@@ -19,7 +19,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
@@ -234,7 +233,8 @@ public class ResponseListeners
             contentSource.demand(() -> consume(contentSource));
     }
 
-    private static void notifyContentSource(Response.ContentSourceListener listener, Response response, Content.Source contentSource)
+    private static void notifyContentSource(
+                                            Response.ContentSourceListener listener, Response response, Content.Source contentSource)
     {
         try
         {
@@ -358,25 +358,13 @@ public class ResponseListeners
     public boolean addListener(Response.Listener listener)
     {
         // Use binary OR to avoid short-circuit.
-        return addBeginListener(listener) |
-               addHeaderListener(listener) |
-               addHeadersListener(listener) |
-               addContentSourceListener(listener) |
-               addSuccessListener(listener) |
-               addFailureListener(listener) |
-               addCompleteListener(listener, false);
+        return addBeginListener(listener) | addHeaderListener(listener) | addHeadersListener(listener) | addContentSourceListener(listener) | addSuccessListener(listener) | addFailureListener(listener) | addCompleteListener(listener, false);
     }
 
     public boolean addResponseListeners(ResponseListeners listeners)
     {
         // Use binary OR to avoid short-circuit.
-        return addBeginListener(listeners.beginListener) |
-               addHeaderListener(listeners.headerListener) |
-               addHeadersListener(listeners.headersListener) |
-               addContentSourceListener(listeners.contentSourceListener) |
-               addSuccessListener(listeners.successListener) |
-               addFailureListener(listeners.failureListener) |
-               addCompleteListener(listeners.completeListener, false);
+        return addBeginListener(listeners.beginListener) | addHeaderListener(listeners.headerListener) | addHeadersListener(listeners.headersListener) | addContentSourceListener(listeners.contentSourceListener) | addSuccessListener(listeners.successListener) | addFailureListener(listeners.failureListener) | addCompleteListener(listeners.completeListener, false);
     }
 
     private void emitEvents(Response response)
@@ -607,7 +595,10 @@ public class ResponseListeners
             {
                 Content.Chunk currentChunk = this.chunk;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Registering content in multiplexed content source #{} that contains {}", index, currentChunk);
+                    LOG.debug(
+                        "Registering content in multiplexed content source #{} that contains {}",
+                        index,
+                        currentChunk);
                 if (currentChunk == null || currentChunk == ALREADY_READ_CHUNK)
                 {
                     if (chunk.hasRemaining())
@@ -699,17 +690,19 @@ public class ResponseListeners
             @Override
             public String toString()
             {
-                return "%s@%x[i=%d,d=%s,c=%s,s=%s]".formatted(getClass().getSimpleName(), hashCode(), index, demandCallbackRef, chunk, state);
+                return "%s@%x[i=%d,d=%s,c=%s,s=%s]"
+                    .formatted(getClass().getSimpleName(), hashCode(), index, demandCallbackRef, chunk, state);
             }
         }
 
         enum State
         {
-            IDLE, DEMANDED, FAILED
+            IDLE,
+            DEMANDED,
+            FAILED
         }
 
-        private record Counters(int demands, int failures)
-        {
+        private record Counters(int demands, int failures) {
             public int total()
             {
                 return demands + failures;

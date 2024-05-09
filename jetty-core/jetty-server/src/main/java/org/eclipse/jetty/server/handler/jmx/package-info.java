@@ -15,4 +15,3 @@
  * Jetty Server : Handler JMX Integration
  */
 package org.eclipse.jetty.server.handler.jmx;
-

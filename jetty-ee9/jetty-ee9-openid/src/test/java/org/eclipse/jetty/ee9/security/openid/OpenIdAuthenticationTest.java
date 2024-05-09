@@ -13,6 +13,17 @@
 
 package org.eclipse.jetty.ee9.security.openid;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.security.Principal;
@@ -20,11 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
@@ -48,13 +54,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
 
 @SuppressWarnings("unchecked")
 public class OpenIdAuthenticationTest
@@ -122,7 +121,8 @@ public class OpenIdAuthenticationTest
         securityHandler.addConstraintMapping(adminMapping);
 
         // Authentication using local OIDC Provider
-        OpenIdConfiguration openIdConfiguration = new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET);
+        OpenIdConfiguration openIdConfiguration =
+            new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET);
         if (configure != null)
             configure.accept(openIdConfiguration);
         server.addBean(openIdConfiguration);
@@ -274,7 +274,8 @@ public class OpenIdAuthenticationTest
         String location = response.getHeaders().get(HttpHeader.LOCATION);
         assertThat(location, containsString(openIdProvider.getProvider() + "/auth"));
 
-        // Note that we couldn't follow "OpenID Connect RP-Initiated Logout 1.0" because we redirect straight to auth endpoint.
+        // Note that we couldn't follow "OpenID Connect RP-Initiated Logout 1.0" because we redirect straight to auth
+        // endpoint.
         assertThat(openIdProvider.getLoggedInUsers().getCurrent(), equalTo(1L));
         assertThat(openIdProvider.getLoggedInUsers().getMax(), equalTo(1L));
         assertThat(openIdProvider.getLoggedInUsers().getTotal(), equalTo(1L));
@@ -356,7 +357,8 @@ public class OpenIdAuthenticationTest
         assertThat(content, containsString("name: Alice"));
         assertThat(content, containsString("email: Alice@example.com"));
 
-        // After waiting past ID_Token expiry time we are still authenticated because logoutWhenIdTokenIsExpired is false by default.
+        // After waiting past ID_Token expiry time we are still authenticated because logoutWhenIdTokenIsExpired is
+        // false by default.
         Thread.sleep(idTokenExpiryTime * 2);
         response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -380,7 +382,8 @@ public class OpenIdAuthenticationTest
     public static class LogoutPage extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             request.logout();
         }
@@ -391,7 +394,8 @@ public class OpenIdAuthenticationTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            Map<String, Object> userInfo = (Map<String, Object>)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
+            Map<String, Object> userInfo =
+                (Map<String, Object>)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
             response.getWriter().println(userInfo.get("sub") + ": success");
         }
     }
@@ -405,7 +409,8 @@ public class OpenIdAuthenticationTest
             Principal userPrincipal = request.getUserPrincipal();
             if (userPrincipal != null)
             {
-                Map<String, Object> userInfo = (Map<String, Object>)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
+                Map<String, Object> userInfo =
+                    (Map<String, Object>)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
                 response.getWriter().println("userId: " + userInfo.get("sub") + "<br>");
                 response.getWriter().println("name: " + userInfo.get("name") + "<br>");
                 response.getWriter().println("email: " + userInfo.get("email") + "<br>");

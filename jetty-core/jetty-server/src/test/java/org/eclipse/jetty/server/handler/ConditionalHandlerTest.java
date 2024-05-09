@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
+
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
@@ -31,12 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.not;
-
 public class ConditionalHandlerTest
 {
     private Server _server;
@@ -49,7 +48,10 @@ public class ConditionalHandlerTest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
+        _connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .addCustomizer(new ForwardedRequestCustomizer());
         _server.addConnector(_connector);
         _helloHandler = new HelloHandler();
     }
@@ -74,8 +76,7 @@ public class ConditionalHandlerTest
             new TestConditionalHandler(),
             new TestConditionalHandlerSkipNext(new TestHandler()),
             new TestConditionalHandlerDontHandle(new TestHandler()),
-            new TestConditionalHandlerReject(new TestHandler())
-        );
+            new TestConditionalHandlerReject(new TestHandler()));
     }
 
     @ParameterizedTest
@@ -128,18 +129,20 @@ public class ConditionalHandlerTest
         testHandler.includeInetAddressPattern("192.168.128.0-192.168.128.128");
         testHandler.excludeInetAddressPattern("192.168.128.30-192.168.128.39");
         startServer(testHandler);
-        String response = _connector.getResponse("""
-            GET /foo HTTP/1.0
-            Forwarded: for=192.168.128.1
-            
-            """);
+        String response = _connector.getResponse(
+            """
+                GET /foo HTTP/1.0
+                Forwarded: for=192.168.128.1
+
+                """);
         _expected.testDoHandle(response);
 
-        response = _connector.getResponse("""
-            GET /foo HTTP/1.0
-            Forwarded: for=192.168.128.31
-            
-            """);
+        response = _connector.getResponse(
+            """
+                GET /foo HTTP/1.0
+                Forwarded: for=192.168.128.31
+
+                """);
         _expected.testDoNotHandle(response);
     }
 
@@ -224,7 +227,6 @@ public class ConditionalHandlerTest
             assertThat(response, containsString("200 OK"));
             assertThat(response, not(containsString("Test: applied")));
         }
-
     }
 
     public static class TestConditionalHandlerSkipNext extends ConditionalHandler.SkipNext implements Expected
@@ -268,7 +270,7 @@ public class ConditionalHandlerTest
             assertThat(response, not(containsString("Test: applied")));
         }
     }
-    
+
     public static class TestHandler extends Handler.Wrapper
     {
         @Override
@@ -278,5 +280,4 @@ public class ConditionalHandlerTest
             return super.handle(request, response, callback);
         }
     }
-
 }

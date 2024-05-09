@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
@@ -44,9 +43,7 @@ class UpgradeResponseDelegate implements UpgradeResponse
     @Override
     public List<ExtensionConfig> getExtensions()
     {
-        return response.getExtensions().stream()
-            .map(JettyExtensionConfig::new)
-            .collect(Collectors.toList());
+        return response.getExtensions().stream().map(JettyExtensionConfig::new).collect(Collectors.toList());
     }
 
     @Override

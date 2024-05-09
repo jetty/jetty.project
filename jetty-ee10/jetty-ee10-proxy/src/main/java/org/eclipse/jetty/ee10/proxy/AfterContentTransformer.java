@@ -27,7 +27,6 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.slf4j.Logger;
@@ -238,7 +237,8 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
         if (inputFile == null)
         {
             Path path = Files.createTempFile(getOverflowDirectory(), getInputFilePrefix(), null);
-            inputFile = FileChannel.open(path,
+            inputFile = FileChannel.open(
+                path,
                 StandardOpenOption.CREATE,
                 StandardOpenOption.READ,
                 StandardOpenOption.WRITE,
@@ -424,7 +424,8 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
             if (outputFile == null)
             {
                 Path path = Files.createTempFile(getOverflowDirectory(), getOutputFilePrefix(), null);
-                outputFile = FileChannel.open(path,
+                outputFile = FileChannel.open(
+                    path,
                     StandardOpenOption.CREATE,
                     StandardOpenOption.READ,
                     StandardOpenOption.WRITE,

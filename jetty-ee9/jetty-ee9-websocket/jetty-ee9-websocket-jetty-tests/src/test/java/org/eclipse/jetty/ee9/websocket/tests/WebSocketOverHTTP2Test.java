@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.ConnectException;
@@ -23,10 +35,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
@@ -69,15 +77,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsStringIgnoringCase;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class WebSocketOverHTTP2Test
 {
     private Server server;
@@ -103,7 +102,8 @@ public class WebSocketOverHTTP2Test
         server.addConnector(connector);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(MavenTestingUtils.getTargetPath("test-classes/keystore.p12").toString());
+        sslContextFactory.setKeyStorePath(
+            MavenTestingUtils.getTargetPath("test-classes/keystore.p12").toString());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
 
@@ -131,7 +131,8 @@ public class WebSocketOverHTTP2Test
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, protocolFn.apply(clientConnector)));
+        HttpClient httpClient =
+            new HttpClient(new HttpClientTransportDynamic(clientConnector, protocolFn.apply(clientConnector)));
         wsClient = new WebSocketClient(httpClient);
         wsClient.start();
     }
@@ -155,10 +156,12 @@ public class WebSocketOverHTTP2Test
     @Tag("flaky")
     public void testWebSocketOverDynamicHTTP2() throws Exception
     {
-        testWebSocketOverDynamicTransport(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
+        testWebSocketOverDynamicTransport(
+            clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
     }
 
-    private void testWebSocketOverDynamicTransport(Function<ClientConnector, ClientConnectionFactory.Info> protocolFn) throws Exception
+    private void testWebSocketOverDynamicTransport(Function<ClientConnector, ClientConnectionFactory.Info> protocolFn)
+        throws Exception
     {
         startServer();
         startClient(protocolFn);
@@ -192,8 +195,9 @@ public class WebSocketOverHTTP2Test
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/echo");
 
-        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
-            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+        ExecutionException failure =
+            Assertions.assertThrows(ExecutionException.class, () -> wsClient.connect(wsEndPoint, uri)
+                .get(5, TimeUnit.SECONDS));
 
         Throwable cause = failure.getCause();
         assertThat(cause.getMessage(), containsStringIgnoringCase(ErrorCode.PROTOCOL_ERROR.name()));
@@ -205,7 +209,8 @@ public class WebSocketOverHTTP2Test
         startServer(new TestJettyWebSocketServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 try
                 {
@@ -251,8 +256,9 @@ public class WebSocketOverHTTP2Test
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + (connector.getLocalPort() + 1) + "/ws/echo");
 
-        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
-            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+        ExecutionException failure =
+            Assertions.assertThrows(ExecutionException.class, () -> wsClient.connect(wsEndPoint, uri)
+                .get(5, TimeUnit.SECONDS));
 
         Throwable cause = failure.getCause();
         assertThat(cause, instanceOf(ConnectException.class));
@@ -268,8 +274,9 @@ public class WebSocketOverHTTP2Test
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/nothing");
 
-        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
-            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+        ExecutionException failure =
+            Assertions.assertThrows(ExecutionException.class, () -> wsClient.connect(wsEndPoint, uri)
+                .get(5, TimeUnit.SECONDS));
 
         Throwable cause = failure.getCause();
         assertThat(cause, instanceOf(UpgradeException.class));
@@ -285,8 +292,9 @@ public class WebSocketOverHTTP2Test
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/null");
 
-        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
-            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+        ExecutionException failure =
+            Assertions.assertThrows(ExecutionException.class, () -> wsClient.connect(wsEndPoint, uri)
+                .get(5, TimeUnit.SECONDS));
 
         Throwable cause = failure.getCause();
         assertThat(cause, instanceOf(UpgradeException.class));
@@ -315,8 +323,8 @@ public class WebSocketOverHTTP2Test
         ExecutionException failure;
         try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
-            failure = Assertions.assertThrows(ExecutionException.class, () ->
-                wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+            failure = Assertions.assertThrows(ExecutionException.class, () -> wsClient.connect(wsEndPoint, uri)
+                .get(5, TimeUnit.SECONDS));
         }
 
         Throwable cause = failure.getCause();
@@ -336,8 +344,9 @@ public class WebSocketOverHTTP2Test
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/connectionClose");
 
-        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
-            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+        ExecutionException failure =
+            Assertions.assertThrows(ExecutionException.class, () -> wsClient.connect(wsEndPoint, uri)
+                .get(5, TimeUnit.SECONDS));
 
         Throwable cause = failure.getCause();
         assertThat(cause, instanceOf(ClosedChannelException.class));
@@ -347,7 +356,8 @@ public class WebSocketOverHTTP2Test
     public void testServerTimeout() throws Exception
     {
         startServer();
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(context.getServletContext());
+        JettyWebSocketServerContainer container =
+            JettyWebSocketServerContainer.getContainer(context.getServletContext());
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
         EchoSocket serverEndpoint = new EchoSocket();
         container.addMapping("/specialEcho", (req, resp) -> serverEndpoint);
@@ -401,7 +411,10 @@ public class WebSocketOverHTTP2Test
             factory.addMapping("/ws/connectionClose", (request, response) ->
             {
                 HttpServletRequest upgradeRequest = request.getHttpServletRequest();
-                ((org.eclipse.jetty.ee9.nested.Request)upgradeRequest).getHttpChannel().getEndPoint().close();
+                ((org.eclipse.jetty.ee9.nested.Request)upgradeRequest)
+                    .getHttpChannel()
+                    .getEndPoint()
+                    .close();
                 return new EchoSocket();
             });
         }

@@ -13,17 +13,10 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
-import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
@@ -43,6 +36,17 @@ import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.Sha1Sum;
@@ -54,11 +58,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class StreamTest
 {
@@ -75,12 +74,14 @@ public class StreamTest
         ServerContainer container = server.getServerContainer();
 
         // Prepare Server Side Output directory for uploaded files
-        outputDir = MavenTestingUtils.getTargetTestingPath(StreamTest.class.getName()).toFile();
+        outputDir = MavenTestingUtils.getTargetTestingPath(StreamTest.class.getName())
+            .toFile();
         FS.ensureEmpty(outputDir.toPath());
 
         // Create Server Endpoint with output directory configuration
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(UploadSocket.class, "/upload/{filename}")
-            .configurator(new ServerUploadConfigurator(outputDir)).build();
+            .configurator(new ServerUploadConfigurator(outputDir))
+            .build();
         container.addEndpoint(config);
     }
 
@@ -116,7 +117,8 @@ public class StreamTest
 
     private void upload(String filename) throws Exception
     {
-        File inputFile = MavenTestingUtils.getTestResourcePath("data/" + filename).toFile();
+        File inputFile =
+            MavenTestingUtils.getTestResourcePath("data/" + filename).toFile();
 
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();
         try
@@ -127,7 +129,8 @@ public class StreamTest
             socket.uploadFile(inputFile);
             socket.awaitClose();
 
-            File sha1File = MavenTestingUtils.getTestResourcePath("data/" + filename + ".sha").toFile();
+            File sha1File = MavenTestingUtils.getTestResourcePath("data/" + filename + ".sha")
+                .toFile();
             assertFileUpload(new File(outputDir, filename), sha1File);
         }
         finally

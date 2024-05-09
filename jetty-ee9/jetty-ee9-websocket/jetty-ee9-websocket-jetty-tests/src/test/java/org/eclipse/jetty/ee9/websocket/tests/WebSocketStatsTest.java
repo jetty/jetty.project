@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
@@ -38,10 +41,6 @@ import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketStatsTest
 {
@@ -141,8 +140,8 @@ public class WebSocketStatsTest
         final long closeFrameSize = getFrameByteSize(closeFrame);
         final int maskSize = 4; // We use 4 byte mask for client frames in WSConnection
 
-        final long expectedSent =  numMessages * textFrameSize + closeFrameSize;
-        final long expectedReceived =  numMessages * (textFrameSize + maskSize) + (closeFrameSize + maskSize);
+        final long expectedSent = numMessages * textFrameSize + closeFrameSize;
+        final long expectedReceived = numMessages * (textFrameSize + maskSize) + (closeFrameSize + maskSize);
 
         assertThat(statistics.getSentBytes(), is(expectedSent));
         assertThat(statistics.getReceivedBytes(), is(expectedReceived));

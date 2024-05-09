@@ -13,18 +13,20 @@
 
 package org.eclipse.jetty.ee9.session;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Random;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Random;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -34,10 +36,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * ConcurrencyTest
@@ -71,14 +69,14 @@ public class ConcurrencyTest
             {
                 String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
-                //create session upfront so the session id is established and
-                //can be shared to all clients
+                // create session upfront so the session id is established and
+                // can be shared to all clients
                 ContentResponse response1 = client.GET(url + "?action=init");
                 assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
 
-                //simulate 10 clients making 10 requests each for the same session
+                // simulate 10 clients making 10 requests each for the same session
                 ExecutorService executor = Executors.newCachedThreadPool();
                 int clientsCount = 10;
                 CyclicBarrier barrier = new CyclicBarrier(clientsCount + 1);
@@ -158,7 +156,7 @@ public class ConcurrencyTest
                 {
                     int pauseMsec = random.nextInt(1000);
 
-                    //wait a random number of milliseconds between requests up to 1 second
+                    // wait a random number of milliseconds between requests up to 1 second
                     if (pauseMsec > 0)
                     {
                         Thread.currentThread().sleep(pauseMsec);
@@ -178,8 +176,7 @@ public class ConcurrencyTest
         }
     }
 
-    public static class TestServlet
-        extends HttpServlet
+    public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
 

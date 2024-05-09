@@ -22,6 +22,7 @@ public class size_t_pointer extends ByReference
     {
         this((byte)0);
     }
+
     public size_t_pointer(long v)
     {
         super(Native.SIZE_T_SIZE);

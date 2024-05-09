@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class RFC6265CookieParserTest
 {
@@ -90,9 +89,7 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC2965Double()
     {
-        String rawCookie = "$Version=\"1\"; " +
-            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+        String rawCookie = "$Version=\"1\"; " + "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " + "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
 
         Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
@@ -134,10 +131,7 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFCTriple()
     {
-        String rawCookie = "$Version=\"1\"; " +
-            "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
-            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " +
-            "Shipping=\"FedEx\"; $Path=\"/acme\"";
+        String rawCookie = "$Version=\"1\"; " + "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " + "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " + "Shipping=\"FedEx\"; $Path=\"/acme\"";
 
         Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
@@ -153,9 +147,7 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFCPathExample()
     {
-        String rawCookie = "$Version=\"1\"; " +
-            "Part_Number=\"Riding_Rocket_0023\"; $Path=\"/acme/ammo\"; " +
-            "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
+        String rawCookie = "$Version=\"1\"; " + "Part_Number=\"Riding_Rocket_0023\"; $Path=\"/acme/ammo\"; " + "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
 
         Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
@@ -170,9 +162,8 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC2109CookieSpoofingExample()
     {
-        String rawCookie = "$Version=\"1\"; " +
-            "session_id=\"1234\"; " +
-            "session_id=\"1111\"; $Domain=\".cracker.edu\"";
+        String rawCookie =
+            "$Version=\"1\"; " + "session_id=\"1234\"; " + "session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
         Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
@@ -187,8 +178,7 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC2965CookieSpoofingExample()
     {
-        String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
-            "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
+        String rawCookie = "$Version=\"1\"; session_id=\"1234\", " + "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
         Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC2965, rawCookie);
 
@@ -342,8 +332,7 @@ public class RFC6265CookieParserTest
             new Param("€"),
             new Param("@={}"),
             new Param("$X=Y; N=V", "$X=Y", "N=V"),
-            new Param("N=V; $X=Y", "N=V", "$X=Y")
-        );
+            new Param("N=V; $X=Y", "N=V", "$X=Y"));
     }
 
     @ParameterizedTest
@@ -420,7 +409,9 @@ public class RFC6265CookieParserTest
         return cutter.cookies.toArray(Cookie[]::new);
     }
 
-    private void assertCookie(String prefix, Cookie cookie,
+    private void assertCookie(
+                              String prefix,
+                              Cookie cookie,
                               String expectedName,
                               String expectedValue,
                               int expectedVersion,
@@ -456,7 +447,13 @@ public class RFC6265CookieParserTest
         }
 
         @Override
-        public void addCookie(String cookieName, String cookieValue, int cookieVersion, String cookieDomain, String cookiePath, String cookieComment)
+        public void addCookie(
+                              String cookieName,
+                              String cookieValue,
+                              int cookieVersion,
+                              String cookieDomain,
+                              String cookiePath,
+                              String cookieComment)
         {
             cookies.add(new Cookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment));
         }

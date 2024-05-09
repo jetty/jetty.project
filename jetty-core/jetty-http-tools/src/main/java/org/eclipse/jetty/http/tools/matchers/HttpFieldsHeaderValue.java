@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http.tools.matchers;
 
 import java.util.Objects;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -40,7 +39,11 @@ public class HttpFieldsHeaderValue extends TypeSafeMatcher<HttpFields>
     @Override
     public void describeTo(Description description)
     {
-        description.appendText("expecting http header ").appendValue(keyName).appendText(" with value ").appendValue(value);
+        description
+            .appendText("expecting http header ")
+            .appendValue(keyName)
+            .appendText(" with value ")
+            .appendValue(value);
     }
 
     @Override

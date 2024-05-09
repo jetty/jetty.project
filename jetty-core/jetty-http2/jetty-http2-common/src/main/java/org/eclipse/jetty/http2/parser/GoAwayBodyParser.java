@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 
@@ -170,6 +169,12 @@ public class GoAwayBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, LAST_STREAM_ID, LAST_STREAM_ID_BYTES, ERROR, ERROR_BYTES, PAYLOAD, PAYLOAD_BYTES
+        PREPARE,
+        LAST_STREAM_ID,
+        LAST_STREAM_ID_BYTES,
+        ERROR,
+        ERROR_BYTES,
+        PAYLOAD,
+        PAYLOAD_BYTES
     }
 }

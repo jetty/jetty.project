@@ -13,22 +13,21 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.Session;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.sockets.TrackingSocket;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
 
 public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebSocketFrameHandlerTest
 {
@@ -42,13 +41,10 @@ public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebS
         localEndpoint.onOpen(coreSession, Callback.NOOP);
         CloseStatus status = new CloseStatus(CloseStatus.NORMAL, "Normal");
         Frame closeFrame = status.toFrame();
-        localEndpoint.onFrame(closeFrame, Callback.from(() ->
-                localEndpoint.onClosed(status, Callback.NOOP),
-            t ->
-            {
-                throw new RuntimeException(t);
-            }
-        ));
+        localEndpoint.onFrame(closeFrame, Callback.from(() -> localEndpoint.onClosed(status, Callback.NOOP), t ->
+        {
+            throw new RuntimeException(t);
+        }));
         String event = socket.events.poll(10, TimeUnit.SECONDS);
         assertThat("Event", event, eventMatcher);
     }
@@ -82,11 +78,11 @@ public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebS
     @Test
     public void testInvokeCloseSession() throws Exception
     {
-        assertOnCloseInvocation(new CloseSessionSocket(),
+        assertOnCloseInvocation(
+            new CloseSessionSocket(),
             allOf(
                 containsString("onClose(JakartaWebSocketSession@"),
-                containsString(CloseSessionSocket.class.getName())
-            ));
+                containsString(CloseSessionSocket.class.getName())));
     }
 
     @ClientEndpoint
@@ -102,8 +98,7 @@ public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebS
     @Test
     public void testInvokeCloseReason() throws Exception
     {
-        assertOnCloseInvocation(new CloseReasonSocket(),
-            containsString("onClose(" + EXPECTED_REASON + ")"));
+        assertOnCloseInvocation(new CloseReasonSocket(), containsString("onClose(" + EXPECTED_REASON + ")"));
     }
 
     @ClientEndpoint
@@ -119,11 +114,11 @@ public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebS
     @Test
     public void testInvokeCloseSessionReason() throws Exception
     {
-        assertOnCloseInvocation(new CloseSessionReasonSocket(),
+        assertOnCloseInvocation(
+            new CloseSessionReasonSocket(),
             allOf(
                 containsString("onClose(JakartaWebSocketSession@"),
-                containsString(CloseSessionReasonSocket.class.getName())
-            ));
+                containsString(CloseSessionReasonSocket.class.getName())));
     }
 
     @ClientEndpoint
@@ -139,10 +134,10 @@ public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebS
     @Test
     public void testInvokeCloseReasonSession() throws Exception
     {
-        assertOnCloseInvocation(new CloseReasonSessionSocket(),
+        assertOnCloseInvocation(
+            new CloseReasonSessionSocket(),
             allOf(
                 containsString("onClose(" + EXPECTED_REASON),
-                containsString(CloseReasonSessionSocket.class.getName())
-            ));
+                containsString(CloseReasonSessionSocket.class.getName())));
     }
 }

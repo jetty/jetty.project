@@ -33,7 +33,8 @@ public class BasicEchoSocketContextListener implements ServletContextListener
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
+        ServerContainer container =
+            (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
         try
         {
             container.addEndpoint(BasicEchoSocket.class);

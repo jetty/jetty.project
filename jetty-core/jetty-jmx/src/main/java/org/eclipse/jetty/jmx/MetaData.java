@@ -42,7 +42,6 @@ import javax.management.MBeanParameterInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.modelmbean.ModelMBean;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -97,7 +96,8 @@ class MetaData
     {
         try
         {
-            Object mbean = constructor.getParameterCount() == 0 ? constructor.newInstance() : constructor.newInstance(bean);
+            Object mbean =
+                constructor.getParameterCount() == 0 ? constructor.newInstance() : constructor.newInstance(bean);
             if (mbean instanceof ModelMBean)
                 ((ModelMBean)mbean).setManagedResource(bean, "objectReference");
             return mbean;
@@ -113,7 +113,8 @@ class MetaData
         return _info;
     }
 
-    Object getAttribute(String name, ObjectMBean mbean) throws AttributeNotFoundException, ReflectionException, MBeanException
+    Object getAttribute(String name, ObjectMBean mbean)
+        throws AttributeNotFoundException, ReflectionException, MBeanException
     {
         AttributeInfo info = findAttribute(name);
         if (info == null)
@@ -121,7 +122,8 @@ class MetaData
         return info.getAttribute(mbean);
     }
 
-    void setAttribute(Attribute attribute, ObjectMBean mbean) throws AttributeNotFoundException, ReflectionException, MBeanException
+    void setAttribute(Attribute attribute, ObjectMBean mbean)
+        throws AttributeNotFoundException, ReflectionException, MBeanException
     {
         if (attribute == null)
             return;
@@ -159,7 +161,8 @@ class MetaData
         return result;
     }
 
-    Object invoke(String name, String[] params, Object[] args, ObjectMBean mbean) throws ReflectionException, MBeanException
+    Object invoke(String name, String[] params, Object[] args, ObjectMBean mbean)
+        throws ReflectionException, MBeanException
     {
         String signature = signature(name, params);
         OperationInfo info = findOperation(signature);
@@ -245,9 +248,7 @@ class MetaData
                 return ObjectName[].class;
         }
 
-        if (type instanceof ParameterizedType parameterizedType &&
-            parameterizedType.getRawType() instanceof Class<?> clazz &&
-            Collection.class.isAssignableFrom(clazz))
+        if (type instanceof ParameterizedType parameterizedType && parameterizedType.getRawType() instanceof Class<?> clazz && Collection.class.isAssignableFrom(clazz))
         {
             Type[] genArgs = parameterizedType.getActualTypeArguments();
             if (genArgs.length == 1 && genArgs[0] instanceof Class<?> klass && klass.isAnnotationPresent(ManagedObject.class))
@@ -305,9 +306,8 @@ class MetaData
 
     private static String signature(Method method)
     {
-        String signature = Arrays.stream(method.getParameterTypes())
-            .map(Class::getName)
-            .collect(Collectors.joining(","));
+        String signature =
+            Arrays.stream(method.getParameterTypes()).map(Class::getName).collect(Collectors.joining(","));
         return String.format("%s(%s)", method.getName(), signature);
     }
 
@@ -363,7 +363,11 @@ class MetaData
             MBeanOperationInfo[] parentOperations = _parent.getMBeanInfo().getOperations();
             for (MBeanOperationInfo parentOperation : parentOperations)
             {
-                String signature = signature(parentOperation.getName(), Arrays.stream(parentOperation.getSignature()).map(MBeanParameterInfo::getType).toArray(String[]::new));
+                String signature = signature(
+                    parentOperation.getName(),
+                    Arrays.stream(parentOperation.getSignature())
+                        .map(MBeanParameterInfo::getType)
+                        .toArray(String[]::new));
                 operationInfos.put(signature, parentOperation);
             }
         }
@@ -385,8 +389,9 @@ class MetaData
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s, attrs=%s, opers=%s]", getClass().getSimpleName(), hashCode(),
-            _klass.getName(), _attributes.keySet(), _operations.keySet());
+        return String.format(
+            "%s@%x[%s, attrs=%s, opers=%s]",
+            getClass().getSimpleName(), hashCode(), _klass.getName(), _attributes.keySet(), _operations.keySet());
     }
 
     private static class AttributeInfo
@@ -416,8 +421,13 @@ class MetaData
             String signature = _convert.getTypeName();
 
             String description = attribute.value();
-            _info = new MBeanAttributeInfo(name, signature, description, true,
-                _setter != null, getter.getName().startsWith("is"));
+            _info = new MBeanAttributeInfo(
+                name,
+                signature,
+                description,
+                true,
+                _setter != null,
+                getter.getName().startsWith("is"));
         }
 
         Object getAttribute(ObjectMBean mbean) throws ReflectionException, MBeanException
@@ -505,7 +515,10 @@ class MetaData
             }
 
             if (candidate != null && setter == null)
-                LOG.info("Getter/setter type mismatch for mbean attribute {} in {}, attribute will be read-only", name, klass);
+                LOG.info(
+                    "Getter/setter type mismatch for mbean attribute {} in {}, attribute will be read-only",
+                    name,
+                    klass);
 
             return setter;
         }
@@ -513,8 +526,9 @@ class MetaData
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s,proxied=%b,convert=%b,info=%s]", getClass().getSimpleName(), hashCode(),
-                _name, _proxied, _convert, _info);
+            return String.format(
+                "%s@%x[%s,proxied=%b,convert=%b,info=%s]",
+                getClass().getSimpleName(), hashCode(), _name, _proxied, _convert, _info);
         }
     }
 
@@ -547,7 +561,8 @@ class MetaData
                 impact = MBeanOperationInfo.ACTION_INFO;
 
             String description = operation.value();
-            MBeanParameterInfo[] parameterInfos = parameters(method.getParameterTypes(), method.getParameterAnnotations());
+            MBeanParameterInfo[] parameterInfos =
+                parameters(method.getParameterTypes(), method.getParameterAnnotations());
             _info = new MBeanOperationInfo(method.getName(), description, parameterInfos, returnSignature, impact);
         }
 
@@ -574,7 +589,8 @@ class MetaData
             }
         }
 
-        private static MBeanParameterInfo[] parameters(Class<?>[] parameterTypes, Annotation[][] parametersAnnotations)
+        private static MBeanParameterInfo[] parameters(
+                                                       Class<?>[] parameterTypes, Annotation[][] parametersAnnotations)
         {
             MBeanParameterInfo[] result = new MBeanParameterInfo[parameterTypes.length];
             for (int i = 0; i < parametersAnnotations.length; i++)
@@ -599,8 +615,9 @@ class MetaData
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s,proxied=%b,convert=%b]", getClass().getSimpleName(), hashCode(),
-                _name, _proxied, _convert);
+            return String.format(
+                "%s@%x[%s,proxied=%b,convert=%b]",
+                getClass().getSimpleName(), hashCode(), _name, _proxied, _convert);
         }
     }
 }

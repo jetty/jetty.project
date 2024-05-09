@@ -21,7 +21,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -280,7 +279,8 @@ public class SharedBlockingCallback
             _lock.lock();
             try
             {
-                return String.format("%s@%x{%s}", Blocker.class.getSimpleName(), hashCode(), _state == null ? "WAIT" : _state);
+                return String.format(
+                    "%s@%x{%s}", Blocker.class.getSimpleName(), hashCode(), _state == null ? "WAIT" : _state);
             }
             finally
             {

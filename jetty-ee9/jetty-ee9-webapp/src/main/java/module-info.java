@@ -28,7 +28,6 @@ import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 module org.eclipse.jetty.ee9.webapp
 {
     requires org.slf4j;
-
     requires transitive java.instrument;
     requires transitive org.eclipse.jetty.ee9.servlet;
     requires transitive org.eclipse.jetty.xml;

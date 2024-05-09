@@ -16,7 +16,6 @@ module org.eclipse.jetty.ee9.fcgi.proxy
     requires transitive org.eclipse.jetty.ee9.proxy;
     requires transitive org.eclipse.jetty.fcgi.client;
     requires transitive org.eclipse.jetty.server;
-
     requires static jetty.servlet.api;
 
     exports org.eclipse.jetty.ee9.fcgi.proxy;

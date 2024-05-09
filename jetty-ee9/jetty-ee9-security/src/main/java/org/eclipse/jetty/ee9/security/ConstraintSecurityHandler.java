@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee9.security;
 
+import jakarta.servlet.HttpConstraintElement;
+import jakarta.servlet.HttpMethodConstraintElement;
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
+import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,12 +31,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-
-import jakarta.servlet.HttpConstraintElement;
-import jakarta.servlet.HttpMethodConstraintElement;
-import jakarta.servlet.ServletSecurityElement;
-import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
-import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.Response;
@@ -58,7 +57,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ConstraintSecurityHandler extends SecurityHandler implements ConstraintAware
 {
-    private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class); //use same as SecurityHandler
+    private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class); // use same as SecurityHandler
 
     private static final String OMISSION_SUFFIX = ".omission";
     private static final String ALL_METHODS = "*";
@@ -94,7 +93,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @param dataConstraint the data constraint
      * @return the constraint
      */
-    public static ServletConstraint createConstraint(String name, boolean authenticate, String[] roles, int dataConstraint)
+    public static ServletConstraint createConstraint(
+                                                     String name, boolean authenticate, String[] roles, int dataConstraint)
     {
         ServletConstraint constraint = createConstraint();
         if (name != null)
@@ -114,7 +114,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     public static ServletConstraint createConstraint(String name, HttpConstraintElement element)
     {
-        return createConstraint(name, element.getRolesAllowed(), element.getEmptyRoleSemantic(), element.getTransportGuarantee());
+        return createConstraint(
+            name, element.getRolesAllowed(), element.getEmptyRoleSemantic(), element.getTransportGuarantee());
     }
 
     /**
@@ -126,7 +127,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @param transport the transport guarantee
      * @return the created constraint
      */
-    public static ServletConstraint createConstraint(String name, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
+    public static ServletConstraint createConstraint(
+                                                     String name, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
     {
         ServletConstraint constraint = createConstraint();
 
@@ -134,31 +136,34 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         {
             if (permitOrDeny.equals(EmptyRoleSemantic.DENY))
             {
-                //Equivalent to <auth-constraint> with no roles
+                // Equivalent to <auth-constraint> with no roles
                 constraint.setName(name + "-Deny");
                 constraint.setAuthenticate(true);
             }
             else
             {
-                //Equivalent to no <auth-constraint>
+                // Equivalent to no <auth-constraint>
                 constraint.setName(name + "-Permit");
                 constraint.setAuthenticate(false);
             }
         }
         else
         {
-            //Equivalent to <auth-constraint> with list of <security-role-name>s
+            // Equivalent to <auth-constraint> with list of <security-role-name>s
             constraint.setAuthenticate(true);
             constraint.setRoles(rolesAllowed);
             constraint.setName(name + "-RolesAllowed");
         }
 
-        //Equivalent to //<user-data-constraint><transport-guarantee>CONFIDENTIAL</transport-guarantee></user-data-constraint>
-        constraint.setDataConstraint((transport.equals(TransportGuarantee.CONFIDENTIAL) ? ServletConstraint.DC_CONFIDENTIAL : ServletConstraint.DC_NONE));
+        // Equivalent to
+        // //<user-data-constraint><transport-guarantee>CONFIDENTIAL</transport-guarantee></user-data-constraint>
+        constraint.setDataConstraint(
+            (transport.equals(TransportGuarantee.CONFIDENTIAL) ? ServletConstraint.DC_CONFIDENTIAL : ServletConstraint.DC_NONE));
         return constraint;
     }
 
-    public static List<ConstraintMapping> getConstraintMappingsForPath(String pathSpec, List<ConstraintMapping> constraintMappings)
+    public static List<ConstraintMapping> getConstraintMappingsForPath(
+                                                                       String pathSpec, List<ConstraintMapping> constraintMappings)
     {
         if (pathSpec == null || "".equals(pathSpec.trim()) || constraintMappings == null || constraintMappings.size() == 0)
             return Collections.emptyList();
@@ -182,7 +187,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @param constraintMappings a new list minus the matching constraints
      * @return the list of constraint mappings
      */
-    public static List<ConstraintMapping> removeConstraintMappingsForPath(String pathSpec, List<ConstraintMapping> constraintMappings)
+    public static List<ConstraintMapping> removeConstraintMappingsForPath(
+                                                                          String pathSpec, List<ConstraintMapping> constraintMappings)
     {
         if (pathSpec == null || "".equals(pathSpec.trim()) || constraintMappings == null || constraintMappings.size() == 0)
             return Collections.emptyList();
@@ -190,7 +196,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         List<ConstraintMapping> mappings = new ArrayList<>();
         for (ConstraintMapping mapping : constraintMappings)
         {
-            //Remove the matching mappings by only copying in non-matching mappings
+            // Remove the matching mappings by only copying in non-matching mappings
             if (!pathSpec.equals(mapping.getPathSpec()))
             {
                 mappings.add(mapping);
@@ -207,52 +213,55 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @param securityElement the servlet security element
      * @return the list of constraint mappings
      */
-    public static List<ConstraintMapping> createConstraintsWithMappingsForPath(String name, String pathSpec, ServletSecurityElement securityElement)
+    public static List<ConstraintMapping> createConstraintsWithMappingsForPath(
+                                                                               String name, String pathSpec, ServletSecurityElement securityElement)
     {
         List<ConstraintMapping> mappings = new ArrayList<>();
 
-        //Create a constraint that will describe the default case (ie if not overridden by specific HttpMethodConstraints)
+        // Create a constraint that will describe the default case (ie if not overridden by specific
+        // HttpMethodConstraints)
         ServletConstraint httpConstraint;
         ConstraintMapping httpConstraintMapping = null;
 
-        if (securityElement.getEmptyRoleSemantic() != EmptyRoleSemantic.PERMIT ||
-            securityElement.getRolesAllowed().length != 0 ||
-            securityElement.getTransportGuarantee() != TransportGuarantee.NONE)
+        if (securityElement.getEmptyRoleSemantic() != EmptyRoleSemantic.PERMIT || securityElement.getRolesAllowed().length != 0 || securityElement.getTransportGuarantee() != TransportGuarantee.NONE)
         {
             httpConstraint = ConstraintSecurityHandler.createConstraint(name, securityElement);
 
-            //Create a mapping for the pathSpec for the default case
+            // Create a mapping for the pathSpec for the default case
             httpConstraintMapping = new ConstraintMapping();
             httpConstraintMapping.setPathSpec(pathSpec);
             httpConstraintMapping.setConstraint(httpConstraint);
             mappings.add(httpConstraintMapping);
         }
 
-        //See Spec 13.4.1.2 p127
+        // See Spec 13.4.1.2 p127
         List<String> methodOmissions = new ArrayList<>();
 
-        //make constraint mappings for this url for each of the HttpMethodConstraintElements
+        // make constraint mappings for this url for each of the HttpMethodConstraintElements
         Collection<HttpMethodConstraintElement> methodConstraintElements = securityElement.getHttpMethodConstraints();
         if (methodConstraintElements != null)
         {
             for (HttpMethodConstraintElement methodConstraintElement : methodConstraintElements)
             {
-                //Make a Constraint that captures the <auth-constraint> and <user-data-constraint> elements supplied for the HttpMethodConstraintElement
-                ServletConstraint methodConstraint = ConstraintSecurityHandler.createConstraint(name, methodConstraintElement);
+                // Make a Constraint that captures the <auth-constraint> and <user-data-constraint> elements supplied
+                // for the HttpMethodConstraintElement
+                ServletConstraint methodConstraint =
+                    ConstraintSecurityHandler.createConstraint(name, methodConstraintElement);
                 ConstraintMapping mapping = new ConstraintMapping();
                 mapping.setConstraint(methodConstraint);
                 mapping.setPathSpec(pathSpec);
                 if (methodConstraintElement.getMethodName() != null)
                 {
                     mapping.setMethod(methodConstraintElement.getMethodName());
-                    //See spec 13.4.1.2 p127 - add an omission for every method name to the default constraint
+                    // See spec 13.4.1.2 p127 - add an omission for every method name to the default constraint
                     methodOmissions.add(methodConstraintElement.getMethodName());
                 }
                 mappings.add(mapping);
             }
         }
-        //See spec 13.4.1.2 p127 - add an omission for every method name to the default constraint
-        //UNLESS the default constraint contains all default values. In that case, we won't add it. See Servlet Spec 3.1 pg 129
+        // See spec 13.4.1.2 p127 - add an omission for every method name to the default constraint
+        // UNLESS the default constraint contains all default values. In that case, we won't add it. See Servlet Spec
+        // 3.1 pg 129
         if (methodOmissions.size() > 0 && httpConstraintMapping != null)
             httpConstraintMapping.setMethodOmissions(methodOmissions.toArray(new String[0]));
 
@@ -362,8 +371,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
         if (mapping.getConstraint() != null && mapping.getConstraint().getRoles() != null)
         {
-            //allow for lazy role naming: if a role is named in a security constraint, try and
-            //add it to the list of declared roles (ie as if it was declared with a security-role
+            // allow for lazy role naming: if a role is named in a security constraint, try and
+            // add it to the list of declared roles (ie as if it was declared with a security-role
             for (String role : mapping.getConstraint().getRoles())
             {
                 if ("*".equals(role) || "**".equals(role))
@@ -379,7 +388,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     public void addRole(String role)
     {
-        //add to list of declared roles
+        // add to list of declared roles
         boolean modified = _roles.add(role);
         if (isStarted() && modified)
         {
@@ -401,7 +410,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         _constraintRoles.reset();
         _constraintMappings.forEach(this::processConstraintMapping);
 
-        //Servlet Spec 3.1 pg 147 sec 13.8.4.2 log paths for which there are uncovered http methods
+        // Servlet Spec 3.1 pg 147 sec 13.8.4.2 log paths for which there are uncovered http methods
         checkPathsWithUncoveredHttpMethods();
 
         super.doStart();
@@ -456,7 +465,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (roleInfo.isForbidden())
             return;
 
-        //add in info from the constraint
+        // add in info from the constraint
         configureRoleInfo(roleInfo, mapping);
 
         if (roleInfo.isForbidden())
@@ -489,7 +498,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @param mapping the constraint mapping
      * @param mappings the mappings of roles
      */
-    protected void processConstraintMappingWithMethodOmissions(ConstraintMapping mapping, Map<String, RoleInfo> mappings)
+    protected void processConstraintMappingWithMethodOmissions(
+                                                               ConstraintMapping mapping, Map<String, RoleInfo> mappings)
     {
         String[] omissions = mapping.getMethodOmissions();
         StringBuilder sb = new StringBuilder();
@@ -517,15 +527,16 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         boolean forbidden = constraint.isForbidden();
         ri.setForbidden(forbidden);
 
-        //set up the data constraint (NOTE: must be done after setForbidden, as it nulls out the data constraint
-        //which we need in order to do combining of omissions in prepareConstraintInfo
-        UserDataConstraint userDataConstraint = UserDataConstraint.get(mapping.getConstraint().getDataConstraint());
+        // set up the data constraint (NOTE: must be done after setForbidden, as it nulls out the data constraint
+        // which we need in order to do combining of omissions in prepareConstraintInfo
+        UserDataConstraint userDataConstraint =
+            UserDataConstraint.get(mapping.getConstraint().getDataConstraint());
         ri.setUserDataConstraint(userDataConstraint);
 
-        //if forbidden, no point setting up roles
+        // if forbidden, no point setting up roles
         if (!ri.isForbidden())
         {
-            //add in the roles
+            // add in the roles
             boolean checked = mapping.getConstraint().getAuthenticate();
             ri.setChecked(checked);
 
@@ -542,18 +553,19 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 }
                 else if (mapping.getConstraint().isAnyAuth())
                 {
-                    //being authenticated is sufficient, not necessary to check roles
+                    // being authenticated is sufficient, not necessary to check roles
                     ri.setAnyAuth(true);
                 }
                 else
                 {
-                    //user must be in one of the named roles
+                    // user must be in one of the named roles
                     String[] newRoles = mapping.getConstraint().getRoles();
                     for (String role : newRoles)
                     {
-                        //check role has been defined
+                        // check role has been defined
                         if (!_roles.contains(role))
-                            throw new IllegalArgumentException("Attempt to use undeclared role: " + role + ", known roles: " + _roles);
+                            throw new IllegalArgumentException(
+                                "Attempt to use undeclared role: " + role + ", known roles: " + _roles);
                         ri.addRole(role);
                     }
                 }
@@ -588,16 +600,16 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         RoleInfo roleInfo = mappings.get(httpMethod);
         if (roleInfo == null)
         {
-            //No specific http-method names matched
+            // No specific http-method names matched
             List<RoleInfo> applicableConstraints = new ArrayList<>();
 
-            //Get info for constraint that matches all methods if it exists
+            // Get info for constraint that matches all methods if it exists
             RoleInfo all = mappings.get(ALL_METHODS);
             if (all != null)
                 applicableConstraints.add(all);
 
-            //Get info for constraints that name method omissions where target method name is not omitted
-            //(ie matches because target method is not omitted, hence considered covered by the constraint)
+            // Get info for constraints that name method omissions where target method name is not omitted
+            // (ie matches because target method is not omitted, hence considered covered by the constraint)
             for (Entry<String, RoleInfo> entry : mappings.entrySet())
             {
                 if (entry.getKey() != null && entry.getKey().endsWith(OMISSION_SUFFIX) && !entry.getKey().contains(httpMethod))
@@ -627,7 +639,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
 
     @Override
-    protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response, RoleInfo roleInfo) throws IOException
+    protected boolean checkUserDataPermissions(
+                                               String pathInContext, Request request, Response response, RoleInfo roleInfo) throws IOException
     {
         if (roleInfo == null)
             return true;
@@ -652,7 +665,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 String scheme = httpConfig.getSecureScheme();
                 int port = httpConfig.getSecurePort();
 
-                String url = URIUtil.newURI(scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString());
+                String url = URIUtil.newURI(
+                    scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString());
                 response.setContentLength(0);
                 response.sendRedirect(url, true);
             }
@@ -675,7 +689,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
 
     @Override
-    protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo, UserIdentity userIdentity)
+    protected boolean checkWebResourcePermissions(
+                                                  String pathInContext, Request request, Response response, Object constraintInfo, UserIdentity userIdentity)
         throws IOException
     {
         if (constraintInfo == null)
@@ -689,13 +704,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             return true;
         }
 
-        //handle ** role constraint
+        // handle ** role constraint
         if (roleInfo.isAnyAuth() && request.getUserPrincipal() != null)
         {
             return true;
         }
 
-        //check if user is any of the allowed roles
+        // check if user is any of the allowed roles
         boolean isUserInRole = false;
         for (String role : roleInfo.getRoles())
         {
@@ -706,13 +721,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             }
         }
 
-        //handle * role constraint
+        // handle * role constraint
         if (roleInfo.isAnyRole() && request.getUserPrincipal() != null && isUserInRole)
         {
             return true;
         }
 
-        //normal role check
+        // normal role check
         if (isUserInRole)
         {
             return true;
@@ -724,9 +739,11 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent,
-                    DumpableCollection.from("roles", _roles),
-                    DumpableCollection.from("constraints", _constraintMappings));
+        dumpObjects(
+            out,
+            indent,
+            DumpableCollection.from("roles", _roles),
+            DumpableCollection.from("constraints", _constraintMappings));
     }
 
     @Override
@@ -750,8 +767,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         Set<String> paths = getPathsWithUncoveredHttpMethods();
         if (paths != null && !paths.isEmpty())
         {
-            LOG.warn("{} has uncovered HTTP methods for the following paths: {}",
-                ContextHandler.getCurrentContext(), paths);
+            LOG.warn(
+                "{} has uncovered HTTP methods for the following paths: {}",
+                ContextHandler.getCurrentContext(),
+                paths);
             return true;
         }
         return false;
@@ -767,7 +786,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     public Set<String> getPathsWithUncoveredHttpMethods()
     {
-        //if automatically denying uncovered methods, there are no uncovered methods
+        // if automatically denying uncovered methods, there are no uncovered methods
         if (_denyUncoveredMethods)
             return Collections.emptySet();
 
@@ -777,12 +796,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         {
             String path = resource.getPathSpec().getDeclaration();
             Map<String, RoleInfo> methodMappings = resource.getResource();
-            //Each key is either:
+            // Each key is either:
             // : an exact method name
             // : * which means that the constraint applies to every method
-            // : a name of the form <method>.<method>.<method>.omission, which means it applies to every method EXCEPT those named
+            // : a name of the form <method>.<method>.<method>.omission, which means it applies to every method EXCEPT
+            // those named
             if (methodMappings.get(ALL_METHODS) != null)
-                continue; //can't be any uncovered methods for this url path
+                continue; // can't be any uncovered methods for this url path
 
             boolean hasOmissions = omissionsExist(path, methodMappings);
 
@@ -799,9 +819,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 }
                 else
                 {
-                    //an exact method name
+                    // an exact method name
                     if (!hasOmissions)
-                        //an http-method does not have http-method-omission to cover the other method names
+                        // an http-method does not have http-method-omission to cover the other method names
                         uncoveredPaths.add(path);
                 }
             }

@@ -30,8 +30,14 @@ public class JettyWebSocketClientConfiguration extends AbstractConfiguration
     public JettyWebSocketClientConfiguration()
     {
         super(new Builder()
-            .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class)
-            .addDependents("org.eclipse.jetty.ee10.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName())
+            .addDependencies(
+                WebXmlConfiguration.class,
+                MetaInfConfiguration.class,
+                WebInfConfiguration.class,
+                FragmentConfiguration.class)
+            .addDependents(
+                "org.eclipse.jetty.ee10.annotations.AnnotationConfiguration",
+                WebAppConfiguration.class.getName())
             .protectAndExpose("org.eclipse.jetty.websocket.api.")
             .protectAndExpose("org.eclipse.jetty.websocket.client.")
             .hide("org.eclipse.jetty.websocket.client.internal.")

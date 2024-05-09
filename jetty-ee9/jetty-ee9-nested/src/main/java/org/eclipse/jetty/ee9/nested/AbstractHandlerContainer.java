@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.nested;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,12 +76,14 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         else if (handler instanceof HandlerContainer)
         {
             HandlerContainer container = (HandlerContainer)handler;
-            Handler[] handlers = byClass == null ? container.getChildHandlers() : container.getChildHandlersByClass(byClass);
+            Handler[] handlers =
+                byClass == null ? container.getChildHandlers() : container.getChildHandlersByClass(byClass);
             list.addAll(Arrays.asList(handlers));
         }
     }
 
-    public static <T extends HandlerContainer> T findContainerOf(HandlerContainer root, Class<T> type, Handler handler)
+    public static <T extends HandlerContainer> T findContainerOf(
+                                                                 HandlerContainer root, Class<T> type, Handler handler)
     {
         if (root == null || handler == null)
             return null;

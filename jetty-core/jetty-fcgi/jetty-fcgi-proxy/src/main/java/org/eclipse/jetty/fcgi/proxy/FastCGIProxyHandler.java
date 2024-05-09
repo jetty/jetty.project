@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
@@ -277,10 +276,15 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
     }
 
     @Override
-    protected void sendProxyToServerRequest(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+    protected void sendProxyToServerRequest(
+                                            Request clientToProxyRequest,
+                                            org.eclipse.jetty.client.Request proxyToServerRequest,
+                                            Response proxyToClientResponse,
+                                            Callback proxyToClientCallback)
     {
         proxyToServerRequest.attribute(REMOTE_ADDR_ATTRIBUTE, Request.getRemoteAddr(clientToProxyRequest));
-        proxyToServerRequest.attribute(REMOTE_PORT_ATTRIBUTE, String.valueOf(Request.getRemotePort(clientToProxyRequest)));
+        proxyToServerRequest.attribute(
+            REMOTE_PORT_ATTRIBUTE, String.valueOf(Request.getRemotePort(clientToProxyRequest)));
         String serverName = Request.getServerName(clientToProxyRequest);
         proxyToServerRequest.attribute(SERVER_NAME_ATTRIBUTE, serverName);
         proxyToServerRequest.attribute(SERVER_ADDR_ATTRIBUTE, Request.getLocalAddr(clientToProxyRequest));
@@ -317,9 +321,8 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
             if (serverPort != URIUtil.getDefaultPortForScheme(scheme))
                 serverName += ":" + serverPort;
             String host = serverName;
-            proxyToServerRequest.headers(headers -> headers
-                .put(HttpHeader.HOST, host)
-                .put(HttpHeader.X_FORWARDED_HOST, host));
+            proxyToServerRequest.headers(
+                headers -> headers.put(HttpHeader.HOST, host).put(HttpHeader.X_FORWARDED_HOST, host));
         }
 
         // PHP does not like multiple Cookie headers, coalesce into one.
@@ -334,10 +337,12 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         if (unixDomain != null)
             proxyToServerRequest.transport(new Transport.TCPUnix(unixDomain));
 
-        super.sendProxyToServerRequest(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
+        super.sendProxyToServerRequest(
+            clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
     }
 
-    protected void customizeFastCGIHeaders(org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
+    protected void customizeFastCGIHeaders(
+                                           org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
     {
         for (String envName : getFastCGIEnvNames())
         {
@@ -354,7 +359,8 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         fastCGIHeaders.put(FCGI.Headers.SERVER_ADDR, (String)proxyToServerRequest.getAttributes().get(SERVER_ADDR_ATTRIBUTE));
         fastCGIHeaders.put(FCGI.Headers.SERVER_PORT, (String)proxyToServerRequest.getAttributes().get(SERVER_PORT_ATTRIBUTE));
 
-        if (isFastCGISecure() || HttpScheme.HTTPS.is((String)proxyToServerRequest.getAttributes().get(SCHEME_ATTRIBUTE)))
+        if (isFastCGISecure() || HttpScheme.HTTPS.is(
+            (String)proxyToServerRequest.getAttributes().get(SCHEME_ATTRIBUTE)))
             fastCGIHeaders.put(FCGI.Headers.HTTPS, "on");
 
         URI proxyRequestURI = proxyToServerRequest.getURI();
@@ -399,7 +405,8 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         }
 
         @Override
-        public void customize(org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
+        public void customize(
+                              org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields.Mutable fastCGIHeaders)
         {
             super.customize(proxyToServerRequest, fastCGIHeaders);
             customizeFastCGIHeaders(proxyToServerRequest, fastCGIHeaders);
@@ -411,9 +418,12 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
                     fcgi.put(field.getName(), field.getValue());
                 }
                 String eol = System.lineSeparator();
-                LOG.debug("FastCGI variables {}{}", eol, fcgi.entrySet().stream()
-                    .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
-                    .collect(Collectors.joining(eol)));
+                LOG.debug(
+                    "FastCGI variables {}{}",
+                    eol,
+                    fcgi.entrySet().stream()
+                        .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
+                        .collect(Collectors.joining(eol)));
             }
         }
     }

@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.client.jmx;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.lang.management.ManagementFactory;
 import java.util.Locale;
 import java.util.Set;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HttpClientJMXTest
 {
@@ -44,7 +43,8 @@ public class HttpClientJMXTest
             httpClient.start();
 
             String domain = HttpClient.class.getPackage().getName();
-            ObjectName pattern = new ObjectName(domain + ":type=" + HttpClient.class.getSimpleName().toLowerCase(Locale.ENGLISH) + ",*");
+            ObjectName pattern = new ObjectName(
+                domain + ":type=" + HttpClient.class.getSimpleName().toLowerCase(Locale.ENGLISH) + ",*");
             Set<ObjectName> objectNames = mbeanServer.queryNames(pattern, null);
             assertEquals(1, objectNames.size());
             ObjectName objectName = objectNames.iterator().next();

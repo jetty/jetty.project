@@ -74,12 +74,16 @@ public class X509CertificateAdapter extends X509Certificate
     }
 
     @Override
-    public void verify(PublicKey key) throws CertificateException, NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException, SignatureException
+    public void verify(PublicKey key)
+        throws CertificateException, NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException,
+        SignatureException
     {
     }
 
     @Override
-    public void verify(PublicKey key, String sigProvider) throws CertificateException, NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException, SignatureException
+    public void verify(PublicKey key, String sigProvider)
+        throws CertificateException, NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException,
+        SignatureException
     {
     }
 

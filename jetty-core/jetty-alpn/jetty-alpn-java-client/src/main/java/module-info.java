@@ -14,7 +14,6 @@
 module org.eclipse.jetty.alpn.java.client
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.alpn.client;
 
     provides org.eclipse.jetty.io.ssl.ALPNProcessor.Client with

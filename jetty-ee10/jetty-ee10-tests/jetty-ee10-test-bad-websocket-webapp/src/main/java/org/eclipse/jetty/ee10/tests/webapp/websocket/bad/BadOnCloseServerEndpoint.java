@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.tests.webapp.websocket.bad;
 
-import java.io.IOException;
-
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
 
 @ServerEndpoint("/badonclose/{arg}")
 public class BadOnCloseServerEndpoint
@@ -40,8 +39,7 @@ public class BadOnCloseServerEndpoint
     }
 
     @OnError
-    public void onError(Session session, Throwable t)
-        throws IOException
+    public void onError(Session session, Throwable t) throws IOException
     {
         String message = "Error happened:" + t.getMessage();
         session.getBasicRemote().sendText(message);

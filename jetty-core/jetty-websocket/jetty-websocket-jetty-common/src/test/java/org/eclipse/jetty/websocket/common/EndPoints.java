@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
@@ -29,9 +31,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.util.TextUtils;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class EndPoints
 {
@@ -65,7 +64,8 @@ public class EndPoints
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
+            events.add(
+                "onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
         }
 
         @Override
@@ -94,7 +94,8 @@ public class EndPoints
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
+            events.add(
+                "onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
         }
 
         @Override
@@ -124,7 +125,8 @@ public class EndPoints
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
+            events.add(
+                "onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
         }
 
         @Override
@@ -160,7 +162,8 @@ public class EndPoints
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
+            events.add(
+                "onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
         }
 
         @Override

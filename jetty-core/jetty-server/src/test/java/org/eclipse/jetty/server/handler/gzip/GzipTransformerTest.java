@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPOutputStream;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -27,11 +31,6 @@ import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.junit.jupiter.api.Test;
-
-import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 
 public class GzipTransformerTest
 {
@@ -46,11 +45,10 @@ public class GzipTransformerTest
             Content.Chunk.from(originalFailure1, false),
             gzipChunk(bufferPool, "BBB".getBytes(US_ASCII), false),
             Content.Chunk.from(originalFailure2, false),
-            gzipChunk(bufferPool, "CCC".getBytes(US_ASCII), true)
-        );
+            gzipChunk(bufferPool, "CCC".getBytes(US_ASCII), true));
 
-        GzipRequest.GzipTransformer transformer = new GzipRequest.GzipTransformer(originalSource, new GzipRequest.Decoder(new InflaterPool(1, true), bufferPool, 1));
-
+        GzipRequest.GzipTransformer transformer = new GzipRequest.GzipTransformer(
+            originalSource, new GzipRequest.Decoder(new InflaterPool(1, true), bufferPool, 1));
 
         Content.Chunk chunk;
         chunk = transformer.read();
@@ -88,7 +86,8 @@ public class GzipTransformerTest
         assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
     }
 
-    private static Content.Chunk gzipChunk(ArrayByteBufferPool.Tracking bufferPool, byte[] bytes, boolean last) throws IOException
+    private static Content.Chunk gzipChunk(ArrayByteBufferPool.Tracking bufferPool, byte[] bytes, boolean last)
+        throws IOException
     {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream gzos = new GZIPOutputStream(baos);

@@ -29,5 +29,6 @@ public interface FrameHandlerFactory
      * @return the API specific FrameHandler, or null if this implementation is unable to create
      * the FrameHandler (allowing another {@link FrameHandlerFactory} to try)
      */
-    FrameHandler newFrameHandler(Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse);
+    FrameHandler newFrameHandler(
+                                 Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse);
 }

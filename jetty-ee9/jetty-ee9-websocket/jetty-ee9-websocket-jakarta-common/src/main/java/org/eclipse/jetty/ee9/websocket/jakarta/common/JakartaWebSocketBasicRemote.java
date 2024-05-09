@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import jakarta.websocket.EncodeException;
+import jakarta.websocket.RemoteEndpoint;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
-
-import jakarta.websocket.EncodeException;
-import jakarta.websocket.RemoteEndpoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -28,8 +29,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint implements RemoteEndpoint.Basic
 {
@@ -88,7 +87,8 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
                 frame = new Frame(OpCode.CONTINUATION);
                 break;
             default:
-                throw new IllegalStateException("Cannot send a partial BINARY message: unrecognized active message type " + OpCode.name(messageType));
+                throw new IllegalStateException(
+                    "Cannot send a partial BINARY message: unrecognized active message type " + OpCode.name(messageType));
         }
 
         frame.setPayload(partialByte);

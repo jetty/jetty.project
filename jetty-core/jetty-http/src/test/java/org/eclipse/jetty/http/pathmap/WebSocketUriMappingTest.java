@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.http.pathmap;
 
-import java.util.List;
-
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 public class WebSocketUriMappingTest
 {

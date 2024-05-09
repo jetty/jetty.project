@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.server.config;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -26,6 +23,8 @@ import jakarta.websocket.server.ServerApplicationConfig;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.util.HashSet;
+import java.util.Set;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.JakartaWebSocketServerContainer;
@@ -132,10 +131,12 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
      */
     public static ServerContainer initialize(ServletContextHandler context)
     {
-        JakartaWebSocketServerContainer serverContainer = JakartaWebSocketServerContainer.getContainer(context.getServletContext());
+        JakartaWebSocketServerContainer serverContainer =
+            JakartaWebSocketServerContainer.getContainer(context.getServletContext());
         if (serverContainer == null)
         {
-            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context);
+            WebSocketComponents components =
+                WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context);
             FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
             WebSocketMappings mapping = WebSocketMappings.ensureMappings(context);
             serverContainer = JakartaWebSocketServerContainer.ensureContainer(context.getServletContext());
@@ -161,7 +162,8 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
             return;
         }
 
-        ServletContextHandler servletContextHandler = ServletContextHandler.getServletContextHandler(context, "Jakarta WebSocket SCI");
+        ServletContextHandler servletContextHandler =
+            ServletContextHandler.getServletContextHandler(context, "Jakarta WebSocket SCI");
         ServerContainer container = initialize(servletContextHandler);
 
         try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(context.getClassLoader()))
@@ -196,7 +198,8 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
 
                 try
                 {
-                    ServerApplicationConfig config = clazz.getDeclaredConstructor().newInstance();
+                    ServerApplicationConfig config =
+                        clazz.getDeclaredConstructor().newInstance();
 
                     Set<ServerEndpointConfig> seconfigs = config.getEndpointConfigs(discoveredExtendedEndpoints);
                     if (seconfigs != null)
@@ -275,7 +278,10 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
     }
 
     @SuppressWarnings("unchecked")
-    private void filterClasses(Set<Class<?>> c, Set<Class<? extends Endpoint>> discoveredExtendedEndpoints, Set<Class<?>> discoveredAnnotatedEndpoints,
+    private void filterClasses(
+                               Set<Class<?>> c,
+                               Set<Class<? extends Endpoint>> discoveredExtendedEndpoints,
+                               Set<Class<?>> discoveredAnnotatedEndpoints,
                                Set<Class<? extends ServerApplicationConfig>> serverAppConfigs)
     {
         for (Class<?> clazz : c)

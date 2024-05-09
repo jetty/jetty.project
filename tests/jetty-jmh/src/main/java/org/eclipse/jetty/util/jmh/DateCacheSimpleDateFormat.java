@@ -17,7 +17,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -112,7 +111,7 @@ public class DateCacheSimpleDateFormat
                 sb.append('-');
             }
 
-            int raw = tzOffset / (1000 * 60);             // Convert to seconds
+            int raw = tzOffset / (1000 * 60); // Convert to seconds
             int hr = raw / 60;
             int min = raw % 60;
 

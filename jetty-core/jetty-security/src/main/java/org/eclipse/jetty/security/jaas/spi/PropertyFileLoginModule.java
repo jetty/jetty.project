@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
-
 import org.eclipse.jetty.security.PropertyUserStore;
 import org.eclipse.jetty.security.RolePrincipal;
 import org.eclipse.jetty.security.UserPrincipal;
@@ -52,17 +51,18 @@ public class PropertyFileLoginModule extends AbstractLoginModule
      * Map)
      */
     @Override
-    public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
+    public void initialize(
+                           Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
     {
         super.initialize(subject, callbackHandler, sharedState, options);
         setupPropertyUserStore(options);
     }
 
     /**
-     * Get an existing, or create a new PropertyUserStore to read the 
+     * Get an existing, or create a new PropertyUserStore to read the
      * authentication and authorization information from the file named by
      * the option "file".
-     * 
+     *
      * @param options configuration options
      */
     private void setupPropertyUserStore(Map<String, ?> options)

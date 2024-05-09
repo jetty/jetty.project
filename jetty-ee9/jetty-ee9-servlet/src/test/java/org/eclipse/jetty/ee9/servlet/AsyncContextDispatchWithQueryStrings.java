@@ -13,23 +13,22 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * This tests verifies that merging of queryStrings works when dispatching
@@ -50,7 +49,8 @@ public class AsyncContextDispatchWithQueryStrings
         _contextHandler.setContextPath("/");
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/initialCall");
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/firstDispatchWithNewQueryString");
-        _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/secondDispatchNewValueForExistingQueryString");
+        _contextHandler.addServlet(
+            new ServletHolder(new TestServlet()), "/secondDispatchNewValueForExistingQueryString");
 
         _server.setHandler(_contextHandler);
         _server.start();
@@ -59,11 +59,7 @@ public class AsyncContextDispatchWithQueryStrings
     @Test
     public void testMultipleDispatchesWithNewQueryStrings() throws Exception
     {
-        String request =
-            "GET /initialCall?initialParam=right HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" + "\r\n";
+        String request = "GET /initialCall?initialParam=right HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Connection: close\r\n" + "\r\n";
         String responseString = _connector.getResponse(request);
         assertThat(responseString, startsWith("HTTP/1.1 200"));
     }
@@ -80,7 +76,8 @@ public class AsyncContextDispatchWithQueryStrings
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String uri = request.getRequestURI();
             String queryString = request.getQueryString();

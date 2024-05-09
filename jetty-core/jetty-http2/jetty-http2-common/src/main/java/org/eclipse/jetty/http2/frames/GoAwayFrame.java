@@ -14,12 +14,13 @@
 package org.eclipse.jetty.http2.frames;
 
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.http2.ErrorCode;
 
 public class GoAwayFrame extends Frame
 {
-    public static final GoAwayFrame GRACEFUL = new GoAwayFrame(Integer.MAX_VALUE, ErrorCode.NO_ERROR.code, new byte[]{'g', 'r', 'a', 'c', 'e', 'f', 'u', 'l'});
+    public static final GoAwayFrame GRACEFUL = new GoAwayFrame(
+        Integer.MAX_VALUE, ErrorCode.NO_ERROR.code, new byte[]
+        {'g', 'r', 'a', 'c', 'e', 'f', 'u', 'l'});
 
     private final int lastStreamId;
     private final int error;
@@ -74,10 +75,7 @@ public class GoAwayFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s{%d/%s/%s}",
-            super.toString(),
-            lastStreamId,
-            ErrorCode.toString(error, null),
-            tryConvertPayload());
+        return String.format(
+            "%s{%d/%s/%s}", super.toString(), lastStreamId, ErrorCode.toString(error, null), tryConvertPayload());
     }
 }

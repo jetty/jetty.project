@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -411,65 +410,117 @@ public class HTTP2Client extends ContainerLifeCycle
         connect(null, address, listener, promise);
     }
 
-    public CompletableFuture<Session> connect(SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener)
+    public CompletableFuture<Session> connect(
+                                              SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener)
     {
         return Promise.Completable.with(p -> connect(sslContextFactory, address, listener, p));
     }
 
-    public void connect(SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise)
+    public void connect(
+                        SslContextFactory.Client sslContextFactory,
+                        SocketAddress address,
+                        Session.Listener listener,
+                        Promise<Session> promise)
     {
         connect(sslContextFactory, address, listener, promise, null);
     }
 
-    public void connect(SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    public void connect(
+                        SslContextFactory.Client sslContextFactory,
+                        SocketAddress address,
+                        Session.Listener listener,
+                        Promise<Session> promise,
+                        Map<String, Object> context)
     {
         connect(Transport.TCP_IP, sslContextFactory, address, listener, promise, context);
     }
 
-    public CompletableFuture<Session> connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener)
+    public CompletableFuture<Session> connect(
+                                              Transport transport,
+                                              SslContextFactory.Client sslContextFactory,
+                                              SocketAddress address,
+                                              Session.Listener listener)
     {
         return Promise.Completable.with(p -> connect(transport, sslContextFactory, address, listener, p, null));
     }
 
-    public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    public void connect(
+                        Transport transport,
+                        SslContextFactory.Client sslContextFactory,
+                        SocketAddress address,
+                        Session.Listener listener,
+                        Promise<Session> promise,
+                        Map<String, Object> context)
     {
         ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
         connect(transport, address, factory, listener, promise, context);
     }
 
-    public void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    public void connect(
+                        SocketAddress address,
+                        ClientConnectionFactory factory,
+                        Session.Listener listener,
+                        Promise<Session> promise,
+                        Map<String, Object> context)
     {
         connect(Transport.TCP_IP, address, factory, listener, promise, context);
     }
 
-    public void connect(Transport transport, SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    public void connect(
+                        Transport transport,
+                        SocketAddress address,
+                        ClientConnectionFactory factory,
+                        Session.Listener listener,
+                        Promise<Session> promise,
+                        Map<String, Object> context)
     {
         context = contextFrom(factory, listener, promise, context);
         context.put(Transport.class.getName(), transport);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection ->
+        {
+        }, promise::failed));
         transport.connect(address, context);
     }
 
-    public void accept(SslContextFactory.Client sslContextFactory, SocketChannel channel, Session.Listener listener, Promise<Session> promise)
+    public void accept(
+                       SslContextFactory.Client sslContextFactory,
+                       SocketChannel channel,
+                       Session.Listener listener,
+                       Promise<Session> promise)
     {
         ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
         accept(channel, factory, listener, promise);
     }
 
-    public void accept(SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
+    public void accept(
+                       SocketChannel channel,
+                       ClientConnectionFactory factory,
+                       Session.Listener listener,
+                       Promise<Session> promise)
     {
         accept(Transport.TCP_IP, channel, factory, listener, promise);
     }
 
-    public void accept(Transport transport, SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
+    public void accept(
+                       Transport transport,
+                       SocketChannel channel,
+                       ClientConnectionFactory factory,
+                       Session.Listener listener,
+                       Promise<Session> promise)
     {
         Map<String, Object> context = contextFrom(factory, listener, promise, null);
         context.put(Transport.class.getName(), transport);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection ->
+        {
+        }, promise::failed));
         connector.accept(channel, context);
     }
 
-    private Map<String, Object> contextFrom(ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    private Map<String, Object> contextFrom(
+                                            ClientConnectionFactory factory,
+                                            Session.Listener listener,
+                                            Promise<Session> promise,
+                                            Map<String, Object> context)
     {
         if (context == null)
             context = new ConcurrentHashMap<>();

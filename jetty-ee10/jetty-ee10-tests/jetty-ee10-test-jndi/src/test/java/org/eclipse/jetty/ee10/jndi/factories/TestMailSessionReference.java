@@ -13,20 +13,18 @@
 
 package org.eclipse.jetty.ee10.jndi.factories;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Properties;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.LinkRef;
 import javax.naming.Name;
 import javax.naming.NameParser;
-
-import org.eclipse.jetty.ee10.jndi.factories.MailSessionReference;
 import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *

@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.websocket.tests.client;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
 import org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.ee9.websocket.api.Session;

@@ -33,7 +33,6 @@ import javax.xml.catalog.CatalogManager;
 import javax.xml.catalog.CatalogResolver;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -95,7 +94,8 @@ public class XmlParser
     {
         SAXParserFactory factory = SAXParserFactory.newInstance();
         boolean validatingDefault = factory.getClass().toString().contains("org.apache.xerces.");
-        String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDefault ? "true" : "false");
+        String validatingProp =
+            System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDefault ? "true" : "false");
         return Boolean.parseBoolean(validatingProp);
     }
 
@@ -136,7 +136,8 @@ public class XmlParser
             try
             {
                 if (validating)
-                    _parser.getXMLReader().setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", validating);
+                    _parser.getXMLReader()
+                        .setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", validating);
             }
             catch (Exception e)
             {
@@ -186,7 +187,9 @@ public class XmlParser
      */
     public void addCatalog(URI catalogXml)
     {
-        CatalogFeatures f = CatalogFeatures.builder().with(CatalogFeatures.Feature.RESOLVE, "continue").build();
+        CatalogFeatures f = CatalogFeatures.builder()
+            .with(CatalogFeatures.Feature.RESOLVE, "continue")
+            .build();
         Catalog catalog = CatalogManager.catalog(f, catalogXml);
         CatalogResolver catalogResolver = CatalogManager.catalogResolver(catalog);
         _entityResolvers.add(catalogResolver);
@@ -389,7 +392,7 @@ public class XmlParser
             {
                 String path = node.getPath();
                 boolean match = false;
-                for (int i = LazyList.size(_xpaths); !match && i-- > 0; )
+                for (int i = LazyList.size(_xpaths); !match && i-- > 0;)
                 {
                     String xpath = (String)LazyList.get(_xpaths, i);
 

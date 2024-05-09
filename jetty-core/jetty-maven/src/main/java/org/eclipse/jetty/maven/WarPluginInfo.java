@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
@@ -28,7 +27,7 @@ import org.eclipse.jetty.util.StringUtil;
 
 /**
  * WarPluginInfo
- * 
+ *
  * Information about the maven-war-plugin contained in the pom
  */
 public class WarPluginInfo
@@ -45,9 +44,9 @@ public class WarPluginInfo
         _project = project;
         if (_project.getArtifacts() != null)
         {
-            _warArtifacts = _project.getArtifacts()
-                .stream()
-                .filter(a -> "war".equals(a.getType()) || "zip".equals(a.getType())).collect(Collectors.toSet());
+            _warArtifacts = _project.getArtifacts().stream()
+                .filter(a -> "war".equals(a.getType()) || "zip".equals(a.getType()))
+                .collect(Collectors.toSet());
         }
         else
             _warArtifacts = Collections.emptySet();
@@ -70,7 +69,7 @@ public class WarPluginInfo
     {
         return _warArtifacts;
     }
-    
+
     /**
      * Get an artifact of type war that matches the given coordinates.
      * @param groupId the groupId to match
@@ -81,7 +80,8 @@ public class WarPluginInfo
     public Artifact getWarArtifact(String groupId, String artifactId, String classifier)
     {
         Optional<Artifact> o = _warArtifacts.stream()
-            .filter(a -> match(a, groupId, artifactId, classifier)).findFirst();
+            .filter(a -> match(a, groupId, artifactId, classifier))
+            .findFirst();
         return o.orElse(null);
     }
 
@@ -196,22 +196,21 @@ public class WarPluginInfo
             _overlayConfigs = new ArrayList<OverlayConfig>();
             for (int i = 0; i < nodes.length; i++)
             {
-                OverlayConfig overlayConfig = new OverlayConfig(nodes[i], _dependentMavenWarIncludes, _dependentMavenWarExcludes);
+                OverlayConfig overlayConfig =
+                    new OverlayConfig(nodes[i], _dependentMavenWarIncludes, _dependentMavenWarExcludes);
                 _overlayConfigs.add(overlayConfig);
             }
         }
 
         return _overlayConfigs;
     }
-    
+
     public boolean match(Artifact a, String gid, String aid, String cls)
     {
         if (a == null)
             return (gid == null && aid == null && cls == null);
-        
-        if (((a.getGroupId() == null && gid == null) || (a.getGroupId() != null && a.getGroupId().equals(gid))) &&
-            ((a.getArtifactId() == null && aid == null) || (a.getArtifactId() != null && a.getArtifactId().equals(aid))) &&
-            ((a.getClassifier() == null) || (a.getClassifier().equals(cls))))
+
+        if (((a.getGroupId() == null && gid == null) || (a.getGroupId() != null && a.getGroupId().equals(gid))) && ((a.getArtifactId() == null && aid == null) || (a.getArtifactId() != null && a.getArtifactId().equals(aid))) && ((a.getClassifier() == null) || (a.getClassifier().equals(cls))))
             return true;
 
         return false;
@@ -219,7 +218,7 @@ public class WarPluginInfo
 
     /**
      * Check if the given artifact matches the group and artifact coordinates.
-     * 
+     *
      * @param a the artifact to check
      * @param gid the group id
      * @param aid the artifact id
@@ -229,9 +228,8 @@ public class WarPluginInfo
     {
         if (a == null)
             return (gid == null && aid == null);
-        
-        if (((a.getGroupId() == null && gid == null) || (a.getGroupId() != null && a.getGroupId().equals(gid))) &&
-            ((a.getArtifactId() == null && aid == null) || (a.getArtifactId() != null && a.getArtifactId().equals(aid))))
+
+        if (((a.getGroupId() == null && gid == null) || (a.getGroupId() != null && a.getGroupId().equals(gid))) && ((a.getArtifactId() == null && aid == null) || (a.getArtifactId() != null && a.getArtifactId().equals(aid))))
             return true;
 
         return false;

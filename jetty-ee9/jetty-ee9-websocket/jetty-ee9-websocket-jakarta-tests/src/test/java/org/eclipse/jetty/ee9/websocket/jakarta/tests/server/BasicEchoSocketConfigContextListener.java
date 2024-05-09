@@ -34,7 +34,8 @@ public class BasicEchoSocketConfigContextListener implements ServletContextListe
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
+        ServerContainer container =
+            (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
         // Build up a configuration with a specific path
         // Intentionally using alternate path in config (which differs from @ServerEndpoint declaration)
         String path = "/echo-alt";

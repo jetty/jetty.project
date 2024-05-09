@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.http;
 
+import static java.util.EnumSet.allOf;
+import static java.util.EnumSet.noneOf;
+
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.util.EnumSet.allOf;
-import static java.util.EnumSet.noneOf;
 
 /**
  * The compliance mode for MultiPart handling.
@@ -29,12 +29,19 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
 {
     public enum Violation implements ComplianceViolation
     {
-        CONTENT_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7", "Content-Transfer-Encoding header is deprecated"),
-        CR_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1", "CR only line termination is forbidden"),
-        LF_LINE_TERMINATION("https://tools.ietf.org/html/rfc2046#section-4.1.1", "LF only line termination is forbidden"),
-        WHITESPACE_BEFORE_BOUNDARY("https://tools.ietf.org/html/rfc2046#section-5.1.1", "Whitespace not allowed before boundary"),
-        BASE64_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7", "'base64' Content-Transfer-Encoding is deprecated"),
-        QUOTED_PRINTABLE_TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7", "'quoted-printable' Content-Transfer-Encoding is deprecated");
+        CONTENT_TRANSFER_ENCODING(
+            "https://tools.ietf.org/html/rfc7578#section-4.7", "Content-Transfer-Encoding header is deprecated"),
+        CR_LINE_TERMINATION(
+            "https://tools.ietf.org/html/rfc2046#section-4.1.1", "CR only line termination is forbidden"),
+        LF_LINE_TERMINATION(
+            "https://tools.ietf.org/html/rfc2046#section-4.1.1", "LF only line termination is forbidden"),
+        WHITESPACE_BEFORE_BOUNDARY(
+            "https://tools.ietf.org/html/rfc2046#section-5.1.1", "Whitespace not allowed before boundary"),
+        BASE64_TRANSFER_ENCODING(
+            "https://tools.ietf.org/html/rfc7578#section-4.7", "'base64' Content-Transfer-Encoding is deprecated"),
+        QUOTED_PRINTABLE_TRANSFER_ENCODING(
+            "https://tools.ietf.org/html/rfc7578#section-4.7",
+            "'quoted-printable' Content-Transfer-Encoding is deprecated");
 
         private final String url;
         private final String description;
@@ -67,8 +74,8 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
     /**
      * Strict (RFC7578) {@code multiPart/form-data} compliant strict parsing.
      */
-    public static final MultiPartCompliance RFC7578_STRICT = new MultiPartCompliance(
-        "RFC7578_STRICT", EnumSet.noneOf(Violation.class));
+    public static final MultiPartCompliance RFC7578_STRICT =
+        new MultiPartCompliance("RFC7578_STRICT", EnumSet.noneOf(Violation.class));
 
     /**
      * RFC7578 {@code multiPart/form-data} compliant parsing lenient to LF EOL and Content-Transfer-Encoding.
@@ -81,8 +88,8 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
      * This mode is not recommended for websites on the public internet.
      * It will accept non-compliant preambles and inconsistent line termination that are in violation of RFC7578.
      */
-    public static final MultiPartCompliance LEGACY =  new MultiPartCompliance(
-        "LEGACY", EnumSet.complementOf(EnumSet.of(Violation.BASE64_TRANSFER_ENCODING)));
+    public static final MultiPartCompliance LEGACY =
+        new MultiPartCompliance("LEGACY", EnumSet.complementOf(EnumSet.of(Violation.BASE64_TRANSFER_ENCODING)));
 
     private static final List<MultiPartCompliance> KNOWN_MODES = Arrays.asList(RFC7578, LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();
@@ -139,16 +146,17 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
         {
             String[] elements = spec.split("\\s*,\\s*");
 
-            Set<MultiPartCompliance.Violation> violations = switch (elements[0])
-            {
-                case "0" -> noneOf(MultiPartCompliance.Violation.class);
-                case "*" -> allOf(MultiPartCompliance.Violation.class);
-                default ->
+            Set<MultiPartCompliance.Violation> violations =
+                switch (elements[0])
                 {
-                    MultiPartCompliance mode = MultiPartCompliance.valueOf(elements[0]);
-                    yield (mode == null) ? noneOf(MultiPartCompliance.Violation.class) : copyOf(mode.getAllowed());
-                }
-            };
+                    case "0" -> noneOf(MultiPartCompliance.Violation.class);
+                    case "*" -> allOf(MultiPartCompliance.Violation.class);
+                    default ->
+                    {
+                        MultiPartCompliance mode = MultiPartCompliance.valueOf(elements[0]);
+                        yield (mode == null) ? noneOf(MultiPartCompliance.Violation.class) : copyOf(mode.getAllowed());
+                    }
+                };
 
             for (int i = 1; i < elements.length; i++)
             {

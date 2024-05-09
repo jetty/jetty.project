@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
@@ -37,10 +40,6 @@ import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 
 public class ExtensionTool
 {
@@ -152,7 +151,8 @@ public class ExtensionTool
 
                 ByteBuffer expected = expectedFrames[i].getPayload().slice();
                 assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-                ByteBufferAssert.assertEquals(prefix + ".payload", expected, actual.getPayload().slice());
+                ByteBufferAssert.assertEquals(
+                    prefix + ".payload", expected, actual.getPayload().slice());
             }
         }
     }
@@ -172,8 +172,11 @@ public class ExtensionTool
     private WebSocketCoreSession newWebSocketCoreSession(List<ExtensionConfig> configs)
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
-        exStack.setLastDemand(() -> {}); // Never delegate to WebSocketConnection as it is null for this test.
+        exStack.setLastDemand(() ->
+        {
+        }); // Never delegate to WebSocketConnection as it is null for this test.
         exStack.negotiate(configs, configs);
-        return new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
+        return new WebSocketCoreSession(
+            new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
     }
 }

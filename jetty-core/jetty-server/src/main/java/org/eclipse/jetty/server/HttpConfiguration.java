@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
@@ -53,10 +52,8 @@ public class HttpConfiguration implements Dumpable
 {
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
     private final List<Customizer> _customizers = new CopyOnWriteArrayList<>();
-    private final Index.Mutable<Boolean> _formEncodedMethods = new Index.Builder<Boolean>()
-        .caseSensitive(false)
-        .mutable()
-        .build();
+    private final Index.Mutable<Boolean> _formEncodedMethods =
+        new Index.Builder<Boolean>().caseSensitive(false).mutable().build();
     private final List<ComplianceViolation.Listener> _complianceViolationListeners = new ArrayList<>();
     private int _outputBufferSize = 32 * 1024;
     private int _outputAggregationSize = _outputBufferSize / 4;
@@ -810,7 +807,10 @@ public class HttpConfiguration implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this,
+        Dumpable.dumpObjects(
+            out,
+            indent,
+            this,
             new DumpableCollection("customizers", _customizers),
             new DumpableCollection("formEncodedMethods", _formEncodedMethods.keySet()),
             "outputBufferSize=" + _outputBufferSize,
@@ -832,14 +832,14 @@ public class HttpConfiguration implements Dumpable
             "requestCookieCompliance=" + _requestCookieCompliance,
             "responseCookieCompliance=" + _responseCookieCompliance,
             "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors,
-            "relativeRedirectAllowed=" + _relativeRedirectAllowed
-        );
+            "relativeRedirectAllowed=" + _relativeRedirectAllowed);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%d/%d,%d/%d,%s://:%d,%s}",
+        return String.format(
+            "%s@%x{%d/%d,%d/%d,%s://:%d,%s}",
             this.getClass().getSimpleName(),
             hashCode(),
             _outputBufferSize,

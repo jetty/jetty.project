@@ -13,13 +13,9 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.EnumSet;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterChain;
@@ -31,6 +27,13 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URLDecoder;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.EnumSet;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.UriCompliance;
@@ -42,10 +45,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResponseHeadersTest
 {
@@ -61,7 +60,8 @@ public class ResponseHeadersTest
     public static class SimulateUpgradeServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.setHeader("Upgrade", "WebSocket");
             response.addHeader("Connection", "Upgrade");
@@ -74,7 +74,8 @@ public class ResponseHeadersTest
     public static class MultilineResponseValueServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse response)
+            throws ServletException, IOException
         {
             // The bad use-case
             String pathInfo = req.getPathInfo();
@@ -94,7 +95,8 @@ public class ResponseHeadersTest
     public static class CharsetResetToJsonMimeTypeServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             // We set an initial desired behavior.
             response.setContentType("text/html; charset=US-ASCII");
@@ -114,7 +116,8 @@ public class ResponseHeadersTest
     public static class CharsetChangeToJsonMimeTypeServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             // We set an initial desired behavior.
             response.setContentType("text/html; charset=US-ASCII");
@@ -132,7 +135,8 @@ public class ResponseHeadersTest
     public static class CharsetChangeToJsonMimeTypeSetCharsetToNullServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             // We set an initial desired behavior.
 
@@ -226,7 +230,10 @@ public class ResponseHeadersTest
     @Test
     public void testMultilineResponseHeaderValue() throws Exception
     {
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setUriCompliance(UriCompliance.UNSAFE);
         String actualPathInfo = "%0a%20Content-Type%3a%20image/png%0a%20Content-Length%3a%208%0A%20%0A%20yuck<!--";
 
         HttpTester.Request request = new HttpTester.Request();
@@ -244,7 +251,7 @@ public class ResponseHeadersTest
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/plain;charset=UTF-8"));
 
-        String expected = StringUtil.replace(actualPathInfo, "%0a", " ");  // replace OBS fold with space
+        String expected = StringUtil.replace(actualPathInfo, "%0a", " "); // replace OBS fold with space
         expected = StringUtil.replace(expected, "%0A", " "); // replace OBS fold with space
         expected = URLDecoder.decode(expected, StandardCharsets.UTF_8); // decode the rest
         expected = expected.trim(); // trim whitespace at start/end

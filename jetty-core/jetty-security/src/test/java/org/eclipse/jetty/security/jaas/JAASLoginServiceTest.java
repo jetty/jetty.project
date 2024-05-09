@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.security.jaas;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Base64;
@@ -20,7 +28,6 @@ import java.util.Collections;
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.security.Constraint;
@@ -38,14 +45,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * JAASLoginServiceTest
  */
@@ -53,7 +52,6 @@ public class JAASLoginServiceTest
 {
     interface SomeRole
     {
-
     }
 
     public class TestRole implements Principal, SomeRole
@@ -100,10 +98,15 @@ public class JAASLoginServiceTest
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
-            Content.Sink.write(response, true, """
-                All OK
-                httpURI=%s
-                """.formatted(request.getHttpURI()), callback);
+            Content.Sink.write(
+                response,
+                true,
+                """
+                    All OK
+                    httpURI=%s
+                    """
+                    .formatted(request.getHttpURI()),
+                callback);
             return true;
         }
     }
@@ -111,7 +114,7 @@ public class JAASLoginServiceTest
     private Server _server;
     private LocalConnector _connector;
     private ContextHandler _context;
-    
+
     @BeforeEach
     public void setUp() throws Exception
     {
@@ -128,7 +131,7 @@ public class JAASLoginServiceTest
         _context.setHandler(security);
         security.setHandler(new TestHandler());
     }
-    
+
     @AfterEach
     public void tearDown() throws Exception
     {
@@ -143,38 +146,37 @@ public class JAASLoginServiceTest
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name)
             {
-                return new AppConfigurationEntry[] {
-                    new AppConfigurationEntry(TestLoginModule.class.getCanonicalName(), 
+                return new AppConfigurationEntry[]{
+                    new AppConfigurationEntry(
+                        TestLoginModule.class.getCanonicalName(),
                         AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
                         Collections.emptyMap())
                 };
             }
         };
 
-        //Test with the DefaultCallbackHandler
+        // Test with the DefaultCallbackHandler
         JAASLoginService ls = new JAASLoginService("foo");
         ls.setCallbackHandlerClass("org.eclipse.jetty.security.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(config);
         _server.addBean(ls, true);
         _server.start();
-        
-        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
-            Base64.getEncoder().encodeToString("aaardvaark:aaa".getBytes(ISO_8859_1)) + "\n\n");
+
+        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " + Base64.getEncoder().encodeToString("aaardvaark:aaa".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-        
+
         _server.stop();
         _server.removeBean(ls);
 
-        //Test with the fallback CallbackHandler
+        // Test with the fallback CallbackHandler
         ls = new JAASLoginService("foo");
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(config);
         _server.addBean(ls, true);
         _server.start();
-        
-        response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
-            Base64.getEncoder().encodeToString("aaardvaark:aaa".getBytes(ISO_8859_1)) + "\n\n");
+
+        response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " + Base64.getEncoder().encodeToString("aaardvaark:aaa".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
@@ -183,7 +185,7 @@ public class JAASLoginServiceTest
     {
         JAASLoginService ls = new JAASLoginService("foo");
 
-        //test that we always add in the DEFAULT ROLE CLASSNAME
+        // test that we always add in the DEFAULT ROLE CLASSNAME
         ls.setRoleClassNames(new String[]{"arole", "brole"});
         String[] roles = ls.getRoleClassNames();
         assertEquals(3, roles.length);
@@ -197,7 +199,7 @@ public class JAASLoginServiceTest
         assertEquals(1, ls.getRoleClassNames().length);
         assertEquals(JAASLoginService.DEFAULT_ROLE_CLASS_NAME, ls.getRoleClassNames()[0]);
 
-        //test a custom role class where some of the roles are subclasses of it
+        // test a custom role class where some of the roles are subclasses of it
         ls.setRoleClassNames(new String[]{TestRole.class.getName()});
         Subject subject = new Subject();
         subject.getPrincipals().add(new NotTestRole("w"));
@@ -207,8 +209,8 @@ public class JAASLoginServiceTest
 
         String[] groups = ls.getGroups(subject);
         assertThat(Arrays.asList(groups), containsInAnyOrder("x", "y", "z"));
-        
-        //test a custom role class
+
+        // test a custom role class
         ls.setRoleClassNames(new String[]{AnotherTestRole.class.getName()});
         Subject subject2 = new Subject();
         subject2.getPrincipals().add(new NotTestRole("w"));
@@ -219,7 +221,7 @@ public class JAASLoginServiceTest
         assertThat(s2groups, is(notNullValue()));
         assertThat(Arrays.asList(s2groups), containsInAnyOrder("z"));
 
-        //test a custom role class that implements an interface
+        // test a custom role class that implements an interface
         ls.setRoleClassNames(new String[]{SomeRole.class.getName()});
         Subject subject3 = new Subject();
         subject3.getPrincipals().add(new NotTestRole("w"));
@@ -230,7 +232,7 @@ public class JAASLoginServiceTest
         assertThat(s3groups, is(notNullValue()));
         assertThat(Arrays.asList(s3groups), containsInAnyOrder("x", "y", "z"));
 
-        //test a class that doesn't match
+        // test a class that doesn't match
         ls.setRoleClassNames(new String[]{NotTestRole.class.getName()});
         Subject subject4 = new Subject();
         subject4.getPrincipals().add(new TestRole("x"));

@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 public class LoopTest extends AbstractUseCase
 {
@@ -37,54 +36,19 @@ public class LoopTest extends AbstractUseCase
         // Create loop
         // richard -> harry -> tom -> richard
 
-        Files.write(baseDir.resolve("modules/branch.mod"),
-            Arrays.asList(
-                "[provides]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/richard.mod"),
-            Arrays.asList(
-                "[depends]",
-                "harry"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/harry.mod"),
-            Arrays.asList(
-                "[depends]",
-                "tom"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/other.mod"),
-            Arrays.asList(
-                "[provides]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/root.mod"),
-            Arrays.asList(
-                "[depends]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/tom.mod"),
-            Arrays.asList(
-                "[depends]",
-                "richard"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=root"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(
+            baseDir.resolve("modules/branch.mod"), Arrays.asList("[provides]", "branch"), StandardCharsets.UTF_8);
+        Files.write(
+            baseDir.resolve("modules/richard.mod"), Arrays.asList("[depends]", "harry"), StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("modules/harry.mod"), Arrays.asList("[depends]", "tom"), StandardCharsets.UTF_8);
+        Files.write(
+            baseDir.resolve("modules/other.mod"), Arrays.asList("[provides]", "branch"), StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("modules/root.mod"), Arrays.asList("[depends]", "branch"), StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("modules/tom.mod"), Arrays.asList("[depends]", "richard"), StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=root"), StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
-            "--testing-mode",
-            "--create-startd",
-            "--add-modules=tom"
-        );
+        List<String> prepareArgs = Arrays.asList("--testing-mode", "--create-startd", "--add-modules=tom");
         exec(prepareArgs, true);
 
         // === Execute Main
@@ -107,54 +71,24 @@ public class LoopTest extends AbstractUseCase
         // Create loop
         // richard -> dynamic/harry -> tom -> richard
 
-        Files.write(baseDir.resolve("modules/branch.mod"),
-            Arrays.asList(
-                "[provides]",
-                "branch"
-            ),
+        Files.write(
+            baseDir.resolve("modules/branch.mod"), Arrays.asList("[provides]", "branch"), StandardCharsets.UTF_8);
+        Files.write(
+            baseDir.resolve("modules/richard.mod"),
+            Arrays.asList("[depends]", "dynamic/harry"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/richard.mod"),
-            Arrays.asList(
-                "[depends]",
-                "dynamic/harry"
-            ),
+        Files.write(
+            baseDir.resolve("modules/dynamic/harry.mod"),
+            Arrays.asList("[depends]", "tom"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/dynamic/harry.mod"),
-            Arrays.asList(
-                "[depends]",
-                "tom"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/other.mod"),
-            Arrays.asList(
-                "[provides]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/root.mod"),
-            Arrays.asList(
-                "[depends]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/tom.mod"),
-            Arrays.asList(
-                "[depends]",
-                "richard"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=root"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(
+            baseDir.resolve("modules/other.mod"), Arrays.asList("[provides]", "branch"), StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("modules/root.mod"), Arrays.asList("[depends]", "branch"), StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("modules/tom.mod"), Arrays.asList("[depends]", "richard"), StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=root"), StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
-            "--testing-mode",
-            "--create-startd",
-            "--add-modules=tom"
-        );
+        List<String> prepareArgs = Arrays.asList("--testing-mode", "--create-startd", "--add-modules=tom");
         exec(prepareArgs, true);
 
         // === Execute Main

@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.io.content.BufferedContentSink;
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
@@ -229,7 +228,8 @@ public class Content
          * @return A {@link CompletableFuture} that will be completed when the complete content is read or
          * failed if the max size is exceeded or there is a read error.
          */
-        static CompletableFuture<RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
+        static CompletableFuture<RetainableByteBuffer> asRetainableByteBuffer(
+                                                                              Source source, ByteBufferPool pool, boolean direct, int maxSize)
         {
             return new ChunkAccumulator().readAll(source, pool, direct, maxSize);
         }
@@ -482,7 +482,8 @@ public class Content
          * @param maxBufferSize the maximum size of the buffer
          * @return a Sink that writes to the given content sink
          */
-        static Sink asBuffered(Sink sink, ByteBufferPool bufferPool, boolean direct, int maxAggregationSize, int maxBufferSize)
+        static Sink asBuffered(
+                               Sink sink, ByteBufferPool bufferPool, boolean direct, int maxAggregationSize, int maxBufferSize)
         {
             return new BufferedContentSink(sink, bufferPool, direct, maxAggregationSize, maxBufferSize);
         }
@@ -623,7 +624,7 @@ public class Content
         static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
             if (byteBuffer.hasRemaining())
-               return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
+                return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
             return last ? EOF : EMPTY;
         }
 

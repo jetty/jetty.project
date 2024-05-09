@@ -13,6 +13,19 @@
 
 package org.eclipse.jetty.client;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -37,7 +50,6 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -79,19 +91,6 @@ import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTLSTest
 {
@@ -185,11 +184,10 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .timeout(5, TimeUnit.SECONDS)
-                .send());
+        assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
@@ -226,11 +224,10 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .timeout(5, TimeUnit.SECONDS)
-                .send());
+        assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
@@ -268,11 +265,10 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .timeout(5, TimeUnit.SECONDS)
-                .send());
+        assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
@@ -317,7 +313,8 @@ public class HttpClientTLSTest
         // If this JVM has "TLSv1.3" present, then it's assumed that it also has the new logic
         // to not send bytes to the server when a protocol and cipher suite mismatch occurs
         // on the client side configuration.
-        List<String> supportedClientProtocols = Arrays.asList(clientTLSFactory.getSslContext().getSupportedSSLParameters().getProtocols());
+        List<String> supportedClientProtocols = Arrays.asList(
+            clientTLSFactory.getSslContext().getSupportedSSLParameters().getProtocols());
         boolean expectServerFailure = !(supportedClientProtocols.contains("TLSv1.3"));
 
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -330,11 +327,10 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .timeout(5, TimeUnit.SECONDS)
-                .send());
+        assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
 
         if (expectServerFailure)
             assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
@@ -429,7 +425,8 @@ public class HttpClientTLSTest
             @Override
             public void handshakeSucceeded(Event event)
             {
-                if (Arrays.equals(serverSession.get(), event.getSSLEngine().getSession().getId()))
+                if (Arrays.equals(
+                    serverSession.get(), event.getSSLEngine().getSession().getId()))
                     serverLatch.countDown();
             }
         });
@@ -440,7 +437,8 @@ public class HttpClientTLSTest
             @Override
             public void handshakeSucceeded(Event event)
             {
-                if (Arrays.equals(clientSession.get(), event.getSSLEngine().getSession().getId()))
+                if (Arrays.equals(
+                    clientSession.get(), event.getSSLEngine().getSession().getId()))
                     clientLatch.countDown();
             }
         });
@@ -472,7 +470,8 @@ public class HttpClientTLSTest
         String host = "localhost";
         int port = connector.getLocalPort();
         Socket socket1 = new Socket(host, port);
-        SSLSocket sslSocket1 = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket1, host, port, true);
+        SSLSocket sslSocket1 =
+            (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket1, host, port, true);
         CountDownLatch handshakeLatch1 = new CountDownLatch(1);
         AtomicReference<byte[]> session1 = new AtomicReference<>();
         sslSocket1.addHandshakeCompletedListener(event ->
@@ -497,7 +496,8 @@ public class HttpClientTLSTest
 
         // Try again and compare the session ids.
         Socket socket2 = new Socket(host, port);
-        SSLSocket sslSocket2 = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket2, host, port, true);
+        SSLSocket sslSocket2 =
+            (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket2, host, port, true);
         CountDownLatch handshakeLatch2 = new CountDownLatch(1);
         AtomicReference<byte[]> session2 = new AtomicReference<>();
         sslSocket2.addHandshakeCompletedListener(event ->
@@ -529,7 +529,8 @@ public class HttpClientTLSTest
             client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
             {
                 @Override
-                public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+                public ClientConnectionFactory newSslClientConnectionFactory(
+                                                                             SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
                 {
                     SslClientConnectionFactory ssl = (SslClientConnectionFactory)super.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
                     ssl.setRequireCloseMessage(true);
@@ -549,9 +550,13 @@ public class HttpClientTLSTest
 
             try (Socket socket = server.accept())
             {
-                SSLSocket sslSocket = (SSLSocket)serverTLSFactory.getSslContext().getSocketFactory().createSocket(socket, null, socket.getPort(), true);
+                SSLSocket sslSocket = (SSLSocket)serverTLSFactory
+                    .getSslContext()
+                    .getSocketFactory()
+                    .createSocket(socket, null, socket.getPort(), true);
                 sslSocket.setUseClientMode(false);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(sslSocket.getInputStream(), StandardCharsets.UTF_8));
+                BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(sslSocket.getInputStream(), StandardCharsets.UTF_8));
                 while (true)
                 {
                     String line = reader.readLine();
@@ -571,9 +576,7 @@ public class HttpClientTLSTest
                 // a response failure.
 
                 byte[] half = new byte[8];
-                String response = "HTTP/1.1 200 OK\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+                String response = "HTTP/1.1 200 OK\r\n" + "Connection: close\r\n" + "\r\n";
                 OutputStream output = sslSocket.getOutputStream();
                 output.write(response.getBytes(StandardCharsets.UTF_8));
                 output.write(half);
@@ -631,7 +634,14 @@ public class HttpClientTLSTest
             @Override
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(
+                    connector.getByteBufferPool(),
+                    connector.getExecutor(),
+                    getSslContextFactory(),
+                    endPoint,
+                    engine,
+                    isDirectBuffersForEncryption(),
+                    isDirectBuffersForDecryption())
                 {
                     @Override
                     protected int networkFill(ByteBuffer input) throws IOException
@@ -661,16 +671,25 @@ public class HttpClientTLSTest
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
         {
             @Override
-            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(
+                                                                         SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
-                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                return new SslClientConnectionFactory(
+                    sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(
+                            getByteBufferPool(),
+                            getExecutor(),
+                            getSslContextFactory(),
+                            endPoint,
+                            engine,
+                            isDirectBuffersForEncryption(),
+                            isDirectBuffersForDecryption())
                         {
                             @Override
                             protected int networkFill(ByteBuffer input) throws IOException
@@ -723,7 +742,14 @@ public class HttpClientTLSTest
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
                 ByteBufferPool bufferPool = connector.getByteBufferPool();
-                return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(
+                    bufferPool,
+                    connector.getExecutor(),
+                    getSslContextFactory(),
+                    endPoint,
+                    engine,
+                    isDirectBuffersForEncryption(),
+                    isDirectBuffersForDecryption())
                 {
                     @Override
                     protected int networkFill(ByteBuffer input) throws IOException
@@ -752,10 +778,14 @@ public class HttpClientTLSTest
         client.setExecutor(clientThreads);
         client.start();
 
-        assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
+        assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .send());
 
         ArrayByteBufferPool bufferPool = (ArrayByteBufferPool)server.getByteBufferPool();
-        Pool<RetainableByteBuffer> bucket = bufferPool.poolFor(16 * 1024 + 1, connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
+        Pool<RetainableByteBuffer> bucket = bufferPool.poolFor(
+            16 * 1024 + 1,
+            connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
         assertEquals(1, bucket.size());
         assertEquals(1, bucket.getIdleCount());
 
@@ -800,7 +830,14 @@ public class HttpClientTLSTest
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
                 ByteBufferPool bufferPool = connector.getByteBufferPool();
-                return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(
+                    bufferPool,
+                    connector.getExecutor(),
+                    getSslContextFactory(),
+                    endPoint,
+                    engine,
+                    isDirectBuffersForEncryption(),
+                    isDirectBuffersForDecryption())
                 {
                     @Override
                     protected boolean networkFlush(ByteBuffer output) throws IOException
@@ -826,14 +863,17 @@ public class HttpClientTLSTest
         client.setExecutor(clientThreads);
         client.start();
 
-        assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
+        assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .send());
 
         bufferPool.clear();
         await().atMost(5, TimeUnit.SECONDS).until(() -> leakedBuffers, is(empty()));
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testEncryptedOutputBufferRepoolingAfterNetworkFlushReturnsFalse(boolean close) throws Exception
     {
         SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
@@ -871,7 +911,14 @@ public class HttpClientTLSTest
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
                 ByteBufferPool bufferPool = connector.getByteBufferPool();
-                return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(
+                    bufferPool,
+                    connector.getExecutor(),
+                    getSslContextFactory(),
+                    endPoint,
+                    engine,
+                    isDirectBuffersForEncryption(),
+                    isDirectBuffersForDecryption())
                 {
                     @Override
                     protected boolean networkFlush(ByteBuffer output) throws IOException
@@ -891,7 +938,8 @@ public class HttpClientTLSTest
             protected void service(Request request, Response response)
             {
                 failFlush.set(true);
-                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                EndPoint endPoint =
+                    request.getConnectionMetaData().getConnection().getEndPoint();
                 if (close)
                     endPoint.close();
                 else
@@ -911,14 +959,17 @@ public class HttpClientTLSTest
         client.setExecutor(clientThreads);
         client.start();
 
-        assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
+        assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .send());
 
         bufferPool.clear();
         await().atMost(5, TimeUnit.SECONDS).until(() -> leakedBuffers, is(empty()));
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testEncryptedOutputBufferRepoolingAfterNetworkFlushThrows(boolean close) throws Exception
     {
         SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
@@ -956,7 +1007,14 @@ public class HttpClientTLSTest
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
                 ByteBufferPool bufferPool = connector.getByteBufferPool();
-                return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(
+                    bufferPool,
+                    connector.getExecutor(),
+                    getSslContextFactory(),
+                    endPoint,
+                    engine,
+                    isDirectBuffersForEncryption(),
+                    isDirectBuffersForDecryption())
                 {
                     @Override
                     protected boolean networkFlush(ByteBuffer output) throws IOException
@@ -976,7 +1034,8 @@ public class HttpClientTLSTest
             protected void service(Request request, Response response)
             {
                 failFlush.set(true);
-                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                EndPoint endPoint =
+                    request.getConnectionMetaData().getConnection().getEndPoint();
                 if (close)
                     endPoint.close();
                 else
@@ -996,7 +1055,9 @@ public class HttpClientTLSTest
         client.setExecutor(clientThreads);
         client.start();
 
-        assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
+        assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .send());
 
         bufferPool.clear();
         await().atMost(5, TimeUnit.SECONDS).until(() -> leakedBuffers, is(empty()));
@@ -1018,7 +1079,14 @@ public class HttpClientTLSTest
             @Override
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(
+                    connector.getByteBufferPool(),
+                    connector.getExecutor(),
+                    getSslContextFactory(),
+                    endPoint,
+                    engine,
+                    isDirectBuffersForEncryption(),
+                    isDirectBuffersForDecryption())
                 {
                     @Override
                     protected int networkFill(ByteBuffer input) throws IOException
@@ -1049,16 +1117,25 @@ public class HttpClientTLSTest
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
         {
             @Override
-            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(
+                                                                         SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
-                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                return new SslClientConnectionFactory(
+                    sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(
+                            getByteBufferPool(),
+                            getExecutor(),
+                            getSslContextFactory(),
+                            endPoint,
+                            engine,
+                            isDirectBuffersForEncryption(),
+                            isDirectBuffersForDecryption())
                         {
                             @Override
                             protected int networkFill(ByteBuffer input) throws IOException
@@ -1111,19 +1188,29 @@ public class HttpClientTLSTest
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
         {
             @Override
-            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(
+                                                                         SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
-                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                return new SslClientConnectionFactory(
+                    sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(
+                            getByteBufferPool(),
+                            getExecutor(),
+                            getSslContextFactory(),
+                            endPoint,
+                            engine,
+                            isDirectBuffersForEncryption(),
+                            isDirectBuffersForDecryption())
                         {
                             @Override
-                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output)
+                                throws SSLException
                             {
                                 sslEngine.closeOutbound();
                                 return super.wrap(sslEngine, input, output);
@@ -1136,9 +1223,10 @@ public class HttpClientTLSTest
         client.setExecutor(clientThreads);
         client.start();
 
-        ExecutionException failure = assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
-            .scheme(HttpScheme.HTTPS.asString())
-            .send());
+        ExecutionException failure =
+            assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .send());
         Throwable cause = failure.getCause();
         assertThat(cause, Matchers.instanceOf(SSLHandshakeException.class));
     }
@@ -1159,10 +1247,18 @@ public class HttpClientTLSTest
             @Override
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(
+                    connector.getByteBufferPool(),
+                    connector.getExecutor(),
+                    getSslContextFactory(),
+                    endPoint,
+                    engine,
+                    isDirectBuffersForEncryption(),
+                    isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                    protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output)
+                        throws SSLException
                     {
                         int inputBytes = input.remaining();
                         SSLEngineResult result = super.unwrap(sslEngine, input, output);
@@ -1191,19 +1287,29 @@ public class HttpClientTLSTest
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
         {
             @Override
-            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(
+                                                                         SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
-                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                return new SslClientConnectionFactory(
+                    sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(
+                            getByteBufferPool(),
+                            getExecutor(),
+                            getSslContextFactory(),
+                            endPoint,
+                            engine,
+                            isDirectBuffersForEncryption(),
+                            isDirectBuffersForDecryption())
                         {
                             @Override
-                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output)
+                                throws SSLException
                             {
                                 try
                                 {
@@ -1229,14 +1335,12 @@ public class HttpClientTLSTest
         int port = connector.getLocalPort();
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        client.newRequest(host, port)
-            .scheme(HttpScheme.HTTPS.asString())
-            .send(result ->
-            {
-                assertTrue(result.isSucceeded());
-                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
-                responseLatch.countDown();
-            });
+        client.newRequest(host, port).scheme(HttpScheme.HTTPS.asString()).send(result ->
+        {
+            assertTrue(result.isSucceeded());
+            assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+            responseLatch.countDown();
+        });
         // Wait for the TLS buffers to be acquired by the client, then the
         // HTTP request will be paused waiting for the TLS buffer to be expanded.
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));

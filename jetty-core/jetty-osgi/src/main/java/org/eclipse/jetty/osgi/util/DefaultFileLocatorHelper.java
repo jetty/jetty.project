@@ -24,7 +24,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.zip.ZipFile;
-
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.osgi.framework.Bundle;
@@ -61,10 +60,12 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         "org.eclipse.osgi.baseadaptor.bundlefile.ZipBundleEntry", "org.eclipse.osgi.storage.bundlefile.ZipBundleEntry"
     };
     private static final String[] DIR_ZIP_BUNDLE_ENTRY_CLASSES = {
-        "org.eclipse.osgi.baseadaptor.bundlefile.DirZipBundleEntry", "org.eclipse.osgi.storage.bundlefile.DirZipBundleEntry"
+        "org.eclipse.osgi.baseadaptor.bundlefile.DirZipBundleEntry",
+        "org.eclipse.osgi.storage.bundlefile.DirZipBundleEntry"
     };
     private static final String[] BUNDLE_URL_CONNECTION_CLASSES = {
-        "org.eclipse.osgi.framework.internal.core.BundleURLConnection", "org.eclipse.osgi.storage.url.BundleURLConnection"
+        "org.eclipse.osgi.framework.internal.core.BundleURLConnection",
+        "org.eclipse.osgi.storage.url.BundleURLConnection"
     };
 
     public static boolean match(String name, String... names)
@@ -149,13 +150,15 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                 bundleEntry = BUNDLE_ENTRY_FIELD.get(con);
                 if (BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY == null)
                 {
-                    BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY = bundleEntry.getClass().getDeclaredField("bundleFile");
+                    BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY =
+                        bundleEntry.getClass().getDeclaredField("bundleFile");
                     BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY.setAccessible(true);
                 }
                 Object zipBundleFile = BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY.get(bundleEntry);
                 if (ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE == null)
                 {
-                    ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = zipBundleFile.getClass().getDeclaredField("zipFile");
+                    ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE =
+                        zipBundleFile.getClass().getDeclaredField("zipFile");
                     ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE.setAccessible(true);
                 }
                 ZipFile zipFile = (ZipFile)ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE.get(zipBundleFile);
@@ -228,8 +231,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         File webapp = path != null && path.length() != 0 ? new File(bundleInstall, path) : bundleInstall;
         if (!webapp.exists())
         {
-            throw new IllegalArgumentException("Unable to locate " + path + " inside " + bundle.getSymbolicName() +
-                " (" + (bundleInstall != null ? bundleInstall.getAbsolutePath() : " no_bundle_location ") + ")");
+            throw new IllegalArgumentException("Unable to locate " + path + " inside " + bundle.getSymbolicName() + " (" + (bundleInstall != null ? bundleInstall.getAbsolutePath() : " no_bundle_location ") + ")");
         }
         return webapp;
     }
@@ -324,8 +326,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * @return a URL to the bundle entry that uses a common protocol
      */
     @Override
-    public URL getLocalURL(URL url)
-        throws Exception
+    public URL getLocalURL(URL url) throws Exception
     {
         if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
         {
@@ -359,8 +360,8 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      */
     @Override
     public URL getFileURL(URL url) throws Exception
-
     {
+
         if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
         {
 

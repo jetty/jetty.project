@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.client.internal;
 
+import jakarta.websocket.ClientEndpointConfig.Configurator;
+import jakarta.websocket.HandshakeResponse;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.websocket.ClientEndpointConfig.Configurator;
-import jakarta.websocket.HandshakeResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;

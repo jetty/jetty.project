@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.nested.jmx;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -42,14 +41,18 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
     }
 
     @ManagedOperation(value = "Set context attribute", impact = "ACTION")
-    public void setContextAttribute(@Name(value = "name", description = "attribute name") String name, @Name(value = "value", description = "attribute value") Object value)
+    public void setContextAttribute(
+                                    @Name(value = "name", description = "attribute name") String name,
+                                    @Name(value = "value", description = "attribute value") Object value)
     {
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
         attrs.setAttribute(name, value);
     }
 
     @ManagedOperation(value = "Set context attribute", impact = "ACTION")
-    public void setContextAttribute(@Name(value = "name", description = "attribute name") String name, @Name(value = "value", description = "attribute value") String value)
+    public void setContextAttribute(
+                                    @Name(value = "name", description = "attribute name") String name,
+                                    @Name(value = "value", description = "attribute value") String value)
     {
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
         attrs.setAttribute(name, value);

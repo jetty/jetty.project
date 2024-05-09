@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -41,9 +43,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class FlowControlWindowsTest
 {
     private Server server;
@@ -56,7 +55,8 @@ public class FlowControlWindowsTest
 
     private void start(ServerSessionListener listener) throws Exception
     {
-        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
+        RawHTTP2ServerConnectionFactory connectionFactory =
+            new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
         connectionFactory.setInitialSessionRecvWindow(serverSessionRecvWindow);
         connectionFactory.setInitialStreamRecvWindow(serverStreamRecvWindow);
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
@@ -97,9 +97,13 @@ public class FlowControlWindowsTest
     @Test
     public void testClientFlowControlWindows() throws Exception
     {
-        start(new ServerSessionListener() {});
+        start(new ServerSessionListener()
+        {
+        });
 
-        HTTP2Session clientSession = newClient(new Session.Listener() {});
+        HTTP2Session clientSession = newClient(new Session.Listener()
+        {
+        });
         // Wait while client and server exchange SETTINGS and WINDOW_UPDATE frames.
         Thread.sleep(1000);
 
@@ -109,7 +113,14 @@ public class FlowControlWindowsTest
         assertEquals(clientSessionRecvWindow, sessionRecvWindow);
 
         HostPortHttpField hostPort = new HostPortHttpField("localhost:" + connector.getLocalPort());
-        MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP.asString(), hostPort, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
+        MetaData.Request request = new MetaData.Request(
+            HttpMethod.GET.asString(),
+            HttpScheme.HTTP.asString(),
+            hostPort,
+            "/",
+            HttpVersion.HTTP_2,
+            HttpFields.EMPTY,
+            -1);
         HeadersFrame frame = new HeadersFrame(request, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         clientSession.newStream(frame, promise, null);
@@ -146,7 +157,9 @@ public class FlowControlWindowsTest
             }
         });
 
-        HTTP2Session clientSession = newClient(new Session.Listener() {});
+        HTTP2Session clientSession = newClient(new Session.Listener()
+        {
+        });
 
         assertTrue(sessionLatch.await(5, TimeUnit.SECONDS));
         HTTP2Session serverSession = sessionRef.get();
@@ -159,7 +172,14 @@ public class FlowControlWindowsTest
         assertEquals(serverSessionRecvWindow, sessionRecvWindow);
 
         HostPortHttpField hostPort = new HostPortHttpField("localhost:" + connector.getLocalPort());
-        MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP.asString(), hostPort, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
+        MetaData.Request request = new MetaData.Request(
+            HttpMethod.GET.asString(),
+            HttpScheme.HTTP.asString(),
+            hostPort,
+            "/",
+            HttpVersion.HTTP_2,
+            HttpFields.EMPTY,
+            -1);
         HeadersFrame frame = new HeadersFrame(request, null, true);
         clientSession.newStream(frame, new Promise.Adapter<>(), null);
 

@@ -13,12 +13,14 @@
 
 package org.eclipse.jetty.ee10.test.client.transport;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -29,6 +31,12 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
@@ -41,15 +49,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class RequestReaderTest extends AbstractTest
 {
@@ -106,7 +105,8 @@ public class RequestReaderTest extends AbstractTest
                     {
                         servletDoneLatch.countDown();
                     }
-                }).start();
+                })
+                    .start();
             }
         });
         CountDownLatch callbackCompletedLatch = new CountDownLatch(1);
@@ -115,7 +115,8 @@ public class RequestReaderTest extends AbstractTest
         server.insertHandler(new Handler.Wrapper()
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+                throws Exception
             {
                 return super.handle(request, response, new Callback()
                 {
@@ -249,7 +250,8 @@ public class RequestReaderTest extends AbstractTest
         start(transport, new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 // Must be a Reader and not an InputStream.
                 BufferedReader br = request.getReader();

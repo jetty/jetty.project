@@ -15,7 +15,6 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.nio.file.Path;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -37,7 +36,7 @@ public class AbstractJettyHomeTest
     {
         return environment + "-" + module;
     }
-    
+
     protected void startHttpClient() throws Exception
     {
         startHttpClient(false);

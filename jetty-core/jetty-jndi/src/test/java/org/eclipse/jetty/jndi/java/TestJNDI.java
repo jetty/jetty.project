@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.jndi.java;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
@@ -29,7 +36,6 @@ import javax.naming.NamingException;
 import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
-
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -42,13 +48,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -67,18 +66,18 @@ public class TestJNDI
         public static String myString = "xxx";
 
         @Override
-        public Object getObjectInstance(Object obj, Name name, Context nameCtx, Hashtable environment) throws Exception
+        public Object getObjectInstance(Object obj, Name name, Context nameCtx, Hashtable environment)
+            throws Exception
         {
             return myString;
         }
     }
 
     @Test
-    public void testThreadContextClassloaderAndCurrentContext()
-        throws Exception
+    public void testThreadContextClassloaderAndCurrentContext() throws Exception
     {
-        //create a jetty context, and start it so that its classloader it created
-        //and it is the current context
+        // create a jetty context, and start it so that its classloader it created
+        // and it is the current context
         ClassLoader currentLoader = Thread.currentThread().getContextClassLoader();
         ContextHandler ch1 = new ContextHandler("/ch");
         URLClassLoader chLoader = new URLClassLoader(new URL[0], currentLoader);
@@ -137,7 +136,7 @@ public class TestJNDI
             }
         });
 
-        //Create another one
+        // Create another one
         ContextHandler ch2 = new ContextHandler("/ch2");
         URLClassLoader ch2Loader = new URLClassLoader(new URL[0], currentLoader);
         ch2.setClassLoader(ch2Loader);
@@ -163,7 +162,7 @@ public class TestJNDI
                     comp = (Context)initCtx.lookup("java:comp");
                     assertNotNull(comp);
 
-                    //another context's bindings should not be visible
+                    // another context's bindings should not be visible
                     Context env = ((Context)comp).createSubcontext("env");
                     try
                     {
@@ -172,7 +171,7 @@ public class TestJNDI
                     }
                     catch (NameNotFoundException e)
                     {
-                        //expected
+                        // expected
                     }
                 }
                 catch (Exception e)
@@ -199,9 +198,9 @@ public class TestJNDI
 
         try
         {
-            //Starting the context makes it current and creates a classloader for it
+            // Starting the context makes it current and creates a classloader for it
             ch1.start();
-            //make the new context the current one
+            // make the new context the current one
             ch2.start();
         }
         finally
@@ -219,7 +218,7 @@ public class TestJNDI
         ClassLoader currentLoader = currentThread.getContextClassLoader();
         ClassLoader childLoader1 = new URLClassLoader(new URL[0], currentLoader);
 
-        //set the current thread's classloader
+        // set the current thread's classloader
         currentThread.setContextClassLoader(childLoader1);
 
         try
@@ -305,7 +304,7 @@ public class TestJNDI
     @Test
     public void testIt() throws Exception
     {
-        //set up some classloaders
+        // set up some classloaders
         Thread currentThread = Thread.currentThread();
         ClassLoader currentLoader = currentThread.getContextClassLoader();
         ClassLoader childLoader1 = new URLClassLoader(new URL[0], currentLoader);
@@ -314,7 +313,7 @@ public class TestJNDI
         try
         {
 
-            //Uncomment to aid with debug
+            // Uncomment to aid with debug
             /*
             javaRootURLContext.getRoot().addListener(new NamingContext.Listener()
             {
@@ -322,7 +321,7 @@ public class TestJNDI
                 {
                     System.err.println("java unbind "+binding+" from "+ctx.getName());
                 }
-                
+            
                 public Binding bind(NamingContext ctx, Binding binding)
                 {
                     System.err.println("java bind "+binding+" to "+ctx.getName());
@@ -336,7 +335,7 @@ public class TestJNDI
                 {
                     System.err.println("local unbind "+binding+" from "+ctx.getName());
                 }
-                
+            
                 public Binding bind(NamingContext ctx, Binding binding)
                 {
                     System.err.println("local bind "+binding+" to "+ctx.getName());
@@ -345,16 +344,16 @@ public class TestJNDI
             });
             */
 
-            //Set up the tccl before doing any jndi operations
+            // Set up the tccl before doing any jndi operations
             currentThread.setContextClassLoader(childLoader1);
             initCtx = new InitialContext();
 
-            //Test we can lookup the root java: naming tree
+            // Test we can lookup the root java: naming tree
             Context sub0 = (Context)initCtx.lookup("java:");
             assertNotNull(sub0);
 
-            //Test that we cannot bind java:comp as it should
-            //already be bound 
+            // Test that we cannot bind java:comp as it should
+            // already be bound
             try
             {
                 Context sub1 = sub0.createSubcontext("comp");
@@ -362,10 +361,10 @@ public class TestJNDI
             }
             catch (NameAlreadyBoundException e)
             {
-                //expected exception
+                // expected exception
             }
 
-            //check bindings at comp
+            // check bindings at comp
             Context sub1 = (Context)initCtx.lookup("java:comp");
             assertNotNull(sub1);
 
@@ -375,27 +374,25 @@ public class TestJNDI
             initCtx.bind("java:comp/env/rubbish", "abc");
             assertEquals("abc", initCtx.lookup("java:comp/env/rubbish"));
 
-            //check binding LinkRefs
+            // check binding LinkRefs
             LinkRef link = new LinkRef("java:comp/env/rubbish");
             initCtx.bind("java:comp/env/poubelle", link);
             assertEquals("abc", initCtx.lookup("java:comp/env/poubelle"));
 
-            //check binding References
+            // check binding References
             StringRefAddr addr = new StringRefAddr("blah", "myReferenceable");
-            Reference ref = new Reference(java.lang.String.class.getName(),
-                addr,
-                MyObjectFactory.class.getName(),
-                null);
+            Reference ref =
+                new Reference(java.lang.String.class.getName(), addr, MyObjectFactory.class.getName(), null);
 
             initCtx.bind("java:comp/env/quatsch", ref);
             assertEquals(MyObjectFactory.myString, initCtx.lookup("java:comp/env/quatsch"));
 
-            //test binding something at java:
+            // test binding something at java:
             Context sub3 = initCtx.createSubcontext("java:zero");
             initCtx.bind("java:zero/one", "ONE");
             assertEquals("ONE", initCtx.lookup("java:zero/one"));
 
-            //change the current thread's classloader to check distinct naming
+            // change the current thread's classloader to check distinct naming
             currentThread.setContextClassLoader(childLoader2);
 
             Context otherSub1 = (Context)initCtx.lookup("java:comp");
@@ -407,27 +404,27 @@ public class TestJNDI
             }
             catch (NameNotFoundException e)
             {
-                //expected
+                // expected
             }
 
-            //put the thread's classloader back
+            // put the thread's classloader back
             currentThread.setContextClassLoader(childLoader1);
 
-            //test rebind with existing binding
+            // test rebind with existing binding
             initCtx.rebind("java:comp/env/rubbish", "xyz");
             assertEquals("xyz", initCtx.lookup("java:comp/env/rubbish"));
 
-            //test rebind with no existing binding
+            // test rebind with no existing binding
             initCtx.rebind("java:comp/env/mullheim", "hij");
             assertEquals("hij", initCtx.lookup("java:comp/env/mullheim"));
 
-            //test that the other bindings are already there
+            // test that the other bindings are already there
             assertEquals("xyz", initCtx.lookup("java:comp/env/poubelle"));
 
-            //test java:/comp/env/stuff
+            // test java:/comp/env/stuff
             assertEquals("xyz", initCtx.lookup("java:/comp/env/poubelle/"));
 
-            //test list Names
+            // test list Names
             NamingEnumeration nenum = initCtx.list("java:comp/env");
             HashMap results = new HashMap();
             while (nenum.hasMore())
@@ -443,37 +440,37 @@ public class TestJNDI
             assertEquals("java.lang.String", results.get("mullheim"));
             assertEquals("javax.naming.Reference", results.get("quatsch"));
 
-            //test list Bindings
+            // test list Bindings
             NamingEnumeration benum = initCtx.list("java:comp/env");
             assertEquals(4, results.size());
 
-            //test NameInNamespace
+            // test NameInNamespace
             assertEquals("comp/env", sub2.getNameInNamespace());
 
-            //test close does nothing
+            // test close does nothing
             Context closeCtx = (Context)initCtx.lookup("java:comp/env");
             closeCtx.close();
 
-            //test what happens when you close an initial context
+            // test what happens when you close an initial context
             InitialContext closeInit = new InitialContext();
             closeInit.close();
 
-            //check locking the context
+            // check locking the context
             Context ectx = (Context)initCtx.lookup("java:comp");
-            //make a deep structure lie ttt/ttt2 for later use
+            // make a deep structure lie ttt/ttt2 for later use
             Context ttt = ectx.createSubcontext("ttt");
             ttt.createSubcontext("ttt2");
-            //bind a value
+            // bind a value
             ectx.bind("crud", "xxx");
-            //lock
+            // lock
             ectx.addToEnvironment("org.eclipse.jetty.jndi.lock", "TRUE");
-            //check we can't get the lock
+            // check we can't get the lock
             assertFalse(ectx.getEnvironment().containsKey("org.eclipse.jetty.jndi.lock"));
-            //check once locked we can still do lookups
+            // check once locked we can still do lookups
             assertEquals("xxx", initCtx.lookup("java:comp/crud"));
             assertNotNull(initCtx.lookup("java:comp/ttt/ttt2"));
 
-            //test trying to bind into java:comp after lock
+            // test trying to bind into java:comp after lock
             InitialContext zzz = null;
             try
             {
@@ -491,12 +488,12 @@ public class TestJNDI
                 zzz.close();
             }
 
-            //test trying to bind into a deep structure inside java:comp after lock
+            // test trying to bind into a deep structure inside java:comp after lock
             try
             {
                 zzz = new InitialContext();
 
-                //TODO test deep locking
+                // TODO test deep locking
                 //  ((Context)zzz.lookup("java:comp/ttt/ttt2")).bind("zzz2", "zzz2");
                 // fail("Should not be able to write to locked context");
                 ((Context)zzz.lookup("java:comp")).bind("foo", "bar");
@@ -513,7 +510,7 @@ public class TestJNDI
         }
         finally
         {
-            //make some effort to clean up
+            // make some effort to clean up
             initCtx.close();
             InitialContext ic = new InitialContext();
             Context java = (Context)ic.lookup("java:");

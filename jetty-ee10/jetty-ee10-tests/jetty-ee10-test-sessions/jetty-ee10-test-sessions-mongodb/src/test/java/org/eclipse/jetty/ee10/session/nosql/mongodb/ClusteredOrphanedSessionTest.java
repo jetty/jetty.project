@@ -29,7 +29,8 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
 {
     private static String DB_NAME = "DB" + ClusteredOrphanedSessionTest.class.getSimpleName() + System.nanoTime();
 
-    private static String COLLECTION_NAME = "COLLECTION" + ClusteredOrphanedSessionTest.class.getSimpleName() + System.nanoTime();
+    private static String COLLECTION_NAME =
+        "COLLECTION" + ClusteredOrphanedSessionTest.class.getSimpleName() + System.nanoTime();
 
     @BeforeAll
     public static void beforeClass() throws Exception

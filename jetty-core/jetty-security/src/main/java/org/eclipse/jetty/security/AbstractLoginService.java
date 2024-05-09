@@ -17,16 +17,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import javax.security.auth.Subject;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 /**
  * AbstractLoginService
- * 
+ *
  * Base class for LoginServices that allows subclasses to provide the user authentication and authorization information,
- * but provides common behaviour such as handling authentication. 
+ * but provides common behaviour such as handling authentication.
  */
 public abstract class AbstractLoginService extends ContainerLifeCycle implements LoginService
 {
@@ -82,7 +81,8 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
+    public UserIdentity login(
+                              String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
     {
         if (username == null)
             return null;
@@ -90,7 +90,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         UserPrincipal userPrincipal = loadUserInfo(username);
         if (userPrincipal != null && userPrincipal.authenticate(credentials))
         {
-            //safe to load the roles
+            // safe to load the roles
             List<RolePrincipal> roles = loadRoleInfo(userPrincipal);
 
             List<String> roleNames = new ArrayList<>();
@@ -98,13 +98,13 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
             userPrincipal.configureSubject(subject);
             if (roles != null)
             {
-                roles.forEach(p -> 
+                roles.forEach(p ->
                 {
                     p.configureForSubject(subject);
                     roleNames.add(p.getName());
                 });
             }
-  
+
             subject.setReadOnly();
             return _identityService.newUserIdentity(subject, userPrincipal, roleNames.toArray(new String[0]));
         }
@@ -116,19 +116,19 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     public boolean validate(UserIdentity user)
     {
         if (!isFullValidate())
-            return true; //if we have a user identity it must be valid
+            return true; // if we have a user identity it must be valid
 
-        //Do a full validation back against the user store     
+        // Do a full validation back against the user store
         UserPrincipal fresh = loadUserInfo(user.getUserPrincipal().getName());
         if (fresh == null)
-            return false; //user no longer exists
+            return false; // user no longer exists
 
         if (user.getUserPrincipal() instanceof UserPrincipal)
         {
             return fresh.authenticate(((UserPrincipal)user.getUserPrincipal()));
         }
 
-        throw new IllegalStateException("UserPrincipal not known"); //can't validate
+        throw new IllegalStateException("UserPrincipal not known"); // can't validate
     }
 
     @Override
@@ -140,7 +140,7 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     @Override
     public void logout(UserIdentity user)
     {
-        //Override in subclasses
+        // Override in subclasses
     }
 
     public boolean isFullValidate()

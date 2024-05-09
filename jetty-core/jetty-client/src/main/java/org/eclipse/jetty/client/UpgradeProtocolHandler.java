@@ -14,10 +14,8 @@
 package org.eclipse.jetty.client;
 
 import java.util.List;
-
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
-import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -75,11 +73,18 @@ public class UpgradeProtocolHandler implements ProtocolHandler
                         HttpConversation conversation = request.getConversation();
                         HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
                         if (upgrader == null)
-                            throw new HttpResponseException("101 response without " + HttpUpgrader.class.getSimpleName(), response);
+                            throw new HttpResponseException(
+                                "101 response without " + HttpUpgrader.class.getSimpleName(), response);
                         EndPoint endPoint = (EndPoint)conversation.getAttribute(EndPoint.class.getName());
                         if (endPoint == null)
-                            throw new HttpResponseException("Upgrade without " + EndPoint.class.getSimpleName(), response);
-                        upgrader.upgrade(response, endPoint, Callback.from(Callback.NOOP::succeeded, x -> forwardFailureComplete(request, null, response, x)));
+                            throw new HttpResponseException(
+                                "Upgrade without " + EndPoint.class.getSimpleName(), response);
+                        upgrader.upgrade(
+                            response,
+                            endPoint,
+                            Callback.from(
+                                Callback.NOOP::succeeded,
+                                x -> forwardFailureComplete(request, null, response, x)));
                     }
                     catch (Throwable x)
                     {
@@ -94,7 +99,8 @@ public class UpgradeProtocolHandler implements ProtocolHandler
         };
     }
 
-    private void forwardFailureComplete(HttpRequest request, Throwable requestFailure, Response response, Throwable responseFailure)
+    private void forwardFailureComplete(
+                                        HttpRequest request, Throwable requestFailure, Response response, Throwable responseFailure)
     {
         HttpConversation conversation = request.getConversation();
         conversation.updateResponseListeners(null);

@@ -13,18 +13,24 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.io.IOException;
-import java.io.Serial;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.Serial;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
@@ -38,13 +44,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.in;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CrossOriginFilterTest
 {
@@ -76,12 +75,13 @@ public class CrossOriginFilterTest
         final CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -102,20 +102,25 @@ public class CrossOriginFilterTest
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
         String otherOrigin = StringUtil.replace(origin, "localhost", "127.0.0.1");
-        String request = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            Origin: %s\r
-            \r
-            """.formatted(otherOrigin);
+        String request =
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                Origin: %s\r
+                \r
+                """
+                .formatted(otherOrigin);
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
         assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, not(is(in(fieldNames))));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(is(in(fieldNames))));
+        assertThat(
+            response.toString(),
+            CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER,
+            not(is(in(fieldNames))));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -129,12 +134,7 @@ public class CrossOriginFilterTest
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
         String origin = "http://foo.example.com";
 
-        String request =
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "Origin: " + origin + "\r\n" +
-                "\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "Origin: " + origin + "\r\n" + "\r\n";
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -157,12 +157,7 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request =
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "Origin: " + origin + "\r\n" +
-                "\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "Origin: " + origin + "\r\n" + "\r\n";
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -186,12 +181,7 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request =
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "Origin: " + origin + "\r\n" +
-                "\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "Origin: " + origin + "\r\n" + "\r\n";
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -214,12 +204,7 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request =
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "Origin: " + origin + "\r\n" +
-                "\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "Origin: " + origin + "\r\n" + "\r\n";
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -245,12 +230,7 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request =
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "Origin: " + origin + "\r\n" +
-                "\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "Origin: " + origin + "\r\n" + "\r\n";
         String response = connector.getResponse(request);
         assertTrue(response.contains("HTTP/1.1 200"));
         assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER));
@@ -272,12 +252,7 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request =
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "Origin: " + origin + "\r\n" +
-                "\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "Origin: " + origin + "\r\n" + "\r\n";
         String response = connector.getResponse(request);
         assertTrue(response.contains("HTTP/1.1 200"));
         assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER));
@@ -299,13 +274,9 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request =
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                // Use 2 spaces as separator to test that the implementation does not fail
-                "Origin: " + otherOrigin + " " + " " + origin + "\r\n" +
-                "\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" +
+            // Use 2 spaces as separator to test that the implementation does not fail
+            "Origin: " + otherOrigin + " " + " " + origin + "\r\n" + "\r\n";
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -327,20 +298,24 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            Origin: http://localhost\r
-            \r
-            """;
+        String request =
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                Origin: http://localhost\r
+                \r
+                """;
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
         assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, is(in(fieldNames)));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(is(in(fieldNames))));
+        assertThat(
+            response.toString(),
+            CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER,
+            not(is(in(fieldNames))));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -357,13 +332,14 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request = """
-            PUT / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            Origin: http://localhost\r
-            \r
-            """;
+        String request =
+            """
+                PUT / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                Origin: http://localhost\r
+                \r
+                """;
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -387,13 +363,14 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request = """
-            OPTIONS / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            Origin: http://localhost\r
-            \r
-            """;
+        String request =
+            """
+                OPTIONS / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                Origin: http://localhost\r
+                \r
+                """;
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -414,14 +391,7 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request =
-            "OPTIONS / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER + ": X-Foo-Bar\r\n" +
-                CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": GET\r\n" +
-                "Origin: http://localhost\r\n" +
-                "\r\n";
+        String request = "OPTIONS / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER + ": X-Foo-Bar\r\n" + CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": GET\r\n" + "Origin: http://localhost\r\n" + "\r\n";
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -444,13 +414,7 @@ public class CrossOriginFilterTest
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
         // Preflight request
-        String request =
-            "OPTIONS / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" +
-                "Origin: http://localhost\r\n" +
-                "\r\n";
+        String request = "OPTIONS / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" + "Origin: http://localhost\r\n" + "\r\n";
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -464,13 +428,14 @@ public class CrossOriginFilterTest
         assertTrue(latch.await(1, TimeUnit.SECONDS));
 
         // Preflight request was ok, now make the actual request
-        request = """
-            PUT / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            Origin: http://localhost\r
-            \r
-            """;
+        request =
+            """
+                PUT / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                Origin: http://localhost\r
+                \r
+                """;
         rawResponse = connector.getResponse(request);
         response = HttpTester.parseResponse(rawResponse);
 
@@ -485,23 +450,27 @@ public class CrossOriginFilterTest
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "GET,HEAD,POST,PUT,DELETE");
-        filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, "X-Requested-With,Content-Type,Accept,Origin,X-Custom");
+        filterHolder.setInitParameter(
+            CrossOriginFilter.ALLOWED_HEADERS_PARAM, "X-Requested-With,Content-Type,Accept,Origin,X-Custom");
         context.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
         // Preflight request
-        String request = """
-            OPTIONS / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            %s: DELETE\r
-            %s: origin,x-custom,x-requested-with\r
-            Origin: http://localhost\r
-            \r
-            """.formatted(CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER,
-            CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER);
+        String request =
+            """
+                OPTIONS / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                %s: DELETE\r
+                %s: origin,x-custom,x-requested-with\r
+                Origin: http://localhost\r
+                \r
+                """
+                .formatted(
+                    CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER,
+                    CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER);
 
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -517,15 +486,16 @@ public class CrossOriginFilterTest
         assertTrue(latch.await(1, TimeUnit.SECONDS));
 
         // Preflight request was ok, now make the actual request
-        request = """
-            DELETE / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            X-Custom: value\r
-            X-Requested-With: local\r
-            Origin: http://localhost\r
-            \r
-            """;
+        request =
+            """
+                DELETE / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                X-Custom: value\r
+                X-Requested-With: local\r
+                Origin: http://localhost\r
+                \r
+                """;
         rawResponse = connector.getResponse(request);
         response = HttpTester.parseResponse(rawResponse);
 
@@ -546,21 +516,17 @@ public class CrossOriginFilterTest
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
         // Preflight request
-        String request =
-            "OPTIONS / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": DELETE\r\n" +
-                CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER + ": origin,x-custom,x-requested-with\r\n" +
-                "Origin: http://localhost\r\n" +
-                "\r\n";
+        String request = "OPTIONS / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": DELETE\r\n" + CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER + ": origin,x-custom,x-requested-with\r\n" + "Origin: http://localhost\r\n" + "\r\n";
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
         assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, not(is(in(fieldNames))));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(is(in(fieldNames))));
+        assertThat(
+            response.toString(),
+            CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER,
+            not(is(in(fieldNames))));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         // The preflight request failed because header X-Custom is not allowed, actual request not issued
     }
@@ -574,21 +540,25 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            Connection: Upgrade\r
-            Upgrade: WebSocket\r
-            Origin: http://localhost\r
-            \r
-            """;
+        String request =
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Connection: Upgrade\r
+                Upgrade: WebSocket\r
+                Origin: http://localhost\r
+                \r
+                """;
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         Set<String> fieldNames = response.getFieldNamesCollection();
         assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, not(is(in(fieldNames))));
-        assertThat(response.toString(), CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, not(is(in(fieldNames))));
+        assertThat(
+            response.toString(),
+            CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER,
+            not(is(in(fieldNames))));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
@@ -602,13 +572,14 @@ public class CrossOriginFilterTest
         CountDownLatch latch = new CountDownLatch(1);
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
-        String request = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            Origin: http://localhost\r
-            \r
-            """;
+        String request =
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                Origin: http://localhost\r
+                \r
+                """;
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -630,13 +601,7 @@ public class CrossOriginFilterTest
         context.addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
 
         // Preflight request
-        String request =
-            "OPTIONS / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" +
-                "Origin: http://localhost\r\n" +
-                "\r\n";
+        String request = "OPTIONS / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" + "Origin: http://localhost\r\n" + "\r\n";
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -650,6 +615,7 @@ public class CrossOriginFilterTest
     {
         @Serial
         private static final long serialVersionUID = 1L;
+
         private final CountDownLatch latch;
 
         public ResourceServlet(CountDownLatch latch)

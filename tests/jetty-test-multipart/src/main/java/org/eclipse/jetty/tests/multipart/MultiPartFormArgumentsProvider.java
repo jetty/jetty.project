@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.tests.multipart;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,13 +25,9 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class MultiPartFormArgumentsProvider implements ArgumentsProvider
 {
@@ -60,7 +59,7 @@ public class MultiPartFormArgumentsProvider implements ArgumentsProvider
 
         // == Arbitrary / Non-Standard Examples ==
         args.add(asArgs("multipart-uppercase", null));
-        args.add(asArgs("multipart-base64", null));  // base64 transfer encoding deprecated
+        args.add(asArgs("multipart-base64", null)); // base64 transfer encoding deprecated
         args.add(asArgs("multipart-base64-long", null)); // base64 transfer encoding deprecated
 
         // == Capture of raw request body contents from Apache HttpClient 4.5.5 ==
@@ -135,7 +134,7 @@ public class MultiPartFormArgumentsProvider implements ArgumentsProvider
         args.add(asArgs("browser-capture-sjis-form-edge", UTF_8));
         args.add(asArgs("browser-capture-sjis-form-msie", UTF_8));
         args.add(asArgs("browser-capture-sjis-jetty-client", UTF_8));
-        
+
         // form parts submitted at Shift_JIS (also contains html encoded character entities)
         // forms that were submitted without {@code _charset_} named part (as specified by the HTML5 spec).
         // This is a flaky and buggy part of the HTML spec in various browsers.

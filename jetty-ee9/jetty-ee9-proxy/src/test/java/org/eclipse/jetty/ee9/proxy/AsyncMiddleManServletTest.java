@@ -13,6 +13,19 @@
 
 package org.eclipse.jetty.ee9.proxy;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -46,13 +59,6 @@ import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
@@ -87,13 +93,6 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class AsyncMiddleManServletTest
@@ -212,7 +211,8 @@ public class AsyncMiddleManServletTest
         startServer(new EchoHttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 String transferEncoding = request.getHeader(HttpHeader.TRANSFER_ENCODING.asString());
                 if (expectChunked)
@@ -226,7 +226,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            protected ContentTransformer newClientRequestContentTransformer(
+                                                                            HttpServletRequest clientRequest, Request proxyRequest)
             {
                 return new GZIPContentTransformer(getHttpClient(), ContentTransformer.IDENTITY);
             }
@@ -265,7 +266,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new GZIPContentTransformer(ContentTransformer.IDENTITY);
             }
@@ -289,7 +291,8 @@ public class AsyncMiddleManServletTest
         startServer(new EchoHttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
                 super.service(request, response);
@@ -298,13 +301,15 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            protected ContentTransformer newClientRequestContentTransformer(
+                                                                            HttpServletRequest clientRequest, Request proxyRequest)
             {
                 return new GZIPContentTransformer(new HrefTransformer.Client());
             }
 
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new GZIPContentTransformer(new HrefTransformer.Server());
             }
@@ -331,7 +336,8 @@ public class AsyncMiddleManServletTest
             {
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
 
-                String sample = "<a href=\"http://webtide.com/\">Webtide</a>\n<a href=\"http://google.com\">Google</a>\n";
+                String sample =
+                    "<a href=\"http://webtide.com/\">Webtide</a>\n<a href=\"http://google.com\">Google</a>\n";
                 byte[] bytes = sample.getBytes(StandardCharsets.UTF_8);
 
                 ServletOutputStream out = response.getOutputStream();
@@ -351,7 +357,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new GZIPContentTransformer(new HeadTransformer());
             }
@@ -385,7 +392,8 @@ public class AsyncMiddleManServletTest
         startServer(new EchoHttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
                 super.service(request, response);
@@ -394,7 +402,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            protected ContentTransformer newClientRequestContentTransformer(
+                                                                            HttpServletRequest clientRequest, Request proxyRequest)
             {
                 return new GZIPContentTransformer(new BufferingContentTransformer());
             }
@@ -439,7 +448,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new GZIPContentTransformer(new BufferingContentTransformer());
             }
@@ -478,13 +488,15 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            protected ContentTransformer newClientRequestContentTransformer(
+                                                                            HttpServletRequest clientRequest, Request proxyRequest)
             {
                 return new GZIPContentTransformer(new DiscardContentTransformer());
             }
 
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new GZIPContentTransformer(new DiscardContentTransformer());
             }
@@ -508,7 +520,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            protected ContentTransformer newClientRequestContentTransformer(
+                                                                            HttpServletRequest clientRequest, Request proxyRequest)
             {
                 return (input, finished, output) ->
                 {
@@ -537,7 +550,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            protected ContentTransformer newClientRequestContentTransformer(
+                                                                            HttpServletRequest clientRequest, Request proxyRequest)
             {
                 return new ContentTransformer()
                 {
@@ -619,7 +633,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new ContentTransformer()
                 {
@@ -690,7 +705,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 ContentTransformer transformer = new BufferingContentTransformer();
                 if (gzipped)
@@ -739,7 +755,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return (input, finished, output) ->
                 {
@@ -855,7 +872,8 @@ public class AsyncMiddleManServletTest
             private int count;
 
             @Override
-            protected void writeProxyResponseContent(ServletOutputStream output, ByteBuffer content) throws IOException
+            protected void writeProxyResponseContent(ServletOutputStream output, ByteBuffer content)
+                throws IOException
             {
                 if (++count < writeCount)
                     super.writeProxyResponseContent(output, content);
@@ -893,7 +911,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new AfterContentTransformer()
                 {
@@ -960,7 +979,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new AfterContentTransformer()
                 {
@@ -1017,7 +1037,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 AfterContentTransformer transformer = new AfterContentTransformer()
                 {
@@ -1129,7 +1150,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            protected ContentTransformer newClientRequestContentTransformer(
+                                                                            HttpServletRequest clientRequest, Request proxyRequest)
             {
                 return new AfterContentTransformer()
                 {
@@ -1200,7 +1222,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new AfterContentTransformer()
                 {
@@ -1268,7 +1291,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new AfterContentTransformer()
                 {
@@ -1322,7 +1346,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new AfterContentTransformer()
                 {
@@ -1353,13 +1378,15 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            protected ContentTransformer newClientRequestContentTransformer(
+                                                                            HttpServletRequest clientRequest, Request proxyRequest)
             {
                 return new DiscardContentTransformer();
             }
 
             @Override
-            protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
+            protected void sendProxyRequest(
+                                            HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
             {
                 proxyRequestLatch.countDown();
                 super.sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
@@ -1400,13 +1427,15 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            protected ContentTransformer newClientRequestContentTransformer(
+                                                                            HttpServletRequest clientRequest, Request proxyRequest)
             {
                 return new BufferingContentTransformer();
             }
 
             @Override
-            protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
+            protected void sendProxyRequest(
+                                            HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
             {
                 proxyRequestLatch.countDown();
                 super.sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
@@ -1447,7 +1476,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            protected ContentTransformer newClientRequestContentTransformer(
+                                                                            HttpServletRequest clientRequest, Request proxyRequest)
             {
                 return new ContentTransformer()
                 {
@@ -1476,7 +1506,8 @@ public class AsyncMiddleManServletTest
             }
 
             @Override
-            protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
+            protected void sendProxyRequest(
+                                            HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
             {
                 proxyRequestLatch.countDown();
                 super.sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
@@ -1526,7 +1557,8 @@ public class AsyncMiddleManServletTest
         AsyncMiddleManServlet proxyServlet = new AsyncMiddleManServlet.Transparent()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return ContentTransformer.IDENTITY;
             }
@@ -1572,7 +1604,8 @@ public class AsyncMiddleManServletTest
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
-            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            protected ContentTransformer newServerResponseContentTransformer(
+                                                                             HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
                 return new AfterContentTransformer()
                 {

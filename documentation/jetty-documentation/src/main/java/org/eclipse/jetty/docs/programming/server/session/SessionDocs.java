@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.net.InetSocketAddress;
 import java.util.Properties;
-
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory;
@@ -58,39 +57,39 @@ public class SessionDocs
 {
     public void cachingSessionDataStore()
     {
-        //tag::cachingsds[]
+        // tag::cachingsds[]
         Server server = new Server();
 
-        //Make a factory for memcached L2 caches for SessionData
+        // Make a factory for memcached L2 caches for SessionData
         MemcachedSessionDataMapFactory mapFactory = new MemcachedSessionDataMapFactory();
-        mapFactory.setExpirySec(0); //items in memcached don't expire
-        mapFactory.setHeartbeats(true); //tell memcached to use heartbeats
-        mapFactory.setAddresses(new InetSocketAddress("localhost", 11211)); //use a local memcached instance
-        mapFactory.setWeights(new int[]{100}); //set the weighting
+        mapFactory.setExpirySec(0); // items in memcached don't expire
+        mapFactory.setHeartbeats(true); // tell memcached to use heartbeats
+        mapFactory.setAddresses(new InetSocketAddress("localhost", 11211)); // use a local memcached instance
+        mapFactory.setWeights(new int[]{100}); // set the weighting
 
-        //Make a FileSessionDataStoreFactory for creating FileSessionDataStores
-        //to persist the session data
+        // Make a FileSessionDataStoreFactory for creating FileSessionDataStores
+        // to persist the session data
         FileSessionDataStoreFactory storeFactory = new FileSessionDataStoreFactory();
         storeFactory.setStoreDir(new File("/tmp/sessions"));
         storeFactory.setGracePeriodSec(3600);
         storeFactory.setSavePeriodSec(0);
 
-        //Make a factory that plugs the L2 cache into the SessionDataStore
+        // Make a factory that plugs the L2 cache into the SessionDataStore
         CachingSessionDataStoreFactory cachingSessionDataStoreFactory = new CachingSessionDataStoreFactory();
         cachingSessionDataStoreFactory.setSessionDataMapFactory(mapFactory);
         cachingSessionDataStoreFactory.setSessionStoreFactory(storeFactory);
 
-        //Register it as a bean so that all SessionManagers will use it
-        //to make FileSessionDataStores that use memcached as an L2 SessionData cache.
+        // Register it as a bean so that all SessionManagers will use it
+        // to make FileSessionDataStores that use memcached as an L2 SessionData cache.
         server.addBean(cachingSessionDataStoreFactory);
-        //end::cachingsds[]
+        // end::cachingsds[]
     }
 
     public void coreSessionHandler()
     {
         try
         {
-            //tag:coresession[]
+            // tag:coresession[]
             Server server = new Server();
             org.eclipse.jetty.session.SessionHandler sessionHandler = new org.eclipse.jetty.session.SessionHandler();
             sessionHandler.setSessionCookie("SIMPLE");
@@ -108,7 +107,7 @@ public class SessionDocs
                     return true;
                 }
             });
-            //end::coresession[]
+            // end::coresession[]
         }
         catch (Exception e)
         {
@@ -118,30 +117,30 @@ public class SessionDocs
 
     public void defaultSessionCache()
     {
-        //tag::defaultsessioncache[]
+        // tag::defaultsessioncache[]
         Server server = new Server();
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        //EVICT_ON_INACTIVE: evict a session after 60sec inactivity
+        // EVICT_ON_INACTIVE: evict a session after 60sec inactivity
         cacheFactory.setEvictionPolicy(60);
-        //Only useful with the EVICT_ON_INACTIVE policy
+        // Only useful with the EVICT_ON_INACTIVE policy
         cacheFactory.setSaveOnInactiveEviction(true);
         cacheFactory.setFlushOnResponseCommit(true);
         cacheFactory.setInvalidateOnShutdown(false);
         cacheFactory.setRemoveUnloadableSessions(true);
         cacheFactory.setSaveOnCreate(true);
 
-        //Add the factory as a bean to the server, now whenever a
-        //SessionManager starts it will consult the bean to create a new DefaultSessionCache
+        // Add the factory as a bean to the server, now whenever a
+        // SessionManager starts it will consult the bean to create a new DefaultSessionCache
         server.addBean(cacheFactory);
-        //end::defaultsessioncache[]
+        // end::defaultsessioncache[]
     }
 
     public void defaultSessionIdManagerWithHouseKeeper()
     {
         try
         {
-            //tag::housekeeper[]
+            // tag::housekeeper[]
             Server server = new Server();
             DefaultSessionIdManager idMgr = new DefaultSessionIdManager(server);
             idMgr.setWorkerName("server7");
@@ -149,10 +148,10 @@ public class SessionDocs
 
             HouseKeeper houseKeeper = new HouseKeeper();
             houseKeeper.setSessionIdManager(idMgr);
-            //set the frequency of scavenge cycles
+            // set the frequency of scavenge cycles
             houseKeeper.setIntervalSec(600L);
             idMgr.setSessionHouseKeeper(houseKeeper);
-            //end::housekeeper[]
+            // end::housekeeper[]
         }
         catch (Exception e)
         {
@@ -162,13 +161,13 @@ public class SessionDocs
 
     public void fileSessionDataStore()
     {
-        //tag::filesessiondatastore[]
+        // tag::filesessiondatastore[]
 
-        //create a context
+        // create a context
         WebAppContext app1 = new WebAppContext();
         app1.setContextPath("/app1");
 
-        //First, we create a DefaultSessionCache
+        // First, we create a DefaultSessionCache
         DefaultSessionCache cache = new DefaultSessionCache(app1.getSessionHandler());
         cache.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cache.setFlushOnResponseCommit(true);
@@ -176,118 +175,118 @@ public class SessionDocs
         cache.setRemoveUnloadableSessions(true);
         cache.setSaveOnCreate(true);
 
-        //Now, we configure a FileSessionDataStore
+        // Now, we configure a FileSessionDataStore
         FileSessionDataStore store = new FileSessionDataStore();
         store.setStoreDir(new File("/tmp/sessions"));
         store.setGracePeriodSec(3600);
         store.setSavePeriodSec(0);
 
-        //Tell the cache to use the store
+        // Tell the cache to use the store
         cache.setSessionDataStore(store);
 
-        //Tell the context to use the cache/store combination
+        // Tell the context to use the cache/store combination
         app1.getSessionHandler().setSessionCache(cache);
 
-        //end::filesessiondatastore[]
+        // end::filesessiondatastore[]
     }
 
     public void fileSessionDataStoreFactory()
     {
-        //tag::filesessiondatastorefactory[]
+        // tag::filesessiondatastorefactory[]
         Server server = new Server();
 
-        //First lets configure a DefaultSessionCacheFactory
+        // First lets configure a DefaultSessionCacheFactory
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        //NEVER_EVICT
+        // NEVER_EVICT
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cacheFactory.setFlushOnResponseCommit(true);
         cacheFactory.setInvalidateOnShutdown(false);
         cacheFactory.setRemoveUnloadableSessions(true);
         cacheFactory.setSaveOnCreate(true);
 
-        //Add the factory as a bean to the server, now whenever a
-        //SessionManager starts it will consult the bean to create a new DefaultSessionCache
+        // Add the factory as a bean to the server, now whenever a
+        // SessionManager starts it will consult the bean to create a new DefaultSessionCache
         server.addBean(cacheFactory);
 
-        //Now, lets configure a FileSessionDataStoreFactory
+        // Now, lets configure a FileSessionDataStoreFactory
         FileSessionDataStoreFactory storeFactory = new FileSessionDataStoreFactory();
         storeFactory.setStoreDir(new File("/tmp/sessions"));
         storeFactory.setGracePeriodSec(3600);
         storeFactory.setSavePeriodSec(0);
 
-        //Add the factory as a bean on the server, now whenever a
-        //SessionManager starts, it will consult the bean to create a new FileSessionDataStore
-        //for use by the DefaultSessionCache
+        // Add the factory as a bean on the server, now whenever a
+        // SessionManager starts, it will consult the bean to create a new FileSessionDataStore
+        // for use by the DefaultSessionCache
         server.addBean(storeFactory);
-        //end::filesessiondatastorefactory[]
+        // end::filesessiondatastorefactory[]
     }
 
     public void jdbcSessionDataStore()
     {
-        //tag::dbaDatasource[]
+        // tag::dbaDatasource[]
         DatabaseAdaptor datasourceAdaptor = new DatabaseAdaptor();
         datasourceAdaptor.setDatasourceName("/jdbc/myDS");
-        //end::dbaDatasource[]
+        // end::dbaDatasource[]
 
-        //tag::dbaDriver[]
+        // tag::dbaDriver[]
         DatabaseAdaptor driverAdaptor = new DatabaseAdaptor();
         driverAdaptor.setDriverInfo("com.mysql.jdbc.Driver", "jdbc:mysql://127.0.0.1:3306/sessions?user=sessionsadmin");
-        //end::dbaDriver[]
+        // end::dbaDriver[]
     }
 
     public void minimumDefaultSessionIdManager()
     {
-        //tag::default[]
+        // tag::default[]
         Server server = new Server();
         DefaultSessionIdManager idMgr = new DefaultSessionIdManager(server);
-        //you must set the workerName unless you set the env viable JETTY_WORKER_NAME
+        // you must set the workerName unless you set the env viable JETTY_WORKER_NAME
         idMgr.setWorkerName("server3");
         server.addBean(idMgr, true);
-        //end::default[]
+        // end::default[]
     }
 
     public void mixedSessionCache()
     {
-        //tag::mixedsessioncache[]
+        // tag::mixedsessioncache[]
         Server server = new Server();
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        //NEVER_EVICT
+        // NEVER_EVICT
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cacheFactory.setFlushOnResponseCommit(true);
         cacheFactory.setInvalidateOnShutdown(false);
         cacheFactory.setRemoveUnloadableSessions(true);
         cacheFactory.setSaveOnCreate(true);
 
-        //Add the factory as a bean to the server, now whenever a
-        //SessionManager starts it will consult the bean to create a new DefaultSessionCache
+        // Add the factory as a bean to the server, now whenever a
+        // SessionManager starts it will consult the bean to create a new DefaultSessionCache
         server.addBean(cacheFactory);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        //Add a webapp that will use a DefaultSessionCache via the DefaultSessionCacheFactory
+        // Add a webapp that will use a DefaultSessionCache via the DefaultSessionCacheFactory
         WebAppContext app1 = new WebAppContext();
         app1.setContextPath("/app1");
         contexts.addHandler(app1);
 
-        //Add a webapp that uses an explicit NullSessionCache instead
+        // Add a webapp that uses an explicit NullSessionCache instead
         WebAppContext app2 = new WebAppContext();
         app2.setContextPath("/app2");
         NullSessionCache nullSessionCache = new NullSessionCache(app2.getSessionHandler());
         nullSessionCache.setFlushOnResponseCommit(true);
         nullSessionCache.setRemoveUnloadableSessions(true);
         nullSessionCache.setSaveOnCreate(true);
-        //If we pass an existing SessionCache instance to the SessionHandler, it must be
-        //fully configured: this means we must also provide SessionDataStore
+        // If we pass an existing SessionCache instance to the SessionHandler, it must be
+        // fully configured: this means we must also provide SessionDataStore
         nullSessionCache.setSessionDataStore(new NullSessionDataStore());
         app2.getSessionHandler().setSessionCache(nullSessionCache);
-        //end::mixedsessioncache[]
+        // end::mixedsessioncache[]
     }
 
     public void mongoSessionDataStore()
     {
-        //tag::mongosdfactory[]
+        // tag::mongosdfactory[]
         Server server = new Server();
 
         MongoSessionDataStoreFactory mongoSessionDataStoreFactory = new MongoSessionDataStoreFactory();
@@ -301,14 +300,14 @@ public class SessionDocs
         // or alternatively set the host and port.
         mongoSessionDataStoreFactory.setHost("localhost");
         mongoSessionDataStoreFactory.setPort(27017);
-        //end::mongosdfactory[]
+        // end::mongosdfactory[]
     }
 
     public void infinispanEmbedded()
     {
         try
         {
-            //tag::infinispanembed[]
+            // tag::infinispanembed[]
             /* Create a core SessionHandler
              * Alternatively in a Servlet Environment do:
              * WebAppContext webapp = new WebAppContext();
@@ -316,25 +315,27 @@ public class SessionDocs
              */
             SessionHandler sessionHandler = new SessionHandler();
 
-            //Use an Infinispan local cache configured via an infinispan xml file
+            // Use an Infinispan local cache configured via an infinispan xml file
             DefaultCacheManager defaultCacheManager = new DefaultCacheManager("path/to/infinispan.xml");
             Cache<String, InfinispanSessionData> localCache = defaultCacheManager.getCache();
 
-            //Configure the Jetty session datastore with Infinispan
+            // Configure the Jetty session datastore with Infinispan
             InfinispanSessionDataStore infinispanSessionDataStore = new InfinispanSessionDataStore();
             infinispanSessionDataStore.setCache(localCache);
-            infinispanSessionDataStore.setSerialization(false); //local cache does not serialize session data
-            infinispanSessionDataStore.setInfinispanIdleTimeoutSec(0); //do not use infinispan auto delete of unused sessions
-            infinispanSessionDataStore.setQueryManager(new org.eclipse.jetty.session.infinispan.EmbeddedQueryManager(localCache)); //enable Jetty session scavenging
+            infinispanSessionDataStore.setSerialization(false); // local cache does not serialize session data
+            infinispanSessionDataStore.setInfinispanIdleTimeoutSec(
+                0); // do not use infinispan auto delete of unused sessions
+            infinispanSessionDataStore.setQueryManager(new org.eclipse.jetty.session.infinispan.EmbeddedQueryManager(
+                localCache)); // enable Jetty session scavenging
             infinispanSessionDataStore.setGracePeriodSec(3600);
             infinispanSessionDataStore.setSavePeriodSec(0);
 
-            //Configure a SessionHandler to use the local Infinispan cache as a store of SessionData
+            // Configure a SessionHandler to use the local Infinispan cache as a store of SessionData
             DefaultSessionCache sessionCache = new DefaultSessionCache(sessionHandler);
             sessionCache.setSessionDataStore(infinispanSessionDataStore);
             sessionHandler.setSessionCache(sessionCache);
 
-            //end::infinispanembed[]
+            // end::infinispanembed[]
         }
         catch (Exception e)
         {
@@ -346,7 +347,7 @@ public class SessionDocs
     {
         try
         {
-            //tag::infinispanremote[]
+            // tag::infinispanremote[]
             /* Create a core SessionHandler
              * Alternatively in a Servlet Environment do:
              * WebAppContext webapp = new WebAppContext();
@@ -354,30 +355,35 @@ public class SessionDocs
              */
             SessionHandler sessionHandler = new SessionHandler();
 
-            //Configure Infinispan to provide a remote cache called "JettySessions"
+            // Configure Infinispan to provide a remote cache called "JettySessions"
             Properties hotrodProperties = new Properties();
             hotrodProperties.load(new FileInputStream("/path/to/hotrod-client.properties"));
-            org.infinispan.client.hotrod.configuration.ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+            org.infinispan.client.hotrod.configuration.ConfigurationBuilder configurationBuilder =
+                new ConfigurationBuilder();
             configurationBuilder.withProperties(hotrodProperties);
             configurationBuilder.marshaller(new ProtoStreamMarshaller());
-            configurationBuilder.addContextInitializer(new org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer());
-            org.infinispan.client.hotrod.RemoteCacheManager remoteCacheManager = new RemoteCacheManager(configurationBuilder.build());
+            configurationBuilder.addContextInitializer(
+                new org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer());
+            org.infinispan.client.hotrod.RemoteCacheManager remoteCacheManager =
+                new RemoteCacheManager(configurationBuilder.build());
             RemoteCache<String, InfinispanSessionData> remoteCache = remoteCacheManager.getCache("JettySessions");
 
-            //Configure the Jetty session datastore with Infinispan
+            // Configure the Jetty session datastore with Infinispan
             InfinispanSessionDataStore infinispanSessionDataStore = new InfinispanSessionDataStore();
             infinispanSessionDataStore.setCache(remoteCache);
-            infinispanSessionDataStore.setSerialization(true); //remote cache serializes session data
-            infinispanSessionDataStore.setInfinispanIdleTimeoutSec(0); //do not use infinispan auto delete of unused sessions
-            infinispanSessionDataStore.setQueryManager(new org.eclipse.jetty.session.infinispan.RemoteQueryManager(remoteCache)); //enable Jetty session scavenging
+            infinispanSessionDataStore.setSerialization(true); // remote cache serializes session data
+            infinispanSessionDataStore.setInfinispanIdleTimeoutSec(
+                0); // do not use infinispan auto delete of unused sessions
+            infinispanSessionDataStore.setQueryManager(new org.eclipse.jetty.session.infinispan.RemoteQueryManager(
+                remoteCache)); // enable Jetty session scavenging
             infinispanSessionDataStore.setGracePeriodSec(3600);
             infinispanSessionDataStore.setSavePeriodSec(0);
 
-            //Configure a SessionHandler to use a remote Infinispan cache as a store of SessionData
+            // Configure a SessionHandler to use a remote Infinispan cache as a store of SessionData
             DefaultSessionCache sessionCache = new DefaultSessionCache(sessionHandler);
             sessionCache.setSessionDataStore(infinispanSessionDataStore);
             sessionHandler.setSessionCache(sessionCache);
-            //end::infinispanremote[]
+            // end::infinispanremote[]
         }
         catch (Exception e)
         {
@@ -389,28 +395,28 @@ public class SessionDocs
     {
         try
         {
-            //tag::gcloudsessiondatastorefactory[]
+            // tag::gcloudsessiondatastorefactory[]
             Server server = new Server();
 
-            //Ensure there is a SessionCacheFactory
+            // Ensure there is a SessionCacheFactory
             DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
 
-            //Add the factory as a bean to the server, now whenever a
-            //SessionManager starts it will consult the bean to create a new DefaultSessionCache
+            // Add the factory as a bean to the server, now whenever a
+            // SessionManager starts it will consult the bean to create a new DefaultSessionCache
             server.addBean(cacheFactory);
 
-            //Configure the GCloudSessionDataStoreFactory
+            // Configure the GCloudSessionDataStoreFactory
             GCloudSessionDataStoreFactory storeFactory = new GCloudSessionDataStoreFactory();
             storeFactory.setGracePeriodSec(3600);
             storeFactory.setSavePeriodSec(0);
-            storeFactory.setBackoffMs(2000); //increase the time between retries of failed writes
-            storeFactory.setMaxRetries(10); //increase the number of retries of failed writes
+            storeFactory.setBackoffMs(2000); // increase the time between retries of failed writes
+            storeFactory.setMaxRetries(10); // increase the number of retries of failed writes
 
-            //Add the factory as a bean on the server, now whenever a
-            //SessionManager starts, it will consult the bean to create a new GCloudSessionDataStore
-            //for use by the DefaultSessionCache
+            // Add the factory as a bean on the server, now whenever a
+            // SessionManager starts, it will consult the bean to create a new GCloudSessionDataStore
+            // for use by the DefaultSessionCache
             server.addBean(storeFactory);
-            //end::gcloudsessiondatastorefactory[]
+            // end::gcloudsessiondatastorefactory[]
         }
         catch (Exception e)
         {
@@ -420,46 +426,46 @@ public class SessionDocs
 
     public void nullSessionCache()
     {
-        //tag::nullsessioncache[]
+        // tag::nullsessioncache[]
         Server server = new Server();
         NullSessionCacheFactory cacheFactory = new NullSessionCacheFactory();
         cacheFactory.setFlushOnResponseCommit(true);
         cacheFactory.setRemoveUnloadableSessions(true);
         cacheFactory.setSaveOnCreate(true);
 
-        //Add the factory as a bean to the server, now whenever a
-        //SessionManager starts it will consult the bean to create a new NullSessionCache
+        // Add the factory as a bean to the server, now whenever a
+        // SessionManager starts it will consult the bean to create a new NullSessionCache
         server.addBean(cacheFactory);
-        //end::nullsessioncache[]
+        // end::nullsessioncache[]
     }
 
     public void servletContextWithSessionHandler()
     {
-        //tag:schsession[]
+        // tag:schsession[]
         Server server = new Server();
 
         ServletContextHandler context = new ServletContextHandler("/foo", ServletContextHandler.SESSIONS);
-        //make idle sessions valid for only 5mins
+        // make idle sessions valid for only 5mins
         context.getSessionHandler().setMaxInactiveInterval(300);
-        //turn off use of cookies
+        // turn off use of cookies
         context.getSessionHandler().setUsingCookies(false);
 
         server.setHandler(context);
-        //end::schsession[]
+        // end::schsession[]
     }
 
     public void webAppWithSessionHandler()
     {
-        //tag:wacsession[]
+        // tag:wacsession[]
         Server server = new Server();
 
         WebAppContext context = new WebAppContext();
-        //make idle sessions valid for only 5mins
+        // make idle sessions valid for only 5mins
         context.getSessionHandler().setMaxInactiveInterval(300);
-        //turn off use of cookies
+        // turn off use of cookies
         context.getSessionHandler().setUsingCookies(false);
 
         server.setHandler(context);
-        //end::wacsession[]
+        // end::wacsession[]
     }
 }

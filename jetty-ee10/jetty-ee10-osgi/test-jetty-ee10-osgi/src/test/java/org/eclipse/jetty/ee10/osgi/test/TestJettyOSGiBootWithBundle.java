@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.ee10.osgi.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
@@ -34,11 +38,6 @@ import org.ops4j.pax.tinybundles.core.TinyBundle;
 import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * TestJettyOSGiBootWithBundle
@@ -59,28 +58,52 @@ public class TestJettyOSGiBootWithBundle
     public static Option[] configure() throws IOException
     {
         ArrayList<Option> options = new ArrayList<>();
-        
+
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
         options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(configureJettyHomeAndPort());
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
-            "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-            "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+        options.add(CoreOptions.systemPackages(
+            "com.sun.org.apache.xalan.internal.res",
+            "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xpath.internal",
+            "com.sun.org.apache.xpath.internal.jaxp",
+            "com.sun.org.apache.xpath.internal.objects"));
         TestOSGiUtil.coreJettyDependencies(options);
         TestOSGiUtil.coreJspDependencies(options);
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
-        //back down version of bnd used here because tinybundles expects only this version
-        options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").version("3.5.0").start());
-        options.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-java-client")
+            .versionAsInProject()
+            .start());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-client")
+            .versionAsInProject()
+            .start());
+        // back down version of bnd used here because tinybundles expects only this version
+        options.add(mavenBundle()
+            .groupId("biz.aQute.bnd")
+            .artifactId("biz.aQute.bndlib")
+            .version("3.5.0")
+            .start());
+        options.add(mavenBundle()
+            .groupId("org.ops4j.pax.tinybundles")
+            .artifactId("tinybundles")
+            .versionAsInProject()
+            .start());
         TinyBundle bundle = TinyBundles.bundle();
         bundle.add(SomeCustomBean.class);
         bundle.set(Constants.BUNDLE_SYMBOLICNAME, TEST_JETTY_HOME_BUNDLE);
         File etcFolder = new File("src/test/config/etc");
-        bundle.add("jettyhome/etc/jetty-http-boot-with-bundle.xml", new FileInputStream(new File(etcFolder, "jetty-http-boot-with-bundle.xml")));
-        bundle.add("jettyhome/etc/jetty-with-custom-class.xml", new FileInputStream(new File(etcFolder, "jetty-with-custom-class.xml")));
+        bundle.add(
+            "jettyhome/etc/jetty-http-boot-with-bundle.xml",
+            new FileInputStream(new File(etcFolder, "jetty-http-boot-with-bundle.xml")));
+        bundle.add(
+            "jettyhome/etc/jetty-with-custom-class.xml",
+            new FileInputStream(new File(etcFolder, "jetty-with-custom-class.xml")));
         options.add(CoreOptions.streamBundle(bundle.build()).startLevel(1));
         options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[0]);
@@ -89,9 +112,11 @@ public class TestJettyOSGiBootWithBundle
     public static List<Option> configureJettyHomeAndPort()
     {
         List<Option> options = new ArrayList<>();
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value("etc/jetty-with-custom-class.xml,etc/jetty-http-boot-with-bundle.xml"));
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS)
+            .value("etc/jetty-with-custom-class.xml,etc/jetty-http-boot-with-bundle.xml"));
         options.add(systemProperty("jetty.http.port").value("0"));
-        // TODO: FIXME: options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
+        // TODO: FIXME:
+        // options.add(systemProperty("jetty.ssl.port").value(String.valueOf(TestOSGiUtil.DEFAULT_SSL_PORT)));
         options.add(systemProperty("jetty.home.bundle").value(TEST_JETTY_HOME_BUNDLE));
         return options;
     }
@@ -101,7 +126,7 @@ public class TestJettyOSGiBootWithBundle
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
-        
+
         // now test the context
         HttpClient client = new HttpClient();
         try

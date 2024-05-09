@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -38,10 +41,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StreamCountTest extends AbstractTest
 {
@@ -71,7 +70,8 @@ public class StreamCountTest extends AbstractTest
                         data.release();
                         if (data.frame().isEndStream())
                         {
-                            MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            MetaData.Response metaData =
+                                new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), Callback.NOOP);
                         }
                     }
@@ -110,8 +110,7 @@ public class StreamCountTest extends AbstractTest
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
         session.newStream(frame2, streamPromise2, null);
 
-        assertThrows(ExecutionException.class,
-            () -> streamPromise2.get(5, TimeUnit.SECONDS));
+        assertThrows(ExecutionException.class, () -> streamPromise2.get(5, TimeUnit.SECONDS));
 
         stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
@@ -137,7 +136,8 @@ public class StreamCountTest extends AbstractTest
                         data.release();
                         if (data.frame().isEndStream())
                         {
-                            MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            MetaData.Response metaData =
+                                new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), Callback.NOOP);
                         }
                     }
@@ -204,7 +204,11 @@ public class StreamCountTest extends AbstractTest
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.control(accumulator, frame3);
         generator.data(accumulator, data3, data3.remaining());
-        ((HTTP2Session)session).getEndPoint().write(Callback.from(accumulator::release), accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
+        ((HTTP2Session)session)
+            .getEndPoint()
+            .write(
+                Callback.from(accumulator::release),
+                accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
         // Expect 2 RST_STREAM frames.
         assertTrue(sessionResetLatch.await(5, TimeUnit.SECONDS));
 

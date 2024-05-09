@@ -18,7 +18,6 @@ import java.lang.reflect.Modifier;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import org.eclipse.jetty.util.ajax.JSON.Output;
 
 /**
@@ -69,10 +68,7 @@ public class JSONObjectConvertor implements JSON.Convertor
 
             for (Method m : c.getMethods())
             {
-                if (!Modifier.isStatic(m.getModifiers()) &&
-                    m.getParameterCount() == 0 &&
-                    m.getReturnType() != null &&
-                    m.getDeclaringClass() != Object.class)
+                if (!Modifier.isStatic(m.getModifiers()) && m.getParameterCount() == 0 && m.getReturnType() != null && m.getDeclaringClass() != Object.class)
                 {
                     String name = m.getName();
                     if (name.startsWith("is"))

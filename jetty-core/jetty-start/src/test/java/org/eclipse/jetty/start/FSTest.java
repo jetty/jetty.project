@@ -13,22 +13,21 @@
 
 package org.eclipse.jetty.start;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class FSTest
@@ -62,7 +61,9 @@ public class FSTest
         Path bad = Path.of("/tmp/evil.txt");
         Files.deleteIfExists(bad);
         assertThrows(IOException.class, () -> FS.extractZip(archive, dest));
-        assertFalse(Files.exists(bad), "The escaper prevention didn't work, you should not have a /tmp/evil.txt file, but you do.");
+        assertFalse(
+            Files.exists(bad),
+            "The escaper prevention didn't work, you should not have a /tmp/evil.txt file, but you do.");
     }
 
     /**

@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.test.openid;
 
-import java.io.IOException;
-
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 public class ErrorPage extends HttpServlet
 {

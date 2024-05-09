@@ -13,10 +13,17 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -30,14 +37,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ResponseTest
 {
@@ -74,7 +73,8 @@ public class ResponseTest
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 GET /path HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -96,8 +96,10 @@ public class ResponseTest
 
                 response.getHeaders().add("Temp", "field");
                 response.getHeaders().add("Test", "before reset");
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().remove(HttpHeader.SERVER));
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().remove(HttpHeader.DATE));
+                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders()
+                    .remove(HttpHeader.SERVER));
+                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders()
+                    .remove(HttpHeader.DATE));
                 response.getHeaders().remove("Temp");
 
                 response.getHeaders().add("Temp", "field");
@@ -110,14 +112,17 @@ public class ResponseTest
                 assertThat(iterator.next().getName(), is("Temp"));
                 iterator.remove();
                 assertFalse(response.getHeaders().contains("Temp"));
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().remove(HttpHeader.SERVER));
+                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders()
+                    .remove(HttpHeader.SERVER));
                 assertFalse(iterator.hasNext());
 
                 ListIterator<HttpField> listIterator = response.getHeaders().listIterator();
                 assertThat(listIterator.next().getHeader(), is(HttpHeader.SERVER));
                 assertThrows(UnsupportedOperationException.class, listIterator::remove);
                 assertThat(listIterator.next().getHeader(), is(HttpHeader.DATE));
-                assertThrows(UnsupportedOperationException.class, () -> listIterator.set(new HttpField("Something", "else")));
+                assertThrows(
+                    UnsupportedOperationException.class,
+                    () -> listIterator.set(new HttpField("Something", "else")));
                 listIterator.set(new HttpField(HttpHeader.DATE, "1970-01-01"));
                 assertThat(listIterator.previous().getHeader(), is(HttpHeader.DATE));
                 assertThrows(UnsupportedOperationException.class, listIterator::remove);
@@ -142,16 +147,19 @@ public class ResponseTest
                 response.getHeaders().add("Test", "after reset");
 
                 response.getHeaders().putDate("Date", 1L);
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
+                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders()
+                    .put(HttpHeader.SERVER, (String)null));
                 response.getHeaders().put(HttpHeader.SERVER, "jettyrocks");
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
+                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders()
+                    .put(HttpHeader.SERVER, (String)null));
                 callback.succeeded();
                 return true;
             }
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 GET /path HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -166,8 +174,10 @@ public class ResponseTest
     @Test
     public void testRedirectGET() throws Exception
     {
-        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
-            .getHttpConfiguration().setRelativeRedirectAllowed(false);
+        server.getConnectors()[0]
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setRelativeRedirectAllowed(false);
         server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -179,7 +189,8 @@ public class ResponseTest
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 GET /path HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -188,7 +199,8 @@ public class ResponseTest
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
 
-        request = """
+        request =
+            """
                 GET /path HTTP/1.1\r
                 Host: hostname\r
                 Connection: close\r
@@ -202,8 +214,10 @@ public class ResponseTest
     @Test
     public void testEncodedRedirectGET() throws Exception
     {
-        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
-                .getHttpConfiguration().setRelativeRedirectAllowed(false);
+        server.getConnectors()[0]
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setRelativeRedirectAllowed(false);
         server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -215,7 +229,8 @@ public class ResponseTest
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 GET /p%61th/ HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -228,8 +243,10 @@ public class ResponseTest
     @Test
     public void testRelativeRedirectGET() throws Exception
     {
-        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
-            .getHttpConfiguration().setRelativeRedirectAllowed(true);
+        server.getConnectors()[0]
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setRelativeRedirectAllowed(true);
         server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -241,7 +258,8 @@ public class ResponseTest
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 GET /path HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -250,7 +268,8 @@ public class ResponseTest
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
 
-        request = """
+        request =
+            """
                 GET /path HTTP/1.1\r
                 Host: hostname\r
                 Connection: close\r
@@ -264,8 +283,10 @@ public class ResponseTest
     @Test
     public void testRequestRelativeRedirectGET() throws Exception
     {
-        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
-            .getHttpConfiguration().setRelativeRedirectAllowed(true);
+        server.getConnectors()[0]
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setRelativeRedirectAllowed(true);
         server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -277,7 +298,8 @@ public class ResponseTest
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 GET /path HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -286,7 +308,8 @@ public class ResponseTest
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
 
-        request = """
+        request =
+            """
                 GET /path/ HTTP/1.1\r
                 Host: hostname\r
                 Connection: close\r
@@ -296,7 +319,8 @@ public class ResponseTest
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/path/somewhere/else"));
 
-        request = """
+        request =
+            """
                 GET /path/index.html HTTP/1.1\r
                 Host: hostname\r
                 Connection: close\r
@@ -306,7 +330,8 @@ public class ResponseTest
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/path/somewhere/else"));
 
-        request = """
+        request =
+            """
                 GET /path/to/ HTTP/1.1\r
                 Host: hostname\r
                 Connection: close\r
@@ -320,8 +345,10 @@ public class ResponseTest
     @Test
     public void testRedirectPOST() throws Exception
     {
-        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
-            .getHttpConfiguration().setRelativeRedirectAllowed(false);
+        server.getConnectors()[0]
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setRelativeRedirectAllowed(false);
         server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -333,7 +360,8 @@ public class ResponseTest
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 POST /path HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -342,7 +370,8 @@ public class ResponseTest
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
 
-        request = """
+        request =
+            """
                 POST /path HTTP/1.1\r
                 Host: hostname\r
                 Connection: close\r
@@ -356,8 +385,10 @@ public class ResponseTest
     @Test
     public void testRelativeRedirectPOST() throws Exception
     {
-        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
-            .getHttpConfiguration().setRelativeRedirectAllowed(true);
+        server.getConnectors()[0]
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setRelativeRedirectAllowed(true);
         server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -369,7 +400,8 @@ public class ResponseTest
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 POST /path HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -378,7 +410,8 @@ public class ResponseTest
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
 
-        request = """
+        request =
+            """
                 POST /path HTTP/1.1\r
                 Host: hostname\r
                 Connection: close\r
@@ -392,8 +425,10 @@ public class ResponseTest
     @Test
     public void testXPoweredByDefault() throws Exception
     {
-        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
-            .getHttpConfiguration().setSendXPoweredBy(true);
+        server.getConnectors()[0]
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendXPoweredBy(true);
         server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -405,7 +440,8 @@ public class ResponseTest
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 GET /test HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -414,8 +450,9 @@ public class ResponseTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // ensure there are only 1 entry for each of these headers
-        List<HttpHeader> expectedHeaders = List.of(HttpHeader.SERVER, HttpHeader.X_POWERED_BY, HttpHeader.DATE, HttpHeader.CONTENT_LENGTH);
-        for (HttpHeader expectedHeader: expectedHeaders)
+        List<HttpHeader> expectedHeaders =
+            List.of(HttpHeader.SERVER, HttpHeader.X_POWERED_BY, HttpHeader.DATE, HttpHeader.CONTENT_LENGTH);
+        for (HttpHeader expectedHeader : expectedHeaders)
         {
             List<String> actualHeader = response.getValuesList(expectedHeader);
             assertThat(expectedHeader + " exists", actualHeader, is(notNullValue()));
@@ -428,8 +465,10 @@ public class ResponseTest
     @Test
     public void testXPoweredByOverride() throws Exception
     {
-        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
-            .getHttpConfiguration().setSendXPoweredBy(true);
+        server.getConnectors()[0]
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendXPoweredBy(true);
         server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -443,7 +482,8 @@ public class ResponseTest
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 GET /test HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -452,8 +492,9 @@ public class ResponseTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // ensure there are only 1 entry for each of these headers
-        List<HttpHeader> expectedHeaders = List.of(HttpHeader.SERVER, HttpHeader.X_POWERED_BY, HttpHeader.DATE, HttpHeader.CONTENT_LENGTH);
-        for (HttpHeader expectedHeader: expectedHeaders)
+        List<HttpHeader> expectedHeaders =
+            List.of(HttpHeader.SERVER, HttpHeader.X_POWERED_BY, HttpHeader.DATE, HttpHeader.CONTENT_LENGTH);
+        for (HttpHeader expectedHeader : expectedHeaders)
         {
             List<String> actualHeader = response.getValuesList(expectedHeader);
             assertThat(expectedHeader + " exists", actualHeader, is(notNullValue()));
@@ -490,7 +531,9 @@ public class ResponseTest
                                     .domain("customized")
                                     .sameSite(HttpCookie.SameSite.LAX)
                                     .build(),
-                                request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance()));
+                                request.getConnectionMetaData()
+                                    .getHttpConfiguration()
+                                    .getResponseCookieCompliance()));
                         }
                     }
                 });
@@ -503,15 +546,18 @@ public class ResponseTest
         });
         server.start();
 
-        String request = """
+        String request =
+            """
                 POST /path HTTP/1.0\r
                 Host: hostname\r
                 \r
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertThat(response.getValuesList(HttpHeader.SET_COOKIE), containsInAnyOrder(
-            "name=test1; Domain=customized; SameSite=Lax",
-            "other=test2; Domain=customized; SameSite=Lax; Attr=x"));
+        assertThat(
+            response.getValuesList(HttpHeader.SET_COOKIE),
+            containsInAnyOrder(
+                "name=test1; Domain=customized; SameSite=Lax",
+                "other=test2; Domain=customized; SameSite=Lax; Attr=x"));
     }
 }

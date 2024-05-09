@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
-
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
@@ -29,11 +33,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class ModuleGraphWriterTest
@@ -88,8 +87,10 @@ public class ModuleGraphWriterTest
         {
             Process p = Runtime.getRuntime().exec(args);
 
-            try (BufferedReader bri = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
-                 BufferedReader bre = new BufferedReader(new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8)))
+            try (BufferedReader bri =
+                new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
+                 BufferedReader bre =
+                     new BufferedReader(new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8)))
             {
                 String line;
                 while ((line = bri.readLine()) != null)

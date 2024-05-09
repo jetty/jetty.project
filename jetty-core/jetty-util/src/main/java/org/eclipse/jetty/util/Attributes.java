@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.util.component.Dumpable;
 
 /**
@@ -68,7 +67,7 @@ public interface Attributes
         return new AbstractMap<>()
         {
             private final Set<String> _attributeNameSet = getAttributeNameSet();
-            private final AbstractSet<Entry<String, Object>> _entrySet  = new AbstractSet<>()
+            private final AbstractSet<Entry<String, Object>> _entrySet = new AbstractSet<>()
             {
                 @Override
                 public Iterator<Entry<String, Object>> iterator()
@@ -166,7 +165,6 @@ public interface Attributes
         }
         return false;
     }
-
 
     /** Unwrap attributes to a specific attribute  {@link Wrapper}.
      * @param attributes The attributes to unwrap, which may be a {@link Wrapper}
@@ -447,7 +445,8 @@ public interface Attributes
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            Dumpable.dumpObjects(out, indent, String.format("%s@%x", this.getClass().getSimpleName(), hashCode()), map());
+            Dumpable.dumpObjects(
+                out, indent, String.format("%s@%x", this.getClass().getSimpleName(), hashCode()), map());
         }
 
         @Override

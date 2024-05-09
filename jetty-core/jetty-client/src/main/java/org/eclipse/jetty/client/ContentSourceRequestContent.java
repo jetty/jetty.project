@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.util.Objects;
-
 import org.eclipse.jetty.io.Content;
 
 /**

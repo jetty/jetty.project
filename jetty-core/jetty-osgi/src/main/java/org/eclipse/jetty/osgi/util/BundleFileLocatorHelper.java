@@ -16,7 +16,6 @@ package org.eclipse.jetty.osgi.util;
 import java.io.File;
 import java.net.URL;
 import java.util.Enumeration;
-
 import org.osgi.framework.Bundle;
 
 /**

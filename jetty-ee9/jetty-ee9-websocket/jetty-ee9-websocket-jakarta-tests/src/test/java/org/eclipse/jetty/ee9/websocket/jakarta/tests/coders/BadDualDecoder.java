@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
+import jakarta.websocket.DecodeException;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.EndpointConfig;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.Decoder;
-import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.util.BufferUtil;
 
 /**

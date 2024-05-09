@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -63,7 +62,8 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
     /**
      * The name of the request attribute used to control the max aggregation size of a particular request.
      */
-    public static final String MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".max-aggregation-size";
+    public static final String MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME =
+        BufferedResponseHandler.class.getName() + ".max-aggregation-size";
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
@@ -84,9 +84,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         // are also check during response generation, once the type is known.
         for (String type : MimeTypes.DEFAULTS.getMimeMap().values())
         {
-            if (type.startsWith("image/") ||
-                type.startsWith("audio/") ||
-                type.startsWith("video/"))
+            if (type.startsWith("image/") || type.startsWith("audio/") || type.startsWith("video/"))
                 _mimeTypes.exclude(type);
         }
 
@@ -141,7 +139,9 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
             LOG.debug("{} doHandle {} in {}", this, request, request.getContext());
 
         // If the mime type is known from the path then apply mime type filtering.
-        String mimeType = request.getContext().getMimeTypes().getMimeByExtension(request.getHttpURI().getCanonicalPath());
+        String mimeType = request.getContext()
+            .getMimeTypes()
+            .getMimeByExtension(request.getHttpURI().getCanonicalPath());
         if (mimeType != null)
         {
             mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
@@ -201,7 +201,8 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
             Object attribute = request.getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
             int bufferSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputBufferSize();
             attribute = request.getAttribute(BufferedResponseHandler.MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME);
-            int maxAggregationSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputAggregationSize();
+            int maxAggregationSize =
+                attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputAggregationSize();
             boolean direct = httpConfiguration.isUseOutputDirectByteBuffers();
             return Content.Sink.asBuffered(getWrapped(), bufferPool, direct, maxAggregationSize, bufferSize);
         }

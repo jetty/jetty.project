@@ -13,9 +13,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
@@ -24,11 +28,6 @@ import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RestartTest
 {
@@ -44,8 +43,8 @@ public class RestartTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        _upgradeHandler = new WebSocketUpgradeHandler(handler ->
-            handler.addMapping("/", (req, resp, cb) -> new EchoFrameHandler()));
+        _upgradeHandler = new WebSocketUpgradeHandler(
+            handler -> handler.addMapping("/", (req, resp, cb) -> new EchoFrameHandler()));
         _server.setHandler(_upgradeHandler);
 
         _server.start();

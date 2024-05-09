@@ -30,7 +30,6 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.start.Props.Prop;
 
 /**
@@ -167,6 +166,7 @@ public class Module implements Comparable<Module>
      * Module names from {@code [after]} section
      */
     private final Set<String> _after = new HashSet<>();
+
     private String _environment;
 
     public Module(BaseHome basehome, Path path) throws IOException
@@ -176,7 +176,7 @@ public class Module implements Comparable<Module>
 
         // Module name is the / separated path below the modules directory
         int m = -1;
-        for (int i = path.getNameCount(); i-- > 0; )
+        for (int i = path.getNameCount(); i-- > 0;)
         {
             if ("modules".equals(path.getName(i).toString()))
             {
@@ -185,7 +185,8 @@ public class Module implements Comparable<Module>
             }
         }
         if (m < 0)
-            throw new IllegalArgumentException("Module not contained within modules directory: " + basehome.toShortForm(path));
+            throw new IllegalArgumentException(
+                "Module not contained within modules directory: " + basehome.toShortForm(path));
         String n = path.getName(m + 1).toString();
         for (int i = m + 2; i < path.getNameCount(); i++)
         {
@@ -193,7 +194,8 @@ public class Module implements Comparable<Module>
         }
         Matcher matcher = MOD_NAME.matcher(n);
         if (!matcher.matches())
-            throw new IllegalArgumentException("Module filename must have .mod extension: " + basehome.toShortForm(path));
+            throw new IllegalArgumentException(
+                "Module filename must have .mod extension: " + basehome.toShortForm(path));
         _name = matcher.group(1);
 
         _provides.add(_name);

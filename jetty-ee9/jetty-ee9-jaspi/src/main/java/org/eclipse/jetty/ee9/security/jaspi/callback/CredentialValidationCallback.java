@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.security.jaspi.callback;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
-
 import org.eclipse.jetty.util.security.Credential;
 
 /**

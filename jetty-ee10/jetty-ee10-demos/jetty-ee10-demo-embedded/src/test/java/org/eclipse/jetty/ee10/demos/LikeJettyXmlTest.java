@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.ee10.demos;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.util.Map;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -24,10 +27,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class LikeJettyXmlTest extends AbstractEmbeddedTest
 {
@@ -59,9 +58,7 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
     public void testGetTest() throws Exception
     {
         URI uri = serverPlainUri.resolve("/test/");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
@@ -75,9 +72,7 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
     public void testGetTestSsl() throws Exception
     {
         URI uri = serverSslUri.resolve("/test/");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);

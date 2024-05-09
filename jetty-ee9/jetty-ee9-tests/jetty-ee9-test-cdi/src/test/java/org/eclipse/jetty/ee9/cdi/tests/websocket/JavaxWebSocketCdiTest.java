@@ -13,13 +13,10 @@
 
 package org.eclipse.jetty.ee9.cdi.tests.websocket;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.inject.Inject;
 import jakarta.websocket.ClientEndpoint;
@@ -40,6 +37,13 @@ import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import org.eclipse.jetty.ee9.cdi.CdiDecoratingListener;
 import org.eclipse.jetty.ee9.cdi.CdiServletContainerInitializer;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -58,12 +62,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@Disabled //TODO mismatch weld and cdi spec
+@Disabled // TODO mismatch weld and cdi spec
 public class JavaxWebSocketCdiTest
 {
     private Server _server;
@@ -99,7 +98,8 @@ public class JavaxWebSocketCdiTest
         _server.start();
 
         // Configure the Client with the same DecoratedObjectFactory from the server.
-        WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(_context.getCoreContextHandler());
+        WebSocketComponents components =
+            WebSocketServerComponents.getWebSocketComponents(_context.getCoreContextHandler());
         _client = new JakartaWebSocketClientContainer(components);
         LifeCycle.start(_client);
     }
@@ -116,7 +116,8 @@ public class JavaxWebSocketCdiTest
     {
         start((servletContext, wsContainer) -> wsContainer.addEndpoint(AnnotatedCdiEchoSocket.class));
 
-        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there was no NPE.
+        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there
+        // was no NPE.
         AnnotatedCdiClientSocket clientEndpoint = new AnnotatedCdiClientSocket();
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
         Session session = _client.connectToServer(clientEndpoint, uri);
@@ -129,12 +130,14 @@ public class JavaxWebSocketCdiTest
     @Test
     public void testConfiguredEndpoint() throws Exception
     {
-        ServerEndpointConfig serverEndpointConfig = ServerEndpointConfig.Builder.create(ConfiguredCdiEchoSocket.class, "/echo")
+        ServerEndpointConfig serverEndpointConfig = ServerEndpointConfig.Builder.create(
+            ConfiguredCdiEchoSocket.class, "/echo")
             .configurator(new ServerConfigurator())
             .build();
         start((servletContext, wsContainer) -> wsContainer.addEndpoint(serverEndpointConfig));
 
-        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there was no NPE.
+        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there
+        // was no NPE.
         ConfiguredCdiClientSocket clientEndpoint = new ConfiguredCdiClientSocket();
         ClientEndpointConfig clientEndpointConfig = ClientEndpointConfig.Builder.create()
             .configurator(new ClientConfigurator())
@@ -153,7 +156,8 @@ public class JavaxWebSocketCdiTest
     {
         start((servletContext, wsContainer) -> wsContainer.addEndpoint(AnnotatedCdiEchoSocket.class));
 
-        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there was no NPE.
+        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there
+        // was no NPE.
         AnnotatedEncoderDecoderClientSocket clientEndpoint = new AnnotatedEncoderDecoderClientSocket();
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
         Session session = _client.connectToServer(clientEndpoint, uri);
@@ -169,7 +173,8 @@ public class JavaxWebSocketCdiTest
     {
         start((servletContext, wsContainer) -> wsContainer.addEndpoint(CdiHttpSessionSocket.class));
 
-        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there was no NPE.
+        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there
+        // was no NPE.
         AnnotatedCdiClientSocket clientEndpoint = new AnnotatedCdiClientSocket();
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
         Session session = _client.connectToServer(clientEndpoint, uri);
@@ -243,6 +248,7 @@ public class JavaxWebSocketCdiTest
     {
         @Inject
         protected Logger logger;
+
         protected Session session;
 
         @OnOpen
@@ -303,6 +309,7 @@ public class JavaxWebSocketCdiTest
     {
         @Inject
         public Logger logger;
+
         private Session session;
 
         @Override

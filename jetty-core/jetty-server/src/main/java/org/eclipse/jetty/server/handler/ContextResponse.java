@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;

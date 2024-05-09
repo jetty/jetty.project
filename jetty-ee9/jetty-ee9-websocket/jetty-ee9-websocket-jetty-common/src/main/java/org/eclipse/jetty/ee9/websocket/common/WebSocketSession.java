@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Objects;
-
 import org.eclipse.jetty.ee9.websocket.api.CloseStatus;
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.StatusCode;
@@ -42,7 +41,8 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
 
-    public WebSocketSession(WebSocketContainer container, CoreSession coreSession, JettyWebSocketFrameHandler frameHandler)
+    public WebSocketSession(
+                            WebSocketContainer container, CoreSession coreSession, JettyWebSocketFrameHandler frameHandler)
     {
         this.frameHandler = Objects.requireNonNull(frameHandler);
         this.coreSession = Objects.requireNonNull(coreSession);
@@ -255,8 +255,10 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     @Override
     public String dumpSelf()
     {
-        return String.format("%s@%x[behavior=%s,idleTimeout=%dms]",
-            this.getClass().getSimpleName(), hashCode(),
+        return String.format(
+            "%s@%x[behavior=%s,idleTimeout=%dms]",
+            this.getClass().getSimpleName(),
+            hashCode(),
             getPolicy().getBehavior(),
             getIdleTimeout().toMillis());
     }
@@ -264,6 +266,7 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     @Override
     public String toString()
     {
-        return String.format("WebSocketSession[%s,to=%s,%s,%s]", getBehavior(), getIdleTimeout(), coreSession, frameHandler);
+        return String.format(
+            "WebSocketSession[%s,to=%s,%s,%s]", getBehavior(), getIdleTimeout(), coreSession, frameHandler);
     }
 }

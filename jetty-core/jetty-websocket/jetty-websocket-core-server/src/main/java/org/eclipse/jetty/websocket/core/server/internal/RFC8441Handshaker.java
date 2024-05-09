@@ -50,7 +50,8 @@ public class RFC8441Handshaker extends AbstractHandshaker
     }
 
     @Override
-    protected WebSocketNegotiation newNegotiation(Request request, Response response, Callback callback, WebSocketComponents webSocketComponents)
+    protected WebSocketNegotiation newNegotiation(
+                                                  Request request, Response response, Callback callback, WebSocketComponents webSocketComponents)
     {
         return new RFC8441Negotiation(request, response, callback, webSocketComponents);
     }
@@ -62,7 +63,8 @@ public class RFC8441Handshaker extends AbstractHandshaker
         ByteBufferPool byteBufferPool = connector.getByteBufferPool();
         TunnelSupport tunnelSupport = request.getTunnelSupport();
         EndPoint endPoint = tunnelSupport.getEndPoint();
-        return newWebSocketConnection(endPoint, connector.getExecutor(), connector.getScheduler(), byteBufferPool, coreSession);
+        return newWebSocketConnection(
+            endPoint, connector.getExecutor(), connector.getScheduler(), byteBufferPool, coreSession);
     }
 
     @Override

@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.ContainerProvider;
@@ -28,6 +29,9 @@ import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSServer;
@@ -39,11 +43,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DeploymentTest
 {
@@ -81,8 +80,10 @@ public class DeploymentTest
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();
         EventSocket clientSocket = new EventSocket();
 
-        Throwable error = assertThrows(Throwable.class, () ->
-            client.connectToServer(clientSocket, server.getWsUri().resolve(app1.getContextPath() + "/badonclose/a")));
+        Throwable error = assertThrows(
+            Throwable.class,
+            () -> client.connectToServer(
+                clientSocket, server.getWsUri().resolve(app1.getContextPath() + "/badonclose/a")));
         assertThat(error, Matchers.instanceOf(IOException.class));
         assertThat(error.getMessage(), Matchers.containsString("503 Service Unavailable"));
     }
@@ -93,7 +94,8 @@ public class DeploymentTest
      * @throws Exception if there is an error during the test.
      */
     @Test
-    @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15})
+    @DisabledOnJre(
+    {JRE.JAVA_14, JRE.JAVA_15})
     public void testDifferentWebAppsWithSameClassInSignature() throws Exception
     {
         WSServer.WebApp app1 = server.createWebApp("test1");
@@ -137,7 +139,7 @@ public class DeploymentTest
     public static class BadPathParamEndpoint
     {
         @OnOpen
-        public void onOpen(Session session, @PathParam("arg")  DecodedString arg)
+        public void onOpen(Session session, @PathParam("arg") DecodedString arg)
         {
         }
     }

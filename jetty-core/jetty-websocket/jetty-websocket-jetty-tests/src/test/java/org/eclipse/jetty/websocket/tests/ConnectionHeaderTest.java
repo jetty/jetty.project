@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -31,9 +33,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 public class ConnectionHeaderTest
 {
     private Server server;
@@ -47,8 +46,8 @@ public class ConnectionHeaderTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
-            container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(
+            server, container -> container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));
 
         server.setHandler(wsHandler);
         server.start();
@@ -65,7 +64,8 @@ public class ConnectionHeaderTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Upgrade", "keep-alive, Upgrade", "close, Upgrade"})
+    @ValueSource(strings =
+    {"Upgrade", "keep-alive, Upgrade", "close, Upgrade"})
     public void testConnectionKeepAlive(String connectionHeaderValue) throws Exception
     {
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
@@ -84,7 +84,8 @@ public class ConnectionHeaderTest
         };
 
         EventSocket clientEndpoint = new EventSocket();
-        try (Session session = client.connect(clientEndpoint, uri, null, upgradeListener).get(5, TimeUnit.SECONDS))
+        try (Session session =
+            client.connect(clientEndpoint, uri, null, upgradeListener).get(5, TimeUnit.SECONDS))
         {
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";

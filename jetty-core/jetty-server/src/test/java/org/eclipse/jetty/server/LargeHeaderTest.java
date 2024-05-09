@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
@@ -42,12 +47,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LargeHeaderTest
 {
@@ -128,7 +127,11 @@ public class LargeHeaderTest
         int lenRead;
         int lenTotal = 0;
 
-        LOG.debug("X-Count: {} - Reading Response from {}->{}", xCount, socket.getLocalSocketAddress(), socket.getRemoteSocketAddress());
+        LOG.debug(
+            "X-Count: {} - Reading Response from {}->{}",
+            xCount,
+            socket.getLocalSocketAddress(),
+            socket.getRemoteSocketAddress());
 
         while (true)
         {
@@ -139,7 +142,12 @@ public class LargeHeaderTest
             lenTotal += lenRead;
         }
 
-        LOG.debug("X-Count: {} - Read {} bytes of Response from {}->{}", xCount, lenTotal, socket.getLocalAddress(), socket.getRemoteSocketAddress());
+        LOG.debug(
+            "X-Count: {} - Read {} bytes of Response from {}->{}",
+            xCount,
+            lenTotal,
+            socket.getLocalAddress(),
+            socket.getRemoteSocketAddress());
         return readBytes.toString(UTF_8);
     }
 
@@ -147,9 +155,7 @@ public class LargeHeaderTest
     public void testLargeHeader() throws Throwable
     {
         URI serverURI = server.getURI();
-        String rawRequest = "GET / HTTP/1.1\r\n" +
-            "Host: " + serverURI.getAuthority() + "\r\n" +
-            "\r\n";
+        String rawRequest = "GET / HTTP/1.1\r\n" + "Host: " + serverURI.getAuthority() + "\r\n" + "\r\n";
 
         try (Socket client = new Socket(serverURI.getHost(), serverURI.getPort());
              OutputStream output = client.getOutputStream();
@@ -169,10 +175,7 @@ public class LargeHeaderTest
         ExecutorService executorService = Executors.newCachedThreadPool();
 
         URI serverURI = server.getURI();
-        String rawRequest = "GET / HTTP/1.1\r\n" +
-            "Host: " + serverURI.getAuthority() + "\r\n" +
-            "Connection: close\r\n" +
-            "X-Count: %d\r\n" + // just so I can track them in wireshark
+        String rawRequest = "GET / HTTP/1.1\r\n" + "Host: " + serverURI.getAuthority() + "\r\n" + "Connection: close\r\n" + "X-Count: %d\r\n" + // just so I can track them in wireshark
             "\r\n";
 
         final int iterations = 500;
@@ -195,7 +198,11 @@ public class LargeHeaderTest
                      OutputStream output = client.getOutputStream();
                      InputStream input = client.getInputStream())
                 {
-                    LOG.debug("X-Count: {} - Send Request - {}->{}", count, client.getLocalAddress(), client.getRemoteSocketAddress());
+                    LOG.debug(
+                        "X-Count: {} - Send Request - {}->{}",
+                        count,
+                        client.getLocalAddress(),
+                        client.getRemoteSocketAddress());
 
                     output.write(rawRequest.formatted(count).getBytes(UTF_8));
                     output.flush();
@@ -256,7 +263,8 @@ public class LargeHeaderTest
                 Count (empty response): %d
                 Count (throwables): %d
                 Count (other status codes): %d
-                """.formatted(iterations, count500.get(), countEmpty.get(), countFailure.get(), countOther.get());
+                """
+                .formatted(iterations, count500.get(), countEmpty.get(), countFailure.get(), countOther.get());
         });
     }
 
@@ -264,9 +272,7 @@ public class LargeHeaderTest
     public void testLargeHeaderNewConnectionsSequential() throws Throwable
     {
         URI serverURI = server.getURI();
-        String rawRequest = "GET / HTTP/1.1\r\n" +
-            "Host: " + serverURI.getAuthority() + "\r\n" +
-            "X-Count: %d\r\n" + // just so I can track them in wireshark
+        String rawRequest = "GET / HTTP/1.1\r\n" + "Host: " + serverURI.getAuthority() + "\r\n" + "X-Count: %d\r\n" + // just so I can track them in wireshark
             "\r\n";
 
         final int iterations = 500;
@@ -334,7 +340,8 @@ public class LargeHeaderTest
                 Count (empty responses): %d
                 Count (throwables): %d
                 Count (other status codes): %d
-                """.formatted(iterations, count500.get(), countEmpty.get(), countFailure.get(), countOther.get());
+                """
+                .formatted(iterations, count500.get(), countEmpty.get(), countFailure.get(), countOther.get());
         });
     }
 }

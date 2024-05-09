@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee9.security.authentication;
 
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serial;
 import java.nio.charset.StandardCharsets;
@@ -26,11 +30,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.ee9.nested.Request;
@@ -54,7 +53,11 @@ import org.slf4j.LoggerFactory;
 public class DigestAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = LoggerFactory.getLogger(DigestAuthenticator.class);
-    private static final QuotedStringTokenizer TOKENIZER = QuotedStringTokenizer.builder().delimiters("=, ").returnDelimiters().allowEmbeddedQuotes().build();
+    private static final QuotedStringTokenizer TOKENIZER = QuotedStringTokenizer.builder()
+        .delimiters("=, ")
+        .returnDelimiters()
+        .allowEmbeddedQuotes()
+        .build();
 
     private final SecureRandom _random = new SecureRandom();
     private final ConcurrentMap<String, Nonce> _nonceMap = new ConcurrentHashMap<>();
@@ -102,13 +105,15 @@ public class DigestAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser)
+        throws ServerAuthException
     {
         return true;
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory)
+        throws ServerAuthException
     {
         if (!mandatory)
             return new DeferredAuthentication(this);
@@ -178,7 +183,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
                 if (n > 0)
                 {
-                    //UserIdentity user = _loginService.login(digest.username,digest);
+                    // UserIdentity user = _loginService.login(digest.username,digest);
                     UserIdentity user = login(digest.username, digest, req);
                     if (user != null)
                     {
@@ -194,12 +199,9 @@ public class DigestAuthenticator extends LoginAuthenticator
                 String domain = request.getContextPath();
                 if (domain == null)
                     domain = "/";
-                response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
-                    "\", domain=\"" + domain +
-                    "\", nonce=\"" + newNonce(baseRequest) +
-                    "\", algorithm=MD5" +
-                    ", qop=\"auth\"" +
-                    ", stale=" + stale);
+                response.setHeader(
+                    HttpHeader.WWW_AUTHENTICATE.asString(),
+                    "Digest realm=\"" + _loginService.getName() + "\", domain=\"" + domain + "\", nonce=\"" + newNonce(baseRequest) + "\", algorithm=MD5" + ", qop=\"auth\"" + ", stale=" + stale);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 
                 return Authentication.SEND_CONTINUE;
@@ -310,6 +312,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     {
         @Serial
         private static final long serialVersionUID = -2484639019549527724L;
+
         final String method;
         String username = "";
         String realm = "";
@@ -382,7 +385,8 @@ public class DigestAuthenticator extends LoginAuthenticator
                 byte[] digest = md.digest();
 
                 // check digest
-                return stringEquals(TypeUtil.toString(digest, 16).toLowerCase(), response == null ? null : response.toLowerCase());
+                return stringEquals(
+                    TypeUtil.toString(digest, 16).toLowerCase(), response == null ? null : response.toLowerCase());
             }
             catch (Exception e)
             {

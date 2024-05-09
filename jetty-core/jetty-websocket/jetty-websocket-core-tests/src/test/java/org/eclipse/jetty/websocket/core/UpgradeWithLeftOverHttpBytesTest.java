@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +33,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -37,13 +43,6 @@ import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
 {
@@ -94,11 +93,7 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         String upgradeRequest = getRequestHeaders(serverSocket.getInputStream());
         assertThat(upgradeRequest, containsString("HTTP/1.1"));
         assertThat(upgradeRequest, containsString("Upgrade: websocket"));
-        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" +
-            "Upgrade: WebSocket\n" +
-            "Connection: Upgrade\n" +
-            "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
-            "\n";
+        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" + "Upgrade: WebSocket\n" + "Connection: Upgrade\n" + "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" + "\n";
         serverSocket.getOutputStream().write(upgradeResponse.getBytes(StandardCharsets.ISO_8859_1));
 
         // Wait for WebSocket to be opened, wait 1 sec before allowing it to continue.
@@ -141,11 +136,7 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         String upgradeRequest = getRequestHeaders(serverSocket.getInputStream());
         assertThat(upgradeRequest, containsString("HTTP/1.1"));
         assertThat(upgradeRequest, containsString("Upgrade: websocket"));
-        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" +
-            "Upgrade: WebSocket\n" +
-            "Connection: Upgrade\n" +
-            "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
-            "\n";
+        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" + "Upgrade: WebSocket\n" + "Connection: Upgrade\n" + "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" + "\n";
         Frame firstFrame = new Frame(OpCode.TEXT, "first message payload");
         byte[] bytes = combineToByteArray(BufferUtil.toBuffer(upgradeResponse), generateFrame(firstFrame));
         serverSocket.getOutputStream().write(bytes);
@@ -202,11 +193,7 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         String upgradeRequest = getRequestHeaders(serverSocket.getInputStream());
         assertThat(upgradeRequest, containsString("HTTP/1.1"));
         assertThat(upgradeRequest, containsString("Upgrade: websocket"));
-        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" +
-            "Upgrade: WebSocket\n" +
-            "Connection: Upgrade\n" +
-            "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
-            "\n";
+        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" + "Upgrade: WebSocket\n" + "Connection: Upgrade\n" + "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" + "\n";
         serverSocket.getOutputStream().write(upgradeResponse.getBytes(StandardCharsets.ISO_8859_1));
 
         // Wait for WebSocket to be opened, wait 1 sec before allowing it to continue.
@@ -259,11 +246,7 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         String upgradeRequest = getRequestHeaders(serverSocket.getInputStream());
         assertThat(upgradeRequest, containsString("HTTP/1.1"));
         assertThat(upgradeRequest, containsString("Upgrade: websocket"));
-        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" +
-            "Upgrade: WebSocket\n" +
-            "Connection: Upgrade\n" +
-            "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
-            "\n";
+        String upgradeResponse = "HTTP/1.1 101 Switching Protocols\n" + "Upgrade: WebSocket\n" + "Connection: Upgrade\n" + "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" + "\n";
         Frame firstFrame = new Frame(OpCode.TEXT, "first message payload");
         byte[] bytes = combineToByteArray(BufferUtil.toBuffer(upgradeResponse), generateFrame(firstFrame));
         serverSocket.getOutputStream().write(bytes);

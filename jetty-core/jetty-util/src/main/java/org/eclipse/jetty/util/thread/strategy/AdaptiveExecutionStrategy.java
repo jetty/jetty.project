@@ -19,7 +19,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.VirtualThreads;
@@ -98,8 +97,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     /**
      * The production state of the strategy.
      */
-    private static final int IDLE = 0;        // No tasks or producers.
-    private static final int PRODUCING = 1;   // There is an active producing thread.
+    private static final int IDLE = 0; // No tasks or producers.
+
+    private static final int PRODUCING = 1; // There is an active producing thread.
     private static final int REPRODUCING = 2; // There is an active producing thread and demand for more production.
 
     /**
@@ -156,7 +156,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     public void dispatch()
     {
         boolean execute = false;
-        loop: while (true)
+        loop:
+        while (true)
         {
             long biState = _state.get();
             int state = AtomicBiInteger.getLo(biState);
@@ -212,7 +213,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             LOG.debug("{} tryProduce {}", this, wasPending);
 
         // check if the thread can produce.
-        loop: while (true)
+        loop:
+        while (true)
         {
             long biState = _state.get();
             int state = AtomicBiInteger.getLo(biState);
@@ -251,7 +253,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
         // Determine the thread's invocation type once, outside of the production loop.
         boolean nonBlocking = Invocable.isNonBlockingInvocation();
-        running: while (isRunning())
+        running:
+        while (isRunning())
         {
             try
             {
@@ -418,7 +421,13 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         // Consume and/or execute task according to the selected mode.
         if (LOG.isDebugEnabled())
-            LOG.debug("consumeTask ss={}/{}/{} t={} {}", subStrategy, Invocable.isNonBlockingInvocation(), Invocable.getInvocationType(task), task, this);
+            LOG.debug(
+                "consumeTask ss={}/{}/{} t={} {}",
+                subStrategy,
+                Invocable.isNonBlockingInvocation(),
+                Invocable.getInvocationType(task),
+                task,
+                this);
         switch (subStrategy)
         {
             case PRODUCE_CONSUME:

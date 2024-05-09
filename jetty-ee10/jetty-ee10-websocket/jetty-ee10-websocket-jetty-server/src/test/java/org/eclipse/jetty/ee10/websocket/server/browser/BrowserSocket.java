@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
@@ -116,7 +115,11 @@ public class BrowserSocket
         if (message.length() > 300)
         {
             int len = message.length();
-            LOG.info("onTextMessage({} ... {}) size:{}", message.substring(0, 15), message.substring(len - 15, len).replaceAll("[\r\n]*", ""), len);
+            LOG.info(
+                "onTextMessage({} ... {}) size:{}",
+                message.substring(0, 15),
+                message.substring(len - 15, len).replaceAll("[\r\n]*", ""),
+                len);
         }
         else
         {

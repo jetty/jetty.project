@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -20,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
@@ -36,8 +37,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReproducibleRequestContentTest extends AbstractTest
 {
@@ -128,8 +127,8 @@ public class ReproducibleRequestContentTest extends AbstractTest
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(
             client.newRequest(newURI(transport))
                 .method(HttpMethod.POST)
-                .body(body)
-        ).send();
+                .body(body))
+            .send();
 
         // The request was sent, wait for the server to redirect.
         Thread.sleep(1000);
@@ -146,7 +145,8 @@ public class ReproducibleRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBasicAuthenticationWithReproducibleRequestContentSplitAndDelayed(Transport transport) throws Exception
+    public void testBasicAuthenticationWithReproducibleRequestContentSplitAndDelayed(Transport transport)
+        throws Exception
     {
         String realm = "test-realm";
         start(transport, new Handler.Abstract()
@@ -177,8 +177,8 @@ public class ReproducibleRequestContentTest extends AbstractTest
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(
             client.newRequest(newURI(transport))
                 .method(HttpMethod.POST)
-                .body(body)
-        ).send();
+                .body(body))
+            .send();
 
         // The request was sent, wait for the server to reply with 401.
         Thread.sleep(1000);
@@ -193,7 +193,8 @@ public class ReproducibleRequestContentTest extends AbstractTest
         assertEquals(text1 + text2, response.getContentAsString());
     }
 
-    private static class ReproducibleAsyncRequestContent implements org.eclipse.jetty.client.Request.Content, AutoCloseable
+    private static class ReproducibleAsyncRequestContent
+        implements org.eclipse.jetty.client.Request.Content, AutoCloseable
     {
         private static final ByteBuffer EOF = ByteBuffer.allocate(0);
 

@@ -13,34 +13,33 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AbstractHandlerContainerTest
 {
     public class ParentContainer extends AbstractHandlerContainer
     {
         private List<Handler> _children = new ArrayList<>();
-        
+
         @Override
         public Handler[] getHandlers()
         {
-            return _children.toArray(new Handler[] {});
+            return _children.toArray(new Handler[]{});
         }
-        
+
         public void addHandler(Handler h)
         {
             _children.add(h);
         }
-        
+
         @Override
         protected void expandChildren(List<Handler> list, Class<?> byClass)
         {
@@ -51,32 +50,35 @@ public class AbstractHandlerContainerTest
                     expandHandler(h, list, byClass);
                 }
         }
-        
+
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
-            //noop
+            // noop
         }
     }
 
     public class HandlerA extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
-            //noop
+            // noop
         }
     }
 
     public class HandlerB extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
-            //noop
+            // noop
         }
     }
-    
+
     /**
      * This test was moved from ServletContextHandlerTest.
      * It cannot be done with a ServletContextHandler as the parent, because
@@ -94,7 +96,6 @@ public class AbstractHandlerContainerTest
         HandlerB b = new HandlerB();
         parent.addHandler(a);
         parent.addHandler(b);
-        
 
         assertEquals(parent, AbstractHandlerContainer.findContainerOf(collection, ParentContainer.class, a));
         assertEquals(parent, AbstractHandlerContainer.findContainerOf(collection, ParentContainer.class, b));

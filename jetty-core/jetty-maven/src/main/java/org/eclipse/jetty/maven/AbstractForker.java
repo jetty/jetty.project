@@ -16,7 +16,6 @@ package org.eclipse.jetty.maven;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,41 +28,41 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractForker extends AbstractLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractForker.class);
-    
+
     protected Map<String, String> env;
-    
+
     protected String jvmArgs;
-    
+
     protected boolean exitVm;
-    
+
     protected boolean stopAtShutdown;
-    
+
     protected List<File> jettyXmlFiles;
-    
+
     protected Map<String, String> jettyProperties;
-    
+
     protected int stopPort;
-    
+
     protected String stopKey;
-    
+
     protected File jettyOutputFile;
-    
+
     protected boolean waitForChild;
-    
-    protected int maxChildStartChecks = 10; //check up to 10 times for child to start
-    
-    protected long maxChildStartCheckMs = 200; //wait 200ms between checks
-    
+
+    protected int maxChildStartChecks = 10; // check up to 10 times for child to start
+
+    protected long maxChildStartCheckMs = 200; // wait 200ms between checks
+
     protected File tokenFile;
-    
+
     protected File workDir;
-    
+
     protected Map<String, String> systemProperties;
-    
-    protected abstract ProcessBuilder  createCommand();
-    
+
+    protected abstract ProcessBuilder createCommand();
+
     protected abstract void redeployWebApp() throws Exception;
-    
+
     public File getWorkDir()
     {
         return workDir;
@@ -81,7 +80,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
     {
         return systemProperties;
     }
-    
+
     /**
      * Set the systemProperties to set.
      * @param systemProperties the systemProperties to set
@@ -90,7 +89,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
     {
         this.systemProperties = systemProperties;
     }
-    
+
     public Map<String, String> getEnv()
     {
         return env;
@@ -221,23 +220,22 @@ public abstract class AbstractForker extends AbstractLifeCycle
         this.tokenFile = tokenFile;
     }
 
-    public void doStart()
-        throws Exception
+    public void doStart() throws Exception
     {
         super.doStart();
 
-        //Create the command to fork
+        // Create the command to fork
         ProcessBuilder command = createCommand();
         Process process = command.start();
-        
+
         if (waitForChild)
         {
-            //keep executing until the child dies
+            // keep executing until the child dies
             process.waitFor();
         }
         else
         {
-            //just wait until the child has started successfully
+            // just wait until the child has started successfully
             int attempts = maxChildStartChecks;
             while (!tokenFile.exists() && attempts > 0)
             {

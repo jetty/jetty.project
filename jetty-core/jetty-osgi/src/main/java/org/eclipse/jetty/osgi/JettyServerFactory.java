@@ -22,9 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.StringTokenizer;
-
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
@@ -62,7 +60,7 @@ public class JettyServerFactory
         throws Exception
     {
         Objects.requireNonNull(name);
-        
+
         Server server = null;
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
@@ -70,22 +68,23 @@ public class JettyServerFactory
             List<URL> sharedURLs = getManagedJettySharedLibFolderUrls(props);
 
             // Ensure we have a classloader that will have access to all jetty classes
-            ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(null, sharedURLs, contextCl/*JettyServerFactory.class.getClassLoader()*/);
+            ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(
+                null, sharedURLs, contextCl /*JettyServerFactory.class.getClassLoader()*/);
 
             ClassLoader serverClassLoader = libExtClassLoader;
-            
+
             if (LOG.isDebugEnabled())
                 LOG.debug("LibExtClassLoader = {}", libExtClassLoader);
 
             Thread.currentThread().setContextClassLoader(libExtClassLoader);
 
-            //Get ready to apply jetty configuration files, both those as explicit argument,
-            //as well as those provided by property
+            // Get ready to apply jetty configuration files, both those as explicit argument,
+            // as well as those provided by property
             List<URL> jettyConfigs = new ArrayList<>();
             if (jettyConfigurations != null)
                 jettyConfigs.addAll(jettyConfigurations);
 
-            //config files provided as part of the osgi properties
+            // config files provided as part of the osgi properties
             String jettyConfigFilenames = (String)props.get(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS);
             if (jettyConfigFilenames != null)
             {
@@ -108,7 +107,7 @@ public class JettyServerFactory
 
             try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
             {
-                //create the server via config files
+                // create the server via config files
                 for (URL jettyConfiguration : jettyConfigurations)
                 {
                     try
@@ -143,11 +142,11 @@ public class JettyServerFactory
                 }
             }
 
-            //if no config files, create the server
+            // if no config files, create the server
             if (server == null)
                 server = new Server();
 
-            //ensure ContextHandlerCollection
+            // ensure ContextHandlerCollection
             ContextHandlerCollection contextHandlerCollection = getContextHandlerCollection(server);
             if (contextHandlerCollection == null)
             {
@@ -155,7 +154,7 @@ public class JettyServerFactory
                 server.setHandler(contextHandlerCollection);
             }
 
-            //ensure DeploymentManager
+            // ensure DeploymentManager
             DeploymentManager deploymentManager = ensureDeploymentManager(server);
             deploymentManager.setUseStandardBindings(false);
             List<AppLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<>();
@@ -164,7 +163,7 @@ public class JettyServerFactory
             deploymentLifeCycleBindings.add(new StandardStopper());
             deploymentLifeCycleBindings.add(new OSGiUndeployer(server));
             deploymentManager.setLifeCycleBindings(deploymentLifeCycleBindings);
-            
+
             server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
             server.setAttribute(OSGiServerConstants.JETTY_BASE, properties.get(OSGiServerConstants.JETTY_BASE));
             server.setAttribute(OSGiServerConstants.SERVER_CLASSLOADER, serverClassLoader);
@@ -193,31 +192,31 @@ public class JettyServerFactory
         }
     }
 
-   private static DeploymentManager ensureDeploymentManager(Server server)
-   {
-       Collection<DeploymentManager> deployers = server.getBeans(DeploymentManager.class);
-       DeploymentManager deploymentManager = null;
+    private static DeploymentManager ensureDeploymentManager(Server server)
+    {
+        Collection<DeploymentManager> deployers = server.getBeans(DeploymentManager.class);
+        DeploymentManager deploymentManager = null;
 
-       if (deployers != null)
-       {
-           deploymentManager = deployers.stream().findFirst().orElse(null);
-       }
+        if (deployers != null)
+        {
+            deploymentManager = deployers.stream().findFirst().orElse(null);
+        }
 
-       if (deploymentManager == null)
-       {
-           deploymentManager = new DeploymentManager();
-           deploymentManager.setContexts(getContextHandlerCollection(server));
-           server.addBean(deploymentManager);
-       }
-       
-       return deploymentManager;
-   }
-   
-   private static ContextHandlerCollection getContextHandlerCollection(Server server)
-   {
-       return (ContextHandlerCollection)server.getDescendant(ContextHandlerCollection.class);
-   }
-       
+        if (deploymentManager == null)
+        {
+            deploymentManager = new DeploymentManager();
+            deploymentManager.setContexts(getContextHandlerCollection(server));
+            server.addBean(deploymentManager);
+        }
+
+        return deploymentManager;
+    }
+
+    private static ContextHandlerCollection getContextHandlerCollection(Server server)
+    {
+        return (ContextHandlerCollection)server.getDescendant(ContextHandlerCollection.class);
+    }
+
     /**
      * Get the Jetty Shared Lib Folder URLs in a form that is suitable for
      * {@link LibExtClassLoaderHelper} to use.

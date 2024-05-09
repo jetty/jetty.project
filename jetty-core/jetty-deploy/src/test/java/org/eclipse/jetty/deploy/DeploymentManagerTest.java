@@ -13,10 +13,16 @@
 
 package org.eclipse.jetty.deploy;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Set;
-
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -26,13 +32,6 @@ import org.eclipse.jetty.util.component.Environment;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentManagerTest
@@ -145,14 +144,12 @@ public class DeploymentManagerTest
             }
         });
 
-        assertThat(depman.getAppProviders().stream().map(AppProvider::getEnvironmentName).sorted(Deployable.ENVIRONMENT_COMPARATOR).toList(),
-            contains(
-                "other",
-                "somethingElse",
-                "ee7",
-                "ee10",
-                "ee12"
-                ));
+        assertThat(
+            depman.getAppProviders().stream()
+                .map(AppProvider::getEnvironmentName)
+                .sorted(Deployable.ENVIRONMENT_COMPARATOR)
+                .toList(),
+            contains("other", "somethingElse", "ee7", "ee10", "ee12"));
     }
 
     @Test

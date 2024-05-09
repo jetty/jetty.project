@@ -30,7 +30,6 @@ public class IntrospectorCleaner implements ServletContextListener
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-
     }
 
     @Override

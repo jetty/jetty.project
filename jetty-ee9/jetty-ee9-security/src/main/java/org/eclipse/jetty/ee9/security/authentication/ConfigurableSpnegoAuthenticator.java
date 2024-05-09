@@ -13,16 +13,17 @@
 
 package org.eclipse.jetty.ee9.security.authentication;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.time.Duration;
-import java.time.Instant;
+import static org.eclipse.jetty.ee9.nested.SessionHandler.ServletSessionApi.getOrCreateSession;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.Serializable;
+import java.time.Duration;
+import java.time.Instant;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.ee9.nested.Request;
@@ -36,8 +37,6 @@ import org.eclipse.jetty.security.SPNEGOUserPrincipal;
 import org.eclipse.jetty.security.UserIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.ee9.nested.SessionHandler.ServletSessionApi.getOrCreateSession;
 
 /**
  * <p>A LoginAuthenticator that uses SPNEGO and the GSS API to authenticate requests.</p>
@@ -107,15 +106,16 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         Request baseRequest = Request.getBaseRequest(servletRequest);
         if (baseRequest == null)
             return null;
-        RoleDelegateUserIdentity user = (RoleDelegateUserIdentity)_loginService
-            .login(username, password, baseRequest.getCoreRequest(), getOrCreateSession(servletRequest));
+        RoleDelegateUserIdentity user = (RoleDelegateUserIdentity)_loginService.login(
+            username, password, baseRequest.getCoreRequest(), getOrCreateSession(servletRequest));
         if (user != null && user.isEstablished())
             renewSession(baseRequest, baseRequest.getResponse());
         return user;
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory)
+        throws ServerAuthException
     {
         if (!mandatory)
             return new DeferredAuthentication(this);
@@ -176,7 +176,8 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
                     Duration authnDuration = getAuthenticationDuration();
                     if (!authnDuration.isNegative())
                     {
-                        boolean expired = !authnDuration.isZero() && Instant.now().isAfter(holder._validFrom.plus(authnDuration));
+                        boolean expired =
+                            !authnDuration.isZero() && Instant.now().isAfter(holder._validFrom.plus(authnDuration));
                         // Allow non-GET requests even if they're expired, so that
                         // the client does not need to send the request content again.
                         if (!expired || !HttpMethod.GET.is(request.getMethod()))
@@ -227,7 +228,8 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser)
+    public boolean secureResponse(
+                                  ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser)
     {
         return true;
     }

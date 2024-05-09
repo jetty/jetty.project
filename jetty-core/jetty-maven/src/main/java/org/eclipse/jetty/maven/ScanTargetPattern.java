@@ -18,7 +18,6 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.Collections;
 import java.util.List;
-
 import org.eclipse.jetty.util.IncludeExcludeSet;
 
 /**
@@ -91,14 +90,14 @@ public class ScanTargetPattern
 
     public void configureIncludesExcludeSet(IncludeExcludeSet<PathMatcher, Path> includesExcludes)
     {
-        for (String include:getIncludes())
+        for (String include : getIncludes())
         {
             if (!include.startsWith("glob:"))
                 include = "glob:" + include;
             includesExcludes.include(_directory.toPath().getFileSystem().getPathMatcher(include));
         }
 
-        for (String exclude:getExcludes())
+        for (String exclude : getExcludes())
         {
             if (!exclude.startsWith("glob:"))
                 exclude = "glob:" + exclude;

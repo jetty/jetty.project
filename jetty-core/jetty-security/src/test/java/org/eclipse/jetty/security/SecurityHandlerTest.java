@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.security;
 
-import java.util.List;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
+import java.util.List;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MappedResource;
@@ -31,11 +35,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 
 public class SecurityHandlerTest
 {
@@ -169,7 +168,8 @@ public class SecurityHandlerTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Unauthenticated"));
 
-        response = _connectorS.getResponse("GET /ctx/confidential/info.hidden HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
+        response =
+            _connectorS.getResponse("GET /ctx/confidential/info.hidden HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
         assertThat(response, not(containsString("OK")));
     }
@@ -196,16 +196,6 @@ public class SecurityHandlerTest
             .map(Constraint::getName)
             .toList();
 
-        assertThat(names, contains(
-            "default",
-            "everything",
-            "foo",
-            "foobar",
-            "foobarbob",
-            "txt",
-            "thingtxt",
-            "exact"
-        ));
-
+        assertThat(names, contains("default", "everything", "foo", "foobar", "foobarbob", "txt", "thingtxt", "exact"));
     }
 }

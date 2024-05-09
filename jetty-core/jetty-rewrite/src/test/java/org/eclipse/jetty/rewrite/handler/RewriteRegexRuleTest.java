@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.util.stream.Stream;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
@@ -26,10 +29,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RewriteRegexRuleTest extends AbstractRuleTest
 {
@@ -47,12 +46,24 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
             // TODO: path is not encoded when it reaches the X-Path handler
             new Scenario("/f%20o3/bar", "/(.*)/(.*)", "/$2/$1/xxx", "/bar/f%20o3/xxx", null),
             new Scenario("/foo4/bar", "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "p2=bar&p1=foo4"),
-            new Scenario("/foo4.2/bar/zed", "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "p2=zed&p1=foo4.2/bar"),
-            new Scenario("/foo4.3/bar/zed", "/([^/]*)/([^/]*)/.*", "/test?p2=$2&p1=$1", "/test", "p2=bar&p1=foo4.3"),
+            new Scenario(
+                "/foo4.2/bar/zed", "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "p2=zed&p1=foo4.2/bar"),
+            new Scenario(
+                "/foo4.3/bar/zed",
+                "/([^/]*)/([^/]*)/.*",
+                "/test?p2=$2&p1=$1",
+                "/test",
+                "p2=bar&p1=foo4.3"),
             // Example of bad regex group (accidentally covered query)
-            new Scenario("/foo4.4/bar?x=y", "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "p2=bar?x=y&p1=foo4.4"),
+            new Scenario(
+                "/foo4.4/bar?x=y", "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "p2=bar?x=y&p1=foo4.4"),
             // Fixed Example of above bad regex group (covered query properly)
-            new Scenario("/foo4.5/bar?x=y", "/([^/]*)/([^/?]*).*", "/test?p2=$2&p1=$1", "/test", "p2=bar&p1=foo4.5"),
+            new Scenario(
+                "/foo4.5/bar?x=y",
+                "/([^/]*)/([^/?]*).*",
+                "/test?p2=$2&p1=$1",
+                "/test",
+                "p2=bar&p1=foo4.5"),
             // specific regex groups
             new Scenario("/foo5/bar", "^/(foo5)/(.*)(bar)", "/$3/$1/xxx$2", "/bar/foo5/xxx", null),
             // target input with raw "$"
@@ -60,11 +71,31 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
             // target input with raw "$", and replacement with "$" character
             new Scenario("/foo6/$bar", "/.*", "/\\$replace", "/$replace", null),
             new Scenario("/fooA/$bar", "/fooA/(.*)", "/$1/replace", "/$bar/replace", null),
-            new Scenario("/fooB/bar/info", "/fooB/(NotHere)?([^/]*)/(.*)", "/$3/other?p1=$2", "/info/other", "p1=bar"),
-            new Scenario("/fooC/bar/info", "/fooC/(NotHere)?([^/]*)/([^?]*)(?:\\?|/\\?|/|)(?<query>.*)", "/$3/other?p1=$2&${query}", "/info/other", "p1=bar&"),
-            new Scenario("/fooD/bar/info?n=v", "/fooD/(NotHere)?([^/]*)/([^?]*)(?:\\?|/\\?|/|)(?<query>.*)", "/$3/other?p1=$2&${query}", "/info/other", "p1=bar&n=v"),
-            new Scenario("/fooE/bar/info?n=v", "/fooE/(NotHere)?([^/]*)/([^?]*)(?:\\?|/\\?|/|)(?<query>.*)", "/$3/other?p1=$2", "/info/other", "p1=bar")
-        ).map(Arguments::of);
+            new Scenario(
+                "/fooB/bar/info",
+                "/fooB/(NotHere)?([^/]*)/(.*)",
+                "/$3/other?p1=$2",
+                "/info/other",
+                "p1=bar"),
+            new Scenario(
+                "/fooC/bar/info",
+                "/fooC/(NotHere)?([^/]*)/([^?]*)(?:\\?|/\\?|/|)(?<query>.*)",
+                "/$3/other?p1=$2&${query}",
+                "/info/other",
+                "p1=bar&"),
+            new Scenario(
+                "/fooD/bar/info?n=v",
+                "/fooD/(NotHere)?([^/]*)/([^?]*)(?:\\?|/\\?|/|)(?<query>.*)",
+                "/$3/other?p1=$2&${query}",
+                "/info/other",
+                "p1=bar&n=v"),
+            new Scenario(
+                "/fooE/bar/info?n=v",
+                "/fooE/(NotHere)?([^/]*)/([^?]*)(?:\\?|/\\?|/|)(?<query>.*)",
+                "/$3/other?p1=$2",
+                "/info/other",
+                "p1=bar"))
+            .map(Arguments::of);
     }
 
     private void start(RewriteRegexRule rule) throws Exception
@@ -95,8 +126,9 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
         String request = """
             GET $T HTTP/1.1
             Host: localhost
-                        
-            """.replace("$T", scenario.pathQuery);
+
+            """
+            .replace("$T", scenario.pathQuery);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus(), "Response status code");
@@ -113,8 +145,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
             Arguments.of("/foo/bar?", "/test?&p2=bar&p1=foo"),
             Arguments.of("/foo/bar/?", "/test?&p2=bar&p1=foo"),
             Arguments.of("/foo/bar?a=b", "/test?a=b&p2=bar&p1=foo"),
-            Arguments.of("/foo/bar/?a=b", "/test?a=b&p2=bar&p1=foo")
-        );
+            Arguments.of("/foo/bar/?a=b", "/test?a=b&p2=bar&p1=foo"));
     }
 
     @ParameterizedTest
@@ -126,11 +157,12 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
         RewriteRegexRule rule = new RewriteRegexRule(regex, replacement);
         start(rule);
 
-        String request = """
-            GET $T HTTP/1.1
-            Host: localhost
-                        
-            """.replace("$T", target);
+        String request =
+            """
+                GET $T HTTP/1.1
+                Host: localhost
+
+                """.replace("$T", target);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus(), "Response status code");
@@ -142,7 +174,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
         assertThat(result, is(expectedResult));
     }
 
-    private record Scenario(String pathQuery, String regex, String replacement, String expectedPath, String expectedQuery)
-    {
+    private record Scenario(
+        String pathQuery, String regex, String replacement, String expectedPath, String expectedQuery) {
     }
 }

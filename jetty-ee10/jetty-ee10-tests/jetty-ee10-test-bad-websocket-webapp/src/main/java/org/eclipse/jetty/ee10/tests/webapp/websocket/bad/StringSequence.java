@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.ee10.tests.webapp.websocket.bad;
 
-public class StringSequence
-    implements CharSequence
+public class StringSequence implements CharSequence
 {
     public String stringBuffer = "";
 

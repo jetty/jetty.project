@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.ee9.test.client.transport;
 
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ReadListener;
@@ -27,6 +24,11 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
@@ -38,9 +40,6 @@ import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisabledForJreRange(max = JRE.JAVA_18)
 public class VirtualThreadsTest extends AbstractTest
@@ -149,7 +148,8 @@ public class VirtualThreadsTest extends AbstractTest
         });
         ThreadPool threadPool = server.getThreadPool();
         if (threadPool instanceof VirtualThreads.Configurable)
-            ((VirtualThreads.Configurable)threadPool).setVirtualThreadsExecutor(VirtualThreads.getDefaultVirtualThreadsExecutor());
+            ((VirtualThreads.Configurable)threadPool)
+                .setVirtualThreadsExecutor(VirtualThreads.getDefaultVirtualThreadsExecutor());
         server.start();
         startClient(transport);
 

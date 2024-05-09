@@ -13,18 +13,18 @@
 
 package org.eclipse.jetty.ee10.proxy;
 
-import java.io.IOException;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.util.IO;
 
 public class EchoHttpServlet extends HttpServlet
 {
     @Override
-    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void service(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         IO.copy(request.getInputStream(), response.getOutputStream());
     }

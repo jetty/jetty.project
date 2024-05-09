@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.parser;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http3.Grease;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.FrameType;
@@ -87,14 +86,23 @@ public class ControlParser
                             {
                                 // SPEC: message frames on the control stream are invalid.
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("invalid message frame type {} on control stream", Long.toHexString(frameType));
-                                sessionFailure(buffer, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type", new IOException("invalid message frame on control stream"));
+                                    LOG.debug(
+                                        "invalid message frame type {} on control stream",
+                                        Long.toHexString(frameType));
+                                sessionFailure(
+                                    buffer,
+                                    HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(),
+                                    "invalid_frame_type",
+                                    new IOException("invalid message frame on control stream"));
                                 return;
                             }
 
                             // SPEC: grease and unknown frame types are ignored.
                             if (LOG.isDebugEnabled())
-                                LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
+                                LOG.debug(
+                                    "ignoring {} frame type {}",
+                                    Grease.isGreaseValue(frameType) ? "grease" : "unknown",
+                                    Long.toHexString(frameType));
 
                             BodyParser.Result result = unknownBodyParser.parse(buffer);
                             if (result == BodyParser.Result.NO_FRAME)
@@ -146,6 +154,7 @@ public class ControlParser
 
     private enum State
     {
-        HEADER, BODY
+        HEADER,
+        BODY
     }
 }

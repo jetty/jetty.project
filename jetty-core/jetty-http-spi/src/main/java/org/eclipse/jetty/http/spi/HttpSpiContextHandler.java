@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.http.spi;
 
-import java.util.List;
-import java.util.Map;
-
 import com.sun.net.httpserver.Authenticator;
 import com.sun.net.httpserver.Authenticator.Result;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpPrincipal;
+import java.util.List;
+import java.util.Map;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -53,9 +52,7 @@ public class HttpSpiContextHandler extends ContextHandler
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                try (HttpExchange jettyHttpExchange = request.isSecure()
-                    ? new JettyHttpsExchange(_httpContext, request, response)
-                    : new JettyHttpExchange(_httpContext, request, response))
+                try (HttpExchange jettyHttpExchange = request.isSecure() ? new JettyHttpsExchange(_httpContext, request, response) : new JettyHttpExchange(_httpContext, request, response))
                 {
                     Authenticator auth = _httpContext.getAuthenticator();
                     if (auth != null && handleAuthentication(request, response, callback, jettyHttpExchange, auth))
@@ -81,11 +78,7 @@ public class HttpSpiContextHandler extends ContextHandler
     }
 
     private boolean handleAuthentication(
-        Request request,
-        Response response,
-        Callback callback,
-        HttpExchange httpExchange,
-        Authenticator auth)
+                                         Request request, Response response, Callback callback, HttpExchange httpExchange, Authenticator auth)
     {
         Result result = auth.authenticate(httpExchange);
         if (result instanceof Authenticator.Failure)

@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.ee9.security;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.function.Function;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
+import java.util.function.Function;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
@@ -42,8 +43,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DataConstraintsTest
 {
@@ -99,7 +98,9 @@ public class DataConstraintsTest
         _security.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.sendError(404);
@@ -291,13 +292,16 @@ public class DataConstraintsTest
         response = _connectorS.getResponse("POST /ctx/confid/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 401 Unauthorized"));
 
-        response = _connector.getResponse("GET /ctx/confid/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connector.getResponse(
+            "GET /ctx/confid/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
-        response = _connector.getResponse("POST /ctx/confid/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connector.getResponse(
+            "POST /ctx/confid/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 302 Found"));
 
-        response = _connectorS.getResponse("POST /ctx/confid/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connectorS.getResponse(
+            "POST /ctx/confid/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
     }
 
@@ -323,10 +327,12 @@ public class DataConstraintsTest
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponse("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connector.getResponse(
+            "GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
-        response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connectorS.getResponse(
+            "GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
     }
 
@@ -353,10 +359,12 @@ public class DataConstraintsTest
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponse("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connector.getResponse(
+            "GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
-        response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connectorS.getResponse(
+            "GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
     }
 
@@ -387,10 +395,12 @@ public class DataConstraintsTest
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 401 Unauthorized"));
 
-        response = _connector.getResponse("GET /ctx/restricted/info HTTP/1.0\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\n\n");
+        response = _connector.getResponse(
+            "GET /ctx/restricted/info HTTP/1.0\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\n\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
 
-        response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\n\n");
+        response = _connectorS.getResponse(
+            "GET /ctx/restricted/info HTTP/1.0\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\n\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
     }
 
@@ -410,7 +420,11 @@ public class DataConstraintsTest
         }
 
         @Override
-        public UserIdentity login(String username, Object credentials, org.eclipse.jetty.server.Request request, Function<Boolean, Session> getOrCreateSession)
+        public UserIdentity login(
+                                  String username,
+                                  Object credentials,
+                                  org.eclipse.jetty.server.Request request,
+                                  Function<Boolean, Session> getOrCreateSession)
         {
             if ("admin".equals(username) && "password".equals(credentials))
                 return UserIdentity.from(null, null, "admin");

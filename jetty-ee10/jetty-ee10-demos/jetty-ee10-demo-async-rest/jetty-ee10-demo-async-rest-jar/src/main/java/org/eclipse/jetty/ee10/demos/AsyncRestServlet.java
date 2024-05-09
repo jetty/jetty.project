@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee10.demos;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
@@ -20,12 +25,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
@@ -71,7 +70,8 @@ public class AsyncRestServlet extends AbstractRestServlet
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         long start = NanoTime.now();
 
@@ -100,22 +100,21 @@ public class AsyncRestServlet extends AbstractRestServlet
             Queue<Map<String, Object>> resultsQueue = results;
             for (final String item : keywords)
             {
-                _client.newRequest(restURL(item)).method(HttpMethod.GET).send(
-                    new AsyncRestRequest()
+                _client.newRequest(restURL(item)).method(HttpMethod.GET).send(new AsyncRestRequest()
+                {
+                    @Override
+                    void onAuctionFound(Map<String, Object> auction)
                     {
-                        @Override
-                        void onAuctionFound(Map<String, Object> auction)
-                        {
-                            resultsQueue.add(auction);
-                        }
+                        resultsQueue.add(auction);
+                    }
 
-                        @Override
-                        void onComplete()
-                        {
-                            if (outstanding.decrementAndGet() <= 0)
-                                async.dispatch();
-                        }
-                    });
+                    @Override
+                    void onComplete()
+                    {
+                        if (outstanding.decrementAndGet() <= 0)
+                            async.dispatch();
+                    }
+                });
             }
 
             // save timing info and return
@@ -150,9 +149,7 @@ public class AsyncRestServlet extends AbstractRestServlet
         out.print("Thread held (<span class='red'>red</span>): " + ms(thread) + "ms (" + ms(initial) + " initial + " + ms(generate) + " generate )<br/>");
         out.print("Async wait (<span class='green'>green</span>): " + ms(total - thread) + "ms<br/>");
 
-        out.println("<img border='0px' src='asyncrest/red.png'   height='20px' width='" + width(initial) + "px'>" +
-            "<img border='0px' src='asyncrest/green.png' height='20px' width='" + width(total - thread) + "px'>" +
-            "<img border='0px' src='asyncrest/red.png'   height='20px' width='" + width(generate) + "px'>");
+        out.println("<img border='0px' src='asyncrest/red.png'   height='20px' width='" + width(initial) + "px'>" + "<img border='0px' src='asyncrest/green.png' height='20px' width='" + width(total - thread) + "px'>" + "<img border='0px' src='asyncrest/red.png'   height='20px' width='" + width(generate) + "px'>");
 
         out.println("<hr />");
         out.println(thumbs);
@@ -201,7 +198,8 @@ public class AsyncRestServlet extends AbstractRestServlet
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         doGet(request, response);
     }

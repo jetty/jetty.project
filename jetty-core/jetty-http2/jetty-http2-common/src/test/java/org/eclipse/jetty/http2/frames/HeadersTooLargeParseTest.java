@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -31,9 +33,6 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HeadersTooLargeParseTest
 {
     private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
@@ -41,9 +40,15 @@ public class HeadersTooLargeParseTest
     @Test
     public void testProtocolErrorURITooLong() throws HpackException
     {
-        HttpFields fields = HttpFields.build()
-                .put("B", "test");
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/nested/uri/path/too/long", HttpVersion.HTTP_2, fields, -1);
+        HttpFields fields = HttpFields.build().put("B", "test");
+        MetaData.Request metaData = new MetaData.Request(
+            "GET",
+            HttpScheme.HTTP.asString(),
+            new HostPortHttpField("localhost:8080"),
+            "/nested/uri/path/too/long",
+            HttpVersion.HTTP_2,
+            fields,
+            -1);
         int maxHeaderSize = 48;
 
         assertProtocolError(maxHeaderSize, metaData);
@@ -53,9 +58,16 @@ public class HeadersTooLargeParseTest
     public void testProtocolErrorCumulativeHeaderSize() throws HpackException
     {
         HttpFields fields = HttpFields.build()
-                .put("X-Large-Header", "lorem-ipsum-dolor-sit")
-                .put("X-Other-Header", "test");
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/", HttpVersion.HTTP_2, fields, -1);
+            .put("X-Large-Header", "lorem-ipsum-dolor-sit")
+            .put("X-Other-Header", "test");
+        MetaData.Request metaData = new MetaData.Request(
+            "GET",
+            HttpScheme.HTTP.asString(),
+            new HostPortHttpField("localhost:8080"),
+            "/",
+            HttpVersion.HTTP_2,
+            fields,
+            -1);
         int maxHeaderSize = 64;
 
         assertProtocolError(maxHeaderSize, metaData);

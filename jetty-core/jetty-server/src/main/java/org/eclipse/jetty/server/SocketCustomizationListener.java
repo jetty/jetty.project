@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.net.Socket;
-
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Connection.Listener;
 import org.eclipse.jetty.io.EndPoint;

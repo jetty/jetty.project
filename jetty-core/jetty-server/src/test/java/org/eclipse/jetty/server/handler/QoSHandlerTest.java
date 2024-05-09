@@ -13,12 +13,19 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.EofException;
@@ -33,14 +40,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class QoSHandlerTest
 {
@@ -95,22 +94,25 @@ public class QoSHandlerTest
         List<LocalConnector.LocalEndPoint> endPoints = new ArrayList<>();
         for (int i = 0; i < maxRequests; ++i)
         {
-            LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
-                GET /%d HTTP/1.1
-                Host: localhost
-                                
-                """.formatted(i));
+            LocalConnector.LocalEndPoint endPoint = connector.executeRequest(
+                """
+                    GET /%d HTTP/1.1
+                    Host: localhost
+
+                    """
+                    .formatted(i));
             endPoints.add(endPoint);
             // Wait that the request arrives at the server.
             await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(i + 1));
         }
 
         // Send one more request, it should be suspended by QoSHandler.
-        LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
-            GET /%d HTTP/1.1
-            Host: localhost
-                            
-            """.formatted(maxRequests));
+        LocalConnector.LocalEndPoint endPoint = connector.executeRequest(
+            """
+                GET /%d HTTP/1.1
+                Host: localhost
+
+                """.formatted(maxRequests));
         endPoints.add(endPoint);
 
         assertEquals(maxRequests, callbacks.size());
@@ -161,19 +163,21 @@ public class QoSHandlerTest
         });
         start(qosHandler);
 
-        LocalConnector.LocalEndPoint endPoint0 = connector.executeRequest("""
-            GET /0 HTTP/1.1
-            Host: localhost
-                            
-            """);
+        LocalConnector.LocalEndPoint endPoint0 =
+            connector.executeRequest("""
+                GET /0 HTTP/1.1
+                Host: localhost
+
+                """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // This request is suspended by QoSHandler.
-        LocalConnector.LocalEndPoint endPoint1 = connector.executeRequest("""
-            GET /1 HTTP/1.1
-            Host: localhost
-                            
-            """);
+        LocalConnector.LocalEndPoint endPoint1 =
+            connector.executeRequest("""
+                GET /1 HTTP/1.1
+                Host: localhost
+
+                """);
         await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1L));
 
         // Do not succeed the callback of the first request.
@@ -191,11 +195,12 @@ public class QoSHandlerTest
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
 
         // Verify that a third request goes through.
-        LocalConnector.LocalEndPoint endPoint2 = connector.executeRequest("""
-            GET /2 HTTP/1.1
-            Host: localhost
-                            
-            """);
+        LocalConnector.LocalEndPoint endPoint2 =
+            connector.executeRequest("""
+                GET /2 HTTP/1.1
+                Host: localhost
+
+                """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
         callbacks.remove(0).succeeded();
         text = endPoint2.getResponse(false, 5, TimeUnit.SECONDS);
@@ -230,29 +235,32 @@ public class QoSHandlerTest
         start(qosHandler);
 
         // Make a first request.
-        LocalConnector.LocalEndPoint endPoint0 = connector.executeRequest("""
-            GET /0 HTTP/1.1
-            Host: localhost
-                            
-            """);
+        LocalConnector.LocalEndPoint endPoint0 =
+            connector.executeRequest("""
+                GET /0 HTTP/1.1
+                Host: localhost
+
+                """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // Make a second request, will be suspended
-        LocalConnector.LocalEndPoint endPoint1 = connector.executeRequest("""
-            GET /1 HTTP/1.1
-            Host: localhost
-            Priority: 0
-                            
-            """);
+        LocalConnector.LocalEndPoint endPoint1 = connector.executeRequest(
+            """
+                GET /1 HTTP/1.1
+                Host: localhost
+                Priority: 0
+
+                """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // Make a third request, will be suspended.
-        LocalConnector.LocalEndPoint endPoint2 = connector.executeRequest("""
-            GET /2 HTTP/1.1
-            Host: localhost
-            Priority: 1
-                            
-            """);
+        LocalConnector.LocalEndPoint endPoint2 = connector.executeRequest(
+            """
+                GET /2 HTTP/1.1
+                Host: localhost
+                Priority: 1
+
+                """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // Complete the first request.
@@ -280,7 +288,8 @@ public class QoSHandlerTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testConcurrentRequests(boolean async) throws Exception
     {
         int delay = 100;
@@ -314,16 +323,19 @@ public class QoSHandlerTest
 
         int parallelism = 8;
         int iterations = 4;
-        IntStream.range(0, parallelism).parallel().forEach(i ->
-            IntStream.range(0, iterations).forEach(j ->
+        IntStream.range(0, parallelism).parallel().forEach(i -> IntStream.range(0, iterations)
+            .forEach(j ->
             {
-                try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
-                    GET /%d/%d HTTP/1.1
-                    Host: localhost
-                                    
-                    """.formatted(i, j)))
+                try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(
+                    """
+                        GET /%d/%d HTTP/1.1
+                        Host: localhost
+
+                        """
+                        .formatted(i, j)))
                 {
-                    String text = endPoint.getResponse(false, parallelism * iterations * delay * 5, TimeUnit.MILLISECONDS);
+                    String text = endPoint.getResponse(
+                        false, parallelism * iterations * delay * 5, TimeUnit.MILLISECONDS);
                     HttpTester.Response response = HttpTester.parseResponse(text);
                     assertEquals(HttpStatus.OK_200, response.getStatus());
                 }
@@ -331,8 +343,7 @@ public class QoSHandlerTest
                 {
                     fail(x);
                 }
-            })
-        );
+            }));
     }
 
     @Test
@@ -355,29 +366,31 @@ public class QoSHandlerTest
         });
         start(qosHandler);
 
-
         // Wait until a normal request arrives at the handler.
-        LocalConnector.LocalEndPoint normalEndPoint = connector.executeRequest("""
-            GET /normal/request HTTP/1.1
-            Host: localhost
-                            
-            """);
+        LocalConnector.LocalEndPoint normalEndPoint = connector.executeRequest(
+            """
+                GET /normal/request HTTP/1.1
+                Host: localhost
+
+                """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // Check that another normal request does not arrive at the handler
-        LocalConnector.LocalEndPoint anotherEndPoint = connector.executeRequest("""
-            GET /another/normal/request HTTP/1.1
-            Host: localhost
-                            
-            """);
+        LocalConnector.LocalEndPoint anotherEndPoint = connector.executeRequest(
+            """
+                GET /another/normal/request HTTP/1.1
+                Host: localhost
+
+                """);
         await().atLeast(100, TimeUnit.MILLISECONDS).until(callbacks::size, is(1));
 
         // Wait until special request arrives at the handler
-        LocalConnector.LocalEndPoint specialEndPoint = connector.executeRequest("""
-            GET /special/info HTTP/1.1
-            Host: localhost
-                            
-            """);
+        LocalConnector.LocalEndPoint specialEndPoint = connector.executeRequest(
+            """
+                GET /special/info HTTP/1.1
+                Host: localhost
+
+                """);
 
         // Wait that the request arrives at the server.
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(2));
@@ -406,5 +419,4 @@ public class QoSHandlerTest
         response = HttpTester.parseResponse(text);
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
-
 }

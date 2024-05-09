@@ -26,7 +26,6 @@ import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -58,7 +57,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         super(new ProxyV1ConnectionFactory(nextProtocol), new ProxyV2ConnectionFactory(nextProtocol));
     }
 
-    private static ConnectionFactory findNextConnectionFactory(String nextProtocol, Connector connector, String currentProtocol, EndPoint endp)
+    private static ConnectionFactory findNextConnectionFactory(
+                                                               String nextProtocol, Connector connector, String currentProtocol, EndPoint endp)
     {
         currentProtocol = "[" + currentProtocol + "]";
         if (LOG.isDebugEnabled())
@@ -88,7 +88,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         v2.setMaxProxyHeader(maxProxyHeader);
     }
 
-    private static class ProxyV1ConnectionFactory extends AbstractConnectionFactory implements ConnectionFactory.Detecting
+    private static class ProxyV1ConnectionFactory extends AbstractConnectionFactory
+        implements ConnectionFactory.Detecting
     {
         private static final byte[] SIGNATURE = "PROXY".getBytes(StandardCharsets.US_ASCII);
 
@@ -132,11 +133,13 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         @Override
         public Connection newConnection(Connector connector, EndPoint endp)
         {
-            ConnectionFactory nextConnectionFactory = findNextConnectionFactory(_nextProtocol, connector, getProtocol(), endp);
+            ConnectionFactory nextConnectionFactory =
+                findNextConnectionFactory(_nextProtocol, connector, getProtocol(), endp);
             return configure(new ProxyProtocolV1Connection(endp, connector, nextConnectionFactory), connector, endp);
         }
 
-        private static class ProxyProtocolV1Connection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
+        private static class ProxyProtocolV1Connection extends AbstractConnection
+            implements Connection.UpgradeFrom, Connection.UpgradeTo
         {
             // 0     1 2       3       4 5 6
             // 98765432109876543210987654321
@@ -345,7 +348,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 if (unknown)
                 {
                     EndPoint endPoint = getEndPoint();
-                    proxyEndPoint = new ProxyEndPoint(endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
+                    proxyEndPoint = new ProxyEndPoint(
+                        endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
                 }
                 else
                 {
@@ -362,22 +366,27 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    private static class ProxyV2ConnectionFactory extends AbstractConnectionFactory implements ConnectionFactory.Detecting
+    private static class ProxyV2ConnectionFactory extends AbstractConnectionFactory
+        implements ConnectionFactory.Detecting
     {
         private enum Family
         {
-            UNSPEC, INET, INET6, UNIX
+            UNSPEC,
+            INET,
+            INET6,
+            UNIX
         }
 
         private enum Transport
         {
-            UNSPEC, STREAM, DGRAM
+            UNSPEC,
+            STREAM,
+            DGRAM
         }
 
-        private static final byte[] SIGNATURE = new byte[]
-        {
-            0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A
-        };
+        private static final byte[] SIGNATURE =
+            new byte[]
+            {0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A};
 
         private static final int PP2_TYPE_ALPN = 0x01;
         private static final int PP2_TYPE_AUTHORITY = 0x02;
@@ -447,11 +456,13 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         @Override
         public Connection newConnection(Connector connector, EndPoint endp)
         {
-            ConnectionFactory nextConnectionFactory = findNextConnectionFactory(_nextProtocol, connector, getProtocol(), endp);
+            ConnectionFactory nextConnectionFactory =
+                findNextConnectionFactory(_nextProtocol, connector, getProtocol(), endp);
             return configure(new ProxyProtocolV2Connection(endp, connector, nextConnectionFactory), connector, endp);
         }
 
-        private class ProxyProtocolV2Connection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
+        private class ProxyProtocolV2Connection extends AbstractConnection
+            implements Connection.UpgradeFrom, Connection.UpgradeTo
         {
             private static final int HEADER_LENGTH = 16;
 
@@ -496,7 +507,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     else
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Proxy v2 onOpen parsing fixed length packet ran out of bytes, marking as fillInterested");
+                            LOG.debug(
+                                "Proxy v2 onOpen parsing fixed length packet ran out of bytes, marking as fillInterested");
                         fillInterested();
                     }
                 }
@@ -601,7 +613,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 if (_local)
                 {
                     byteBuffer.position(byteBuffer.position() + _length);
-                    proxyEndPoint = new ProxyEndPoint(endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
+                    proxyEndPoint = new ProxyEndPoint(
+                        endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
                 }
                 else
                 {
@@ -659,7 +672,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         byteBuffer.get(value);
 
                         if (LOG.isDebugEnabled())
-                            LOG.debug(String.format("Proxy v2 T=%x L=%d V=%s for %s", type, length, StringUtil.toHexString(value), this));
+                            LOG.debug(String.format(
+                                "Proxy v2 T=%x L=%d V=%s for %s",
+                                type, length, StringUtil.toHexString(value), this));
 
                         // PP2_TYPE_NOOP is only used for byte alignment, skip them.
                         if (type != PP2_TYPE_NOOP)
@@ -688,7 +703,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         }
                     }
 
-                    proxyEndPoint = new ProxyEndPoint(endPoint, local, remote, tlvs, client == 0 ? null : EndPoint.SslSessionData.from(null, null, sslCipher, null));
+                    proxyEndPoint = new ProxyEndPoint(
+                        endPoint,
+                        local,
+                        remote,
+                        tlvs,
+                        client == 0 ? null : EndPoint.SslSessionData.from(null, null, sslCipher, null));
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("Proxy v2 {} {}", endPoint, proxyEndPoint);
@@ -738,21 +758,25 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     default -> throw new IOException("Proxy v2 bad PROXY family");
                 }
 
-                Transport transport = switch (transportAndFamily & 0xF)
-                {
-                    case 0 -> Transport.UNSPEC;
-                    case 1 -> Transport.STREAM;
-                    case 2 -> Transport.DGRAM;
-                    default -> throw new IOException("Proxy v2 bad PROXY family");
-                };
+                Transport transport =
+                    switch (transportAndFamily & 0xF)
+                    {
+                        case 0 -> Transport.UNSPEC;
+                        case 1 -> Transport.STREAM;
+                        case 2 -> Transport.DGRAM;
+                        default -> throw new IOException("Proxy v2 bad PROXY family");
+                    };
 
                 _length = byteBuffer.getChar();
 
                 if (!_local && (_family == Family.UNSPEC || transport != Transport.STREAM))
-                    throw new IOException(String.format("Proxy v2 unsupported PROXY mode 0x%x,0x%x", versionAndCommand, transportAndFamily));
+                    throw new IOException(String.format(
+                        "Proxy v2 unsupported PROXY mode 0x%x,0x%x", versionAndCommand, transportAndFamily));
 
                 if (_length > getMaxProxyHeader())
-                    throw new IOException(String.format("Proxy v2 Unsupported PROXY mode 0x%x,0x%x,0x%x", versionAndCommand, transportAndFamily, _length));
+                    throw new IOException(String.format(
+                        "Proxy v2 Unsupported PROXY mode 0x%x,0x%x,0x%x",
+                        versionAndCommand, transportAndFamily, _length));
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 fixed length packet part is now parsed");
@@ -794,7 +818,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             this(endPoint, local, remote, null, null);
         }
 
-        public ProxyEndPoint(EndPoint endPoint, SocketAddress local, SocketAddress remote, Map<Integer, byte[]> tlvs, SslSessionData sslSessionData)
+        public ProxyEndPoint(
+                             EndPoint endPoint,
+                             SocketAddress local,
+                             SocketAddress remote,
+                             Map<Integer, byte[]> tlvs,
+                             SslSessionData sslSessionData)
         {
             _endPoint = endPoint;
             _local = local;
@@ -813,7 +842,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         {
             return _endPoint;
         }
-        
+
         /**
          * <p>Gets a TLV vector, see section 2.2.7 of the PROXY protocol specification.</p>
          *
@@ -960,12 +989,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         @Override
         public String toString()
         {
-            return String.format("%s@%x[remote=%s,local=%s,endpoint=%s]",
-                getClass().getSimpleName(),
-                hashCode(),
-                _remote,
-                _local,
-                _endPoint);
+            return String.format(
+                "%s@%x[remote=%s,local=%s,endpoint=%s]",
+                getClass().getSimpleName(), hashCode(), _remote, _local, _endPoint);
         }
 
         @Override

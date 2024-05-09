@@ -33,17 +33,12 @@ public enum FrameType
 
     public static boolean isControl(long frameType)
     {
-        return frameType == CANCEL_PUSH.type() ||
-            frameType == SETTINGS.type() ||
-            frameType == GOAWAY.type() ||
-            frameType == MAX_PUSH_ID.type();
+        return frameType == CANCEL_PUSH.type() || frameType == SETTINGS.type() || frameType == GOAWAY.type() || frameType == MAX_PUSH_ID.type();
     }
 
     public static boolean isMessage(long frameType)
     {
-        return frameType == DATA.type() ||
-            frameType == HEADERS.type() ||
-            frameType == PUSH_PROMISE.type();
+        return frameType == DATA.type() || frameType == HEADERS.type() || frameType == PUSH_PROMISE.type();
     }
 
     public static int maxType()

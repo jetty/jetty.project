@@ -24,9 +24,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ClusteredInvalidateSessionTest extends AbstractClusteredInvalidationSessionTest
 {
 
-    private static final String DB_NAME = "DB" + ClusteredInvalidateSessionTest.class.getSimpleName() + System.nanoTime();
+    private static final String DB_NAME =
+        "DB" + ClusteredInvalidateSessionTest.class.getSimpleName() + System.nanoTime();
 
-    private static final String COLLECTION_NAME = "COLLECTION" + ClusteredInvalidateSessionTest.class.getSimpleName() + System.nanoTime();
+    private static final String COLLECTION_NAME =
+        "COLLECTION" + ClusteredInvalidateSessionTest.class.getSimpleName() + System.nanoTime();
 
     @BeforeAll
     public static void beforeClass() throws Exception

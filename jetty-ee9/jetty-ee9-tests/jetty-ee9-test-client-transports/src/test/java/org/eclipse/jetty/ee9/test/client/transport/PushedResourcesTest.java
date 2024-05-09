@@ -13,17 +13,21 @@
 
 package org.eclipse.jetty.ee9.test.client.transport;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.PushBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Result;
@@ -33,11 +37,6 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PushedResourcesTest extends AbstractTest
 {
@@ -71,12 +70,8 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    request.newPushBuilder()
-                        .path(path1)
-                        .push();
-                    request.newPushBuilder()
-                        .path(path2)
-                        .push();
+                    request.newPushBuilder().path(path1).push();
+                    request.newPushBuilder().path(path2).push();
                     response.getOutputStream().write(bytes);
                 }
             }
@@ -178,10 +173,7 @@ public class PushedResourcesTest extends AbstractTest
                         System.err.println("Expected error null method");
                     }
 
-                    String[] methods = {
-                        "", "POST", "PUT", "DELETE",
-                        "CONNECT", "OPTIONS", "TRACE"
-                    };
+                    String[] methods = {"", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE"};
 
                     for (String m : methods)
                     {
@@ -244,7 +236,8 @@ public class PushedResourcesTest extends AbstractTest
             new HttpServlet()
             {
                 @Override
-                protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+                protected void service(HttpServletRequest request, HttpServletResponse response)
+                    throws IOException
                 {
                     try
                     {
@@ -279,10 +272,7 @@ public class PushedResourcesTest extends AbstractTest
                         System.err.println("Expected error null method");
                     }
 
-                    String[] methods = {
-                        "", "POST", "PUT", "DELETE",
-                        "CONNECT", "OPTIONS", "TRACE"
-                    };
+                    String[] methods = {"", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE"};
 
                     for (String m : methods)
                     {

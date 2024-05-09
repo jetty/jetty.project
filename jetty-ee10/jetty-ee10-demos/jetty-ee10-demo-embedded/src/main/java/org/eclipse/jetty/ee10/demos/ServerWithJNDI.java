@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.demos;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import javax.naming.NamingException;
-
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -35,9 +34,10 @@ public class ServerWithJNDI
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee10.demos",
-                "jetty-ee10-demo-jndi-webapp", "", "war");
-        Path testJndiWar = JettyDemos.find("jetty-ee10-demo-jndi-webapp/target/jetty-ee10-demo-jndi-webapp-@VER@.war", mavenCoordinate);
+        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate(
+            "org.eclipse.jetty.ee10.demos", "jetty-ee10-demo-jndi-webapp", "", "war");
+        Path testJndiWar = JettyDemos.find(
+            "jetty-ee10-demo-jndi-webapp/target/jetty-ee10-demo-jndi-webapp-@VER@.war", mavenCoordinate);
         webapp.setWarResource(webapp.getResourceFactory().newResource(testJndiWar));
         server.setHandler(webapp);
 
@@ -46,8 +46,7 @@ public class ServerWithJNDI
 
         // Register new transaction manager in JNDI
         // At runtime, the webapp accesses this as java:comp/UserTransaction
-        new org.eclipse.jetty.ee10.plus.jndi.Transaction("ee10",
-            new org.example.MockUserTransaction());
+        new org.eclipse.jetty.ee10.plus.jndi.Transaction("ee10", new org.example.MockUserTransaction());
 
         // Define an env entry with ee10 scope.
         // At runtime, the webapp accesses this as java:comp/env/woggle
@@ -81,8 +80,7 @@ public class ServerWithJNDI
         // </resource-ref>
         // At runtime the webapp accesses this as
         // java:comp/env/jdbc/mydatasource
-        new org.eclipse.jetty.plus.jndi.Resource(
-            webapp, "jdbc/mydatasource", new org.example.MockDataSource());
+        new org.eclipse.jetty.plus.jndi.Resource(webapp, "jdbc/mydatasource", new org.example.MockDataSource());
         return server;
     }
 

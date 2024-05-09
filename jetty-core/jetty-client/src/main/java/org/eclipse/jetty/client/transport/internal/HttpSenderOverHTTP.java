@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.transport.internal;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.transport.HttpExchange;
@@ -59,7 +58,8 @@ public class HttpSenderOverHTTP extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendHeaders(
+                               HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         try
         {
@@ -74,9 +74,19 @@ public class HttpSenderOverHTTP extends HttpSender
             String query = request.getQuery();
             if (query != null)
                 path += "?" + query;
-            metaData = new MetaData.Request(request.getMethod(), HttpURI.from(path), request.getVersion(), request.getHeaders(), contentLength, request.getTrailersSupplier());
+            metaData = new MetaData.Request(
+                request.getMethod(),
+                HttpURI.from(path),
+                request.getVersion(),
+                request.getHeaders(),
+                contentLength,
+                request.getTrailersSupplier());
             if (LOG.isDebugEnabled())
-                LOG.debug("Sending headers with content {} last={} for {}", BufferUtil.toDetailString(contentBuffer), lastContent, exchange.getRequest());
+                LOG.debug(
+                    "Sending headers with content {} last={} for {}",
+                    BufferUtil.toDetailString(contentBuffer),
+                    lastContent,
+                    exchange.getRequest());
             headersCallback.iterate();
         }
         catch (Throwable x)
@@ -88,7 +98,8 @@ public class HttpSenderOverHTTP extends HttpSender
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendContent(
+                               HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         try
         {
@@ -97,7 +108,11 @@ public class HttpSenderOverHTTP extends HttpSender
             this.lastContent = lastContent;
             this.callback = callback;
             if (LOG.isDebugEnabled())
-                LOG.debug("Sending content {} last={} for {}", BufferUtil.toDetailString(contentBuffer), lastContent, exchange.getRequest());
+                LOG.debug(
+                    "Sending content {} last={} for {}",
+                    BufferUtil.toDetailString(contentBuffer),
+                    lastContent,
+                    exchange.getRequest());
             contentCallback.iterate();
         }
         catch (Throwable x)
@@ -164,13 +179,17 @@ public class HttpSenderOverHTTP extends HttpSender
             {
                 ByteBuffer headerByteBuffer = headerBuffer == null ? null : headerBuffer.getByteBuffer();
                 ByteBuffer chunkByteBuffer = chunkBuffer == null ? null : chunkBuffer.getByteBuffer();
-                HttpGenerator.Result result = generator.generateRequest(metaData, headerByteBuffer, chunkByteBuffer, contentByteBuffer, lastContent);
+                HttpGenerator.Result result = generator.generateRequest(
+                    metaData, headerByteBuffer, chunkByteBuffer, contentByteBuffer, lastContent);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Generated headers ({} bytes), chunk ({} bytes), content ({} bytes) - {}/{} for {}",
+                    LOG.debug(
+                        "Generated headers ({} bytes), chunk ({} bytes), content ({} bytes) - {}/{} for {}",
                         headerByteBuffer == null ? -1 : headerByteBuffer.remaining(),
                         chunkByteBuffer == null ? -1 : chunkByteBuffer.remaining(),
                         contentByteBuffer == null ? -1 : contentByteBuffer.remaining(),
-                        result, generator, exchange.getRequest());
+                        result,
+                        generator,
+                        exchange.getRequest());
                 switch (result)
                 {
                     case NEED_HEADER:
@@ -294,11 +313,15 @@ public class HttpSenderOverHTTP extends HttpSender
             while (true)
             {
                 ByteBuffer chunkByteBuffer = chunkBuffer == null ? null : chunkBuffer.getByteBuffer();
-                HttpGenerator.Result result = generator.generateRequest(null, null, chunkByteBuffer, contentByteBuffer, lastContent);
+                HttpGenerator.Result result =
+                    generator.generateRequest(null, null, chunkByteBuffer, contentByteBuffer, lastContent);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Generated content ({} bytes, last={}) - {}/{}",
+                    LOG.debug(
+                        "Generated content ({} bytes, last={}) - {}/{}",
                         contentByteBuffer == null ? -1 : contentByteBuffer.remaining(),
-                        lastContent, result, generator);
+                        lastContent,
+                        result,
+                        generator);
                 switch (result)
                 {
                     case NEED_CHUNK:

@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee10.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.InetSocketAddress;
@@ -28,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Connection;
@@ -41,10 +44,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RecoverFailedSelectorTest
 {
@@ -95,7 +94,8 @@ public class RecoverFailedSelectorTest
                             }
 
                             @Override
-                            protected void handleSelectFailure(Selector selector, Throwable failure) throws IOException
+                            protected void handleSelectFailure(Selector selector, Throwable failure)
+                                throws IOException
                             {
                                 super.handleSelectFailure(selector, failure);
                                 failureLatch.countDown();
@@ -163,10 +163,12 @@ public class RecoverFailedSelectorTest
                             }
 
                             @Override
-                            protected void handleSelectFailure(Selector selector, Throwable failure) throws IOException
+                            protected void handleSelectFailure(Selector selector, Throwable failure)
+                                throws IOException
                             {
                                 // Before handling the failure, connect with another socket.
-                                SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort()));
+                                SocketChannel socket = SocketChannel.open(
+                                    new InetSocketAddress("localhost", connector.getLocalPort()));
                                 socketRef.set(socket);
                                 super.handleSelectFailure(selector, failure);
                                 failureLatch.countDown();
@@ -236,7 +238,8 @@ public class RecoverFailedSelectorTest
                             }
 
                             @Override
-                            protected void handleSelectFailure(Selector selector, Throwable failure) throws IOException
+                            protected void handleSelectFailure(Selector selector, Throwable failure)
+                                throws IOException
                             {
                                 super.handleSelectFailure(selector, failure);
                                 failureLatch.countDown();
@@ -245,7 +248,9 @@ public class RecoverFailedSelectorTest
                     }
 
                     @Override
-                    protected SocketChannelEndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
+                    protected SocketChannelEndPoint newEndPoint(
+                                                                SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
+                        throws IOException
                     {
                         try
                         {
@@ -272,7 +277,8 @@ public class RecoverFailedSelectorTest
 
             // Wake up the selector and fail it.
             fail.set(true);
-            SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())).close();
+            SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort()))
+                .close();
 
             // Wait until the selector is replaced.
             assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
@@ -321,7 +327,8 @@ public class RecoverFailedSelectorTest
                             }
 
                             @Override
-                            protected void handleSelectFailure(Selector selector, Throwable failure) throws IOException
+                            protected void handleSelectFailure(Selector selector, Throwable failure)
+                                throws IOException
                             {
                                 super.handleSelectFailure(selector, failure);
                                 failureLatch.countDown();
@@ -330,7 +337,8 @@ public class RecoverFailedSelectorTest
                     }
 
                     @Override
-                    public Connection newConnection(SelectableChannel channel, EndPoint endPoint, Object attachment) throws IOException
+                    public Connection newConnection(SelectableChannel channel, EndPoint endPoint, Object attachment)
+                        throws IOException
                     {
                         try
                         {
@@ -358,7 +366,8 @@ public class RecoverFailedSelectorTest
 
             // Wake up the selector and fail it.
             fail.set(true);
-            SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())).close();
+            SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort()))
+                .close();
 
             // Wait until the selector is replaced.
             assertTrue(failureLatch.await(5, TimeUnit.SECONDS));

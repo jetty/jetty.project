@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.client;
 
-import java.net.HttpCookie;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.ContainerProvider;
@@ -25,6 +26,11 @@ import jakarta.websocket.Endpoint;
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
+import java.net.HttpCookie;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.DummyEndpoint;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.StaticText;
@@ -35,13 +41,6 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CookiesTest
 {
@@ -76,8 +75,11 @@ public class CookiesTest
             assertEquals(cookieValue, cookie.getValue());
 
             StringBuilder requestHeaders = new StringBuilder();
-            req.getHeaders().getFieldNamesCollection()
-                .forEach(name -> requestHeaders.append(name).append(": ").append(req.getHeaders().get(name)).append("\n"));
+            req.getHeaders().getFieldNamesCollection().forEach(name -> requestHeaders
+                .append(name)
+                .append(": ")
+                .append(req.getHeaders().get(name))
+                .append("\n"));
 
             return new StaticText(requestHeaders.toString());
         });
@@ -111,7 +113,14 @@ public class CookiesTest
         final String cookiePath = "/path";
         startServer((req, resp, cb) ->
         {
-            org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(cookieName, cookieValue, Map.of(org.eclipse.jetty.http.HttpCookie.DOMAIN_ATTRIBUTE, cookieDomain, org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE, cookiePath));
+            org.eclipse.jetty.http.HttpCookie cookie = org.eclipse.jetty.http.HttpCookie.from(
+                cookieName,
+                cookieValue,
+                Map.of(
+                    org.eclipse.jetty.http.HttpCookie.DOMAIN_ATTRIBUTE,
+                    cookieDomain,
+                    org.eclipse.jetty.http.HttpCookie.PATH_ATTRIBUTE,
+                    cookiePath));
             Response.addCookie(resp, cookie);
             return new WholeMessageEcho();
         });

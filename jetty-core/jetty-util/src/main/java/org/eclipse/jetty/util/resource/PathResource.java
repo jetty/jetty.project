@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -120,7 +119,7 @@ public class PathResource extends Resource
         }
 
         // compare each segment of path, backwards
-        for (int i = bCount; i-- > 0; )
+        for (int i = bCount; i-- > 0;)
         {
             if (!pathA.getName(i).toString().equals(pathB.getName(i).toString()))
             {
@@ -211,9 +210,7 @@ public class PathResource extends Resource
             throw new UnsupportedOperationException("Resources without a Path must implement contains");
 
         Path otherPath = other.getPath();
-        return otherPath != null &&
-            otherPath.getFileSystem().equals(thisPath.getFileSystem()) &&
-            otherPath.startsWith(thisPath);
+        return otherPath != null && otherPath.getFileSystem().equals(thisPath.getFileSystem()) && otherPath.startsWith(thisPath);
     }
 
     public Path getRealPath()
@@ -462,7 +459,8 @@ public class PathResource extends Resource
                 //  - This resource doesn't exist.
                 //  - No access rights to this resource.
                 //  - Unable to read the file or directory.
-                //  - Navigation segments (eg: "foo/../test.txt") would go through something that doesn't exist, or not accessible.
+                //  - Navigation segments (eg: "foo/../test.txt") would go through something that doesn't exist, or not
+                // accessible.
                 //  - FileSystem doesn't support toRealPath.
                 return;
             }

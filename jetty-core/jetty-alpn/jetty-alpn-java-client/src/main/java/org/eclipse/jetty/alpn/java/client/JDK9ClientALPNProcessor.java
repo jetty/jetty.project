@@ -16,7 +16,6 @@ package org.eclipse.jetty.alpn.java.client;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
-
 import org.eclipse.jetty.alpn.client.ALPNClientConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;

@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Connection.Listener;
 import org.eclipse.jetty.io.EndPoint;
@@ -242,7 +241,13 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         {
             _accepting.remove(channel);
             if (LOG.isDebugEnabled())
-                LOG.debug("onAcceptFailed ({}+{}) < {} {} {}", _accepting.size(), _connections, _maxConnections, channel, cause);
+                LOG.debug(
+                    "onAcceptFailed ({}+{}) < {} {} {}",
+                    _accepting.size(),
+                    _connections,
+                    _maxConnections,
+                    channel,
+                    cause);
             check();
         }
     }

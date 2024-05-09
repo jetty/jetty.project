@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -22,7 +27,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -34,11 +38,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class FileIDTest
@@ -74,8 +73,7 @@ public class FileIDTest
             Arguments.of("/dir/foo/", "foo"),
             Arguments.of("/foo", "foo"),
             Arguments.of("/foo/", "foo"),
-            Arguments.of("/", "")
-        );
+            Arguments.of("/", ""));
     }
 
     @ParameterizedTest
@@ -107,11 +105,13 @@ public class FileIDTest
             Arguments.of(URI.create("file:zed/"), "zed"),
             Arguments.of(URI.create("file:///path/to/test.txt"), "test.txt"),
             Arguments.of(URI.create("file:///path/to/dir/"), "dir"),
-            Arguments.of(URI.create("jar:file:///home/user/libs/jetty-server-12.jar!/org/eclipse/jetty/server/jetty-dir.css"), "jetty-dir.css"),
+            Arguments.of(
+                URI.create(
+                    "jar:file:///home/user/libs/jetty-server-12.jar!/org/eclipse/jetty/server/jetty-dir.css"),
+                "jetty-dir.css"),
             Arguments.of(URI.create("http://eclipse.org/jetty/"), "jetty"),
             Arguments.of(URI.create("http://eclipse.org/jetty/index.html"), "index.html"),
-            Arguments.of(URI.create("http://eclipse.org/jetty/docs.html?query=val#anchor"), "docs.html")
-        );
+            Arguments.of(URI.create("http://eclipse.org/jetty/docs.html?query=val#anchor"), "docs.html"));
     }
 
     @ParameterizedTest
@@ -129,8 +129,7 @@ public class FileIDTest
             Arguments.of("path/to/webapps/", "webapps"),
             Arguments.of("META-INF/services/org.eclipse.jetty.FooService", "META-INF"),
             Arguments.of("META-INF/lib/lib-1.jar", "META-INF"),
-            Arguments.of("deeper/path/to/exploded-jar/META-INF/lib/lib-1.jar", "META-INF")
-        );
+            Arguments.of("deeper/path/to/exploded-jar/META-INF/lib/lib-1.jar", "META-INF"));
     }
 
     /**
@@ -141,7 +140,8 @@ public class FileIDTest
     public void testHasNamedPathSegmentTrue(String input, String dirname) throws IOException
     {
         Path path = touchTestPath(input);
-        assertTrue(FileID.hasNamedPathSegment(path, dirname), "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
+        assertTrue(
+            FileID.hasNamedPathSegment(path, dirname), "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
     }
 
     public static Stream<Arguments> hasNamedPathSegmentFalseCases()
@@ -150,8 +150,7 @@ public class FileIDTest
             Arguments.of("path/to/webapps/root.war", "WEB-INF"),
             Arguments.of("path/to/webapps/", "WEB-INF"),
             Arguments.of("classes/org.eclipse.jetty.util.Foo", "util"),
-            Arguments.of("path/lib-a/foo.txt", "lib")
-        );
+            Arguments.of("path/lib-a/foo.txt", "lib"));
     }
 
     /**
@@ -162,7 +161,8 @@ public class FileIDTest
     public void testHasNamedPathSegmentFalse(String input, String dirname) throws IOException
     {
         Path path = touchTestPath(input);
-        assertFalse(FileID.hasNamedPathSegment(path, dirname), "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
+        assertFalse(
+            FileID.hasNamedPathSegment(path, dirname), "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
     }
 
     public static Stream<Arguments> hasNamedPathSegmentCasesTrue()
@@ -171,8 +171,7 @@ public class FileIDTest
             Arguments.of("/META-INF/services/org.eclipse.jetty.FooService", "META-INF"),
             Arguments.of("/WEB-INF/lib/lib-1.jar", "WEB-INF"),
             Arguments.of("/WEB-INF/dir/foo.tld", "WEB-INF"),
-            Arguments.of("/opt/web/base/webapps/root.war", "webapps")
-        );
+            Arguments.of("/opt/web/base/webapps/root.war", "webapps"));
     }
 
     /**
@@ -191,7 +190,9 @@ public class FileIDTest
         {
             Path root = zipfs.getPath("/");
             Path path = touchTestPath(root, input);
-            assertTrue(FileID.hasNamedPathSegment(path, dirname), "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
+            assertTrue(
+                FileID.hasNamedPathSegment(path, dirname),
+                "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
         }
     }
 
@@ -201,7 +202,8 @@ public class FileIDTest
             Arguments.of("/css/main.css", "WEB-INF"),
             Arguments.of("/META-INF/classes/module-info.class", "WEB-INF"),
             Arguments.of("/", "tmp"),
-            Arguments.of("/index.html", "target") // shouldn't detect that the zipfs archive is in the target directory
+            Arguments.of(
+                "/index.html", "target") // shouldn't detect that the zipfs archive is in the target directory
         );
     }
 
@@ -223,7 +225,9 @@ public class FileIDTest
             Path root = zipfs.getPath("/");
             FS.ensureDirExists(root.resolve("/tmp"));
             Path path = touchTestPath(root, input);
-            assertFalse(FileID.hasNamedPathSegment(path, dirname), "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
+            assertFalse(
+                FileID.hasNamedPathSegment(path, dirname),
+                "hasNamedPathSegment(%s, \"%s\")".formatted(path, dirname));
         }
     }
 
@@ -240,8 +244,7 @@ public class FileIDTest
             Arguments.of("foo.bar", "bar"),
             Arguments.of("foo.", ""),
             Arguments.of("foo", null),
-            Arguments.of(".bar", null)
-        );
+            Arguments.of(".bar", null));
     }
 
     @ParameterizedTest
@@ -258,12 +261,14 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "jar:file:/home/user/project/with.jar/in/path/name",
         "file:/home/user/project/directory/",
         "file:/home/user/hello.ear",
-        "file:/opt/websites/webapps/company.war", // war files are not lib archives (the classes are not in the right place)
-        "/home/user/app.war",  // not a absolute URI
+        "file:/opt/websites/webapps/company.war", // war files are not lib archives (the classes are not in the
+        // right place)
+        "/home/user/app.war", // not a absolute URI
         "/home/user/hello.jar"
     })
     public void testIsLibArchiveUriFalse(String rawUri)
@@ -272,7 +277,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar!/",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
@@ -285,7 +291,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "jar:file:/home/user/project/with.jar/in/path/name",
         "/home/user/project/with.jar/in/path/name",
         "/home/user/project/directory/",
@@ -302,7 +309,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
         "company-1.0.jar",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
@@ -316,11 +324,12 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "jar:file:/home/user/project/with.jar/in/path/name",
         "file:/home/user/project/directory/",
         "file:/home/user/hello.ear",
-        "/home/user/app.war",  // not a absolute URI
+        "/home/user/app.war", // not a absolute URI
         "/home/user/hello.jar"
     })
     public void testIsArchiveUriFalse(String rawUri)
@@ -329,7 +338,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar!/",
         "jar:file:/home/user/.m2/repository/com/company/1.0/company-1.0.jar",
@@ -345,7 +355,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         // Doesn't end in class
         "Foo.txt",
         // No name
@@ -375,11 +386,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "Foo.class",
-        "org/eclipse/jetty/demo/Zed.class",
-        "org/eclipse/jetty/demo/Zed$Inner.class"
-    })
+    @ValueSource(strings =
+    {"Foo.class", "org/eclipse/jetty/demo/Zed.class", "org/eclipse/jetty/demo/Zed$Inner.class"})
     public void testIsClassFileTrue(String input) throws IOException
     {
         Path testPath = touchTestPath(input);
@@ -387,12 +395,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "dir/foo.txt",
-        "bar",
-        "zed.png",
-        "a/b/c/d/e/f/g.jpeg"
-    })
+    @ValueSource(strings =
+    {"dir/foo.txt", "bar", "zed.png", "a/b/c/d/e/f/g.jpeg"})
     public void testIsHiddenFalse(String input) throws IOException
     {
         Path base = workDir.getEmptyPathDir();
@@ -401,12 +405,10 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        ".dir/foo.txt",
-        ".bar",
-        "a/b/c/.d/e/f/g.jpeg"
-    })
-    @EnabledOnOs({OS.LINUX, OS.MAC})
+    @ValueSource(strings =
+    {".dir/foo.txt", ".bar", "a/b/c/.d/e/f/g.jpeg"})
+    @EnabledOnOs(
+    {OS.LINUX, OS.MAC})
     public void testIsHiddenTrue(String input) throws IOException
     {
         Path base = workDir.getEmptyPathDir();
@@ -415,7 +417,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "/META-INF/versions/9/foo.txt",
         "/META-INF/versions/17/org/eclipse/demo/Util.class",
         "/META-INF/versions/17/WEB-INF/web.xml",
@@ -441,7 +444,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "foo",
         "dir/",
         "zed.txt",
@@ -459,14 +463,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "dir/foo.war",
-        "DIR/FOO.WAR",
-        "Dir/Foo.War",
-        "zed.war",
-        "ZED.WAR",
-        "Zed.War"
-    })
+    @ValueSource(strings =
+    {"dir/foo.war", "DIR/FOO.WAR", "Dir/Foo.War", "zed.war", "ZED.WAR", "Zed.War"})
     public void testIsWebArchiveStringTrue(String input) throws IOException
     {
         assertTrue(FileID.isWebArchive(input), "isWebArchive((String) \"%s\")".formatted(input));
@@ -475,13 +473,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "foo.jar",
-        "FOO.war",
-        "Foo.zip",
-        "dir/zed.xml/",
-        "dir/zed.xml/bar.txt"
-    })
+    @ValueSource(strings =
+    {"foo.jar", "FOO.war", "Foo.zip", "dir/zed.xml/", "dir/zed.xml/bar.txt"})
     public void testIsXmlFalse(String input) throws IOException
     {
         assertFalse(FileID.isXml(input), "isXml((String) \"%s\")".formatted(input));
@@ -490,7 +483,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "foo.xml",
         "FOO.XML",
         "Foo.Xml",
@@ -506,7 +500,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "/root.txt",
         "/META-INF/MANIFEST.MF",
         "/META-INF/services/versions/foo.txt",
@@ -531,7 +526,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "foo/module-info.class",
         "module-info.class",
         "Module-Info.Class", // case differences
@@ -544,7 +540,8 @@ public class FileIDTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "foo/Bar.class",
         "Zed.class",
         "META-INF/versions/9/foo/Bar.class",

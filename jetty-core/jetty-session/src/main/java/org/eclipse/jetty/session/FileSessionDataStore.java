@@ -20,8 +20,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
@@ -32,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -110,12 +107,12 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
     {
         if (_storeDir != null)
         {
-            //remove from our map
+            // remove from our map
             String filename = _sessionFileMap.remove(getIdWithContext(id));
             if (filename == null)
                 return false;
 
-            //remove the file
+            // remove the file
             return deleteFile(filename);
         }
 
@@ -150,8 +147,8 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
     {
         HashSet<String> expired = new HashSet<>();
 
-        //check the candidates
-        for (String id:candidates)
+        // check the candidates
+        for (String id : candidates)
         {
             String filename = _sessionFileMap.get(getIdWithContext(id));
             // no such file, therefore no longer any such session, it can be expired
@@ -182,7 +179,7 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
 
         // iterate over the files and work out which expired at or
         // before the time limit
-        for (String filename:_sessionFileMap.values())
+        for (String filename : _sessionFileMap.values())
         {
             try
             {
@@ -195,7 +192,7 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
                 LOG.warn("Error finding sessions expired before {}", timeLimit, e);
             }
         }
-        
+
         return expired;
     }
 
@@ -210,14 +207,13 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
      * that expired at or before the time limit.
      */
     protected void sweepDisk(long time)
-    {        
+    {
         // iterate over the files in the store dir and check expiry times
         if (LOG.isDebugEnabled())
             LOG.debug("Sweeping {} for old session files at {}", _storeDir, time);
         try (Stream<Path> stream = Files.walk(_storeDir.toPath(), 1, FileVisitOption.FOLLOW_LINKS))
         {
-            stream
-                .filter(p -> !Files.isDirectory(p))
+            stream.filter(p -> !Files.isDirectory(p))
                 .filter(p -> isSessionFilename(p.getFileName().toString()))
                 .forEach(p -> sweepFile(time, p));
         }
@@ -240,7 +236,7 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
             try
             {
                 long expiry = getExpiryFromFilename(p.getFileName().toString());
-                //files with 0 expiry never expire
+                // files with 0 expiry never expire
                 if (expiry > 0 && expiry <= time)
                 {
                     try
@@ -266,7 +262,7 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
     @Override
     public SessionData doLoad(String id) throws Exception
     {
-        //load session info from its file
+        // load session info from its file
         String idWithContext = getIdWithContext(id);
         String filename = _sessionFileMap.get(idWithContext);
         if (filename == null)
@@ -315,7 +311,7 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
         {
             delete(id);
 
-            //make a fresh file using the latest session expiry
+            // make a fresh file using the latest session expiry
             String filename = getIdWithContextAndExpiry(data);
             String idWithContext = getIdWithContext(id);
             file = new File(_storeDir, filename);
@@ -346,8 +342,7 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
      * or contains 2 files with the same lastmodify time for the same session. Throws IOException
      * if the lastmodifytimes can't be read.
      */
-    public void initializeStore()
-        throws Exception
+    public void initializeStore() throws Exception
     {
         if (_storeDir == null)
             throw new IllegalStateException("No file store specified");
@@ -362,17 +357,16 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
             if (!(_storeDir.isDirectory() && _storeDir.canWrite() && _storeDir.canRead()))
                 throw new IllegalStateException(_storeDir.getAbsolutePath() + " must be readable/writeable dir");
 
-            //iterate over files in _storeDir and build map of session id to filename.
-            //if we come across files for sessions in other contexts, check if they're
-            //ancient and remove if necessary.
+            // iterate over files in _storeDir and build map of session id to filename.
+            // if we come across files for sessions in other contexts, check if they're
+            // ancient and remove if necessary.
             final ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
             long now = System.currentTimeMillis();
 
             // Build session file map by walking directory
             try (Stream<Path> stream = Files.walk(_storeDir.toPath(), 1, FileVisitOption.FOLLOW_LINKS))
             {
-                stream
-                    .filter(p -> !Files.isDirectory(p))
+                stream.filter(p -> !Files.isDirectory(p))
                     .filter(p -> isSessionFilename(p.getFileName().toString()))
                     .forEach(p ->
                     {
@@ -382,20 +376,20 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
                         String filename = p.getFileName().toString();
                         String context = getContextFromFilename(filename);
 
-                        //now process it if it wasn't deleted, and it is for our context
+                        // now process it if it wasn't deleted, and it is for our context
                         if (Files.exists(p) && _contextString.equals(context))
                         {
-                            //the session is for our context, populate the map with it
+                            // the session is for our context, populate the map with it
                             String sessionIdWithContext = getIdWithContextFromFilename(filename);
                             if (sessionIdWithContext != null)
                             {
-                                //handle multiple session files existing for the same session: remove all
-                                //but the file with the most recent expiry time
+                                // handle multiple session files existing for the same session: remove all
+                                // but the file with the most recent expiry time
                                 String existing = _sessionFileMap.putIfAbsent(sessionIdWithContext, filename);
                                 if (existing != null)
                                 {
-                                    //if there was a prior filename, work out which has the most
-                                    //recent modify time
+                                    // if there was a prior filename, work out which has the most
+                                    // recent modify time
                                     try
                                     {
                                         long existingExpiry = getExpiryFromFilename(existing);
@@ -403,18 +397,19 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
 
                                         if (thisExpiry > existingExpiry)
                                         {
-                                            //replace with more recent file
-                                            Path existingPath = _storeDir.toPath().resolve(existing);
-                                            //update the file we're keeping
+                                            // replace with more recent file
+                                            Path existingPath =
+                                                _storeDir.toPath().resolve(existing);
+                                            // update the file we're keeping
                                             _sessionFileMap.put(sessionIdWithContext, filename);
-                                            //delete the old file
+                                            // delete the old file
                                             Files.delete(existingPath);
                                             if (LOG.isDebugEnabled())
                                                 LOG.debug("Replaced {} with {}", existing, filename);
                                         }
                                         else
                                         {
-                                            //we found an older file, delete it
+                                            // we found an older file, delete it
                                             Files.delete(p);
                                             if (LOG.isDebugEnabled())
                                                 LOG.debug("Deleted expired session file {}", filename);
@@ -449,12 +444,12 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
         if (filename == null)
             return false;
 
-        //check the expiry
+        // check the expiry
         long expiry = getExpiryFromFilename(filename);
         if (expiry <= 0)
-            return true; //never expires
+            return true; // never expires
         else
-            return (expiry > System.currentTimeMillis()); //hasn't yet expired
+            return (expiry > System.currentTimeMillis()); // hasn't yet expired
     }
 
     /**
@@ -555,7 +550,7 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
             return false;
         String[] parts = filename.split("_");
 
-        //Need at least 4 parts for a valid filename
+        // Need at least 4 parts for a valid filename
         if (parts.length < 4)
             return false;
         return true;
@@ -574,11 +569,11 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
             return false;
         String[] parts = filename.split("_");
 
-        //Need at least 4 parts for a valid filename
+        // Need at least 4 parts for a valid filename
         if (parts.length < 4)
             return false;
 
-        //Also needs to be for our context
+        // Also needs to be for our context
         String context = getContextFromFilename(filename);
         if (context == null)
             return false;
@@ -592,10 +587,9 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
      * @param expectedId the id we've been told to load
      * @return the session data
      */
-    protected SessionData load(InputStream is, String expectedId)
-        throws Exception
+    protected SessionData load(InputStream is, String expectedId) throws Exception
     {
-        String id; //the actual id from inside the file
+        String id; // the actual id from inside the file
 
         try
         {
@@ -634,6 +628,7 @@ public class FileSessionDataStore extends ObjectStreamSessionDataStore
     @Override
     public String toString()
     {
-        return String.format("%s[dir=%s,deleteUnrestorableFiles=%b]", super.toString(), _storeDir, _deleteUnrestorableFiles);
+        return String.format(
+            "%s[dir=%s,deleteUnrestorableFiles=%b]", super.toString(), _storeDir, _deleteUnrestorableFiles);
     }
 }

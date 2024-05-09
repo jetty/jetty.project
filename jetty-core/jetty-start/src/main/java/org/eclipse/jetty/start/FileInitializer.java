@@ -56,7 +56,6 @@ public abstract class FileInitializer
      * @return true if local file system is modified.
      * @throws IOException if there was an attempt to initialize, but an error occurred.
      */
-
     public abstract boolean create(URI uri, String location) throws IOException;
 
     public boolean check(URI uri, String location) throws IOException
@@ -111,11 +110,13 @@ public abstract class FileInitializer
         // attempt to save them from themselves.
         // Note: All copy and extract steps, will not replace files that already exist.
         if (destination != null && !destination.startsWith(_basehome.getBasePath()))
-            throw new IOException("For security reasons, Jetty start is unable to process file resource not in ${jetty.base} - " + location);
+            throw new IOException(
+                "For security reasons, Jetty start is unable to process file resource not in ${jetty.base} - " + location);
 
         boolean isDestDir = Files.isDirectory(destination) || !Files.exists(destination) && location.endsWith("/");
         if (isDestDir && uri != null && uri.getSchemeSpecificPart().contains("/") && !uri.getSchemeSpecificPart().endsWith("/"))
-            destination = destination.resolve(uri.getSchemeSpecificPart().substring(uri.getSchemeSpecificPart().lastIndexOf('/') + 1));
+            destination = destination.resolve(uri.getSchemeSpecificPart()
+                .substring(uri.getSchemeSpecificPart().lastIndexOf('/') + 1));
 
         return destination;
     }

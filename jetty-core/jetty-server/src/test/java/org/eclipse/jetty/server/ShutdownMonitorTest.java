@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.InputStreamReader;
@@ -20,16 +25,10 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShutdownMonitorTest
 {
@@ -38,7 +37,7 @@ public class ShutdownMonitorTest
     {
         ShutdownMonitor.reset();
     }
-    
+
     @Test
     @Disabled // TODO
     public void testPid() throws Exception
@@ -135,12 +134,12 @@ public class ShutdownMonitorTest
     }
 
     /*
-     * Disable these config tests because ShutdownMonitor is a 
+     * Disable these config tests because ShutdownMonitor is a
      * static singleton that cannot be unset, and thus would
      * need each of these methods executed it its own jvm -
-     * current surefire settings only fork for a single test 
+     * current surefire settings only fork for a single test
      * class.
-     * 
+     *
      * Undisable to test individually as needed.
      */
     @Disabled
@@ -158,7 +157,7 @@ public class ShutdownMonitorTest
             server.setStopAtShutdown(true);
             server.start();
 
-            //shouldn't be registered for shutdown on jvm
+            // shouldn't be registered for shutdown on jvm
             assertTrue(ShutdownThread.isRegistered(server));
             assertTrue(ShutdownMonitor.isRegistered(server));
 
@@ -175,12 +174,12 @@ public class ShutdownMonitorTest
             assertTrue(!ShutdownMonitor.isRegistered(server));
         }
     }
-    
+
     @Disabled
     @Test
     public void testExitVmDefault() throws Exception
     {
-        //Test that the default is to exit
+        // Test that the default is to exit
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertTrue(monitor.isExitVm());
@@ -190,24 +189,24 @@ public class ShutdownMonitorTest
     @Test
     public void testExitVmTrue() throws Exception
     {
-        //Test setting exit true
+        // Test setting exit true
         System.setProperty("STOP.EXIT", "true");
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertTrue(monitor.isExitVm());
     }
-    
+
     @Disabled
     @Test
     public void testExitVmFalse() throws Exception
     {
-        //Test setting exit false
+        // Test setting exit false
         System.setProperty("STOP.EXIT", "false");
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertFalse(monitor.isExitVm());
     }
-    
+
     @Disabled
     @Test
     public void testForceStopCommand() throws Exception
@@ -222,7 +221,7 @@ public class ShutdownMonitorTest
         {
             server.start();
 
-            //shouldn't be registered for shutdown on jvm
+            // shouldn't be registered for shutdown on jvm
             assertTrue(!ShutdownThread.isRegistered(server));
             assertTrue(ShutdownMonitor.isRegistered(server));
 
@@ -253,7 +252,7 @@ public class ShutdownMonitorTest
             server.setStopAtShutdown(true);
             server.start();
 
-            //should be registered for shutdown on exit
+            // should be registered for shutdown on exit
             assertTrue(ShutdownThread.isRegistered(server));
             assertTrue(ShutdownMonitor.isRegistered(server));
 

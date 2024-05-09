@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.io.ClientConnector;
@@ -186,14 +185,19 @@ public class HTTP3Client extends ContainerLifeCycle
         return connect(socketAddress, listener, context);
     }
 
-    public CompletableFuture<Session.Client> connect(SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context)
+    public CompletableFuture<Session.Client> connect(
+                                                     SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context)
     {
         if (context == null)
             context = new ConcurrentHashMap<>();
         return connect(new QuicTransport(getQuicConfiguration()), socketAddress, listener, context);
     }
 
-    public CompletableFuture<Session.Client> connect(Transport transport, SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context)
+    public CompletableFuture<Session.Client> connect(
+                                                     Transport transport,
+                                                     SocketAddress socketAddress,
+                                                     Session.Client.Listener listener,
+                                                     Map<String, Object> context)
     {
         if (context == null)
             context = new ConcurrentHashMap<>();
@@ -202,8 +206,12 @@ public class HTTP3Client extends ContainerLifeCycle
         context.put(SESSION_LISTENER_CONTEXT_KEY, listener);
         context.put(SESSION_PROMISE_CONTEXT_KEY, completable);
         context.putIfAbsent(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, connector);
-        context.computeIfAbsent(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, key -> new HTTP3ClientConnectionFactory());
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, completable::failed));
+        context.computeIfAbsent(
+            ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, key -> new HTTP3ClientConnectionFactory());
+        context.put(
+            ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection ->
+            {
+            }, completable::failed));
         context.put(Transport.class.getName(), transport);
 
         if (LOG.isDebugEnabled())

@@ -119,7 +119,11 @@ public class FileArg
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append("DownloadArg [uri=").append(uri).append(", location=").append(location).append("]");
+        builder.append("DownloadArg [uri=")
+            .append(uri)
+            .append(", location=")
+            .append(location)
+            .append("]");
         return builder.toString();
     }
 }

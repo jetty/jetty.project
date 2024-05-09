@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.http3.qpack;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.List;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -32,12 +37,6 @@ import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EncodeDecodeTest
 {
@@ -93,7 +92,8 @@ public class EncodeDecodeTest
         assertThat(_decoderHandler.getInstruction(), instanceOf(SectionAcknowledgmentInstruction.class));
         assertTrue(_decoderHandler.isEmpty());
 
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(streamId))));
+        _encoderInstructionParser.parse(
+            QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(streamId))));
 
         // B.2. Dynamic Table.
 
@@ -107,11 +107,10 @@ public class EncodeDecodeTest
         _decoderInstructionParser.parse(QpackTestUtil.hexToBuffer("3fbd01"));
         assertThat(_decoder.getQpackContext().getDynamicTable().getCapacity(), is(220));
 
-        // Insert with named referenced to static table. Test we get two instructions generated to add to the dynamic table.
+        // Insert with named referenced to static table. Test we get two instructions generated to add to the dynamic
+        // table.
         streamId = 4;
-        httpFields = HttpFields.build()
-            .add(":authority", "www.example.com")
-            .add(":path", "/sample/path");
+        httpFields = HttpFields.build().add(":authority", "www.example.com").add(":path", "/sample/path");
         buffer.clear();
         _encoder.encode(buffer, streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
         buffer.flip();
@@ -120,16 +119,20 @@ public class EncodeDecodeTest
         assertThat(instruction, instanceOf(IndexedNameEntryInstruction.class));
         assertThat(((IndexedNameEntryInstruction)instruction).getIndex(), is(0));
         assertThat(((IndexedNameEntryInstruction)instruction).getValue(), is("www.example.com"));
-        assertThat(QpackTestUtil.toHexString(instruction), QpackTestUtil.equalsHex("c00f 7777 772e 6578 616d 706c 652e 636f 6d"));
+        assertThat(
+            QpackTestUtil.toHexString(instruction),
+            QpackTestUtil.equalsHex("c00f 7777 772e 6578 616d 706c 652e 636f 6d"));
 
         instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(IndexedNameEntryInstruction.class));
         assertThat(((IndexedNameEntryInstruction)instruction).getIndex(), is(1));
         assertThat(((IndexedNameEntryInstruction)instruction).getValue(), is("/sample/path"));
-        assertThat(QpackTestUtil.toHexString(instruction), QpackTestUtil.equalsHex("c10c 2f73 616d 706c 652f 7061 7468"));
+        assertThat(
+            QpackTestUtil.toHexString(instruction), QpackTestUtil.equalsHex("c10c 2f73 616d 706c 652f 7061 7468"));
         assertTrue(_encoderHandler.isEmpty());
 
-        // We cannot decode the buffer until we parse the two instructions generated above (we reach required insert count).
+        // We cannot decode the buffer until we parse the two instructions generated above (we reach required insert
+        // count).
         _decoder.decode(streamId, buffer, _decoderHandler);
         assertNull(_decoderHandler.getMetaData());
 
@@ -146,13 +149,16 @@ public class EncodeDecodeTest
 
         // Parse the decoder instructions on the encoder.
         _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new InsertCountIncrementInstruction(2))));
-        _encoderInstructionParser.parse(QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(streamId))));
+        _encoderInstructionParser.parse(
+            QpackTestUtil.toBuffer(List.of(new SectionAcknowledgmentInstruction(streamId))));
 
         // B.3. Speculative Insert
         _encoder.insert(new HttpField("custom-key", "custom-value"));
         instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(LiteralNameEntryInstruction.class));
-        assertThat(QpackTestUtil.toHexString(instruction), QpackTestUtil.equalsHex("4a63 7573 746f 6d2d 6b65 790c 6375 7374 6f6d 2d76 616c 7565"));
+        assertThat(
+            QpackTestUtil.toHexString(instruction),
+            QpackTestUtil.equalsHex("4a63 7573 746f 6d2d 6b65 790c 6375 7374 6f6d 2d76 616c 7565"));
         _encoder.getInstructionHandler().onInsertCountIncrement(1);
     }
 }

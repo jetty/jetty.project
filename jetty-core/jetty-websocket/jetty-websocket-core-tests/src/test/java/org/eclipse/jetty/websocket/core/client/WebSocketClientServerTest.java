@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -30,10 +33,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests of a core client and core server
@@ -136,7 +135,10 @@ public class WebSocketClientServerTest
         assertNotNull(recv);
         assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
 
-        ((WebSocketCoreSession)clientHandler.getCoreSession()).getConnection().getEndPoint().close();
+        ((WebSocketCoreSession)clientHandler.getCoreSession())
+            .getConnection()
+            .getEndPoint()
+            .close();
 
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));

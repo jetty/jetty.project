@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -22,7 +34,6 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -37,18 +48,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * URIUtil Tests.
@@ -65,13 +64,13 @@ public class URIUtilTest
         return Stream.of(
             Arguments.of("/foo/\n/bar", "/foo/%0A/bar"),
             Arguments.of("/foo%23+;,:=/b a r/?info ", "/foo%2523+%3B,:=/b%20a%20r/%3Finfo%20"),
-            Arguments.of("/context/'list'/\"me\"/;<script>window.alert('xss');</script>",
+            Arguments.of(
+                "/context/'list'/\"me\"/;<script>window.alert('xss');</script>",
                 "/context/%27list%27/%22me%22/%3B%3Cscript%3Ewindow.alert(%27xss%27)%3B%3C/script%3E"),
             Arguments.of("test\u00f6?\u00f6:\u00df", "test%C3%B6%3F%C3%B6:%C3%9F"),
             Arguments.of("test?\u00f6?\u00f6:\u00df", "test%3F%C3%B6%3F%C3%B6:%C3%9F"),
             Arguments.of("/test space/", "/test%20space/"),
-            Arguments.of("/test\u007fdel/", "/test%7Fdel/")
-        );
+            Arguments.of("/test\u007fdel/", "/test%7Fdel/"));
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -117,13 +116,18 @@ public class URIUtilTest
 
             // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
             Arguments.of("/f%20o/b%20r", "/f%20o/b%20r", "/f o/b r"),
-            Arguments.of("f\u00e4\u00e4%2523%3b%2c:%3db%20a%20r%3D", "f\u00e4\u00e4%2523%3B,:=b%20a%20r=", "f\u00e4\u00e4%23;,:=b a r="),
-            Arguments.of("f%d8%a9%D8%A9%2523%3b%2c:%3db%20a%20r", "f\u0629\u0629%2523%3B,:=b%20a%20r", "f\u0629\u0629%23;,:=b a r"),
+            Arguments.of(
+                "f\u00e4\u00e4%2523%3b%2c:%3db%20a%20r%3D",
+                "f\u00e4\u00e4%2523%3B,:=b%20a%20r=", "f\u00e4\u00e4%23;,:=b a r="),
+            Arguments.of(
+                "f%d8%a9%D8%A9%2523%3b%2c:%3db%20a%20r",
+                "f\u0629\u0629%2523%3B,:=b%20a%20r", "f\u0629\u0629%23;,:=b a r"),
 
             // path parameters should be ignored
             Arguments.of("/foo;ignore/bar;ignore", "/foo/bar", "/foo/bar"),
             Arguments.of("/f\u00e4\u00e4;ignore/bar;ignore", "/fää/bar", "/fää/bar"),
-            Arguments.of("/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f\u0629\u0629%2523/bar", "/f\u0629\u0629%23/bar"),
+            Arguments.of(
+                "/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f\u0629\u0629%2523/bar", "/f\u0629\u0629%23/bar"),
             Arguments.of("foo%2523%3b%2c:%3db%20a%20r;rubbish", "foo%2523%3B,:=b%20a%20r", "foo%23;,:=b a r"),
 
             // test for chars that are somehow already decoded, but shouldn't be
@@ -140,7 +144,8 @@ public class URIUtilTest
             Arguments.of("abc%u3040", "abc\u3040", "abc\u3040"),
 
             // Invalid UTF-8 - replacement characters should be present on invalid sequences
-            // URI paths do not support ISO-8859-1, so this should not be a fallback of our decodePath implementation
+            // URI paths do not support ISO-8859-1, so this should not be a fallback of our decodePath
+            // implementation
             /* TODO: remove ISO-8859-1 fallback mode in decodePath - Issue #9489
             Arguments.of("/a%D8%2fbar", "/a�%2Fbar", "/a�%2Fbar"), // invalid 2 octet sequence
             Arguments.of("/abc%C3%28", "/abc�", "/abc�"), // invalid 2 octet sequence
@@ -165,8 +170,7 @@ public class URIUtilTest
             Arguments.of("/foo/.../bar", "/foo/.../bar", "/foo/.../bar"),
             Arguments.of("/foo/%2e/bar", "/foo/bar", "/foo/./bar"), // Not by the RFC, but safer
             Arguments.of("/foo/%2e%2e/bar", "/bar", "/foo/../bar"), // Not by the RFC, but safer
-            Arguments.of("/foo/%2e%2e%2e/bar", "/foo/.../bar", "/foo/.../bar")
-        );
+            Arguments.of("/foo/%2e%2e%2e/bar", "/foo/.../bar", "/foo/.../bar"));
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -234,85 +238,71 @@ public class URIUtilTest
             Arguments.of(null, "bbb", "bbb"),
             Arguments.of(null, "/", "/"),
             Arguments.of(null, "/bbb", "/bbb"),
-
             Arguments.of("", null, ""),
             Arguments.of("", "", ""),
             Arguments.of("", "bbb", "bbb"),
             Arguments.of("", "/", "/"),
             Arguments.of("", "/bbb", "/bbb"),
-
             Arguments.of("aaa", null, "aaa"),
             Arguments.of("aaa", "", "aaa"),
             Arguments.of("aaa", "bbb", "aaa/bbb"),
             Arguments.of("aaa", "/", "aaa/"),
             Arguments.of("aaa", "/bbb", "aaa/bbb"),
-
             Arguments.of("/", null, "/"),
             Arguments.of("/", "", "/"),
             Arguments.of("/", "bbb", "/bbb"),
             Arguments.of("/", "/", "/"),
             Arguments.of("/", "/bbb", "/bbb"),
-
             Arguments.of("aaa/", null, "aaa/"),
             Arguments.of("aaa/", "", "aaa/"),
             Arguments.of("aaa/", "bbb", "aaa/bbb"),
             Arguments.of("aaa/", "/", "aaa/"),
             Arguments.of("aaa/", "/bbb", "aaa/bbb"),
-
             Arguments.of(";JS", null, ";JS"),
             Arguments.of(";JS", "", ";JS"),
             Arguments.of(";JS", "bbb", "bbb;JS"),
             Arguments.of(";JS", "/", "/;JS"),
             Arguments.of(";JS", "/bbb", "/bbb;JS"),
-
             Arguments.of("aaa;JS", null, "aaa;JS"),
             Arguments.of("aaa;JS", "", "aaa;JS"),
             Arguments.of("aaa;JS", "bbb", "aaa/bbb;JS"),
             Arguments.of("aaa;JS", "/", "aaa/;JS"),
             Arguments.of("aaa;JS", "/bbb", "aaa/bbb;JS"),
-
             Arguments.of("aaa/;JS", null, "aaa/;JS"),
             Arguments.of("aaa/;JS", "", "aaa/;JS"),
             Arguments.of("aaa/;JS", "bbb", "aaa/bbb;JS"),
             Arguments.of("aaa/;JS", "/", "aaa/;JS"),
             Arguments.of("aaa/;JS", "/bbb", "aaa/bbb;JS"),
-
             Arguments.of("?A=1", null, "?A=1"),
             Arguments.of("?A=1", "", "?A=1"),
             Arguments.of("?A=1", "bbb", "bbb?A=1"),
             Arguments.of("?A=1", "/", "/?A=1"),
             Arguments.of("?A=1", "/bbb", "/bbb?A=1"),
-
             Arguments.of("aaa?A=1", null, "aaa?A=1"),
             Arguments.of("aaa?A=1", "", "aaa?A=1"),
             Arguments.of("aaa?A=1", "bbb", "aaa/bbb?A=1"),
             Arguments.of("aaa?A=1", "/", "aaa/?A=1"),
             Arguments.of("aaa?A=1", "/bbb", "aaa/bbb?A=1"),
-
             Arguments.of("aaa/?A=1", null, "aaa/?A=1"),
             Arguments.of("aaa/?A=1", "", "aaa/?A=1"),
             Arguments.of("aaa/?A=1", "bbb", "aaa/bbb?A=1"),
             Arguments.of("aaa/?A=1", "/", "aaa/?A=1"),
             Arguments.of("aaa/?A=1", "/bbb", "aaa/bbb?A=1"),
-
             Arguments.of(";JS?A=1", null, ";JS?A=1"),
             Arguments.of(";JS?A=1", "", ";JS?A=1"),
             Arguments.of(";JS?A=1", "bbb", "bbb;JS?A=1"),
             Arguments.of(";JS?A=1", "/", "/;JS?A=1"),
             Arguments.of(";JS?A=1", "/bbb", "/bbb;JS?A=1"),
-
             Arguments.of("aaa;JS?A=1", null, "aaa;JS?A=1"),
             Arguments.of("aaa;JS?A=1", "", "aaa;JS?A=1"),
             Arguments.of("aaa;JS?A=1", "bbb", "aaa/bbb;JS?A=1"),
             Arguments.of("aaa;JS?A=1", "/", "aaa/;JS?A=1"),
             Arguments.of("aaa;JS?A=1", "/bbb", "aaa/bbb;JS?A=1"),
-
             Arguments.of("aaa/;JS?A=1", null, "aaa/;JS?A=1"),
             Arguments.of("aaa/;JS?A=1", "", "aaa/;JS?A=1"),
             Arguments.of("aaa/;JS?A=1", "bbb", "aaa/bbb;JS?A=1"),
             Arguments.of("aaa/;JS?A=1", "/", "aaa/;JS?A=1"),
-            Arguments.of("aaa/;JS?A=1", "/bbb", "aaa/bbb;JS?A=1")
-        );
+            Arguments.of("aaa/;JS?A=1", "/bbb", "aaa/bbb;JS?A=1"));
     }
 
     @ParameterizedTest(name = "[{index}] {0}+{1}")
@@ -331,67 +321,56 @@ public class URIUtilTest
             Arguments.of(null, "bbb", "bbb"),
             Arguments.of(null, "/", "/"),
             Arguments.of(null, "/bbb", "/bbb"),
-
             Arguments.of("", null, ""),
             Arguments.of("", "", ""),
             Arguments.of("", "bbb", "bbb"),
             Arguments.of("", "/", "/"),
             Arguments.of("", "/bbb", "/bbb"),
-
             Arguments.of("aaa", null, "aaa"),
             Arguments.of("aaa", "", "aaa"),
             Arguments.of("aaa", "bbb", "aaa/bbb"),
             Arguments.of("aaa", "/", "aaa/"),
             Arguments.of("aaa", "/bbb", "aaa/bbb"),
-
             Arguments.of("/", null, "/"),
             Arguments.of("/", "", "/"),
             Arguments.of("/", "bbb", "/bbb"),
             Arguments.of("/", "/", "/"),
             Arguments.of("/", "/bbb", "/bbb"),
-
             Arguments.of("aaa/", null, "aaa/"),
             Arguments.of("aaa/", "", "aaa/"),
             Arguments.of("aaa/", "bbb", "aaa/bbb"),
             Arguments.of("aaa/", "/", "aaa/"),
             Arguments.of("aaa/", "/bbb", "aaa/bbb"),
-
             Arguments.of(";JS", null, ";JS"),
             Arguments.of(";JS", "", ";JS"),
             Arguments.of(";JS", "bbb", ";JS/bbb"),
             Arguments.of(";JS", "/", ";JS/"),
             Arguments.of(";JS", "/bbb", ";JS/bbb"),
-
             Arguments.of("aaa;JS", null, "aaa;JS"),
             Arguments.of("aaa;JS", "", "aaa;JS"),
             Arguments.of("aaa;JS", "bbb", "aaa;JS/bbb"),
             Arguments.of("aaa;JS", "/", "aaa;JS/"),
             Arguments.of("aaa;JS", "/bbb", "aaa;JS/bbb"),
-
             Arguments.of("aaa/;JS", null, "aaa/;JS"),
             Arguments.of("aaa/;JS", "", "aaa/;JS"),
             Arguments.of("aaa/;JS", "bbb", "aaa/;JS/bbb"),
             Arguments.of("aaa/;JS", "/", "aaa/;JS/"),
             Arguments.of("aaa/;JS", "/bbb", "aaa/;JS/bbb"),
-
             Arguments.of("?A=1", null, "?A=1"),
             Arguments.of("?A=1", "", "?A=1"),
             Arguments.of("?A=1", "bbb", "?A=1/bbb"),
             Arguments.of("?A=1", "/", "?A=1/"),
             Arguments.of("?A=1", "/bbb", "?A=1/bbb"),
-
             Arguments.of("aaa?A=1", null, "aaa?A=1"),
             Arguments.of("aaa?A=1", "", "aaa?A=1"),
             Arguments.of("aaa?A=1", "bbb", "aaa?A=1/bbb"),
             Arguments.of("aaa?A=1", "/", "aaa?A=1/"),
             Arguments.of("aaa?A=1", "/bbb", "aaa?A=1/bbb"),
-
             Arguments.of("aaa/?A=1", null, "aaa/?A=1"),
             Arguments.of("aaa/?A=1", "", "aaa/?A=1"),
             Arguments.of("aaa/?A=1", "bbb", "aaa/?A=1/bbb"),
             Arguments.of("aaa/?A=1", "/", "aaa/?A=1/"),
-            Arguments.of("aaa/?A=1", "/bbb", "aaa/?A=1/bbb")
-        );
+            Arguments.of("aaa/?A=1", "/bbb", "aaa/?A=1/bbb"));
     }
 
     @ParameterizedTest(name = "[{index}] {0}+{1}")
@@ -551,8 +530,7 @@ public class URIUtilTest
             Arguments.of("/path", "", "/path"),
             Arguments.of("/path", "    ", "/path"),
             Arguments.of("/path", "a=b", "/path?a=b"),
-            Arguments.of("/path?a=b", "x=y", "/path?a=b&x=y")
-        );
+            Arguments.of("/path?a=b", "x=y", "/path?a=b&x=y"));
     }
 
     @ParameterizedTest
@@ -582,8 +560,7 @@ public class URIUtilTest
             Arguments.of("/foo%5B1%5D", "/foo%5B1%5D"), // the "[" and "]" symbols
             Arguments.of("/bar%23", "/bar%23"), // hash "#" symbol
             // normalize hex codes
-            Arguments.of("/b%c3%a4%e2%82%ac%c3%a3m/", "/b%C3%A4%E2%82%AC%C3%A3m/")
-        );
+            Arguments.of("/b%c3%a4%e2%82%ac%c3%a3m/", "/b%C3%A4%E2%82%AC%C3%A3m/"));
     }
 
     @ParameterizedTest
@@ -598,13 +575,10 @@ public class URIUtilTest
         return Stream.of(
             Arguments.of("/foo/bar", "/foo/bar"),
             Arguments.of("/foo/bar?a=b//c", "/foo/bar?a=b//c"),
-
             Arguments.of("//foo//bar", "/foo/bar"),
             Arguments.of("//foo//bar?a=b//c", "/foo/bar?a=b//c"),
-
             Arguments.of("/foo///bar", "/foo/bar"),
-            Arguments.of("/foo///bar?a=b//c", "/foo/bar?a=b//c")
-        );
+            Arguments.of("/foo///bar?a=b//c", "/foo/bar?a=b//c"));
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -623,8 +597,7 @@ public class URIUtilTest
             Arguments.of("/aaa/", "/"),
             Arguments.of("/aaa", "/"),
             Arguments.of("/", null),
-            Arguments.of(null, null)
-        );
+            Arguments.of(null, null));
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -661,8 +634,7 @@ public class URIUtilTest
             Arguments.of("mailto:jesse@webtide.com", "mailto:jesse@webtide.com"),
             // Empty scheme
             // Arguments.of("file:", "file:"), java.net.URI requires an SSP for `file`
-            Arguments.of("jar:file:", "jar:file:")
-        );
+            Arguments.of("jar:file:", "jar:file:"));
     }
 
     @ParameterizedTest
@@ -724,8 +696,7 @@ public class URIUtilTest
 
             // partially encoded already
             Arguments.of("a%20name=value%20pair", "=", "a%20name%3Dvalue%20pair"),
-            Arguments.of("a%20name=value%20pair", "=%", "a%2520name%3Dvalue%2520pair")
-        );
+            Arguments.of("a%20name=value%20pair", "=%", "a%2520name%3Dvalue%2520pair"));
     }
 
     @ParameterizedTest
@@ -761,8 +732,7 @@ public class URIUtilTest
 
             // partially decode
             Arguments.of("a%20name%3Dvalue%20pair", "=", "a%20name=value%20pair"),
-            Arguments.of("a%2520name%3Dvalue%2520pair", "=%", "a%20name=value%20pair")
-        );
+            Arguments.of("a%2520name%3Dvalue%2520pair", "=%", "a%20name=value%20pair"));
     }
 
     @ParameterizedTest
@@ -788,8 +758,7 @@ public class URIUtilTest
             Arguments.of("a/b!/", "b"),
             Arguments.of("a/b!/c/", "b"),
             Arguments.of("a/b!/c/d/", "b"),
-            Arguments.of("a/b%21/", "b%21")
-        );
+            Arguments.of("a/b%21/", "b%21"));
     }
 
     /**
@@ -846,9 +815,9 @@ public class URIUtilTest
 
             try (Stream<Path> entryStream = Files.find(root, 10, (path, attrs) -> true))
             {
-                entryStream.filter(Files::isRegularFile)
-                    .forEach((path) ->
-                        arguments.add(Arguments.of(path.toUri(), TEST_RESOURCE_JAR)));
+                entryStream
+                    .filter(Files::isRegularFile)
+                    .forEach((path) -> arguments.add(Arguments.of(path.toUri(), TEST_RESOURCE_JAR)));
             }
         }
 
@@ -875,9 +844,14 @@ public class URIUtilTest
             Arguments.of(newQueryParam, "", is(newQueryParam)),
             Arguments.of("existingParam=3", newQueryParam, is("existingParam=3&" + newQueryParam)),
             Arguments.of(newQueryParam, "existingParam=3", is(newQueryParam + "&existingParam=3")),
-            Arguments.of("existingParam1=value1&existingParam2=value2", newQueryParam, is("existingParam1=value1&existingParam2=value2&" + newQueryParam)),
-            Arguments.of(newQueryParam, "existingParam1=value1&existingParam2=value2", is(newQueryParam + "&existingParam1=value1&existingParam2=value2"))
-        );
+            Arguments.of(
+                "existingParam1=value1&existingParam2=value2",
+                newQueryParam,
+                is("existingParam1=value1&existingParam2=value2&" + newQueryParam)),
+            Arguments.of(
+                newQueryParam,
+                "existingParam1=value1&existingParam2=value2",
+                is(newQueryParam + "&existingParam1=value1&existingParam2=value2")));
     }
 
     @ParameterizedTest
@@ -909,7 +883,8 @@ public class URIUtilTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "a",
         "deadbeef",
         "321zzz123",
@@ -926,7 +901,8 @@ public class URIUtilTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         " ",
         "tab\tchar",
         "a long name with spaces",
@@ -949,8 +925,8 @@ public class URIUtilTest
         return Stream.of(
             Arguments.of("file:///opt/foo.jar", "!/zed.dat", "jar:file:///opt/foo.jar!/zed.dat"),
             Arguments.of("jar:file:///opt/foo.jar", "!/zed.dat", "jar:file:///opt/foo.jar!/zed.dat"),
-            Arguments.of("jar:file:///opt/foo.jar!/something.txt", "!/zed.dat", "jar:file:///opt/foo.jar!/zed.dat")
-        );
+            Arguments.of(
+                "jar:file:///opt/foo.jar!/something.txt", "!/zed.dat", "jar:file:///opt/foo.jar!/zed.dat"));
     }
 
     @ParameterizedTest
@@ -980,8 +956,7 @@ public class URIUtilTest
             Arguments.of("jar:file:///opt/foo.jar!/something.txt", "/zed.dat"),
             Arguments.of("file:///opt/foo.jar", "zed.dat"),
             Arguments.of("jar:file:///opt/foo.jar", "zed.dat"),
-            Arguments.of("jar:file:///opt/foo.jar!/something.txt", "zed.dat")
-        );
+            Arguments.of("jar:file:///opt/foo.jar!/something.txt", "zed.dat"));
     }
 
     @ParameterizedTest
@@ -1143,11 +1118,7 @@ public class URIUtilTest
         // Split using commas
         List<URI> uris = URIUtil.split(config);
 
-        URI[] expected = new URI[] {
-            dir.toUri(),
-            foo.toUri(),
-            bar.toUri()
-        };
+        URI[] expected = new URI[]{dir.toUri(), foo.toUri(), bar.toUri()};
         assertThat(uris, contains(expected));
     }
 
@@ -1168,11 +1139,7 @@ public class URIUtilTest
         // Split using commas
         List<URI> uris = URIUtil.split(config);
 
-        URI[] expected = new URI[] {
-            dir.toUri(),
-            foo.toUri(),
-            bar.toUri()
-        };
+        URI[] expected = new URI[]{dir.toUri(), foo.toUri(), bar.toUri()};
         assertThat(uris, contains(expected));
     }
 
@@ -1193,11 +1160,7 @@ public class URIUtilTest
         // Split using commas
         List<URI> uris = URIUtil.split(config);
 
-        URI[] expected = new URI[] {
-            dir.toUri(),
-            foo.toUri(),
-            bar.toUri()
-        };
+        URI[] expected = new URI[]{dir.toUri(), foo.toUri(), bar.toUri()};
         assertThat(uris, contains(expected));
     }
 
@@ -1220,7 +1183,7 @@ public class URIUtilTest
         // Split using commas
         List<URI> uris = URIUtil.split(config);
 
-        URI[] expected = new URI[] {
+        URI[] expected = new URI[]{
             dir.toUri(),
             foo.toUri(),
             // Should see the two archives as `jar:file:` URI entries
@@ -1264,8 +1227,7 @@ public class URIUtilTest
             Arguments.of("ftp", "example.org", 21, "ftp://example.org"),
             Arguments.of("ssh", "example.org", 2222, "ssh://example.org:2222"),
             Arguments.of("ftp", "example.org", 2121, "ftp://example.org:2121"),
-            Arguments.of("file", "etc", -1, "file://etc")
-        );
+            Arguments.of("file", "etc", -1, "file://etc"));
     }
 
     @ParameterizedTest
@@ -1294,10 +1256,16 @@ public class URIUtilTest
             // Default behaviors of stripping a port number based on scheme
             // Query specified
             Arguments.of("http", "example.org", 0, "/", "a=b", null, "http://example.org/?a=b"),
-            Arguments.of("http", "example.org", 0, "/documentation/latest/", "a=b", null, "http://example.org/documentation/latest/?a=b"),
+            Arguments.of(
+                "http",
+                "example.org",
+                0,
+                "/documentation/latest/",
+                "a=b",
+                null,
+                "http://example.org/documentation/latest/?a=b"),
             Arguments.of("http", "example.org", 0, null, "a=b", null, "http://example.org/?a=b"),
-            Arguments.of("http", "example.org", 0, null, "", null, "http://example.org/?")
-        ));
+            Arguments.of("http", "example.org", 0, null, "", null, "http://example.org/?")));
         return cases;
     }
 
@@ -1334,8 +1302,7 @@ public class URIUtilTest
             Arguments.of("ssh", "example.org", 22, "ssh://example.org"),
             Arguments.of("ftp", "example.org", 21, "ftp://example.org"),
             Arguments.of("ssh", "example.org", 2222, "ssh://example.org:2222"),
-            Arguments.of("ftp", "example.org", 2121, "ftp://example.org:2121")
-        );
+            Arguments.of("ftp", "example.org", 2121, "ftp://example.org:2121"));
     }
 
     public static List<Arguments> schemeHostPortPathCases()
@@ -1379,10 +1346,16 @@ public class URIUtilTest
             Arguments.of("http", "example.org", 0, "/a%20b/c%20d", null, null, "http://example.org/a%20b/c%20d"),
             // Query specified
             Arguments.of("http", "example.org", 0, "/", "a=b", null, "http://example.org/?a=b"),
-            Arguments.of("http", "example.org", 0, "/documentation/latest/", "a=b", null, "http://example.org/documentation/latest/?a=b"),
+            Arguments.of(
+                "http",
+                "example.org",
+                0,
+                "/documentation/latest/",
+                "a=b",
+                null,
+                "http://example.org/documentation/latest/?a=b"),
             Arguments.of("http", "example.org", 0, null, "a=b", null, "http://example.org/?a=b"),
-            Arguments.of("http", "example.org", 0, null, "", null, "http://example.org/?")
-        ));
+            Arguments.of("http", "example.org", 0, null, "", null, "http://example.org/?")));
         return cases;
     }
 
@@ -1397,8 +1370,7 @@ public class URIUtilTest
             Arguments.of("http", "example.org", 0, "/", null, "toc", "http://example.org/#toc"),
             Arguments.of("http", "example.org", 0, null, null, "toc", "http://example.org/#toc"),
             // Empty query & fragment - behavior matches java URI and URL
-            Arguments.of("http", "example.org", 0, null, "", "", "http://example.org/?#")
-        ));
+            Arguments.of("http", "example.org", 0, null, "", "", "http://example.org/?#")));
 
         return cases;
     }
@@ -1413,7 +1385,8 @@ public class URIUtilTest
 
     @ParameterizedTest
     @MethodSource("schemeHostPortPathCases")
-    public void testNewURI(String scheme, String server, int port, String path, String query, String fragment, String expectedStr)
+    public void testNewURI(
+                           String scheme, String server, int port, String path, String query, String fragment, String expectedStr)
     {
         assumeTrue(StringUtil.isBlank(fragment), "Skip tests with fragments, as this newURI doesn't have them");
         String actual = URIUtil.newURI(scheme, server, port, path, query);
@@ -1422,14 +1395,16 @@ public class URIUtilTest
 
     @ParameterizedTest
     @MethodSource("schemeHostPortFragmentCases")
-    public void testNewURIFragment(String scheme, String server, int port, String path, String query, String fragment, String expectedStr)
+    public void testNewURIFragment(
+                                   String scheme, String server, int port, String path, String query, String fragment, String expectedStr)
     {
         String actual = URIUtil.newURI(scheme, server, port, path, query, fragment);
         assertEquals(expectedStr, actual.toString());
     }
 
     @ParameterizedTest
-    @CsvSource(value = {
+    @CsvSource(value =
+    {
         "http,80",
         "https,443",
         "ws,80",
@@ -1448,7 +1423,8 @@ public class URIUtilTest
     }
 
     @ParameterizedTest
-    @CsvSource(value = {
+    @CsvSource(value =
+    {
         "http,80,0",
         "https,443,0",
         "https,8443,8443",
@@ -1471,15 +1447,8 @@ public class URIUtilTest
     }
 
     @ParameterizedTest
-    @CsvSource(value = {
-        "http,http",
-        "https,https",
-        "HTTP,http",
-        "WSS,wss",
-        "WS,ws",
-        "XRTP,xrtp",
-        "Https,https"
-    })
+    @CsvSource(value =
+    {"http,http", "https,https", "HTTP,http", "WSS,wss", "WS,ws", "XRTP,xrtp", "Https,https"})
     public void testNormalizeScheme(String input, String expected)
     {
         String actual = URIUtil.normalizeScheme(input);

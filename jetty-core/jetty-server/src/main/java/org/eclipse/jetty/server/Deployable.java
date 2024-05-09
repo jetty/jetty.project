@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 
 /**
  * Interface that can be implemented by ContextHandlers within Environments to allow configuration
- * to be passed from the DeploymentManager without dependencies on the Deployment module itself. 
+ * to be passed from the DeploymentManager without dependencies on the Deployment module itself.
  */
 public interface Deployable
 {

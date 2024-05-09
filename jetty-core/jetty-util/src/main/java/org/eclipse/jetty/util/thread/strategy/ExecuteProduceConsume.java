@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;

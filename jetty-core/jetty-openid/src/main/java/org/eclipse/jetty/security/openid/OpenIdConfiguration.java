@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
@@ -77,8 +76,13 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
      * @param httpClient The {@link HttpClient} instance to use.
      */
-    public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
-                               String clientId, String clientSecret, HttpClient httpClient)
+    public OpenIdConfiguration(
+                               String issuer,
+                               String authorizationEndpoint,
+                               String tokenEndpoint,
+                               String clientId,
+                               String clientSecret,
+                               HttpClient httpClient)
     {
         this(issuer, authorizationEndpoint, tokenEndpoint, clientId, clientSecret, "client_secret_post", httpClient);
     }
@@ -93,7 +97,8 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param authenticationMethod Authentication method to use with the Token Endpoint.
      * @param httpClient The {@link HttpClient} instance to use.
      */
-    public OpenIdConfiguration(@Name("issuer") String issuer,
+    public OpenIdConfiguration(
+                               @Name("issuer") String issuer,
                                @Name("authorizationEndpoint") String authorizationEndpoint,
                                @Name("tokenEndpoint") String tokenEndpoint,
                                @Name("clientId") String clientId,
@@ -101,7 +106,15 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                                @Name("authenticationMethod") String authenticationMethod,
                                @Name("httpClient") HttpClient httpClient)
     {
-        this(issuer, authorizationEndpoint, tokenEndpoint, null, clientId, clientSecret, authenticationMethod, httpClient);
+        this(
+            issuer,
+            authorizationEndpoint,
+            tokenEndpoint,
+            null,
+            clientId,
+            clientSecret,
+            authenticationMethod,
+            httpClient);
     }
 
     /**
@@ -115,7 +128,8 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param authenticationMethod Authentication method to use with the Token Endpoint.
      * @param httpClient The {@link HttpClient} instance to use.
      */
-    public OpenIdConfiguration(@Name("issuer") String issuer,
+    public OpenIdConfiguration(
+                               @Name("issuer") String issuer,
                                @Name("authorizationEndpoint") String authorizationEndpoint,
                                @Name("tokenEndpoint") String tokenEndpoint,
                                @Name("endSessionEndpoint") String endSessionEndpoint,
@@ -296,7 +310,16 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     @Override
     public String toString()
     {
-        return String.format("%s@%x{iss=%s, clientId=%s, authEndpoint=%s, authenticator=%s, tokenEndpoint=%s, scopes=%s, authNewUsers=%s}",
-            getClass().getSimpleName(), hashCode(), issuer, clientId, authEndpoint, authenticationMethod, tokenEndpoint, scopes, authenticateNewUsers);
+        return String.format(
+            "%s@%x{iss=%s, clientId=%s, authEndpoint=%s, authenticator=%s, tokenEndpoint=%s, scopes=%s, authNewUsers=%s}",
+            getClass().getSimpleName(),
+            hashCode(),
+            issuer,
+            clientId,
+            authEndpoint,
+            authenticationMethod,
+            tokenEndpoint,
+            scopes,
+            authenticateNewUsers);
     }
 }

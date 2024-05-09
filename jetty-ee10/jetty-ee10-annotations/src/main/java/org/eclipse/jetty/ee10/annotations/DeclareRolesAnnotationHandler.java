@@ -38,7 +38,7 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
     public void doHandle(Class clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))
-            return; //only applicable on jakarta.servlet.Servlet derivatives
+            return; // only applicable on jakarta.servlet.Servlet derivatives
 
         if (!(_context.getSecurityHandler() instanceof ConstraintAware))
         {

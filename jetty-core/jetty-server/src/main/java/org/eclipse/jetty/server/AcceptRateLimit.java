@@ -17,7 +17,6 @@ import java.nio.channels.SelectableChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -68,14 +67,22 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     private boolean _limiting;
     private Scheduler.Task _task;
 
-    public AcceptRateLimit(@Name("acceptRateLimit") int acceptRateLimit, @Name("period") long period, @Name("units") TimeUnit units, @Name("server") Server server)
+    public AcceptRateLimit(
+                           @Name("acceptRateLimit") int acceptRateLimit,
+                           @Name("period") long period,
+                           @Name("units") TimeUnit units,
+                           @Name("server") Server server)
     {
         _server = server;
         _acceptRateLimit = acceptRateLimit;
         _rate = new Rate(period, units);
     }
 
-    public AcceptRateLimit(@Name("limit") int limit, @Name("period") long period, @Name("units") TimeUnit units, @Name("connectors") Connector... connectors)
+    public AcceptRateLimit(
+                           @Name("limit") int limit,
+                           @Name("period") long period,
+                           @Name("units") TimeUnit units,
+                           @Name("connectors") Connector... connectors)
     {
         this(limit, period, units, (Server)null);
         for (Connector c : connectors)

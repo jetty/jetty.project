@@ -17,7 +17,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,10 +113,8 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler, Runn
         @Override
         public String toString()
         {
-            return String.format("%s.%s@%x",
-                TimerScheduler.class.getSimpleName(),
-                SimpleTask.class.getSimpleName(),
-                hashCode());
+            return String.format(
+                "%s.%s@%x", TimerScheduler.class.getSimpleName(), SimpleTask.class.getSimpleName(), hashCode());
         }
     }
 }

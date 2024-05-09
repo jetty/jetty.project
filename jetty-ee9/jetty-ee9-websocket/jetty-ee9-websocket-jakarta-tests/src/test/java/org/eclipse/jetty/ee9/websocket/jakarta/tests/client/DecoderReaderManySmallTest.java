@@ -13,14 +13,8 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ContainerProvider;
@@ -30,6 +24,14 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEventTracker;
 import org.eclipse.jetty.util.Callback;
@@ -37,9 +39,6 @@ import org.eclipse.jetty.websocket.core.internal.MessageHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DecoderReaderManySmallTest
 {

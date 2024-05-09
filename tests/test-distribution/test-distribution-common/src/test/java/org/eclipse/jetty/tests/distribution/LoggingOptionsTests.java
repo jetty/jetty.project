@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
@@ -30,74 +36,53 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@Disabled //TODO
+@Disabled // TODO
 public class LoggingOptionsTests extends AbstractJettyHomeTest
 {
     public static Stream<Arguments> validLoggingModules()
     {
         List<Arguments> arguments = new ArrayList<>();
-        
-        for (String env : new String[] {"ee9", "ee10"})
+
+        for (String env : new String[]{"ee9", "ee10"})
         {
-            arguments.add(Arguments.of(env, "logging-jetty",
+            arguments.add(Arguments.of(
+                env,
+                "logging-jetty",
                 Arrays.asList(
                     "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
                     "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]jetty-slf4j-impl-.*\\.jar"),
-                Arrays.asList(
-                    "logging/slf4j",
-                    "logging-jetty"
-                )
-            ));
-            arguments.add(Arguments.of(env, "logging-logback",
+                Arrays.asList("logging/slf4j", "logging-jetty")));
+            arguments.add(Arguments.of(
+                env,
+                "logging-logback",
                 Arrays.asList(
                     "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
                     "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]logback-classic-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]logback-core-.*\\.jar"
-                ),
-                Arrays.asList(
-                    "logging/slf4j",
-                    "logging-logback"
-                )
-            ));
-            arguments.add(Arguments.of(env, "logging-jul",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]logback-core-.*\\.jar"),
+                Arrays.asList("logging/slf4j", "logging-logback")));
+            arguments.add(Arguments.of(
+                env,
+                "logging-jul",
                 Arrays.asList(
                     "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-jdk14-.*\\.jar"
-                ),
-                Arrays.asList(
-                    "logging/slf4j",
-                    "logging-jul"
-                )
-            ));
-            arguments.add(Arguments.of(env, "logging-log4j1",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-jdk14-.*\\.jar"),
+                Arrays.asList("logging/slf4j", "logging-jul")));
+            arguments.add(Arguments.of(
+                env,
+                "logging-log4j1",
                 Arrays.asList(
                     "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-reload4j-.*\\.jar"
-                ),
-                Arrays.asList(
-                    "logging/slf4j",
-                    "logging-log4j1"
-                )
-            ));
-            arguments.add(Arguments.of(env, "logging-log4j2",
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-reload4j-.*\\.jar"),
+                Arrays.asList("logging/slf4j", "logging-log4j1")));
+            arguments.add(Arguments.of(
+                env,
+                "logging-log4j2",
                 Arrays.asList(
                     "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
                     "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-slf4j2-impl-.*\\.jar",
                     "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-api-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-core-.*\\.jar"
-                ),
-                Arrays.asList(
-                    "logging/slf4j",
-                    "logging-log4j2"
-                )
-            ));
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-core-.*\\.jar"),
+                Arrays.asList("logging/slf4j", "logging-log4j2")));
             // Disabled, as slf4j noop is not supported by output/log monitoring of AbstractJettyHomeTest
             /* Arguments.of("logging-noop",
                 Arrays.asList(
@@ -107,32 +92,35 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
                     "logging-log4j2"
                 )
             ),*/
-            arguments.add(Arguments.of(env, "logging-logback,logging-jcl-capture,logging-jul-capture,logging-log4j1-capture",
+            arguments.add(Arguments.of(
+                env,
+                "logging-logback,logging-jcl-capture,logging-jul-capture,logging-log4j1-capture",
                 Arrays.asList(
                     "\\$\\{jetty.home\\}[/\\\\]lib[/\\\\]logging[/\\\\]slf4j-api-.*\\.jar",
                     "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]logback-classic-.*\\.jar",
                     "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]logback-core-.*\\.jar",
                     "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]jcl-over-slf4j-.*\\.jar",
                     "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]jul-to-slf4j-.*\\.jar",
-                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-over-slf4j-.*\\.jar"
-                ),
+                    "\\$\\{jetty.base\\}[/\\\\]lib[/\\\\]logging[/\\\\]log4j-over-slf4j-.*\\.jar"),
                 Arrays.asList(
                     "logging/slf4j",
                     "logging-logback",
                     "logging-jcl-capture",
                     "logging-jul-capture",
-                    "logging-log4j1-capture"
-                )
-            ));
+                    "logging-log4j1-capture")));
         }
-        
+
         return arguments.stream();
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("validLoggingModules")
-    public void testLoggingConfiguration(String env, String loggingModules, List<String> expectedClasspathEntries,
-                                         List<String> expectedEnabledModules) throws Exception
+    public void testLoggingConfiguration(
+                                         String env,
+                                         String loggingModules,
+                                         List<String> expectedClasspathEntries,
+                                         List<String> expectedEnabledModules)
+        throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -169,7 +157,8 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
                 }
             }
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + ".demo-jsp-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact(
+                "org.eclipse.jetty." + env + ".demos:jetty-" + env + ".demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWar(war, "test");
 
             int port = Tester.freePort();
@@ -189,6 +178,9 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
     private void containsEntryWith(String reason, List<String> logs, String expectedEntry)
     {
         Pattern pat = Pattern.compile(expectedEntry);
-        assertThat("Count of matches for [" + expectedEntry + "]", logs.stream().filter(pat.asPredicate()).count(), greaterThanOrEqualTo(1L));
+        assertThat(
+            "Count of matches for [" + expectedEntry + "]",
+            logs.stream().filter(pat.asPredicate()).count(),
+            greaterThanOrEqualTo(1L));
     }
 }

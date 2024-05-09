@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.eclipse.jetty.util.thread.ExecutionStrategy.Producer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.openjdk.jmh.infra.Blackhole;
@@ -130,7 +129,7 @@ public class TestConnection implements Producer
                         Blackhole.consumeCPU(delay * 150);
                 }
 
-                // get the uri 
+                // get the uri
                 response.append("URI: ").append(uri).append(System.lineSeparator());
 
                 // look for a file
@@ -138,18 +137,29 @@ public class TestConnection implements Producer
                 if (file.exists())
                 {
                     response.append("contentType: ").append("file").append(System.lineSeparator());
-                    response.append("lastModified: ").append(Long.toString(file.lastModified())).append(System.lineSeparator());
-                    response.append("contentLength: ").append(Long.toString(file.length())).append(System.lineSeparator());
-                    response.append("content: ").append("This should be content from a file, but lets pretend it was cached").append(System.lineSeparator());
+                    response.append("lastModified: ")
+                        .append(Long.toString(file.lastModified()))
+                        .append(System.lineSeparator());
+                    response.append("contentLength: ")
+                        .append(Long.toString(file.length()))
+                        .append(System.lineSeparator());
+                    response.append("content: ")
+                        .append("This should be content from a file, but lets pretend it was cached")
+                        .append(System.lineSeparator());
                 }
                 else
                 {
                     response.append("contentType: ").append("dynamic").append(System.lineSeparator());
-                    response.append("This is content for ").append(uri)
-                        .append(" generated for ").append(userid)
-                        .append(" with session ").append(_request.get("sessionid"))
-                        .append(" for user ").append(userid)
-                        .append(" on thread ").append(Thread.currentThread());
+                    response.append("This is content for ")
+                        .append(uri)
+                        .append(" generated for ")
+                        .append(userid)
+                        .append(" with session ")
+                        .append(_request.get("sessionid"))
+                        .append(" for user ")
+                        .append(userid)
+                        .append(" on thread ")
+                        .append(Thread.currentThread());
                 }
 
                 Blackhole.consumeCPU(1000);

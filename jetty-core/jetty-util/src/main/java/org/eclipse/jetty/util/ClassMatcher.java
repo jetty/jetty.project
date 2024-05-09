@@ -52,7 +52,6 @@ import java.util.function.Supplier;
  * When class is initialized from a classpath pattern string, entries
  * in this string should be separated by ':' (semicolon) or ',' (comma).
  */
-
 public class ClassMatcher extends AbstractSet<String>
 {
     public static class Entry
@@ -158,10 +157,8 @@ public class ClassMatcher extends AbstractSet<String>
 
     public static class ByPackage extends AbstractSet<Entry> implements Predicate<String>
     {
-        private final Index.Mutable<Entry> _entries = new Index.Builder<Entry>()
-            .caseSensitive(true)
-            .mutable()
-            .build();
+        private final Index.Mutable<Entry> _entries =
+            new Index.Builder<Entry>().caseSensitive(true).mutable().build();
 
         @Override
         public boolean test(String name)
@@ -373,10 +370,8 @@ public class ClassMatcher extends AbstractSet<String>
 
     public static class ByModule extends HashSet<Entry> implements Predicate<URI>
     {
-        private final Index.Mutable<Entry> _entries = new Index.Builder<Entry>()
-            .caseSensitive(true)
-            .mutable()
-            .build();
+        private final Index.Mutable<Entry> _entries =
+            new Index.Builder<Entry>().caseSensitive(true).mutable().build();
 
         @Override
         public boolean test(URI uri)
@@ -488,7 +483,10 @@ public class ClassMatcher extends AbstractSet<String>
     protected final IncludeExcludeSet<Entry, String> _patterns;
     protected final IncludeExcludeSet<Entry, URI> _locations;
 
-    protected ClassMatcher(Map<String, Entry> entries, IncludeExcludeSet<Entry, String> patterns, IncludeExcludeSet<Entry, URI> locations)
+    protected ClassMatcher(
+                           Map<String, Entry> entries,
+                           IncludeExcludeSet<Entry, String> patterns,
+                           IncludeExcludeSet<Entry, URI> locations)
     {
         _entries = entries;
         _patterns = patterns == null ? new IncludeExcludeSet<>(ByPackageOrName.class) : patterns;
@@ -527,9 +525,7 @@ public class ClassMatcher extends AbstractSet<String>
 
     public ClassMatcher asImmutable()
     {
-        return new ClassMatcher(Map.copyOf(_entries),
-            _patterns.asImmutable(),
-            _locations.asImmutable());
+        return new ClassMatcher(Map.copyOf(_entries), _patterns.asImmutable(), _locations.asImmutable());
     }
 
     public boolean include(String name)
@@ -703,7 +699,10 @@ public class ClassMatcher extends AbstractSet<String>
      */
     public String[] getInclusions()
     {
-        return _entries.values().stream().filter(Entry::isInclusive).map(Entry::getName).toArray(String[]::new);
+        return _entries.values().stream()
+            .filter(Entry::isInclusive)
+            .map(Entry::getName)
+            .toArray(String[]::new);
     }
 
     /**
@@ -711,7 +710,10 @@ public class ClassMatcher extends AbstractSet<String>
      */
     public String[] getExclusions()
     {
-        return _entries.values().stream().filter(e -> !e.isInclusive()).map(Entry::getName).toArray(String[]::new);
+        return _entries.values().stream()
+            .filter(e -> !e.isInclusive())
+            .map(Entry::getName)
+            .toArray(String[]::new);
     }
 
     /**
@@ -775,7 +777,7 @@ public class ClassMatcher extends AbstractSet<String>
      * included, or for there to be no inclusions. In the case where the location
      * of the class is null, it will match if it is included by name, or
      * if there are no location exclusions.
-     * 
+     *
      * @param names configured inclusions and exclusions by name
      * @param name the name to check
      * @param locations configured inclusions and exclusions by location
@@ -783,7 +785,11 @@ public class ClassMatcher extends AbstractSet<String>
      * @return true if the class is not excluded but is included, or there are
      * no inclusions. False otherwise.
      */
-    static boolean combine(IncludeExcludeSet<Entry, String> names, String name, IncludeExcludeSet<Entry, URI> locations, Supplier<URI> location)
+    static boolean combine(
+                           IncludeExcludeSet<Entry, String> names,
+                           String name,
+                           IncludeExcludeSet<Entry, URI> locations,
+                           Supplier<URI> location)
     {
         // check the name set
         Boolean byName = names.isIncludedAndNotExcluded(name);

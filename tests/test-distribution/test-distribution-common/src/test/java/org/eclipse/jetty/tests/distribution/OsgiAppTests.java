@@ -13,9 +13,13 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
@@ -23,37 +27,27 @@ import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class OsgiAppTests extends AbstractJettyHomeTest
 {
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings =
+    {"ee9", "ee10"})
     public void testFelixWebappStart(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .build();
+        JettyHomeTester distribution =
+            JettyHomeTester.Builder.newInstance().jettyVersion(jettyVersion).build();
 
-        String mods = "http,resources," +
-            toEnvironment("deploy", env) + "," +
-            toEnvironment("annotations", env) + "," +
-            toEnvironment("plus", env);
+        String mods = "http,resources," + toEnvironment("deploy", env) + "," + toEnvironment("annotations", env) + "," + toEnvironment("plus", env);
 
-        String[] args1 = {
-            "--approve-all-licenses",
-            "--add-modules=" + mods
-        };
+        String[] args1 = {"--approve-all-licenses", "--add-modules=" + mods};
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-felix-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact(
+                "org.eclipse.jetty." + env + ":jetty-" + env + "-test-felix-webapp:war:" + jettyVersion);
             distribution.installWar(war, "test");
 
             int port = Tester.freePort();

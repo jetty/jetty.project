@@ -23,4 +23,3 @@
  * </p>
  */
 package org.eclipse.jetty.ee9.websocket.common;
-

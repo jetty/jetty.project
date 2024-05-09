@@ -13,6 +13,11 @@
 
 package org.example.test;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -20,17 +25,10 @@ import java.net.URL;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 @WebServlet(urlPatterns = "/classloader")
 public class ClassLoaderServlet extends HttpServlet
 {
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException
     {
         try
         {
@@ -48,7 +46,7 @@ public class ClassLoaderServlet extends HttpServlet
             Class<?> serverIO = req.getServletContext().getClass().getClassLoader().loadClass("org.eclipse.jetty.util.IO");
             URI serverURI = getLocationOfClass(serverIO);
             String serverVersion = serverIO.getPackage().getImplementationVersion();
-
+            
             writer.printf("<p>Webapp loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n",webappVersion,webappURI);
             writer.printf("<br/>Server loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n",serverVersion, serverURI);
             if (webappVersion.equals(serverVersion))

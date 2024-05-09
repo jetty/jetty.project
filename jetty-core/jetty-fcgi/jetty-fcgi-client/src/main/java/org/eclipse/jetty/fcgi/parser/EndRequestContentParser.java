@@ -130,6 +130,10 @@ public class EndRequestContentParser extends ContentParser
 
     private enum State
     {
-        APPLICATION, APPLICATION_BYTES, PROTOCOL, RESERVED, RESERVED_BYTES
+        APPLICATION,
+        APPLICATION_BYTES,
+        PROTOCOL,
+        RESERVED,
+        RESERVED_BYTES
     }
 }

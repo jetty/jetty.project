@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.util.EnumSet;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -29,6 +29,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.EnumSet;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -37,9 +39,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class ServletWrapperTest
 {
@@ -74,7 +73,8 @@ public class ServletWrapperTest
     {
         ServletHolder servletHolder = context.addServlet(HelloServlet.class, "/hello");
         servletHolder.setAsyncSupported(false);
-        FilterHolder filterHolder = context.addFilter(NoopRequestWrapperFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        FilterHolder filterHolder =
+            context.addFilter(NoopRequestWrapperFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         filterHolder.setAsyncSupported(true);
 
         server.setHandler(context);
@@ -95,7 +95,8 @@ public class ServletWrapperTest
     public void testServletRequestHttpWrapper() throws Exception
     {
         ServletHolder servletHolder = context.addServlet(WrappedRequestServlet.class, "/test");
-        FilterHolder filterHolder = context.addFilter(ServletRequestHttpWrapperFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        FilterHolder filterHolder =
+            context.addFilter(ServletRequestHttpWrapperFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         server.setHandler(context);
         server.start();
@@ -135,7 +136,8 @@ public class ServletWrapperTest
     public static class ServletRequestHttpWrapperFilter implements Filter
     {
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             chain.doFilter(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
         }
@@ -150,7 +152,8 @@ public class ServletWrapperTest
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             if (!(request instanceof HttpServletRequest) || !(response instanceof HttpServletResponse))
             {

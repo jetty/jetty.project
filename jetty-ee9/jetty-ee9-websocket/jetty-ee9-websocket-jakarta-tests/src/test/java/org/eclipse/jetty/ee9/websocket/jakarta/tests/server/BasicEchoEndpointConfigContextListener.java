@@ -34,7 +34,8 @@ public class BasicEchoEndpointConfigContextListener implements ServletContextLis
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
+        ServerContainer container =
+            (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
         if (container == null)
             throw new IllegalStateException("No Websocket ServerContainer in " + sce.getServletContext());
 

@@ -18,7 +18,6 @@ import java.net.SocketAddress;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.HTTP3StreamConnection;
@@ -41,7 +40,12 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
     private final HttpConfiguration httpConfiguration;
     private final ServerHTTP3Session session;
 
-    public ServerHTTP3StreamConnection(Connector connector, HttpConfiguration httpConfiguration, QuicStreamEndPoint endPoint, ServerHTTP3Session session, MessageParser parser)
+    public ServerHTTP3StreamConnection(
+                                       Connector connector,
+                                       HttpConfiguration httpConfiguration,
+                                       QuicStreamEndPoint endPoint,
+                                       ServerHTTP3Session session,
+                                       MessageParser parser)
     {
         super(endPoint, connector.getExecutor(), connector.getByteBufferPool(), parser);
         this.connector = connector;

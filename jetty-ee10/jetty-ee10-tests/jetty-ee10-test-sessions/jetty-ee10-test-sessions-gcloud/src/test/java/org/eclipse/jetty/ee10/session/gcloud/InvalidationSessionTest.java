@@ -24,7 +24,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class InvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
-    public GCloudSessionTestSupport testSupport = new GCloudSessionTestSupport(getClass().getSimpleName());
+    public GCloudSessionTestSupport testSupport =
+        new GCloudSessionTestSupport(getClass().getSimpleName());
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()

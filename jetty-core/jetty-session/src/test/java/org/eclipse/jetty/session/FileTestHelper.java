@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.session;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -27,16 +34,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * FileTestHelper
@@ -72,8 +71,7 @@ public class FileTestHelper
     {
         try (Stream<Path> s = Files.list(storeDirRoot))
         {
-            return s
-                .filter((path) -> path.getFileName().toString().endsWith("_" + sessionId))
+            return s.filter((path) -> path.getFileName().toString().endsWith("_" + sessionId))
                 .findFirst()
                 .map(Path::toFile)
                 .orElse(null);
@@ -84,8 +82,8 @@ public class FileTestHelper
     {
         try (Stream<Path> s = Files.list(storeDirRoot))
         {
-            Optional<Path> sessionPath = s
-                .filter((path) -> path.getFileName().toString().contains(sessionId))
+            Optional<Path> sessionPath = s.filter(
+                (path) -> path.getFileName().toString().contains(sessionId))
                 .findFirst();
             if (exists)
                 assertTrue(sessionPath.isPresent());
@@ -103,18 +101,25 @@ public class FileTestHelper
             assertFalse(Files.exists(path), "File should NOT exist: " + path);
     }
 
-    public void createFile(String filename)
-        throws IOException
+    public void createFile(String filename) throws IOException
     {
         Path path = storeDirRoot.resolve(filename);
         Files.deleteIfExists(path);
         FS.touch(path);
     }
 
-    public void createFile(String id, String contextPath, String vhost,
-                           String lastNode, long created, long accessed,
-                           long lastAccessed, long maxIdle, long expiry,
-                           long cookieSet, Map<String, Object> attributes)
+    public void createFile(
+                           String id,
+                           String contextPath,
+                           String vhost,
+                           String lastNode,
+                           long created,
+                           long accessed,
+                           long lastAccessed,
+                           long maxIdle,
+                           long expiry,
+                           long cookieSet,
+                           Map<String, Object> attributes)
         throws Exception
     {
         String filename = "" + expiry + "_" + contextPath + "_" + vhost + "_" + id;
@@ -143,10 +148,10 @@ public class FileTestHelper
         assertTrue(Files.exists(path));
     }
 
-    public boolean checkSessionPersisted(SessionData data)
-        throws Exception
+    public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-        String filename = "" + data.getExpiry() + "_" + data.getContextPath() + "_" + data.getVhost() + "_" + data.getId();
+        String filename =
+            "" + data.getExpiry() + "_" + data.getContextPath() + "_" + data.getVhost() + "_" + data.getId();
         Path file = storeDirRoot.resolve(filename);
 
         assertTrue(Files.exists(file));
@@ -180,11 +185,11 @@ public class FileTestHelper
             ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(di);
             SessionData.deserializeAttributes(tmp, ois);
 
-            //same number of attributes
+            // same number of attributes
             assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
-            //same keys
+            // same keys
             assertEquals(tmp.getAllAttributes().keySet(), data.getKeys());
-            //same values
+            // same values
             for (String name : data.getKeys())
             {
                 assertEquals(tmp.getAttribute(name), data.getAttribute(name));

@@ -13,22 +13,21 @@
 
 package org.eclipse.jetty.test.client.transport;
 
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.client.Request;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.jetty.client.Request;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class HttpClientConnectTimeoutTest extends AbstractTest
 {
@@ -75,12 +74,11 @@ public class HttpClientConnectTimeoutTest extends AbstractTest
         AtomicInteger completes = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(2);
         Request request = client.newRequest(host, port);
-        request.timeout(connectTimeout / 2, TimeUnit.MILLISECONDS)
-            .send(result ->
-            {
-                completes.incrementAndGet();
-                latch.countDown();
-            });
+        request.timeout(connectTimeout / 2, TimeUnit.MILLISECONDS).send(result ->
+        {
+            completes.incrementAndGet();
+            latch.countDown();
+        });
 
         assertFalse(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
         assertEquals(1, completes.get());

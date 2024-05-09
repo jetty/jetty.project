@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.server;
 
+import static java.lang.invoke.MethodType.methodType;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Set;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -37,8 +38,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.invoke.MethodType.methodType;
 
 /**
  * Customize Requests for Proxy Forwarding.
@@ -161,10 +160,8 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
     private String _forwardedCipherSuiteHeader = "Proxy-auth-cert";
     private String _forwardedSslSessionIdHeader = "Proxy-ssl-id";
     private boolean _sslIsSecure = true;
-    private final Index.Mutable<MethodHandle> _handles = new Index.Builder<MethodHandle>()
-        .caseSensitive(false)
-        .mutable()
-        .build();
+    private final Index.Mutable<MethodHandle> _handles =
+        new Index.Builder<MethodHandle>().caseSensitive(false).mutable().build();
 
     public ForwardedRequestCustomizer()
     {
@@ -536,12 +533,13 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
             }
 
             // Don't change port if port == IMPLIED.
-            if (request.getHttpURI().getPort() == 0 && port > 0 && port == HttpScheme.CACHE.get(httpConfig.getSecureScheme()).getDefaultPort())
+            if (request.getHttpURI().getPort() == 0 && port > 0 && port == HttpScheme.CACHE
+                .get(httpConfig.getSecureScheme())
+                .getDefaultPort())
                 port = 0;
 
             // Update authority if different from metadata
-            if (!host.equalsIgnoreCase(builder.getHost()) ||
-                port != builder.getPort())
+            if (!host.equalsIgnoreCase(builder.getHost()) || port != builder.getPort())
             {
                 authority = new HostPortHttpField(host, port);
                 builder.authority(host, port);
@@ -597,38 +595,39 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
             @Override
             public String toString()
             {
-                return "%s@%x{id=%s,remote=%s,authority=%s,%s}".formatted(
-                    TypeUtil.toShortName(this.getClass()),
-                    hashCode(),
-                    getId(),
-                    remote,
-                    authority,
-                    getWrapped()
-                );
+                return "%s@%x{id=%s,remote=%s,authority=%s,%s}"
+                    .formatted(
+                        TypeUtil.toShortName(this.getClass()),
+                        hashCode(),
+                        getId(),
+                        remote,
+                        authority,
+                        getWrapped());
             }
         };
 
-        HttpFields headers = authority == null
-            ? request.getHeaders()
-            : HttpFields.build(request.getHeaders(), authority);
+        HttpFields headers =
+            authority == null ? request.getHeaders() : HttpFields.build(request.getHeaders(), authority);
 
         EndPoint.SslSessionData sslSessionData = forwarded._sslSessionData;
-        return new Request.AttributesWrapper(request, sslSessionData == null ? request : new Attributes.Synthetic(request)
-        {
-            private static final Set<String> ATTRIBUTES = Set.of(EndPoint.SslSessionData.ATTRIBUTE);
-
-            @Override
-            protected Object getSyntheticAttribute(String name)
+        return new Request.AttributesWrapper(
+            request,
+            sslSessionData == null ? request : new Attributes.Synthetic(request)
             {
-                return EndPoint.SslSessionData.ATTRIBUTE.equals(name) ? sslSessionData : null;
-            }
+                private static final Set<String> ATTRIBUTES = Set.of(EndPoint.SslSessionData.ATTRIBUTE);
 
-            @Override
-            protected Set<String> getSyntheticNameSet()
-            {
-                return ATTRIBUTES;
-            }
-        })
+                @Override
+                protected Object getSyntheticAttribute(String name)
+                {
+                    return EndPoint.SslSessionData.ATTRIBUTE.equals(name) ? sslSessionData : null;
+                }
+
+                @Override
+                protected Set<String> getSyntheticNameSet()
+                {
+                    return ATTRIBUTES;
+                }
+            })
         {
             @Override
             public HttpURI getHttpURI()
@@ -727,7 +726,8 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
     }
 
-    private void updateForwardedHandle(MethodHandles.Lookup lookup, String headerName, String forwardedMethodName) throws NoSuchMethodException, IllegalAccessException
+    private void updateForwardedHandle(MethodHandles.Lookup lookup, String headerName, String forwardedMethodName)
+        throws NoSuchMethodException, IllegalAccessException
     {
         final MethodType type = methodType(void.class, HttpField.class);
 
@@ -799,7 +799,8 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         @Override
         public String toString()
         {
-            return "%s@%x{host='%s'/%s, port=%d/%s}".formatted(getClass().getSimpleName(), hashCode(), _host, _hostSource, _port, _portSource);
+            return "%s@%x{host='%s'/%s, port=%d/%s}"
+                .formatted(getClass().getSimpleName(), hashCode(), _host, _hostSource, _port, _portSource);
         }
     }
 
@@ -847,10 +848,11 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
             _config = config;
             if (_forcedHost != null)
             {
-                getAuthority().setHostPort(
-                    _forcedHost.getHostPort().getHost(),
-                    _forcedHost.getHostPort().getPort(),
-                    Source.FORCED);
+                getAuthority()
+                    .setHostPort(
+                        _forcedHost.getHostPort().getHost(),
+                        _forcedHost.getHostPort().getPort(),
+                        Source.FORCED);
             }
         }
 
@@ -1067,14 +1069,9 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         @Override
         public String toString()
         {
-            return String.format("Forwarded@%x[req=%s,auth=%s,for=%s,proto=%s,sec=%s/%s]",
-                hashCode(),
-                _request,
-                _authority,
-                _for,
-                _proto,
-                _secure,
-                _secureScheme);
+            return String.format(
+                "Forwarded@%x[req=%s,auth=%s,for=%s,proto=%s,sec=%s/%s]",
+                hashCode(), _request, _authority, _for, _proto, _secure, _secureScheme);
         }
     }
 }

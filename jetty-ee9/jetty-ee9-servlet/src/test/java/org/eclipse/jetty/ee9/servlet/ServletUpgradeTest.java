@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
+import static org.eclipse.jetty.util.StringUtil.CRLF;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;
@@ -27,6 +27,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.WebConnection;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
@@ -35,11 +39,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.util.StringUtil.CRLF;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled // TODO
 public class ServletUpgradeTest
@@ -93,13 +92,21 @@ public class ServletUpgradeTest
             output = s.getOutputStream();
 
             StringBuilder reqStr = new StringBuilder()
-                .append("POST /TestServlet HTTP/1.1").append(CRLF)
-                .append("User-Agent: Java/1.6.0_33").append(CRLF)
-                .append("Host: localhost:").append(port).append(CRLF)
-                .append("Accept: text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2").append(CRLF)
-                .append("Upgrade: YES").append(CRLF)
-                .append("Connection: Upgrade").append(CRLF)
-                .append("Content-type: application/x-www-form-urlencoded").append(CRLF)
+                .append("POST /TestServlet HTTP/1.1")
+                .append(CRLF)
+                .append("User-Agent: Java/1.6.0_33")
+                .append(CRLF)
+                .append("Host: localhost:")
+                .append(port)
+                .append(CRLF)
+                .append("Accept: text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2")
+                .append(CRLF)
+                .append("Upgrade: YES")
+                .append(CRLF)
+                .append("Connection: Upgrade")
+                .append(CRLF)
+                .append("Content-type: application/x-www-form-urlencoded")
+                .append(CRLF)
                 .append(CRLF);
 
             LOG.info("REQUEST=========" + reqStr);
@@ -200,7 +207,8 @@ public class ServletUpgradeTest
 
     private static class TestServlet extends HttpServlet
     {
-        public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        public void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             if (request.getHeader("Upgrade") != null)
             {
@@ -321,14 +329,7 @@ public class ServletUpgradeTest
             if (searchIdx < 0)
             {
                 found = false;
-                String s = "[ServletTestUtil] Unable to find the following " +
-                    "search string in the server's " +
-                    "response: '" + search + "' at index: " +
-                    startIdx +
-                    "\n[ServletTestUtil] Server's response:\n" +
-                    "-------------------------------------------\n" +
-                    actual +
-                    "\n-------------------------------------------\n";
+                String s = "[ServletTestUtil] Unable to find the following " + "search string in the server's " + "response: '" + search + "' at index: " + startIdx + "\n[ServletTestUtil] Server's response:\n" + "-------------------------------------------\n" + actual + "\n-------------------------------------------\n";
                 LOG.debug(s);
                 break;
             }

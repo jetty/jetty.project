@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.ee9.proxy;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.ServletException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,8 +34,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentMap;
-
-import jakarta.servlet.ServletException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
@@ -45,12 +50,6 @@ import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConnectHandlerTest extends AbstractConnectHandlerTest
 {
@@ -69,10 +68,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECT() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -115,10 +111,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         try (ServerSocket server = new ServerSocket(0))
         {
             String hostPort = "localhost:" + server.getLocalPort();
-            String request =
-                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+            String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
             try (Socket socket = newSocket())
             {
                 OutputStream output = socket.getOutputStream();
@@ -145,10 +138,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         String hostPort = "[::1]:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -167,10 +157,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECTAndGET() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -185,10 +172,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            request =
-                "GET /echo" + " HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "\r\n";
+            request = "GET /echo" + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -207,10 +191,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         connectHandler.getWhiteListHosts().add(hostPort);
 
         // Try with the wrong host
-        String request =
-            "CONNECT localhost:" + port + " HTTP/1.1\r\n" +
-                "Host: localhost:" + port + "\r\n" +
-                "\r\n";
+        String request = "CONNECT localhost:" + port + " HTTP/1.1\r\n" + "Host: localhost:" + port + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -230,10 +211,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         }
 
         // Try again with the right host
-        request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -248,10 +226,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            request =
-                "GET /echo" + " HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "\r\n";
+            request = "GET /echo" + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -270,10 +245,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         connectHandler.getBlackListHosts().add(hostPort);
 
         // Try with the wrong host
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -293,10 +265,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         }
 
         // Try again with the right host
-        request =
-            "CONNECT 127.0.0.1:" + port + " HTTP/1.1\r\n" +
-                "Host: 127.0.0.1:" + port + "\r\n" +
-                "\r\n";
+        request = "CONNECT 127.0.0.1:" + port + " HTTP/1.1\r\n" + "Host: 127.0.0.1:" + port + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -311,10 +280,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            request =
-                "GET /echo" + " HTTP/1.1\r\n" +
-                    "Host: 127.0.0.1:" + port + "\r\n" +
-                    "\r\n";
+            request = "GET /echo" + " HTTP/1.1\r\n" + "Host: 127.0.0.1:" + port + "\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -352,10 +318,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         String hostPort = "localhost:" + port;
 
         // Try without authentication
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -377,11 +340,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
 
         // Try with authentication
         String credentials = "Basic " + Base64.getEncoder().encodeToString("test:test".getBytes(ISO_8859_1));
-        request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "Proxy-Authorization: " + credentials + "\r\n" +
-                "\r\n";
+        request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "Proxy-Authorization: " + credentials + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -396,10 +355,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            request =
-                "GET /echo" + " HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "\r\n";
+            request = "GET /echo" + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -418,11 +374,13 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         try
         {
             InetAddress address = InetAddress.getByName(invalidHostname);
-            String err = """
-                DNS Hijacking detected: %s should have not returned a valid IP address [%s].
-                Fix your DNS provider to have this test pass.
-                For more info see https://en.wikipedia.org/wiki/DNS_hijacking")
-                """.formatted(invalidHostname, address.getHostAddress());
+            String err =
+                """
+                    DNS Hijacking detected: %s should have not returned a valid IP address [%s].
+                    Fix your DNS provider to have this test pass.
+                    For more info see https://en.wikipedia.org/wiki/DNS_hijacking")
+                    """
+                    .formatted(invalidHostname, address.getHostAddress());
             assertNull(address, err);
         }
         catch (UnknownHostException e)
@@ -431,10 +389,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         }
 
         String hostPort = String.format("%s:%d", invalidHostname, serverConnector.getLocalPort());
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             socket.setSoTimeout(30000);
@@ -456,10 +411,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECT10AndGET() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.0\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.0\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -474,10 +426,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            request =
-                "GET /echo" + " HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "\r\n";
+            request = "GET /echo" + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -492,13 +441,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECTAndGETPipelined() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n" +
-                "GET /echo" + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n" + "GET /echo" + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -525,10 +468,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECTAndMultipleGETs() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -545,10 +485,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
 
             for (int i = 0; i < 10; ++i)
             {
-                request =
-                    "GET /echo" + " HTTP/1.1\r\n" +
-                        "Host: " + hostPort + "\r\n" +
-                        "\r\n";
+                request = "GET /echo" + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -564,10 +501,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECTAndGETServerStop() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -582,10 +516,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            request =
-                "GET /echo HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "\r\n";
+            request = "GET /echo HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -606,10 +537,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECTAndGETAndServerSideClose() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -624,10 +552,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            request =
-                "GET /close HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "\r\n";
+            request = "GET /close HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -640,10 +565,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECTAndPOSTAndGET() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -658,12 +580,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            request =
-                "POST /echo HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "Content-Length: 5\r\n" +
-                    "\r\n" +
-                    "HELLO";
+            request = "POST /echo HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "Content-Length: 5\r\n" + "\r\n" + "HELLO";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -672,10 +589,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertEquals("POST /echo\r\nHELLO", response.getContent());
 
-            request =
-                "GET /echo" + " HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "\r\n";
+            request = "GET /echo" + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -698,10 +612,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
 
         String hostPort = "localhost:" + serverConnector.getLocalPort();
 
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             socket.setSoTimeout((int)idleTimeout);
@@ -720,12 +631,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             String chunk = "0123456789ABCDEF";
             String body = chunk.repeat(1024 * 1024);
 
-            request =
-                "POST /echo HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "Content-Length: " + body.length() + "\r\n" +
-                    "\r\n" +
-                    body;
+            request = "POST /echo HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "Content-Length: " + body.length() + "\r\n" + "\r\n" + body;
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -769,14 +675,16 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             }
 
             @Override
-            protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
+            protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context)
+                throws IOException
             {
                 assertEquals(contextValue, context.get(contextKey));
                 return super.read(endPoint, buffer, context);
             }
 
             @Override
-            protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
+            protected void write(
+                                 EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
             {
                 assertEquals(contextValue, context.get(contextKey));
                 super.write(endPoint, buffer, callback, context);
@@ -785,10 +693,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
         proxy.start();
 
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -804,12 +709,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String body = "0123456789ABCDEF";
-            request =
-                "POST /echo HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "Content-Length: " + body.length() + "\r\n" +
-                    "\r\n" +
-                    body;
+            request = "POST /echo HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "Content-Length: " + body.length() + "\r\n" + "\r\n" + body;
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -824,13 +724,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECTAndGETPipelinedAndOutputShutdown() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n" +
-                "GET /echo" + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n" + "GET /echo" + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -858,10 +752,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     public void testCONNECTAndGETAndOutputShutdown() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -876,10 +767,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            request =
-                "GET /echo" + " HTTP/1.1\r\n" +
-                    "Host: " + hostPort + "\r\n" +
-                    "\r\n";
+            request = "GET /echo" + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
             socket.shutdownOutput();
@@ -938,7 +826,10 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                 }
                 case "/close" ->
                 {
-                    request.getConnectionMetaData().getConnection().getEndPoint().close();
+                    request.getConnectionMetaData()
+                        .getConnection()
+                        .getEndPoint()
+                        .close();
                     callback.succeeded();
                 }
                 default -> throw new ServletException();

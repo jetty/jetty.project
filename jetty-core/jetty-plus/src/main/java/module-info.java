@@ -16,7 +16,6 @@ module org.eclipse.jetty.plus
     requires org.eclipse.jetty.security;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
-
     requires transitive java.naming;
     // Only required if using DataSourceLoginService.
     requires static java.sql;

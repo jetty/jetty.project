@@ -15,7 +15,6 @@ package org.eclipse.jetty.util.thread.jmh;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -44,7 +43,9 @@ public class ReservedThreadPoolBenchmark
 {
     public enum Type
     {
-        RTE_EXCH, RTE_SEMA, RTE_Q
+        RTE_EXCH,
+        RTE_SEMA,
+        RTE_Q
     }
 
     @Param({"RTE_EXCH", "RTE_SEMA", "RTE_Q"})
@@ -157,7 +158,8 @@ public class ReservedThreadPoolBenchmark
             miss.increment();
             qtp.execute(task);
         }
-        // We don't wait for the job to complete here, as we want to measure the speed of dispatch, not execution latency
+        // We don't wait for the job to complete here, as we want to measure the speed of dispatch, not execution
+        // latency
     }
 
     public static void main(String[] args) throws RunnerException

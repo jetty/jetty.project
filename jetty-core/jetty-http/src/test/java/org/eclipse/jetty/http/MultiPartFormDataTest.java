@@ -13,32 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.ByteArrayInputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.content.AsyncContent;
-import org.eclipse.jetty.io.content.InputStreamContentSource;
-import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -56,6 +30,31 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.ByteArrayInputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.InputStreamContentSource;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class MultiPartFormDataTest
 {
@@ -98,13 +97,7 @@ public class MultiPartFormDataTest
     public void testBadMultiPart() throws Exception
     {
         String boundary = "X0Y0";
-        String str = "--" + boundary + "\r\n" +
-            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-            "Content-Type: application/octet-stream\r\n\r\n" +
-            "How now brown cow." +
-            "\r\n--" + boundary + "-\r\n" +
-            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
-            "\r\n";
+        String str = "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" + "Content-Type: application/octet-stream\r\n\r\n" + "How now brown cow." + "\r\n--" + boundary + "-\r\n" + "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" + "\r\n";
 
         AsyncContent source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
@@ -113,13 +106,15 @@ public class MultiPartFormDataTest
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
         Content.Sink.write(source, true, str, Callback.NOOP);
-        formData.parse(source).handle((parts, failure) ->
-        {
-            assertNull(parts);
-            assertInstanceOf(BadMessageException.class, failure);
-            assertThat(failure.getMessage(), containsStringIgnoringCase("bad last boundary"));
-            return null;
-        }).get(5, TimeUnit.SECONDS);
+        formData.parse(source)
+            .handle((parts, failure) ->
+            {
+                assertNull(parts);
+                assertInstanceOf(BadMessageException.class, failure);
+                assertThat(failure.getMessage(), containsStringIgnoringCase("bad last boundary"));
+                return null;
+            })
+            .get(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -130,11 +125,8 @@ public class MultiPartFormDataTest
 
         // Multipart request body containing only an arbitrary string of text,
         // followed by the final boundary marker, delimited by empty lines.
-        String str = eol +
-            "Hello world" +
-            eol +        // Two eol markers, which make an empty line.
-            eol +
-            "--" + boundary + "--" + eol;
+        String str = eol + "Hello world" + eol + // Two eol markers, which make an empty line.
+            eol + "--" + boundary + "--" + eol;
 
         AsyncContent source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
@@ -143,14 +135,16 @@ public class MultiPartFormDataTest
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
         Content.Sink.write(source, true, str, Callback.NOOP);
-        formData.parse(source).whenComplete((parts, failure) ->
-        {
-            // No errors and no parts.
-            assertNull(failure);
-            assertNotNull(parts);
-            assertEquals(0, parts.size());
-            parts.close();
-        }).get(5, TimeUnit.SECONDS);
+        formData.parse(source)
+            .whenComplete((parts, failure) ->
+            {
+                // No errors and no parts.
+                assertNull(failure);
+                assertNotNull(parts);
+                assertEquals(0, parts.size());
+                parts.close();
+            })
+            .get(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -159,8 +153,7 @@ public class MultiPartFormDataTest
         String eol = "\r\n";
         String boundary = "MockMultiPartTestBoundary";
 
-        String str = eol +
-            "--" + boundary + "--" + eol;
+        String str = eol + "--" + boundary + "--" + eol;
 
         AsyncContent source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
@@ -169,46 +162,49 @@ public class MultiPartFormDataTest
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
         Content.Sink.write(source, true, str, Callback.NOOP);
-        formData.parse(source).whenComplete((parts, failure) ->
-        {
-            // No errors and no parts.
-            assertNull(failure);
-            assertNotNull(parts);
-            assertEquals(0, parts.size());
-            parts.close();
-        }).get(5, TimeUnit.SECONDS);
+        formData.parse(source)
+            .whenComplete((parts, failure) ->
+            {
+                // No errors and no parts.
+                assertNull(failure);
+                assertNotNull(parts);
+                assertEquals(0, parts.size());
+                parts.close();
+            })
+            .get(5, TimeUnit.SECONDS);
     }
 
     @Test
     public void testEmptyStringBoundary() throws Exception
     {
-        String str = """
-            --\r
-            Content-Disposition: form-data; name="fileName"\r
-            Content-Type: text/plain; charset=US-ASCII\r
-            Content-Transfer-Encoding: 8bit\r
-            \r
-            abc\r
-            --\r
-            Content-Disposition: form-data; name="desc"\r
-            Content-Type: text/plain; charset=US-ASCII\r
-            Content-Transfer-Encoding: 8bit\r
-            \r
-            123\r
-            --\r
-            Content-Disposition: form-data; name="title"\r
-            Content-Type: text/plain; charset=US-ASCII\r
-            Content-Transfer-Encoding: 8bit\r
-            \r
-            ttt\r
-            --\r
-            Content-Disposition: form-data; name="datafile5239138112980980385.txt"; filename="datafile5239138112980980385.txt"\r
-            Content-Type: application/octet-stream; charset=ISO-8859-1\r
-            Content-Transfer-Encoding: binary\r
-            \r
-            000\r
-            ----\r
-            """;
+        String str =
+            """
+                --\r
+                Content-Disposition: form-data; name="fileName"\r
+                Content-Type: text/plain; charset=US-ASCII\r
+                Content-Transfer-Encoding: 8bit\r
+                \r
+                abc\r
+                --\r
+                Content-Disposition: form-data; name="desc"\r
+                Content-Type: text/plain; charset=US-ASCII\r
+                Content-Transfer-Encoding: 8bit\r
+                \r
+                123\r
+                --\r
+                Content-Disposition: form-data; name="title"\r
+                Content-Type: text/plain; charset=US-ASCII\r
+                Content-Transfer-Encoding: 8bit\r
+                \r
+                ttt\r
+                --\r
+                Content-Disposition: form-data; name="datafile5239138112980980385.txt"; filename="datafile5239138112980980385.txt"\r
+                Content-Type: application/octet-stream; charset=ISO-8859-1\r
+                Content-Transfer-Encoding: binary\r
+                \r
+                000\r
+                ----\r
+                """;
 
         AsyncContent source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("");
@@ -251,19 +247,22 @@ public class MultiPartFormDataTest
     public void testContentTransferEncodingQuotedPrintable() throws Exception
     {
         String boundary = "BEEF";
-        String str = """
-            --$B\r
-            Content-Disposition: form-data; name="greeting"\r
-            Content-Type: text/plain; charset=US-ASCII\r
-            Content-Transfer-Encoding: quoted-printable\r
-            \r
-            Hello World\r
-            --$B--\r
-            """.replace("$B", boundary);
+        String str =
+            """
+                --$B\r
+                Content-Disposition: form-data; name="greeting"\r
+                Content-Type: text/plain; charset=US-ASCII\r
+                Content-Transfer-Encoding: quoted-printable\r
+                \r
+                Hello World\r
+                --$B--\r
+                """
+                .replace("$B", boundary);
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
+        MultiPartFormData.Parser formData =
+            new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
@@ -288,12 +287,13 @@ public class MultiPartFormDataTest
     @Test
     public void testLFOnlyNoCRInPreviousChunk() throws Exception
     {
-        String str1 = """
-            --BEEF\r
-            Content-Disposition: form-data; name="greeting"\r
-            Content-Type: text/plain; charset=US-ASCII\r
-            \r
-            """;
+        String str1 =
+            """
+                --BEEF\r
+                Content-Disposition: form-data; name="greeting"\r
+                Content-Type: text/plain; charset=US-ASCII\r
+                \r
+                """;
         String str2 = "Hello World"; // not ending with CR
         String str3 = """
             \n--BEEF--\r
@@ -301,7 +301,8 @@ public class MultiPartFormDataTest
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser("BEEF", MultiPartCompliance.RFC7578, violations);
+        MultiPartFormData.Parser formData =
+            new MultiPartFormData.Parser("BEEF", MultiPartCompliance.RFC7578, violations);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, false, str1, Callback.NOOP);
         Content.Sink.write(source, false, str2, Callback.NOOP);
@@ -327,12 +328,13 @@ public class MultiPartFormDataTest
     @Test
     public void testLFOnlyNoCRInCurrentChunk() throws Exception
     {
-        String str1 = """
-            --BEEF\r
-            Content-Disposition: form-data; name="greeting"\r
-            Content-Type: text/plain; charset=US-ASCII\r
-            \r
-            """;
+        String str1 =
+            """
+                --BEEF\r
+                Content-Disposition: form-data; name="greeting"\r
+                Content-Type: text/plain; charset=US-ASCII\r
+                \r
+                """;
         // Do not end Hello World with "\r".
         String str2 = """
             Hello World\n--BEEF--\r
@@ -340,7 +342,8 @@ public class MultiPartFormDataTest
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser("BEEF", MultiPartCompliance.RFC7578, violations);
+        MultiPartFormData.Parser formData =
+            new MultiPartFormData.Parser("BEEF", MultiPartCompliance.RFC7578, violations);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, false, str1, Callback.NOOP);
         Content.Sink.write(source, true, str2, Callback.NOOP);
@@ -366,20 +369,23 @@ public class MultiPartFormDataTest
     public void testLFOnlyEOLLenient() throws Exception
     {
         String boundary = "BEEF";
-        String str = """
-            --$B
-            Content-Disposition: form-data; name="greeting"
-            Content-Type: text/plain; charset=US-ASCII
-            
-            Hello World
-            --$B--
-            """.replace("$B", boundary);
+        String str =
+            """
+                --$B
+                Content-Disposition: form-data; name="greeting"
+                Content-Type: text/plain; charset=US-ASCII
+
+                Hello World
+                --$B--
+                """
+                .replace("$B", boundary);
 
         assertThat("multipart str cannot contain CR for this test", str, not(containsString(CR)));
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
+        MultiPartFormData.Parser formData =
+            new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
 
@@ -404,24 +410,28 @@ public class MultiPartFormDataTest
     public void testLFOnlyEOLStrict()
     {
         String boundary = "BEEF";
-        String str = """
-            --$B
-            Content-Disposition: form-data; name="greeting"
-            Content-Type: text/plain; charset=US-ASCII
-            
-            Hello World
-            --$B--
-            """.replace("$B", boundary);
+        String str =
+            """
+                --$B
+                Content-Disposition: form-data; name="greeting"
+                Content-Type: text/plain; charset=US-ASCII
+
+                Hello World
+                --$B--
+                """
+                .replace("$B", boundary);
 
         assertThat("multipart str cannot contain CR for this test", str, not(containsString(CR)));
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578_STRICT, violations);
+        MultiPartFormData.Parser formData =
+            new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578_STRICT, violations);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
 
-        ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
+        ExecutionException ee = assertThrows(
+            ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
         assertThat(ee.getCause(), instanceOf(BadMessageException.class));
         BadMessageException bme = (BadMessageException)ee.getCause();
         assertThat(bme.getMessage(), containsString("invalid LF-only EOL"));
@@ -436,24 +446,28 @@ public class MultiPartFormDataTest
     public void testWhiteSpaceBeforeBoundary()
     {
         String boundary = "BEEF";
-        String str = """
-            preamble\r
-             --$B\r
-            Content-Disposition: form-data; name="greeting"\r
-            Content-Type: text/plain; charset=US-ASCII\r
-            \r
-            Hello World\r
-             --$B--\r
-            """.replace("$B", boundary);
+        String str =
+            """
+                preamble\r
+                 --$B\r
+                Content-Disposition: form-data; name="greeting"\r
+                Content-Type: text/plain; charset=US-ASCII\r
+                \r
+                Hello World\r
+                 --$B--\r
+                """
+                .replace("$B", boundary);
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
+        MultiPartFormData.Parser formData =
+            new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
 
-        ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get());
+        ExecutionException ee = assertThrows(
+            ExecutionException.class, () -> formData.parse(source).get());
         assertThat(ee.getCause(), instanceOf(EOFException.class));
         EOFException bme = (EOFException)ee.getCause();
         assertThat(bme.getMessage(), containsString("unexpected EOF"));
@@ -463,14 +477,16 @@ public class MultiPartFormDataTest
     public void testCROnlyEOL()
     {
         String boundary = "BEEF";
-        String str = """
-            --$B
-            Content-Disposition: form-data; name="greeting"
-            Content-Type: text/plain; charset=US-ASCII
-            
-            Hello World
-            --$B--
-            """.replace("$B", boundary);
+        String str =
+            """
+                --$B
+                Content-Disposition: form-data; name="greeting"
+                Content-Type: text/plain; charset=US-ASCII
+
+                Hello World
+                --$B--
+                """
+                .replace("$B", boundary);
 
         // change every '\n' LF to a CR.
         str = str.replace(LF, CR);
@@ -479,12 +495,14 @@ public class MultiPartFormDataTest
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
+        MultiPartFormData.Parser formData =
+            new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
 
-        ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
+        ExecutionException ee = assertThrows(
+            ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
         assertThat(ee.getCause(), instanceOf(BadMessageException.class));
         BadMessageException bme = (BadMessageException)ee.getCause();
         assertThat(bme.getMessage(), containsString("invalid CR-only EOL"));
@@ -494,26 +512,30 @@ public class MultiPartFormDataTest
     public void testTooManyCRs()
     {
         String boundary = "BEEF";
-        String str = """
-            --$B
-            Content-Disposition: form-data; name="greeting"
-            Content-Type: text/plain; charset=US-ASCII
-            
-            Hello World
-            --$B--
-            """.replace("$B", boundary);
+        String str =
+            """
+                --$B
+                Content-Disposition: form-data; name="greeting"
+                Content-Type: text/plain; charset=US-ASCII
+
+                Hello World
+                --$B--
+                """
+                .replace("$B", boundary);
 
         // change every '\n' LF to a multiple CR then a LF.
         str = str.replace("\n", "\r\r\r\r\r\r\r\n");
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
+        MultiPartFormData.Parser formData =
+            new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
 
-        ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get());
+        ExecutionException ee = assertThrows(
+            ExecutionException.class, () -> formData.parse(source).get());
         assertThat(ee.getCause(), instanceOf(BadMessageException.class));
         BadMessageException bme = (BadMessageException)ee.getCause();
         assertThat(bme.getMessage(), containsString("invalid CR-only EOL"));
@@ -523,19 +545,22 @@ public class MultiPartFormDataTest
     public void testContentTransferEncodingBase64() throws Exception
     {
         String boundary = "BEEF";
-        String str = """
-            --$B\r
-            Content-Disposition: form-data; name="greeting"\r
-            Content-Type: text/plain; charset=US-ASCII\r
-            Content-Transfer-Encoding: base64\r
-            \r
-            SGVsbG8gV29ybGQK\r
-            --$B--\r
-            """.replace("$B", boundary);
+        String str =
+            """
+                --$B\r
+                Content-Disposition: form-data; name="greeting"\r
+                Content-Type: text/plain; charset=US-ASCII\r
+                Content-Transfer-Encoding: base64\r
+                \r
+                SGVsbG8gV29ybGQK\r
+                --$B--\r
+                """
+                .replace("$B", boundary);
 
         AsyncContent source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
+        MultiPartFormData.Parser formData =
+            new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
         Content.Sink.write(source, true, str, Callback.NOOP);
@@ -563,13 +588,15 @@ public class MultiPartFormDataTest
         AsyncContent source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("boundary");
         source.close();
-        formData.parse(source).handle((parts, failure) ->
-        {
-            assertNull(parts);
-            assertNotNull(failure);
-            assertThat(failure.getMessage(), containsStringIgnoringCase("unexpected EOF"));
-            return null;
-        }).get(5, TimeUnit.SECONDS);
+        formData.parse(source)
+            .handle((parts, failure) ->
+            {
+                assertNull(parts);
+                assertNotNull(failure);
+                assertThat(failure.getMessage(), containsStringIgnoringCase("unexpected EOF"));
+                return null;
+            })
+            .get(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -579,36 +606,39 @@ public class MultiPartFormDataTest
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("boundary");
         String body = "              \n\n\n\r\n\r\n\r\n\r\n";
         Content.Sink.write(source, true, body, Callback.NOOP);
-        formData.parse(source).handle((parts, failure) ->
-        {
-            assertNull(parts);
-            assertNotNull(failure);
-            assertThat(failure.getMessage(), containsStringIgnoringCase("unexpected EOF"));
-            return null;
-        }).get(5, TimeUnit.SECONDS);
+        formData.parse(source)
+            .handle((parts, failure) ->
+            {
+                assertNull(parts);
+                assertNotNull(failure);
+                assertThat(failure.getMessage(), containsStringIgnoringCase("unexpected EOF"));
+                return null;
+            })
+            .get(5, TimeUnit.SECONDS);
     }
 
     @Test
     public void testLeadingWhitespaceBodyWithCRLF() throws Exception
     {
-        String body = """
-                        
+        String body =
+            """
 
-            \r
-            \r
-            \r
-            \r
-            --AaB03x\r
-            content-disposition: form-data; name="field1"\r
-            \r
-            Joe Blow\r
-            --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="foo.txt"\r
-            Content-Type: text/plain\r
-            \r
-            aaaabbbbb\r
-            --AaB03x--\r
-            """;
+
+                \r
+                \r
+                \r
+                \r
+                --AaB03x\r
+                content-disposition: form-data; name="field1"\r
+                \r
+                Joe Blow\r
+                --AaB03x\r
+                content-disposition: form-data; name="stuff"; filename="foo.txt"\r
+                Content-Type: text/plain\r
+                \r
+                aaaabbbbb\r
+                --AaB03x--\r
+                """;
 
         AsyncContent source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
@@ -634,18 +664,19 @@ public class MultiPartFormDataTest
     @Test
     public void testLeadingWhitespaceBodyWithoutCRLF() throws Exception
     {
-        String body = """
-                        --AaB03x\r
-            content-disposition: form-data; name="field1"\r
-            \r
-            Joe Blow\r
-            --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="foo.txt"\r
-            Content-Type: text/plain\r
-            \r
-            aaaabbbbb\r
-            --AaB03x--\r
-            """;
+        String body =
+            """
+                            --AaB03x\r
+                content-disposition: form-data; name="field1"\r
+                \r
+                Joe Blow\r
+                --AaB03x\r
+                content-disposition: form-data; name="stuff"; filename="foo.txt"\r
+                Content-Type: text/plain\r
+                \r
+                aaaabbbbb\r
+                --AaB03x--\r
+                """;
 
         AsyncContent source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
@@ -671,14 +702,15 @@ public class MultiPartFormDataTest
         AsyncContent source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
-        String body = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="file"; filename="file.txt"\r
-            Content-Type: text/plain\r
-            \r
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
-            --AaB03x--\r
-            """;
+        String body =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="file"; filename="file.txt"\r
+                Content-Type: text/plain\r
+                \r
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, body, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -702,22 +734,25 @@ public class MultiPartFormDataTest
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxLength(16);
 
-        String body = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="file"; filename="file.txt"\r
-            Content-Type: text/plain\r
-            \r
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
-            --AaB03x--\r
-            """;
+        String body =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="file"; filename="file.txt"\r
+                Content-Type: text/plain\r
+                \r
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, body, Callback.NOOP);
-        formData.parse(source).handle((parts, failure) ->
-        {
-            assertNull(parts);
-            assertNotNull(failure);
-            assertThat(failure.getMessage(), containsStringIgnoringCase("max length exceeded"));
-            return null;
-        }).get(5, TimeUnit.SECONDS);
+        formData.parse(source)
+            .handle((parts, failure) ->
+            {
+                assertNull(parts);
+                assertNotNull(failure);
+                assertThat(failure.getMessage(), containsStringIgnoringCase("max length exceeded"));
+                return null;
+            })
+            .get(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -728,22 +763,25 @@ public class MultiPartFormDataTest
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(16);
 
-        String body = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="file"; filename="file.txt"\r
-            Content-Type: text/plain\r
-            \r
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
-            --AaB03x--\r
-            """;
+        String body =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="file"; filename="file.txt"\r
+                Content-Type: text/plain\r
+                \r
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, body, Callback.NOOP);
-        formData.parse(source).handle((parts, failure) ->
-        {
-            assertNull(parts);
-            assertNotNull(failure);
-            assertThat(failure.getMessage(), containsStringIgnoringCase("max file size exceeded"));
-            return null;
-        }).get(5, TimeUnit.SECONDS);
+        formData.parse(source)
+            .handle((parts, failure) ->
+            {
+                assertNull(parts);
+                assertNotNull(failure);
+                assertThat(failure.getMessage(), containsStringIgnoringCase("max file size exceeded"));
+                return null;
+            })
+            .get(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -755,19 +793,21 @@ public class MultiPartFormDataTest
         String chunk = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         formData.setMaxMemoryFileSize(chunk.length() + 1);
 
-        String body = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="file1"; filename="file1.txt"\r
-            Content-Type: text/plain\r
-            \r
-            $C\r
-            --AaB03x\r
-            Content-Disposition: form-data; name="file2"; filename="file2.txt"\r
-            Content-Type: text/plain\r
-            \r
-            $C$C$C$C\r
-            --AaB03x--\r
-            """.replace("$C", chunk);
+        String body =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="file1"; filename="file1.txt"\r
+                Content-Type: text/plain\r
+                \r
+                $C\r
+                --AaB03x\r
+                Content-Disposition: form-data; name="file2"; filename="file2.txt"\r
+                Content-Type: text/plain\r
+                \r
+                $C$C$C$C\r
+                --AaB03x--\r
+                """
+                .replace("$C", chunk);
         Content.Sink.write(source, true, body, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -795,19 +835,21 @@ public class MultiPartFormDataTest
         String chunk = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         formData.setMaxMemoryFileSize(chunk.length() + 1);
 
-        String body = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="file1"; filename="file1.txt"\r
-            Content-Type: text/plain\r
-            \r
-            $C\r
-            --AaB03x\r
-            Content-Disposition: form-data; name="file2"; filename="file2.txt"\r
-            Content-Type: text/plain\r
-            \r
-            $C$C$C$C\r
-            --AaB03x--\r
-            """.replace("$C", chunk);
+        String body =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="file1"; filename="file1.txt"\r
+                Content-Type: text/plain\r
+                \r
+                $C\r
+                --AaB03x\r
+                Content-Disposition: form-data; name="file2"; filename="file2.txt"\r
+                Content-Type: text/plain\r
+                \r
+                $C$C$C$C\r
+                --AaB03x--\r
+                """
+                .replace("$C", chunk);
         Content.Sink.write(source, true, body, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -839,14 +881,15 @@ public class MultiPartFormDataTest
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
 
-        String body = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="file"; filename="file.txt"\r
-            Content-Type: text/plain\r
-            \r
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
-            --AaB03x--\r
-            """;
+        String body =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="file"; filename="file.txt"\r
+                Content-Type: text/plain\r
+                \r
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, body, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -871,14 +914,15 @@ public class MultiPartFormDataTest
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(32);
 
-        String body = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="letters"; filename="letters.txt"\r
-            Content-Type: text/plain\r
-            \r
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
-            --AaB03x\r
-            """;
+        String body =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="letters"; filename="letters.txt"\r
+                Content-Type: text/plain\r
+                \r
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
+                --AaB03x\r
+                """;
         String terminator = """
             --AaB03x--\r
             """;
@@ -907,22 +951,25 @@ public class MultiPartFormDataTest
         formData.setFilesDirectory(_tmpDir);
         formData.setPartHeadersMaxLength(32);
 
-        String body = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="letters"; filename="letters.txt"\r
-            Content-Type: text/plain\r
-            \r
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
-            --AaB03x--\r
-            """;
+        String body =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="letters"; filename="letters.txt"\r
+                Content-Type: text/plain\r
+                \r
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, body, Callback.NOOP);
-        formData.parse(source).handle((parts, failure) ->
-        {
-            assertNull(parts);
-            assertNotNull(failure);
-            assertThat(failure.getMessage(), containsStringIgnoringCase("headers max length exceeded: 32"));
-            return null;
-        }).get(5, TimeUnit.SECONDS);
+        formData.parse(source)
+            .handle((parts, failure) ->
+            {
+                assertNull(parts);
+                assertNotNull(failure);
+                assertThat(failure.getMessage(), containsStringIgnoringCase("headers max length exceeded: 32"));
+                return null;
+            })
+            .get(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -933,24 +980,26 @@ public class MultiPartFormDataTest
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
 
-        String body1 = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="_charset_"\r
-            \r
-            ISO-8859-1\r
-            --AaB03x\r
-            Content-Disposition: form-data; name="iso"\r
-            Content-Type: text/plain\r
-            \r
-            """;
+        String body1 =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="_charset_"\r
+                \r
+                ISO-8859-1\r
+                --AaB03x\r
+                Content-Disposition: form-data; name="iso"\r
+                Content-Type: text/plain\r
+                \r
+                """;
         ByteBuffer isoCedilla = ISO_8859_1.encode("ç");
-        String body2 = """
-            \r
-            --AaB03x\r
-            Content-Disposition: form-data; name="utf"\r
-            Content-Type: text/plain; charset="UTF-8"\r
-            \r
-            """;
+        String body2 =
+            """
+                \r
+                --AaB03x\r
+                Content-Disposition: form-data; name="utf"\r
+                Content-Type: text/plain; charset="UTF-8"\r
+                \r
+                """;
         ByteBuffer utfCedilla = UTF_8.encode("ç");
         String terminator = """
             \r
@@ -986,13 +1035,14 @@ public class MultiPartFormDataTest
         formData.setMaxMemoryFileSize(-1);
 
         // First chunk must end with CR.
-        String chunk1 = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="spaces"\r
-            Content-Type: text/plain\r
-            \r
-            ABC
-            """ + "\r";
+        String chunk1 =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="spaces"\r
+                Content-Type: text/plain\r
+                \r
+                ABC
+                """ + "\r";
         // Second chunk must end with LF.
         String chunk2 = """
             DEF
@@ -1025,13 +1075,14 @@ public class MultiPartFormDataTest
         formData.setMaxMemoryFileSize(-1);
 
         // First chunk must end with CR.
-        String chunk1 = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="spaces"\r
-            Content-Type: text/plain\r
-            \r
-            ABC
-            """ + "\r";
+        String chunk1 =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="spaces"\r
+                Content-Type: text/plain\r
+                \r
+                ABC
+                """ + "\r";
         // Second chunk must have a partial boundary that is actually content.
         String chunk2 = "\n--AaB0";
         String terminator = """
@@ -1062,13 +1113,14 @@ public class MultiPartFormDataTest
         formData.setMaxMemoryFileSize(-1);
 
         // First chunk must end with CR.
-        String chunk1 = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="spaces"\r
-            Content-Type: text/plain\r
-            \r
-            ABC
-            """ + "\r";
+        String chunk1 =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="spaces"\r
+                Content-Type: text/plain\r
+                \r
+                ABC
+                """ + "\r";
         // Second chunk must have a partial boundary that is actually content.
         String chunk2 = "\n--AaB0";
         String chunk3 = "3x--\r\n";
@@ -1096,13 +1148,14 @@ public class MultiPartFormDataTest
         formData.setMaxMemoryFileSize(-1);
 
         // First chunk must end with CR.
-        String chunk1 = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="spaces"\r
-            Content-Type: text/plain\r
-            \r
-            ABC
-            """ + "\r";
+        String chunk1 =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="spaces"\r
+                Content-Type: text/plain\r
+                \r
+                ABC
+                """ + "\r";
         // Second chunk must have a partial boundary that is actually content.
         String chunk2 = "\n--AaB0";
         String chunk3 = "3x";
@@ -1132,13 +1185,14 @@ public class MultiPartFormDataTest
         formData.setMaxMemoryFileSize(-1);
 
         // First chunk must end with CR.
-        String chunk1 = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="spaces"\r
-            Content-Type: text/plain\r
-            \r
-            ABC
-            """ + "\r";
+        String chunk1 =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="spaces"\r
+                Content-Type: text/plain\r
+                \r
+                ABC
+                """ + "\r";
         // Second chunk must have a partial boundary that is actually content.
         String chunk2 = "\n--AaB0";
         String chunk3 = """
@@ -1169,13 +1223,14 @@ public class MultiPartFormDataTest
         formData.setMaxMemoryFileSize(-1);
 
         // First chunk must end with CR.
-        String chunk1 = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="spaces"\r
-            Content-Type: text/plain\r
-            \r
-            ABC
-            """ + "\r";
+        String chunk1 =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="spaces"\r
+                Content-Type: text/plain\r
+                \r
+                ABC
+                """ + "\r";
         // Second chunk must have a partial boundary that is actually content.
         String chunk2 = "\n--AaB";
         String chunk3 = "03";
@@ -1208,14 +1263,16 @@ public class MultiPartFormDataTest
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
         formData.setMaxMemoryFileSize(-1);
 
-        String form = """
-            --$B\r
-            Content-Disposition: form-data; name="spaces"\r
-            Content-Type: text/plain\r
-            \r
-            ABC\n\rDEF\n
-            --$B--
-            """.replace("$B", boundary);
+        String form =
+            """
+                --$B\r
+                Content-Disposition: form-data; name="spaces"\r
+                Content-Type: text/plain\r
+                \r
+                ABC\n\rDEF\n
+                --$B--
+                """
+                .replace("$B", boundary);
 
         CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
 
@@ -1227,7 +1284,8 @@ public class MultiPartFormDataTest
                 source.write(false, ByteBuffer.wrap(new byte[]{buf.get()}), Callback.NOOP);
             }
             source.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
-        }).start();
+        })
+            .start();
 
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
         {
@@ -1248,13 +1306,14 @@ public class MultiPartFormDataTest
         formData.setMaxMemoryFileSize(-1);
 
         // This chunk must end with \r.
-        String chunk1 = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="j"\r
-            Content-Type: text/plain\r
-            \r
-            ABC
-            """ + "\r";
+        String chunk1 =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="j"\r
+                Content-Type: text/plain\r
+                \r
+                ABC
+                """ + "\r";
         // Terminator must start with \n--Boundary.
         String terminator = """
             \n--AaB03x--\r
@@ -1282,14 +1341,15 @@ public class MultiPartFormDataTest
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
 
-        String contents = """
-            --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="C:\\Pictures\\4th May 2012.jpg"\r
-            Content-Type: text/plain\r
-            \r
-            stuffaaa\r
-            --AaB03x--\r
-            """;
+        String contents =
+            """
+                --AaB03x\r
+                content-disposition: form-data; name="stuff"; filename="C:\\Pictures\\4th May 2012.jpg"\r
+                Content-Type: text/plain\r
+                \r
+                stuffaaa\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, contents, Callback.NOOP);
 
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
@@ -1308,14 +1368,15 @@ public class MultiPartFormDataTest
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
 
-        String contents = """
-            --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"\r
-            Content-Type: text/plain\r
-            \r
-            stuffaaa\r
-            --AaB03x--\r
-            """;
+        String contents =
+            """
+                --AaB03x\r
+                content-disposition: form-data; name="stuff"; filename="c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"\r
+                Content-Type: text/plain\r
+                \r
+                stuffaaa\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, contents, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -1336,14 +1397,15 @@ public class MultiPartFormDataTest
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
 
-        String contents = """
-            --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="c:\\\\this\\\\really\\\\is\\\\some\\\\path\\\\to\\\\a\\\\file.txt"\r
-            Content-Type: text/plain\r
-            \r
-            stuffaaa\r
-            --AaB03x--\r
-            """;
+        String contents =
+            """
+                --AaB03x\r
+                content-disposition: form-data; name="stuff"; filename="c:\\\\this\\\\really\\\\is\\\\some\\\\path\\\\to\\\\a\\\\file.txt"\r
+                Content-Type: text/plain\r
+                \r
+                stuffaaa\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, contents, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -1361,14 +1423,15 @@ public class MultiPartFormDataTest
         formData.setFilesDirectory(_tmpDir);
         formData.setUseFilesForPartsWithoutFileName(true);
 
-        String body = """
-            --AaB03x\r
-            content-disposition: form-data; name="stuff"\r
-            Content-Type: text/plain\r
-            \r
-            sssaaa\r
-            --AaB03x--\r
-            """;
+        String body =
+            """
+                --AaB03x\r
+                content-disposition: form-data; name="stuff"\r
+                Content-Type: text/plain\r
+                \r
+                sssaaa\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, body, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -1388,19 +1451,20 @@ public class MultiPartFormDataTest
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
 
-        String sameNames = """
-            --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="stuff1.txt"\r
-            Content-Type: text/plain\r
-            \r
-            00000\r
-            --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="stuff2.txt"\r
-            Content-Type: text/plain\r
-            \r
-            AAAAA\r
-            --AaB03x--\r
-            """;
+        String sameNames =
+            """
+                --AaB03x\r
+                content-disposition: form-data; name="stuff"; filename="stuff1.txt"\r
+                Content-Type: text/plain\r
+                \r
+                00000\r
+                --AaB03x\r
+                content-disposition: form-data; name="stuff"; filename="stuff2.txt"\r
+                Content-Type: text/plain\r
+                \r
+                AAAAA\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, sameNames, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -1424,11 +1488,14 @@ public class MultiPartFormDataTest
     public void testContentSourceCanBeFailed()
     {
         MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
-        source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
-            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
-            Content.Chunk.from(new NumberFormatException(), false),
-            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), true)
-        )));
+        source.addPart(new MultiPart.ChunksPart(
+            "part1",
+            "file1",
+            HttpFields.EMPTY,
+            List.of(
+                Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
+                Content.Chunk.from(new NumberFormatException(), false),
+                Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), true))));
         source.close();
 
         Content.Chunk chunk;
@@ -1437,7 +1504,9 @@ public class MultiPartFormDataTest
         assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        assertThat(
+            BufferUtil.toString(chunk.getByteBuffer(), UTF_8),
+            is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
         assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
@@ -1456,11 +1525,14 @@ public class MultiPartFormDataTest
     public void testTransientFailuresAreReturned()
     {
         MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
-        source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
-            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
-            Content.Chunk.from(new NumberFormatException(), false),
-            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), true)
-        )));
+        source.addPart(new MultiPart.ChunksPart(
+            "part1",
+            "file1",
+            HttpFields.EMPTY,
+            List.of(
+                Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
+                Content.Chunk.from(new NumberFormatException(), false),
+                Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), true))));
         source.close();
 
         Content.Chunk chunk;
@@ -1469,7 +1541,9 @@ public class MultiPartFormDataTest
         assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        assertThat(
+            BufferUtil.toString(chunk.getByteBuffer(), UTF_8),
+            is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
         assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
@@ -1495,11 +1569,14 @@ public class MultiPartFormDataTest
     public void testTerminalFailureIsTerminal()
     {
         MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
-        source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
-            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
-            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), false),
-            Content.Chunk.from(new NumberFormatException(), true)
-        )));
+        source.addPart(new MultiPart.ChunksPart(
+            "part1",
+            "file1",
+            HttpFields.EMPTY,
+            List.of(
+                Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
+                Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), false),
+                Content.Chunk.from(new NumberFormatException(), true))));
         source.close();
 
         Content.Chunk chunk;
@@ -1508,7 +1585,9 @@ public class MultiPartFormDataTest
         assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        assertThat(
+            BufferUtil.toString(chunk.getByteBuffer(), UTF_8),
+            is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
         assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
@@ -1533,35 +1612,39 @@ public class MultiPartFormDataTest
         // Always save to disk.
         formData.setMaxMemoryFileSize(0);
 
-        String body = """
-            --AaB03x\r
-            Content-Disposition: form-data; name="file1"; filename="file.txt"\r
-            Content-Type: text/plain\r
-            \r
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
-            --AaB03x--\r
-            """;
+        String body =
+            """
+                --AaB03x\r
+                Content-Disposition: form-data; name="file1"; filename="file.txt"\r
+                Content-Type: text/plain\r
+                \r
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
+                --AaB03x--\r
+                """;
         Content.Sink.write(source, true, body, Callback.NOOP);
 
-        Throwable cause = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS)).getCause();
+        Throwable cause = assertThrows(
+            ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS))
+            .getCause();
         assertInstanceOf(IllegalArgumentException.class, cause);
     }
 
     @Test
     public void testNonRetainableContent() throws Exception
     {
-        String body = """
-            --AaB03x\r
-            content-disposition: form-data; name="field1"\r
-            \r
-            Joe Blow\r
-            --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="foo.txt"\r
-            Content-Type: text/plain\r
-            \r
-            aaaabbbbb\r
-            --AaB03x--\r
-            """;
+        String body =
+            """
+                --AaB03x\r
+                content-disposition: form-data; name="field1"\r
+                \r
+                Joe Blow\r
+                --AaB03x\r
+                content-disposition: form-data; name="stuff"; filename="foo.txt"\r
+                Content-Type: text/plain\r
+                \r
+                aaaabbbbb\r
+                --AaB03x--\r
+                """;
 
         Content.Source source = new InputStreamContentSource(new ByteArrayInputStream(body.getBytes(ISO_8859_1)))
         {

@@ -18,7 +18,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.stream.IntStream;
-
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -185,7 +184,12 @@ public class QuicStreamEndPoint extends AbstractEndPoint
             ByteBuffer buffer = buffers[i];
             int flushed = session.flush(streamId, buffer, (i == length - 1) && last);
             if (LOG.isDebugEnabled())
-                LOG.debug("flushed {} bytes window={}/{} to {}", flushed, session.getWindowCapacity(streamId), session.getWindowCapacity(), this);
+                LOG.debug(
+                    "flushed {} bytes window={}/{} to {}",
+                    flushed,
+                    session.getWindowCapacity(streamId),
+                    session.getWindowCapacity(),
+                    this);
             if (buffer.hasRemaining())
             {
                 if (LOG.isDebugEnabled())
@@ -244,7 +248,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
 
         // TODO: an alternative way of avoid the race would be to emulate an NIO style
         //  notification, where onReadable() gets called only if there is interest.
-//        getQuicSession().setFillInterested(getStreamId(), false);
+        //        getQuicSession().setFillInterested(getStreamId(), false);
 
         boolean interested = isFillInterested();
         if (LOG.isDebugEnabled())
@@ -275,7 +279,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
             super.fillInterested(callback);
 
         // TODO: see above
-//        getQuicSession().setFillInterested(getStreamId(), true);
+        //        getQuicSession().setFillInterested(getStreamId(), true);
 
         // Method produce() could block, but it's called synchronously from the producer thread
         // which calls onReadable() above, so it will just go into re-producing and never block.
@@ -309,6 +313,8 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d[%s]->[%s]", getClass().getSimpleName(), hashCode(), getStreamId(), toEndPointString(), toConnectionString());
+        return String.format(
+            "%s@%x#%d[%s]->[%s]",
+            getClass().getSimpleName(), hashCode(), getStreamId(), toEndPointString(), toConnectionString());
     }
 }

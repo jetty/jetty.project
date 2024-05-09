@@ -32,7 +32,8 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
         super();
     }
 
-    public GCloudSessionTestSupport testSupport = new GCloudSessionTestSupport(getClass().getSimpleName());
+    public GCloudSessionTestSupport testSupport =
+        new GCloudSessionTestSupport(getClass().getSimpleName());
 
     @AfterEach
     public void teardown() throws Exception
@@ -49,18 +50,38 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(),
-            data.getCookieSet(), data.getLastSaved(), data.getAllAttributes());
+        testSupport.createSession(
+            data.getId(),
+            data.getContextPath(),
+            data.getVhost(),
+            data.getLastNode(),
+            data.getCreated(),
+            data.getAccessed(),
+            data.getLastAccessed(),
+            data.getMaxInactiveMs(),
+            data.getExpiry(),
+            data.getCookieSet(),
+            data.getLastSaved(),
+            data.getAllAttributes());
     }
 
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
 
-        testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(),
-            data.getCookieSet(), data.getLastSaved(), null);
+        testSupport.createSession(
+            data.getId(),
+            data.getContextPath(),
+            data.getVhost(),
+            data.getLastNode(),
+            data.getCreated(),
+            data.getAccessed(),
+            data.getLastAccessed(),
+            data.getMaxInactiveMs(),
+            data.getExpiry(),
+            data.getCookieSet(),
+            data.getLastSaved(),
+            null);
     }
 
     @Override

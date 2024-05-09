@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.slf4j.Logger;
@@ -105,6 +104,8 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
 
     private enum State
     {
-        IDLE, PRODUCE, EXECUTE
+        IDLE,
+        PRODUCE,
+        EXECUTE
     }
 }

@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
-import java.io.IOException;
-import java.util.function.BiConsumer;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.function.BiConsumer;
 
 /**
  * Utility Servlet to make easier testcases

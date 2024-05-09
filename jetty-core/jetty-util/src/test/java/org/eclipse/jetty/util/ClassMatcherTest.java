@@ -13,10 +13,15 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.util.ClassMatcher.ByLocationOrModule;
 import org.eclipse.jetty.util.ClassMatcher.ByPackageOrName;
 import org.eclipse.jetty.util.ClassMatcher.Entry;
@@ -24,18 +29,12 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ClassMatcherTest
 {
     private final ClassMatcher _pattern = new ClassMatcher();
-    
+
     protected static Supplier<URI> NULL_SUPPLIER = () -> null;
-    
+
     @BeforeEach
     public void before()
     {
@@ -44,20 +43,19 @@ public class ClassMatcherTest
         _pattern.add("-org.excluded.");
         _pattern.add("org.example.FooBar");
         _pattern.add("-org.example.Excluded");
-        _pattern.addAll(Arrays.asList(
-            "-org.example.Nested$Minus",
-            "org.example.Nested",
-            "org.example.Nested$Something"));
+        _pattern.addAll(
+            Arrays.asList("-org.example.Nested$Minus", "org.example.Nested", "org.example.Nested$Something"));
 
-        assertThat(_pattern, Matchers.containsInAnyOrder(
-            "org.package.",
-            "-org.excluded.",
-            "org.example.FooBar",
-            "-org.example.Excluded",
-            "-org.example.Nested$Minus",
-            "org.example.Nested",
-            "org.example.Nested$Something"
-        ));
+        assertThat(
+            _pattern,
+            Matchers.containsInAnyOrder(
+                "org.package.",
+                "-org.excluded.",
+                "org.example.FooBar",
+                "-org.example.Excluded",
+                "-org.example.Nested$Minus",
+                "org.example.Nested",
+                "org.example.Nested$Something"));
     }
 
     @Test
@@ -141,7 +139,7 @@ public class ClassMatcherTest
         // a jar from maven repo jar
         URI locJunit = TypeUtil.getLocationOfClass(Test.class);
 
-        // class file 
+        // class file
         URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
 
         ClassMatcher pattern = new ClassMatcher();
@@ -239,40 +237,40 @@ public class ClassMatcherTest
         assertThat(pattern.match(Test.class), is(false));
         assertThat(pattern.match(ClassMatcherTest.class), is(false));
     }
-    
+
     @Test
     public void testWithNullLocation() throws Exception
     {
         ClassMatcher matcher = new ClassMatcher();
-        
+
         IncludeExcludeSet<Entry, String> names = new IncludeExcludeSet<>(ByPackageOrName.class);
         IncludeExcludeSet<Entry, URI> locations = new IncludeExcludeSet<>(ByLocationOrModule.class);
 
-        //Test no name or location includes or excludes - should match
+        // Test no name or location includes or excludes - should match
         assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), is(true));
-        
+
         names.include(matcher.newEntry("a.b.", true));
         names.exclude(matcher.newEntry("d.e.", false));
-       
-        //Test explicit include by name no locations - should match
+
+        // Test explicit include by name no locations - should match
         assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), is(true));
-        
-        //Test explicit exclude by name no locations - should not match
+
+        // Test explicit exclude by name no locations - should not match
         assertThat(ClassMatcher.combine(names, "d.e.f", locations, NULL_SUPPLIER), is(false));
-        
-        //Test include by name with location includes - should match
+
+        // Test include by name with location includes - should match
         locations.include(matcher.newEntry("file:/foo/bar", true));
         assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), is(true));
-        
-        //Test include by name but with location exclusions - should not match
+
+        // Test include by name but with location exclusions - should not match
         locations.clear();
         locations.exclude(matcher.newEntry("file:/high/low", false));
         assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), is(false));
-        
-        //Test neither included or excluded by name, but with location exclusions - should not match
+
+        // Test neither included or excluded by name, but with location exclusions - should not match
         assertThat(ClassMatcher.combine(names, "g.b.r", locations, NULL_SUPPLIER), is(false));
-        
-        //Test neither included nor excluded by name, but with location inclusions - should not match
+
+        // Test neither included nor excluded by name, but with location inclusions - should not match
         locations.clear();
         locations.include(matcher.newEntry("file:/foo/bar", true));
         assertThat(ClassMatcher.combine(names, "g.b.r", locations, NULL_SUPPLIER), is(false));

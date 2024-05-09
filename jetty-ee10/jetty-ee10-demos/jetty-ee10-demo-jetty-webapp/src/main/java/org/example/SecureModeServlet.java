@@ -13,6 +13,12 @@
 
 package org.example;
 
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -20,13 +26,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Dump Servlet Request.
@@ -156,7 +155,8 @@ public class SecureModeServlet extends HttpServlet
         {
             out.println("check read for $jetty.home/lib/policy/jetty.policy<br/>");
 
-            File jettyHomeFile = new File(userDir + File.separator + "lib" + File.separator + "policy" + File.separator + "jetty.policy");
+            File jettyHomeFile = new File(
+                userDir + File.separator + "lib" + File.separator + "policy" + File.separator + "jetty.policy");
             jettyHomeFile.canRead();
             out.println("status: <b>SUCCESS - expected</b><br/>");
         }
@@ -172,7 +172,8 @@ public class SecureModeServlet extends HttpServlet
         {
             out.println("check write permission for $jetty.home/lib/policy/jetty.policy<br/>");
 
-            File jettyHomeFile = new File(userDir + File.separator + "lib" + File.separator + "policy" + File.separator + "jetty.policy");
+            File jettyHomeFile = new File(
+                userDir + File.separator + "lib" + File.separator + "policy" + File.separator + "jetty.policy");
             jettyHomeFile.canWrite();
             out.println("status: <b>SUCCESS - unexpected</b><br/>");
         }

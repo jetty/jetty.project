@@ -17,7 +17,6 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -123,11 +122,8 @@ public class HttpContentResponse implements ContentResponse
     @Override
     public String toString()
     {
-        return String.format("%s[%s %d %s - %d bytes]",
-            HttpContentResponse.class.getSimpleName(),
-            getVersion(),
-            getStatus(),
-            getReason(),
-            getContent().length);
+        return String.format(
+            "%s[%s %d %s - %d bytes]",
+            HttpContentResponse.class.getSimpleName(), getVersion(), getStatus(), getReason(), getContent().length);
     }
 }

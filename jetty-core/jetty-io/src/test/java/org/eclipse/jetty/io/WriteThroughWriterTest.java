@@ -13,12 +13,17 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -28,12 +33,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class WriteThroughWriterTest
@@ -152,10 +151,7 @@ public class WriteThroughWriterTest
         final String multiByteDuplicateStr = "\uD842\uDF9F";
         int adjustSize = -1;
 
-        String source =
-            singleByteStr.repeat(Math.max(0, WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE + adjustSize)) +
-            multiByteDuplicateStr +
-            singleByteStr.repeat(remainSize);
+        String source = singleByteStr.repeat(Math.max(0, WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE + adjustSize)) + multiByteDuplicateStr + singleByteStr.repeat(remainSize);
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         writer.write(source.toCharArray(), 0, source.toCharArray().length);
@@ -183,10 +179,7 @@ public class WriteThroughWriterTest
         final String multiByteDuplicateStr = "\uD842\uDF9F";
         int adjustSize = -2;
 
-        String source =
-            singleByteStr.repeat(Math.max(0, WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE + adjustSize)) +
-            multiByteDuplicateStr +
-            singleByteStr.repeat(remainSize);
+        String source = singleByteStr.repeat(Math.max(0, WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE + adjustSize)) + multiByteDuplicateStr + singleByteStr.repeat(remainSize);
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         writer.write(source.toCharArray(), 0, source.toCharArray().length);
@@ -236,8 +229,7 @@ public class WriteThroughWriterTest
             Arguments.of("hello", 1, 4, "ello"),
             Arguments.of("hello", 1, 3, "ell"),
             Arguments.of("hello", 5, 0, ""),
-            Arguments.of("hello", 0, 6, null)
-        );
+            Arguments.of("hello", 0, 6, null));
     }
 
     @ParameterizedTest
@@ -247,7 +239,9 @@ public class WriteThroughWriterTest
         if (expected == null)
         {
             assertThrows(IndexOutOfBoundsException.class, () -> WriteThroughWriter.subSequence(source, offset, length));
-            assertThrows(IndexOutOfBoundsException.class, () -> WriteThroughWriter.subSequence(source.toCharArray(), offset, length));
+            assertThrows(
+                IndexOutOfBoundsException.class,
+                () -> WriteThroughWriter.subSequence(source.toCharArray(), offset, length));
             return;
         }
 

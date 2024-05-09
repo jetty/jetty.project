@@ -32,21 +32,18 @@ public class NameEnumeration implements NamingEnumeration<NameClassPair>
     }
 
     @Override
-    public void close()
-        throws NamingException
+    public void close() throws NamingException
     {
     }
 
     @Override
-    public boolean hasMore()
-        throws NamingException
+    public boolean hasMore() throws NamingException
     {
         return _delegate.hasNext();
     }
 
     @Override
-    public NameClassPair next()
-        throws NamingException
+    public NameClassPair next() throws NamingException
     {
         Binding b = _delegate.next();
         return new NameClassPair(b.getName(), b.getClassName(), true);

@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,7 +152,8 @@ public interface Graceful
         // Inner components may send network bytes to close connections
         // and must run before the ServerConnector closes the EndPoints.
         Collections.reverse(gracefuls);
-        return CompletableFuture.allOf(gracefuls.stream().map(Graceful::shutdown).toArray(CompletableFuture[]::new));
+        return CompletableFuture.allOf(
+            gracefuls.stream().map(Graceful::shutdown).toArray(CompletableFuture[]::new));
     }
 
     /**

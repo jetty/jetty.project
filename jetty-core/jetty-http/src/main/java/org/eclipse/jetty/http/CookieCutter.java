@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static org.eclipse.jetty.http.CookieCompliance.Violation.BAD_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ESCAPE_IN_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.INVALID_COOKIES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN_QUOTES;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Cookie parser
@@ -39,7 +38,10 @@ public class CookieCutter implements CookieParser
     private final CookieCompliance _complianceMode;
     private final ComplianceViolation.Listener _complianceListener;
 
-    public CookieCutter(CookieParser.Handler handler, CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    public CookieCutter(
+                        CookieParser.Handler handler,
+                        CookieCompliance compliance,
+                        ComplianceViolation.Listener complianceListener)
     {
         _handler = handler;
         _complianceMode = compliance;
@@ -194,7 +196,9 @@ public class CookieCutter implements CookieParser
                                     {
                                         if (RESERVED_NAMES_NOT_DOLLAR_PREFIXED.isAllowedBy(_complianceMode))
                                         {
-                                            reportComplianceViolation(RESERVED_NAMES_NOT_DOLLAR_PREFIXED, "Cookie " + cookieName + " field " + name);
+                                            reportComplianceViolation(
+                                                RESERVED_NAMES_NOT_DOLLAR_PREFIXED,
+                                                "Cookie " + cookieName + " field " + name);
                                             String lowercaseName = name.toLowerCase(Locale.ENGLISH);
                                             switch (lowercaseName)
                                             {
@@ -219,7 +223,13 @@ public class CookieCutter implements CookieParser
                                             }
                                             else
                                             {
-                                                _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
+                                                _handler.addCookie(
+                                                    cookieName,
+                                                    cookieValue,
+                                                    cookieVersion,
+                                                    cookieDomain,
+                                                    cookiePath,
+                                                    cookieComment);
                                             }
                                             reject = false;
                                             cookieDomain = null;
@@ -366,7 +376,8 @@ public class CookieCutter implements CookieParser
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
         if (_complianceListener != null)
-            _complianceListener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
+            _complianceListener.onComplianceViolation(
+                new ComplianceViolation.Event(_complianceMode, violation, reason));
     }
 
     protected boolean isRFC6265RejectedCharacter(char c)
@@ -383,6 +394,6 @@ public class CookieCutter implements CookieParser
             c == '"' || // DQUOTE
             c == ',' || // comma
             c == ';' || // semicolon
-            c == '\\';  // backslash
+            c == '\\'; // backslash
     }
 }

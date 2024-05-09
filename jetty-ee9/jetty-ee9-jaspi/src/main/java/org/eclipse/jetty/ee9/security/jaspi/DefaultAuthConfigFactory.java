@@ -13,20 +13,19 @@
 
 package org.eclipse.jetty.ee9.security.jaspi;
 
+import jakarta.security.auth.message.config.AuthConfigFactory;
+import jakarta.security.auth.message.config.AuthConfigProvider;
+import jakarta.security.auth.message.config.RegistrationListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import jakarta.security.auth.message.config.AuthConfigFactory;
-import jakarta.security.auth.message.config.AuthConfigProvider;
-import jakarta.security.auth.message.config.RegistrationListener;
 import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 
+/**
  * A very basic {@link AuthConfigFactory} that allows for registering providers programmatically.
  */
 public class DefaultAuthConfigFactory extends AuthConfigFactory
@@ -58,13 +57,15 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     }
 
     @Override
-    public String registerConfigProvider(String className, Map properties, String layer, String appContext, String description)
+    public String registerConfigProvider(
+                                         String className, Map properties, String layer, String appContext, String description)
     {
         checkPermission();
 
         String key = getKey(layer, appContext);
         AuthConfigProvider configProvider = createConfigProvider(className, properties);
-        DefaultRegistrationContext context = new DefaultRegistrationContext(configProvider, layer, appContext, description, true);
+        DefaultRegistrationContext context =
+            new DefaultRegistrationContext(configProvider, layer, appContext, description, true);
         DefaultRegistrationContext oldContext = _registrations.put(key, context);
         if (oldContext != null)
             oldContext.notifyListeners();
@@ -72,12 +73,14 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     }
 
     @Override
-    public String registerConfigProvider(AuthConfigProvider provider, String layer, String appContext, String description)
+    public String registerConfigProvider(
+                                         AuthConfigProvider provider, String layer, String appContext, String description)
     {
         checkPermission();
 
         String key = getKey(layer, appContext);
-        DefaultRegistrationContext context = new DefaultRegistrationContext(provider, layer, appContext, description, false);
+        DefaultRegistrationContext context =
+            new DefaultRegistrationContext(provider, layer, appContext, description, false);
         DefaultRegistrationContext oldContext = _registrations.put(key, context);
         if (oldContext != null)
             oldContext.notifyListeners();
@@ -178,7 +181,8 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
         private final String _description;
         private final List<RegistrationListener> _listeners = new CopyOnWriteArrayList<>();
 
-        public DefaultRegistrationContext(AuthConfigProvider provider, String layer, String appContext, String description, boolean persistent)
+        public DefaultRegistrationContext(
+                                          AuthConfigProvider provider, String layer, String appContext, String description, boolean persistent)
         {
             _provider = provider;
             _layer = layer;

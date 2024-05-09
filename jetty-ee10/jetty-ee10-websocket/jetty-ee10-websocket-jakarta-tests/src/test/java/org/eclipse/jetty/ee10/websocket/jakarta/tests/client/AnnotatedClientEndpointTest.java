@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.client;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Date;
+import static java.util.stream.Collectors.joining;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
@@ -27,6 +28,10 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Date;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.coders.DateDecoder;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.coders.TimeEncoder;
@@ -34,19 +39,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static java.util.stream.Collectors.joining;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 public class AnnotatedClientEndpointTest
 {
-    @ClientEndpoint(
-        subprotocols = {"chat", "echo-whole"},
-        decoders = {DateDecoder.class},
-        encoders = {TimeEncoder.class},
-        configurator = AnnotatedEndpointConfigurator.class)
+    @ClientEndpoint(subprotocols = {"chat", "echo-whole"}, decoders = {DateDecoder.class}, encoders = {TimeEncoder.class}, configurator = AnnotatedEndpointConfigurator.class)
     public static class AnnotatedEndpointClient
     {
         public Session session;

@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -47,7 +46,9 @@ public abstract class ReHandlingErrorHandler extends ErrorHandler
     }
 
     @Override
-    protected void generateResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) throws IOException
+    protected void generateResponse(
+                                    Request request, Response response, int code, String message, Throwable cause, Callback callback)
+        throws IOException
     {
         if (request.getAttribute(ReHandlingErrorHandler.class.getName()) == null)
         {

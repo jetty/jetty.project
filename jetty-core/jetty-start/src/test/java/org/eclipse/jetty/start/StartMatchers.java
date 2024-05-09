@@ -15,7 +15,6 @@ package org.eclipse.jetty.start;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;

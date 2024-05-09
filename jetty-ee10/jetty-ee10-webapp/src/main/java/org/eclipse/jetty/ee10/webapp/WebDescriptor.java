@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import jakarta.servlet.Servlet;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import jakarta.servlet.Servlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
@@ -38,7 +37,7 @@ public class WebDescriptor extends Descriptor
 
     public static XmlParser __nonValidatingStaticParser = newParser(false);
     protected MetaData.Complete _metaDataComplete;
-    protected int _majorVersion = 4; //default to container version
+    protected int _majorVersion = 4; // default to container version
     protected int _minorVersion = 0;
     protected ArrayList<String> _classNames = new ArrayList<>();
     protected boolean _distributable;
@@ -98,7 +97,8 @@ public class WebDescriptor extends Descriptor
             String catalogName = "catalog-%s.xml".formatted(ServletContextHandler.ENVIRONMENT.getName());
             URL url = WebDescriptor.class.getResource(catalogName);
             if (url == null)
-                throw new IllegalStateException("Catalog not found: %s/%s".formatted(WebDescriptor.class.getPackageName(), catalogName));
+                throw new IllegalStateException(
+                    "Catalog not found: %s/%s".formatted(WebDescriptor.class.getPackageName(), catalogName));
             addCatalog(URI.create(url.toExternalForm()), Servlet.class);
         }
     }
@@ -109,8 +109,7 @@ public class WebDescriptor extends Descriptor
     }
 
     @Override
-    public void parse(XmlParser parser)
-        throws Exception
+    public void parse(XmlParser parser) throws Exception
     {
         super.parse(parser);
         processVersion();
@@ -165,22 +164,27 @@ public class WebDescriptor extends Descriptor
             if (s == null)
                 _metaDataComplete = MetaData.Complete.NotSet;
             else
-                _metaDataComplete = Boolean.valueOf(s).booleanValue() ? MetaData.Complete.True : MetaData.Complete.False;
+                _metaDataComplete =
+                    Boolean.valueOf(s).booleanValue() ? MetaData.Complete.True : MetaData.Complete.False;
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{}: Calculated metadatacomplete = {} with version = {}", _xml.toString(), _metaDataComplete, version);
+            LOG.debug(
+                "{}: Calculated metadatacomplete = {} with version = {}",
+                _xml.toString(),
+                _metaDataComplete,
+                version);
     }
 
     public void processOrdering()
     {
-        //Process the web.xml's optional <absolute-ordering> element
+        // Process the web.xml's optional <absolute-ordering> element
         XmlParser.Node ordering = _root.get("absolute-ordering");
         if (ordering == null)
             return;
 
         _isOrdered = true;
-        //If an absolute-ordering was already set, then ignore it in favor of this new one
+        // If an absolute-ordering was already set, then ignore it in favor of this new one
         // _processor.setOrdering(new AbsoluteOrdering());
 
         Iterator<Object> iter = ordering.iterator();
@@ -193,10 +197,10 @@ public class WebDescriptor extends Descriptor
             node = (XmlParser.Node)o;
 
             if (node.getTag().equalsIgnoreCase("others"))
-                //((AbsoluteOrdering)_processor.getOrdering()).addOthers();
+                // ((AbsoluteOrdering)_processor.getOrdering()).addOthers();
                 _ordering.add("others");
             else if (node.getTag().equalsIgnoreCase("name"))
-                //((AbsoluteOrdering)_processor.getOrdering()).add(node.toString(false,true));
+                // ((AbsoluteOrdering)_processor.getOrdering()).add(node.toString(false,true));
                 _ordering.add(node.toString(false, true));
         }
     }
@@ -205,7 +209,7 @@ public class WebDescriptor extends Descriptor
     {
         XmlParser.Node distributable = _root.get("distributable");
         if (distributable == null)
-            return; //no <distributable> element
+            return; // no <distributable> element
         _distributable = true;
     }
 

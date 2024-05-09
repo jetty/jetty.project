@@ -37,10 +37,8 @@ public class HttpFieldsMatchersTest
     @Test
     public void testNotContainsHeader()
     {
-        HttpFields.Mutable fields = HttpFields.build()
-            .put("a", "foo")
-            .put("b", "bar")
-            .put("c", "fizz");
+        HttpFields.Mutable fields =
+            HttpFields.build().put("a", "foo").put("b", "bar").put("c", "fizz");
 
         AssertionError x = Assertions.assertThrows(AssertionError.class, () ->
         {
@@ -79,7 +77,8 @@ public class HttpFieldsMatchersTest
             MatcherAssert.assertThat(fields, HttpFieldsMatchers.containsHeaderValue("z", "floom"));
         });
 
-        MatcherAssert.assertThat(x.getMessage(), Matchers.containsString("expecting http header \"z\" with value \"floom\""));
+        MatcherAssert.assertThat(
+            x.getMessage(), Matchers.containsString("expecting http header \"z\" with value \"floom\""));
     }
 
     @Test
@@ -95,7 +94,8 @@ public class HttpFieldsMatchersTest
             MatcherAssert.assertThat(fields, HttpFieldsMatchers.containsHeaderValue("a", "floom"));
         });
 
-        MatcherAssert.assertThat(x.getMessage(), Matchers.containsString("expecting http header \"a\" with value \"floom\""));
+        MatcherAssert.assertThat(
+            x.getMessage(), Matchers.containsString("expecting http header \"a\" with value \"floom\""));
     }
 
     @Test

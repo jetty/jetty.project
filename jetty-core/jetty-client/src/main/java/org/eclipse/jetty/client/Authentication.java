@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 import java.util.Map;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.StringUtil;

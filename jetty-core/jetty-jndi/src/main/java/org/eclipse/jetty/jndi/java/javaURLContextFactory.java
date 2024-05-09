@@ -18,7 +18,6 @@ import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NamingException;
 import javax.naming.spi.ObjectFactory;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +44,7 @@ public class javaURLContextFactory implements ObjectFactory
      * @throws Exception if an error occurs
      */
     @Override
-    public Object getObjectInstance(Object url, Name name, Context ctx, Hashtable env)
-        throws Exception
+    public Object getObjectInstance(Object url, Name name, Context ctx, Hashtable env) throws Exception
     {
         // null object means return a root context for doing resolutions
         if (url == null)

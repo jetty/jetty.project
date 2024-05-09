@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.IntStream;
-
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -140,8 +139,8 @@ public class JSON
             {
                 // Special cases for quotation-mark, reverse-solidus, and solidus.
                 if ((c == '"') || (c == '\\')
-                  /* solidus is optional - per Carsten Bormann (IETF)
-                     || (c == '/') */)
+                /* solidus is optional - per Carsten Bormann (IETF)
+                || (c == '/') */ )
                 {
                     buffer.append('\\').append(c);
                 }
@@ -1070,8 +1069,7 @@ public class JSON
                             scratch[i++] = '\t';
                             break;
                         case 'u':
-                            char uc = (char)((TypeUtil.convertHexDigit((byte)source.next()) << 12) + (TypeUtil.convertHexDigit((byte)source.next()) << 8) +
-                                (TypeUtil.convertHexDigit((byte)source.next()) << 4) + (TypeUtil.convertHexDigit((byte)source.next())));
+                            char uc = (char)((TypeUtil.convertHexDigit((byte)source.next()) << 12) + (TypeUtil.convertHexDigit((byte)source.next()) << 8) + (TypeUtil.convertHexDigit((byte)source.next()) << 4) + (TypeUtil.convertHexDigit((byte)source.next())));
                             scratch[i++] = uc;
                             break;
                         default:
@@ -1137,8 +1135,7 @@ public class JSON
                         builder.append('\t');
                         break;
                     case 'u':
-                        char uc = (char)((TypeUtil.convertHexDigit((byte)source.next()) << 12) + (TypeUtil.convertHexDigit((byte)source.next()) << 8) +
-                            (TypeUtil.convertHexDigit((byte)source.next()) << 4) + (TypeUtil.convertHexDigit((byte)source.next())));
+                        char uc = (char)((TypeUtil.convertHexDigit((byte)source.next()) << 12) + (TypeUtil.convertHexDigit((byte)source.next()) << 8) + (TypeUtil.convertHexDigit((byte)source.next()) << 4) + (TypeUtil.convertHexDigit((byte)source.next())));
                         builder.append(uc);
                         break;
                     default:

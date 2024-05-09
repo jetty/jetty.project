@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -25,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.http.HttpStatus;
@@ -38,11 +42,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RoundRobinConnectionPoolTest extends AbstractTest
 {
@@ -70,16 +69,15 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections);
             LifeCycle.start(pool);
-            pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
+            pool.preCreateConnections(maxConnections)
+                .handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
             return pool;
         });
 
         // Send one request to trigger destination creation
         // and connection pool pre-creation of connections,
         // so we can test reliably the round-robin behavior.
-        client.newRequest(newURI(transport))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        client.newRequest(newURI(transport)).timeout(5, TimeUnit.SECONDS).send();
         setup.get(5, TimeUnit.SECONDS);
 
         record.set(true);
@@ -150,16 +148,15 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections);
             LifeCycle.start(pool);
-            pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
+            pool.preCreateConnections(maxConnections)
+                .handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
             return pool;
         });
 
         // Send one request to trigger destination creation
         // and connection pool pre-creation of connections,
         // so we can test reliably the round-robin behavior.
-        client.newRequest(newURI(transport))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        client.newRequest(newURI(transport)).timeout(5, TimeUnit.SECONDS).send();
         setup.get(5, TimeUnit.SECONDS);
 
         record.set(true);
@@ -253,8 +250,8 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
             return;
 
         // Maps {remote_port -> number_of_times_port_was_used}.
-        Map<Integer, Long> results = remotePorts.stream()
-            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        Map<Integer, Long> results =
+            remotePorts.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         // RoundRobinConnectionPool may open more connections than expected.
         // For example with maxUsage=2, requests could be sent to these ports:
         // [p1, p2, p3 | p1, p2, p3 | p4, p4, p5 | p6, p5, p7]

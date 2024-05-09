@@ -20,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.regex.Matcher;
-
 import org.eclipse.jetty.start.Props.Prop;
 
 /**
@@ -104,7 +103,11 @@ public class StartIni extends TextFile
                     {
                         if (writer == null)
                         {
-                            writer = new PrintWriter(Files.newBufferedWriter(getFile(), StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE));
+                            writer = new PrintWriter(Files.newBufferedWriter(
+                                getFile(),
+                                StandardCharsets.UTF_8,
+                                StandardOpenOption.TRUNCATE_EXISTING,
+                                StandardOpenOption.CREATE));
                             for (String l : getAllLines())
                             {
                                 if (line.equals(l))

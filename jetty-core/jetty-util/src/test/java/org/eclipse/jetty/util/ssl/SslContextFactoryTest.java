@@ -13,6 +13,25 @@
 
 package org.eclipse.jetty.util.ssl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItemInArray;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesRegex;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -36,7 +55,6 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.X509ExtendedKeyManager;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -45,25 +63,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItemInArray;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.matchesRegex;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SslContextFactoryTest
 {
@@ -106,16 +105,19 @@ public class SslContextFactoryTest
         // Confirm output in dump
         List<SslSelectionDump> dumps = cf.selectionDump();
 
-        Optional<SslSelectionDump> protocolDumpOpt = dumps.stream()
-            .filter((dump) -> dump.type.contains("Protocol"))
-            .findFirst();
+        Optional<SslSelectionDump> protocolDumpOpt =
+            dumps.stream().filter((dump) -> dump.type.contains("Protocol")).findFirst();
 
         assertTrue(protocolDumpOpt.isPresent(), "Protocol dump section should exist");
 
         SslSelectionDump protocolDump = protocolDumpOpt.get();
 
-        long countTls11Enabled = protocolDump.enabled.stream().filter((t) -> t.contains("TLSv1.1")).count();
-        long countTls11Disabled = protocolDump.disabled.stream().filter((t) -> t.contains("TLSv1.1")).count();
+        long countTls11Enabled = protocolDump.enabled.stream()
+            .filter((t) -> t.contains("TLSv1.1"))
+            .count();
+        long countTls11Disabled = protocolDump.disabled.stream()
+            .filter((t) -> t.contains("TLSv1.1"))
+            .count();
 
         assertThat("Enabled Protocols TLSv1.1 count", countTls11Enabled, is(0L));
         assertThat("Disabled Protocols TLSv1.1 count", countTls11Disabled, is(1L));
@@ -153,7 +155,10 @@ public class SslContextFactoryTest
 
         SslSelectionDump cipherDump = cipherSuiteDumpOpt.get();
 
-        assertThat("Dump Enabled List size is equal to selected list size", cipherDump.enabled.size(), is(selectedSuites.size()));
+        assertThat(
+            "Dump Enabled List size is equal to selected list size",
+            cipherDump.enabled.size(),
+            is(selectedSuites.size()));
 
         for (String expectedCipherSuite : tlsRsaSuites)
         {
@@ -432,10 +437,12 @@ public class SslContextFactoryTest
                         // Start the TLS handshake and verify that
                         // the client got the right server certificate.
                         clientSocket.startHandshake();
-                        Certificate[] certificates = clientSocket.getSession().getPeerCertificates();
+                        Certificate[] certificates =
+                            clientSocket.getSession().getPeerCertificates();
                         assertThat(certificates.length, greaterThan(0));
                         X509Certificate certificate = (X509Certificate)certificates[0];
-                        assertThat(certificate.getSubjectX500Principal().getName(), startsWith("CN=" + hostName));
+                        assertThat(
+                            certificate.getSubjectX500Principal().getName(), startsWith("CN=" + hostName));
                         // Send some data to verify communication is ok.
                         OutputStream output = clientSocket.getOutputStream();
                         output.write(data);
@@ -446,7 +453,8 @@ public class SslContextFactoryTest
                     {
                         x.printStackTrace();
                     }
-                }).start();
+                })
+                    .start();
                 // Verify that we received the data the client sent.
                 sslSocket.setSoTimeout(5000);
                 InputStream input = sslSocket.getInputStream();

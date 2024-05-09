@@ -68,8 +68,9 @@ public class JettyAutobahnServer
         context.setContextPath("/");
         server.setHandler(context);
 
-        JettyWebSocketServletContainerInitializer.configure(context, (servletContext, container) ->
-            container.addMapping("/", (req, resp) -> new JettyAutobahnSocket()));
+        JettyWebSocketServletContainerInitializer.configure(
+            context,
+            (servletContext, container) -> container.addMapping("/", (req, resp) -> new JettyAutobahnSocket()));
 
         server.start();
         server.join();

@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.session.infinispan;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import org.eclipse.jetty.session.SessionContext;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.Search;
@@ -25,8 +26,6 @@ import org.infinispan.query.dsl.QueryFactory;
 import org.infinispan.query.dsl.QueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.stream.Collectors.toSet;
 
 /**
  * RemoteQueryManager
@@ -50,11 +49,11 @@ public class RemoteQueryManager implements QueryManager
     {
         Objects.requireNonNull(sessionContext);
 
-        Query<InfinispanSessionData> expiredQuery = _factory.create("select id from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " +
-            " contextPath = :contextPath and expiry <= :expiry and expiry > 0");
+        Query<InfinispanSessionData> expiredQuery =
+            _factory.create("select id from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " + " contextPath = :contextPath and expiry <= :expiry and expiry > 0");
         expiredQuery.setParameter("contextPath", sessionContext.getCanonicalContextPath());
         expiredQuery.setParameter("expiry", time);
-        
+
         @SuppressWarnings("rawtypes")
         QueryResult result = expiredQuery.execute();
         List<Object[]> list = result.list();
@@ -65,10 +64,10 @@ public class RemoteQueryManager implements QueryManager
     @Override
     public void deleteOrphanSessions(long time)
     {
-        Query<InfinispanSessionData> deleteQuery = _factory.create("select id, contextPath, vhost from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " +
-            " expiry <= :expiry and expiry > 0");
+        Query<InfinispanSessionData> deleteQuery = _factory.create(
+            "select id, contextPath, vhost from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " + " expiry <= :expiry and expiry > 0");
         deleteQuery.setParameter("expiry", time);
-        
+
         @SuppressWarnings("rawtypes")
         QueryResult result = deleteQuery.execute();
         List<Object[]> list = result.list();
@@ -83,7 +82,7 @@ public class RemoteQueryManager implements QueryManager
             {
                 LOG.warn("Error deleting {}", key, e);
             }
-        });  
+        });
     }
 
     @Override
@@ -91,12 +90,12 @@ public class RemoteQueryManager implements QueryManager
     {
         Objects.requireNonNull(sessionContext);
 
-        Query<InfinispanSessionData> existQuery = _factory.create("select id from org_eclipse_jetty_session_infinispan.InfinispanSessionData where" +
-            " id = :id and contextPath = :contextPath and expiry > :time or expiry <= 0");
+        Query<InfinispanSessionData> existQuery =
+            _factory.create("select id from org_eclipse_jetty_session_infinispan.InfinispanSessionData where" + " id = :id and contextPath = :contextPath and expiry > :time or expiry <= 0");
         existQuery.setParameter("id", id);
         existQuery.setParameter("contextPath", sessionContext.getCanonicalContextPath());
         existQuery.setParameter("time", System.currentTimeMillis());
-        
+
         @SuppressWarnings("rawtypes")
         QueryResult result = existQuery.execute();
         List<Object[]> list = result.list();

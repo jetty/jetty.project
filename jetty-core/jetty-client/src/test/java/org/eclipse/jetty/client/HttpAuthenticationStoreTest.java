@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.client;
 
-import java.net.URI;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.net.URI;
 import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class HttpAuthenticationStoreTest
 {

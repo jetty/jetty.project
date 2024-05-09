@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.ee9.session.memcached;
 
-import java.io.IOException;
+import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -36,11 +40,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * CachingSessionDataStoreTest
  */
@@ -54,11 +53,13 @@ public class CachingSessionDataStoreTest
         int scavengePeriod = -1;
         int maxInactivePeriod = -1;
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setFlushOnResponseCommit(true); //ensure changes are saved before response commits so we can check values after response
+        cacheFactory.setFlushOnResponseCommit(
+            true); // ensure changes are saved before response commits so we can check values after response
         SessionDataStoreFactory storeFactory = MemcachedTestHelper.newSessionDataStoreFactory();
 
-        //Make sure sessions are evicted on request exit so they will need to be reloaded via cache/persistent store
-        SessionTestSupport server = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        // Make sure sessions are evicted on request exit so they will need to be reloaded via cache/persistent store
+        SessionTestSupport server =
+            new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "";
@@ -72,44 +73,46 @@ public class CachingSessionDataStoreTest
             try
             {
                 //
-                //Create a session
+                // Create a session
                 //
-                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                ContentResponse response =
+                    client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 String id = SessionTestSupport.extractSessionId(sessionCookie);
 
-                //check that the memcache contains the session, and the session data store contains the session
+                // check that the memcache contains the session, and the session data store contains the session
                 CachingSessionDataStore ds = (CachingSessionDataStore)context.getSessionHandler().getSessionCache().getSessionDataStore();
                 assertNotNull(ds);
                 SessionDataStore persistentStore = ds.getSessionStore();
                 SessionDataMap dataMap = ds.getSessionDataMap();
-                //the backing persistent store contains the session
+                // the backing persistent store contains the session
                 assertNotNull(persistentStore.load(id));
-                //the memcache cache contains the session
+                // the memcache cache contains the session
                 assertNotNull(dataMap.load(id));
 
                 //
-                //Update a session and check that is is NOT loaded via the persistent store
+                // Update a session and check that is is NOT loaded via the persistent store
                 //
                 ((MemcachedTestHelper.MockDataStore)persistentStore).zeroLoadCount();
-                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=update");
+                Request request =
+                    client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=update");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 assertEquals(0, ((MemcachedTestHelper.MockDataStore)persistentStore).getLoadCount());
 
-                //check it was updated in the persistent store
+                // check it was updated in the persistent store
                 SessionData sd = persistentStore.load(id);
                 assertNotNull(sd);
                 assertEquals("bar", sd.getAttribute("foo"));
 
-                //check it was updated in the cache
+                // check it was updated in the cache
                 sd = dataMap.load(id);
                 assertNotNull(sd);
                 assertEquals("bar", sd.getAttribute("foo"));
-                
-                //invalidate a session and check its gone from cache and store
+
+                // invalidate a session and check its gone from cache and store
                 request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=del");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
@@ -132,7 +135,8 @@ public class CachingSessionDataStoreTest
         String id;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
             if ("create".equals(action))

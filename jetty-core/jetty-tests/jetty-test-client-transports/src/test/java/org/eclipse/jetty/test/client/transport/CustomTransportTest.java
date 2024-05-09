@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -21,7 +24,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.ContentSourceRequestContent;
@@ -52,9 +54,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 /**
  * <p>Tests a proxy scenario where the proxy HttpClient wants to send the request bytes to an in-memory gateway,
@@ -108,7 +107,8 @@ public class CustomTransportTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                var gatewayRequest = httpClient.newRequest("http://localhost/")
+                var gatewayRequest = httpClient
+                    .newRequest("http://localhost/")
                     .transport(new GatewayTransport(httpClient.getScheduler(), gateway))
                     .method(request.getMethod())
                     .path(request.getHttpURI().getPathQuery())
@@ -149,11 +149,12 @@ public class CustomTransportTest
         server.start();
 
         // Make a request to the server, it will be forwarded to the external system in bytes.
-        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(httpClient.newRequest("localhost", connector.getLocalPort())
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
             .body(new StringRequestContent("REQUEST"))
-            .timeout(5, TimeUnit.SECONDS)
-        ).send();
+            .timeout(5, TimeUnit.SECONDS))
+            .send();
 
         // After a while, simulate that the Gateway sends back data on Channel 1.
         Thread.sleep(500);
@@ -179,7 +180,8 @@ public class CustomTransportTest
         public void connect(SocketAddress socketAddress, Map<String, Object> context)
         {
             @SuppressWarnings("unchecked")
-            Promise<Connection> promise = (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
+            Promise<Connection> promise =
+                (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
             try
             {
                 // Create the Pipe to connect client and server.
@@ -192,7 +194,8 @@ public class CustomTransportTest
                 // Set up the client-side.
                 EndPoint localEndPoint = pipe.getLocalEndPoint();
 
-                ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY);
+                ClientConnector clientConnector =
+                    (ClientConnector)context.get(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY);
                 localEndPoint.setIdleTimeout(clientConnector.getIdleTimeout().toMillis());
 
                 Transport transport = (Transport)context.get(Transport.class.getName());
@@ -245,11 +248,13 @@ public class CustomTransportTest
         {
             Channel channel = channels.get(id);
             // Simulate the data to read.
-            channel.data = StandardCharsets.UTF_8.encode("""
-                HTTP/1.1 200 OK
-                Content-Length: %d
-                                    
-                """.formatted(CONTENT.length()) + CONTENT);
+            channel.data = StandardCharsets.UTF_8.encode(
+                """
+                    HTTP/1.1 200 OK
+                    Content-Length: %d
+
+                    """
+                    .formatted(CONTENT.length()) + CONTENT);
             new ChannelToEndPointCallback(channel).iterate();
         }
 

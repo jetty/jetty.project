@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -23,7 +29,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -38,12 +43,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentest4j.TestAbortedException;
 
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-
 @Disabled // TODO
 public class AllowSymLinkAliasCheckerTest
 {
@@ -51,10 +50,7 @@ public class AllowSymLinkAliasCheckerTest
     {
         List<Arguments> data = new ArrayList<>();
 
-        String[] dirs = {
-            "/workDir/", "/testdirlnk/", "/testdirprefixlnk/", "/testdirsuffixlnk/",
-            "/testdirwraplnk/"
-        };
+        String[] dirs = {"/workDir/", "/testdirlnk/", "/testdirprefixlnk/", "/testdirsuffixlnk/", "/testdirwraplnk/"};
 
         for (String dirname : dirs)
         {
@@ -179,7 +175,7 @@ public class AllowSymLinkAliasCheckerTest
         fileResourceContext.setHandler(fileResourceHandler);
         /* TODO
         fileResourceContext.setBaseResource(new PathResource(rootPath));
-
+        
         fileResourceContext.clearAliasChecks();
         fileResourceContext.addAliasCheck(new SymlinkAllowedResourceAliasChecker(fileResourceContext));
          */
@@ -189,7 +185,12 @@ public class AllowSymLinkAliasCheckerTest
 
     @ParameterizedTest
     @MethodSource("params")
-    public void testAccess(String requestURI, int expectedResponseStatus, String expectedResponseContentType, String expectedResponseContentContains) throws Exception
+    public void testAccess(
+                           String requestURI,
+                           int expectedResponseStatus,
+                           String expectedResponseContentType,
+                           String expectedResponseContentContains)
+        throws Exception
     {
         HttpTester.Request request = HttpTester.newRequest();
 
@@ -201,7 +202,10 @@ public class AllowSymLinkAliasCheckerTest
         {
             String responseString = localConnector.getResponse(BufferUtil.toString(request.generate()));
             assertThat("Response status code", responseString, startsWith("HTTP/1.1 " + expectedResponseStatus + " "));
-            assertThat("Response Content-Type", responseString, containsString("\nContent-Type: " + expectedResponseContentType));
+            assertThat(
+                "Response Content-Type",
+                responseString,
+                containsString("\nContent-Type: " + expectedResponseContentType));
             assertThat("Response", responseString, containsString(expectedResponseContentContains));
         });
     }

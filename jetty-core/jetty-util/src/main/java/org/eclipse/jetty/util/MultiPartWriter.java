@@ -33,12 +33,10 @@ public class MultiPartWriter extends FilterWriter
 
     private boolean inPart = false;
 
-    public MultiPartWriter(Writer out)
-        throws IOException
+    public MultiPartWriter(Writer out) throws IOException
     {
         super(out);
-        boundary = "jetty" + System.identityHashCode(this) +
-            Long.toString(System.currentTimeMillis(), 36);
+        boundary = "jetty" + System.identityHashCode(this) + Long.toString(System.currentTimeMillis(), 36);
 
         inPart = false;
     }
@@ -49,8 +47,7 @@ public class MultiPartWriter extends FilterWriter
      * @throws IOException IOException
      */
     @Override
-    public void close()
-        throws IOException
+    public void close() throws IOException
     {
         try
         {
@@ -79,8 +76,7 @@ public class MultiPartWriter extends FilterWriter
      * @param contentType the content type
      * @throws IOException if unable to write the part
      */
-    public void startPart(String contentType)
-        throws IOException
+    public void startPart(String contentType) throws IOException
     {
         if (inPart)
             out.write(__CRLF);
@@ -101,8 +97,7 @@ public class MultiPartWriter extends FilterWriter
      * @param headers the part headers
      * @throws IOException if unable to write the part
      */
-    public void startPart(String contentType, String[] headers)
-        throws IOException
+    public void startPart(String contentType, String[] headers) throws IOException
     {
         if (inPart)
             out.write(__CRLF);
@@ -126,15 +121,10 @@ public class MultiPartWriter extends FilterWriter
      *
      * @throws IOException if unable to write the part
      */
-    public void endPart()
-        throws IOException
+    public void endPart() throws IOException
     {
         if (inPart)
             out.write(__CRLF);
         inPart = false;
     }
 }
-
-
-
-

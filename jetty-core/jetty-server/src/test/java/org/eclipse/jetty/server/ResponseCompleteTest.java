@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,7 +26,6 @@ import java.net.Socket;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
@@ -36,12 +41,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-
 /**
  * The purpose of this testcase is to ensure that we handle the various
  * Response complete flows when dealing with errors and failures.
@@ -49,12 +48,13 @@ import static org.hamcrest.Matchers.is;
 public class ResponseCompleteTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseCompleteTest.class);
-    private static final byte[] GET_REQUEST_BYTES = """
-        GET / HTTP/1.1
-        Host: local
-        Connection: close
-        
-        """.getBytes(UTF_8);
+    private static final byte[] GET_REQUEST_BYTES =
+        """
+            GET / HTTP/1.1
+            Host: local
+            Connection: close
+
+            """.getBytes(UTF_8);
     private Server server;
 
     private Server startServer(HttpConnectionFactory httpConnectionFactory, Handler handler) throws Exception
@@ -79,7 +79,8 @@ public class ResponseCompleteTest
      * Callback not yet completing when response fails in different thread.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testHandleCallbackNotCompletingYet(boolean throwFromHandler) throws Exception
     {
         AtomicReference<Callback> callbackAtomicReference = new AtomicReference<>();
@@ -118,7 +119,8 @@ public class ResponseCompleteTest
      * Callback is completing when response fails in different thread.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testHandleCallbackCompleting(boolean throwFromHandler) throws Exception
     {
         CountDownLatch handleLatch = new CountDownLatch(1);
@@ -132,7 +134,8 @@ public class ResponseCompleteTest
                     HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint)
                     {
                         @Override
-                        protected HttpStreamOverHTTP1 newHttpStream(String method, String uri, HttpVersion version)
+                        protected HttpStreamOverHTTP1 newHttpStream(
+                                                                    String method, String uri, HttpVersion version)
                         {
                             return new HttpStreamOverHTTP1(method, uri, version)
                             {
@@ -164,7 +167,8 @@ public class ResponseCompleteTest
                     connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
                     return configure(connection, connector, endPoint);
                 }
-            }, new Handler.Abstract()
+            },
+            new Handler.Abstract()
             {
                 @Override
                 public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -198,7 +202,9 @@ public class ResponseCompleteTest
             assertThat("Raw Response Length", rawResponse.length(), greaterThan(0));
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(500));
-            assertThat(response.getContent(), containsString("<h2>HTTP ERROR 500 java.lang.Exception: Test-Threaded</h2>"));
+            assertThat(
+                response.getContent(),
+                containsString("<h2>HTTP ERROR 500 java.lang.Exception: Test-Threaded</h2>"));
         }
     }
 
@@ -207,7 +213,8 @@ public class ResponseCompleteTest
      * Callback is completed when response fails in different thread.
      */
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testHandleCallbackCompleted(boolean throwFromHandler) throws Exception
     {
         startServer(new HttpConnectionFactory(), new Handler.Abstract()

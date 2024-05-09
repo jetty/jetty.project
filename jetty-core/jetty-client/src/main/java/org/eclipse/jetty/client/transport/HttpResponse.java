@@ -15,7 +15,6 @@ package org.eclipse.jetty.client.transport;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpField;
@@ -124,6 +123,8 @@ public class HttpResponse implements Response
     @Override
     public String toString()
     {
-        return String.format("%s[%s %d %s]@%x", HttpResponse.class.getSimpleName(), getVersion(), getStatus(), getReason(), hashCode());
+        return String.format(
+            "%s[%s %d %s]@%x",
+            HttpResponse.class.getSimpleName(), getVersion(), getStatus(), getReason(), hashCode());
     }
 }

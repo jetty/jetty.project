@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
@@ -30,6 +30,10 @@ import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
@@ -38,11 +42,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettySpecificConfigTest
 {
@@ -107,8 +106,8 @@ public class JettySpecificConfigTest
         _context.setContextPath("/");
         _server.setHandler(_context);
 
-        JakartaWebSocketServletContainerInitializer.configure(_context,
-            (context, container) -> container.addEndpoint(EchoParamSocket.class));
+        JakartaWebSocketServletContainerInitializer.configure(
+            _context, (context, container) -> container.addEndpoint(EchoParamSocket.class));
 
         _server.start();
     }

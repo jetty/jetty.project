@@ -15,7 +15,6 @@ package org.eclipse.jetty.security;
 
 import java.security.Principal;
 import javax.security.auth.Subject;
-
 import org.eclipse.jetty.security.internal.DefaultUserIdentity;
 import org.eclipse.jetty.security.internal.RoleRunAsToken;
 
@@ -28,7 +27,9 @@ import org.eclipse.jetty.security.internal.RoleRunAsToken;
 public class DefaultIdentityService implements IdentityService
 {
     private static final ThreadLocal<String> runAsRole = new ThreadLocal<>();
-    private static final Association NOOP = () -> {};
+    private static final Association NOOP = () ->
+    {
+    };
     private static final Association CLEAR_RUN_AS = () -> runAsRole.set(null);
 
     public static boolean isRoleAssociated(String role)

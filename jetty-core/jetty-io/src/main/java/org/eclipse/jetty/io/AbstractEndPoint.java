@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -111,7 +110,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                     }
                     return;
 
-                case ISHUTTING:  // Somebody else ishutting
+                case ISHUTTING: // Somebody else ishutting
                 case ISHUT: // Already ishut
                     return;
 
@@ -179,7 +178,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                     doOnClose(null);
                     return;
 
-                case OSHUTTING:  // Somebody else oshutting
+                case OSHUTTING: // Somebody else oshutting
                 case OSHUT: // Already oshut
                     return;
 
@@ -396,7 +395,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         boolean isOpen = isOpen();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("handled idle isOpen={} inputShutdown={} outputShutdown={} fillFailed={} writeFailed={} for {}",
+            LOG.debug(
+                "handled idle isOpen={} inputShutdown={} outputShutdown={} fillFailed={} writeFailed={} for {}",
                 isOpen,
                 inputShutdown,
                 outputShutdown,
@@ -414,15 +414,17 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     {
         Connection oldConnection = getConnection();
 
-        ByteBuffer buffer = (oldConnection instanceof Connection.UpgradeFrom)
-            ? ((Connection.UpgradeFrom)oldConnection).onUpgradeFrom()
-            : null;
+        ByteBuffer buffer = (oldConnection instanceof Connection.UpgradeFrom) ? ((Connection.UpgradeFrom)oldConnection).onUpgradeFrom() : null;
         oldConnection.onClose(null);
         oldConnection.getEndPoint().setConnection(newConnection);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} upgrading from {} to {} with {}",
-                this, oldConnection, newConnection, BufferUtil.toDetailString(buffer));
+            LOG.debug(
+                "{} upgrading from {} to {} with {}",
+                this,
+                oldConnection,
+                newConnection,
+                BufferUtil.toDetailString(buffer));
 
         if (BufferUtil.hasContent(buffer))
         {
@@ -438,12 +440,14 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]->[%s]", getClass().getSimpleName(), hashCode(), toEndPointString(), toConnectionString());
+        return String.format(
+            "%s@%x[%s]->[%s]", getClass().getSimpleName(), hashCode(), toEndPointString(), toConnectionString());
     }
 
     public String toEndPointString()
     {
-        return String.format("{l=%s,r=%s,%s,fill=%s,flush=%s,to=%d/%d}",
+        return String.format(
+            "{l=%s,r=%s,%s,fill=%s,flush=%s,to=%d/%d}",
             getLocalSocketAddress(),
             getRemoteSocketAddress(),
             _state.get(),
@@ -465,6 +469,11 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
     private enum State
     {
-        OPEN, ISHUTTING, ISHUT, OSHUTTING, OSHUT, CLOSED
+        OPEN,
+        ISHUTTING,
+        ISHUT,
+        OSHUTTING,
+        OSHUT,
+        CLOSED
     }
 }

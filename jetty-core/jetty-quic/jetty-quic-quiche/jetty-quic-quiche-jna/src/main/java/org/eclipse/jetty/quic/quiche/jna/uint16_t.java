@@ -21,6 +21,7 @@ public class uint16_t extends IntegerType
     {
         this(0);
     }
+
     public uint16_t(int v)
     {
         super(2, v, true);

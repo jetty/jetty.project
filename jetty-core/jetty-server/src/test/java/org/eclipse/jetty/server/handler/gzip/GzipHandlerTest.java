@@ -13,6 +13,24 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
@@ -39,7 +57,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
@@ -82,42 +99,15 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-@ExtendWith(WorkDirExtension.class) 
+@ExtendWith(WorkDirExtension.class)
 public class GzipHandlerTest
 {
     protected static final int DEFAULT_OUTPUT_BUFFER_SIZE = new HttpConfiguration().getOutputBufferSize();
 
     private static final String CONTENT =
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. " +
-            "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque " +
-            "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. " +
-            "Vestibulum sit amet felis augue, vel convallis dolor. Cras accumsan vehicula diam " +
-            "at faucibus. Etiam in urna turpis, sed congue mi. Morbi et lorem eros. Donec vulputate " +
-            "velit in risus suscipit lobortis. Aliquam id urna orci, nec sollicitudin ipsum. " +
-            "Cras a orci turpis. Donec suscipit vulputate cursus. Mauris nunc tellus, fermentum " +
-            "eu auctor ut, mollis at diam. Quisque porttitor ultrices metus, vitae tincidunt massa " +
-            "sollicitudin a. Vivamus porttitor libero eget purus hendrerit cursus. Integer aliquam " +
-            "consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque. " +
-            "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse " +
-            "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. " + "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque " + "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. " + "Vestibulum sit amet felis augue, vel convallis dolor. Cras accumsan vehicula diam " + "at faucibus. Etiam in urna turpis, sed congue mi. Morbi et lorem eros. Donec vulputate " +
+            "velit in risus suscipit lobortis. Aliquam id urna orci, nec sollicitudin ipsum. " + "Cras a orci turpis. Donec suscipit vulputate cursus. Mauris nunc tellus, fermentum " + "eu auctor ut, mollis at diam. Quisque porttitor ultrices metus, vitae tincidunt massa " + "sollicitudin a. Vivamus porttitor libero eget purus hendrerit cursus. Integer aliquam " + "consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque. " +
+            "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse " + "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
 
     private static final byte[] CONTENT_BYTES = CONTENT.getBytes(StandardCharsets.UTF_8);
 
@@ -126,7 +116,8 @@ public class GzipHandlerTest
     private static final String MICRO_ETAG = String.format("W/\"%x\"", MICRO.hashCode());
 
     private static final String CONTENT_ETAG = String.format("W/\"%x\"", CONTENT.hashCode());
-    private static final String CONTENT_ETAG_GZIP = String.format("W/\"%x" + CompressedContentFormat.GZIP.getEtagSuffix() + "\"", CONTENT.hashCode());
+    private static final String CONTENT_ETAG_GZIP =
+        String.format("W/\"%x" + CompressedContentFormat.GZIP.getEtagSuffix() + "\"", CONTENT.hashCode());
 
     private Server _server;
     private ServerConnector _httpConnector;
@@ -160,10 +151,7 @@ public class GzipHandlerTest
 
     public static Stream<Integer> compressibleSizesSource()
     {
-        return Stream.of(
-            DEFAULT_OUTPUT_BUFFER_SIZE / 4,
-            DEFAULT_OUTPUT_BUFFER_SIZE,
-            DEFAULT_OUTPUT_BUFFER_SIZE * 4);
+        return Stream.of(DEFAULT_OUTPUT_BUFFER_SIZE / 4, DEFAULT_OUTPUT_BUFFER_SIZE, DEFAULT_OUTPUT_BUFFER_SIZE * 4);
     }
 
     @AfterEach
@@ -208,7 +196,8 @@ public class GzipHandlerTest
 
     @ParameterizedTest
     @MethodSource("asyncResponseSource")
-    public void testAsyncScenarios(int writes, int bufferSize, boolean readOnly, boolean contentLength, boolean knownLast) throws Exception
+    public void testAsyncScenarios(
+                                   int writes, int bufferSize, boolean readOnly, boolean contentLength, boolean knownLast) throws Exception
     {
         _contextHandler.setHandler(new WriteHandler());
         _server.start();
@@ -313,14 +302,16 @@ public class GzipHandlerTest
         try (LocalConnector.LocalEndPoint localEndPoint = _connector.connect())
         {
             // Send HEAD Request
-            String rawHeadRequest = """
-                HEAD /ctx/buffer/test?one HTTP/1.1
-                Host: tester
-                Accept-Encoding: gzip
-            
-                """;
+            String rawHeadRequest =
+                """
+                    HEAD /ctx/buffer/test?one HTTP/1.1
+                    Host: tester
+                    Accept-Encoding: gzip
+
+                    """;
             localEndPoint.addInput(BufferUtil.toBuffer(rawHeadRequest, UTF_8));
-            HttpTester.Response response = HttpTester.parseHeadResponse(localEndPoint.getResponse(true, 2, TimeUnit.SECONDS));
+            HttpTester.Response response =
+                HttpTester.parseHeadResponse(localEndPoint.getResponse(true, 2, TimeUnit.SECONDS));
 
             assertThat(response.getStatus(), is(200));
             assertNull(response.getField("Vary")); // HEAD should not have a Vary header
@@ -328,19 +319,21 @@ public class GzipHandlerTest
             assertThat(response.getContentBytes().length, is(0));
 
             // Send GET Request
-            String rawGetRequest = """
-                GET /ctx/buffer/test?two HTTP/1.1
-                Host: tester
-                Connection: close
-                Accept-Encoding: gzip
-            
-                """;
+            String rawGetRequest =
+                """
+                    GET /ctx/buffer/test?two HTTP/1.1
+                    Host: tester
+                    Connection: close
+                    Accept-Encoding: gzip
+
+                    """;
 
             localEndPoint.addInput(BufferUtil.toBuffer(rawGetRequest, UTF_8));
             response = HttpTester.parseResponse(localEndPoint.getResponse(false, 2, TimeUnit.SECONDS));
             assertThat(response.getStatus(), is(200));
             assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
-            assertThat(response.getLongField("Content-Length"),
+            assertThat(
+                response.getLongField("Content-Length"),
                 is(both(greaterThan(0L)).and(lessThan((long)CONTENT_BYTES.length))));
 
             try (InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes())))
@@ -362,14 +355,16 @@ public class GzipHandlerTest
         // generated and parsed test
         HttpTester.Response response;
 
-        // Request to a handler that writes a single buffer, with a valid Content-Length header, and Content-Encoding header.
-        String rawRequest = """
-            HEAD /ctx/buffer/info HTTP/1.1
-            Host: tester
-            Connection: close
-            Accept-Encoding: gzip
-            
-            """;
+        // Request to a handler that writes a single buffer, with a valid Content-Length header, and Content-Encoding
+        // header.
+        String rawRequest =
+            """
+                HEAD /ctx/buffer/info HTTP/1.1
+                Host: tester
+                Connection: close
+                Accept-Encoding: gzip
+
+                """;
 
         // Parse HEAD response
         response = HttpTester.parseHeadResponse(_connector.getResponse(rawRequest));
@@ -389,20 +384,23 @@ public class GzipHandlerTest
         // generated and parsed test
         HttpTester.Response response;
 
-        // Request to a handler that writes a single buffer, with a valid Content-Length header, and Content-Encoding header.
-        String rawRequest = """
-            GET /ctx/buffer/info HTTP/1.1
-            Host: tester
-            Connection: close
-            Accept-Encoding: gzip
-            
-            """;
+        // Request to a handler that writes a single buffer, with a valid Content-Length header, and Content-Encoding
+        // header.
+        String rawRequest =
+            """
+                GET /ctx/buffer/info HTTP/1.1
+                Host: tester
+                Connection: close
+                Accept-Encoding: gzip
+
+                """;
 
         response = HttpTester.parseResponse(_connector.getResponse(rawRequest));
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
-        assertThat(response.getLongField("Content-Length"),
+        assertThat(
+            response.getLongField("Content-Length"),
             is(both(greaterThan(0L)).and(lessThan((long)CONTENT_BYTES.length))));
 
         try (InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes())))
@@ -982,7 +980,8 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"POST", "WIBBLE", "GET", "HEAD"})
+    @ValueSource(strings =
+    {"POST", "WIBBLE", "GET", "HEAD"})
     public void testIncludeMethods(String method) throws Exception
     {
         boolean head = HttpMethod.HEAD.is(method);
@@ -1018,7 +1017,9 @@ public class GzipHandlerTest
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
 
         // We expect Content-Length regardless of the HTTP Method used
-        assertThat("Response[Content-Length]", response.getLongField("Content-Length"),
+        assertThat(
+            "Response[Content-Length]",
+            response.getLongField("Content-Length"),
             is(both(greaterThan(0L)).and(lessThan((long)fileSize))));
 
         if (head)
@@ -1026,7 +1027,6 @@ public class GzipHandlerTest
             // Don't assert Response body content on HEAD requests.
             return;
         }
-
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
@@ -1244,7 +1244,12 @@ public class GzipHandlerTest
 
         for (int i = 0; i < writes; i++)
         {
-            assertEquals(CONTENT, new String(Arrays.copyOfRange(bytes, i * CONTENT_BYTES.length, (i + 1) * CONTENT_BYTES.length), StandardCharsets.UTF_8), "chunk " + i);
+            assertEquals(
+                CONTENT,
+                new String(
+                    Arrays.copyOfRange(bytes, i * CONTENT_BYTES.length, (i + 1) * CONTENT_BYTES.length),
+                    StandardCharsets.UTF_8),
+                "chunk " + i);
         }
     }
 
@@ -1435,7 +1440,8 @@ public class GzipHandlerTest
      */
     @ParameterizedTest
     @MethodSource("compressibleSizesSource")
-    public void testRequestIfModifiedSinceInFutureGzipCompressedResponse(int fileSize, WorkDir workDir) throws Exception
+    public void testRequestIfModifiedSinceInFutureGzipCompressedResponse(int fileSize, WorkDir workDir)
+        throws Exception
     {
         _gzipHandler.addIncludedMimeTypes("text/plain");
         Path tmpPath = workDir.getEmptyPathDir();
@@ -1525,7 +1531,8 @@ public class GzipHandlerTest
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
-        assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
+        assertThat(
+            "Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
         assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
@@ -1690,11 +1697,14 @@ public class GzipHandlerTest
         assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
     }
 
-    protected FilterInputStream newContentEncodingFilterInputStream(String contentEncoding, InputStream inputStream) throws IOException
+    protected FilterInputStream newContentEncodingFilterInputStream(String contentEncoding, InputStream inputStream)
+        throws IOException
     {
         if (contentEncoding == null)
         {
-            return new FilterInputStream(inputStream) {};
+            return new FilterInputStream(inputStream)
+            {
+            };
         }
         else if (contentEncoding.contains(GzipHandler.GZIP))
         {
@@ -1707,7 +1717,8 @@ public class GzipHandlerTest
         throw new RuntimeException("Unexpected response content-encoding: " + contentEncoding);
     }
 
-    protected UncompressedMetadata parseResponseContent(HttpTester.Response response) throws NoSuchAlgorithmException, IOException
+    protected UncompressedMetadata parseResponseContent(HttpTester.Response response)
+        throws NoSuchAlgorithmException, IOException
     {
         UncompressedMetadata metadata = new UncompressedMetadata();
         metadata.contentLength = response.getContentBytes().length;
@@ -1723,7 +1734,8 @@ public class GzipHandlerTest
             org.eclipse.jetty.toolchain.test.IO.copy(streamFilter, digester);
             metadata.uncompressedContent = uncompressedStream.toByteArray();
             metadata.uncompressedSize = metadata.uncompressedContent.length;
-            metadata.uncompressedSha1Sum = StringUtil.toHexString(digest.digest()).toUpperCase(Locale.ENGLISH);
+            metadata.uncompressedSha1Sum =
+                StringUtil.toHexString(digest.digest()).toUpperCase(Locale.ENGLISH);
             return metadata;
         }
     }
@@ -2027,7 +2039,9 @@ public class GzipHandlerTest
             Fields formParameters = FormFields.from(request, UTF_8, -1, -1).get();
             Fields parameters = Fields.combine(queryParameters, formParameters);
 
-            String dump = parameters.stream().map(f -> "%s: %s\n".formatted(f.getName(), f.getValue())).collect(Collectors.joining());
+            String dump = parameters.stream()
+                .map(f -> "%s: %s\n".formatted(f.getName(), f.getValue()))
+                .collect(Collectors.joining());
             Content.Sink.write(response, true, dump, callback);
             return true;
         }

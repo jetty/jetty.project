@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
@@ -27,7 +29,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.Attributes;
@@ -36,8 +37,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.US_ASCII;
 
 /**
  * <p>A {@link CompletableFuture} that is completed when a multipart/form-data content
@@ -81,7 +80,8 @@ public class MultiPartFormData
     /**
      * Returns {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578}.
      */
-    public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    public static CompletableFuture<Parts> from(
+                                                Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
         return from(attributes, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP, boundary, parse);
     }
@@ -96,10 +96,16 @@ public class MultiPartFormData
      * @param parse the parser completable future
      * @return the future parts
      */
-    public static CompletableFuture<Parts> from(Attributes attributes, MultiPartCompliance compliance, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    public static CompletableFuture<Parts> from(
+                                                Attributes attributes,
+                                                MultiPartCompliance compliance,
+                                                ComplianceViolation.Listener listener,
+                                                String boundary,
+                                                Function<Parser, CompletableFuture<Parts>> parse)
     {
         @SuppressWarnings("unchecked")
-        CompletableFuture<Parts> futureParts = (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
+        CompletableFuture<Parts> futureParts =
+            (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
         if (futureParts == null)
         {
             futureParts = parse.apply(new Parser(boundary, compliance, listener));
@@ -157,9 +163,7 @@ public class MultiPartFormData
          */
         public List<MultiPart.Part> getAll(String name)
         {
-            return parts.stream()
-                .filter(part -> part.getName().equals(name))
-                .toList();
+            return parts.stream().filter(part -> part.getName().equals(name)).toList();
         }
 
         /**
@@ -234,7 +238,10 @@ public class MultiPartFormData
             this(boundary, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP);
         }
 
-        public Parser(String boundary, MultiPartCompliance multiPartCompliance, ComplianceViolation.Listener complianceViolationListener)
+        public Parser(
+                      String boundary,
+                      MultiPartCompliance multiPartCompliance,
+                      ComplianceViolation.Listener complianceViolationListener)
         {
             compliance = Objects.requireNonNull(multiPartCompliance);
             complianceListener = Objects.requireNonNull(complianceViolationListener);
@@ -553,17 +560,15 @@ public class MultiPartFormData
                         {
                             case "base64" ->
                             {
-                                complianceListener.onComplianceViolation(
-                                    new ComplianceViolation.Event(compliance,
-                                        MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
-                                        value));
+                                complianceListener.onComplianceViolation(new ComplianceViolation.Event(
+                                    compliance, MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING, value));
                             }
                             case "quoted-printable" ->
                             {
-                                complianceListener.onComplianceViolation(
-                                    new ComplianceViolation.Event(compliance,
-                                        MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
-                                        value));
+                                complianceListener.onComplianceViolation(new ComplianceViolation.Event(
+                                    compliance,
+                                    MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
+                                    value));
                             }
                             case "8bit", "binary" ->
                             {
@@ -571,10 +576,8 @@ public class MultiPartFormData
                             }
                             default ->
                             {
-                                complianceListener.onComplianceViolation(
-                                    new ComplianceViolation.Event(compliance,
-                                        MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
-                                        value));
+                                complianceListener.onComplianceViolation(new ComplianceViolation.Event(
+                                    compliance, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value));
                             }
                         }
                     }
@@ -638,7 +641,8 @@ public class MultiPartFormData
             {
                 try
                 {
-                    ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation");
+                    ComplianceViolation.Event event =
+                        new ComplianceViolation.Event(compliance, violation, "multipart spec violation");
                     complianceListener.onComplianceViolation(event);
                 }
                 catch (Throwable x)

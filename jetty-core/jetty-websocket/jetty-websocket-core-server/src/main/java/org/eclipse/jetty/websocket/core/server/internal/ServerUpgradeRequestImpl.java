@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;

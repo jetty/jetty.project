@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.handlers;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 @ServerEndpoint("/")
 public class AbstractAnnotatedHandler

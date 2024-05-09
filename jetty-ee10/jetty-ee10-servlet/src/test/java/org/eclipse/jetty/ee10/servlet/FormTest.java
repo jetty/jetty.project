@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -20,10 +25,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FormRequestContent;
@@ -40,8 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FormTest
 {
@@ -99,8 +98,7 @@ public class FormTest
             Arguments.of(0, true),
             Arguments.of(0, false),
             Arguments.of(MAX_FORM_CONTENT_SIZE, true),
-            Arguments.of(MAX_FORM_CONTENT_SIZE, false)
-        );
+            Arguments.of(MAX_FORM_CONTENT_SIZE, false));
     }
 
     @ParameterizedTest
@@ -122,9 +120,7 @@ public class FormTest
         });
 
         byte[] key = "foo=".getBytes(StandardCharsets.US_ASCII);
-        int length = (maxFormContentSize == null || maxFormContentSize < 0)
-            ? ServletContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE
-            : maxFormContentSize;
+        int length = (maxFormContentSize == null || maxFormContentSize < 0) ? ServletContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE : maxFormContentSize;
         // Avoid empty value.
         length = length + 1;
         byte[] value = new byte[length];
@@ -148,9 +144,8 @@ public class FormTest
             })
             .send();
 
-        int expected = (maxFormContentSize != null && maxFormContentSize < 0)
-            ? HttpStatus.OK_200
-            : HttpStatus.BAD_REQUEST_400;
+        int expected =
+            (maxFormContentSize != null && maxFormContentSize < 0) ? HttpStatus.OK_200 : HttpStatus.BAD_REQUEST_400;
         assertEquals(expected, response.getStatus());
     }
 
@@ -177,9 +172,7 @@ public class FormTest
             };
         });
 
-        int keys = (maxFormKeys == null || maxFormKeys < 0)
-            ? ServletContextHandler.DEFAULT_MAX_FORM_KEYS
-            : maxFormKeys;
+        int keys = (maxFormKeys == null || maxFormKeys < 0) ? ServletContextHandler.DEFAULT_MAX_FORM_KEYS : maxFormKeys;
         // Have at least one key.
         keys = keys + 1;
         Fields formParams = new Fields();
@@ -193,9 +186,7 @@ public class FormTest
             .body(new FormRequestContent(formParams))
             .send();
 
-        int expected = (maxFormKeys != null && maxFormKeys < 0)
-            ? HttpStatus.OK_200
-            : HttpStatus.BAD_REQUEST_400;
+        int expected = (maxFormKeys != null && maxFormKeys < 0) ? HttpStatus.OK_200 : HttpStatus.BAD_REQUEST_400;
         assertEquals(expected, response.getStatus());
     }
 

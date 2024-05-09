@@ -21,6 +21,7 @@ public class bool_pointer extends ByReference
     {
         this(0);
     }
+
     public bool_pointer(int v)
     {
         super(1);

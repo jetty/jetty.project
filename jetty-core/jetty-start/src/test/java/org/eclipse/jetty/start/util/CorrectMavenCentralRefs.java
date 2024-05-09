@@ -29,7 +29,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.start.PathFinder;
 import org.eclipse.jetty.start.PathMatchers;
 import org.eclipse.jetty.start.Utils;
@@ -239,7 +238,8 @@ public class CorrectMavenCentralRefs
 
     private void saveLines(Path path, List<String> lines) throws IOException
     {
-        try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING))
+        try (BufferedWriter writer =
+            Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING))
         {
             for (String line : lines)
             {

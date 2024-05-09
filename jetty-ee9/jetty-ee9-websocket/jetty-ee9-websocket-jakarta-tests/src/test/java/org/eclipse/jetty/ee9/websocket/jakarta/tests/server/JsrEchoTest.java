@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
-
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.websocket.core.CloseStatus;

@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.handlers;
 
-import java.nio.ByteBuffer;
-
 import jakarta.websocket.MessageHandler;
+import java.nio.ByteBuffer;
 
 /**
  * A particularly annoying type of MessageHandler. One defining 2 implementations.

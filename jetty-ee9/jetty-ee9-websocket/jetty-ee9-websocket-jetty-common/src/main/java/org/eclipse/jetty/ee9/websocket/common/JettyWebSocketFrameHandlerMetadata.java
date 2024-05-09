@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.websocket.common;
 
 import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
 import org.eclipse.jetty.ee9.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.Configuration;

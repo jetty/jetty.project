@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -35,7 +34,8 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 public class StatisticsHandler extends EventsHandler
 {
-    private final CounterStatistic _requestStats = new CounterStatistic(); // how many requests are being handled (full lifecycle)
+    private final CounterStatistic _requestStats =
+        new CounterStatistic(); // how many requests are being handled (full lifecycle)
     private final SampleStatistic _requestTimeStats = new SampleStatistic(); // latencies of requests (full lifecycle)
     private final CounterStatistic _handleStats = new CounterStatistic(); // how many requests are in handle()
     private final SampleStatistic _handleTimeStats = new SampleStatistic(); // latencies of requests in handle()
@@ -117,7 +117,9 @@ public class StatisticsHandler extends EventsHandler
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent,
+        dumpObjects(
+            out,
+            indent,
             Dumpable.named("requestStats", _requestStats),
             Dumpable.named("requestTimeStats", _requestTimeStats),
             Dumpable.named("handleStats", _handleStats),
@@ -130,8 +132,7 @@ public class StatisticsHandler extends EventsHandler
             Dumpable.named("4xxResponses", _responses4xx),
             Dumpable.named("5xxResponses", _responses5xx),
             Dumpable.named("bytesRead", _bytesRead),
-            Dumpable.named("bytesWritten", _bytesWritten)
-        );
+            Dumpable.named("bytesWritten", _bytesWritten));
     }
 
     @ManagedOperation(value = "resets the statistics", impact = "ACTION")

@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.jmx;
 
-import java.util.Arrays;
-import java.util.List;
-
 import com.openpojo.reflection.impl.PojoClassFactory;
 import com.openpojo.validation.Validator;
 import com.openpojo.validation.ValidatorBuilder;
 import com.openpojo.validation.test.impl.GetterTester;
 import com.openpojo.validation.test.impl.SetterTester;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /*
@@ -31,7 +30,10 @@ public class PojoTest
     @Test
     public void testOpenPojo()
     {
-        Validator validator = ValidatorBuilder.create().with(new SetterTester()).with(new GetterTester()).build();
+        Validator validator = ValidatorBuilder.create()
+            .with(new SetterTester())
+            .with(new GetterTester())
+            .build();
         List<Class> classes = Arrays.asList(MBeanContainer.class, ObjectMBean.class);
         for (Class clazz : classes)
         {

@@ -16,7 +16,6 @@ package org.eclipse.jetty.security.openid;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.security.auth.Subject;
-
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.UserIdentity;
@@ -76,7 +75,8 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     }
 
     @Override
-    public UserIdentity login(String identifier, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
+    public UserIdentity login(
+                              String identifier, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("login({}, {}, {})", identifier, credentials, getOrCreateSession);
@@ -99,10 +99,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         subject.setReadOnly();
 
         if (loginService != null)
-           return loginService.getUserIdentity(
-               subject,
-                userPrincipal,
-                isAuthenticateNewUsers());
+            return loginService.getUserIdentity(subject, userPrincipal, isAuthenticateNewUsers());
         return identityService.newUserIdentity(subject, userPrincipal, new String[0]);
     }
 

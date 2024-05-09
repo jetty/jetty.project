@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.matchers;
 
-import java.util.Map;
-
 import jakarta.websocket.Decoder;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.PongMessage;
+import java.util.Map;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.RegisteredMessageHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
@@ -44,7 +43,8 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JakartaWebSo
     @Override
     protected boolean matchesSafely(JakartaWebSocketSession session)
     {
-        Map<Byte, RegisteredMessageHandler> handlerMap = session.getFrameHandler().getMessageHandlerMap();
+        Map<Byte, RegisteredMessageHandler> handlerMap =
+            session.getFrameHandler().getMessageHandlerMap();
 
         if (handlerMap == null)
         {
@@ -93,7 +93,8 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JakartaWebSo
     @Override
     protected void describeMismatchSafely(JakartaWebSocketSession session, Description mismatchDescription)
     {
-        Map<Byte, RegisteredMessageHandler> handlerMap = session.getFrameHandler().getMessageHandlerMap();
+        Map<Byte, RegisteredMessageHandler> handlerMap =
+            session.getFrameHandler().getMessageHandlerMap();
 
         mismatchDescription.appendText(".getMessageHandlers()");
 
@@ -107,7 +108,8 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JakartaWebSo
         boolean delim = false;
         for (RegisteredMessageHandler registeredMessageHandler : handlerMap.values())
         {
-            Class<? extends MessageHandler> handlerClass = registeredMessageHandler.getMessageHandler().getClass();
+            Class<? extends MessageHandler> handlerClass =
+                registeredMessageHandler.getMessageHandler().getClass();
             if (delim)
             {
                 mismatchDescription.appendText(", ");

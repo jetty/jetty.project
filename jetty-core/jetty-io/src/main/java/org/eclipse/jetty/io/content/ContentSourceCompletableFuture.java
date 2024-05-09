@@ -15,7 +15,6 @@ package org.eclipse.jetty.io.content;
 
 import java.io.EOFException;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.io.Content;
 
 /**
@@ -47,7 +46,7 @@ import org.eclipse.jetty.io.Content;
  *         return builder.takeCompleteString(IllegalStateException::new);
  *     }
  * }
- * 
+ *
  * CompletableUTF8String cs = new CompletableUTF8String(source);
  * cs.parse();
  * String s = cs.get();
@@ -151,4 +150,3 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
         return false;
     }
 }
-

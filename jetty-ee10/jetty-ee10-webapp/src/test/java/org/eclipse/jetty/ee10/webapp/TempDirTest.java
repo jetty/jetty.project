@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+
+import jakarta.servlet.ServletContext;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -21,8 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -36,10 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 @ExtendWith(WorkDirExtension.class)
 public class TempDirTest
@@ -57,7 +56,8 @@ public class TempDirTest
      * Test ServletContext.TEMPDIR as valid directory with types File, String and Path.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"File", "String", "Path"})
+    @ValueSource(strings =
+    {"File", "String", "Path"})
     public void attributeWithValidDirectory(String type, WorkDir workDir) throws Exception
     {
         Path tmpDir = workDir.getEmptyPathDir();
@@ -82,7 +82,8 @@ public class TempDirTest
      * ServletContext.TEMPDIR as File to a non existent directory.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"File", "String", "Path"})
+    @ValueSource(strings =
+    {"File", "String", "Path"})
     public void attributeWithNonExistentDirectory(String type, WorkDir workDir) throws Exception
     {
         Path path = workDir.getEmptyPathDir();
@@ -143,7 +144,9 @@ public class TempDirTest
         WebAppContext webAppContext = new WebAppContext();
         server.setHandler(webAppContext);
         webInfConfiguration.resolveTempDirectory(webAppContext);
-        assertThat(webAppContext.getTempDirectory().getParentFile().getParentFile().toPath(), PathMatchers.isSame(workDir.getPath()));
+        assertThat(
+            webAppContext.getTempDirectory().getParentFile().getParentFile().toPath(),
+            PathMatchers.isSame(workDir.getPath()));
     }
 
     @Test
@@ -164,8 +167,8 @@ public class TempDirTest
             IO.copyDir(testWebappDir, root);
         }
 
-        //Test that if jetty is creating a tmp dir for the webapp, it is different on
-        //restart
+        // Test that if jetty is creating a tmp dir for the webapp, it is different on
+        // restart
         _server = new Server();
         WebAppContext webAppContext = new WebAppContext();
         webAppContext.setContextPath("/");
@@ -175,10 +178,12 @@ public class TempDirTest
         File tempDirectory = webAppContext.getTempDirectory();
         webAppContext.stop();
         webAppContext.start();
-        assertThat(tempDirectory.toPath(), not(PathMatchers.isSame(webAppContext.getTempDirectory().toPath())));
+        assertThat(
+            tempDirectory.toPath(),
+            not(PathMatchers.isSame(webAppContext.getTempDirectory().toPath())));
     }
 
-    @Disabled ("Enable after issue 11548 fixed")
+    @Disabled("Enable after issue 11548 fixed")
     @Test
     public void testSameTempDir(WorkDir workDir) throws Exception
     {
@@ -197,7 +202,7 @@ public class TempDirTest
             IO.copyDir(testWebappDir, root);
         }
 
-        //Test that if we explicitly configure the temp dir, it is the same after restart
+        // Test that if we explicitly configure the temp dir, it is the same after restart
         _server = new Server();
         WebAppContext webAppContext = new WebAppContext();
         webAppContext.setContextPath("/");
@@ -210,6 +215,8 @@ public class TempDirTest
         assertThat(tempDirectory.toPath(), PathMatchers.isSame(configuredTmpDir));
         webAppContext.stop();
         webAppContext.start();
-        assertThat(tempDirectory.toPath(), PathMatchers.isSame(webAppContext.getTempDirectory().toPath()));
+        assertThat(
+            tempDirectory.toPath(),
+            PathMatchers.isSame(webAppContext.getTempDirectory().toPath()));
     }
 }

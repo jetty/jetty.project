@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.client.internal.HttpContentResponse;
 
 /**
@@ -114,6 +113,7 @@ public class CompletableResponseListener extends BufferingResponseListener
         if (result.isFailed())
             completable.completeExceptionally(result.getFailure());
         else
-            completable.complete(new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()));
+            completable.complete(
+                new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()));
     }
 }

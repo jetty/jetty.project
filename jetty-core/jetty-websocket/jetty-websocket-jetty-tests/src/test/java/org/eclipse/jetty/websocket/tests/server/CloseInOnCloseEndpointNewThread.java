@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import java.util.concurrent.CountDownLatch;
-
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -32,7 +31,8 @@ public class CloseInOnCloseEndpointNewThread extends AbstractCloseEndpoint
                 Session session = getSession();
                 session.close(StatusCode.SERVER_ERROR, "this should be a noop", Callback.NOOP);
                 complete.countDown();
-            }).start();
+            })
+                .start();
             complete.await();
         }
         catch (InterruptedException e)

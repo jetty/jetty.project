@@ -21,7 +21,6 @@ import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -157,7 +156,8 @@ public class ObjectMBean implements DynamicMBean
     }
 
     @Override
-    public void setAttribute(Attribute attribute) throws AttributeNotFoundException, ReflectionException, MBeanException
+    public void setAttribute(Attribute attribute)
+        throws AttributeNotFoundException, ReflectionException, MBeanException
     {
         ClassLoader prevLoader = Thread.currentThread().getContextClassLoader();
         try

@@ -22,6 +22,7 @@ public class QuicheConfig
         BBR(Quiche.quiche_cc_algorithm.QUICHE_CC_BBR);
 
         private final int value;
+
         CongestionControl(int value)
         {
             this.value = value;

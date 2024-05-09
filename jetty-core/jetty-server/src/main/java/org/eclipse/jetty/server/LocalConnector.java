@@ -21,7 +21,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
@@ -46,7 +45,13 @@ public class LocalConnector extends AbstractConnector
 {
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
 
-    public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, int acceptors, ConnectionFactory... factories)
+    public LocalConnector(
+                          Server server,
+                          Executor executor,
+                          Scheduler scheduler,
+                          ByteBufferPool bufferPool,
+                          int acceptors,
+                          ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, Math.max(1, acceptors), factories);
         setIdleTimeout(30000);
@@ -59,7 +64,13 @@ public class LocalConnector extends AbstractConnector
 
     public LocalConnector(Server server, SslContextFactory.Server sslContextFactory)
     {
-        this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
+        this(
+            server,
+            null,
+            null,
+            null,
+            -1,
+            AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
     }
 
     public LocalConnector(Server server, ConnectionFactory connectionFactory)
@@ -67,9 +78,16 @@ public class LocalConnector extends AbstractConnector
         this(server, null, null, null, -1, connectionFactory);
     }
 
-    public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory.Server sslContextFactory)
+    public LocalConnector(
+                          Server server, ConnectionFactory connectionFactory, SslContextFactory.Server sslContextFactory)
     {
-        this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory, connectionFactory));
+        this(
+            server,
+            null,
+            null,
+            null,
+            -1,
+            AbstractConnectionFactory.getFactories(sslContextFactory, connectionFactory));
     }
 
     @Override
@@ -354,7 +372,9 @@ public class LocalConnector extends AbstractConnector
          */
         public ByteBuffer waitForResponse(boolean head, long time, TimeUnit unit) throws Exception
         {
-            return waitForResponse(head, time, unit, i -> {});
+            return waitForResponse(head, time, unit, i ->
+            {
+            });
         }
 
         /**
@@ -367,7 +387,8 @@ public class LocalConnector extends AbstractConnector
          * @return Buffer containing full response or null for EOF;
          * @throws Exception if the response cannot be parsed
          */
-        public ByteBuffer waitForResponse(boolean head, long time, TimeUnit unit, Consumer<Integer> statusConsumer) throws Exception
+        public ByteBuffer waitForResponse(boolean head, long time, TimeUnit unit, Consumer<Integer> statusConsumer)
+            throws Exception
         {
             HttpParser.ResponseHandler handler = new HttpParser.ResponseHandler()
             {

@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.websocket.Session;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-
-import jakarta.websocket.Session;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class InvokerUtilsStaticParamsTest
 {
@@ -54,7 +53,7 @@ public class InvokerUtilsStaticParamsTest
             return String.format("onColorMessage(%s, '%s', '%s')", color);
         }
     }
-    
+
     private static MethodHandles.Lookup lookup = MethodHandles.lookup();
 
     @Test
@@ -63,21 +62,21 @@ public class InvokerUtilsStaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onFruit", String.class);
 
         // Declared Variable Names
-        final String[] namedVariables = new String[]{
-            "fruit"
-        };
+        final String[] namedVariables = new String[]{"fruit"};
 
         // Raw Calling Args - none specified
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables);
+        MethodHandle methodHandle =
+            InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables);
 
         // Some point later an actual instance is needed, which has static named parameters
         Map<String, String> templateValues = new HashMap<>();
         templateValues.put("fruit", "pear");
 
         // Bind the static values, in same order as declared
-        methodHandle = JakartaWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
+        methodHandle =
+            JakartaWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
 
         // Assign an instance to call.
         Foo foo = new Foo();
@@ -94,19 +93,19 @@ public class InvokerUtilsStaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onCount", int.class);
 
         // Declared Variable Names - as seen in url-template-pattern
-        final String[] namedVariables = new String[]{
-            "count"
-        };
+        final String[] namedVariables = new String[]{"count"};
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables);
+        MethodHandle methodHandle =
+            InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables);
 
         // Some point later an actual instance is needed, which has static named parameters
         Map<String, String> templateValues = new HashMap<>();
         templateValues.put("count", "2222");
 
         // Bind the static values for the variables, in same order as the variables were declared
-        methodHandle = JakartaWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
+        methodHandle =
+            JakartaWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
 
         // Assign an instance to call.
         Foo foo = new Foo();
@@ -123,21 +122,21 @@ public class InvokerUtilsStaticParamsTest
         Method method = ReflectUtils.findMethod(Foo.class, "onLabeledCount", String.class, int.class);
 
         // Declared Variable Names - as seen in url-template-pattern
-        final String[] namedVariables = new String[]{
-            "count"
-        };
+        final String[] namedVariables = new String[]{"count"};
 
         final InvokerUtils.Arg ARG_LABEL = new InvokerUtils.Arg(String.class).required();
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables, ARG_LABEL);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(
+            lookup, Foo.class, method, new NameParamIdentifier(), namedVariables, ARG_LABEL);
 
         // Some point later an actual instance is needed, which has static named parameters
         Map<String, String> templateValues = new HashMap<>();
         templateValues.put("count", "444");
 
         // Bind the static values for the variables, in same order as the variables were declared
-        methodHandle = JakartaWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
+        methodHandle =
+            JakartaWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
 
         // Assign an instance to call.
         Foo foo = new Foo();

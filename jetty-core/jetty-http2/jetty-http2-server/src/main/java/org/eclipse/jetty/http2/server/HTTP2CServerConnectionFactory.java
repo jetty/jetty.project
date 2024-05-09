@@ -54,7 +54,8 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
         this(httpConfiguration, "h2c");
     }
 
-    public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
+    public HTTP2CServerConnectionFactory(
+                                         @Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
         super(httpConfiguration, protocols);
     }
@@ -67,7 +68,9 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
     }
 
     @Override
-    public Connection upgradeConnection(Connector connector, EndPoint endPoint, Request request, HttpFields.Mutable response101) throws BadMessageException
+    public Connection upgradeConnection(
+                                        Connector connector, EndPoint endPoint, Request request, HttpFields.Mutable response101)
+        throws BadMessageException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} upgrading {}{}{}", this, request, System.lineSeparator(), request.getHttpFields());

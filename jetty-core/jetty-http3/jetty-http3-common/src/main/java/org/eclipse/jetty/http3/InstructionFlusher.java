@@ -18,7 +18,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-
 import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -107,7 +106,10 @@ public class InstructionFlusher extends IteratingCallback
     public void succeeded()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("succeeded to write {} buffers on {}", accumulator.getByteBuffers().size(), this);
+            LOG.debug(
+                "succeeded to write {} buffers on {}",
+                accumulator.getByteBuffers().size(),
+                this);
 
         accumulator.release();
 
@@ -118,7 +120,11 @@ public class InstructionFlusher extends IteratingCallback
     protected void onCompleteFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed to write {} buffers on {}", accumulator.getByteBuffers().size(), this, failure);
+            LOG.debug(
+                "failed to write {} buffers on {}",
+                accumulator.getByteBuffers().size(),
+                this,
+                failure);
 
         accumulator.release();
 

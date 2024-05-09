@@ -14,7 +14,6 @@
 package com.acme;
 
 import java.util.ArrayList;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;

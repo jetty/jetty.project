@@ -20,7 +20,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.eclipse.jetty.util.annotation.Name;
 
 public class ExampleConfiguration extends HashMap<String, Object>
@@ -41,10 +40,13 @@ public class ExampleConfiguration extends HashMap<String, Object>
     public int testField1;
     public int testField2;
     public int propValue;
+
     @SuppressWarnings("rawtypes")
     private List list;
+
     @SuppressWarnings("rawtypes")
     private Set set;
+
     private ConstructorArgTestClass constructorArgTestClass;
     public Map map;
     public Double number;

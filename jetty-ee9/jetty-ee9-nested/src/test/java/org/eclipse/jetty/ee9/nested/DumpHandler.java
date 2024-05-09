@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,11 +25,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.slf4j.Logger;
@@ -52,7 +51,8 @@ public class DumpHandler extends AbstractHandler
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         if (!isStarted())
             return;
@@ -73,7 +73,7 @@ public class DumpHandler extends AbstractHandler
             read = new StringBuilder();
             int len = Integer.parseInt(request.getParameter("read"));
             Reader in = request.getReader();
-            for (int i = len; i-- > 0; )
+            for (int i = len; i-- > 0;)
             {
                 read.append((char)in.read());
             }
@@ -159,8 +159,7 @@ public class DumpHandler extends AbstractHandler
             {
                 String val = request.getParameter("CookieVal");
                 val = val.replaceAll("[ \n\r=<>]", "?");
-                Cookie cookie =
-                    new Cookie(cookieName.trim(), val);
+                Cookie cookie = new Cookie(cookieName.trim(), val);
                 if ("Clear Cookie".equals(cookieAction))
                     cookie.setMaxAge(0);
                 response.addCookie(cookie);
@@ -246,7 +245,7 @@ public class DumpHandler extends AbstractHandler
         {
             buf.reset();
             writer.flush();
-            for (int pad = 998; pad-- > 0; )
+            for (int pad = 998; pad-- > 0;)
             {
                 writer.write(" ");
             }

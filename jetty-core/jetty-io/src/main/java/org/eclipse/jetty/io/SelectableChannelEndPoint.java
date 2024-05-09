@@ -20,7 +20,6 @@ import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -76,7 +75,8 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         @Override
         public String toString()
         {
-            return String.format("%s:%s:%s->%s", SelectableChannelEndPoint.this, _operation, getInvocationType(), getWriteFlusher());
+            return String.format(
+                "%s:%s:%s->%s", SelectableChannelEndPoint.this, _operation, getInvocationType(), getWriteFlusher());
         }
     };
     private final Runnable _runCompleteWriteFillable = new RunnableCloseable("runCompleteWriteFillable")
@@ -106,7 +106,8 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         }
     };
 
-    public SelectableChannelEndPoint(Scheduler scheduler, SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
+    public SelectableChannelEndPoint(
+                                     Scheduler scheduler, SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
     {
         super(scheduler);
         _channel = channel;
@@ -232,13 +233,7 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
             LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, fillable, flushable, this);
 
         // return task to complete the job
-        Runnable task = fillable
-            ? (flushable
-            ? _runCompleteWriteFillable
-            : _runFillable)
-            : (flushable
-            ? _runCompleteWrite
-            : null);
+        Runnable task = fillable ? (flushable ? _runCompleteWriteFillable : _runFillable) : (flushable ? _runCompleteWrite : null);
 
         if (LOG.isDebugEnabled())
             LOG.debug("task {}", task);
@@ -298,7 +293,8 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
     public String toEndPointString()
     {
         // We do a best effort to print the right toString() and that's it.
-        return String.format("%s{io=%d/%d,kio=%d,kro=%d}",
+        return String.format(
+            "%s{io=%d/%d,kio=%d,kro=%d}",
             super.toEndPointString(),
             _currentInterestOps,
             _desiredInterestOps,

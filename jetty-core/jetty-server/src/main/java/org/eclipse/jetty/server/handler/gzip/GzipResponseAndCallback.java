@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
+import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -35,17 +36,15 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
-
 public class GzipResponseAndCallback extends Response.Wrapper implements Callback, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(GzipResponseAndCallback.class);
 
     // Per RFC-1952 this is the "unknown" OS value byte.
     private static final byte OS_UNKNOWN = (byte)0xFF;
-    private static final byte[] GZIP_HEADER = new byte[]{
-        (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, OS_UNKNOWN
-    };
+    private static final byte[] GZIP_HEADER =
+        new byte[]
+        {(byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, OS_UNKNOWN};
     // Per RFC-1952, the GZIP trailer is 8 bytes
     private static final int GZIP_TRAILER_SIZE = 8;
 
@@ -80,7 +79,9 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         super(request, response);
         _callback = callback;
         _factory = handler;
-        _bufferSize = Math.max(GZIP_HEADER.length + GZIP_TRAILER_SIZE, request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
+        _bufferSize = Math.max(
+            GZIP_HEADER.length + GZIP_TRAILER_SIZE,
+            request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
         _syncFlush = handler.isSyncFlush();
     }
 
@@ -146,7 +147,10 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     private void addTrailer(ByteBuffer outputBuffer)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("addTrailer: _crc={}, _totalIn={})", _crc.getValue(), _deflaterEntry.get().getTotalIn());
+            LOG.debug(
+                "addTrailer: _crc={}, _totalIn={})",
+                _crc.getValue(),
+                _deflaterEntry.get().getTotalIn());
         outputBuffer.putInt((int)_crc.getValue());
         outputBuffer.putInt(_deflaterEntry.get().getTotalIn());
     }
@@ -318,7 +322,11 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("GzipBufferCB(complete={}, callback={}, content={})", complete, callback, BufferUtil.toDetailString(content));
+                LOG.debug(
+                    "GzipBufferCB(complete={}, callback={}, content={})",
+                    complete,
+                    callback,
+                    BufferUtil.toDetailString(content));
         }
 
         @Override
@@ -336,7 +344,11 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         protected Action process() throws Exception
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("GzipBufferCB.process(): _last={}, _buffer={}, _content={}", _last, _buffer, BufferUtil.toDetailString(_content));
+                LOG.debug(
+                    "GzipBufferCB.process(): _last={}, _buffer={}, _content={}",
+                    _last,
+                    _buffer,
+                    BufferUtil.toDetailString(_content));
 
             GZState gzstate = _state.get();
 
@@ -404,7 +416,10 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         private Action compressing(Deflater deflater, ByteBuffer outputBuffer)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("compressing() deflater={}, outputBuffer={}", deflater, BufferUtil.toDetailString(outputBuffer));
+                LOG.debug(
+                    "compressing() deflater={}, outputBuffer={}",
+                    deflater,
+                    BufferUtil.toDetailString(outputBuffer));
 
             if (!deflater.finished())
             {
@@ -449,7 +464,8 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         private Action finishing(Deflater deflater, ByteBuffer outputBuffer)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("finishing() deflater={}, outputBuffer={}", deflater, BufferUtil.toDetailString(outputBuffer));
+                LOG.debug(
+                    "finishing() deflater={}, outputBuffer={}", deflater, BufferUtil.toDetailString(outputBuffer));
             if (!deflater.finished())
             {
                 int len = deflater.deflate(outputBuffer, getFlushMode());
@@ -493,7 +509,8 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         @Override
         public String toString()
         {
-            return String.format("%s[content=%s last=%b buffer=%s deflate=%s %s]",
+            return String.format(
+                "%s[content=%s last=%b buffer=%s deflate=%s %s]",
                 super.toString(),
                 BufferUtil.toDetailString(_content),
                 _last,

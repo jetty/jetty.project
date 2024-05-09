@@ -17,7 +17,6 @@ module org.eclipse.jetty.websocket.common
 {
     requires org.eclipse.jetty.util;
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.websocket.core.common;
     requires transitive org.eclipse.jetty.websocket.api;
 

@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,7 +28,6 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -40,10 +43,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SecuredRedirectHandlerTest
 {
@@ -73,7 +72,8 @@ public class SecuredRedirectHandlerTest
         HttpConfiguration httpsConf = new HttpConfiguration(httpConf);
         httpsConf.addCustomizer(new SecureRequestCustomizer());
 
-        ServerConnector httpsConnector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(httpsConf));
+        ServerConnector httpsConnector = new ServerConnector(
+            server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(httpsConf));
         httpsConnector.setName("secured");
         httpsConnector.setPort(0);
 
@@ -132,12 +132,14 @@ public class SecuredRedirectHandlerTest
              OutputStream output = socket.getOutputStream();
              InputStream input = socket.getInputStream())
         {
-            String rawRequest = """
-                GET %s HTTP/1.1
-                Host: %s:%d
-                Connection: close
-                
-                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            String rawRequest =
+                """
+                    GET %s HTTP/1.1
+                    Host: %s:%d
+                    Connection: close
+
+                    """
+                    .formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
             output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
             output.flush();
             HttpTester.Response response = HttpTester.parseResponse(input);
@@ -168,12 +170,14 @@ public class SecuredRedirectHandlerTest
              OutputStream output = socket.getOutputStream();
              InputStream input = socket.getInputStream())
         {
-            String rawRequest = """
-                GET %s HTTP/1.1
-                Host: %s:%d
-                Connection: close
-                
-                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            String rawRequest =
+                """
+                    GET %s HTTP/1.1
+                    Host: %s:%d
+                    Connection: close
+
+                    """
+                    .formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
             output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
             output.flush();
             HttpTester.Response response = HttpTester.parseResponse(input);
@@ -203,12 +207,14 @@ public class SecuredRedirectHandlerTest
              OutputStream output = socket.getOutputStream();
              InputStream input = socket.getInputStream())
         {
-            String rawRequest = """
-                GET %s HTTP/1.1
-                Host: %s:%d
-                Connection: close
-                
-                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            String rawRequest =
+                """
+                    GET %s HTTP/1.1
+                    Host: %s:%d
+                    Connection: close
+
+                    """
+                    .formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
             output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
             output.flush();
             HttpTester.Response response = HttpTester.parseResponse(input);
@@ -239,12 +245,14 @@ public class SecuredRedirectHandlerTest
              OutputStream output = socket.getOutputStream();
              InputStream input = socket.getInputStream())
         {
-            String rawRequest = """
-                GET %s HTTP/1.1
-                Host: %s:%d
-                Connection: close
-                
-                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            String rawRequest =
+                """
+                    GET %s HTTP/1.1
+                    Host: %s:%d
+                    Connection: close
+
+                    """
+                    .formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
             output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
             output.flush();
             HttpTester.Response response = HttpTester.parseResponse(input);
@@ -274,12 +282,14 @@ public class SecuredRedirectHandlerTest
              OutputStream output = socket.getOutputStream();
              InputStream input = socket.getInputStream())
         {
-            String rawRequest = """
-                GET %s HTTP/1.1
-                Host: %s:%d
-                Connection: close
-                
-                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            String rawRequest =
+                """
+                    GET %s HTTP/1.1
+                    Host: %s:%d
+                    Connection: close
+
+                    """
+                    .formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
             output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
             output.flush();
             HttpTester.Response response = HttpTester.parseResponse(input);
@@ -307,12 +317,14 @@ public class SecuredRedirectHandlerTest
              OutputStream output = socket.getOutputStream();
              InputStream input = socket.getInputStream())
         {
-            String rawRequest = """
-                GET %s HTTP/1.1
-                Host: %s:%d
-                Connection: close
-                
-                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            String rawRequest =
+                """
+                    GET %s HTTP/1.1
+                    Host: %s:%d
+                    Connection: close
+
+                    """
+                    .formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
             output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
             output.flush();
             HttpTester.Response response = HttpTester.parseResponse(input);
@@ -326,12 +338,14 @@ public class SecuredRedirectHandlerTest
              OutputStream output = socket.getOutputStream();
              InputStream input = socket.getInputStream())
         {
-            String rawRequest = """
-                GET %s HTTP/1.1
-                Host: %s:%d
-                Connection: close
-                
-                """.formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
+            String rawRequest =
+                """
+                    GET %s HTTP/1.1
+                    Host: %s:%d
+                    Connection: close
+
+                    """
+                    .formatted(destURI.getRawPath(), destURI.getHost(), destURI.getPort());
             output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
             output.flush();
             HttpTester.Response response = HttpTester.parseResponse(input);

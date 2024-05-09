@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -110,7 +109,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     private boolean pushEnabled;
     private boolean connectProtocolEnabled;
 
-    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Parser parser, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
+    public HTTP2Session(
+                        Scheduler scheduler,
+                        EndPoint endPoint,
+                        Parser parser,
+                        Generator generator,
+                        Session.Listener listener,
+                        FlowControlStrategy flowControl,
+                        int initialStreamId)
     {
         this.endPoint = endPoint;
         this.parser = parser;
@@ -396,7 +402,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case SettingsFrame.HEADER_TABLE_SIZE ->
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating HPACK {} max table capacity to {} for {}", local ? "decoder" : "encoder", value, this);
+                        LOG.debug(
+                            "Updating HPACK {} max table capacity to {} for {}",
+                            local ? "decoder" : "encoder",
+                            value,
+                            this);
                     if (local)
                     {
                         parser.getHpackDecoder().setMaxTableCapacity(value);
@@ -418,7 +428,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case SettingsFrame.MAX_CONCURRENT_STREAMS ->
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max {} concurrent streams to {} for {}", local ? "remote" : "local", value, this);
+                        LOG.debug(
+                            "Updating max {} concurrent streams to {} for {}",
+                            local ? "remote" : "local",
+                            value,
+                            this);
                     if (local)
                         maxRemoteStreams = value;
                     else
@@ -433,7 +447,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case SettingsFrame.MAX_FRAME_SIZE ->
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating {} max frame size to {} for {}", local ? "parser" : "generator", value, this);
+                        LOG.debug(
+                            "Updating {} max frame size to {} for {}", local ? "parser" : "generator", value, this);
                     if (local)
                         parser.setMaxFrameSize(value);
                     else
@@ -442,7 +457,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case SettingsFrame.MAX_HEADER_LIST_SIZE ->
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating {} max header list size to {} for {}", local ? "decoder" : "encoder", value, this);
+                        LOG.debug(
+                            "Updating {} max header list size to {} for {}",
+                            local ? "decoder" : "encoder",
+                            value,
+                            this);
                     if (local)
                         parser.getHpackDecoder().setMaxHeaderListSize(value);
                     else
@@ -554,7 +573,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     @Override
     public void onStreamFailure(int streamId, int error, String reason)
     {
-        Callback callback = Callback.from(() -> reset(getStream(streamId), new ResetFrame(streamId, error), Callback.NOOP));
+        Callback callback =
+            Callback.from(() -> reset(getStream(streamId), new ResetFrame(streamId, error), Callback.NOOP));
         Throwable failure = toFailure(error, reason);
         if (LOG.isDebugEnabled())
             LOG.debug("Stream #{} failure {}", streamId, this, failure);
@@ -669,19 +689,22 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     {
         if (!isPushEnabled())
             throw new IllegalStateException("Push is disabled");
-        streamsState.push(frame, new Promise.Wrapper<>(promise)
-        {
-            @Override
-            public void succeeded(Stream pushed)
+        streamsState.push(
+            frame,
+            new Promise.Wrapper<>(promise)
             {
-                // Pushed streams are implicitly remotely closed.
-                // They are closed when sending an end-stream DATA frame.
-                HTTP2Stream http2Pushed = (HTTP2Stream)pushed;
-                http2Pushed.process(Stream.Data.eof(pushed.getId()));
-                http2Pushed.updateClose(true, CloseState.Event.RECEIVED);
-                super.succeeded(pushed);
-            }
-        }, listener);
+                @Override
+                public void succeeded(Stream pushed)
+                {
+                    // Pushed streams are implicitly remotely closed.
+                    // They are closed when sending an end-stream DATA frame.
+                    HTTP2Stream http2Pushed = (HTTP2Stream)pushed;
+                    http2Pushed.process(Stream.Data.eof(pushed.getId()));
+                    http2Pushed.updateClose(true, CloseState.Event.RECEIVED);
+                    super.succeeded(pushed);
+                }
+            },
+            listener);
     }
 
     @Override
@@ -701,14 +724,19 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     void reset(HTTP2Stream stream, ResetFrame frame, Callback callback)
     {
-        control(stream, Callback.from(() ->
-        {
-            if (stream != null)
-            {
-                stream.close();
-                removeStream(stream);
-            }
-        }, callback), frame);
+        control(
+            stream,
+            Callback.from(
+                () ->
+                {
+                    if (stream != null)
+                    {
+                        stream.close();
+                        removeStream(stream);
+                    }
+                },
+                callback),
+            frame);
     }
 
     /**
@@ -793,9 +821,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     private Entry newEntry(Frame frame, HTTP2Stream stream, Callback callback)
     {
-        return frame.getType() == FrameType.DATA
-            ? new DataEntry((DataFrame)frame, stream, callback)
-            : new ControlEntry(frame, stream, callback);
+        return frame.getType() == FrameType.DATA ? new DataEntry((DataFrame)frame, stream, callback) : new ControlEntry(frame, stream, callback);
     }
 
     public void data(HTTP2Stream stream, DataFrame frame, Callback callback)
@@ -826,7 +852,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             int maxCount = getMaxLocalStreams();
             if (maxCount >= 0 && localCount >= maxCount)
             {
-                IllegalStateException failure = new IllegalStateException("Max local stream count " + maxCount + " exceeded: " + localCount);
+                IllegalStateException failure =
+                    new IllegalStateException("Max local stream count " + maxCount + " exceeded: " + localCount);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Could not create local stream #{} for {}", streamId, this, failure);
                 failFn.accept(failure);
@@ -877,10 +904,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             int maxCount = getMaxRemoteStreams();
             if (maxCount >= 0 && remoteCount - remoteClosing >= maxCount)
             {
-                IllegalStateException failure = new IllegalStateException("Max remote stream count " + maxCount + " exceeded: " + remoteCount + "+" + remoteClosing);
+                IllegalStateException failure = new IllegalStateException(
+                    "Max remote stream count " + maxCount + " exceeded: " + remoteCount + "+" + remoteClosing);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Could not create remote stream #{} for {}", streamId, this, failure);
-                reset(null, new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.from(() -> onStreamDestroyed(streamId)));
+                reset(
+                    null,
+                    new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code),
+                    Callback.from(() -> onStreamDestroyed(streamId)));
                 return null;
             }
             if (remoteStreamCount.compareAndSet(encoded, remoteCount + 1, remoteClosing))
@@ -1231,15 +1262,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     @Override
     public String toString()
     {
-        return String.format("%s@%x{local:%s,remote:%s,sendWindow=%s,recvWindow=%s,%s}",
+        return String.format(
+            "%s@%x{local:%s,remote:%s,sendWindow=%s,recvWindow=%s,%s}",
             getClass().getSimpleName(),
             hashCode(),
             getEndPoint().getLocalSocketAddress(),
             getEndPoint().getRemoteSocketAddress(),
             sendWindow,
             recvWindow,
-            streamsState
-        );
+            streamsState);
     }
 
     public abstract static class Entry extends Callback.Nested
@@ -1644,9 +1675,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                         else
                         {
                             // SPEC: see section 6.8.
-                            if (goAwaySent.isGraceful() ||
-                                frame.getLastStreamId() < goAwaySent.getLastStreamId() ||
-                                frame.getError() != ErrorCode.NO_ERROR.code)
+                            if (goAwaySent.isGraceful() || frame.getLastStreamId() < goAwaySent.getLastStreamId() || frame.getError() != ErrorCode.NO_ERROR.code)
                             {
                                 goAwaySent = frame;
                                 sendGoAway = true;
@@ -2154,7 +2183,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             return streamId;
         }
 
-        private void newLocalStream(HTTP2Stream.FrameList frameList, Promise<Stream> promise, Stream.Listener listener)
+        private void newLocalStream(
+                                    HTTP2Stream.FrameList frameList, Promise<Stream> promise, Stream.Listener listener)
         {
             Slot slot = new Slot();
             int currentStreamId = frameList.getStreamId();
@@ -2178,11 +2208,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         {
             int streamId = localStreamIds.getAndAdd(2);
             HTTP2Session.this.onStreamCreated(streamId);
-            HTTP2Stream stream = HTTP2Session.this.createLocalStream(streamId, (MetaData.Request)frame.getMetaData(), x ->
-            {
-                HTTP2Session.this.onStreamDestroyed(streamId);
-                failFn.accept(x);
-            });
+            HTTP2Stream stream =
+                HTTP2Session.this.createLocalStream(streamId, (MetaData.Request)frame.getMetaData(), x ->
+                {
+                    HTTP2Session.this.onStreamDestroyed(streamId);
+                    failFn.accept(x);
+                });
             if (stream != null)
             {
                 stream.setListener(listener);
@@ -2224,7 +2255,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             }
         }
 
-        private boolean createLocalStream(Slot slot, List<StreamFrame> frames, Promise<Stream> promise, Stream.Listener listener, int streamId)
+        private boolean createLocalStream(
+                                          Slot slot, List<StreamFrame> frames, Promise<Stream> promise, Stream.Listener listener, int streamId)
         {
             MetaData.Request request = extractMetaDataRequest(frames.get(0));
             if (request == null)
@@ -2236,11 +2268,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             stream.setListener(listener);
             stream.process(new PrefaceFrame(), Callback.NOOP);
 
-            Callback streamCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> promise.succeeded(stream), x ->
-            {
-                HTTP2Session.this.onStreamDestroyed(streamId);
-                promise.failed(x);
-            });
+            Callback streamCallback =
+                Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> promise.succeeded(stream), x ->
+                {
+                    HTTP2Session.this.onStreamDestroyed(streamId);
+                    promise.failed(x);
+                });
             int count = frames.size();
             if (count == 1)
             {
@@ -2363,13 +2396,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         {
             try (AutoLock ignored = lock.lock())
             {
-                return String.format("state=[streams=%d,%s,goAwayRecv=%s,goAwaySent=%s,failure=%s]",
-                    streamCount.get(),
-                    closed,
-                    goAwayRecv,
-                    goAwaySent,
-                    failure
-                );
+                return String.format(
+                    "state=[streams=%d,%s,goAwayRecv=%s,goAwaySent=%s,failure=%s]",
+                    streamCount.get(), closed, goAwayRecv, goAwaySent, failure);
             }
         }
 

@@ -13,6 +13,25 @@
 
 package org.eclipse.jetty.util.resource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
+
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,7 +51,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -47,25 +65,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.junit.jupiter.api.condition.OS.LINUX;
-import static org.junit.jupiter.api.condition.OS.MAC;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
 @Isolated("Access static FileSystemPool.INSTANCE.mounts()")
@@ -187,8 +186,8 @@ public class FileSystemResourceTest
     @Tag("flaky")
     public void testNotFileURI()
     {
-        assertThrows(IllegalArgumentException.class,
-            () -> ResourceFactory.root().newResource(new URI("https://eclipse.dev/jetty/")));
+        assertThrows(IllegalArgumentException.class, () -> ResourceFactory.root()
+            .newResource(new URI("https://eclipse.dev/jetty/")));
     }
 
     @Test
@@ -196,16 +195,18 @@ public class FileSystemResourceTest
     public void testBogusFilenameWindows()
     {
         // "CON" is a reserved name under windows
-        assertThrows(IllegalArgumentException.class,
-            () -> ResourceFactory.root().newResource(new URI("file://CON")));
+        assertThrows(
+            IllegalArgumentException.class, () -> ResourceFactory.root().newResource(new URI("file://CON")));
     }
 
     @Test
-    @EnabledOnOs({LINUX, MAC})
+    @EnabledOnOs(
+    {LINUX, MAC})
     public void testBogusFilenameUnix()
     {
         // A windows path is invalid under unix
-        assertThrows(IllegalArgumentException.class, () -> ResourceFactory.root().newResource(URI.create("file://Z:/:")));
+        assertThrows(
+            IllegalArgumentException.class, () -> ResourceFactory.root().newResource(URI.create("file://Z:/:")));
     }
 
     @Test
@@ -494,16 +495,12 @@ public class FileSystemResourceTest
         Files.createDirectories(dir.resolve("tick"));
         Files.createDirectories(dir.resolve("tock"));
 
-        String[] expectedFileNames = {
-            "foo",
-            "bar",
-            "tick",
-            "tock"
-        };
+        String[] expectedFileNames = {"foo", "bar", "tick", "tock"};
 
         Resource base = ResourceFactory.root().newResource(dir);
         List<Resource> listing = base.list();
-        List<String> actualFileNames = listing.stream().map(Resource::getFileName).toList();
+        List<String> actualFileNames =
+            listing.stream().map(Resource::getFileName).toList();
 
         assertThat(actualFileNames, containsInAnyOrder(expectedFileNames));
     }
@@ -598,8 +595,10 @@ public class FileSystemResourceTest
         {
             // If it exists, it must be an alias
             assertThat("targetURI", alias, isRealResourceFor(resource));
-            assertThat("targetURI.uri", ResourceFactory.root().newResource(alias.getURI()), isRealResourceFor(resource));
-            assertThat("targetURI.file", ResourceFactory.root().newResource(alias.getPath()), isRealResourceFor(resource));
+            assertThat(
+                "targetURI.uri", ResourceFactory.root().newResource(alias.getURI()), isRealResourceFor(resource));
+            assertThat(
+                "targetURI.file", ResourceFactory.root().newResource(alias.getPath()), isRealResourceFor(resource));
         }
     }
 
@@ -634,8 +633,10 @@ public class FileSystemResourceTest
         {
             // If it exists, it must be an alias
             assertThat("targetURI", alias, isRealResourceFor(resource));
-            assertThat("targetURI.uri", ResourceFactory.root().newResource(alias.getURI()), isRealResourceFor(resource));
-            assertThat("targetURI.file", ResourceFactory.root().newResource(alias.getPath()), isRealResourceFor(resource));
+            assertThat(
+                "targetURI.uri", ResourceFactory.root().newResource(alias.getURI()), isRealResourceFor(resource));
+            assertThat(
+                "targetURI.file", ResourceFactory.root().newResource(alias.getPath()), isRealResourceFor(resource));
         }
     }
 
@@ -669,8 +670,14 @@ public class FileSystemResourceTest
             {
                 // If it exists, it must be an alias
                 assertThat("resource.targetURI", alias, isRealResourceFor(resource));
-                assertThat("resource.uri.targetURI", ResourceFactory.root().newResource(alias.getURI()), isRealResourceFor(resource));
-                assertThat("resource.file.targetURI", ResourceFactory.root().newResource(alias.getPath()), isRealResourceFor(resource));
+                assertThat(
+                    "resource.uri.targetURI",
+                    ResourceFactory.root().newResource(alias.getURI()),
+                    isRealResourceFor(resource));
+                assertThat(
+                    "resource.file.targetURI",
+                    ResourceFactory.root().newResource(alias.getPath()),
+                    isRealResourceFor(resource));
             }
         }
         catch (InvalidPathException e)
@@ -711,8 +718,14 @@ public class FileSystemResourceTest
 
                 // If it exists, it must be an alias
                 assertThat("resource.targetURI", alias, isRealResourceFor(resource));
-                assertThat("resource.uri.targetURI", ResourceFactory.root().newResource(alias.getURI()), isRealResourceFor(resource));
-                assertThat("resource.file.targetURI", ResourceFactory.root().newResource(alias.getPath()), isRealResourceFor(resource));
+                assertThat(
+                    "resource.uri.targetURI",
+                    ResourceFactory.root().newResource(alias.getURI()),
+                    isRealResourceFor(resource));
+                assertThat(
+                    "resource.file.targetURI",
+                    ResourceFactory.root().newResource(alias.getPath()),
+                    isRealResourceFor(resource));
             }
         }
         catch (InvalidPathException e)
@@ -751,8 +764,14 @@ public class FileSystemResourceTest
             {
                 // If it exists, it must be an alias
                 assertThat("resource.targetURI", alias, isRealResourceFor(resource));
-                assertThat("resource.uri.targetURI", ResourceFactory.root().newResource(alias.getURI()), isRealResourceFor(resource));
-                assertThat("resource.file.targetURI", ResourceFactory.root().newResource(alias.getPath()), isRealResourceFor(resource));
+                assertThat(
+                    "resource.uri.targetURI",
+                    ResourceFactory.root().newResource(alias.getURI()),
+                    isRealResourceFor(resource));
+                assertThat(
+                    "resource.file.targetURI",
+                    ResourceFactory.root().newResource(alias.getPath()),
+                    isRealResourceFor(resource));
             }
         }
         catch (InvalidPathException e)
@@ -875,7 +894,6 @@ public class FileSystemResourceTest
         // access in un-encoded way
         file = base.resolve("foo.{bar}.txt");
         assertTrue(file.exists());
-
     }
 
     @Test
@@ -985,9 +1003,7 @@ public class FileSystemResourceTest
         URI refB = dir.toUri().resolve("foo%27s.txt");
 
         // show that simple URI.equals() doesn't work
-        String msg = "URI[a].equals(URI[b])" + System.lineSeparator() +
-            "URI[a] = " + refA + System.lineSeparator() +
-            "URI[b] = " + refB;
+        String msg = "URI[a].equals(URI[b])" + System.lineSeparator() + "URI[a] = " + refA + System.lineSeparator() + "URI[b] = " + refB;
         assertThat(msg, refA.equals(refB), is(false));
 
         // These resources are not equal because they have different request URIs.

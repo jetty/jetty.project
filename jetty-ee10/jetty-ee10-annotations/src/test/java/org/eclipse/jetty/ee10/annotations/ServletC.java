@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
-import java.io.IOException;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
@@ -30,14 +28,15 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 @DeclareRoles({"alice"})
-@WebServlet(urlPatterns = {"/foo/*", "/bah/*"}, name = "CServlet", initParams = {
-    @WebInitParam(name = "x", value = "y")
-    }, loadOnStartup = 2, asyncSupported = false)
+@WebServlet(urlPatterns =
+{"/foo/*", "/bah/*"}, name = "CServlet", initParams = {@WebInitParam(name = "x", value = "y")}, loadOnStartup = 2, asyncSupported = false)
 @MultipartConfig(fileSizeThreshold = 1000, maxFileSize = 2000, maxRequestSize = 3000)
 @RunAs("admin")
-@ServletSecurity(value = @HttpConstraint(rolesAllowed = {"fred", "bill", "dorothy"}), httpMethodConstraints = {
+@ServletSecurity(value = @HttpConstraint(rolesAllowed =
+{"fred", "bill", "dorothy"}), httpMethodConstraints = {
     @HttpMethodConstraint(value = "GET", rolesAllowed =
     {"bob", "carol", "ted"})
 })
@@ -49,17 +48,16 @@ public class ServletC extends HttpServlet
     @PreDestroy
     public void pre()
     {
-
     }
 
     @PostConstruct
     public void post()
     {
-
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         response.setContentType("text/html");
         response.getWriter().println("<h1>Annotated Servlet</h1>");

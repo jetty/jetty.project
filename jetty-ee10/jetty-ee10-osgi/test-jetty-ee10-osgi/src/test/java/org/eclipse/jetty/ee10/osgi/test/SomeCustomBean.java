@@ -20,5 +20,4 @@ package org.eclipse.jetty.ee10.osgi.test;
  */
 public class SomeCustomBean
 {
-
 }

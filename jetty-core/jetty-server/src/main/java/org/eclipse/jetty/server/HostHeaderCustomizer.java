@@ -58,11 +58,10 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
             return request;
 
         String host = serverName == null ? Request.getServerName(request) : serverName;
-        int port = URIUtil.normalizePortForScheme(request.getHttpURI().getScheme(), serverPort == 0 ? Request.getServerPort(request) : serverPort);
+        int port = URIUtil.normalizePortForScheme(
+            request.getHttpURI().getScheme(), serverPort == 0 ? Request.getServerPort(request) : serverPort);
 
-        HttpURI uri = (serverName != null || serverPort > 0)
-            ? HttpURI.build(request.getHttpURI()).authority(host, port).asImmutable()
-            : request.getHttpURI();
+        HttpURI uri = (serverName != null || serverPort > 0) ? HttpURI.build(request.getHttpURI()).authority(host, port).asImmutable() : request.getHttpURI();
 
         HttpFields original = request.getHeaders();
         HttpFields.Mutable builder = HttpFields.build(original.size() + 1);

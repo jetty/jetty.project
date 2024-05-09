@@ -19,12 +19,11 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.toolchain.test.IO;
 
 /**
  * MockShutdownMonitorRunnable
- * 
+ *
  * Mimics the actions of the org.eclipse.jetty.server.ShutdownMonitor.ShutdownMonitorRunnable
  * to aid testing.
  */
@@ -36,7 +35,7 @@ public class MockShutdownMonitorRunnable implements Runnable
     String pidResponse;
     String defaultResponse = "Stopped";
     boolean exit;
-    
+
     public void setExit(boolean exit)
     {
         this.exit = exit;
@@ -46,7 +45,7 @@ public class MockShutdownMonitorRunnable implements Runnable
     {
         this.key = key;
     }
-    
+
     public void setServerSocket(ServerSocket serverSocket)
     {
         this.serverSocket = serverSocket;
@@ -81,7 +80,7 @@ public class MockShutdownMonitorRunnable implements Runnable
                         out.flush();
                     }
                     else if ("pid".equalsIgnoreCase(cmd))
-                    { 
+                    {
                         out.write((pidResponse + "\r\n").getBytes(StandardCharsets.UTF_8));
                         out.flush();
                     }

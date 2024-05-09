@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.WriteListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -25,12 +30,6 @@ import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.WriteListener;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
@@ -66,63 +65,63 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     enum State
     {
-        OPEN,     // Open
-        CLOSE,    // Close needed from onWriteComplete
-        CLOSING,  // Close in progress after close API called
-        CLOSED    // Closed
+        OPEN, // Open
+        CLOSE, // Close needed from onWriteComplete
+        CLOSING, // Close in progress after close API called
+        CLOSED // Closed
     }
 
     /**
      * The API State which combines with the output State:
      * <pre>
-              OPEN/BLOCKING---last----------------------------+                      CLOSED/BLOCKING
-             /   |    ^                                        \                         ^  ^
-            /    w    |                                         \                       /   |
-           /     |   owc   +--owcL------------------->--owcL-----\---------------------+    |
-          |      v    |   /                         /             V                         |
-         swl  OPEN/BLOCKED----last---->CLOSE/BLOCKED----owc----->CLOSING/BLOCKED--owcL------+
-          |
-           \
-            \
-             V
-          +-->OPEN/READY------last---------------------------+
-         /    ^    |                                          \
-        /    /     w                                           \
-       |    /      |       +--owcL------------------->--owcL----\---------------------------+
-       |   /       v      /                         /            V                          |
-       | irt  OPEN/PENDING----last---->CLOSE/PENDING----owc---->CLOSING/PENDING--owcL----+  |
-       |   \  /    |                        |                    ^     |                 |  |
-      owc   \/    owc                      irf                  /     irf                |  |
-       |    /\     |                        |                  /       |                 |  |
-       |   /  \    V                        |                 /        |                 V  V
-       | irf  OPEN/ASYNC------last----------|----------------+         |             CLOSED/ASYNC
-       |   \                                |                          |                 ^  ^
-        \   \                               |                          |                 |  |
-         \   \                              |                          |                 |  |
-          \   v                             v                          v                 |  |
-           +--OPEN/UNREADY----last---->CLOSE/UNREADY----owc----->CLOSING/UNREADY--owcL---+  |
-                          \                         \                                       |
-                           +--owcL------------------->--owcL--------------------------------+
-
-      swl  : setWriteListener
-      w    : write
-      owc  : onWriteComplete last == false
-      owcL : onWriteComplete last == true
-      irf  : isReady() == false
-      irt  : isReady() == true
-      last : close() or complete(Callback) or write of known last content
-     </pre>
+     * OPEN/BLOCKING---last----------------------------+                      CLOSED/BLOCKING
+     * /   |    ^                                        \                         ^  ^
+     * /    w    |                                         \                       /   |
+     * /     |   owc   +--owcL------------------->--owcL-----\---------------------+    |
+     * |      v    |   /                         /             V                         |
+     * swl  OPEN/BLOCKED----last---->CLOSE/BLOCKED----owc----->CLOSING/BLOCKED--owcL------+
+     * |
+     * \
+     * \
+     * V
+     * +-->OPEN/READY------last---------------------------+
+     * /    ^    |                                          \
+     * /    /     w                                           \
+     * |    /      |       +--owcL------------------->--owcL----\---------------------------+
+     * |   /       v      /                         /            V                          |
+     * | irt  OPEN/PENDING----last---->CLOSE/PENDING----owc---->CLOSING/PENDING--owcL----+  |
+     * |   \  /    |                        |                    ^     |                 |  |
+     * owc   \/    owc                      irf                  /     irf                |  |
+     * |    /\     |                        |                  /       |                 |  |
+     * |   /  \    V                        |                 /        |                 V  V
+     * | irf  OPEN/ASYNC------last----------|----------------+         |             CLOSED/ASYNC
+     * |   \                                |                          |                 ^  ^
+     * \   \                               |                          |                 |  |
+     * \   \                              |                          |                 |  |
+     * \   v                             v                          v                 |  |
+     * +--OPEN/UNREADY----last---->CLOSE/UNREADY----owc----->CLOSING/UNREADY--owcL---+  |
+     * \                         \                                       |
+     * +--owcL------------------->--owcL--------------------------------+
+     *
+     * swl  : setWriteListener
+     * w    : write
+     * owc  : onWriteComplete last == false
+     * owcL : onWriteComplete last == true
+     * irf  : isReady() == false
+     * irt  : isReady() == true
+     * last : close() or complete(Callback) or write of known last content
+     * </pre>
      */
     enum ApiState
     {
         BLOCKING, // Open in blocking mode
-        BLOCKED,  // Blocked in blocking operation
-        ASYNC,    // Open in async mode
-        READY,    // isReady() has returned true
-        PENDING,  // write operating in progress
-        UNREADY,  // write operating in progress, isReady has returned false
+        BLOCKED, // Blocked in blocking operation
+        ASYNC, // Open in async mode
+        READY, // isReady() has returned true
+        PENDING, // write operating in progress
+        UNREADY, // write operating in progress, isReady has returned false
     }
-    
+
     private static final Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
     private static final ThreadIdPool<CharsetEncoder> _encoder = new ThreadIdPool<>();
 
@@ -196,7 +195,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_firstByteNanoTime == -1)
         {
-            long minDataRate = _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
+            long minDataRate = _servletChannel
+                .getConnectionMetaData()
+                .getHttpConfiguration()
+                .getMinResponseDataRate();
             if (minDataRate > 0)
                 _firstByteNanoTime = NanoTime.now();
             else
@@ -240,8 +242,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onWriteComplete({},{}) {}->{} c={} cb={} w={}",
-                last, failure, state, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake, failure);
+            LOG.debug(
+                "onWriteComplete({},{}) {}->{} c={} cb={} w={}",
+                last,
+                failure,
+                state,
+                stateString(),
+                BufferUtil.toDetailString(closeContent),
+                closedCallback,
+                wake,
+                failure);
 
         try
         {
@@ -418,7 +428,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("complete({}) {} s={} e={}, c={}", callback, stateString(), succeeded, error, BufferUtil.toDetailString(content));
+            LOG.debug(
+                "complete({}) {} s={} e={}, c={}",
+                callback,
+                stateString(),
+                succeeded,
+                error,
+                BufferUtil.toDetailString(content));
 
         if (succeeded)
         {
@@ -582,7 +598,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private RetainableByteBuffer acquireBuffer()
     {
-        boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+        boolean useOutputDirectByteBuffers =
+            _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
         ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
         if (_aggregate == null)
             _aggregate = pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
@@ -684,7 +701,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private void checkWritable() throws EofException
     {
         if (_softClose)
-                throw new EofException("Closed");
+            throw new EofException("Closed");
 
         switch (_state)
         {
@@ -721,7 +738,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // Write will be aggregated if:
             //  + it is smaller than the commitSize
             //  + is not the last one, or is last but will fit in an already allocated aggregate buffer.
-            aggregate = len <= _commitSize && (!last || (_aggregate != null && _aggregate.hasRemaining()) && len <= space);
+            aggregate =
+                len <= _commitSize && (!last || (_aggregate != null && _aggregate.hasRemaining()) && len <= space);
             flush = last || !aggregate || len >= space;
 
             if (last && _state == State.OPEN)
@@ -762,8 +780,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (!flush)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("write(array) {} aggregated !flush {}",
-                            stateString(), _aggregate);
+                        LOG.debug("write(array) {} aggregated !flush {}", stateString(), _aggregate);
                     return;
                 }
 
@@ -774,8 +791,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("write(array) {} last={} agg={} flush=true async={}, len={} {}",
-                stateString(), last, aggregate, async, len, _aggregate);
+            LOG.debug(
+                "write(array) {} last={} agg={} flush=true async={}, len={} {}",
+                stateString(),
+                last,
+                aggregate,
+                async,
+                len,
+                _aggregate);
 
         if (async)
         {
@@ -1131,23 +1154,22 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             LOG.debug("sendContent(buffer={},{})", BufferUtil.toDetailString(content), callback);
 
         if (prepareSendContent(content.remaining(), callback))
-            channelWrite(content, true,
-                new Callback.Nested(callback)
+            channelWrite(content, true, new Callback.Nested(callback)
+            {
+                @Override
+                public void succeeded()
                 {
-                    @Override
-                    public void succeeded()
-                    {
-                        onWriteComplete(true, null);
-                        super.succeeded();
-                    }
+                    onWriteComplete(true, null);
+                    super.succeeded();
+                }
 
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        onWriteComplete(true, x);
-                        super.failed(x);
-                    }
-                });
+                @Override
+                public void failed(Throwable x)
+                {
+                    onWriteComplete(true, x);
+                    super.failed(x);
+                }
+            });
     }
 
     /**
@@ -1246,7 +1268,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_firstByteNanoTime == -1 || _firstByteNanoTime == Long.MAX_VALUE)
             return;
-        long minDataRate = _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
+        long minDataRate =
+            _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
         _flushed += bytes;
         long minFlushed = minDataRate * NanoTime.millisSince(_firstByteNanoTime) / TimeUnit.SECONDS.toMillis(1);
         if (LOG.isDebugEnabled())
@@ -1691,7 +1714,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             super(callback, true);
             _in = in;
-            boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+            boolean useOutputDirectByteBuffers = _servletChannel
+                .getConnectionMetaData()
+                .getHttpConfiguration()
+                .isUseOutputDirectByteBuffers();
             ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
             _buffer = pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
         }

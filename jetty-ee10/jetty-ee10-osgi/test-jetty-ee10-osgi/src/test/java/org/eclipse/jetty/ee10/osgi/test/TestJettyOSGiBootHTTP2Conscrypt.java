@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee10.osgi.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import javax.inject.Inject;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -38,15 +43,9 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
-
-@Disabled //wrappedBundle mismatch version of bndutils
-//@RunWith(PaxExam.class)
-//@ExamReactorStrategy(PerClass.class)
+@Disabled // wrappedBundle mismatch version of bndutils
+// @RunWith(PaxExam.class)
+// @ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2Conscrypt
 {
     @Inject
@@ -56,26 +55,52 @@ public class TestJettyOSGiBootHTTP2Conscrypt
     public Option[] config()
     {
         ArrayList<Option> options = new ArrayList<>();
-        
+
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
-           
+
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
-            "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-            "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects",
-            "sun.security", "sun.security.x509", "sun.security.ssl"));
+        options.add(CoreOptions.systemPackages(
+            "com.sun.org.apache.xalan.internal.res",
+            "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xpath.internal",
+            "com.sun.org.apache.xpath.internal.jaxp",
+            "com.sun.org.apache.xpath.internal.objects",
+            "sun.security",
+            "sun.security.x509",
+            "sun.security.ssl"));
         options.addAll(http2JettyDependencies());
 
         TestOSGiUtil.coreJettyDependencies(options);
         TestOSGiUtil.coreJspDependencies(options);
-        //deploy a test webapp
-        options.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-jsp-webapp").classifier("webbundle").versionAsInProject());
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-conscrypt-client").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-client").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-client-transport").versionAsInProject().start());
+        // deploy a test webapp
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty.ee10.demos")
+            .artifactId("jetty-ee10-demo-jsp-webapp")
+            .classifier("webbundle")
+            .versionAsInProject());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-conscrypt-client")
+            .versionAsInProject()
+            .start());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-client")
+            .versionAsInProject()
+            .start());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty.http2")
+            .artifactId("jetty-http2-client")
+            .versionAsInProject()
+            .start());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty.http2")
+            .artifactId("jetty-http2-client-transport")
+            .versionAsInProject()
+            .start());
 
         options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[0]);
@@ -87,18 +112,45 @@ public class TestJettyOSGiBootHTTP2Conscrypt
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
         res.add(CoreOptions.systemProperty("jetty.sslContext.provider").value("Conscrypt"));
 
-        res.add(wrappedBundle(mavenBundle().groupId("org.conscrypt").artifactId("conscrypt-openjdk-uber").versionAsInProject())
+        res.add(wrappedBundle(mavenBundle()
+            .groupId("org.conscrypt")
+            .artifactId("conscrypt-openjdk-uber")
+            .versionAsInProject())
             .imports("javax.net.ssl,*")
             .exports("org.conscrypt;version=" + System.getProperty("conscrypt-version"))
             .instructions("Bundle-NativeCode=META-INF/native/libconscrypt_openjdk_jni-linux-x86_64.so")
             .start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("jetty-ee10-osgi-alpn").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-conscrypt-server").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
+        res.add(mavenBundle()
+            .groupId("org.eclipse.jetty.ee10.osgi")
+            .artifactId("jetty-ee10-osgi-alpn")
+            .versionAsInProject()
+            .noStart());
+        res.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-conscrypt-server")
+            .versionAsInProject()
+            .start());
+        res.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-server")
+            .versionAsInProject()
+            .start());
 
-        res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-common").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-hpack").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-server").versionAsInProject().start());
+        res.add(mavenBundle()
+            .groupId("org.eclipse.jetty.http2")
+            .artifactId("jetty-http2-common")
+            .versionAsInProject()
+            .start());
+        res.add(mavenBundle()
+            .groupId("org.eclipse.jetty.http2")
+            .artifactId("jetty-http2-hpack")
+            .versionAsInProject()
+            .start());
+        res.add(mavenBundle()
+            .groupId("org.eclipse.jetty.http2")
+            .artifactId("jetty-http2-server")
+            .versionAsInProject()
+            .start());
         return res;
     }
 

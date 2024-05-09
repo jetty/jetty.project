@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -77,7 +76,8 @@ import org.slf4j.LoggerFactory;
  * </pre>
  */
 @ManagedObject("Implementation of Container and LifeCycle")
-public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, Dumpable.DumpableContainer
+public class ContainerLifeCycle extends AbstractLifeCycle
+    implements Container, Destroyable, Dumpable.DumpableContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContainerLifeCycle.class);
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
@@ -425,7 +425,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      */
     protected final boolean installBean(Object o)
     {
-        return installBean(o, o instanceof LifeCycle l ? (l.isRunning() ? Managed.UNMANAGED : Managed.AUTO) : Managed.POJO);
+        return installBean(
+            o, o instanceof LifeCycle l ? (l.isRunning() ? Managed.UNMANAGED : Managed.AUTO) : Managed.POJO);
     }
 
     /**
@@ -440,9 +441,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
      */
     protected final boolean installBean(Object o, boolean managed)
     {
-        return installBean(o, o instanceof LifeCycle
-            ? (managed ? Managed.MANAGED : Managed.UNMANAGED)
-            : (managed ? Managed.POJO : Managed.UNMANAGED));
+        return installBean(
+            o,
+            o instanceof LifeCycle ? (managed ? Managed.MANAGED : Managed.UNMANAGED) : (managed ? Managed.POJO : Managed.UNMANAGED));
     }
 
     private boolean installBean(Object o, Managed managed)
@@ -710,7 +711,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 l.beanRemoved(this, bean._bean);
             }
 
-            // Remove event listeners, checking list here to avoid calling extended removeEventListener if already removed.
+            // Remove event listeners, checking list here to avoid calling extended removeEventListener if already
+            // removed.
             if (bean._bean instanceof EventListener && getEventListeners().contains(bean._bean))
                 removeEventListener((EventListener)bean._bean);
 
@@ -793,7 +795,10 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 
     enum Managed
     {
-        POJO, MANAGED, UNMANAGED, AUTO
+        POJO,
+        MANAGED,
+        UNMANAGED,
+        AUTO
     }
 
     private static class Bean

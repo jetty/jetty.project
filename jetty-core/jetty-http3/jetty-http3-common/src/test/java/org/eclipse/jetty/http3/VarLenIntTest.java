@@ -13,20 +13,20 @@
 
 package org.eclipse.jetty.http3;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class VarLenIntTest
 {
     @ParameterizedTest
-    @ValueSource(longs = {37L, 15293L, 494878333L, 151288809941952652L})
+    @ValueSource(longs =
+    {37L, 15293L, 494878333L, 151288809941952652L})
     public void testGenerateParse(long value)
     {
         ByteBuffer buffer = ByteBuffer.allocate(8);

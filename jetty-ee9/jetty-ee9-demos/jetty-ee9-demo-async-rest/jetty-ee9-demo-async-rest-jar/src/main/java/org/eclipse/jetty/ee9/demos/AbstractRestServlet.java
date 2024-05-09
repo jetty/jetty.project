@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.ee9.demos;
 
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.util.Map;
 import java.util.Queue;
-
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Abstract Servlet implementation class AsyncRESTServlet.
@@ -39,14 +38,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class AbstractRestServlet extends HttpServlet
 {
     protected static final String __DEFAULT_APPID = "Webtide81-adf4-4f0a-ad58-d91e41bbe85";
-    protected static final String STYLE =
-        "<style type='text/css'>" +
-            "  img.thumb:hover {height:50px}" +
-            "  img.thumb {vertical-align:text-top}" +
-            "  span.red {color: #ff0000}" +
-            "  span.green {color: #00ff00}" +
-            "  iframe {border: 0px}" +
-            "</style>";
+    protected static final String STYLE = "<style type='text/css'>" + "  img.thumb:hover {height:50px}" + "  img.thumb {vertical-align:text-top}" + "  span.red {color: #ff0000}" + "  span.green {color: #00ff00}" + "  iframe {border: 0px}" + "</style>";
 
     protected static final String ITEMS_PARAM = "items";
     protected static final String APPID_PARAM = "appid";
@@ -87,9 +79,7 @@ public class AbstractRestServlet extends HttpServlet
     {
         try
         {
-            return ("https://open.api.ebay.com/shopping?MaxEntries=3&appid=" + _appid +
-                "&version=573&siteid=0&callname=FindItems&responseencoding=JSON&QueryKeywords=" +
-                URLEncoder.encode(item, "UTF-8"));
+            return ("https://open.api.ebay.com/shopping?MaxEntries=3&appid=" + _appid + "&version=573&siteid=0&callname=FindItems&responseencoding=JSON&QueryKeywords=" + URLEncoder.encode(item, "UTF-8"));
         }
         catch (Exception e)
         {
@@ -105,10 +95,15 @@ public class AbstractRestServlet extends HttpServlet
             if (!m.containsKey("GalleryURL"))
                 continue;
 
-            thumbs.append("<a href=\"").append(m.get("ViewItemURLForNaturalSearch")).append("\">");
+            thumbs.append("<a href=\"")
+                .append(m.get("ViewItemURLForNaturalSearch"))
+                .append("\">");
             thumbs.append("<img class='thumb' border='1px' height='25px' src='")
-                .append(m.get("GalleryURL")).append("'")
-                .append(" title='").append(m.get("Title")).append("'")
+                .append(m.get("GalleryURL"))
+                .append("'")
+                .append(" title='")
+                .append(m.get("Title"))
+                .append("'")
                 .append("/>");
             thumbs.append("</a>&nbsp;");
         }
@@ -130,7 +125,8 @@ public class AbstractRestServlet extends HttpServlet
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         doGet(request, response);
     }

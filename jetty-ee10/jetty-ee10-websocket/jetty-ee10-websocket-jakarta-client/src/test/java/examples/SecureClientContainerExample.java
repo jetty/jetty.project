@@ -13,12 +13,11 @@
 
 package examples;
 
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.WebSocketContainer;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;

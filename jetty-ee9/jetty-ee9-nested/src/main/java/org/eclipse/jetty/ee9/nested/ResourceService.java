@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptyList;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,13 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.resource.HttpContentRangeWriter;
 import org.eclipse.jetty.ee9.nested.resource.RangeWriter;
 import org.eclipse.jetty.ee9.nested.resource.SeekableByteChannelRangeWriter;
@@ -62,9 +64,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.Arrays.stream;
-import static java.util.Collections.emptyList;
 
 /**
  * Abstract resource service, used by DefaultServlet and ResourceHandler
@@ -147,7 +146,9 @@ public class ResourceService
     public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
     {
         _precompressedFormats = precompressedFormats;
-        _preferredEncodingOrder = stream(_precompressedFormats).map(CompressedContentFormat::getEncoding).toArray(String[]::new);
+        _preferredEncodingOrder = stream(_precompressedFormats)
+            .map(CompressedContentFormat::getEncoding)
+            .toArray(String[]::new);
     }
 
     public void setEncodingCacheSize(int encodingCacheSize)
@@ -195,9 +196,7 @@ public class ResourceService
         {
             if (cacheControl.getHeader() != HttpHeader.CACHE_CONTROL)
                 throw new IllegalArgumentException("!Cache-Control");
-            _cacheControl = cacheControl instanceof PreEncodedHttpField
-                ? cacheControl
-                : new PreEncodedHttpField(cacheControl.getHeader(), cacheControl.getValue());
+            _cacheControl = cacheControl instanceof PreEncodedHttpField ? cacheControl : new PreEncodedHttpField(cacheControl.getHeader(), cacheControl.getValue());
         }
     }
 
@@ -289,7 +288,8 @@ public class ResourceService
                 pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
                 if (q != null && q.length() != 0)
                     pathInContext += "?" + q;
-                response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), pathInContext)));
+                response.sendRedirect(
+                    response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), pathInContext)));
                 return true;
             }
 
@@ -305,11 +305,13 @@ public class ResourceService
                 {
                     for (String encoding : preferredEncodingOrder)
                     {
-                        CompressedContentFormat contentFormat = isEncodingAvailable(encoding, Arrays.asList(_precompressedFormats));
+                        CompressedContentFormat contentFormat =
+                            isEncodingAvailable(encoding, Arrays.asList(_precompressedFormats));
                         if (contentFormat == null)
                             continue;
 
-                        HttpContent preCompressedContent = _contentFactory.getContent(pathInContext + contentFormat.getExtension());
+                        HttpContent preCompressedContent =
+                            _contentFactory.getContent(pathInContext + contentFormat.getExtension());
                         if (preCompressedContent == null)
                             continue;
 
@@ -395,7 +397,8 @@ public class ResourceService
         return values;
     }
 
-    private CompressedContentFormat isEncodingAvailable(String encoding, Collection<CompressedContentFormat> availableFormats)
+    private CompressedContentFormat isEncodingAvailable(
+                                                        String encoding, Collection<CompressedContentFormat> availableFormats)
     {
         if (availableFormats.isEmpty())
             return null;
@@ -411,7 +414,13 @@ public class ResourceService
         return null;
     }
 
-    protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, boolean included, HttpServletRequest request, HttpServletResponse response)
+    protected void sendWelcome(
+                               HttpContent content,
+                               String pathInContext,
+                               boolean endsWithSlash,
+                               boolean included,
+                               HttpServletRequest request,
+                               HttpServletResponse response)
         throws ServletException, IOException
     {
         // Redirect to directory
@@ -439,8 +448,7 @@ public class ResourceService
 
         if (welcome != null)
         {
-            String servletPath = included ? (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
-                    : request.getServletPath();
+            String servletPath = included ? (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH) : request.getServletPath();
 
             if (_pathInfoOnly)
                 welcome = URIUtil.addPaths(servletPath, welcome);
@@ -516,8 +524,8 @@ public class ResourceService
 
     /* Check modification date headers.
      */
-    protected boolean passConditionalHeaders(HttpServletRequest request, HttpServletResponse response, HttpContent content)
-        throws IOException
+    protected boolean passConditionalHeaders(
+                                             HttpServletRequest request, HttpServletResponse response, HttpContent content) throws IOException
     {
         try
         {
@@ -528,7 +536,7 @@ public class ResourceService
 
             if (request instanceof Request)
             {
-                // Find multiple fields by iteration as an optimization 
+                // Find multiple fields by iteration as an optimization
                 for (HttpField field : ((Request)request).getHttpFields())
                 {
                     if (field.getHeader() != null)
@@ -540,8 +548,8 @@ public class ResourceService
                             case IF_MODIFIED_SINCE -> ifms = field.getValue();
                             case IF_UNMODIFIED_SINCE -> ifums = field.getValue();
                             default ->
-                            {
-                            }
+                                {
+                                }
                         }
                     }
                 }
@@ -608,7 +616,7 @@ public class ResourceService
             // Handle if modified since
             if (ifms != null && ifnm == null)
             {
-                //Get jetty's Response impl
+                // Get jetty's Response impl
                 String mdlm = content.getLastModifiedValue();
                 if (ifms.equals(mdlm))
                 {
@@ -655,10 +663,8 @@ public class ResourceService
         return true;
     }
 
-    protected void sendDirectory(HttpServletRequest request,
-                                 HttpServletResponse response,
-                                 Resource resource,
-                                 String pathInContext)
+    protected void sendDirectory(
+                                 HttpServletRequest request, HttpServletResponse response, Resource resource, String pathInContext)
         throws IOException
     {
         if (!_dirAllowed)
@@ -672,8 +678,7 @@ public class ResourceService
         String dir = ResourceListing.getAsXHTML(resource, base, pathInContext.length() > 1, request.getQueryString());
         if (dir == null)
         {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                "No directory");
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "No directory");
             return;
         }
 
@@ -683,7 +688,8 @@ public class ResourceService
         response.getOutputStream().write(data);
     }
 
-    protected boolean sendData(HttpServletRequest request,
+    protected boolean sendData(
+                               HttpServletRequest request,
                                HttpServletResponse response,
                                boolean include,
                                final HttpContent content,
@@ -786,8 +792,8 @@ public class ResourceService
             if (ranges == null || ranges.size() == 0)
             {
                 response.setContentLength(0);
-                response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
-                    InclusiveByteRange.to416HeaderRangeString(content_length));
+                response.setHeader(
+                    HttpHeader.CONTENT_RANGE.asString(), InclusiveByteRange.to416HeaderRangeString(content_length));
                 sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);
                 return true;
             }
@@ -802,7 +808,8 @@ public class ResourceService
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                 if (!response.containsHeader(HttpHeader.DATE.asString()))
                     response.addDateHeader(HttpHeader.DATE.asString(), System.currentTimeMillis());
-                response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
+                response.setHeader(
+                    HttpHeader.CONTENT_RANGE.asString(),
                     singleSatisfiableRange.toHeaderRangeString(content_length));
                 writeContent(content, out, singleSatisfiableRange.getFirst(), singleLength);
                 return true;
@@ -871,7 +878,8 @@ public class ResourceService
         return true;
     }
 
-    private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException
+    private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength)
+        throws IOException
     {
         // attempt efficient ByteBuffer based write
         ByteBuffer buffer = content.getByteBuffer();
@@ -892,7 +900,8 @@ public class ResourceService
         Path path = content.getResource().getPath();
         if (path != null)
         {
-            try (SeekableByteChannelRangeWriter rangeWriter = new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(path)))
+            try (SeekableByteChannelRangeWriter rangeWriter =
+                new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(path)))
             {
                 rangeWriter.writeTo(out, start, contentLength);
             }

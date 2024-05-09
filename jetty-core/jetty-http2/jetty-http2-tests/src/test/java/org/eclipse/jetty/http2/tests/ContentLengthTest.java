@@ -13,10 +13,14 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -35,15 +39,11 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ContentLengthTest extends AbstractTest
 {
     @ParameterizedTest
-    @ValueSource(strings = {"GET", "HEAD", "POST", "PUT"})
+    @ValueSource(strings =
+    {"GET", "HEAD", "POST", "PUT"})
     public void testZeroContentLengthAddedByServer(String method) throws Exception
     {
         start(new Handler.Abstract()
@@ -56,7 +56,8 @@ public class ContentLengthTest extends AbstractTest
             }
         });
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .method(method)
             .send();
 
@@ -66,7 +67,8 @@ public class ContentLengthTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"GET", "HEAD", "POST", "PUT"})
+    @ValueSource(strings =
+    {"GET", "HEAD", "POST", "PUT"})
     public void testContentLengthAddedByServer(String method) throws Exception
     {
         byte[] data = new byte[512];
@@ -80,7 +82,8 @@ public class ContentLengthTest extends AbstractTest
             }
         });
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .method(method)
             .send();
 
@@ -90,7 +93,8 @@ public class ContentLengthTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"GET", "HEAD", "POST", "PUT"})
+    @ValueSource(strings =
+    {"GET", "HEAD", "POST", "PUT"})
     public void testClientContentLengthMismatch(String method) throws Exception
     {
         byte[] data = new byte[512];
@@ -104,25 +108,30 @@ public class ContentLengthTest extends AbstractTest
             }
         });
 
-        Session clientSession = newClientSession(new Session.Listener() {});
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+        });
         CountDownLatch resetLatch = new CountDownLatch(1);
         // Set a wrong Content-Length header.
         HttpFields requestHeaders = HttpFields.build().put(HttpHeader.CONTENT_LENGTH, String.valueOf(data.length + 1));
-        clientSession.newStream(new HeadersFrame(newRequest(method, requestHeaders), null, false), new Stream.Listener()
-        {
-            @Override
-            public void onReset(Stream stream, ResetFrame frame, Callback callback)
+        clientSession
+            .newStream(new HeadersFrame(newRequest(method, requestHeaders), null, false), new Stream.Listener()
             {
-                resetLatch.countDown();
-                callback.succeeded();
-            }
-        }).thenAccept(stream -> stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(data), true)));
+                @Override
+                public void onReset(Stream stream, ResetFrame frame, Callback callback)
+                {
+                    resetLatch.countDown();
+                    callback.succeeded();
+                }
+            })
+            .thenAccept(stream -> stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(data), true)));
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"GET", "HEAD", "POST", "PUT"})
+    @ValueSource(strings =
+    {"GET", "HEAD", "POST", "PUT"})
     public void testGzippedContentLengthAddedByServer(String method) throws Exception
     {
         byte[] data = new byte[4096];
@@ -144,7 +153,8 @@ public class ContentLengthTest extends AbstractTest
 
         start(gzipHandler);
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .method(method)
             .send();
 

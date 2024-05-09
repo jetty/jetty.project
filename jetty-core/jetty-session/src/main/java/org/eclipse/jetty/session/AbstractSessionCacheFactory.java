@@ -15,7 +15,7 @@ package org.eclipse.jetty.session;
 
 /**
  * AbstractSessionCacheFactory
- * 
+ *
  * Base class for SessionCacheFactories.
  *
  */
@@ -27,7 +27,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     boolean _removeUnloadableSessions;
     boolean _flushOnResponseCommit;
     boolean _invalidateOnShutdown;
-    
+
     public abstract SessionCache newSessionCache(SessionManager manager);
 
     public boolean isInvalidateOnShutdown()

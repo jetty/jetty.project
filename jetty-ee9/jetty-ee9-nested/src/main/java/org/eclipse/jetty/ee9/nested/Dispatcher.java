@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -26,6 +21,10 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
@@ -96,7 +95,8 @@ public class Dispatcher implements RequestDispatcher
             baseRequest.getResponse().include();
             if (_named != null)
             {
-                _contextHandler.handle(_named, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(
+                    _named, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             }
             else
             {
@@ -116,7 +116,8 @@ public class Dispatcher implements RequestDispatcher
                     baseRequest.mergeQueryParameters(baseRequest.getQueryString(), attr._query);
                 baseRequest.setAttributes(attr);
 
-                _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(
+                    _pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             }
         }
         finally
@@ -135,7 +136,8 @@ public class Dispatcher implements RequestDispatcher
         forward(request, response, DispatcherType.FORWARD);
     }
 
-    protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
+    protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch)
+        throws ServletException, IOException
     {
         Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
         Response baseResponse = baseRequest.getResponse();
@@ -161,7 +163,8 @@ public class Dispatcher implements RequestDispatcher
 
             if (_named != null)
             {
-                _contextHandler.handle(_named, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(
+                    _named, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             }
             else
             {
@@ -176,7 +179,8 @@ public class Dispatcher implements RequestDispatcher
                 // Note: the pathInfo is passed as the pathInContext since it is only used when there is
                 // no mapping, and when there is no mapping the pathInfo is the pathInContext.
                 if (old_attr.getAttribute(FORWARD_REQUEST_URI) == null)
-                    baseRequest.setAttributes(new ForwardAttributes(old_attr,
+                    baseRequest.setAttributes(new ForwardAttributes(
+                        old_attr,
                         old_uri.getPath(),
                         baseRequest.getContextPath(),
                         baseRequest.getPathInContext(),
@@ -212,7 +216,8 @@ public class Dispatcher implements RequestDispatcher
                     }
                 }
 
-                _contextHandler.handle(decodedPathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(
+                    decodedPathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
 
                 // If we are not async and not closed already, then close via the possibly wrapped response.
                 if (!baseRequest.getHttpChannelState().isAsync() && !baseResponse.getHttpOutput().isClosed())
@@ -246,7 +251,11 @@ public class Dispatcher implements RequestDispatcher
         {
             HttpChannel channel = baseRequest.getHttpChannel();
             UriCompliance compliance = channel == null || channel.getHttpConfiguration() == null ? null : channel.getHttpConfiguration().getUriCompliance();
-            String illegalState = UriCompliance.checkUriCompliance(compliance, uri, org.eclipse.jetty.server.HttpChannel.from(baseRequest.getCoreRequest()).getComplianceViolationListener());
+            String illegalState = UriCompliance.checkUriCompliance(
+                compliance,
+                uri,
+                org.eclipse.jetty.server.HttpChannel.from(baseRequest.getCoreRequest())
+                    .getComplianceViolationListener());
             if (illegalState != null)
                 throw new IllegalStateException(illegalState);
         }
@@ -267,7 +276,13 @@ public class Dispatcher implements RequestDispatcher
         private final ServletPathMapping _servletPathMapping;
         private final String _query;
 
-        public ForwardAttributes(Attributes attributes, String requestURI, String contextPath, String pathInContext, ServletPathMapping mapping, String query)
+        public ForwardAttributes(
+                                 Attributes attributes,
+                                 String requestURI,
+                                 String contextPath,
+                                 String pathInContext,
+                                 ServletPathMapping mapping,
+                                 String query)
         {
             super(attributes);
             _requestURI = requestURI;
@@ -316,8 +331,7 @@ public class Dispatcher implements RequestDispatcher
             HashSet<String> set = new HashSet<>();
             for (String name : getWrapped().getAttributeNameSet())
             {
-                if (!name.startsWith(__INCLUDE_PREFIX) &&
-                    !name.startsWith(__FORWARD_PREFIX))
+                if (!name.startsWith(__INCLUDE_PREFIX) && !name.startsWith(__FORWARD_PREFIX))
                     set.add(name);
             }
 
@@ -386,7 +400,14 @@ public class Dispatcher implements RequestDispatcher
         private final String _pathInContext;
         private final String _query;
 
-        public IncludeAttributes(Attributes attributes, Request baseRequest, ContextHandler.APIContext sourceContext, ServletPathMapping sourceMapping, String requestURI, String pathInContext, String query)
+        public IncludeAttributes(
+                                 Attributes attributes,
+                                 Request baseRequest,
+                                 ContextHandler.APIContext sourceContext,
+                                 ServletPathMapping sourceMapping,
+                                 String requestURI,
+                                 String pathInContext,
+                                 String query)
         {
             super(attributes);
             _baseRequest = baseRequest;
@@ -453,7 +474,8 @@ public class Dispatcher implements RequestDispatcher
                     set.add(name);
             }
 
-            // We can't assign these in the constructor because the ServletPathMapping hasn't been set by the ServletHandler.
+            // We can't assign these in the constructor because the ServletPathMapping hasn't been set by the
+            // ServletHandler.
             String pathInfo = (String)getAttribute(INCLUDE_PATH_INFO);
             String servletPath = (String)getAttribute(INCLUDE_SERVLET_PATH);
             String contextPath = (String)getAttribute(INCLUDE_CONTEXT_PATH);

@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,8 +76,8 @@ public class DecoratedObjectFactory implements Iterable<Decorator>, Decorator
         this.decorators.clear();
     }
 
-    public <T> T createInstance(Class<T> clazz) throws InstantiationException, IllegalAccessException,
-        NoSuchMethodException, InvocationTargetException
+    public <T> T createInstance(Class<T> clazz)
+        throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException
     {
         if (LOG.isDebugEnabled())
         {

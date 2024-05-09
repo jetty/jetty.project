@@ -15,4 +15,3 @@
  * Jetty Deploy : Standard Deployment Bindings
  */
 package org.eclipse.jetty.deploy.bindings;
-

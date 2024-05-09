@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.api.Callback;
@@ -31,8 +32,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 public class WebSocketSession implements Session, Dumpable
 {
     private final CoreSession coreSession;
@@ -41,7 +40,8 @@ public class WebSocketSession implements Session, Dumpable
     private final UpgradeResponse upgradeResponse;
     private byte messageType = OpCode.UNDEFINED;
 
-    public WebSocketSession(WebSocketContainer container, CoreSession coreSession, JettyWebSocketFrameHandler frameHandler)
+    public WebSocketSession(
+                            WebSocketContainer container, CoreSession coreSession, JettyWebSocketFrameHandler frameHandler)
     {
         this.frameHandler = Objects.requireNonNull(frameHandler);
         this.coreSession = Objects.requireNonNull(coreSession);
@@ -62,7 +62,8 @@ public class WebSocketSession implements Session, Dumpable
     public void sendBinary(ByteBuffer buffer, Callback callback)
     {
         callback = Objects.requireNonNullElse(callback, Callback.NOOP);
-        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(buffer),
+        coreSession.sendFrame(
+            new Frame(OpCode.BINARY).setPayload(buffer),
             org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail),
             false);
     }
@@ -71,21 +72,23 @@ public class WebSocketSession implements Session, Dumpable
     public void sendPartialBinary(ByteBuffer buffer, boolean last, Callback callback)
     {
         callback = Objects.requireNonNullElse(callback, Callback.NOOP);
-        Frame frame = switch (messageType)
-        {
-            case OpCode.UNDEFINED ->
+        Frame frame =
+            switch (messageType)
             {
-                // new message
-                messageType = OpCode.BINARY;
-                yield new Frame(OpCode.BINARY);
-            }
-            case OpCode.BINARY -> new Frame(OpCode.CONTINUATION);
-            default ->
-            {
-                callback.fail(new ProtocolException("Attempt to send partial BINARY during " + OpCode.name(messageType)));
-                yield null;
-            }
-        };
+                case OpCode.UNDEFINED ->
+                {
+                    // new message
+                    messageType = OpCode.BINARY;
+                    yield new Frame(OpCode.BINARY);
+                }
+                case OpCode.BINARY -> new Frame(OpCode.CONTINUATION);
+                default ->
+                {
+                    callback.fail(new ProtocolException(
+                        "Attempt to send partial BINARY during " + OpCode.name(messageType)));
+                    yield null;
+                }
+            };
 
         if (frame != null)
         {
@@ -111,21 +114,23 @@ public class WebSocketSession implements Session, Dumpable
     @Override
     public void sendPartialText(String text, boolean last, Callback callback)
     {
-        Frame frame = switch (messageType)
-        {
-            case OpCode.UNDEFINED ->
+        Frame frame =
+            switch (messageType)
             {
-                // new message
-                messageType = OpCode.TEXT;
-                yield new Frame(OpCode.TEXT);
-            }
-            case OpCode.TEXT -> new Frame(OpCode.CONTINUATION);
-            default ->
-            {
-                callback.fail(new ProtocolException("Attempt to send partial TEXT during " + OpCode.name(messageType)));
-                yield null;
-            }
-        };
+                case OpCode.UNDEFINED ->
+                {
+                    // new message
+                    messageType = OpCode.TEXT;
+                    yield new Frame(OpCode.TEXT);
+                }
+                case OpCode.TEXT -> new Frame(OpCode.CONTINUATION);
+                default ->
+                {
+                    callback.fail(new ProtocolException(
+                        "Attempt to send partial TEXT during " + OpCode.name(messageType)));
+                    yield null;
+                }
+            };
 
         if (frame != null)
         {
@@ -143,15 +148,19 @@ public class WebSocketSession implements Session, Dumpable
     @Override
     public void sendPing(ByteBuffer applicationData, Callback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData),
-            org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail), false);
+        coreSession.sendFrame(
+            new Frame(OpCode.PING).setPayload(applicationData),
+            org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail),
+            false);
     }
 
     @Override
     public void sendPong(ByteBuffer applicationData, Callback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData),
-            org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail), false);
+        coreSession.sendFrame(
+            new Frame(OpCode.PONG).setPayload(applicationData),
+            org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail),
+            false);
     }
 
     @Override
@@ -318,9 +327,9 @@ public class WebSocketSession implements Session, Dumpable
     @Override
     public String dumpSelf()
     {
-        return String.format("%s@%x[idleTimeout=%dms]",
-            this.getClass().getSimpleName(), hashCode(),
-            getIdleTimeout().toMillis());
+        return String.format(
+            "%s@%x[idleTimeout=%dms]",
+            this.getClass().getSimpleName(), hashCode(), getIdleTimeout().toMillis());
     }
 
     @Override

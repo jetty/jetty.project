@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,7 +25,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -33,10 +36,6 @@ import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
 
 public class WebSocketTester
 {
@@ -169,7 +168,8 @@ public class WebSocketTester
                 return frame;
 
             int p = BufferUtil.flipToFill(byteBuffer);
-            int len = in.read(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), byteBuffer.remaining());
+            int len = in.read(
+                byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), byteBuffer.remaining());
             if (len < 0)
                 return null;
             byteBuffer.position(byteBuffer.position() + len);

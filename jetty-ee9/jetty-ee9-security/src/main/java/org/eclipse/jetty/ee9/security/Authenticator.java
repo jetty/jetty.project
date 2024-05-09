@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.security;
 
-import java.util.Set;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import java.util.Set;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.security.IdentityService;
@@ -83,7 +82,8 @@ public interface Authenticator
      * {@link Authentication.Deferred} may be returned.
      * @throws ServerAuthException if unable to validate request
      */
-    Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException;
+    Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory)
+        throws ServerAuthException;
 
     /**
      * is response secure
@@ -95,7 +95,8 @@ public interface Authenticator
      * @return true if response is secure
      * @throws ServerAuthException if unable to test response
      */
-    boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser) throws ServerAuthException;
+    boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser)
+        throws ServerAuthException;
 
     /**
      * Authenticator Configuration
@@ -149,6 +150,11 @@ public interface Authenticator
      */
     interface Factory
     {
-        Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService);
+        Authenticator getAuthenticator(
+                                       Server server,
+                                       ServletContext context,
+                                       AuthConfiguration configuration,
+                                       IdentityService identityService,
+                                       LoginService loginService);
     }
 }

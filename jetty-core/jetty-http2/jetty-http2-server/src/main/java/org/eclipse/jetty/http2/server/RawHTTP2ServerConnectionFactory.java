@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.server;
 
 import java.util.Map;
 import java.util.Objects;
-
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -44,7 +43,8 @@ public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnecti
         this.listener = new RawServerSessionListener(Objects.requireNonNull(listener));
     }
 
-    public RawHTTP2ServerConnectionFactory(HttpConfiguration httpConfiguration, ServerSessionListener listener, String... protocols)
+    public RawHTTP2ServerConnectionFactory(
+                                           HttpConfiguration httpConfiguration, ServerSessionListener listener, String... protocols)
     {
         super(httpConfiguration, protocols);
         this.listener = listener;

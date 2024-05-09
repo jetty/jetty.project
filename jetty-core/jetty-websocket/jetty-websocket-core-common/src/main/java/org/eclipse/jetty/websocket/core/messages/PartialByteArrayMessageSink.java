@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;

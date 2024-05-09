@@ -15,4 +15,3 @@
  * Jetty WebSocket API : Utility Classes
  */
 package org.eclipse.jetty.ee9.websocket.api.util;
-

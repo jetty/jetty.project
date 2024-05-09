@@ -13,17 +13,8 @@
 
 package org.eclipse.jetty.session.test.tools;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
-import java.net.InetAddress;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.cloud.NoCredentials;
 import com.google.cloud.ServiceOptions;
@@ -40,6 +31,17 @@ import com.google.cloud.datastore.Query;
 import com.google.cloud.datastore.Query.ResultType;
 import com.google.cloud.datastore.QueryResults;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.net.InetAddress;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore;
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore.EntityDataModel;
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory;
@@ -55,9 +57,6 @@ import org.testcontainers.containers.DatastoreEmulatorContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  * GCloudSessionTestSupport
  */
@@ -70,9 +69,9 @@ public class GCloudSessionTestSupport
     private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.gcloud.session.gcloudLogs");
 
     public static DatastoreEmulatorContainer emulator = new DatastoreEmulatorContainer(
-            DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:447.0.0-emulators")
-    ).withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG))
-            .withFlags("--consistency=1.0");
+        DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:447.0.0-emulators"))
+        .withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG))
+        .withFlags("--consistency=1.0");
 
     private static final String host;
 
@@ -81,14 +80,15 @@ public class GCloudSessionTestSupport
         try
         {
             emulator.start();
-            //work out if we're running locally or not: if not local, then the host passed to
-            //DatastoreOptions must be prefixed with a scheme
+            // work out if we're running locally or not: if not local, then the host passed to
+            // DatastoreOptions must be prefixed with a scheme
             String endPoint = emulator.getEmulatorEndpoint();
             InetAddress hostAddr = InetAddress.getByName(new URL("http://" + endPoint).getHost());
-            LOGGER.info("endPoint: {} ,hostAddr.isAnyLocalAddress(): {},hostAddr.isLoopbackAddress(): {}",
-                    endPoint,
-                    hostAddr.isAnyLocalAddress(),
-                    hostAddr.isLoopbackAddress());
+            LOGGER.info(
+                "endPoint: {} ,hostAddr.isAnyLocalAddress(): {},hostAddr.isLoopbackAddress(): {}",
+                endPoint,
+                hostAddr.isAnyLocalAddress(),
+                hostAddr.isLoopbackAddress());
             if (hostAddr.isAnyLocalAddress() || hostAddr.isLoopbackAddress())
                 host = endPoint;
             else
@@ -128,17 +128,16 @@ public class GCloudSessionTestSupport
     {
         Objects.requireNonNull(projectId, "projectId cannot be null");
         DatastoreOptions options = DatastoreOptions.newBuilder()
-                .setHost(host)
-                .setCredentials(NoCredentials.getInstance())
-                .setRetrySettings(ServiceOptions.getNoRetrySettings())
-                .setProjectId(projectId.toLowerCase(Locale.ROOT) + "-project")
-                .build();
+            .setHost(host)
+            .setCredentials(NoCredentials.getInstance())
+            .setRetrySettings(ServiceOptions.getNoRetrySettings())
+            .setProjectId(projectId.toLowerCase(Locale.ROOT) + "-project")
+            .build();
         _ds = options.getService();
         _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
     }
 
-    public void setUp()
-        throws Exception
+    public void setUp() throws Exception
     {
         // no op
     }
@@ -148,20 +147,27 @@ public class GCloudSessionTestSupport
         return _ds;
     }
 
-    public void tearDown()
-        throws Exception
+    public void tearDown() throws Exception
     {
         // no op
     }
 
-    public void createSession(String id, String contextPath, String vhost,
-                              String lastNode, long created, long accessed,
-                              long lastAccessed, long maxIdle, long expiry,
-                              long cookieset, long lastSaved,
+    public void createSession(
+                              String id,
+                              String contextPath,
+                              String vhost,
+                              String lastNode,
+                              long created,
+                              long accessed,
+                              long lastAccessed,
+                              long maxIdle,
+                              long expiry,
+                              long cookieset,
+                              long lastSaved,
                               Map<String, Object> attributes)
         throws Exception
     {
-        //serialize the attribute map
+        // serialize the attribute map
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
         {
             if (attributes != null)
@@ -171,7 +177,7 @@ public class GCloudSessionTestSupport
                 SessionData.serializeAttributes(tmp, oos);
             }
 
-            //turn a session into an entity         
+            // turn a session into an entity
             Entity.Builder builder = Entity.newBuilder(_keyFactory.newKey(contextPath + "_" + vhost + "_" + id))
                 .set(EntityDataModel.ID, id)
                 .set(EntityDataModel.CONTEXTPATH, contextPath)
@@ -185,21 +191,24 @@ public class GCloudSessionTestSupport
                 .set(EntityDataModel.MAXINACTIVE, maxIdle)
                 .set(EntityDataModel.LASTSAVED, lastSaved);
             if (attributes != null)
-                builder.set(EntityDataModel.ATTRIBUTES, BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray())).setExcludeFromIndexes(true).build());
+                builder.set(
+                    EntityDataModel.ATTRIBUTES,
+                    BlobValue.newBuilder(Blob.copyFrom(baos.toByteArray()))
+                        .setExcludeFromIndexes(true)
+                        .build());
             Entity entity = builder.build();
 
             _ds.put(entity);
         }
     }
 
-    public boolean checkSessionPersisted(SessionData data)
-        throws Exception
+    public boolean checkSessionPersisted(SessionData data) throws Exception
     {
         Entity entity = _ds.get(_keyFactory.newKey(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()));
         if (entity == null)
             return false;
 
-        //turn an Entity into a Session
+        // turn an Entity into a Session
         Assertions.assertEquals(data.getId(), entity.getString(EntityDataModel.ID));
         Assertions.assertEquals(data.getContextPath(), entity.getString(EntityDataModel.CONTEXTPATH));
         Assertions.assertEquals(data.getVhost(), entity.getString(EntityDataModel.VHOST));
@@ -213,7 +222,9 @@ public class GCloudSessionTestSupport
         Assertions.assertEquals(data.getMaxInactiveMs(), entity.getLong(EntityDataModel.MAXINACTIVE));
         Blob blob = entity.getBlob(EntityDataModel.ATTRIBUTES);
 
-        SessionData tmp = new SessionData(data.getId(), entity.getString(EntityDataModel.CONTEXTPATH),
+        SessionData tmp = new SessionData(
+            data.getId(),
+            entity.getString(EntityDataModel.CONTEXTPATH),
             entity.getString(EntityDataModel.VHOST),
             entity.getLong(EntityDataModel.CREATETIME),
             entity.getLong(EntityDataModel.ACCESSED),
@@ -225,11 +236,11 @@ public class GCloudSessionTestSupport
             SessionData.deserializeAttributes(tmp, ois);
         }
 
-        //same number of attributes
+        // same number of attributes
         assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
-        //same keys
+        // same keys
         assertEquals(data.getKeys(), tmp.getAllAttributes().keySet());
-        //same values
+        // same values
         for (String name : data.getKeys())
         {
             assertEquals(data.getAttribute(name), tmp.getAttribute(name));
@@ -238,8 +249,7 @@ public class GCloudSessionTestSupport
         return true;
     }
 
-    public boolean checkSessionExists(String id)
-        throws Exception
+    public boolean checkSessionExists(String id) throws Exception
     {
         Query<Entity> query = Query.newEntityQueryBuilder()
             .setKind(EntityDataModel.KIND)
@@ -259,7 +269,8 @@ public class GCloudSessionTestSupport
     public Set<String> getSessionIds() throws Exception
     {
         HashSet<String> ids = new HashSet<>();
-        GqlQuery.Builder<Entity> builder = Query.newGqlQueryBuilder(ResultType.ENTITY, "select * from " + GCloudSessionDataStore.EntityDataModel.KIND);
+        GqlQuery.Builder<Entity> builder = Query.newGqlQueryBuilder(
+            ResultType.ENTITY, "select * from " + GCloudSessionDataStore.EntityDataModel.KIND);
 
         Query<Entity> query = builder.build();
 
@@ -277,7 +288,8 @@ public class GCloudSessionTestSupport
     public void listSessions() throws Exception
     {
 
-        GqlQuery.Builder builder = Query.newGqlQueryBuilder(ResultType.ENTITY, "select * from " + GCloudSessionDataStore.EntityDataModel.KIND);
+        GqlQuery.Builder builder = Query.newGqlQueryBuilder(
+            ResultType.ENTITY, "select * from " + GCloudSessionDataStore.EntityDataModel.KIND);
 
         Query<Entity> query = builder.build();
 
@@ -295,7 +307,9 @@ public class GCloudSessionTestSupport
 
     public void assertSessions(int count) throws Exception
     {
-        Query<Key> query = Query.newKeyQueryBuilder().setKind(GCloudSessionDataStore.EntityDataModel.KIND).build();
+        Query<Key> query = Query.newKeyQueryBuilder()
+            .setKind(GCloudSessionDataStore.EntityDataModel.KIND)
+            .build();
         QueryResults<Key> results = _ds.run(query);
         assertNotNull(results);
         int actual = 0;
@@ -311,7 +325,9 @@ public class GCloudSessionTestSupport
 
     public void deleteSessions() throws Exception
     {
-        Query<Key> query = Query.newKeyQueryBuilder().setKind(GCloudSessionDataStore.EntityDataModel.KIND).build();
+        Query<Key> query = Query.newKeyQueryBuilder()
+            .setKind(GCloudSessionDataStore.EntityDataModel.KIND)
+            .build();
         QueryResults<Key> results = _ds.run(query);
 
         Batch batch = _ds.newBatch();

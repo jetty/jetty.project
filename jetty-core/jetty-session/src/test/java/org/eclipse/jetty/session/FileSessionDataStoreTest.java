@@ -47,15 +47,35 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        _helper.createFile(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), data.getAllAttributes());
+        _helper.createFile(
+            data.getId(),
+            data.getContextPath(),
+            data.getVhost(),
+            data.getLastNode(),
+            data.getCreated(),
+            data.getAccessed(),
+            data.getLastAccessed(),
+            data.getMaxInactiveMs(),
+            data.getExpiry(),
+            data.getCookieSet(),
+            data.getAllAttributes());
     }
 
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        _helper.createFile(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), null);
+        _helper.createFile(
+            data.getId(),
+            data.getContextPath(),
+            data.getVhost(),
+            data.getLastNode(),
+            data.getCreated(),
+            data.getAccessed(),
+            data.getLastAccessed(),
+            data.getMaxInactiveMs(),
+            data.getExpiry(),
+            data.getCookieSet(),
+            null);
     }
 
     @Override

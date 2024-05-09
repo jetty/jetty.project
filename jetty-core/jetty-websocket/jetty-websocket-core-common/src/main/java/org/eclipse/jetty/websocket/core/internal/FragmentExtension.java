@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -139,16 +138,18 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
                     LOG.debug("Fragmented {}->{}", frame, fragment);
             }
 
-            Callback payloadCallback = Callback.from(() ->
-            {
-                if (finished)
-                    callback.succeeded();
-            }, t ->
-            {
-                // This is wrapped with CountingCallback so will only be failed once.
-                callback.failed(t);
-                failFlusher(t);
-            });
+            Callback payloadCallback = Callback.from(
+                () ->
+                {
+                    if (finished)
+                        callback.succeeded();
+                },
+                t ->
+                {
+                    // This is wrapped with CountingCallback so will only be failed once.
+                    callback.failed(t);
+                    failFlusher(t);
+                });
 
             emitFrame(fragment, payloadCallback);
             return finished;

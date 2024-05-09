@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
@@ -30,7 +29,8 @@ public class PushPromiseBodyParser extends BodyParser
     private int paddingLength;
     private int streamId;
 
-    public PushPromiseBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser)
+    public PushPromiseBodyParser(
+                                 HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser)
     {
         super(headerParser, listener);
         this.headerBlockParser = headerBlockParser;
@@ -61,7 +61,8 @@ public class PushPromiseBodyParser extends BodyParser
 
                     // For now we don't support PUSH_PROMISE frames that don't have END_HEADERS.
                     if (!hasFlag(Flags.END_HEADERS))
-                        return connectionFailure(buffer, ErrorCode.INTERNAL_ERROR.code, "unsupported_push_promise_frame");
+                        return connectionFailure(
+                            buffer, ErrorCode.INTERNAL_ERROR.code, "unsupported_push_promise_frame");
 
                     length = getBodyLength();
 
@@ -135,7 +136,8 @@ public class PushPromiseBodyParser extends BodyParser
                         {
                             HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
                             if (!rateControlOnEvent(frame))
-                                return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
+                                return connectionFailure(
+                                    buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
                         }
                     }
                     break;
@@ -169,6 +171,11 @@ public class PushPromiseBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, PADDING_LENGTH, STREAM_ID, STREAM_ID_BYTES, HEADERS, PADDING
+        PREPARE,
+        PADDING_LENGTH,
+        STREAM_ID,
+        STREAM_ID_BYTES,
+        HEADERS,
+        PADDING
     }
 }

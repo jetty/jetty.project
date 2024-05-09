@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.util.IncludeExcludeSet;
@@ -38,7 +37,8 @@ import org.eclipse.jetty.util.component.DumpableCollection;
  */
 public class InetAccessHandler extends HandlerWrapper
 {
-    private final IncludeExcludeSet<InetAccessSet.PatternTuple, InetAccessSet.AccessTuple> _set = new IncludeExcludeSet<>(InetAccessSet.class);
+    private final IncludeExcludeSet<InetAccessSet.PatternTuple, InetAccessSet.AccessTuple> _set =
+        new IncludeExcludeSet<>(InetAccessSet.class);
 
     /**
      * Clears all the includes, excludes, included connector names and excluded
@@ -241,7 +241,9 @@ public class InetAccessHandler extends HandlerWrapper
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent,
+        dumpObjects(
+            out,
+            indent,
             new DumpableCollection("included", _set.getIncluded()),
             new DumpableCollection("excluded", _set.getExcluded()));
     }

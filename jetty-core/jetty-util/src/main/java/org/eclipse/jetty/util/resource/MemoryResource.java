@@ -26,7 +26,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 

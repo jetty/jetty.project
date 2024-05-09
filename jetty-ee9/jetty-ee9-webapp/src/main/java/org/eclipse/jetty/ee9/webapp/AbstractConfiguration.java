@@ -57,7 +57,10 @@ public class AbstractConfiguration implements Configuration
      */
     protected void addDependencies(Class<? extends Configuration>... classes)
     {
-        addDependencies(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
+        addDependencies(Arrays.asList(classes).stream()
+            .map(Class::getName)
+            .collect(Collectors.toList())
+            .toArray(new String[classes.length]));
     }
 
     /**
@@ -80,7 +83,10 @@ public class AbstractConfiguration implements Configuration
      */
     protected void addDependents(Class<?>... classes)
     {
-        addDependents(Arrays.asList(classes).stream().map(Class::getName).collect(Collectors.toList()).toArray(new String[classes.length]));
+        addDependents(Arrays.asList(classes).stream()
+            .map(Class::getName)
+            .collect(Collectors.toList())
+            .toArray(new String[classes.length]));
     }
 
     /**

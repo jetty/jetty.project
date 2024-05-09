@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.ee9.demos;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketError;
@@ -32,10 +35,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class WebSocketServerTest
 {

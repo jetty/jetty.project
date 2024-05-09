@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -28,7 +35,6 @@ import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
@@ -52,13 +58,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 public class SslConnectionFactoryTest
 {
     private Server _server;
@@ -80,11 +79,11 @@ public class SslConnectionFactoryTest
         sslContextFactory.setKeyStorePath(keystoreFile.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
-        SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+        SslConnectionFactory sslConnectionFactory =
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
         sslConnectionFactory.setEnsureSecureRequestCustomizer(true);
-        ServerConnector https = _connector = new ServerConnector(_server,
-            sslConnectionFactory,
-            new HttpConnectionFactory());
+        ServerConnector https =
+            _connector = new ServerConnector(_server, sslConnectionFactory, new HttpConnectionFactory());
         https.setPort(0);
         https.setIdleTimeout(30000);
 
@@ -96,7 +95,10 @@ public class SslConnectionFactoryTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.write(true, BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + Request.getServerName(request)), callback);
+                response.write(
+                    true,
+                    BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + Request.getServerName(request)),
+                    callback);
                 return true;
             }
         });
@@ -228,12 +230,14 @@ public class SslConnectionFactoryTest
             try (OutputStream os = sslSocket.getOutputStream();
                  InputStream in = sslSocket.getInputStream())
             {
-                String rawRequest = """
-                    GET /ctx/path HTTP/1.1\r
-                    Host: %s:%d\r
-                    Connection: close\r
-                    \r
-                    """.formatted(reqHost, _port);
+                String rawRequest =
+                    """
+                        GET /ctx/path HTTP/1.1\r
+                        Host: %s:%d\r
+                        Connection: close\r
+                        \r
+                        """
+                        .formatted(reqHost, _port);
 
                 os.write(rawRequest.getBytes(StandardCharsets.UTF_8));
                 String rawResponse = IO.toString(in);

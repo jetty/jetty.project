@@ -17,7 +17,6 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.security.internal.DefaultUserIdentity;
@@ -49,12 +48,14 @@ public class AuthenticationTestHandler extends Handler.Abstract
                     case "authenticate" ->
                     {
                         AuthenticationState.Succeeded succeeded = AuthenticationState.authenticate(request);
-                        out.append(succeeded == null ? "-" : succeeded.getUserIdentity().getUserPrincipal());
+                        out.append(
+                            succeeded == null ? "-" : succeeded.getUserIdentity().getUserPrincipal());
                     }
 
                     case "challenge" ->
                     {
-                        AuthenticationState.Succeeded succeeded = AuthenticationState.authenticate(request, response, callback);
+                        AuthenticationState.Succeeded succeeded =
+                            AuthenticationState.authenticate(request, response, callback);
                         if (succeeded == null)
                             return true;
                         out.append(succeeded.getUserIdentity().getUserPrincipal());
@@ -62,8 +63,10 @@ public class AuthenticationTestHandler extends Handler.Abstract
 
                     case "login" ->
                     {
-                        AuthenticationState.Succeeded succeeded = AuthenticationState.login(usernames.pop(), passwords.pop(), request, response);
-                        out.append(succeeded == null ? "-" : succeeded.getUserIdentity().getUserPrincipal());
+                        AuthenticationState.Succeeded succeeded =
+                            AuthenticationState.login(usernames.pop(), passwords.pop(), request, response);
+                        out.append(
+                            succeeded == null ? "-" : succeeded.getUserIdentity().getUserPrincipal());
                     }
 
                     case "logout" -> out.append(AuthenticationState.logout(request, response));
@@ -140,7 +143,8 @@ public class AuthenticationTestHandler extends Handler.Abstract
         }
 
         @Override
-        public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
+        public UserIdentity login(
+                                  String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
         {
             if ("admin".equals(username) && "password".equals(credentials))
                 return new DefaultUserIdentity(null, new UserPrincipal("admin", null), new String[]{"admin"});

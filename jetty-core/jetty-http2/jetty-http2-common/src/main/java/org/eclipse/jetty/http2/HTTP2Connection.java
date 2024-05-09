@@ -20,7 +20,6 @@ import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -48,7 +47,8 @@ import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP2Connection extends AbstractConnection implements Parser.Listener, WriteFlusher.Listener, Connection.UpgradeTo
+public class HTTP2Connection extends AbstractConnection
+    implements Parser.Listener, WriteFlusher.Listener, Connection.UpgradeTo
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Connection.class);
 
@@ -63,7 +63,8 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
 
-    protected HTTP2Connection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, HTTP2Session session, int bufferSize)
+    protected HTTP2Connection(
+                              ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, HTTP2Session session, int bufferSize)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;

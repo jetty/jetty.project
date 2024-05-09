@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.util.concurrent.LinkedBlockingQueue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
+import java.util.concurrent.LinkedBlockingQueue;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
@@ -32,10 +35,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Tests of behavior of GzipHandler when Request.isHandled() or Response.isCommitted() is true

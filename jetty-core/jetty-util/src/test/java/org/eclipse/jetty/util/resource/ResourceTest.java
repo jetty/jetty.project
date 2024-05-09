@@ -13,6 +13,19 @@
 
 package org.eclipse.jetty.util.resource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -26,7 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -43,19 +55,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class ResourceTest
@@ -161,9 +160,7 @@ public class ResourceTest
 
             // create baseline cases
             baseCases = new Scenario[]{
-                new Scenario(relRef, EXISTS, DIR),
-                new Scenario(uriRef, EXISTS, DIR),
-                new Scenario(fileRef, EXISTS, DIR)
+                new Scenario(relRef, EXISTS, DIR), new Scenario(uriRef, EXISTS, DIR), new Scenario(fileRef, EXISTS, DIR)
             };
 
             // add all baseline cases
@@ -178,8 +175,7 @@ public class ResourceTest
             add(Arguments.of(ucase));
         }
 
-        public void addAllSimpleCases(String subpath, boolean exists, boolean dir)
-            throws Exception
+        public void addAllSimpleCases(String subpath, boolean exists, boolean dir) throws Exception
         {
             addCase(new Scenario(FS.separators(relRef + subpath), exists, dir));
             addCase(new Scenario(uriRef.resolve(subpath).toURL(), exists, dir));
@@ -239,10 +235,8 @@ public class ResourceTest
 
         cases.addCase(new Scenario(zdata, "subdir", EXISTS, DIR));
         cases.addCase(new Scenario(zdata, "/subdir/", EXISTS, DIR));
-        cases.addCase(new Scenario(zdata, "alphabet", EXISTS, !DIR,
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
-        cases.addCase(new Scenario(zdata, "/subdir/alphabet", EXISTS, !DIR,
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+        cases.addCase(new Scenario(zdata, "alphabet", EXISTS, !DIR, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+        cases.addCase(new Scenario(zdata, "/subdir/alphabet", EXISTS, !DIR, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
 
         cases.addAllAddPathCases("/TestData/test/subdir/subsubdir/", EXISTS, DIR);
         cases.addAllAddPathCases("//TestData/test/subdir/subsubdir/", EXISTS, DIR);
@@ -282,8 +276,7 @@ public class ResourceTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testResourceContent(Scenario data)
-        throws Exception
+    public void testResourceContent(Scenario data) throws Exception
     {
         Assumptions.assumeTrue(data.content != null);
 
@@ -294,8 +287,7 @@ public class ResourceTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testResourceCopyToDirectory(Scenario data)
-        throws Exception
+    public void testResourceCopyToDirectory(Scenario data) throws Exception
     {
         Resource resource = data.getResource();
         Assumptions.assumeTrue(resource != null);
@@ -315,8 +307,7 @@ public class ResourceTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testResourceCopyToFile(Scenario data)
-        throws Exception
+    public void testResourceCopyToFile(Scenario data) throws Exception
     {
         Resource resource = data.getResource();
         Assumptions.assumeTrue(resource != null);
@@ -372,7 +363,8 @@ public class ResourceTest
             Path globFile = testDir.resolve("*");
             Files.createFile(globFile);
             assumeTrue(Files.exists(globFile)); // skip test if file wasn't created
-            Resource globResource = resourceFactory.newResource(globFile.toAbsolutePath().toString());
+            Resource globResource =
+                resourceFactory.newResource(globFile.toAbsolutePath().toString());
             assertNotNull(globResource, "Should have produced a Resource");
         }
         catch (InvalidPathException | IOException e)
@@ -403,7 +395,7 @@ public class ResourceTest
     {
         URI a = new URI("file:///c:/foo/bar");
         URI b = new URI("file:///C:/foo/bar");
-        
+
         Resource ra = resourceFactory.newResource(a);
         Resource rb = resourceFactory.newResource(b);
 
@@ -552,7 +544,8 @@ public class ResourceTest
             {
                 String source = IO.toString(sourceIs);
                 String target = IO.toString(targetIs);
-                assertEquals(source, target, "Resource (" + resource + ") and copy (" + copy + ") contents do not match");
+                assertEquals(
+                    source, target, "Resource (" + resource + ") and copy (" + copy + ") contents do not match");
             }
         }
         else

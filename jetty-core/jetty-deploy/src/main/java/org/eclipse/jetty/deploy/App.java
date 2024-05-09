@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.FileID;

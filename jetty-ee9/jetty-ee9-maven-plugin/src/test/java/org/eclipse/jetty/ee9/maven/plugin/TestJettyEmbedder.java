@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.ee9.servlet.ListenerHolder;
 import org.eclipse.jetty.maven.MavenServerConnector;
 import org.eclipse.jetty.maven.ServerSupport;
@@ -31,11 +35,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @Disabled
 @ExtendWith(WorkDirExtension.class)
@@ -60,7 +59,9 @@ public class TestJettyEmbedder
         jetty.setJettyXmlFiles(null);
         jetty.setJettyProperties(null);
         jetty.setLoginServices(null);
-        jetty.setContextXml(MavenTestingUtils.getTargetPath("test-classes/embedder-context.xml").toFile().getAbsolutePath());
+        jetty.setContextXml(MavenTestingUtils.getTargetPath("test-classes/embedder-context.xml")
+            .toFile()
+            .getAbsolutePath());
         jetty.setWebApp(webApp);
 
         try
@@ -80,8 +81,7 @@ public class TestJettyEmbedder
     }
 
     @Test
-    public void testJettyEmbedder(WorkDir workDir)
-        throws Exception
+    public void testJettyEmbedder(WorkDir workDir) throws Exception
     {
         Path baseResource = workDir.getEmptyPathDir();
         MavenWebAppContext webApp = new MavenWebAppContext();
@@ -92,7 +92,8 @@ public class TestJettyEmbedder
 
         ContextHandler otherHandler = new ContextHandler();
         otherHandler.setContextPath("/other");
-        otherHandler.setBaseResource(webApp.getResourceFactory().newResource(MavenTestingUtils.getTargetPath("test-classes/root")));
+        otherHandler.setBaseResource(
+            webApp.getResourceFactory().newResource(MavenTestingUtils.getTargetPath("test-classes/root")));
 
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);
@@ -103,10 +104,12 @@ public class TestJettyEmbedder
         jetty.setServer(server);
         jetty.setContextHandlers(List.of(otherHandler));
         jetty.setRequestLog(null);
-        jetty.setJettyXmlFiles(Collections.singletonList(MavenTestingUtils.getTargetFile("test-classes/embedder-jetty.xml")));
+        jetty.setJettyXmlFiles(
+            Collections.singletonList(MavenTestingUtils.getTargetFile("test-classes/embedder-jetty.xml")));
         jetty.setJettyProperties(jettyProperties);
         jetty.setLoginServices(null);
-        jetty.setContextXml(MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml").getAbsolutePath());
+        jetty.setContextXml(MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml")
+            .getAbsolutePath());
         jetty.setWebApp(webApp);
 
         try
@@ -122,12 +125,13 @@ public class TestJettyEmbedder
             assertTrue(contexts.contains(otherHandler));
             assertTrue(contexts.contains(webApp));
 
-            //stop the webapp and check durable listener retained
+            // stop the webapp and check durable listener retained
             jetty.stopWebApp();
             boolean someListener = false;
             for (ListenerHolder h : webApp.getServletHandler().getListeners())
             {
-                if (h.getHeldClass() != null && "org.eclipse.jetty.ee9.maven.plugin.SomeListener".equalsIgnoreCase(h.getHeldClass().getName()))
+                if (h.getHeldClass() != null && "org.eclipse.jetty.ee9.maven.plugin.SomeListener"
+                    .equalsIgnoreCase(h.getHeldClass().getName()))
                 {
                     if (someListener)
                         fail("Duplicate listeners");
@@ -136,15 +140,15 @@ public class TestJettyEmbedder
                 }
             }
 
-
-            //restart the webapp
+            // restart the webapp
             jetty.redeployWebApp();
             someListener = false;
 
-            //ensure still only 1 listener
+            // ensure still only 1 listener
             for (ListenerHolder h : webApp.getServletHandler().getListeners())
             {
-                if (h.getHeldClass() != null && "org.eclipse.jetty.ee9.maven.plugin.SomeListener".equalsIgnoreCase(h.getHeldClass().getName()))
+                if (h.getHeldClass() != null && "org.eclipse.jetty.ee9.maven.plugin.SomeListener"
+                    .equalsIgnoreCase(h.getHeldClass().getName()))
                 {
                     if (someListener)
                         fail("Duplicate listeners");

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
+import jakarta.websocket.Extension;
+import jakarta.websocket.WebSocketContainer;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -21,9 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-
-import jakarta.websocket.Extension;
-import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -34,12 +33,14 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class JakartaWebSocketContainer extends ContainerLifeCycle implements jakarta.websocket.WebSocketContainer, Dumpable
+public abstract class JakartaWebSocketContainer extends ContainerLifeCycle
+    implements jakarta.websocket.WebSocketContainer, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketContainer.class);
     private final List<JakartaWebSocketSessionListener> sessionListeners = new ArrayList<>();
     protected final SessionTracker sessionTracker = new SessionTracker();
-    protected final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
+    protected final Configuration.ConfigurationCustomizer defaultCustomizer =
+        new Configuration.ConfigurationCustomizer();
     protected final WebSocketComponents components;
 
     public JakartaWebSocketContainer(WebSocketComponents components)

@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import jakarta.websocket.ClientEndpointConfig;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
-import jakarta.websocket.ClientEndpointConfig;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandler;
@@ -37,8 +38,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class OnCloseTest
 {
@@ -81,15 +80,15 @@ public class OnCloseTest
             Arguments.of(new Case(CloseReasonSocket.class).expect("onClose(CloseReason)")),
             Arguments.of(new Case(CloseSessionSocket.class).expect("onClose(Session)")),
             Arguments.of(new Case(CloseReasonSessionSocket.class).expect("onClose(CloseReason,Session)")),
-            Arguments.of(new Case(CloseSessionReasonSocket.class).expect("onClose(Session,CloseReason)"))
-        );
+            Arguments.of(new Case(CloseSessionReasonSocket.class).expect("onClose(Session,CloseReason)")));
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
     public void testOnCloseCall(Case testcase) throws Exception
     {
-        WSEventTracker endpoint = (WSEventTracker)testcase.closeClass.getConstructor().newInstance();
+        WSEventTracker endpoint =
+            (WSEventTracker)testcase.closeClass.getConstructor().newInstance();
 
         ClientEndpointConfig config = new BasicClientEndpointConfig();
         // TODO: use ConfiguredEndpoint here?

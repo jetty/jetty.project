@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,19 +33,12 @@ import java.util.Arrays;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class RolloverFileOutputStreamTest
@@ -50,14 +49,15 @@ public class RolloverFileOutputStreamTest
     private static ZoneId toZoneId(String timezoneId)
     {
         ZoneId zone = TimeZone.getTimeZone(timezoneId).toZoneId();
-        // System.out.printf(".toZoneId(\"%s\") = [id=%s,normalized=%s]%n", timezoneId, zone.getId(), zone.normalized());
+        // System.out.printf(".toZoneId(\"%s\") = [id=%s,normalized=%s]%n", timezoneId, zone.getId(),
+        // zone.normalized());
         return zone;
     }
 
     private static ZonedDateTime toDateTime(String timendate, ZoneId zone)
     {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z")
-            .withZone(zone);
+        DateTimeFormatter formatter =
+            DateTimeFormatter.ofPattern("yyyy.MM.dd-hh:mm:ss.S a z").withZone(zone);
         return ZonedDateTime.parse(timendate, formatter);
     }
 
@@ -100,7 +100,7 @@ public class RolloverFileOutputStreamTest
             {"2017.04.30-12:00:00.0 AM PDT", 86_400_000L},
             {"2017.05.01-12:00:00.0 AM PDT", 86_400_000L},
             {"2017.05.02-12:00:00.0 AM PDT", 86_400_000L},
-            };
+        };
 
         assertSequence(initialDate, expected);
     }
@@ -120,7 +120,7 @@ public class RolloverFileOutputStreamTest
             {"2016.03.14-12:00:00.0 AM PDT", 82_800_000L}, // the short day
             {"2016.03.15-12:00:00.0 AM PDT", 86_400_000L},
             {"2016.03.16-12:00:00.0 AM PDT", 86_400_000L},
-            };
+        };
 
         assertSequence(midnight, expected);
     }
@@ -140,7 +140,7 @@ public class RolloverFileOutputStreamTest
             {"2016.11.07-12:00:00.0 AM PST", 90_000_000L}, // the long day
             {"2016.11.08-12:00:00.0 AM PST", 86_400_000L},
             {"2016.11.09-12:00:00.0 AM PST", 86_400_000L},
-            };
+        };
 
         assertSequence(midnight, expected);
     }
@@ -160,7 +160,7 @@ public class RolloverFileOutputStreamTest
             {"2016.10.04-12:00:00.0 AM AEDT", 86_400_000L},
             {"2016.10.05-12:00:00.0 AM AEDT", 86_400_000L},
             {"2016.10.06-12:00:00.0 AM AEDT", 86_400_000L},
-            };
+        };
 
         assertSequence(midnight, expected);
     }
@@ -180,7 +180,7 @@ public class RolloverFileOutputStreamTest
             {"2016.04.05-12:00:00.0 AM AEST", 86_400_000L},
             {"2016.04.06-12:00:00.0 AM AEST", 86_400_000L},
             {"2016.04.07-12:00:00.0 AM AEST", 86_400_000L},
-            };
+        };
 
         assertSequence(midnight, expected);
     }
@@ -194,7 +194,7 @@ public class RolloverFileOutputStreamTest
         {
             throw new IllegalStateException();
         }
-        catch (Throwable  t)
+        catch (Throwable t)
         {
             error = t;
         }
@@ -202,7 +202,7 @@ public class RolloverFileOutputStreamTest
         assertThat(error, instanceOf(IOException.class));
         error.getMessage();
         assertThat(error.getMessage(), containsString("Log directory does not exist."));
-    }        
+    }
 
     @Test
     public void testFileHandling() throws Exception
@@ -215,7 +215,7 @@ public class RolloverFileOutputStreamTest
         String templateString = template.toAbsolutePath().toString();
 
         try (RolloverFileOutputStream rofos =
-                 new RolloverFileOutputStream(templateString, false, 3, TimeZone.getTimeZone(zone), null, null, now))
+            new RolloverFileOutputStream(templateString, false, 3, TimeZone.getTimeZone(zone), null, null, now))
         {
             rofos.write("TICK".getBytes());
             rofos.flush();
@@ -224,7 +224,7 @@ public class RolloverFileOutputStreamTest
         now = now.plus(5, ChronoUnit.MINUTES);
 
         try (RolloverFileOutputStream rofos =
-                 new RolloverFileOutputStream(templateString, false, 3, TimeZone.getTimeZone(zone), null, null, now))
+            new RolloverFileOutputStream(templateString, false, 3, TimeZone.getTimeZone(zone), null, null, now))
         {
             rofos.write("TOCK".getBytes());
             rofos.flush();
@@ -243,7 +243,7 @@ public class RolloverFileOutputStreamTest
             Files.setLastModifiedTime(testPath.resolve("test-rofos-2016_04_10.log"), FileTime.from(now.toInstant()));
 
             ZonedDateTime time = now.minus(1, ChronoUnit.DAYS);
-            for (int i = 10; i-- > 5; )
+            for (int i = 10; i-- > 5;)
             {
                 String file = "test-rofos-2016_04_0" + i + ".log";
                 Path path = testPath.resolve(file);
@@ -269,37 +269,40 @@ public class RolloverFileOutputStreamTest
 
             ls = ls(testPath);
             assertThat(ls.length, is(14));
-            assertThat(Arrays.asList(ls), Matchers.containsInAnyOrder(
-                "test-rofos-2016_04_05.log",
-                "test-rofos-2016_04_06.log",
-                "test-rofos-2016_04_07.log",
-                "test-rofos-2016_04_08.log",
-                "test-rofos-2016_04_09.log",
-                "test-rofos-2016_04_10.log",
-                "test-rofos-2016_04_06.log.083512300",
-                "test-rofos-2016_04_08.log.083512300",
-                "test-rofos-2016_04_10.log.083512300",
-                "unrelated-9",
-                "unrelated-8",
-                "unrelated-7",
-                "unrelated-6",
-                "unrelated-5"
-            ));
+            assertThat(
+                Arrays.asList(ls),
+                Matchers.containsInAnyOrder(
+                    "test-rofos-2016_04_05.log",
+                    "test-rofos-2016_04_06.log",
+                    "test-rofos-2016_04_07.log",
+                    "test-rofos-2016_04_08.log",
+                    "test-rofos-2016_04_09.log",
+                    "test-rofos-2016_04_10.log",
+                    "test-rofos-2016_04_06.log.083512300",
+                    "test-rofos-2016_04_08.log.083512300",
+                    "test-rofos-2016_04_10.log.083512300",
+                    "unrelated-9",
+                    "unrelated-8",
+                    "unrelated-7",
+                    "unrelated-6",
+                    "unrelated-5"));
 
             rofos.removeOldFiles(now);
             ls = ls(testPath);
             assertThat(ls.length, is(10));
-            assertThat(Arrays.asList(ls), Matchers.containsInAnyOrder(
-                "test-rofos-2016_04_08.log",
-                "test-rofos-2016_04_09.log",
-                "test-rofos-2016_04_10.log",
-                "test-rofos-2016_04_08.log.083512300",
-                "test-rofos-2016_04_10.log.083512300",
-                "unrelated-9",
-                "unrelated-8",
-                "unrelated-7",
-                "unrelated-6",
-                "unrelated-5"));
+            assertThat(
+                Arrays.asList(ls),
+                Matchers.containsInAnyOrder(
+                    "test-rofos-2016_04_08.log",
+                    "test-rofos-2016_04_09.log",
+                    "test-rofos-2016_04_10.log",
+                    "test-rofos-2016_04_08.log.083512300",
+                    "test-rofos-2016_04_10.log.083512300",
+                    "unrelated-9",
+                    "unrelated-8",
+                    "unrelated-7",
+                    "unrelated-6",
+                    "unrelated-5"));
 
             assertThat(readPath(testPath.resolve(backup)), is("TICK"));
             assertThat(readPath(testPath.resolve("test-rofos-2016_04_10.log")), is("TOCK"));
@@ -317,7 +320,7 @@ public class RolloverFileOutputStreamTest
         String templateString = template.toAbsolutePath().toString();
 
         try (RolloverFileOutputStream rofos =
-                 new RolloverFileOutputStream(templateString, false, 0, TimeZone.getTimeZone(zone), null, null, now))
+            new RolloverFileOutputStream(templateString, false, 0, TimeZone.getTimeZone(zone), null, null, now))
         {
             rofos.write("BEFORE".getBytes());
             rofos.flush();
@@ -356,7 +359,7 @@ public class RolloverFileOutputStreamTest
         String templateString = template.toAbsolutePath().toString();
 
         try (RolloverFileOutputStream rofos =
-                 new RolloverFileOutputStream(templateString, false, 0, TimeZone.getTimeZone(zone), "", null, now))
+            new RolloverFileOutputStream(templateString, false, 0, TimeZone.getTimeZone(zone), "", null, now))
         {
             rofos.write("BEFORE".getBytes());
             rofos.flush();

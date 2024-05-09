@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -30,6 +28,13 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -51,12 +56,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-
 /**
  * Servlet equivalent of the jetty-server's RequestLogHandlerTest, but with more ErrorHandler twists.
  */
@@ -73,7 +72,12 @@ public class ServletRequestLogTest
         public void log(Request request, Response response)
         {
             int status = response.getStatus();
-            captured.add(String.format("%s %s %s %03d", request.getMethod(), request.getHttpURI(), request.getConnectionMetaData().getProtocol(), status));
+            captured.add(String.format(
+                "%s %s %s %03d",
+                request.getMethod(),
+                request.getHttpURI(),
+                request.getConnectionMetaData().getProtocol(),
+                status));
         }
     }
 
@@ -91,7 +95,8 @@ public class ServletRequestLogTest
     private static class HelloServlet extends AbstractTestServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.setContentType("text/plain");
             response.getWriter().print("Hello World");
@@ -102,7 +107,8 @@ public class ServletRequestLogTest
     private static class ResponseSendErrorServlet extends AbstractTestServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.sendError(500, "FromResponseSendErrorServlet");
         }
@@ -112,7 +118,8 @@ public class ServletRequestLogTest
     private static class ServletExceptionServlet extends AbstractTestServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             throw new ServletException("FromServletExceptionServlet");
         }
@@ -122,7 +129,8 @@ public class ServletRequestLogTest
     private static class IOExceptionServlet extends AbstractTestServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             throw new IOException("FromIOExceptionServlet");
         }
@@ -132,7 +140,8 @@ public class ServletRequestLogTest
     private static class RuntimeExceptionServlet extends AbstractTestServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             throw new RuntimeException("FromRuntimeExceptionServlet");
         }
@@ -142,7 +151,8 @@ public class ServletRequestLogTest
     private static class AsyncOnTimeoutCompleteServlet extends AbstractTestServlet implements AsyncListener
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             AsyncContext ac = request.startAsync();
             ac.setTimeout(1000);
@@ -175,7 +185,8 @@ public class ServletRequestLogTest
     private static class AsyncOnTimeoutDispatchServlet extends AbstractTestServlet implements AsyncListener
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             if (request.getAttribute("deep") == null)
             {
@@ -212,7 +223,8 @@ public class ServletRequestLogTest
     private static class AsyncOnStartIOExceptionServlet extends AbstractTestServlet implements AsyncListener
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             AsyncContext ac = request.startAsync();
             ac.setTimeout(1000);
@@ -247,7 +259,8 @@ public class ServletRequestLogTest
     public static class CustomErrorServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             // collect error details
             String reason = HttpStatus.getMessage(response.getStatus());
@@ -286,7 +299,8 @@ public class ServletRequestLogTest
      */
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerCollection(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerCollection(Servlet testServlet, String requestPath, String expectedLogEntry)
+        throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -332,12 +346,13 @@ public class ServletRequestLogTest
                 String host = connector.getHost();
                 if (host == null)
                     host = "localhost";
-                
+
                 int port = connector.getLocalPort();
                 URI serverUri = new URI("http", null, host, port, requestPath, null, null);
 
                 // Make call to test handler
-                HttpURLConnection connection = (HttpURLConnection)serverUri.toURL().openConnection();
+                HttpURLConnection connection =
+                    (HttpURLConnection)serverUri.toURL().openConnection();
                 try
                 {
                     connection.setAllowUserInteraction(false);
@@ -362,7 +377,8 @@ public class ServletRequestLogTest
      */
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerCollectionErrorHandlerServerBean(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerCollectionErrorHandlerServerBean(
+                                                               Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -411,7 +427,8 @@ public class ServletRequestLogTest
                 URI serverUri = new URI("http", null, host, port, requestPath, null, null);
 
                 // Make call to test handler
-                HttpURLConnection connection = (HttpURLConnection)serverUri.toURL().openConnection();
+                HttpURLConnection connection =
+                    (HttpURLConnection)serverUri.toURL().openConnection();
                 try
                 {
                     connection.setAllowUserInteraction(false);
@@ -436,7 +453,8 @@ public class ServletRequestLogTest
      */
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerCollectionSimpleErrorPageMapping(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerCollectionSimpleErrorPageMapping(
+                                                               Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -488,7 +506,8 @@ public class ServletRequestLogTest
                 URI serverUri = new URI("http", null, host, port, requestPath, null, null);
 
                 // Make call to test handler
-                HttpURLConnection connection = (HttpURLConnection)serverUri.toURL().openConnection();
+                HttpURLConnection connection =
+                    (HttpURLConnection)serverUri.toURL().openConnection();
                 try
                 {
                     connection.setAllowUserInteraction(false);
@@ -512,7 +531,8 @@ public class ServletRequestLogTest
      */
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerWrapped(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerWrapped(Servlet testServlet, String requestPath, String expectedLogEntry)
+        throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -566,7 +586,8 @@ public class ServletRequestLogTest
                 URI serverUri = new URI("http", null, host, port, "/test", null, null);
 
                 // Make call to test handler
-                HttpURLConnection connection = (HttpURLConnection)serverUri.toURL().openConnection();
+                HttpURLConnection connection =
+                    (HttpURLConnection)serverUri.toURL().openConnection();
                 try
                 {
                     connection.setAllowUserInteraction(false);

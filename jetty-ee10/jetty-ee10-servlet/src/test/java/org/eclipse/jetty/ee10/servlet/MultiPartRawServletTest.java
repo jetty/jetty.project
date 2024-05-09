@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,13 +38,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Part;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -52,9 +54,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Test various raw Multipart Requests against the ee10 servlet implementation
@@ -96,7 +95,9 @@ public class MultiPartRawServletTest
 
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultiPartFormDataParse(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultiPartFormDataParse(
+                                           MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations)
+        throws Exception
     {
         startServer((servletContextHandler) ->
         {
@@ -131,7 +132,10 @@ public class MultiPartRawServletTest
                 }
             });
             if (!hasContentTypeHeader.get())
-                reqBuilder.append("Content-Type: ").append(formExpectations.getContentType()).append("\r\n");
+                reqBuilder
+                    .append("Content-Type: ")
+                    .append(formExpectations.getContentType())
+                    .append("\r\n");
             reqBuilder.append("Content-Length: ").append(bodyBuffer.remaining()).append("\r\n");
             reqBuilder.append("\r\n");
 
@@ -182,7 +186,7 @@ public class MultiPartRawServletTest
                 public List<PartResult> get(String name)
                 {
                     List<PartResult> namedParts = new ArrayList<>();
-                    for (Part part: parts)
+                    for (Part part : parts)
                     {
                         if (part.getName().equalsIgnoreCase(name))
                         {

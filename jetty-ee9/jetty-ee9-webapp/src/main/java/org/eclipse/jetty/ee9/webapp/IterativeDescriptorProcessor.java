@@ -17,7 +17,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -25,7 +24,9 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public abstract class IterativeDescriptorProcessor implements DescriptorProcessor
 {
-    public static final Class<?>[] __signature = new Class[]{WebAppContext.class, Descriptor.class, XmlParser.Node.class};
+    public static final Class<?>[] __signature =
+        new Class[]
+        {WebAppContext.class, Descriptor.class, XmlParser.Node.class};
     protected Map<String, Method> _visitors = new HashMap<String, Method>();
 
     public abstract void start(WebAppContext context, Descriptor descriptor);
@@ -49,8 +50,7 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
      * {@inheritDoc}
      */
     @Override
-    public void process(WebAppContext context, Descriptor descriptor)
-        throws Exception
+    public void process(WebAppContext context, Descriptor descriptor) throws Exception
     {
         if (descriptor == null)
             return;
@@ -72,8 +72,7 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
         end(context, descriptor);
     }
 
-    protected void visit(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
-        throws Exception
+    protected void visit(WebAppContext context, Descriptor descriptor, XmlParser.Node node) throws Exception
     {
         String name = node.getTag();
         Method m = _visitors.get(name);

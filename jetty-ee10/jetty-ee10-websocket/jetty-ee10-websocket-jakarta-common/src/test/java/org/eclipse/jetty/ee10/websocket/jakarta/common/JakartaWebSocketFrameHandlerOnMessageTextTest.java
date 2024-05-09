@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.sockets.TrackingSocket;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -28,11 +32,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JakartaWebSocketFrameHandlerOnMessageTextTest extends AbstractJakartaWebSocketFrameHandlerTest
 {
@@ -73,7 +72,9 @@ public class JakartaWebSocketFrameHandlerOnMessageTextTest extends AbstractJakar
     {
         MessageSocket socket = new MessageSocket();
         Exception e = assertThrows(InvalidSignatureException.class, () -> onText(socket, "Hello World"));
-        assertThat(e.getMessage(), containsString("@OnMessage public void " + MessageSocket.class.getName() + "#onMessage"));
+        assertThat(
+            e.getMessage(),
+            containsString("@OnMessage public void " + MessageSocket.class.getName() + "#onMessage"));
     }
 
     @ClientEndpoint
@@ -110,7 +111,9 @@ public class JakartaWebSocketFrameHandlerOnMessageTextTest extends AbstractJakar
     {
         MessageSessionSocket socket = new MessageSessionSocket();
         Exception e = assertThrows(InvalidSignatureException.class, () -> onText(socket, "Hello World"));
-        assertThat(e.getMessage(), containsString("@OnMessage public void " + MessageSessionSocket.class.getName() + "#onMessage"));
+        assertThat(
+            e.getMessage(),
+            containsString("@OnMessage public void " + MessageSessionSocket.class.getName() + "#onMessage"));
     }
 
     @ClientEndpoint
@@ -126,11 +129,11 @@ public class JakartaWebSocketFrameHandlerOnMessageTextTest extends AbstractJakar
     @Test
     public void testInvokeMessageSessionText() throws Exception
     {
-        assertOnMessageInvocation(new MessageSessionTextSocket(),
+        assertOnMessageInvocation(
+            new MessageSessionTextSocket(),
             allOf(
                 containsString("onMessage(JakartaWebSocketSession@"),
                 containsString(MessageSessionTextSocket.class.getName()),
-                containsString(", Hello World)")
-            ));
+                containsString(", Hello World)")));
     }
 }

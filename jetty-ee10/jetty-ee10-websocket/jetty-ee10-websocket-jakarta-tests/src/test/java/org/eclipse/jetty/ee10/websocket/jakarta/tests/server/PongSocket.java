@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
-import java.nio.charset.StandardCharsets;
-
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.PongMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +42,9 @@ public class PongSocket
     public void onPong(PongMessage pong)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("PongSocket.onPong(): PongMessage.appData={}", BufferUtil.toDetailString(pong.getApplicationData()));
+            LOG.debug(
+                "PongSocket.onPong(): PongMessage.appData={}",
+                BufferUtil.toDetailString(pong.getApplicationData()));
         byte[] buf = BufferUtil.toArray(pong.getApplicationData());
         String message = new String(buf, StandardCharsets.UTF_8);
         this.session.getAsyncRemote().sendText("PongSocket.onPong(PongMessage)[" + path + "]:" + message);

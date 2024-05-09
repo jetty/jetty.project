@@ -17,7 +17,6 @@ import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpFields;
@@ -54,8 +53,12 @@ public class AbstractClientServerTest
     public WorkDir workDir;
 
     @RegisterExtension
-    public final BeforeTestExecutionCallback printMethodName = context ->
-        System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
+    public final BeforeTestExecutionCallback printMethodName = context -> System.err.printf(
+        "Running %s.%s() %s%n",
+        context.getRequiredTestClass().getSimpleName(),
+        context.getRequiredTestMethod().getName(),
+        context.getDisplayName());
+
     protected Server server;
     protected QuicServerConnector connector;
     protected HTTP3Client http3Client;
@@ -112,7 +115,8 @@ public class AbstractClientServerTest
         clientConnector.setSslContextFactory(sslClient);
         ClientQuicConfiguration quicConfiguration = new ClientQuicConfiguration(sslClient, null);
         http3Client = new HTTP3Client(quicConfiguration, clientConnector);
-        httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
+        httpClient = new HttpClient(new HttpClientTransportDynamic(
+            clientConnector, new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
         httpClient.addBean(mbeanContainer);

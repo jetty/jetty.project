@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.parser;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
@@ -66,7 +65,11 @@ public abstract class BodyParser
 
     protected void emptyBody(ByteBuffer buffer)
     {
-        sessionFailure(buffer, HTTP3ErrorCode.PROTOCOL_ERROR.code(), "invalid_frame", new IOException("invalid empty body frame"));
+        sessionFailure(
+            buffer,
+            HTTP3ErrorCode.PROTOCOL_ERROR.code(),
+            "invalid_frame",
+            new IOException("invalid empty body frame"));
     }
 
     protected void sessionFailure(ByteBuffer buffer, long error, String reason, Throwable failure)
@@ -125,6 +128,9 @@ public abstract class BodyParser
 
     public enum Result
     {
-        NO_FRAME, BLOCKED_FRAME, FRAGMENT_FRAME, WHOLE_FRAME
+        NO_FRAME,
+        BLOCKED_FRAME,
+        FRAGMENT_FRAME,
+        WHOLE_FRAME
     }
 }

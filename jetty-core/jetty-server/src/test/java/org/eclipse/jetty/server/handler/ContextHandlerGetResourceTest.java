@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -72,9 +71,12 @@ public class ContextHandlerGetResourceTest
             // /web/logs -> /var/logs -> /media/internal/logs
             // where /media/internal -> /media/internal-physical/
             new File(docroot, "media/internal-physical/logs").mkdirs();
-            Files.createSymbolicLink(new File(docroot, "media/internal").toPath(), new File(docroot, "media/internal-physical").toPath());
+            Files.createSymbolicLink(
+                new File(docroot, "media/internal").toPath(),
+                new File(docroot, "media/internal-physical").toPath());
             new File(docroot, "var").mkdir();
-            Files.createSymbolicLink(new File(docroot, "var/logs").toPath(), new File(docroot, "media/internal/logs").toPath());
+            Files.createSymbolicLink(
+                new File(docroot, "var/logs").toPath(), new File(docroot, "media/internal/logs").toPath());
             new File(docroot, "web").mkdir();
             Files.createSymbolicLink(new File(docroot, "web/logs").toPath(), new File(docroot, "var/logs").toPath());
             new File(docroot, "media/internal-physical/logs/file.log").createNewFile();
@@ -95,7 +97,7 @@ public class ContextHandlerGetResourceTest
             {
                 context.addBean(symlinkcheck);
             }
-
+        
             @Override
             public boolean check(String pathInContext, Resource resource)
             {
@@ -106,7 +108,7 @@ public class ContextHandlerGetResourceTest
                 return allowAliases.get();
             }
         });
-
+        
          */
 
         server.setHandler(context);
@@ -127,7 +129,7 @@ public class ContextHandlerGetResourceTest
         assertThrows(MalformedURLException.class, () -> context.getResource(path));
         assertThrows(MalformedURLException.class, () -> context.getServletContext().getResource(path));
     }
-
+    
     @Test
     public void testGetUnknown() throws Exception
     {
@@ -136,11 +138,11 @@ public class ContextHandlerGetResourceTest
         assertEquals("unknown.txt", resource.getFile().getName());
         assertEquals(docroot, resource.getFile().getParentFile());
         assertFalse(resource.exists());
-
+    
         URL url = context.getServletContext().getResource(path);
         assertNull(url);
     }
-
+    
     @Test
     public void testGetUnknownDir() throws Exception
     {
@@ -149,11 +151,11 @@ public class ContextHandlerGetResourceTest
         assertEquals("unknown", resource.getFile().getName());
         assertEquals(docroot, resource.getFile().getParentFile());
         assertFalse(resource.exists());
-
+    
         URL url = context.getServletContext().getResource(path);
         assertNull(url);
     }
-
+    
     @Test
     public void testRoot() throws Exception
     {
@@ -162,11 +164,11 @@ public class ContextHandlerGetResourceTest
         assertEquals(docroot, resource.getFile());
         assertTrue(resource.exists());
         assertTrue(resource.isDirectory());
-
+    
         URL url = context.getServletContext().getResource(path);
         assertEquals(docroot, new File(url.toURI()));
     }
-
+    
     @Test
     public void testSubdir() throws Exception
     {
@@ -176,11 +178,11 @@ public class ContextHandlerGetResourceTest
         assertTrue(resource.exists());
         assertTrue(resource.isDirectory());
         assertTrue(resource.toString().endsWith("/"));
-
+    
         URL url = context.getServletContext().getResource(path);
         assertEquals(docroot, new File(url.toURI()).getParentFile());
     }
-
+    
     @Test
     public void testSubdirSlash() throws Exception
     {
@@ -190,11 +192,11 @@ public class ContextHandlerGetResourceTest
         assertTrue(resource.exists());
         assertTrue(resource.isDirectory());
         assertTrue(resource.toString().endsWith("/"));
-
+    
         URL url = context.getServletContext().getResource(path);
         assertEquals(docroot, new File(url.toURI()).getParentFile());
     }
-
+    
     @Test
     public void testGetKnown() throws Exception
     {
@@ -203,11 +205,11 @@ public class ContextHandlerGetResourceTest
         assertEquals("index.html", resource.getFile().getName());
         assertEquals(docroot, resource.getFile().getParentFile());
         assertTrue(resource.exists());
-
+    
         URL url = context.getServletContext().getResource(path);
         assertEquals(docroot, new File(url.toURI()).getParentFile());
     }
-
+    
     @Test
     public void testDoesNotExistResource() throws Exception
     {
@@ -215,7 +217,7 @@ public class ContextHandlerGetResourceTest
         assertNotNull(resource);
         assertFalse(resource.exists());
     }
-
+    
     @Test
     public void testAlias() throws Exception
     {
@@ -224,20 +226,20 @@ public class ContextHandlerGetResourceTest
         assertNull(resource);
         URL resourceURL = context.getServletContext().getResource(path);
         assertFalse(resourceURL.getPath().contains("/./"));
-
+    
         path = "/down/../index.html";
         resource = context.getResource(path);
         assertNull(resource);
         resourceURL = context.getServletContext().getResource(path);
         assertFalse(resourceURL.getPath().contains("/../"));
-
+    
         path = "//index.html";
         resource = context.getResource(path);
         assertNull(resource);
         resourceURL = context.getServletContext().getResource(path);
         assertNull(resourceURL);
     }
-
+    
     @ParameterizedTest
     @ValueSource(strings = {"/down/.././../", "/../down/"})
     public void testNormalize(String path) throws Exception
@@ -245,7 +247,7 @@ public class ContextHandlerGetResourceTest
         URL url = context.getServletContext().getResource(path);
         assertNull(url);
     }
-
+    
     @Test
     public void testDeep() throws Exception
     {
@@ -254,85 +256,85 @@ public class ContextHandlerGetResourceTest
         assertEquals("data.txt", resource.getFile().getName());
         assertEquals(docroot, resource.getFile().getParentFile().getParentFile());
         assertTrue(resource.exists());
-
+    
         URL url = context.getServletContext().getResource(path);
         assertEquals(docroot, new File(url.toURI()).getParentFile().getParentFile());
     }
-
+    
     @Test
     public void testEncodedSlash() throws Exception
     {
         final String path = "/subdir%2Fdata.txt";
-
+    
         Resource resource = context.getResource(path);
         assertEquals("subdir%2Fdata.txt", resource.getFile().getName());
         assertEquals(docroot, resource.getFile().getParentFile());
         assertFalse(resource.exists());
-
+    
         URL url = context.getServletContext().getResource(path);
         assertNull(url);
     }
-
+    
     @Test
     public void testEncodedSlosh() throws Exception
     {
         final String path = "/subdir%5Cdata.txt";
-
+    
         Resource resource = context.getResource(path);
         assertEquals("subdir%5Cdata.txt", resource.getFile().getName());
         assertEquals(docroot, resource.getFile().getParentFile());
         assertFalse(resource.exists());
-
+    
         URL url = context.getServletContext().getResource(path);
         assertNull(url);
     }
-
+    
     @Test
     public void testEncodedNull() throws Exception
     {
         final String path = "/subdir/data.txt%00";
-
+    
         Resource resource = context.getResource(path);
         assertEquals("data.txt%00", resource.getFile().getName());
         assertEquals(docroot, resource.getFile().getParentFile().getParentFile());
         assertFalse(resource.exists());
-
+    
         URL url = context.getServletContext().getResource(path);
         assertNull(url);
     }
-
+    
     @Test
     public void testSlashSlash() throws Exception
     {
         File expected = new File(docroot, FS.separators("subdir/data.txt"));
         URL expectedUrl = expected.toURI().toURL();
-
+    
         String path = "//subdir/data.txt";
         Resource resource = context.getResource(path);
         assertThat("Resource: " + resource, resource, nullValue());
         URL url = context.getServletContext().getResource(path);
         assertThat("Resource: " + url, url, nullValue());
-
+    
         path = "/subdir//data.txt";
         resource = context.getResource(path);
         assertThat("Resource: " + resource, resource, nullValue());
         url = context.getServletContext().getResource(path);
         assertThat("Resource: " + url, url, nullValue());
     }
-
+    
     @Test
     public void testAliasedFile() throws Exception
     {
         assumeTrue(OS_ALIAS_SUPPORTED, "OS Supports 8.3 Aliased / Alternate References");
         final String path = "/subdir/TEXTFI~1.TXT";
-
+    
         Resource resource = context.getResource(path);
         assertNull(resource);
-
+    
         URL url = context.getServletContext().getResource(path);
         assertNull(url);
     }
-
+    
     @Test
     public void testAliasedFileAllowed() throws Exception
     {
@@ -341,11 +343,11 @@ public class ContextHandlerGetResourceTest
         {
             allowAliases.set(true);
             final String path = "/subdir/TEXTFI~1.TXT";
-
+    
             Resource resource = context.getResource(path);
             assertNotNull(resource);
             assertEquals(context.getResource("/subdir/TextFile.Long.txt").getURI(), resource.getRealURI());
-
+    
             URL url = context.getServletContext().getResource(path);
             assertNotNull(url);
             assertEquals(docroot, new File(url.toURI()).getParentFile().getParentFile());
@@ -355,7 +357,7 @@ public class ContextHandlerGetResourceTest
             allowAliases.set(false);
         }
     }
-
+    
     @Test
     @EnabledOnOs({LINUX, MAC})
     public void testSymlinkKnown() throws Exception
@@ -363,15 +365,15 @@ public class ContextHandlerGetResourceTest
         try
         {
             allowSymlinks.set(true);
-
+    
             final String path = "/other/other.txt";
-
+    
             Resource resource = context.getResource(path);
             assertNotNull(resource);
             assertEquals("other.txt", resource.getFile().getName());
             assertEquals(docroot, resource.getFile().getParentFile().getParentFile());
             assertTrue(resource.exists());
-
+    
             URL url = context.getServletContext().getResource(path);
             assertEquals(docroot, new File(url.toURI()).getParentFile().getParentFile());
         }
@@ -380,7 +382,7 @@ public class ContextHandlerGetResourceTest
             allowSymlinks.set(false);
         }
     }
-
+    
     @Test
     @EnabledOnOs({LINUX, MAC})
     public void testSymlinkNested() throws Exception
@@ -388,9 +390,9 @@ public class ContextHandlerGetResourceTest
         try
         {
             allowSymlinks.set(true);
-
+    
             final String path = "/web/logs/file.log";
-
+    
             Resource resource = context.getResource(path);
             assertNotNull(resource);
             assertEquals("file.log", resource.getFile().getName());
@@ -401,7 +403,7 @@ public class ContextHandlerGetResourceTest
             allowSymlinks.set(false);
         }
     }
-
+    
     @Test
     @EnabledOnOs({LINUX, MAC})
     public void testSymlinkUnknown() throws Exception
@@ -409,15 +411,15 @@ public class ContextHandlerGetResourceTest
         try
         {
             allowSymlinks.set(true);
-
+    
             final String path = "/other/unknown.txt";
-
+    
             Resource resource = context.getResource(path);
             assertNotNull(resource);
             assertEquals("unknown.txt", resource.getFile().getName());
             assertEquals(docroot, resource.getFile().getParentFile().getParentFile());
             assertFalse(resource.exists());
-
+    
             URL url = context.getServletContext().getResource(path);
             assertNull(url);
         }
@@ -426,6 +428,6 @@ public class ContextHandlerGetResourceTest
             allowSymlinks.set(false);
         }
     }
-
+    
      */
 }

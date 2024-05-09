@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 import org.eclipse.jetty.logging.JettyLevel;
 import org.eclipse.jetty.logging.JettyLogger;
 import org.eclipse.jetty.logging.JettyLoggerFactory;
@@ -30,10 +33,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 
 /**
  * Logger Debug Testing of Handlers
@@ -80,7 +79,8 @@ public class LoggerDebugTest
         assertThat(captureDebugLogging.capture.toString(), not(containsString("SLF4J: Failed toString()")));
     }
 
-    record OriginalLogger(JettyLogger logger, JettyLevel level) {}
+    record OriginalLogger(JettyLogger logger, JettyLevel level) {
+    }
 
     public static class CaptureDebugLogging extends PrintStream
     {
@@ -105,7 +105,7 @@ public class LoggerDebugTest
 
         public void restore()
         {
-            for (OriginalLogger originalLogger: originalLoggers)
+            for (OriginalLogger originalLogger : originalLoggers)
             {
                 originalLogger.logger.setLevel(originalLogger.level);
             }

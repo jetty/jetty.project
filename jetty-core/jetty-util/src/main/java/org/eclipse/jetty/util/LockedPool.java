@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -100,9 +99,7 @@ public class LockedPool<P> extends Pool.Wrapper<P>
         {
             Collection<Entry<P>> result = super.terminate();
             tracker.terminated(getWrapped(), result);
-            return result.stream()
-                .map(LockedEntry::new)
-                .collect(Collectors.toList());
+            return result.stream().map(LockedEntry::new).collect(Collectors.toList());
         }
     }
 

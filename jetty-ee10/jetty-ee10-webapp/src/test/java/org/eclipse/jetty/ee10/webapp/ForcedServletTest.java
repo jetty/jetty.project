@@ -13,17 +13,20 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.Stream;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -39,10 +42,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ForcedServletTest
 {
@@ -60,7 +59,8 @@ public class ForcedServletTest
         context.addBean(new TestInit(context));
 
         // Lets setup the Webapp base resource properly
-        Path basePath = MavenTestingUtils.getTargetTestingPath(ForcedServletTest.class.getName()).resolve("webapp");
+        Path basePath = MavenTestingUtils.getTargetTestingPath(ForcedServletTest.class.getName())
+            .resolve("webapp");
         FS.ensureEmpty(basePath);
         Path srcWebApp = MavenTestingUtils.getProjectDirPath("src/test/webapp-alt-jsp");
         copyDir(srcWebApp, basePath);
@@ -89,7 +89,7 @@ public class ForcedServletTest
         FS.ensureDirExists(dest);
         try (Stream<Path> srcStream = Files.list(src))
         {
-            for (Iterator<Path> it = srcStream.iterator(); it.hasNext(); )
+            for (Iterator<Path> it = srcStream.iterator(); it.hasNext();)
             {
                 Path path = it.next();
                 if (Files.isRegularFile(path))
@@ -183,7 +183,8 @@ public class ForcedServletTest
         assertThat(responseBody, containsString("This is the FakePrecompiledJSP"));
     }
 
-    public static class TestInit extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
+    public static class TestInit extends AbstractLifeCycle
+        implements ServletContextHandler.ServletContainerInitializerCaller
     {
         private final WebAppContext _webapp;
 
@@ -199,7 +200,8 @@ public class ForcedServletTest
             forceServlet("default", ServletHandler.Default404Servlet.class);
             addServletMapping("default", "/");
 
-            // This will result in any attempt to use an JSP that isn't precompiled and in the descriptor with status code 555
+            // This will result in any attempt to use an JSP that isn't precompiled and in the descriptor with status
+            // code 555
             forceServlet("jsp", RejectUncompiledJspServlet.class);
             addServletMapping("jsp", "*.jsp");
             super.doStart();
@@ -234,7 +236,8 @@ public class ForcedServletTest
     public static class RejectUncompiledJspServlet extends HttpServlet
     {
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             log(String.format("Uncompiled JSPs not supported by %s", request.getRequestURI()));
             response.sendError(555);

@@ -19,7 +19,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -57,7 +56,8 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
         this(name, daemon, null);
     }
 
-    public ScheduledExecutorScheduler(@Name("name") String name, @Name("daemon") boolean daemon, @Name("threads") int threads)
+    public ScheduledExecutorScheduler(
+                                      @Name("name") String name, @Name("daemon") boolean daemon, @Name("threads") int threads)
     {
         this(name, daemon, null, null, threads);
     }
@@ -80,7 +80,12 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
      * @param threads The number of threads to pass to the core {@link ScheduledExecutorService} or -1 for a
      * heuristic determined number of threads.
      */
-    public ScheduledExecutorScheduler(@Name("name") String name, @Name("daemon") boolean daemon, @Name("classLoader") ClassLoader classLoader, @Name("threadGroup") ThreadGroup threadGroup, @Name("threads") int threads)
+    public ScheduledExecutorScheduler(
+                                      @Name("name") String name,
+                                      @Name("daemon") boolean daemon,
+                                      @Name("classLoader") ClassLoader classLoader,
+                                      @Name("threadGroup") ThreadGroup threadGroup,
+                                      @Name("threads") int threads)
     {
         this.name = StringUtil.isBlank(name) ? "Scheduler-" + hashCode() : name;
         this.daemon = daemon;
@@ -110,7 +115,8 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
             int size = threads > 0 ? threads : 1;
             ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(size, r ->
             {
-                Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name + "-" + count.incrementAndGet());
+                Thread thread = ScheduledExecutorScheduler.this.thread =
+                    new Thread(threadGroup, r, name + "-" + count.incrementAndGet());
                 thread.setDaemon(daemon);
                 thread.setContextClassLoader(classloader);
                 return thread;

@@ -15,7 +15,6 @@ package org.eclipse.jetty.util.thread.jmh;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.openjdk.jmh.annotations.Benchmark;

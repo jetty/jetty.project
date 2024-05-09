@@ -28,7 +28,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -631,7 +630,14 @@ public interface Request
     /**
      * Listener for all request events.
      */
-    public interface Listener extends QueuedListener, BeginListener, HeadersListener, CommitListener, ContentListener, SuccessListener, FailureListener
+    public interface Listener
+        extends QueuedListener,
+        BeginListener,
+        HeadersListener,
+        CommitListener,
+        ContentListener,
+        SuccessListener,
+        FailureListener
     {
         @Override
         public default void onQueued(Request request)

@@ -16,7 +16,6 @@ package org.eclipse.jetty.security.jaas;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import org.eclipse.jetty.security.PropertyUserStore;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
@@ -27,7 +26,7 @@ import org.slf4j.LoggerFactory;
  *
  * Maintains a map of PropertyUserStores, keyed off the location of the property file containing
  * the authentication and authorization information.
- * 
+ *
  * This class is used to enable the PropertyUserStores to be cached and shared. This is essential
  * for the PropertyFileLoginModules, whose lifecycle is controlled by the JAAS api and instantiated
  * afresh whenever a user needs to be authenticated. Without this class, every PropertyFileLoginModule
@@ -48,11 +47,11 @@ public class PropertyUserStoreManager extends AbstractLifeCycle
         {
             if (_propertyUserStores == null)
                 return null;
-            
+
             return _propertyUserStores.get(file);
         }
     }
-    
+
     public PropertyUserStore addPropertyUserStore(String file, PropertyUserStore store)
     {
         synchronized (this)
@@ -61,7 +60,7 @@ public class PropertyUserStoreManager extends AbstractLifeCycle
             PropertyUserStore existing = _propertyUserStores.get(file);
             if (existing != null)
                 return existing;
-            
+
             _propertyUserStores.put(file, store);
             return store;
         }

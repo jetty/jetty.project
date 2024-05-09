@@ -13,10 +13,14 @@
 
 package org.eclipse.jetty.ee9.plus.annotation;
 
-import java.lang.reflect.Method;
-import java.nio.file.Path;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.servlet.http.HttpServlet;
+import java.lang.reflect.Method;
+import java.nio.file.Path;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallback;
@@ -30,11 +34,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(WorkDirExtension.class)
 public class LifeCycleCallbackCollectionTest
@@ -85,14 +84,14 @@ public class LifeCycleCallbackCollectionTest
     {
         public void afterConstruct()
         {
-            //Empty method, we just want to refer to its name
+            // Empty method, we just want to refer to its name
         }
     }
 
     @Test
     public void testAddForPostConstruct() throws Exception
     {
-        //test empty PostConstruct
+        // test empty PostConstruct
         String nullName = null;
         Class<?> clazz = null;
         PostConstructCallback pc1 = null;
@@ -103,7 +102,7 @@ public class LifeCycleCallbackCollectionTest
         }
         catch (NullPointerException e)
         {
-            //expected
+            // expected
         }
 
         try
@@ -113,7 +112,7 @@ public class LifeCycleCallbackCollectionTest
         }
         catch (NullPointerException e)
         {
-            //expected
+            // expected
         }
 
         try
@@ -123,7 +122,7 @@ public class LifeCycleCallbackCollectionTest
         }
         catch (NullPointerException e)
         {
-            //expected
+            // expected
         }
 
         try
@@ -133,11 +132,11 @@ public class LifeCycleCallbackCollectionTest
         }
         catch (NullPointerException e)
         {
-            //expected
+            // expected
         }
 
         LifeCycleCallbackCollection collection = new LifeCycleCallbackCollection();
-        //test ignoring duplicate adds for callbacks for same classname and method
+        // test ignoring duplicate adds for callbacks for same classname and method
         PostConstructCallback pc2 = new PostConstructCallback("foo", "bar");
         collection.add(pc2);
         assertThat(collection.getPostConstructCallbackMap().get("foo"), Matchers.contains(pc2));
@@ -147,7 +146,7 @@ public class LifeCycleCallbackCollectionTest
         assertThat(collection.getPostConstructCallbackMap().get("foo"), Matchers.contains(pc2));
         assertThat(collection.getPostConstructCallbackMap().values(), hasSize(1));
 
-        //test ignoring duplicate adds by class and method name
+        // test ignoring duplicate adds by class and method name
         collection = new LifeCycleCallbackCollection();
 
         PostConstructCallback pc4 = new PostConstructCallback(SomeTestClass.class, "afterConstruct");
@@ -164,7 +163,7 @@ public class LifeCycleCallbackCollectionTest
     @Test
     public void testUnsupportedType() throws Exception
     {
-        //test that we currently only support PostConstruct and PreDestroy
+        // test that we currently only support PostConstruct and PreDestroy
         LifeCycleCallbackCollection collection = new LifeCycleCallbackCollection();
         try
         {
@@ -174,7 +173,7 @@ public class LifeCycleCallbackCollectionTest
         }
         catch (IllegalArgumentException e)
         {
-            //expected
+            // expected
         }
     }
 
@@ -189,7 +188,7 @@ public class LifeCycleCallbackCollectionTest
         context.setContextPath("/");
         server.setHandler(context);
 
-        //add a non-async servlet
+        // add a non-async servlet
         ServletHolder notAsync = new ServletHolder();
         notAsync.setHeldClass(TestServlet.class);
         notAsync.setName("notAsync");
@@ -197,7 +196,7 @@ public class LifeCycleCallbackCollectionTest
         notAsync.setInitOrder(1);
         context.getServletHandler().addServletWithMapping(notAsync, "/notasync/*");
 
-        //add an async servlet
+        // add an async servlet
         ServletHolder async = new ServletHolder();
         async.setHeldClass(TestServlet.class);
         async.setName("async");
@@ -205,7 +204,7 @@ public class LifeCycleCallbackCollectionTest
         async.setInitOrder(1);
         context.getServletHandler().addServletWithMapping(async, "/async/*");
 
-        //add a run-as servlet
+        // add a run-as servlet
         ServletHolder runas = new ServletHolder();
         runas.setHeldClass(TestServlet.class);
         runas.setName("runas");
@@ -213,7 +212,7 @@ public class LifeCycleCallbackCollectionTest
         runas.setInitOrder(1);
         context.getServletHandler().addServletWithMapping(runas, "/runas/*");
 
-        //add both run-as and non async servlet
+        // add both run-as and non async servlet
         ServletHolder both = new ServletHolder();
         both.setHeldClass(TestServlet.class);
         both.setName("both");
@@ -222,7 +221,7 @@ public class LifeCycleCallbackCollectionTest
         both.setInitOrder(1);
         context.getServletHandler().addServletWithMapping(both, "/both/*");
 
-        //Make fake lifecycle callbacks for all servlets
+        // Make fake lifecycle callbacks for all servlets
         LifeCycleCallbackCollection collection = new LifeCycleCallbackCollection();
         context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, collection);
         PostConstructCallback pcNotAsync = new PostConstructCallback(TestServlet.class, "postconstruct");
@@ -257,7 +256,7 @@ public class LifeCycleCallbackCollectionTest
     @Test
     public void testAddForPreDestroy() throws Exception
     {
-        //test empty PreDestroy
+        // test empty PreDestroy
         String nullName = null;
         Class<?> clazz = null;
         PreDestroyCallback pc1 = null;
@@ -268,7 +267,7 @@ public class LifeCycleCallbackCollectionTest
         }
         catch (NullPointerException e)
         {
-            //expected
+            // expected
         }
 
         try
@@ -278,7 +277,7 @@ public class LifeCycleCallbackCollectionTest
         }
         catch (NullPointerException e)
         {
-            //expected
+            // expected
         }
 
         try
@@ -288,7 +287,7 @@ public class LifeCycleCallbackCollectionTest
         }
         catch (NullPointerException e)
         {
-            //expected
+            // expected
         }
 
         try
@@ -298,11 +297,11 @@ public class LifeCycleCallbackCollectionTest
         }
         catch (NullPointerException e)
         {
-            //expected
+            // expected
         }
 
         LifeCycleCallbackCollection collection = new LifeCycleCallbackCollection();
-        //test ignoring duplicate adds for callbacks for same classname and method
+        // test ignoring duplicate adds for callbacks for same classname and method
         PreDestroyCallback pc2 = new PreDestroyCallback("foo", "bar");
         collection.add(pc2);
         assertThat(collection.getPreDestroyCallbackMap().get("foo"), Matchers.contains(pc2));
@@ -312,7 +311,7 @@ public class LifeCycleCallbackCollectionTest
         assertThat(collection.getPreDestroyCallbackMap().get("foo"), Matchers.contains(pc2));
         assertThat(collection.getPreDestroyCallbackMap().values(), hasSize(1));
 
-        //test ignoring duplicate adds by class and method name
+        // test ignoring duplicate adds by class and method name
         collection = new LifeCycleCallbackCollection();
 
         PreDestroyCallback pc4 = new PreDestroyCallback(SomeTestClass.class, "afterConstruct");

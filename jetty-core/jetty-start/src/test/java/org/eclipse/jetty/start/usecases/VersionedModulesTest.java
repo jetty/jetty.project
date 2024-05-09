@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -20,13 +24,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class VersionedModulesTest extends AbstractUseCase
 {
@@ -36,26 +35,17 @@ public class VersionedModulesTest extends AbstractUseCase
         setupStandardHomeDir();
 
         FS.ensureDirExists(baseDir.resolve("modules"));
-        Files.write(baseDir.resolve("modules/new.mod"),
-            Arrays.asList(
-                "[version]",
-                "9.3",
-                "[ini]",
-                "the-future=is-new"
-            ),
+        Files.write(
+            baseDir.resolve("modules/new.mod"),
+            Arrays.asList("[version]", "9.3", "[ini]", "the-future=is-new"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/old.mod"),
-            Arrays.asList(
-                "[defaults]",
-                "from-module=old"
-            ),
+        Files.write(
+            baseDir.resolve("modules/old.mod"),
+            Arrays.asList("[defaults]", "from-module=old"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Arrays.asList(
-                "--modules=main",
-                "--modules=old",
-                "--modules=new"
-            ),
+        Files.write(
+            baseDir.resolve("start.ini"),
+            Arrays.asList("--modules=main", "--modules=old", "--modules=new"),
             StandardCharsets.UTF_8);
 
         // === Execute Main
@@ -63,19 +53,13 @@ public class VersionedModulesTest extends AbstractUseCase
         ExecResults results = exec(runArgs, false);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml"
-        );
+        List<String> expectedXmls = Arrays.asList("${jetty.home}/etc/base.xml", "${jetty.home}/etc/main.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/base.jar", "${jetty.home}/lib/main.jar", "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 

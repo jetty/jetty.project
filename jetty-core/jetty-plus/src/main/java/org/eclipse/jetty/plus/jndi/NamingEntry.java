@@ -13,14 +13,12 @@
 
 package org.eclipse.jetty.plus.jndi;
 
-import java.util.Set;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.LinkRef;
 import javax.naming.Name;
 import javax.naming.NameParser;
 import javax.naming.NamingException;
-
 import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +37,11 @@ import org.slf4j.LoggerFactory;
 public abstract class NamingEntry
 {
     private static final Logger LOG = LoggerFactory.getLogger(NamingEntry.class);
-    public static final String __contextName = "__"; //all NamingEntries stored in context called "__"
+    public static final String __contextName = "__"; // all NamingEntries stored in context called "__"
     protected final Object _scope;
-    protected final String _jndiName;  //the name representing the object associated with the NamingEntry
-    protected String _namingEntryNameString; //the name of the NamingEntry relative to the context it is stored in
-    protected String _objectNameString; //the name of the object relative to the context it is stored in
+    protected final String _jndiName; // the name representing the object associated with the NamingEntry
+    protected String _namingEntryNameString; // the name of the NamingEntry relative to the context it is stored in
+    protected String _objectNameString; // the name of the object relative to the context it is stored in
 
     /**
      * Create a NamingEntry.
@@ -58,8 +56,7 @@ public abstract class NamingEntry
      * @param objectToBind the object to bind
      * @throws NamingException if there is no name or no objectToBind
      */
-    protected NamingEntry(Object scope, String jndiName, Object objectToBind)
-        throws NamingException
+    protected NamingEntry(Object scope, String jndiName, Object objectToBind) throws NamingException
     {
         if (jndiName == null)
             throw new NamingException("jndi name is null");
@@ -75,8 +72,7 @@ public abstract class NamingEntry
      * @param localName the local name to bind
      * @throws NamingException if unable to bind
      */
-    public void bindToENC(String localName)
-        throws NamingException
+    public void bindToENC(String localName) throws NamingException
     {
         // TODO - check on the whole overriding/non-overriding thing
         InitialContext ic = new InitialContext();
@@ -173,8 +169,7 @@ public abstract class NamingEntry
      * @throws NamingException if unable to save
      * @see NamingEntryUtil#getNameForScope(Object)
      */
-    protected void save(Object object)
-        throws NamingException
+    protected void save(Object object) throws NamingException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("SAVE {} in {}", this, _scope);
@@ -182,13 +177,13 @@ public abstract class NamingEntry
         NameParser parser = ic.getNameParser("");
         Name prefix = NamingEntryUtil.getNameForScope(_scope);
 
-        //bind the NamingEntry into the context
+        // bind the NamingEntry into the context
         Name namingEntryName = NamingEntryUtil.makeNamingEntryName(parser, getJndiName());
         namingEntryName.addAll(0, prefix);
         _namingEntryNameString = namingEntryName.toString();
         NamingUtil.bind(ic, _namingEntryNameString, this);
 
-        //bind the object as well
+        // bind the object as well
         Name objectName = parser.parse(getJndiName());
         objectName.addAll(0, prefix);
         _objectNameString = objectName.toString();

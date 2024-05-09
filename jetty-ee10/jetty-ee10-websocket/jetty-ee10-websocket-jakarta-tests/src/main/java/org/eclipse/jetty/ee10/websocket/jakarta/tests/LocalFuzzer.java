@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -20,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
@@ -30,10 +33,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
@@ -277,7 +276,10 @@ public class LocalFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
         logger.debug("Response: {}", parsedResponse);
 
         assertThat("Is Switching Protocols", parsedResponse.getStatus(), is(101));
-        assertThat("Is Connection Upgrade", parsedResponse.get(HttpHeader.SEC_WEBSOCKET_ACCEPT.asString()), notNullValue());
+        assertThat(
+            "Is Connection Upgrade",
+            parsedResponse.get(HttpHeader.SEC_WEBSOCKET_ACCEPT.asString()),
+            notNullValue());
         assertThat("Is Connection Upgrade", parsedResponse.get("Connection"), is("Upgrade"));
         assertThat("Is WebSocket Upgrade", parsedResponse.get("Upgrade"), is("WebSocket"));
         return parsedResponse;

@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee10.servlet.util;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
+import java.io.IOException;
+import java.io.OutputStream;
 
 public class ServletOutputStreamWrapper extends ServletOutputStream
 {

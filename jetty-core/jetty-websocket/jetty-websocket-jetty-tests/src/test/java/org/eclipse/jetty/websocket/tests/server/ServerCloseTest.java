@@ -13,11 +13,18 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.concurrent.Future;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -35,14 +42,6 @@ import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests various close scenarios
@@ -157,11 +156,13 @@ public class ServerCloseTest
             session = futSession.get(5, SECONDS);
 
             // Verify that client got close indicating SERVER_ERROR
-            clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.SERVER_ERROR), containsString("Intentional FastFail"));
+            clientEndpoint.assertReceivedCloseEvent(
+                5000, is(StatusCode.SERVER_ERROR), containsString("Intentional FastFail"));
 
             // Verify that server socket got close event
             AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
-            serverEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.SERVER_ERROR), containsString("Intentional FastFail"));
+            serverEndpoint.assertReceivedCloseEvent(
+                5000, is(StatusCode.SERVER_ERROR), containsString("Intentional FastFail"));
 
             // Validate errors (must be "java.lang.RuntimeException: Intentional Exception from onWebSocketOpen")
             assertThat("socket.onErrors", serverEndpoint.errors.size(), greaterThanOrEqualTo(1));
@@ -219,9 +220,9 @@ public class ServerCloseTest
     @Test
     public void testOpenSessionCleanup() throws Exception
     {
-        //fastFail();
-        //fastClose();
-        //dropConnection();
+        // fastFail();
+        // fastClose();
+        // dropConnection();
 
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setSubProtocols("container");

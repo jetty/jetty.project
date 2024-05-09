@@ -24,7 +24,6 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
@@ -61,10 +60,9 @@ import org.eclipse.jetty.websocket.core.util.ReflectUtils;
  */
 public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 {
-    private static final InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(String.class).required()
-    };
+    private static final InvokerUtils.Arg[] textCallingArgs =
+        new InvokerUtils.Arg[]
+        {new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(String.class).required()};
 
     private static final InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
         new InvokerUtils.Arg(Session.class),
@@ -73,14 +71,12 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     };
 
     private static final InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(InputStream.class).required()
+        new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(InputStream.class).required()
     };
 
-    private static final InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(Reader.class).required()
-    };
+    private static final InvokerUtils.Arg[] readerCallingArgs =
+        new InvokerUtils.Arg[]
+        {new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(Reader.class).required()};
 
     private static final InvokerUtils.Arg[] textPartialCallingArgs = new InvokerUtils.Arg[]{
         new InvokerUtils.Arg(Session.class),
@@ -199,7 +195,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             metadata.setTextHandle(PartialStringMessageSink.class, partialTextHandle, partialTextMethod);
         }
 
-        Method partialBinaryMethod = findMethod(endpointClass, "onWebSocketPartialBinary", ByteBuffer.class, boolean.class, Callback.class);
+        Method partialBinaryMethod =
+            findMethod(endpointClass, "onWebSocketPartialBinary", ByteBuffer.class, boolean.class, Callback.class);
         if (partialBinaryMethod != null)
         {
             MethodHandle partialBinaryHandle = toMethodHandle(lookup, partialBinaryMethod);
@@ -279,7 +276,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg STATUS_CODE = new InvokerUtils.Arg(int.class);
             final InvokerUtils.Arg REASON = new InvokerUtils.Arg(String.class);
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, STATUS_CODE, REASON);
+            MethodHandle methodHandle =
+                InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, STATUS_CODE, REASON);
             metadata.setCloseHandle(methodHandle, onmethod);
         }
 
@@ -302,7 +300,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg FRAME = new InvokerUtils.Arg(Frame.class).required();
             final InvokerUtils.Arg CALLBACK = new InvokerUtils.Arg(Callback.class).required();
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, FRAME, CALLBACK);
+            MethodHandle methodHandle =
+                InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, FRAME, CALLBACK);
             metadata.setFrameHandle(methodHandle, onmethod);
         }
 
@@ -315,7 +314,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             {
                 assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
 
-                MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, textCallingArgs);
+                MethodHandle methodHandle =
+                    InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, textCallingArgs);
                 if (methodHandle != null)
                 {
                     // Normal Text Message
@@ -324,7 +324,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryBufferCallingArgs);
+                methodHandle =
+                    InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryBufferCallingArgs);
                 if (methodHandle != null)
                 {
                     // ByteBuffer Binary Message
@@ -333,11 +334,13 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, inputStreamCallingArgs);
+                methodHandle =
+                    InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, inputStreamCallingArgs);
                 if (methodHandle != null)
                 {
                     if (!metadata.isAutoDemand())
-                        throw new InvalidWebSocketException("InputStream methods require auto-demanding WebSocket endpoints");
+                        throw new InvalidWebSocketException(
+                            "InputStream methods require auto-demanding WebSocket endpoints");
 
                     // InputStream Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
@@ -349,7 +352,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 if (methodHandle != null)
                 {
                     if (!metadata.isAutoDemand())
-                        throw new InvalidWebSocketException("Reader methods require auto-demanding WebSocket endpoints");
+                        throw new InvalidWebSocketException(
+                            "Reader methods require auto-demanding WebSocket endpoints");
 
                     // Reader Text Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
@@ -357,7 +361,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, textPartialCallingArgs);
+                methodHandle =
+                    InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, textPartialCallingArgs);
                 if (methodHandle != null)
                 {
                     // Partial Text Message
@@ -366,7 +371,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryPartialBufferCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(
+                    lookup, endpointClass, onMsg, binaryPartialBufferCallingArgs);
                 if (methodHandle != null)
                 {
                     // Partial ByteBuffer Message
@@ -383,7 +389,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         return metadata;
     }
 
-    private void assertSignatureValid(Class<?> endpointClass, Method method, Class<? extends Annotation> annotationClass)
+    private void assertSignatureValid(
+                                      Class<?> endpointClass, Method method, Class<? extends Annotation> annotationClass)
     {
         // Test modifiers
         int mods = method.getModifiers();

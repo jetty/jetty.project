@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.StatusCode;
@@ -29,12 +34,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyOnCloseTest
 {
@@ -98,8 +97,9 @@ public class JettyOnCloseTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServletContainerInitializer.configure(contextHandler, ((servletContext, container) ->
-            container.addMapping("/", (req, resp) -> serverEndpoint)));
+        JettyWebSocketServletContainerInitializer.configure(
+            contextHandler,
+            ((servletContext, container) -> container.addMapping("/", (req, resp) -> serverEndpoint)));
 
         client = new WebSocketClient();
         server.start();

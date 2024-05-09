@@ -16,7 +16,6 @@ package org.eclipse.jetty.http2.client;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
@@ -53,21 +52,24 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @SuppressWarnings("unchecked")
         Promise<Session> sessionPromise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
-        Generator generator = new Generator(bufferPool, client.isUseOutputDirectByteBuffers(), client.getMaxHeaderBlockFragment());
+        Generator generator =
+            new Generator(bufferPool, client.isUseOutputDirectByteBuffers(), client.getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
 
         Parser parser = new Parser(bufferPool, client.getMaxResponseHeadersSize());
         parser.setMaxFrameSize(client.getMaxFrameSize());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
-        HTTP2ClientSession session = new HTTP2ClientSession(client.getScheduler(), endPoint, parser, generator, listener, flowControl);
+        HTTP2ClientSession session =
+            new HTTP2ClientSession(client.getScheduler(), endPoint, parser, generator, listener, flowControl);
         session.setMaxRemoteStreams(client.getMaxConcurrentPushedStreams());
         session.setMaxEncoderTableCapacity(client.getMaxEncoderTableCapacity());
         long streamIdleTimeout = client.getStreamIdleTimeout();
         if (streamIdleTimeout > 0)
             session.setStreamIdleTimeout(streamIdleTimeout);
 
-        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, endPoint, session, sessionPromise, listener);
+        HTTP2ClientConnection connection =
+            new HTTP2ClientConnection(client, endPoint, session, sessionPromise, listener);
         context.put(HTTP2Connection.class.getName(), connection);
         connection.addEventListener(connectionListener);
         parser.init(connection);
@@ -81,7 +83,12 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        private HTTP2ClientConnection(HTTP2Client client, EndPoint endpoint, HTTP2ClientSession session, Promise<Session> sessionPromise, Session.Listener listener)
+        private HTTP2ClientConnection(
+                                      HTTP2Client client,
+                                      EndPoint endpoint,
+                                      HTTP2ClientSession session,
+                                      Promise<Session> sessionPromise,
+                                      Session.Listener listener)
         {
             super(client.getByteBufferPool(), client.getExecutor(), endpoint, session, client.getInputBufferSize());
             this.client = client;

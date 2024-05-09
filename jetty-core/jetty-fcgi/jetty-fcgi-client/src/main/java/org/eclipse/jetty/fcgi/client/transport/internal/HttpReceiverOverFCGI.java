@@ -98,11 +98,15 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     @Override
     public void failAndClose(Throwable failure)
     {
-        responseFailure(failure, Promise.from(failed ->
-        {
-            if (failed)
-                getHttpChannel().getHttpConnection().close(failure);
-        }, x -> getHttpChannel().getHttpConnection().close(failure)));
+        responseFailure(
+            failure,
+            Promise.from(
+                failed ->
+                {
+                    if (failed)
+                        getHttpChannel().getHttpConnection().close(failure);
+                },
+                x -> getHttpChannel().getHttpConnection().close(failure)));
     }
 
     void content(Content.Chunk chunk)

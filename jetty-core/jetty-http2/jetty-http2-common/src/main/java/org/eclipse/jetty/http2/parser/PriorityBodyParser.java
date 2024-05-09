@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 
@@ -121,6 +120,10 @@ public class PriorityBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, EXCLUSIVE, PARENT_STREAM_ID, PARENT_STREAM_ID_BYTES, WEIGHT
+        PREPARE,
+        EXCLUSIVE,
+        PARENT_STREAM_ID,
+        PARENT_STREAM_ID_BYTES,
+        WEIGHT
     }
 }

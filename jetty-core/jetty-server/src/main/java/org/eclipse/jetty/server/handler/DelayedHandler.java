@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -54,7 +53,8 @@ public class DelayedHandler extends Handler.Wrapper
 
         boolean contentExpected = false;
         String contentType = null;
-        loop: for (HttpField field : request.getHeaders())
+        loop:
+        for (HttpField field : request.getHeaders())
         {
             HttpHeader header = field.getHeader();
             if (header == null)
@@ -86,7 +86,8 @@ public class DelayedHandler extends Handler.Wrapper
         }
 
         MimeTypes.Type mimeType = MimeTypes.getBaseType(contentType);
-        DelayedProcess delayed = newDelayedProcess(contentExpected, contentType, mimeType, next, request, response, callback);
+        DelayedProcess delayed =
+            newDelayedProcess(contentExpected, contentType, mimeType, next, request, response, callback);
         if (delayed == null)
             return next.handle(request, response, callback);
 
@@ -94,7 +95,14 @@ public class DelayedHandler extends Handler.Wrapper
         return true;
     }
 
-    protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
+    protected DelayedProcess newDelayedProcess(
+                                               boolean contentExpected,
+                                               String contentType,
+                                               MimeTypes.Type mimeType,
+                                               Handler handler,
+                                               Request request,
+                                               Response response,
+                                               Callback callback)
     {
         // if no content is expected, then no delay
         if (!contentExpected)
@@ -108,7 +116,8 @@ public class DelayedHandler extends Handler.Wrapper
         if (mimeType == null)
             return new UntilContentDelayedProcess(handler, request, response, callback);
 
-        // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content is available
+        // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content
+        // is available
         return switch (mimeType)
         {
             case FORM_ENCODED -> new UntilFormDelayedProcess(handler, request, response, callback, contentType);
@@ -229,7 +238,8 @@ public class DelayedHandler extends Handler.Wrapper
     {
         private final Charset _charset;
 
-        public UntilFormDelayedProcess(Handler handler, Request wrapped, Response response, Callback callback, String contentType)
+        public UntilFormDelayedProcess(
+                                       Handler handler, Request wrapped, Response response, Callback callback, String contentType)
         {
             super(handler, wrapped, response, callback);
 
@@ -260,7 +270,8 @@ public class DelayedHandler extends Handler.Wrapper
         {
             if (x == null)
                 // We must execute here as even though we have consumed all the input, we are probably
-                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
+                // invoked in a demand runnable that is serialized with any write callbacks that might be done in
+                // process
                 getRequest().getContext().execute(super::process);
             else
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);

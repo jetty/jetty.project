@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee10.jsp;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.apache.jasper.servlet.JspServlet;
 
 /**
@@ -70,26 +69,26 @@ public class JettyJspServlet extends JspServlet
 
         String jspFile = getInitParameter("jspFile");
 
-        //if this is a forced-path from a jsp-file, we want the jsp servlet to handle it,
-        //otherwise the default servlet might handle it
+        // if this is a forced-path from a jsp-file, we want the jsp servlet to handle it,
+        // otherwise the default servlet might handle it
         if (jspFile == null)
         {
             if (pathInContext != null && pathInContext.endsWith("/"))
             {
-                //dispatch via forward to the default servlet
+                // dispatch via forward to the default servlet
                 getServletContext().getNamedDispatcher("default").forward(req, resp);
                 return;
             }
             else
             {
-                //check if it resolves to a directory
+                // check if it resolves to a directory
                 String realPath = getServletContext().getRealPath(pathInContext);
                 if (realPath != null)
                 {
                     Path asPath = Paths.get(realPath);
                     if (Files.exists(asPath) && Files.isDirectory(asPath))
                     {
-                        //dispatch via forward to the default servlet
+                        // dispatch via forward to the default servlet
                         getServletContext().getNamedDispatcher("default").forward(req, resp);
                         return;
                     }
@@ -97,7 +96,7 @@ public class JettyJspServlet extends JspServlet
             }
         }
 
-        //fall through to the normal jsp servlet handling
+        // fall through to the normal jsp servlet handling
         super.service(req, resp);
     }
 

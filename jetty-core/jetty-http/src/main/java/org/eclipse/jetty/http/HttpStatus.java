@@ -25,8 +25,10 @@ public class HttpStatus
     public static final int CONTINUE_100 = 100;
     public static final int SWITCHING_PROTOCOLS_101 = 101;
     public static final int PROCESSING_102 = 102;
+
     @Deprecated(forRemoval = true)
     public static final int EARLY_HINT_103 = 103;
+
     public static final int EARLY_HINTS_103 = 103;
 
     public static final int OK_200 = 200;
@@ -171,7 +173,6 @@ public class HttpStatus
         LOOP_DETECTED(LOOP_DETECTED_508, "Loop Detected"),
         NOT_EXTENDED(NOT_EXTENDED_510, "Not Extended"),
         NETWORK_AUTHENTICATION_REQUIRED(NETWORK_AUTHENTICATION_REQUIRED_511, "Network Authentication Required"),
-
         ;
 
         private final int _code;

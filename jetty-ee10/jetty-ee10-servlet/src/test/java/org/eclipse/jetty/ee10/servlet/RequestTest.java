@@ -13,6 +13,25 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,12 +52,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -62,20 +75,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RequestTest
 {
@@ -103,7 +102,10 @@ public class RequestTest
         _server.addConnector(_connector);
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
-        servletContextHandler.addServlet(servlet, "/*").getRegistration().setMultipartConfig(new MultipartConfigElement("here"));
+        servletContextHandler
+            .addServlet(servlet, "/*")
+            .getRegistration()
+            .setMultipartConfig(new MultipartConfigElement("here"));
 
         _server.setHandler(servletContextHandler);
 
@@ -138,7 +140,7 @@ public class RequestTest
                 Host: local
                 Connection: close
                 X-Forwarded-Proto: https
-                
+
                 """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -234,30 +236,45 @@ public class RequestTest
                     pathInfo = iae.toString();
                 }
 
-                resp.getOutputStream().println("requestURI=%s servletPath=%s pathInfo=%s".formatted(requestURI, servletPath, pathInfo));
+                resp.getOutputStream()
+                    .println("requestURI=%s servletPath=%s pathInfo=%s"
+                        .formatted(requestURI, servletPath, pathInfo));
             }
         });
 
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        String rawRequest = """
-            GET /test/foo%2fbar HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """;
+        _connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setUriCompliance(UriCompliance.RFC3986);
+        String rawRequest =
+            """
+                GET /test/foo%2fbar HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
         String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
         assertThat(count.get(), equalTo(0));
 
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        _connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setUriCompliance(UriCompliance.UNSAFE);
         rawResponse = _connector.getResponse(rawRequest);
 
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("requestURI=/test/foo%2fbar"));
-        assertThat(response.getContent(), containsString("servletPath=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
-        assertThat(response.getContent(), containsString("pathInfo=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
+        assertThat(
+            response.getContent(),
+            containsString(
+                "servletPath=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
+        assertThat(
+            response.getContent(),
+            containsString(
+                "pathInfo=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
         assertThat(count.get(), equalTo(1));
 
         _server.getContainedBeans(ServletHandler.class).iterator().next().setDecodeAmbiguousURIs(true);
@@ -318,21 +335,22 @@ public class RequestTest
 
         try (LocalConnector.LocalEndPoint connection = _connector.connect())
         {
-            connection.addInput("""
-                GET /one HTTP/1.1\r
-                Host: myhost\r
-                Cookie: name1=value1; name2=value2\r
-                \r
-                GET /two HTTP/1.1\r
-                Host: myhost\r
-                Cookie: name1=value1; name2=value2\r
-                \r
-                GET /three HTTP/1.1\r
-                Host: myhost\r
-                Cookie: name1=value1; name3=value3\r
-                Connection: close\r
-                \r
-                """);
+            connection.addInput(
+                """
+                    GET /one HTTP/1.1\r
+                    Host: myhost\r
+                    Cookie: name1=value1; name2=value2\r
+                    \r
+                    GET /two HTTP/1.1\r
+                    Host: myhost\r
+                    Cookie: name1=value1; name2=value2\r
+                    \r
+                    GET /three HTTP/1.1\r
+                    Host: myhost\r
+                    Cookie: name1=value1; name3=value3\r
+                    Connection: close\r
+                    \r
+                    """);
 
             assertThat(connection.getResponse(), containsString(" 200 OK"));
             assertThat(connection.getResponse(), containsString(" 200 OK"));
@@ -340,14 +358,17 @@ public class RequestTest
         }
 
         assertThat(cookieHistory.size(), is(6));
-        assertThat(cookieHistory.stream().map(c -> c.getName() + "=" + c.getValue()).toList(), contains(
-            "name1=value1",
-            "name2=value2",
-            "name1=value1",
-            "name2=value2",
-            "name1=value1",
-            "name3=value3"
-        ));
+        assertThat(
+            cookieHistory.stream()
+                .map(c -> c.getName() + "=" + c.getValue())
+                .toList(),
+            contains(
+                "name1=value1",
+                "name2=value2",
+                "name1=value1",
+                "name2=value2",
+                "name1=value1",
+                "name3=value3"));
 
         assertThat(cookieHistory.get(0), sameInstance(cookieHistory.get(2)));
         assertThat(cookieHistory.get(2), not(sameInstance(cookieHistory.get(4))));
@@ -366,21 +387,23 @@ public class RequestTest
 
                 // Set some fake SSL attributes
                 X509Certificate[] certificates = new X509Certificate[0];
-                coreRequest.setAttribute(EndPoint.SslSessionData.ATTRIBUTE,
+                coreRequest.setAttribute(
+                    EndPoint.SslSessionData.ATTRIBUTE,
                     EndPoint.SslSessionData.from(null, "identity", "quantum_42_Knowledge", certificates));
 
                 // Check we have all the attribute names in servlet API
                 Set<String> names = new HashSet<>(Collections.list(request.getAttributeNames()));
-                assertThat(names, containsInAnyOrder(
-                    EndPoint.SslSessionData.ATTRIBUTE,
-                    ServletContextRequest.SSL_CIPHER_SUITE,
-                    ServletContextRequest.SSL_KEY_SIZE,
-                    ServletContextRequest.SSL_SESSION_ID,
-                    ServletContextRequest.PEER_CERTIFICATES,
-                    FormFields.MAX_FIELDS_ATTRIBUTE,
-                    FormFields.MAX_LENGTH_ATTRIBUTE,
-                    ServletContextRequest.MULTIPART_CONFIG_ELEMENT
-                ));
+                assertThat(
+                    names,
+                    containsInAnyOrder(
+                        EndPoint.SslSessionData.ATTRIBUTE,
+                        ServletContextRequest.SSL_CIPHER_SUITE,
+                        ServletContextRequest.SSL_KEY_SIZE,
+                        ServletContextRequest.SSL_SESSION_ID,
+                        ServletContextRequest.PEER_CERTIFICATES,
+                        FormFields.MAX_FIELDS_ATTRIBUTE,
+                        FormFields.MAX_LENGTH_ATTRIBUTE,
+                        ServletContextRequest.MULTIPART_CONFIG_ELEMENT));
 
                 // check we can get the expected values
                 assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("quantum_42_Knowledge"));
@@ -388,9 +411,11 @@ public class RequestTest
                 assertThat(request.getAttribute(ServletContextRequest.SSL_SESSION_ID), is("identity"));
                 assertThat(request.getAttribute(ServletContextRequest.PEER_CERTIFICATES), sameInstance(certificates));
                 assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), notNullValue());
-                int maxFormKeys = ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys();
+                int maxFormKeys = ServletContextHandler.getServletContextHandler(request.getServletContext())
+                    .getMaxFormKeys();
                 assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(maxFormKeys));
-                int maxFormContentSize = ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormContentSize();
+                int maxFormContentSize = ServletContextHandler.getServletContextHandler(request.getServletContext())
+                    .getMaxFormContentSize();
                 assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(maxFormContentSize));
 
                 // check we can set all those attributes in the servlet API
@@ -412,9 +437,21 @@ public class RequestTest
                 assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(102));
 
                 // but shared values are not changed
-                assertThat(servletContextRequest.getMatchedResource().getResource().getServletHolder().getMultipartConfigElement(), notNullValue());
-                assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys(), is(maxFormKeys));
-                assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormContentSize(), is(maxFormContentSize));
+                assertThat(
+                    servletContextRequest
+                        .getMatchedResource()
+                        .getResource()
+                        .getServletHolder()
+                        .getMultipartConfigElement(),
+                    notNullValue());
+                assertThat(
+                    ServletContextHandler.getServletContextHandler(request.getServletContext())
+                        .getMaxFormKeys(),
+                    is(maxFormKeys));
+                assertThat(
+                    ServletContextHandler.getServletContextHandler(request.getServletContext())
+                        .getMaxFormContentSize(),
+                    is(maxFormContentSize));
 
                 // Check we can remove all the attributes
                 request.removeAttribute(ServletContextRequest.SSL_CIPHER_SUITE);
@@ -429,9 +466,21 @@ public class RequestTest
                 assertThat(Collections.list(request.getAttributeNames()), empty());
 
                 // but shared values are not changed
-                assertThat(servletContextRequest.getMatchedResource().getResource().getServletHolder().getMultipartConfigElement(), notNullValue());
-                assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys(), is(maxFormKeys));
-                assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormContentSize(), is(maxFormContentSize));
+                assertThat(
+                    servletContextRequest
+                        .getMatchedResource()
+                        .getResource()
+                        .getServletHolder()
+                        .getMultipartConfigElement(),
+                    notNullValue());
+                assertThat(
+                    ServletContextHandler.getServletContextHandler(request.getServletContext())
+                        .getMaxFormKeys(),
+                    is(maxFormKeys));
+                assertThat(
+                    ServletContextHandler.getServletContextHandler(request.getServletContext())
+                        .getMaxFormContentSize(),
+                    is(maxFormContentSize));
 
                 resp.getWriter().println("OK");
             }
@@ -530,7 +579,8 @@ public class RequestTest
             {
                 HttpConfiguration httpConfiguration = new HttpConfiguration();
                 // httpConfiguration.setSendDateHeader(true);
-                ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
+                ServerConnector connector =
+                    new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
                 connector.setPort(0);
                 server.addConnector(connector);
             },
@@ -547,12 +597,14 @@ public class RequestTest
 
         URI serverURI = _server.getURI();
 
-        String rawRequest = """
-            GET /foo HTTP/1.1
-            Host: %s
-            Connection: close
-            
-            """.formatted(hostHeader);
+        String rawRequest =
+            """
+                GET /foo HTTP/1.1
+                Host: %s
+                Connection: close
+
+                """
+                .formatted(hostHeader);
 
         try (Socket client = new Socket(hostHeader, serverURI.getPort()))
         {

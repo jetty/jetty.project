@@ -13,6 +13,17 @@
 
 package org.eclipse.jetty.server;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,7 +33,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLHandshakeException;
-
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -38,17 +48,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
@@ -88,11 +87,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
-            os.write((
-                "GET / HTTP/1.0\r\n" +
-                    "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                    "connection: keep-alive\r\n" +
-                    "\r\n").getBytes(StandardCharsets.UTF_8));
+            os.write(("GET / HTTP/1.0\r\n" + "host: localhost:" + _serverURI.getPort() + "\r\n" + "connection: keep-alive\r\n" + "\r\n")
+                .getBytes(StandardCharsets.UTF_8));
             os.flush();
 
             IO.toString(is);
@@ -124,12 +120,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             String content = "Wibble";
             byte[] contentB = content.getBytes(StandardCharsets.UTF_8);
-            os.write((
-                "POST /echo HTTP/1.1\r\n" +
-                    "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                    "content-type: text/plain; charset=utf-8\r\n" +
-                    "content-length: " + contentB.length + "\r\n" +
-                    "\r\n").getBytes(StandardCharsets.UTF_8));
+            os.write(("POST /echo HTTP/1.1\r\n" + "host: localhost:" + _serverURI.getPort() + "\r\n" + "content-type: text/plain; charset=utf-8\r\n" + "content-length: " + contentB.length + "\r\n" + "\r\n")
+                .getBytes(StandardCharsets.UTF_8));
             os.write(contentB);
             os.flush();
 
@@ -155,7 +147,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 try
                 {
-                    exchanger.exchange(request.getConnectionMetaData().getConnection().getEndPoint());
+                    exchanger.exchange(
+                        request.getConnectionMetaData().getConnection().getEndPoint());
                 }
                 catch (Exception e)
                 {
@@ -172,11 +165,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         OutputStream os = client.getOutputStream();
         InputStream is = client.getInputStream();
 
-        os.write((
-            "GET / HTTP/1.0\r\n" +
-                "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                "connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+        os.write(("GET / HTTP/1.0\r\n" + "host: localhost:" + _serverURI.getPort() + "\r\n" + "connection: close\r\n" + "\r\n")
+            .getBytes(StandardCharsets.UTF_8));
         os.flush();
 
         // Get the server side endpoint
@@ -213,7 +203,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 try
                 {
-                    exchanger.exchange(request.getConnectionMetaData().getConnection().getEndPoint());
+                    exchanger.exchange(
+                        request.getConnectionMetaData().getConnection().getEndPoint());
                 }
                 catch (Exception e)
                 {
@@ -232,13 +223,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         String content = "Wibble";
         byte[] contentB = content.getBytes(StandardCharsets.UTF_8);
-        os.write((
-            "POST /echo HTTP/1.1\r\n" +
-                "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                "content-type: text/plain; charset=utf-8\r\n" +
-                "content-length: " + contentB.length + "\r\n" +
-                "connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+        os.write(("POST /echo HTTP/1.1\r\n" + "host: localhost:" + _serverURI.getPort() + "\r\n" + "content-type: text/plain; charset=utf-8\r\n" + "content-length: " + contentB.length + "\r\n" + "connection: close\r\n" + "\r\n")
+            .getBytes(StandardCharsets.UTF_8));
         os.write(contentB);
         os.flush();
 
@@ -340,14 +326,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
             OutputStream os = client.getOutputStream();
             long start = NanoTime.now();
-            os.write((
-                "GET / HTTP/1.1\r\n" +
-                    "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                    "connection: keep-alive\r\n" +
-                    "Content-Length: 20\r\n" +
-                    "Content-Type: text/plain\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n").getBytes(StandardCharsets.UTF_8));
+            os.write(("GET / HTTP/1.1\r\n" + "host: localhost:" + _serverURI.getPort() + "\r\n" + "connection: keep-alive\r\n" + "Content-Length: 20\r\n" + "Content-Type: text/plain\r\n" + "Connection: close\r\n" + "\r\n")
+                .getBytes(StandardCharsets.UTF_8));
             os.flush();
 
             assertTimeoutPreemptively(ofSeconds(10), () ->
@@ -390,15 +370,17 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 // but the request hasn't sent all of it.
                 int requestBodyLength = requestBody.length * 2;
 
-                String rawRequest = ("""
-                    GET / HTTP/1.1\r
-                    host: localhost:%d\r
-                    connection: keep-alive\r
-                    Content-Length: %d\r
-                    Content-Type: text/plain\r
-                    Connection: close\r
-                    \r
-                    """).formatted(_serverURI.getPort(), requestBodyLength);
+                String rawRequest =
+                    ("""
+                        GET / HTTP/1.1\r
+                        host: localhost:%d\r
+                        connection: keep-alive\r
+                        Content-Length: %d\r
+                        Content-Type: text/plain\r
+                        Connection: close\r
+                        \r
+                        """)
+                        .formatted(_serverURI.getPort(), requestBodyLength);
 
                 os.write(rawRequest.getBytes(StandardCharsets.UTF_8));
                 os.write(requestBody);
@@ -434,14 +416,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         String content = "Wibble\r\n";
         byte[] contentB = content.getBytes(StandardCharsets.UTF_8);
-        os.write((
-            "GET / HTTP/1.0\r\n" +
-                "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                "connection: keep-alive\r\n" +
-                "Content-Length: " + (contentB.length * 20) + "\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+        os.write(("GET / HTTP/1.0\r\n" + "host: localhost:" + _serverURI.getPort() + "\r\n" + "connection: keep-alive\r\n" + "Content-Length: " + (contentB.length * 20) + "\r\n" + "Content-Type: text/plain\r\n" + "Connection: close\r\n" + "\r\n")
+            .getBytes(StandardCharsets.UTF_8));
         os.flush();
 
         assertTimeoutPreemptively(ofSeconds(10), () ->
@@ -475,12 +451,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         OutputStream os = client.getOutputStream();
         InputStream is = client.getInputStream();
 
-        os.write((
-            "GET / HTTP/1.0\r\n" +
-                "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                "connection: keep-alive\r\n" +
-                "Connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+        os.write(("GET / HTTP/1.0\r\n" + "host: localhost:" + _serverURI.getPort() + "\r\n" + "connection: keep-alive\r\n" + "Connection: close\r\n" + "\r\n")
+            .getBytes(StandardCharsets.UTF_8));
         os.flush();
 
         assertTimeoutPreemptively(ofSeconds(10), () ->
@@ -507,12 +479,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         OutputStream os = client.getOutputStream();
         InputStream is = client.getInputStream();
 
-        os.write((
-            "GET / HTTP/1.0\r\n" +
-                "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                "connection: keep-alive\r\n" +
-                "Connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+        os.write(("GET / HTTP/1.0\r\n" + "host: localhost:" + _serverURI.getPort() + "\r\n" + "connection: keep-alive\r\n" + "Connection: close\r\n" + "\r\n")
+            .getBytes(StandardCharsets.UTF_8));
         os.flush();
 
         assertTimeoutPreemptively(ofSeconds(10), () ->

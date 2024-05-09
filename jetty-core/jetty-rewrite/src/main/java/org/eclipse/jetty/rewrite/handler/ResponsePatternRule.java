@@ -14,7 +14,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -33,7 +32,8 @@ public class ResponsePatternRule extends PatternRule
     {
     }
 
-    public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") int code, @Name("message") String message)
+    public ResponsePatternRule(
+                               @Name("pattern") String pattern, @Name("code") int code, @Name("message") String message)
     {
         super(pattern);
         _code = code;

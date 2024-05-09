@@ -22,13 +22,12 @@ public class JwtEncoder
 {
     private static final Base64.Encoder ENCODER = Base64.getUrlEncoder();
     private static final String DEFAULT_HEADER = "{\"INFO\": \"this is not used or checked in our implementation\"}";
-    private static final String DEFAULT_SIGNATURE = "we do not validate signature as we use the authorization code flow";
+    private static final String DEFAULT_SIGNATURE =
+        "we do not validate signature as we use the authorization code flow";
 
     public static String encode(String idToken)
     {
-        return stripPadding(ENCODER.encodeToString(DEFAULT_HEADER.getBytes())) + "." +
-            stripPadding(ENCODER.encodeToString(idToken.getBytes())) + "." +
-            stripPadding(ENCODER.encodeToString(DEFAULT_SIGNATURE.getBytes()));
+        return stripPadding(ENCODER.encodeToString(DEFAULT_HEADER.getBytes())) + "." + stripPadding(ENCODER.encodeToString(idToken.getBytes())) + "." + stripPadding(ENCODER.encodeToString(DEFAULT_SIGNATURE.getBytes()));
     }
 
     private static String stripPadding(String paddedBase64)
@@ -41,13 +40,6 @@ public class JwtEncoder
      */
     public static String createIdToken(String provider, String clientId, String subject, String name, long expiry)
     {
-        return "{" +
-            "\"iss\": \"" + provider + "\"," +
-            "\"sub\": \"" + subject + "\"," +
-            "\"aud\": \"" + clientId + "\"," +
-            "\"exp\": " + expiry + "," +
-            "\"name\": \"" + name + "\"," +
-            "\"email\": \"" + name + "@example.com" + "\"" +
-            "}";
+        return "{" + "\"iss\": \"" + provider + "\"," + "\"sub\": \"" + subject + "\"," + "\"aud\": \"" + clientId + "\"," + "\"exp\": " + expiry + "," + "\"name\": \"" + name + "\"," + "\"email\": \"" + name + "@example.com" + "\"" + "}";
     }
 }

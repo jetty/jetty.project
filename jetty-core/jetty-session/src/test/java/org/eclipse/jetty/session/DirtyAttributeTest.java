@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.session;
 
-import org.eclipse.jetty.server.Server;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.eclipse.jetty.server.Server;
+import org.junit.jupiter.api.Test;
 
 /**
  * DirtyAttributeTest
@@ -33,19 +33,19 @@ public class DirtyAttributeTest
         Server server = new Server();
         DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
         server.addBean(idManager, true);
-        
+
         TestableSessionManager sessionManager = new TestableSessionManager();
         TestableSessionDataStore sessionDataStore = new TestableSessionDataStore(true);
         DefaultSessionCache sessionCache = new DefaultSessionCache(sessionManager);
-        sessionCache.setSaveOnCreate(true); //ensure session will be saved when first created
+        sessionCache.setSaveOnCreate(true); // ensure session will be saved when first created
         sessionCache.setSessionDataStore(sessionDataStore);
         sessionManager.setSessionCache(sessionCache);
-        
+
         server.addBean(sessionManager);
         sessionManager.setServer(server);
         server.start();
-        
-        //make a session
+
+        // make a session
         TestableSessionConsumer consumer = new TestableSessionConsumer();
         sessionManager.newSession(null, "1234", consumer);
         ManagedSession session = consumer.getSession();
@@ -53,12 +53,12 @@ public class DirtyAttributeTest
         assertTrue(session.isValid());
         assertTrue(sessionDataStore.exists(id));
         assertTrue(sessionManager._sessionCreatedListenersCalled.contains(id));
-        //NOTE:  we don't call passivate and activate here because the session by definition 
-        //_cannot_ contain any attributes, we have literally only just created it
-        
+        // NOTE:  we don't call passivate and activate here because the session by definition
+        // _cannot_ contain any attributes, we have literally only just created it
+
         sessionManager.clear();
-        
-        //Mutate an attribute in the same request
+
+        // Mutate an attribute in the same request
         session.setAttribute("aaa", "one");
         sessionManager.commit(session);
         sessionManager.complete(session);
@@ -71,8 +71,8 @@ public class DirtyAttributeTest
         assertTrue(sessionManager._sessionAttributeListenersCalled.contains(id));
 
         sessionManager.clear();
-        
-        //simulate another request mutating the same attribute to the same value
+
+        // simulate another request mutating the same attribute to the same value
         session = sessionCache.getAndEnter(id, true);
         session.setAttribute("aaa", "one");
         sessionManager.commit(session);
@@ -86,8 +86,8 @@ public class DirtyAttributeTest
         assertFalse(sessionManager._sessionAttributeListenersCalled.contains(id));
 
         sessionManager.clear();
-        
-        //simulate another request mutating to a different value
+
+        // simulate another request mutating to a different value
         session = sessionCache.getAndEnter(id, true);
         session.setAttribute("aaa", "two");
         sessionManager.commit(session);

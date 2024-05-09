@@ -19,7 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
-
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
@@ -44,8 +43,8 @@ public class JarServer
             baseUri = URIUtil.toJarFileUri(baseUri);
 
         Server server = new Server(port);
-//        server.setDumpAfterStart(true);
-//        server.setDumpBeforeStop(true);
+        //        server.setDumpAfterStart(true);
+        //        server.setDumpBeforeStop(true);
         Resource baseResource = ResourceFactory.of(server).newResource(baseUri);
 
         ServletContextHandler context = new ServletContextHandler();

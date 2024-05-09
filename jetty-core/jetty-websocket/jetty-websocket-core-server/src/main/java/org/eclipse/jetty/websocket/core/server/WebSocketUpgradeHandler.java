@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;

@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
@@ -22,18 +29,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MainTest
 {
@@ -84,14 +83,21 @@ public class MainTest
         }
 
         // Test a System Property that comes from JVM
-        String javaVersionLine = output.stream().filter((line) -> line.contains("java.version ="))
-            .findFirst().orElseThrow();
+        String javaVersionLine = output.stream()
+            .filter((line) -> line.contains("java.version ="))
+            .findFirst()
+            .orElseThrow();
         assertThat("java.version should have no indicated source", javaVersionLine, not(containsString("(null)")));
 
-        String userDirLine = output.stream().filter((line) -> line.startsWith(" user.dir ="))
-            .findFirst().orElseThrow();
+        String userDirLine = output.stream()
+            .filter((line) -> line.startsWith(" user.dir ="))
+            .findFirst()
+            .orElseThrow();
         assertThat("A source of 'null' is pointless", userDirLine, not(containsString("(null)")));
-        assertThat("user.dir should indicate that it was specified on the command line", userDirLine, containsString("(<command-line>)"));
+        assertThat(
+            "user.dir should indicate that it was specified on the command line",
+            userDirLine,
+            containsString("(<command-line>)"));
     }
 
     @Test
@@ -132,14 +138,24 @@ public class MainTest
         }
 
         // Test a System Property that comes from JVM
-        List<String> warnings = output.stream().filter((line) -> line.startsWith("WARN")).toList();
+        List<String> warnings =
+            output.stream().filter((line) -> line.startsWith("WARN")).toList();
         // warnings.forEach(System.out::println);
         Iterator<String> warningIter = warnings.iterator();
 
         assertThat("Announcement", warningIter.next(), containsString("Unknown Arguments detected."));
-        assertThat("System Prop on command line detail", warningIter.next(), containsString("Argument: -Dzed.key=0.value (interpreted as a System property, from <command-line>"));
-        assertThat("JVM Arg in ini detail", warningIter.next(), containsString("Argument: --zed-0-zed (interpreted as a JVM argument, from " + zedIni));
-        assertThat("JVM Arg on command line detail", warningIter.next(), containsString("Argument: --foople (interpreted as a JVM argument, from <command-line>"));
+        assertThat(
+            "System Prop on command line detail",
+            warningIter.next(),
+            containsString("Argument: -Dzed.key=0.value (interpreted as a System property, from <command-line>"));
+        assertThat(
+            "JVM Arg in ini detail",
+            warningIter.next(),
+            containsString("Argument: --zed-0-zed (interpreted as a JVM argument, from " + zedIni));
+        assertThat(
+            "JVM Arg on command line detail",
+            warningIter.next(),
+            containsString("Argument: --foople (interpreted as a JVM argument, from <command-line>"));
     }
 
     /**
@@ -178,9 +194,8 @@ public class MainTest
 
         CommandLineBuilder commandLineBuilder = args.getMainArgs(StartArgs.ALL_PARTS);
         String commandLine = commandLineBuilder.toString();
-        String expectedExpansion = String.format("-Xloggc:%s/logs/gc-%s.log",
-            baseHome.getBase(), System.getProperty("java.version")
-        );
+        String expectedExpansion =
+            String.format("-Xloggc:%s/logs/gc-%s.log", baseHome.getBase(), System.getProperty("java.version"));
         assertThat(commandLine, containsString(expectedExpansion));
     }
 }

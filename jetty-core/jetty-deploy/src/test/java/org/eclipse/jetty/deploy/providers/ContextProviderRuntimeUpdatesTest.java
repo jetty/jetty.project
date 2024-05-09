@@ -13,13 +13,18 @@
 
 package org.eclipse.jetty.deploy.providers;
 
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
@@ -34,12 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Similar in scope to {@link ContextProviderStartupTest}, except is concerned with the modification of existing
@@ -139,17 +138,19 @@ public class ContextProviderRuntimeUpdatesTest
         jetty.assertContextHandlerExists("/simple");
         ContextHandler contextHandler = jetty.getContextHandler("/simple");
         assertNotNull(contextHandler);
-        assertEquals(jetty.getJettyBasePath().resolve("tmp").toFile().getAbsolutePath(), contextHandler.getTempDirectory().getAbsolutePath());
+        assertEquals(
+            jetty.getJettyBasePath().resolve("tmp").toFile().getAbsolutePath(),
+            contextHandler.getTempDirectory().getAbsolutePath());
 
-        //touch the context xml and check the context handler was redeployed
+        // touch the context xml and check the context handler was redeployed
         jetty.copyWebapp("simple.xml", "simple.xml");
         waitForDirectoryScan();
         ContextHandler contextHandler2 = jetty.getContextHandler("/simple");
         assertNotNull(contextHandler2);
         assertNotSame(contextHandler, contextHandler2);
 
-        //touch the war file and check the context handler was NOT redeployed
-        Thread.sleep(1000L); //ensure at least a millisecond has passed
+        // touch the war file and check the context handler was NOT redeployed
+        Thread.sleep(1000L); // ensure at least a millisecond has passed
         Files.setLastModifiedTime(webappsDir.resolve("simple.war"), FileTime.fromMillis(System.currentTimeMillis()));
         waitForDirectoryScan();
         ContextHandler contextHandler3 = jetty.getContextHandler("/simple");

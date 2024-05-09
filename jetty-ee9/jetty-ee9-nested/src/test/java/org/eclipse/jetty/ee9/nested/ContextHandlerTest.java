@@ -13,11 +13,15 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Properties;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -26,6 +30,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Properties;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -42,16 +51,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.sameInstance;
 
 public class ContextHandlerTest
 {
@@ -75,7 +74,7 @@ public class ContextHandlerTest
     {
         _server.stop();
     }
-    
+
     @Test
     public void testSimple() throws Exception
     {
@@ -84,7 +83,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET / HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -100,10 +99,11 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new HelloHandler());
         _server.start();
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
-            GET / HTTP/1.0
-            
-            """));
+        HttpTester.Response response =
+            HttpTester.parseResponse(_connector.getResponse("""
+                GET / HTTP/1.0
+
+                """));
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
@@ -113,10 +113,11 @@ public class ContextHandlerTest
         _contextHandler.setContextPath("/ctx");
         _contextHandler.start();
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
-            GET /ctx/ HTTP/1.0
-            
-            """));
+        response =
+            HttpTester.parseResponse(_connector.getResponse("""
+                GET /ctx/ HTTP/1.0
+
+                """));
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
@@ -129,10 +130,11 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new HelloHandler());
         _server.start();
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
-            GET http://localhost:8080 HTTP/1.0
-            
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(
+            _connector.getResponse("""
+                GET http://localhost:8080 HTTP/1.0
+
+                """));
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
@@ -144,7 +146,7 @@ public class ContextHandlerTest
 
         response = HttpTester.parseResponse(_connector.getResponse("""
             GET /ctx HTTP/1.0
-            
+
             """));
         assertThat(response.getStatus(), is(HttpStatus.MOVED_PERMANENTLY_301));
         assertThat(response.getField(HttpHeader.LOCATION).getValue(), is("/ctx/"));
@@ -153,7 +155,7 @@ public class ContextHandlerTest
 
         response = HttpTester.parseResponse(_connector.getResponse("""
             GET /ctx HTTP/1.0
-            
+
             """));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
@@ -169,7 +171,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET /context/path/info HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -187,7 +189,9 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 Assertions.assertThrows(UnsupportedOperationException.class, () -> response.setHeader("Server", null));
                 Assertions.assertThrows(UnsupportedOperationException.class, () -> response.setHeader("Date", null));
@@ -217,7 +221,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET /context/test HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -235,15 +239,17 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new DumpHandler());
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
-            POST /context/path/info?A=1&B=2 HTTP/1.0
-            Host: localhost
-            HeaderName: headerValue
-            Content-Type: %s
-            Content-Length: 7
-            
-            C=3&D=4
-            """.formatted(MimeTypes.Type.FORM_ENCODED.asString()));
+        String rawResponse = _connector.getResponse(
+            """
+                POST /context/path/info?A=1&B=2 HTTP/1.0
+                Host: localhost
+                HeaderName: headerValue
+                Content-Type: %s
+                Content-Length: 7
+
+                C=3&D=4
+                """
+                .formatted(MimeTypes.Type.FORM_ENCODED.asString()));
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -253,12 +259,14 @@ public class ContextHandlerTest
         assertThat(response.getContent(), containsString("contextPath=/context"));
         assertThat(response.getContent(), containsString("pathInfo=/path/info"));
         assertThat(response.getContent(), containsString("contentType=application/x-www-form-urlencoded"));
-        assertThat(response.getContent(), containsString("""
-            A=1
-            B=2
-            C=3
-            D=4
-            """));
+        assertThat(
+            response.getContent(),
+            containsString("""
+                A=1
+                B=2
+                C=3
+                D=4
+                """));
     }
 
     @Test
@@ -267,41 +275,51 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
-                org.eclipse.jetty.server.Request coreRequest = baseRequest.getHttpChannel().getCoreRequest();
+                org.eclipse.jetty.server.Request coreRequest =
+                    baseRequest.getHttpChannel().getCoreRequest();
 
                 baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setContentType("text/plain");
-                response.getOutputStream().print("""
-                    pathInContext=%s
-                    baseRequest.hashCode=%x
-                    coreRequest.id=%s
-                    coreRequest.connectionMetaData.id=%s
-                    coreRequest.connectionMetaData.persistent=%b
-                    
-                    """.formatted(
-                        org.eclipse.jetty.server.Request.getPathInContext(coreRequest),
-                        baseRequest.hashCode(),
-                        coreRequest.getId(),
-                        coreRequest.getConnectionMetaData().getId(),
-                        coreRequest.getConnectionMetaData().isPersistent()
-                ));
+                response.getOutputStream()
+                    .print(
+                        """
+                            pathInContext=%s
+                            baseRequest.hashCode=%x
+                            coreRequest.id=%s
+                            coreRequest.connectionMetaData.id=%s
+                            coreRequest.connectionMetaData.persistent=%b
+
+                            """
+                            .formatted(
+                                org.eclipse.jetty.server.Request.getPathInContext(coreRequest),
+                                baseRequest.hashCode(),
+                                coreRequest.getId(),
+                                coreRequest
+                                    .getConnectionMetaData()
+                                    .getId(),
+                                coreRequest
+                                    .getConnectionMetaData()
+                                    .isPersistent()));
             }
         });
         _server.start();
 
         try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
         {
-            endPoint.addInput("""
-                GET /one HTTP/1.1
-                Host: localhost
-                            
-                GET /two HTTP/1.1
-                Host: localhost
-                            
-                """);
+            endPoint.addInput(
+                """
+                    GET /one HTTP/1.1
+                    Host: localhost
+
+                    GET /two HTTP/1.1
+                    Host: localhost
+
+                    """);
 
             String rawResponse = endPoint.getResponse();
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -321,7 +339,9 @@ public class ContextHandlerTest
             assertThat(one.getProperty("baseRequest.hashCode"), equalTo(two.getProperty("baseRequest.hashCode")));
 
             assertThat(one.getProperty("coreRequest.connectionMetaData.id"), notNullValue());
-            assertThat(one.getProperty("coreRequest.connectionMetaData.id"), equalTo(two.getProperty("coreRequest.connectionMetaData.id")));
+            assertThat(
+                one.getProperty("coreRequest.connectionMetaData.id"),
+                equalTo(two.getProperty("coreRequest.connectionMetaData.id")));
 
             assertThat(one.getProperty("coreRequest.id"), notNullValue());
             assertThat(one.getProperty("coreRequest.id"), not(equalTo(two.getProperty("coreRequest.id"))));
@@ -334,7 +354,9 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
                 baseRequest.setHandled(true);
 
@@ -360,7 +382,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET / HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -376,7 +398,9 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
                 baseRequest.setHandled(true);
 
@@ -413,7 +437,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET / HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -429,7 +453,9 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
                 baseRequest.setHandled(true);
 
@@ -455,7 +481,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET / HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -471,7 +497,9 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
                 baseRequest.setHandled(true);
 
@@ -495,8 +523,7 @@ public class ContextHandlerTest
                                 {
                                     super.setStatus(sc == Integer.MAX_VALUE ? 200 : sc);
                                 }
-                            }
-                        );
+                            });
                         async.dispatch();
                     }
                     case ASYNC ->
@@ -514,7 +541,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET / HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -530,7 +557,9 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
                 baseRequest.setHandled(true);
 
@@ -552,7 +581,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET / HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -568,7 +597,8 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
 
@@ -601,7 +631,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET / HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -618,7 +648,9 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
                 baseRequest.setHandled(true);
                 if (request.getDispatcherType() == DispatcherType.ERROR)
@@ -637,7 +669,7 @@ public class ContextHandlerTest
         {
             String rawResponse = _connector.getResponse("""
                 GET / HTTP/1.0
-                            
+
                 """);
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -655,7 +687,9 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
                 baseRequest.setHandled(true);
                 if (request.getDispatcherType() == DispatcherType.ERROR)
@@ -672,7 +706,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET / HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -689,12 +723,15 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setContentType("text/plain");
-                response.getOutputStream().print("Hello %s\n".formatted(baseRequest.getContext().getContextPath()));
+                response.getOutputStream()
+                    .print("Hello %s\n".formatted(baseRequest.getContext().getContextPath()));
             }
         });
 
@@ -703,12 +740,16 @@ public class ContextHandlerTest
         contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setContentType("text/plain");
-                response.getOutputStream().print("Buongiorno %s\n".formatted(baseRequest.getContext().getContextPath()));
+                response.getOutputStream()
+                    .print("Buongiorno %s\n"
+                        .formatted(baseRequest.getContext().getContextPath()));
             }
         });
 
@@ -723,7 +764,7 @@ public class ContextHandlerTest
             endp.addInput("""
                 GET /ctxA/ HTTP/1.1
                 Host: localhost
-                            
+
                 """);
             String raw = endp.getResponse();
             HttpTester.Response response = HttpTester.parseResponse(raw);
@@ -734,7 +775,7 @@ public class ContextHandlerTest
             endp.addInput("""
                 GET /ctxB/ HTTP/1.1
                 Host: localhost
-                            
+
                 """);
             raw = endp.getResponse();
             response = HttpTester.parseResponse(raw);
@@ -751,7 +792,9 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException
             {
                 baseRequest.setHandled(true);
                 history.add("Handling");
@@ -761,22 +804,24 @@ public class ContextHandlerTest
             }
         });
 
-        _contextHandler.getCoreContextHandler().addEventListener(new org.eclipse.jetty.server.handler.ContextHandler.ContextScopeListener()
-        {
-            @Override
-            public void enterScope(Context context, org.eclipse.jetty.server.Request request)
+        _contextHandler
+            .getCoreContextHandler()
+            .addEventListener(new org.eclipse.jetty.server.handler.ContextHandler.ContextScopeListener()
             {
-                if (request != null)
-                    history.add("Core enter " + request.getHttpURI());
-            }
+                @Override
+                public void enterScope(Context context, org.eclipse.jetty.server.Request request)
+                {
+                    if (request != null)
+                        history.add("Core enter " + request.getHttpURI());
+                }
 
-            @Override
-            public void exitScope(Context context, org.eclipse.jetty.server.Request request)
-            {
-                if (request != null)
-                    history.add("Core exit " + request.getHttpURI());
-            }
-        });
+                @Override
+                public void exitScope(Context context, org.eclipse.jetty.server.Request request)
+                {
+                    if (request != null)
+                        history.add("Core exit " + request.getHttpURI());
+                }
+            });
         _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
             @Override
@@ -797,7 +842,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET / HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -806,13 +851,15 @@ public class ContextHandlerTest
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
         assertThat(response.getContent(), containsString("Hello"));
 
-        assertThat(history, contains(
-            // Enter for handle(request, response, callback)
-            "Core enter http://0.0.0.0/",
-            "EE9 enter /",
-            "Handling",
-            "EE9 exit /",
-            "Core exit http://0.0.0.0/"));
+        assertThat(
+            history,
+            contains(
+                // Enter for handle(request, response, callback)
+                "Core enter http://0.0.0.0/",
+                "EE9 enter /",
+                "Handling",
+                "EE9 exit /",
+                "Core exit http://0.0.0.0/"));
     }
 
     @Test
@@ -823,7 +870,8 @@ public class ContextHandlerTest
         Handler.Wrapper coreHandler = new Handler.Wrapper()
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+                throws Exception
             {
                 response.getHeaders().put("Core", "Inserted");
                 return super.handle(request, response, callback);
@@ -834,7 +882,9 @@ public class ContextHandlerTest
         HandlerWrapper nestedHandler = new HandlerWrapper()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 response.setHeader("Nested", "Inserted");
                 super.handle(target, baseRequest, request, response);
@@ -851,7 +901,7 @@ public class ContextHandlerTest
 
         String rawResponse = _connector.getResponse("""
             GET / HTTP/1.0
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -875,7 +925,8 @@ public class ContextHandlerTest
     private static class HelloHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException
         {
             baseRequest.setHandled(true);
             response.setStatus(200);

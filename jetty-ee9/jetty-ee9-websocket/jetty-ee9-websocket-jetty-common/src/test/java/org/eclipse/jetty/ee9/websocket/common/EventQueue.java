@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.ee9.websocket.common;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.concurrent.LinkedBlockingDeque;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.matchesRegex;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class EventQueue extends LinkedBlockingDeque<String>
 {

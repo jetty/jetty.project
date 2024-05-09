@@ -125,6 +125,7 @@ public class CounterStatistic
     @Override
     public String toString()
     {
-        return String.format("%s@%x{c=%d,m=%d,t=%d}", getClass().getSimpleName(), hashCode(), getCurrent(), getMax(), getTotal());
+        return String.format(
+            "%s@%x{c=%d,m=%d,t=%d}", getClass().getSimpleName(), hashCode(), getCurrent(), getMax(), getTotal());
     }
 }

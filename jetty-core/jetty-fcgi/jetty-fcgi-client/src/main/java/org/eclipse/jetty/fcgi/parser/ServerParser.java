@@ -14,7 +14,6 @@
 package org.eclipse.jetty.fcgi.parser;
 
 import java.util.EnumMap;
-
 import org.eclipse.jetty.fcgi.FCGI;
 
 public class ServerParser extends Parser
@@ -26,12 +25,14 @@ public class ServerParser extends Parser
         super(listener);
         contentParsers.put(FCGI.FrameType.BEGIN_REQUEST, new BeginRequestContentParser(headerParser, listener));
         contentParsers.put(FCGI.FrameType.PARAMS, new ParamsContentParser(headerParser, listener));
-        contentParsers.put(FCGI.FrameType.STDIN, new StreamContentParser(headerParser, FCGI.StreamType.STD_IN, listener));
+        contentParsers.put(
+            FCGI.FrameType.STDIN, new StreamContentParser(headerParser, FCGI.StreamType.STD_IN, listener));
     }
 
     public long getBeginNanoTime()
     {
-        BeginRequestContentParser contentParser = (BeginRequestContentParser)contentParsers.get(FCGI.FrameType.BEGIN_REQUEST);
+        BeginRequestContentParser contentParser =
+            (BeginRequestContentParser)contentParsers.get(FCGI.FrameType.BEGIN_REQUEST);
         return contentParser.getBeginNanoTime();
     }
 

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
@@ -66,6 +65,7 @@ public class AnnotationParser
      * Map of classnames scanned and the first location from which scan occurred
      */
     protected Map<String, URI> _parsedClassNames = new ConcurrentHashMap<>();
+
     private final int _asmVersion;
 
     /**
@@ -85,7 +85,8 @@ public class AnnotationParser
         // an IllegalArgumentException from org.objectweb.asm.ClassVisitor.
         // So must find exactly the maximum ASM api version available.
 
-        Optional<Integer> asmVersion = Arrays.stream(Opcodes.class.getFields()).sequential()
+        Optional<Integer> asmVersion = Arrays.stream(Opcodes.class.getFields())
+            .sequential()
             .filter((f) -> f.getName().matches("ASM[0-9]+"))
             .map((f) -> f.getName().substring(3))
             .map(Integer::parseInt)
@@ -160,7 +161,14 @@ public class AnnotationParser
         final String _superName;
         final String[] _interfaces;
 
-        public ClassInfo(Resource resource, String className, int version, int access, String signature, String superName, String[] interfaces)
+        public ClassInfo(
+                         Resource resource,
+                         String className,
+                         int version,
+                         int access,
+                         String signature,
+                         String superName,
+                         String[] interfaces)
         {
             super();
             _containingResource = resource;
@@ -220,7 +228,13 @@ public class AnnotationParser
         final String _signature;
         final String[] _exceptions;
 
-        public MethodInfo(ClassInfo classInfo, String methodName, int access, String desc, String signature, String[] exceptions)
+        public MethodInfo(
+                          ClassInfo classInfo,
+                          String methodName,
+                          int access,
+                          String desc,
+                          String signature,
+                          String[] exceptions)
         {
             super();
             _classInfo = classInfo;
@@ -274,7 +288,8 @@ public class AnnotationParser
         final String _signature;
         final Object _value;
 
-        public FieldInfo(ClassInfo classInfo, String fieldName, int access, String fieldType, String signature, Object value)
+        public FieldInfo(
+                         ClassInfo classInfo, String fieldName, int access, String fieldType, String signature, Object value)
         {
             super();
             _classInfo = classInfo;
@@ -378,7 +393,8 @@ public class AnnotationParser
         final MethodInfo _mi;
         final Set<? extends Handler> _handlers;
 
-        public MyMethodVisitor(final Set<? extends Handler> handlers,
+        public MyMethodVisitor(
+                               final Set<? extends Handler> handlers,
                                final ClassInfo classInfo,
                                final int access,
                                final String name,
@@ -416,7 +432,8 @@ public class AnnotationParser
         final FieldInfo _fieldInfo;
         final Set<? extends Handler> _handlers;
 
-        public MyFieldVisitor(final Set<? extends Handler> handlers,
+        public MyFieldVisitor(
+                              final Set<? extends Handler> handlers,
                               final ClassInfo classInfo,
                               final int access,
                               final String fieldName,
@@ -465,14 +482,22 @@ public class AnnotationParser
         }
 
         @Override
-        public void visit(final int version,
+        public void visit(
+                          final int version,
                           final int access,
                           final String name,
                           final String signature,
                           final String superName,
                           final String[] interfaces)
         {
-            _ci = new ClassInfo(_containingResource, normalize(name), version, access, signature, normalize(superName), normalize(interfaces));
+            _ci = new ClassInfo(
+                _containingResource,
+                normalize(name),
+                version,
+                access,
+                signature,
+                normalize(superName),
+                normalize(interfaces));
             for (Handler h : _handlers)
             {
                 h.handle(_ci);
@@ -497,7 +522,8 @@ public class AnnotationParser
          * Visit a method to extract its annotations
          */
         @Override
-        public MethodVisitor visitMethod(final int access,
+        public MethodVisitor visitMethod(
+                                         final int access,
                                          final String name,
                                          final String methodDesc,
                                          final String signature,
@@ -510,7 +536,8 @@ public class AnnotationParser
          * Visit a field to extract its annotations
          */
         @Override
-        public FieldVisitor visitField(final int access,
+        public FieldVisitor visitField(
+                                       final int access,
                                        final String fieldName,
                                        final String fieldType,
                                        final String signature,
@@ -594,11 +621,7 @@ public class AnnotationParser
             Path relative = dirResource.getPathTo(candidate);
 
             // select only relative non-hidden class files that are not modules nor versions
-            if (relative == null ||
-                FileID.isHidden(relative) ||
-                FileID.isMetaInfVersions(relative) ||
-                FileID.isModuleInfoClass(relative) ||
-                !FileID.isClassFile(relative))
+            if (relative == null || FileID.isHidden(relative) || FileID.isMetaInfVersions(relative) || FileID.isModuleInfoClass(relative) || !FileID.isClassFile(relative))
                 continue;
 
             try
@@ -627,7 +650,7 @@ public class AnnotationParser
             return;
 
         /*        if (!FileID.isJavaArchive(jarResource.getPath()))
-            return;*/
+        return;*/
 
         if (LOG.isDebugEnabled())
             LOG.debug("Scanning jar {}", jarResource);
@@ -647,7 +670,8 @@ public class AnnotationParser
      * @param classFile the class file to parse
      * @throws IOException if unable to parse
      */
-    protected void parseClass(Set<? extends Handler> handlers, Resource containingResource, Path classFile) throws IOException
+    protected void parseClass(Set<? extends Handler> handlers, Resource containingResource, Path classFile)
+        throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Parse class from {}", classFile.toUri());
@@ -657,7 +681,9 @@ public class AnnotationParser
         try (InputStream in = Files.newInputStream(classFile))
         {
             ClassReader reader = new ClassReader(in);
-            reader.accept(new MyClassVisitor(handlers, containingResource, _asmVersion), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            reader.accept(
+                new MyClassVisitor(handlers, containingResource, _asmVersion),
+                ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
             String classname = normalize(reader.getClassName());
             URI existing = _parsedClassNames.putIfAbsent(classname, location);

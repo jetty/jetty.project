@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.thread.Invocable;

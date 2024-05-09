@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.start;
 
-import java.util.stream.Stream;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class CommandLineBuilderTest
 {
@@ -59,8 +58,13 @@ public class CommandLineBuilderTest
         CommandLineBuilder cmd = new CommandLineBuilder();
         cmd.addArg("java");
         cmd.addArg("-Djetty.home", "/opt/jetty");
-        cmd.addArg("jetty.requestlog.formatter", "%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"");
-        assertThat(cmd.toCommandLine(), is("java -Djetty.home=/opt/jetty jetty.requestlog.formatter='%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"'"));
+        cmd.addArg(
+            "jetty.requestlog.formatter",
+            "%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"");
+        assertThat(
+            cmd.toCommandLine(),
+            is(
+                "java -Djetty.home=/opt/jetty jetty.requestlog.formatter='%{client}a - %u %{dd/MMM/yyyy:HH:mm:ss ZZZ|GMT}t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"'"));
     }
 
     @Test
@@ -91,8 +95,7 @@ public class CommandLineBuilderTest
             Arguments.of("foo\\bar", "'foo\\bar'"),
             Arguments.of("foo'bar", "'foo'\\''bar'"),
             Arguments.of("some 'internal' quoting", "'some '\\''internal'\\'' quoting'"),
-            Arguments.of("monetary.symbol=€", "'monetary.symbol=€'")
-        );
+            Arguments.of("monetary.symbol=€", "'monetary.symbol=€'"));
     }
 
     @ParameterizedTest
@@ -109,9 +112,8 @@ public class CommandLineBuilderTest
         cmd.addArg("java");
         cmd.addArg("-Djetty.home", "/opt/jetty");
         cmd.addArg("monetary.symbol", "€");
-        assertThat(cmd.toCommandLine(),
-            is("java \\" + System.lineSeparator() +
-                "  -Djetty.home=/opt/jetty \\" + System.lineSeparator() +
-                "  monetary.symbol='€'"));
+        assertThat(
+            cmd.toCommandLine(),
+            is("java \\" + System.lineSeparator() + "  -Djetty.home=/opt/jetty \\" + System.lineSeparator() + "  monetary.symbol='€'"));
     }
 }

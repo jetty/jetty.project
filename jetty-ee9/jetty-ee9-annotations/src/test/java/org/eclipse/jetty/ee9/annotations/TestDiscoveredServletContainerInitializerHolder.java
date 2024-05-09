@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.HandlesTypes;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.eclipse.jetty.ee9.servlet.Source;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 public class TestDiscoveredServletContainerInitializerHolder
 {
@@ -36,17 +35,16 @@ public class TestDiscoveredServletContainerInitializerHolder
      */
     interface Ordinary
     {
-        
     }
-    
+
     /**
      * An class with an annotation (that is listed in @HandlesTypes)
      */
     @Sample(value = 1)
     public static class ASample
-    {  
+    {
     }
-    
+
     /**
      * A class that extends a class with an annotation
      */
@@ -62,32 +60,33 @@ public class TestDiscoveredServletContainerInitializerHolder
         {
         }
     }
-    
+
     @Test
     public void test() throws Exception
     {
-        //SCI with @HandlesTypes[Ordinary, Sample]
+        // SCI with @HandlesTypes[Ordinary, Sample]
         SampleServletContainerInitializer sci = new SampleServletContainerInitializer();
-        
-        AnnotationConfiguration.DiscoveredServletContainerInitializerHolder holder =
-            new AnnotationConfiguration.DiscoveredServletContainerInitializerHolder(new Source(Source.Origin.ANNOTATION, sci.getClass()),
-            sci);
 
-        //add the @HandlesTypes to the holder
+        AnnotationConfiguration.DiscoveredServletContainerInitializerHolder holder =
+            new AnnotationConfiguration.DiscoveredServletContainerInitializerHolder(
+                new Source(Source.Origin.ANNOTATION, sci.getClass()), sci);
+
+        // add the @HandlesTypes to the holder
         holder.addStartupClasses(Ordinary.class, Sample.class);
-        
-        //pretend scanned and discovered that ASample has the Sample annotation
+
+        // pretend scanned and discovered that ASample has the Sample annotation
         holder.addStartupClasses(ASample.class.getName());
-        
-        //pretend we scanned the entire class hierarchy and found:
+
+        // pretend we scanned the entire class hierarchy and found:
         //   com.acme.tom and com.acme.dick both extend Ordinary
         //   ASample has subclass BSample
         Map<String, Set<String>> classMap = new HashMap<>();
         classMap.put(Ordinary.class.getName(), new HashSet(Arrays.asList("com.acme.tom", "com.acme.dick")));
         classMap.put(ASample.class.getName(), new HashSet(Arrays.asList(BSample.class.getName())));
         holder.resolveClasses(classMap);
-        
-        //we should now have the following classes that will be passed to the SampleServletContainerInitializer.onStartup
+
+        // we should now have the following classes that will be passed to the
+        // SampleServletContainerInitializer.onStartup
         String toString = holder.toString();
         assertThat(toString, containsString("com.acme.tom"));
         assertThat(toString, containsString("com.acme.dick"));

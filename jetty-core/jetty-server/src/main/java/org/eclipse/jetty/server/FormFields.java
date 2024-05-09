@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.server;
 
+import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
@@ -28,8 +29,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
-
-import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
 
 /**
  * <p>A {@link CompletableFuture} that is completed once a {@code application/x-www-form-urlencoded}
@@ -64,7 +63,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         }
         else
         {
-            // Could be a non-cached Content-Type with other parameters such as "application/x-www-form-urlencoded; p=v".
+            // Could be a non-cached Content-Type with other parameters such as "application/x-www-form-urlencoded;
+            // p=v".
             // Verify that it is actually application/x-www-form-urlencoded.
             int semi = contentTypeWithoutCharset.indexOf(';');
             if (semi > 0)
@@ -113,8 +113,10 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      */
     public static CompletableFuture<Fields> from(Request request)
     {
-        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
-        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
+        int maxFields = getContextAttribute(
+            request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxLength = getContextAttribute(
+            request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
         return from(request, maxFields, maxLength);
     }
 
@@ -129,8 +131,10 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      */
     public static CompletableFuture<Fields> from(Request request, Charset charset)
     {
-        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
-        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxFields = getContextAttribute(
+            request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxLength = getContextAttribute(
+            request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
         return from(request, charset, maxFields, maxLength);
     }
 
@@ -176,7 +180,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param maxLength The maximum total size of the fields
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
      */
-    static CompletableFuture<Fields> from(Content.Source source, Attributes attributes, Charset charset, int maxFields, int maxLength)
+    static CompletableFuture<Fields> from(
+                                          Content.Source source, Attributes attributes, Charset charset, int maxFields, int maxLength)
     {
         Object attr = attributes.getAttribute(FormFields.class.getName());
         if (attr instanceof FormFields futureFormFields)

@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.quic.quiche.jna;
 
-import java.nio.charset.Charset;
-
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
+import java.nio.charset.Charset;
 
 public class char_pointer extends PointerByReference
 {

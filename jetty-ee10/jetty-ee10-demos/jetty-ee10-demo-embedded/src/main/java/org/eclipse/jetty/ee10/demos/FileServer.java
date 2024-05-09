@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.demos;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;

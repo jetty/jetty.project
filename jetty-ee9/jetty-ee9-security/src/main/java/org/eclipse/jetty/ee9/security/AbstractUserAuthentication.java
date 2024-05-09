@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.security;
 
+import jakarta.servlet.ServletRequest;
 import java.io.Serializable;
 import java.util.Set;
-
-import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.ee9.nested.UserIdentityScope;
@@ -59,12 +58,12 @@ public abstract class AbstractUserAuthentication implements User, Serializable
         String roleToTest = UserIdentityScope.deRefRole(scope, role);
         roleToTest = (roleToTest == null ? null : roleToTest.trim());
 
-        //Servlet Spec 3.1 pg 125 if testing special role **
+        // Servlet Spec 3.1 pg 125 if testing special role **
         if ("**".equals(roleToTest))
         {
-            //if ** is NOT a declared role name, the we return true 
-            //as the user is authenticated. If ** HAS been declared as a
-            //role name, then we have to check if the user has that role
+            // if ** is NOT a declared role name, the we return true
+            // as the user is authenticated. If ** HAS been declared as a
+            // role name, then we have to check if the user has that role
             if (!declaredRolesContains("**"))
                 return true;
             else

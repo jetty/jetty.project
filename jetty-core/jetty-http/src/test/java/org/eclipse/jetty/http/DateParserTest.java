@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.http;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for class {@link DateParser}.

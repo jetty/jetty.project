@@ -13,26 +13,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.net.Socket;
-import java.nio.channels.ClosedChannelException;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.URIUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static org.eclipse.jetty.util.Callback.NOOP;
 import static org.eclipse.jetty.websocket.core.OpCode.CLOSE;
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
@@ -47,6 +27,25 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.net.Socket;
+import java.nio.channels.ClosedChannelException;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.URIUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tests of a core server with a fake client
@@ -132,7 +131,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testServerCloseISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
@@ -146,7 +146,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testServerDifferentCloseISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
@@ -161,7 +162,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testServerFailCloseISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
@@ -176,7 +178,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientClosesOutputISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
@@ -190,7 +193,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientCloseOSHUT(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
@@ -206,7 +210,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientDifferentCloseOSHUT(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
@@ -222,7 +227,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientCloseServerFailCloseOSHUT(String scheme) throws Exception
     {
         try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
@@ -241,7 +247,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientSendsBadFrameOPEN(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
@@ -254,7 +261,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientSendsBadFrameOSHUT(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
@@ -267,7 +275,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientSendsBadFrameISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
@@ -282,7 +291,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientHalfCloseISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
@@ -301,7 +311,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientCloseServerWriteISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
@@ -315,7 +326,8 @@ public class WebSocketCloseTest extends WebSocketTester
             {
                 if (!serverHandler.coreSession.isOutputOpen())
                     break;
-                serverHandler.coreSession.sendFrame(new Frame(TEXT, BufferUtil.toBuffer("frame after close")), Callback.NOOP, false);
+                serverHandler.coreSession.sendFrame(
+                    new Frame(TEXT, BufferUtil.toBuffer("frame after close")), Callback.NOOP, false);
                 Thread.sleep(100);
             }
         });
@@ -329,7 +341,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientAbortsOPEN(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
@@ -342,7 +355,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientAbortsOSHUT(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
@@ -355,7 +369,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testClientAbortsISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
@@ -368,7 +383,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testOnFrameThrowsOPEN(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
@@ -386,7 +402,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testOnFrameThrowsOSHUT(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
@@ -404,7 +421,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testAbnormalCloseStatusIsHardClose(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
@@ -419,7 +437,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void doubleNormalClose(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
@@ -444,8 +463,8 @@ public class WebSocketCloseTest extends WebSocketTester
         assertThat(closeStatus.getReason(), is("normal 1"));
 
         // Send close response from client.
-        client.getOutputStream().write(RawFrameBuilder.buildClose(
-            new CloseStatus(CloseStatus.NORMAL, "normal response 1"), true));
+        client.getOutputStream()
+            .write(RawFrameBuilder.buildClose(new CloseStatus(CloseStatus.NORMAL, "normal response 1"), true));
 
         serverHandler.coreSession.demand();
         assertNotNull(serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS));
@@ -458,7 +477,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void doubleAbnormalClose(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
@@ -484,15 +504,18 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void doubleCloseAbnormalOvertakesNormalClose(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
 
         Callback.Completable callback1 = new Callback.Completable();
-        serverHandler.coreSession.close(CloseStatus.NORMAL, "normal close (client does not complete close handshake)", callback1);
+        serverHandler.coreSession.close(
+            CloseStatus.NORMAL, "normal close (client does not complete close handshake)", callback1);
         Callback.Completable callback2 = new Callback.Completable();
-        serverHandler.coreSession.close(CloseStatus.SERVER_ERROR, "error close should overtake normal close", callback2);
+        serverHandler.coreSession.close(
+            CloseStatus.SERVER_ERROR, "error close should overtake normal close", callback2);
 
         // First Callback Succeeded
         assertDoesNotThrow(() -> callback1.get(5, TimeUnit.SECONDS));
@@ -510,7 +533,8 @@ public class WebSocketCloseTest extends WebSocketTester
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    @ValueSource(strings =
+    {WS_SCHEME, WSS_SCHEME})
     public void testThrowFromOnCloseFrame(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
@@ -560,8 +584,8 @@ public class WebSocketCloseTest extends WebSocketTester
             receivedFrames.offer(Frame.copy(frame));
 
             byte opCode = frame.getOpCode();
-            if ((opCode == TEXT && "throw from onFrame".equals(frame.getPayloadAsUTF8())) ||
-                (opCode == CLOSE && "throw from onFrame".equals(CloseStatus.getCloseStatus(frame).getReason())))
+            if ((opCode == TEXT && "throw from onFrame".equals(frame.getPayloadAsUTF8())) || (opCode == CLOSE && "throw from onFrame"
+                .equals(CloseStatus.getCloseStatus(frame).getReason())))
                 throw new RuntimeException("deliberately throwing from onFrame");
         }
 

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.EtagUtils;
@@ -85,8 +84,8 @@ public class ResourceService
             if (aliasCheck != null && !aliasCheck.checkAlias(path, content.getResource()))
                 return null;
 
-            Collection<CompressedContentFormat> compressedContentFormats = (content.getPreCompressedContentFormats() == null)
-                ? _precompressedFormats : content.getPreCompressedContentFormats();
+            Collection<CompressedContentFormat> compressedContentFormats =
+                (content.getPreCompressedContentFormats() == null) ? _precompressedFormats : content.getPreCompressedContentFormats();
             if (!compressedContentFormats.isEmpty())
             {
                 List<String> preferredEncodingOrder = getPreferredEncodingOrder(request);
@@ -98,7 +97,8 @@ public class ResourceService
                         if (contentFormat == null)
                             continue;
 
-                        HttpContent preCompressedContent = _contentFactory.getContent(path + contentFormat.getExtension());
+                        HttpContent preCompressedContent =
+                            _contentFactory.getContent(path + contentFormat.getExtension());
                         if (preCompressedContent == null)
                             continue;
 
@@ -157,8 +157,15 @@ public class ResourceService
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug(".doGet(req={}, resp={}, callback={}, content={}) pathInContext={}, reqRanges={}, endsWithSlash={}",
-                request, response, callback, content, pathInContext, reqRanges, endsWithSlash);
+            LOG.debug(
+                ".doGet(req={}, resp={}, callback={}, content={}) pathInContext={}, reqRanges={}, endsWithSlash={}",
+                request,
+                response,
+                callback,
+                content,
+                pathInContext,
+                reqRanges,
+                endsWithSlash);
         }
 
         try
@@ -178,7 +185,11 @@ public class ResourceService
                 pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
                 if (q != null && q.length() != 0)
                     pathInContext += "?" + q;
-                sendRedirect(request, response, callback, URIUtil.addPaths(request.getContext().getContextPath(), pathInContext));
+                sendRedirect(
+                    request,
+                    response,
+                    callback,
+                    URIUtil.addPaths(request.getContext().getContextPath(), pathInContext));
                 return;
             }
 
@@ -218,7 +229,8 @@ public class ResourceService
         Response.writeError(request, response, callback, cause);
     }
 
-    protected void writeHttpError(Request request, Response response, Callback callback, int status, String msg, Throwable cause)
+    protected void writeHttpError(
+                                  Request request, Response response, Callback callback, int status, String msg, Throwable cause)
     {
         Response.writeError(request, response, callback, status, msg, cause);
     }
@@ -227,8 +239,7 @@ public class ResourceService
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendRedirect(req={}, resp={}, callback={}, target={})",
-                request, response, callback, target);
+            LOG.debug("sendRedirect(req={}, resp={}, callback={}, target={})", request, response, callback, target);
         }
 
         Response.sendRedirect(request, response, callback, target);
@@ -282,7 +293,8 @@ public class ResourceService
         return false;
     }
 
-    private CompressedContentFormat isEncodingAvailable(String encoding, Collection<CompressedContentFormat> availableFormats)
+    private CompressedContentFormat isEncodingAvailable(
+                                                        String encoding, Collection<CompressedContentFormat> availableFormats)
     {
         if (availableFormats.isEmpty())
             return null;
@@ -301,7 +313,8 @@ public class ResourceService
     /**
      * @return true if the request was processed, false otherwise.
      */
-    protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
+    protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback)
+        throws IOException
     {
         try
         {
@@ -322,8 +335,8 @@ public class ResourceService
                         case IF_MODIFIED_SINCE -> ifms = field.getValue();
                         case IF_UNMODIFIED_SINCE -> ifums = field.getValue();
                         default ->
-                        {
-                        }
+                            {
+                            }
                     }
                 }
             }
@@ -364,7 +377,7 @@ public class ResourceService
             // Handle if modified since
             if (ifms != null && ifnm == null)
             {
-                //Get jetty's Response impl
+                // Get jetty's Response impl
                 String mdlm = content.getLastModifiedValue();
                 if (ifms.equals(mdlm))
                 {
@@ -442,14 +455,27 @@ public class ResourceService
         return null;
     }
 
-    protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
+    protected void sendWelcome(
+                               HttpContent content,
+                               String pathInContext,
+                               boolean endsWithSlash,
+                               Request request,
+                               Response response,
+                               Callback callback)
+        throws Exception
     {
         if (!Objects.requireNonNull(content).getResource().isDirectory())
             throw new IllegalArgumentException("content must be a directory");
 
         if (LOG.isDebugEnabled())
-            LOG.debug("sendWelcome(content={}, pathInContext={}, endsWithSlash={}, req={}, resp={}, callback={})",
-                content, pathInContext, endsWithSlash, request, response, callback);
+            LOG.debug(
+                "sendWelcome(content={}, pathInContext={}, endsWithSlash={}, req={}, resp={}, callback={})",
+                content,
+                pathInContext,
+                endsWithSlash,
+                request,
+                response,
+                callback);
 
         // Redirect to directory
         if (!endsWithSlash)
@@ -500,11 +526,11 @@ public class ResourceService
      * @param target the welcome target
      * @param mode the welcome mode
      */
-    public record WelcomeAction(String target, WelcomeMode mode)
-    {
+    public record WelcomeAction(String target, WelcomeMode mode) {
     }
 
-    private boolean welcome(HttpContent content, Request request, Response response, Callback callback) throws Exception
+    private boolean welcome(HttpContent content, Request request, Response response, Callback callback)
+        throws Exception
     {
         WelcomeAction welcomeAction = processWelcome(content, request);
         if (LOG.isDebugEnabled())
@@ -517,7 +543,8 @@ public class ResourceService
         return true;
     }
 
-    protected void handleWelcomeAction(Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws Exception
+    protected void handleWelcomeAction(
+                                       Request request, Response response, Callback callback, WelcomeAction welcomeAction) throws Exception
     {
         switch (welcomeAction.mode)
         {
@@ -540,7 +567,8 @@ public class ResourceService
      * @param welcomeTarget the welcome target to redirect to
      * @throws Exception if the redirection fails
      */
-    protected void redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+    protected void redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget)
+        throws Exception
     {
         response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
         sendRedirect(request, response, callback, welcomeTarget);
@@ -557,7 +585,8 @@ public class ResourceService
      * @param welcomeTarget the welcome target to serve
      * @throws Exception if serving the welcome target fails
      */
-    protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+    protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget)
+        throws Exception
     {
         HttpContent c = _contentFactory.getContent(welcomeTarget);
         sendData(request, response, callback, c, List.of());
@@ -581,7 +610,8 @@ public class ResourceService
      * @param welcomeTarget the welcome target to rehandle to
      * @throws Exception if the rehandling fails
      */
-    protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+    protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget)
+        throws Exception
     {
         Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
     }
@@ -609,12 +639,18 @@ public class ResourceService
         return new WelcomeAction(welcomeTarget, welcomeMode);
     }
 
-    private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext)
+    private void sendDirectory(
+                               Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendDirectory(req={}, resp={}, content={}, callback={}, pathInContext={})",
-                request, response, httpContent, callback, pathInContext);
+            LOG.debug(
+                "sendDirectory(req={}, resp={}, content={}, callback={}, pathInContext={})",
+                request,
+                response,
+                httpContent,
+                callback,
+                pathInContext);
         }
         if (!_dirAllowed)
         {
@@ -623,7 +659,11 @@ public class ResourceService
         }
 
         String base = URIUtil.addEncodedPaths(request.getHttpURI().getPath(), "/");
-        String listing = ResourceListing.getAsXHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
+        String listing = ResourceListing.getAsXHTML(
+            httpContent.getResource(),
+            base,
+            pathInContext.length() > 1,
+            request.getHttpURI().getQuery());
         if (listing == null)
         {
             writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
@@ -638,12 +678,19 @@ public class ResourceService
         response.write(true, ByteBuffer.wrap(data), callback);
     }
 
-    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges) throws IOException
+    private void sendData(
+                          Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
+        throws IOException
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendData(req={}, resp={}, callback={}) content={}, reqRanges={})",
-                request, response, callback, content, reqRanges);
+            LOG.debug(
+                "sendData(req={}, resp={}, callback={}) content={}, reqRanges={})",
+                request,
+                response,
+                callback,
+                content,
+                reqRanges);
         }
 
         long contentLength = content.getContentLengthValue();
@@ -683,7 +730,8 @@ public class ResourceService
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
 
             // TODO use a buffer pool
-            IOResources.copy(content.getResource(), response, null, 0, false, range.first(), range.getLength(), callback);
+            IOResources.copy(
+                content.getResource(), response, null, 0, false, range.first(), range.getLength(), callback);
             return;
         }
 
@@ -692,7 +740,12 @@ public class ResourceService
         String contentType = "multipart/byteranges; boundary=";
         String boundary = MultiPart.generateBoundary(null, 24);
         MultiPartByteRanges.ContentSource byteRanges = new MultiPartByteRanges.ContentSource(boundary);
-        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource(), range, contentLength, request.getComponents().getByteBufferPool())));
+        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(
+            content.getContentTypeValue(),
+            content.getResource(),
+            range,
+            contentLength,
+            request.getComponents().getByteBufferPool())));
         byteRanges.close();
         long partsContentLength = byteRanges.getLength();
         putHeaders(response, content, partsContentLength);
@@ -713,7 +766,8 @@ public class ResourceService
             {
                 IOResources.copy(
                     content.getResource(),
-                    response, request.getComponents().getByteBufferPool(),
+                    response,
+                    request.getComponents().getByteBufferPool(),
                     request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize(),
                     request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers(),
                     callback);
@@ -731,19 +785,19 @@ public class ResourceService
         // TODO it is very inefficient to do many put's to a HttpFields, as each put is a full iteration.
         //      it might be better remove headers en masse and then just add the extras:
         // NOTE: If these headers come from a Servlet Filter we shouldn't override them here.
-//        headers.remove(EnumSet.of(
-//            HttpHeader.LAST_MODIFIED,
-//            HttpHeader.CONTENT_LENGTH,
-//            HttpHeader.CONTENT_TYPE,
-//            HttpHeader.CONTENT_ENCODING,
-//            HttpHeader.ETAG,
-//            HttpHeader.ACCEPT_RANGES,
-//            HttpHeader.CACHE_CONTROL
-//            ));
-//        HttpField lm = content.getLastModified();
-//        if (lm != null)
-//            headers.add(lm);
-//        etc.
+        //        headers.remove(EnumSet.of(
+        //            HttpHeader.LAST_MODIFIED,
+        //            HttpHeader.CONTENT_LENGTH,
+        //            HttpHeader.CONTENT_TYPE,
+        //            HttpHeader.CONTENT_ENCODING,
+        //            HttpHeader.ETAG,
+        //            HttpHeader.ACCEPT_RANGES,
+        //            HttpHeader.CACHE_CONTROL
+        //            ));
+        //        HttpField lm = content.getLastModified();
+        //        if (lm != null)
+        //            headers.add(lm);
+        //        etc.
 
         HttpField lm = content.getLastModified();
         if (lm != null)
@@ -873,7 +927,9 @@ public class ResourceService
         _precompressedFormats.addAll(precompressedFormats);
         // TODO: this preferred encoding order should be a separate configurable
         _preferredEncodingOrder.clear();
-        _preferredEncodingOrder.addAll(_precompressedFormats.stream().map(CompressedContentFormat::getEncoding).toList());
+        _preferredEncodingOrder.addAll(_precompressedFormats.stream()
+            .map(CompressedContentFormat::getEncoding)
+            .toList());
     }
 
     public void setEncodingCacheSize(int encodingCacheSize)
@@ -896,7 +952,9 @@ public class ResourceService
     @Override
     public String toString()
     {
-        return String.format("%s@%x(contentFactory=%s, dirAllowed=%b, welcomeMode=%s)", this.getClass().getName(), this.hashCode(), this._contentFactory, this._dirAllowed, this._welcomeMode);
+        return String.format(
+            "%s@%x(contentFactory=%s, dirAllowed=%b, welcomeMode=%s)",
+            this.getClass().getName(), this.hashCode(), this._contentFactory, this._dirAllowed, this._welcomeMode);
     }
 
     public void setWelcomeFactory(WelcomeFactory welcomeFactory)

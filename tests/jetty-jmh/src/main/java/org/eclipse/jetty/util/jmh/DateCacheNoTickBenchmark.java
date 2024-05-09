@@ -16,7 +16,6 @@ package org.eclipse.jetty.util.jmh;
 import java.time.Instant;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
-
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;

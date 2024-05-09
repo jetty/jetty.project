@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.server;
 
 import java.util.Arrays;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -44,12 +43,19 @@ public class HTTP3ServerConnector extends QuicServerConnector
 
     private HttpField altSvcHttpField;
 
-    public HTTP3ServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    public HTTP3ServerConnector(
+                                Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
         this(server, null, null, null, sslContextFactory, factories);
     }
 
-    public HTTP3ServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    public HTTP3ServerConnector(
+                                Server server,
+                                Executor executor,
+                                Scheduler scheduler,
+                                ByteBufferPool bufferPool,
+                                SslContextFactory.Server sslContextFactory,
+                                ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, extractServerQuicConfiguration(factories), factories);
     }

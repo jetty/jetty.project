@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.docs.programming;
 
+import static java.lang.System.Logger.Level.INFO;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-
-import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
 public class ComponentDocs

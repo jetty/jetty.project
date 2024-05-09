@@ -21,7 +21,7 @@ public class ServerConnectorAsyncContextTest extends LocalAsyncContextTest
     {
         return new ServerConnector(_server);
     }
-
+    
     @Override
     protected String getResponse(String request) throws Exception
     {
@@ -30,6 +30,6 @@ public class ServerConnectorAsyncContextTest extends LocalAsyncContextTest
         socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
         return IO.toString(socket.getInputStream());
     }
-
+    
      */
 }

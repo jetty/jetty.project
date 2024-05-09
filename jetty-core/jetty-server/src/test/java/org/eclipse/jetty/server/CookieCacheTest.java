@@ -13,17 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.ListIterator;
-
-import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -31,6 +20,16 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.ListIterator;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class CookieCacheTest
 {
@@ -196,5 +195,4 @@ public class CookieCacheTest
         assertThat(Arrays.asList(strings), contains("name=value", "other=cookie"));
         assertThat(_cache.getApiCookies(String.class, null), sameInstance(strings));
     }
-
 }

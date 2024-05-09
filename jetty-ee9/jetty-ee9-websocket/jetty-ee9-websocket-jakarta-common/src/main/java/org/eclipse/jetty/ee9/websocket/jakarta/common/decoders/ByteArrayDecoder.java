@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.decoders;
 
-import java.nio.ByteBuffer;
-
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
+import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class ByteArrayDecoder extends AbstractDecoder implements Decoder.Binary<byte[]>

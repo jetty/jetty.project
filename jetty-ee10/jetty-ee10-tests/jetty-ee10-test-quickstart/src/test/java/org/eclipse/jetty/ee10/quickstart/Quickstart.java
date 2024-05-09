@@ -29,10 +29,10 @@ public class Quickstart
         if (args.length < 1)
             error("No WAR file or directory given");
 
-        //war file or dir to start
+        // war file or dir to start
         String war = args[0];
 
-        //optional jetty context xml file to configure the webapp
+        // optional jetty context xml file to configure the webapp
         WebAppContext webapp = new WebAppContext();
         Resource contextXml = null;
         if (args.length > 1)
@@ -40,15 +40,16 @@ public class Quickstart
 
         Server server = new Server(8080);
 
-        webapp.addConfiguration(new QuickStartConfiguration(),
-                                    new EnvConfiguration(),
-                                    new PlusConfiguration(),
-                                    new AnnotationConfiguration());
+        webapp.addConfiguration(
+            new QuickStartConfiguration(),
+            new EnvConfiguration(),
+            new PlusConfiguration(),
+            new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setWar(war);
         webapp.setContextPath("/");
 
-        //apply context xml file
+        // apply context xml file
         if (contextXml != null)
         {
             XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXml);

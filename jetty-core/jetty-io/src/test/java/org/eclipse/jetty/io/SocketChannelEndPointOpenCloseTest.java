@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.io;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SocketChannelEndPointOpenCloseTest
 {
@@ -54,7 +53,8 @@ public class SocketChannelEndPointOpenCloseTest
     {
         EndPointPair c = new EndPointPair();
 
-        c.client = new SocketChannelEndPoint(SocketChannel.open(connector.socket().getLocalSocketAddress()), null, null, null);
+        c.client = new SocketChannelEndPoint(
+            SocketChannel.open(connector.socket().getLocalSocketAddress()), null, null, null);
         c.server = new SocketChannelEndPoint(connector.accept(), null, null, null);
         return c;
     }

@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Result;
@@ -45,11 +49,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class PushedResourcesTest extends AbstractTest
 {
     @Test
@@ -63,30 +62,36 @@ public class PushedResourcesTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 HttpURI pushURI = HttpURI.from("http://localhost:" + connector.getLocalPort() + pushPath);
-                MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                stream.push(new PushPromiseFrame(stream.getId(), pushRequest), new Promise.Adapter<>()
-                {
-                    @Override
-                    public void succeeded(Stream pushStream)
+                MetaData.Request pushRequest =
+                    new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                stream.push(
+                    new PushPromiseFrame(stream.getId(), pushRequest),
+                    new Promise.Adapter<>()
                     {
-                        // Just send the normal response and wait for the reset.
-                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                    }
-                }, new Stream.Listener()
-                {
-                    @Override
-                    public void onReset(Stream stream, ResetFrame frame, Callback callback)
+                        @Override
+                        public void succeeded(Stream pushStream)
+                        {
+                            // Just send the normal response and wait for the reset.
+                            MetaData.Response response = new MetaData.Response(
+                                HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        }
+                    },
+                    new Stream.Listener()
                     {
-                        latch.countDown();
-                        callback.succeeded();
-                    }
-                });
+                        @Override
+                        public void onReset(Stream stream, ResetFrame frame, Callback callback)
+                        {
+                            latch.countDown();
+                            callback.succeeded();
+                        }
+                    });
                 return null;
             }
         });
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .onPush((mainRequest, pushedRequest) -> null)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -124,9 +129,17 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    MetaData.Request push1 = new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(path1), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    MetaData.Request push1 = new MetaData.Request(
+                        "GET",
+                        HttpURI.build(request.getHttpURI()).path(path1),
+                        HttpVersion.HTTP_2,
+                        HttpFields.EMPTY);
                     request.push(push1);
-                    MetaData.Request push2 = new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    MetaData.Request push2 = new MetaData.Request(
+                        "GET",
+                        HttpURI.build(request.getHttpURI()).path(path2),
+                        HttpVersion.HTTP_2,
+                        HttpFields.EMPTY);
                     request.push(push2);
                     response.write(true, ByteBuffer.wrap(bytes), callback);
                 }
@@ -136,7 +149,8 @@ public class PushedResourcesTest extends AbstractTest
 
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
             {
                 @Override
@@ -189,7 +203,11 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    request.push(new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(oldPath), HttpVersion.HTTP_2, HttpFields.EMPTY));
+                    request.push(new MetaData.Request(
+                        "GET",
+                        HttpURI.build(request.getHttpURI()).path(oldPath),
+                        HttpVersion.HTTP_2,
+                        HttpFields.EMPTY));
                     callback.succeeded();
                 }
                 return true;
@@ -197,7 +215,8 @@ public class PushedResourcesTest extends AbstractTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
             {
                 @Override

@@ -18,7 +18,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.Name;
@@ -57,7 +56,8 @@ public class ValidatingCachingHttpContentFactory extends CachingHttpContentFacto
      * @param validationPeriod time between filesystem checks in ms to see if an {@link HttpContent} is still valid (-1 never validate, 0 always validate).
      * @param bufferPool the {@link org.eclipse.jetty.io.ByteBufferPool} to use.
      */
-    public ValidatingCachingHttpContentFactory(@Name("authority") HttpContent.Factory authority,
+    public ValidatingCachingHttpContentFactory(
+                                               @Name("authority") HttpContent.Factory authority,
                                                @Name("validationPeriod") long validationPeriod,
                                                @Name("bufferPool") ByteBufferPool bufferPool)
     {
@@ -75,7 +75,8 @@ public class ValidatingCachingHttpContentFactory extends CachingHttpContentFacto
      * @param sweepPeriod time between runs of the sweeper in ms (if 0 never sweep for invalid entries).
      * @param idleTimeout amount of time in ms an entry can be unused before evicted by the sweeper (if 0 never evict unused entries).
      */
-    public ValidatingCachingHttpContentFactory(@Name("authority") HttpContent.Factory authority,
+    public ValidatingCachingHttpContentFactory(
+                                               @Name("authority") HttpContent.Factory authority,
                                                @Name("validationPeriod") long validationPeriod,
                                                @Name("byteBufferPool") ByteBufferPool bufferPool,
                                                @Name("scheduler") Scheduler scheduler,
@@ -159,8 +160,7 @@ public class ValidatingCachingHttpContentFactory extends CachingHttpContentFacto
             else if (_validationTime > 0)
             {
                 long now = NanoTime.now();
-                if (_lastValidated.updateAndGet(lastChecked ->
-                    (NanoTime.elapsed(lastChecked, now) > TimeUnit.MILLISECONDS.toNanos(_validationTime)) ? now : lastChecked) != now)
+                if (_lastValidated.updateAndGet(lastChecked -> (NanoTime.elapsed(lastChecked, now) > TimeUnit.MILLISECONDS.toNanos(_validationTime)) ? now : lastChecked) != now)
                     return true;
             }
 

@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
-import java.net.URI;
-import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.EndpointConfig;
@@ -25,6 +24,10 @@ import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.net.URI;
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.StringDecoder;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
@@ -35,10 +38,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Example of an annotated echo server discovered via annotation scanning.
@@ -106,15 +105,17 @@ public class ServerDecoderTest
         ServletContextHandler servletContextHandler = new ServletContextHandler(null, "/");
         server.setHandler(servletContextHandler);
 
-        JakartaWebSocketServletContainerInitializer.configure(servletContextHandler, ((servletContext, serverContainer) ->
-        {
-            serverContainer.addEndpoint(AnnotatedEndpoint.class);
+        JakartaWebSocketServletContainerInitializer.configure(
+            servletContextHandler, ((servletContext, serverContainer) ->
+            {
+                serverContainer.addEndpoint(AnnotatedEndpoint.class);
 
-            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ConfiguredEndpoint.class, "/configured")
-                .decoders(Collections.singletonList(PlusAppendDecoder.class))
-                .build();
-            serverContainer.addEndpoint(config);
-        }));
+                ServerEndpointConfig config = ServerEndpointConfig.Builder.create(
+                    ConfiguredEndpoint.class, "/configured")
+                    .decoders(Collections.singletonList(PlusAppendDecoder.class))
+                    .build();
+                serverContainer.addEndpoint(config);
+            }));
 
         server.start();
         serverURI = new URI("ws://localhost:" + serverConnector.getLocalPort());

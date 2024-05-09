@@ -17,6 +17,12 @@ import org.slf4j.event.Level;
 
 public interface JettyAppender
 {
-    void emit(JettyLogger logger, Level level, long timestamp, String threadName,
-              Throwable throwable, String message, Object... argumentArray);
+    void emit(
+              JettyLogger logger,
+              Level level,
+              long timestamp,
+              String threadName,
+              Throwable throwable,
+              String message,
+              Object... argumentArray);
 }

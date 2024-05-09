@@ -13,12 +13,17 @@
 
 package org.eclipse.jetty.util.resource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -29,12 +34,6 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class ResourceAliasTest
@@ -133,9 +132,9 @@ public class ResourceAliasTest
         {
             Path file0 = baseDir.resolve("test.txt\0");
             if (!Files.exists(file0))
-                return;  // this file system does get tricked by ending filenames
+                return; // this file system does get tricked by ending filenames
 
-            assertThat(file0 + " exists", Files.exists(file0), is(true));  // This is an alias!
+            assertThat(file0 + " exists", Files.exists(file0), is(true)); // This is an alias!
 
             Resource dir = resourceFactory.newResource(baseDir);
 

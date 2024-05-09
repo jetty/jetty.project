@@ -13,13 +13,15 @@
 
 package org.eclipse.jetty.ee9.session.jdbc;
 
-import java.io.IOException;
-import java.io.PrintWriter;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -35,9 +37,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * ClusteredSessionMigrationTest
@@ -81,12 +80,16 @@ public class ClusteredSessionMigrationTest extends AbstractSessionTestBase
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        cacheFactory.setSaveOnCreate(true); //immediately save the session when it is created so node2 can see it
+        cacheFactory.setSaveOnCreate(true); // immediately save the session when it is created so node2 can see it
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        SessionTestSupport server1 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC,
-            cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(
+            0,
+            SessionTestSupport.DEFAULT_MAX_INACTIVE,
+            SessionTestSupport.DEFAULT_SCAVENGE_SEC,
+            cacheFactory,
+            storeFactory);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
         try
@@ -94,14 +97,18 @@ public class ClusteredSessionMigrationTest extends AbstractSessionTestBase
             server1.start();
             int port1 = server1.getPort();
 
-            //Configure a cache and store same way for server2
+            // Configure a cache and store same way for server2
             DefaultSessionCacheFactory cacheFactory2 = new DefaultSessionCacheFactory();
             cacheFactory2.setEvictionPolicy(SessionCache.NEVER_EVICT);
             cacheFactory2.setSaveOnCreate(true);
             SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
 
-            SessionTestSupport server2 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC,
-                cacheFactory2, storeFactory2);
+            SessionTestSupport server2 = new SessionTestSupport(
+                0,
+                SessionTestSupport.DEFAULT_MAX_INACTIVE,
+                SessionTestSupport.DEFAULT_SCAVENGE_SEC,
+                cacheFactory2,
+                storeFactory2);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
             try
@@ -125,7 +132,8 @@ public class ClusteredSessionMigrationTest extends AbstractSessionTestBase
 
                     // Perform a request to server2 using the session cookie from the previous request
                     // This should migrate the session from server1 to server2.
-                    Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1) + "?action=get");
+                    Request request2 = client.newRequest(
+                        "http://localhost:" + port2 + contextPath + servletMapping.substring(1) + "?action=get");
                     HttpField cookie = new HttpField("Cookie", sessionCookie);
                     request2.headers(headers -> headers.put(cookie));
                     ContentResponse response2 = request2.send();
@@ -150,7 +158,7 @@ public class ClusteredSessionMigrationTest extends AbstractSessionTestBase
     public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
-        
+
         private static long createTime = 0;
 
         @Override
@@ -178,11 +186,11 @@ public class ClusteredSessionMigrationTest extends AbstractSessionTestBase
             }
             else if ("get".equals(action))
             {
-                //We cannot test if the session contains the attribute node1
-                //set, because it may not have finished writing the attribute
-                //by the time its response returned to the client and the request
-                //was sent to node2. Just test the create time, which should be
-                //saved.
+                // We cannot test if the session contains the attribute node1
+                // set, because it may not have finished writing the attribute
+                // by the time its response returned to the client and the request
+                // was sent to node2. Just test the create time, which should be
+                // saved.
                 assertEquals(createTime, session.getCreationTime());
             }
         }

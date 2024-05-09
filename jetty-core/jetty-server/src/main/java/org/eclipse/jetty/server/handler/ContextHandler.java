@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -147,10 +146,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     public enum Availability
     {
-        STOPPED,        // stopped and can't be made unavailable nor shutdown
-        STARTING,       // starting inside doStart. It may go to any of the next states.
-        AVAILABLE,      // running normally
-        UNAVAILABLE,    // Either a startup error or explicit call to setAvailable(false)
+        STOPPED, // stopped and can't be made unavailable nor shutdown
+        STARTING, // starting inside doStart. It may go to any of the next states.
+        AVAILABLE, // running normally
+        UNAVAILABLE, // Either a startup error or explicit call to setAvailable(false)
     }
 
     /**
@@ -205,7 +204,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         super.setServer(server);
         _mimeTypes.setWrapped(server.getMimeTypes());
     }
-    
+
     protected ScopedContext newContext()
     {
         return new ScopedContext();
@@ -282,7 +281,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent,
+        dumpObjects(
+            out,
+            indent,
             new ClassLoaderDump(getClassLoader()),
             new DumpableAttributes("handler attributes", _persistentAttributes),
             new DumpableAttributes("attributes", _context));
@@ -447,9 +448,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (_classLoader == null || !(_classLoader instanceof URLClassLoader loader))
             return null;
 
-        String classpath = URIUtil.streamOf(loader)
-            .map(URI::toASCIIString)
-            .collect(Collectors.joining(File.pathSeparator));
+        String classpath =
+            URIUtil.streamOf(loader).map(URI::toASCIIString).collect(Collectors.joining(File.pathSeparator));
         if (StringUtil.isBlank(classpath))
             return null;
         return classpath;
@@ -516,9 +516,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             if (contextHandler == null || !contextHandler.isCrossContextDispatchSupported())
                 continue;
             String contextPath = contextHandler.getContextPath();
-            if (path.equals(contextPath) ||
-                (path.startsWith(contextPath) && path.charAt(contextPath.length()) == '/') ||
-                "/".equals(contextPath))
+            if (path.equals(contextPath) || (path.startsWith(contextPath) && path.charAt(contextPath.length()) == '/') || "/".equals(contextPath))
                 contexts.add(contextHandler);
         }
 
@@ -531,7 +529,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         List<String> vhosts = getVirtualHosts();
         if (vhosts != null && !vhosts.isEmpty())
         {
-            for (ListIterator<ContextHandler> i = contexts.listIterator(); i.hasNext(); )
+            for (ListIterator<ContextHandler> i = contexts.listIterator(); i.hasNext();)
             {
                 ContextHandler ch = i.next();
 
@@ -631,7 +629,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      */
     protected void notifyExitScope(Request request)
     {
-        for (int i = _contextListeners.size(); i-- > 0; )
+        for (int i = _contextListeners.size(); i-- > 0;)
         {
             try
             {
@@ -863,7 +861,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         }
     }
 
-    protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
+    protected boolean handleByContextHandler(
+                                             String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         return false;
     }
@@ -1014,8 +1013,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         ProtectedTargetType type = _protectedTargets.getBest(target);
 
-        return type == ProtectedTargetType.PREFIX ||
-            type == ProtectedTargetType.EXACT && _protectedTargets.get(target) == ProtectedTargetType.EXACT;
+        return type == ProtectedTargetType.PREFIX || type == ProtectedTargetType.EXACT && _protectedTargets.get(target) == ProtectedTargetType.EXACT;
     }
 
     /**
@@ -1368,13 +1366,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        default void enterScope(Context context, Request request) {}
+        default void enterScope(Context context, Request request)
+        {
+        }
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        default void exitScope(Context context, Request request) {}
+        default void exitScope(Context context, Request request)
+        {
+        }
     }
 
     private static class VHost
@@ -1462,20 +1464,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         @Override
         public boolean equals(Object o)
         {
-            return o instanceof VHost vhost &&
-                Objects.equals(_vHost, vhost._vHost) &&
-                Objects.equals(_wild, vhost._wild) &&
-                Objects.equals(_vConnector, vhost._vConnector);
+            return o instanceof VHost vhost && Objects.equals(_vHost, vhost._vHost) && Objects.equals(_wild, vhost._wild) && Objects.equals(_vConnector, vhost._vConnector);
         }
 
         @Override
         public String toString()
         {
-            return "VHost{" +
-                "_vHost='" + _vHost + '\'' +
-                ", _wild=" + _wild +
-                ", _vConnector='" + _vConnector + '\'' +
-                '}';
+            return "VHost{" + "_vHost='" + _vHost + '\'' + ", _wild=" + _wild + ", _vConnector='" + _vConnector + '\'' + '}';
         }
     }
 }

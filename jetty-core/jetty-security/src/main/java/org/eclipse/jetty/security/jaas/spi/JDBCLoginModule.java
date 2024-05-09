@@ -18,7 +18,6 @@ import java.sql.DriverManager;
 import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
-
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,8 +44,7 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
      * @throws Exception if unable to get the connection
      */
     @Override
-    public Connection getConnection()
-        throws Exception
+    public Connection getConnection() throws Exception
     {
         if (!((dbDriver != null) && (dbUrl != null)))
             throw new IllegalStateException("Database connection information not configured");
@@ -54,9 +52,7 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
         if (LOG.isDebugEnabled())
             LOG.debug("Connecting using dbDriver={} dbUserName={}, dbPassword={}", dbDriver, dbUserName, dbUrl);
 
-        return DriverManager.getConnection(dbUrl,
-            dbUserName,
-            dbPassword);
+        return DriverManager.getConnection(dbUrl, dbUserName, dbPassword);
     }
 
     /**
@@ -70,16 +66,14 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
      * @param options the options map
      */
     @Override
-    public void initialize(Subject subject,
-                           CallbackHandler callbackHandler,
-                           Map<String, ?> sharedState,
-                           Map<String, ?> options)
+    public void initialize(
+                           Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
     {
         try
         {
             super.initialize(subject, callbackHandler, sharedState, options);
 
-            //get the jdbc  username/password, jdbc url out of the options
+            // get the jdbc  username/password, jdbc url out of the options
             dbDriver = (String)options.get("dbDriver");
             dbUrl = (String)options.get("dbUrl");
             dbUserName = (String)options.get("dbUserName");

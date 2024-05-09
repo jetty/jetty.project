@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.SocketAddress;
@@ -27,21 +35,12 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteFlusherTest
 {
@@ -76,7 +75,12 @@ public class WriteFlusherTest
             flusher.onFail(new IOException("Ignored because no operation in progress"));
 
         FutureCallback callback = new FutureCallback();
-        flusher.write(callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
+        flusher.write(
+            callback,
+            BufferUtil.toBuffer("How "),
+            BufferUtil.toBuffer("now "),
+            BufferUtil.toBuffer("brown "),
+            BufferUtil.toBuffer("cow!"));
 
         assertTrue(callback.isDone());
         assertFalse(incompleteFlush.get());
@@ -293,8 +297,12 @@ public class WriteFlusherTest
                 flushers[i] = flusher;
                 FutureCallback callback = new FutureCallback();
                 futures[i] = callback;
-                scheduler.schedule(() -> flusher.onFail(new Throwable(reason)), random.nextInt(75) + 1, TimeUnit.MILLISECONDS);
-                flusher.write(callback, BufferUtil.toBuffer("How Now Brown Cow."), BufferUtil.toBuffer(" The quick brown fox jumped over the lazy dog!"));
+                scheduler.schedule(
+                    () -> flusher.onFail(new Throwable(reason)), random.nextInt(75) + 1, TimeUnit.MILLISECONDS);
+                flusher.write(
+                    callback,
+                    BufferUtil.toBuffer("How Now Brown Cow."),
+                    BufferUtil.toBuffer(" The quick brown fox jumped over the lazy dog!"));
             }
 
             int completed = 0;
@@ -304,7 +312,9 @@ public class WriteFlusherTest
                 try
                 {
                     futures[i].get(15, TimeUnit.SECONDS);
-                    assertEquals("How Now Brown Cow. The quick brown fox jumped over the lazy dog!", flushers[i].getContent());
+                    assertEquals(
+                        "How Now Brown Cow. The quick brown fox jumped over the lazy dog!",
+                        flushers[i].getContent());
                     completed++;
                 }
                 catch (ExecutionException x)
@@ -474,7 +484,8 @@ public class WriteFlusherTest
         private final Random random;
         private String content = "";
 
-        private ConcurrentWriteFlusher(ByteArrayEndPoint endPoint, ScheduledThreadPoolExecutor scheduler, Random random)
+        private ConcurrentWriteFlusher(
+                                       ByteArrayEndPoint endPoint, ScheduledThreadPoolExecutor scheduler, Random random)
         {
             super(endPoint);
             this.endPoint = endPoint;

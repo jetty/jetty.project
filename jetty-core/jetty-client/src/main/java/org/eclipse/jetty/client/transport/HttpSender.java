@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
@@ -117,7 +116,11 @@ public abstract class HttpSender
 
         HttpRequest request = exchange.getRequest();
         if (LOG.isDebugEnabled())
-            LOG.debug("Request headers {}{}{}", request, System.lineSeparator(), request.getHeaders().toString().trim());
+            LOG.debug(
+                "Request headers {}{}{}",
+                request,
+                System.lineSeparator(),
+                request.getHeaders().toString().trim());
         request.notifyHeaders();
 
         if (updateRequestState(RequestState.TRANSIENT, RequestState.HEADERS))
@@ -156,7 +159,11 @@ public abstract class HttpSender
 
                 HttpRequest request = exchange.getRequest();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Request content {}{}{}", request, System.lineSeparator(), BufferUtil.toDetailString(content));
+                    LOG.debug(
+                        "Request content {}{}{}",
+                        request,
+                        System.lineSeparator(),
+                        BufferUtil.toDetailString(content));
                 request.notifyContent(content);
 
                 if (updateRequestState(RequestState.TRANSIENT, RequestState.CONTENT))
@@ -219,7 +226,8 @@ public abstract class HttpSender
     {
         try
         {
-            Executor executor = getHttpChannel().getHttpDestination().getHttpClient().getExecutor();
+            Executor executor =
+                getHttpChannel().getHttpDestination().getHttpClient().getExecutor();
             executor.execute(() -> abort(exchange, failure, Promise.noop()));
         }
         catch (RejectedExecutionException x)
@@ -296,7 +304,8 @@ public abstract class HttpSender
      * @param lastContent whether the content is the last content to send
      * @param callback the callback to notify
      */
-    protected abstract void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback);
+    protected abstract void sendHeaders(
+                                        HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback);
 
     /**
      * <p>Implementations should send the given HTTP content over the wire.</p>
@@ -306,7 +315,8 @@ public abstract class HttpSender
      * @param lastContent whether the content is the last content to send
      * @param callback the callback to notify
      */
-    protected abstract void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback);
+    protected abstract void sendContent(
+                                        HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback);
 
     protected void reset()
     {
@@ -418,11 +428,7 @@ public abstract class HttpSender
     @Override
     public String toString()
     {
-        return String.format("%s@%x(req=%s,failure=%s)",
-            getClass().getSimpleName(),
-            hashCode(),
-            requestState,
-            failure);
+        return String.format("%s@%x(req=%s,failure=%s)", getClass().getSimpleName(), hashCode(), requestState, failure);
     }
 
     /**

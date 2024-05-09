@@ -13,11 +13,17 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.websocket.api.Session;
@@ -32,13 +38,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketStopTest
 {
@@ -123,8 +122,8 @@ public class WebSocketStopTest
         assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
         assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
 
-        IOException error = assertThrows(IOException.class,
-            () -> session.getRemote().sendString("this should fail before ExtensionStack"));
+        IOException error = assertThrows(
+            IOException.class, () -> session.getRemote().sendString("this should fail before ExtensionStack"));
         assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
     }
 }

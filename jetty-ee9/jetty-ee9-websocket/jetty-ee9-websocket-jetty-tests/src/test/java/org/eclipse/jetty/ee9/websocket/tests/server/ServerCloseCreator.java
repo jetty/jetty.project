@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.tests.server;
 
-import java.util.concurrent.LinkedBlockingQueue;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import jakarta.servlet.ServletContext;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee9.websocket.tests.EchoSocket;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ServerCloseCreator implements JettyWebSocketCreator
 {

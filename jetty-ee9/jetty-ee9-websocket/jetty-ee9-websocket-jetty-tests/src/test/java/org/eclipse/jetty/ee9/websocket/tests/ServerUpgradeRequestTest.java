@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
-import java.net.URI;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import java.net.URI;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
@@ -48,11 +52,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ServerUpgradeRequestTest
 {
     private Server _server;
@@ -70,7 +69,6 @@ public class ServerUpgradeRequestTest
             session.getRemote().sendString("requestURI=" + upgradeRequest.getRequestURI());
             session.close();
         }
-
     }
 
     private static class TestLoginService extends AbstractLoginService
@@ -122,7 +120,8 @@ public class ServerUpgradeRequestTest
         }
 
         @Override
-        public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
+        public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory)
+            throws ServerAuthException
         {
             UserIdentity user = login("user123", null, request);
             if (user != null)
@@ -131,7 +130,9 @@ public class ServerUpgradeRequestTest
         }
 
         @Override
-        public boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, Authentication.User validatedUser) throws ServerAuthException
+        public boolean secureResponse(
+                                      ServletRequest request, ServletResponse response, boolean mandatory, Authentication.User validatedUser)
+            throws ServerAuthException
         {
             return request.isSecure();
         }

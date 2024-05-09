@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.UriCompliance;

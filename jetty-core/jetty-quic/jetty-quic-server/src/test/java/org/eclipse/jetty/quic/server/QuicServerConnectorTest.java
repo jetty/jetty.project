@@ -53,13 +53,17 @@ public class QuicServerConnectorTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                Content.Sink.write(response, true, """
+                Content.Sink.write(
+                    response,
+                    true,
+                    """
                         <html>
                           <body>
                             Request served
                           </body>
                         </html>
-                        """, callback);
+                        """,
+                    callback);
                 return true;
             }
         });

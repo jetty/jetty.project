@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core.client.internal;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.Request;
@@ -34,11 +33,16 @@ import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
 
 public class HttpUpgraderOverHTTP implements HttpUpgrader
 {
-    private static final PreEncodedHttpField WS_VERSION_FIELD = new PreEncodedHttpField(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
-    private static final PreEncodedHttpField WS_UPGRADE_FIELD = new PreEncodedHttpField(HttpHeader.UPGRADE, "websocket");
-    private static final PreEncodedHttpField WS_CONNECTION_FIELD = new PreEncodedHttpField(HttpHeader.CONNECTION, "Upgrade");
-    private static final PreEncodedHttpField PRAGMA_NO_CACHE_FIELD = new PreEncodedHttpField(HttpHeader.PRAGMA, "no-cache");
-    private static final PreEncodedHttpField CACHE_CONTROL_NO_CACHE_FIELD = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "no-cache");
+    private static final PreEncodedHttpField WS_VERSION_FIELD =
+        new PreEncodedHttpField(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
+    private static final PreEncodedHttpField WS_UPGRADE_FIELD =
+        new PreEncodedHttpField(HttpHeader.UPGRADE, "websocket");
+    private static final PreEncodedHttpField WS_CONNECTION_FIELD =
+        new PreEncodedHttpField(HttpHeader.CONNECTION, "Upgrade");
+    private static final PreEncodedHttpField PRAGMA_NO_CACHE_FIELD =
+        new PreEncodedHttpField(HttpHeader.PRAGMA, "no-cache");
+    private static final PreEncodedHttpField CACHE_CONTROL_NO_CACHE_FIELD =
+        new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "no-cache");
     private final CoreClientUpgradeRequest clientUpgradeRequest;
 
     public HttpUpgraderOverHTTP(CoreClientUpgradeRequest clientUpgradeRequest)
@@ -49,18 +53,16 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     @Override
     public void prepare(Request request)
     {
-        request.method(HttpMethod.GET).version(HttpVersion.HTTP_1_1)
-            .headers(headers -> headers
-                .put(WS_VERSION_FIELD)
-                .put(WS_UPGRADE_FIELD)
-                .put(WS_CONNECTION_FIELD)
-                .put(HttpHeader.SEC_WEBSOCKET_KEY, generateRandomKey())
-                // Per the hybi list: Add no-cache headers to avoid compatibility issue.
-                // There are some proxies that rewrite "Connection: upgrade" to
-                // "Connection: close" in the response if a request doesn't contain
-                // these headers.
-                .put(PRAGMA_NO_CACHE_FIELD)
-                .put(CACHE_CONTROL_NO_CACHE_FIELD));
+        request.method(HttpMethod.GET).version(HttpVersion.HTTP_1_1).headers(headers -> headers.put(WS_VERSION_FIELD)
+            .put(WS_UPGRADE_FIELD)
+            .put(WS_CONNECTION_FIELD)
+            .put(HttpHeader.SEC_WEBSOCKET_KEY, generateRandomKey())
+            // Per the hybi list: Add no-cache headers to avoid compatibility issue.
+            // There are some proxies that rewrite "Connection: upgrade" to
+            // "Connection: close" in the response if a request doesn't contain
+            // these headers.
+            .put(PRAGMA_NO_CACHE_FIELD)
+            .put(CACHE_CONTROL_NO_CACHE_FIELD));
 
         // Notify the UpgradeListeners now the headers are set.
         clientUpgradeRequest.requestComplete();
@@ -101,12 +103,15 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
                 }
                 else
                 {
-                    callback.failed(new HttpResponseException("Invalid Sec-WebSocket-Accept hash (was: " + respHash + " expected: " + expectedHash + ")", response));
+                    callback.failed(new HttpResponseException(
+                        "Invalid Sec-WebSocket-Accept hash (was: " + respHash + " expected: " + expectedHash + ")",
+                        response));
                 }
             }
             else
             {
-                callback.failed(new HttpResponseException("WebSocket upgrade missing 'Connection: Upgrade' header", response));
+                callback.failed(
+                    new HttpResponseException("WebSocket upgrade missing 'Connection: Upgrade' header", response));
             }
         }
         else

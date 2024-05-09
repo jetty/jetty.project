@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -20,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
@@ -45,9 +47,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class SmallThreadPoolLoadTest extends AbstractTest
 {
     private final Logger logger = LoggerFactory.getLogger(SmallThreadPoolLoadTest.class);
@@ -71,11 +70,14 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         start(new LoadHandler());
 
         // Only one connection to the server.
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
 
         int runs = 10;
         int iterations = 512;
-        boolean result = IntStream.range(0, 16).parallel()
+        boolean result = IntStream.range(0, 16)
+            .parallel()
             .mapToObj(i -> IntStream.range(0, runs)
                 .mapToObj(j -> run(session, iterations))
                 .reduce(true, Boolean::logicalAnd))
@@ -93,12 +95,16 @@ public class SmallThreadPoolLoadTest extends AbstractTest
 
             // Dumps the state of the client if the test takes too long.
             Thread testThread = Thread.currentThread();
-            Scheduler.Task task = http2Client.getScheduler().schedule(() ->
-            {
-                logger.warn("Interrupting test, it is taking too long - \nServer: \n" +
-                    server.dump() + "\nClient: \n" + http2Client.dump());
-                testThread.interrupt();
-            }, iterations * factor, TimeUnit.MILLISECONDS);
+            Scheduler.Task task = http2Client
+                .getScheduler()
+                .schedule(
+                    () ->
+                    {
+                        logger.warn("Interrupting test, it is taking too long - \nServer: \n" + server.dump() + "\nClient: \n" + http2Client.dump());
+                        testThread.interrupt();
+                    },
+                    iterations * factor,
+                    TimeUnit.MILLISECONDS);
 
             long successes = 0;
             long begin = NanoTime.now();
@@ -113,9 +119,12 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             assertThat(successes, Matchers.greaterThan(0L));
             task.cancel();
             long elapsed = NanoTime.millisSince(begin);
-            logger.info("{} requests in {} ms, {}/{} success/failure, {} req/s",
-                iterations, elapsed,
-                successes, iterations - successes,
+            logger.info(
+                "{} requests in {} ms, {}/{} success/failure, {} req/s",
+                iterations,
+                elapsed,
+                successes,
+                iterations - successes,
                 elapsed > 0 ? iterations * 1000L / elapsed : -1);
             return true;
         }
@@ -138,7 +147,9 @@ public class SmallThreadPoolLoadTest extends AbstractTest
 
         long requestId = requestIds.incrementAndGet();
 
-        MetaData.Request request = newRequest(method.asString(), "/" + requestId,
+        MetaData.Request request = newRequest(
+            method.asString(),
+            "/" + requestId,
             download ? HttpFields.build().put("X-Download", String.valueOf(contentLength)) : HttpFields.EMPTY);
 
         HeadersFrame requestFrame = new HeadersFrame(request, null, download);
@@ -184,8 +195,9 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         if (success)
             latch.countDown();
         else
-            logger.warn("Request {} took too long - \nServer: \n" +
-                server.dump() + "\nClient: \n" + http2Client.dump(), requestId);
+            logger.warn(
+                "Request {} took too long - \nServer: \n" + server.dump() + "\nClient: \n" + http2Client.dump(),
+                requestId);
         return !reset.get();
     }
 

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.PingFrame;
@@ -99,6 +98,8 @@ public class PingBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, PAYLOAD, PAYLOAD_BYTES
+        PREPARE,
+        PAYLOAD,
+        PAYLOAD_BYTES
     }
 }

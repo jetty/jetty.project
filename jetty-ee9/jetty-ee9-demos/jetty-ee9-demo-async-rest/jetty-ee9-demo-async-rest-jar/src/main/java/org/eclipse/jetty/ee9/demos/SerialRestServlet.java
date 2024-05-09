@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee9.demos;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,10 +25,6 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -35,7 +34,8 @@ import org.eclipse.jetty.util.ajax.JSON;
 public class SerialRestServlet extends AbstractRestServlet
 {
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         long start = NanoTime.now();
 
@@ -89,7 +89,8 @@ public class SerialRestServlet extends AbstractRestServlet
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         doGet(request, response);
     }

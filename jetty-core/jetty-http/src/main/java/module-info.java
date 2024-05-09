@@ -14,7 +14,6 @@
 module org.eclipse.jetty.http
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.io;
 
     exports org.eclipse.jetty.http;

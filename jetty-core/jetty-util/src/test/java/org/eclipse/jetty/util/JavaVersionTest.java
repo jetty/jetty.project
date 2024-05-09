@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.util;
 
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for LazyList utility class.

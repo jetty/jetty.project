@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.DateCache;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -40,7 +39,8 @@ import org.openjdk.jmh.runner.options.TimeValue;
 public class DateCacheBenchmark
 {
     TimeZone timeZone = TimeZone.getDefault();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateCache.DEFAULT_FORMAT + " SSS").withZone(timeZone.toZoneId());
+    DateTimeFormatter formatter =
+        DateTimeFormatter.ofPattern(DateCache.DEFAULT_FORMAT + " SSS").withZone(timeZone.toZoneId());
     DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " SSS", null, timeZone, true);
 
     @Benchmark

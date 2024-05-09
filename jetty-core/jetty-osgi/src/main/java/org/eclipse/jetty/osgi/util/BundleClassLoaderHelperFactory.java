@@ -38,13 +38,14 @@ public class BundleClassLoaderHelperFactory
 
     public BundleClassLoaderHelper getHelper()
     {
-        //use the default
+        // use the default
         BundleClassLoaderHelper helper = BundleClassLoaderHelper.DEFAULT;
         try
         {
-            //if a fragment has not provided their own impl
+            // if a fragment has not provided their own impl
             helper = (BundleClassLoaderHelper)Class.forName(BundleClassLoaderHelper.CLASS_NAME)
-                .getDeclaredConstructor().newInstance();
+                .getDeclaredConstructor()
+                .newInstance();
         }
         catch (Throwable t)
         {

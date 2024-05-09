@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.EventListener;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -34,7 +33,13 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     private volatile String _host;
     private volatile int _port = 0;
 
-    public AbstractNetworkConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, int acceptors, ConnectionFactory... factories)
+    public AbstractNetworkConnector(
+                                    Server server,
+                                    Executor executor,
+                                    Scheduler scheduler,
+                                    ByteBufferPool bufferPool,
+                                    int acceptors,
+                                    ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, acceptors, factories);
     }
@@ -142,7 +147,8 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     @Override
     public String toString()
     {
-        return String.format("%s{%s:%d}",
+        return String.format(
+            "%s{%s:%d}",
             super.toString(),
             getHost() == null ? "0.0.0.0" : getHost(),
             getLocalPort() <= 0 ? getPort() : getLocalPort());

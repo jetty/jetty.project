@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -177,10 +176,12 @@ public abstract class AbstractHomeForker extends AbstractForker
         List<String> cmd = new ArrayList<>();
         cmd.add("java");
 
-        //add any args to the jvm
+        // add any args to the jvm
         if (StringUtil.isNotBlank(jvmArgs))
         {
-            Arrays.stream(jvmArgs.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
+            Arrays.stream(jvmArgs.split(" "))
+                .filter(a -> StringUtil.isNotBlank(a))
+                .forEach((a) -> cmd.add(a.trim()));
         }
 
         cmd.add("-jar");
@@ -198,7 +199,7 @@ public abstract class AbstractHomeForker extends AbstractForker
         if (stopKey != null)
             cmd.add("-DSTOP.KEY=" + stopKey);
 
-        //set up enabled jetty modules
+        // set up enabled jetty modules
         StringBuilder tmp = new StringBuilder();
         tmp.append("--module=");
         tmp.append("server,http," + environment + "-webapp," + environment + "-deploy");
@@ -215,14 +216,16 @@ public abstract class AbstractHomeForker extends AbstractForker
             tmp.append(",ext");
         tmp.append("," + environment + "-maven");
         cmd.add(tmp.toString());
- 
-        //put any other jetty options onto the command line
+
+        // put any other jetty options onto the command line
         if (StringUtil.isNotBlank(jettyOptions))
         {
-            Arrays.stream(jettyOptions.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
+            Arrays.stream(jettyOptions.split(" "))
+                .filter(a -> StringUtil.isNotBlank(a))
+                .forEach((a) -> cmd.add(a.trim()));
         }
 
-        //put any jetty properties onto the command line
+        // put any jetty properties onto the command line
         if (jettyProperties != null)
         {
             for (Map.Entry<String, String> e : jettyProperties.entrySet())
@@ -231,7 +234,7 @@ public abstract class AbstractHomeForker extends AbstractForker
             }
         }
 
-        //existence of this file signals process started
+        // existence of this file signals process started
         cmd.add("jetty.token.file=" + tokenFile.getAbsolutePath().toString());
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
@@ -239,7 +242,7 @@ public abstract class AbstractHomeForker extends AbstractForker
 
         PluginLog.getLog().info("Home process starting");
 
-        //set up extra environment vars if there are any
+        // set up extra environment vars if there are any
         if (!env.isEmpty())
             builder.environment().putAll(env);
 
@@ -256,23 +259,22 @@ public abstract class AbstractHomeForker extends AbstractForker
     @Override
     public void doStart() throws Exception
     {
-        //set up a jetty-home
+        // set up a jetty-home
         configureJettyHome();
 
         if (jettyHome == null || !jettyHome.exists())
             throw new IllegalStateException("No jetty home");
 
-        //set up a jetty-base
+        // set up a jetty-base
         configureJettyBase();
 
-        //convert the webapp to properties
+        // convert the webapp to properties
         generateWebAppPropertiesFile();
 
         super.doStart();
     }
 
-    protected void redeployWebApp()
-        throws Exception
+    protected void redeployWebApp() throws Exception
     {
         generateWebAppPropertiesFile();
         webappPath.resolve("maven.xml").toFile().setLastModified(System.currentTimeMillis());
@@ -295,22 +297,26 @@ public abstract class AbstractHomeForker extends AbstractForker
 
         targetJettyBase.mkdirs();
 
-        //jetty-base will be the working directory for the forked command
+        // jetty-base will be the working directory for the forked command
         workDir = targetJettyBase;
 
-        //if there is an existing jetty base, copy parts of it
+        // if there is an existing jetty base, copy parts of it
         if (jettyBase != null)
         {
             Path jettyBasePath = jettyBase.toPath();
 
             final File contextXmlFile = (contextXml == null ? null : FileSystems.getDefault().getPath(contextXml).toFile());
 
-            //copy the existing jetty base
-            Files.walkFileTree(jettyBasePath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+            // copy the existing jetty base
+            Files.walkFileTree(
+                jettyBasePath,
+                EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+                Integer.MAX_VALUE,
                 new SimpleFileVisitor<Path>()
                 {
                     @Override
-                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                        throws IOException
                     {
                         Path targetDir = targetBasePath.resolve(jettyBasePath.relativize(dir));
                         try
@@ -319,7 +325,7 @@ public abstract class AbstractHomeForker extends AbstractForker
                         }
                         catch (FileAlreadyExistsException e)
                         {
-                            if (!Files.isDirectory(targetDir)) //ignore attempt to recreate dir
+                            if (!Files.isDirectory(targetDir)) // ignore attempt to recreate dir
                                 throw e;
                         }
                         return FileVisitResult.CONTINUE;
@@ -329,75 +335,82 @@ public abstract class AbstractHomeForker extends AbstractForker
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
                     {
                         if (contextXmlFile != null && Files.isSameFile(contextXmlFile.toPath(), file))
-                            return FileVisitResult.CONTINUE; //skip copying the context xml file
+                            return FileVisitResult.CONTINUE; // skip copying the context xml file
                         Files.copy(file, targetBasePath.resolve(jettyBasePath.relativize(file)));
                         return FileVisitResult.CONTINUE;
                     }
                 });
         }
 
-        //make the jetty base structure
+        // make the jetty base structure
         modulesPath = Files.createDirectories(targetBasePath.resolve("modules"));
         etcPath = Files.createDirectories(targetBasePath.resolve("etc"));
         libPath = Files.createDirectories(targetBasePath.resolve("lib"));
         webappPath = Files.createDirectories(targetBasePath.resolve("webapps"));
         mavenLibPath = Files.createDirectories(libPath.resolve(environment + "-maven"));
 
-        //copy in the jetty-${ee}-maven-plugin jar
+        // copy in the jetty-${ee}-maven-plugin jar
         URI thisJar = TypeUtil.getLocationOfClass(this.getClass());
         if (thisJar == null)
             throw new IllegalStateException("Can't find jar for jetty-" + environment + "-maven-plugin");
-        
+
         try (InputStream jarStream = thisJar.toURL().openStream();
-             FileOutputStream fileStream = new FileOutputStream(mavenLibPath.resolve("jetty-" + environment + "-maven-plugin.jar").toFile()))
+             FileOutputStream fileStream = new FileOutputStream(mavenLibPath
+                 .resolve("jetty-" + environment + "-maven-plugin.jar")
+                 .toFile()))
         {
             IO.copy(jarStream, fileStream);
         }
 
-        //copy in the jetty-maven.jar for common classes
+        // copy in the jetty-maven.jar for common classes
         URI commonJar = TypeUtil.getLocationOfClass(AbstractHomeForker.class);
         if (commonJar == null)
             throw new IllegalStateException("Can't find jar for jetty-maven common classes");
         try (InputStream jarStream = commonJar.toURL().openStream();
-             FileOutputStream fileStream = new FileOutputStream(mavenLibPath.resolve("jetty-maven.jar").toFile()))
+             FileOutputStream fileStream = new FileOutputStream(
+                 mavenLibPath.resolve("jetty-maven.jar").toFile()))
         {
             IO.copy(jarStream, fileStream);
         }
 
-        //copy in the maven-${ee}.xml webapp file
+        // copy in the maven-${ee}.xml webapp file
         String mavenXml = "maven-" + environment + ".xml";
         try (InputStream mavenXmlStream = getClass().getClassLoader().getResourceAsStream(mavenXml);
-             FileOutputStream fileStream = new FileOutputStream(webappPath.resolve(mavenXml).toFile()))
+             FileOutputStream fileStream =
+                 new FileOutputStream(webappPath.resolve(mavenXml).toFile()))
         {
             IO.copy(mavenXmlStream, fileStream);
         }
 
         Files.writeString(webappPath.resolve("maven-" + environment + ".properties"), "environment=" + environment);
 
-        //copy in the ${ee}-maven.mod file
+        // copy in the ${ee}-maven.mod file
         String mavenMod = environment + "-maven.mod";
         try (InputStream mavenModStream = getClass().getClassLoader().getResourceAsStream(mavenMod);
-             FileOutputStream fileStream = new FileOutputStream(modulesPath.resolve(mavenMod).toFile()))
+             FileOutputStream fileStream =
+                 new FileOutputStream(modulesPath.resolve(mavenMod).toFile()))
         {
             IO.copy(mavenModStream, fileStream);
         }
 
-        //copy in the jetty-${ee}-maven.xml file
+        // copy in the jetty-${ee}-maven.xml file
         String jettyMavenXml = "jetty-" + environment + "-maven.xml";
         try (InputStream jettyMavenStream = getClass().getClassLoader().getResourceAsStream(jettyMavenXml);
-             FileOutputStream fileStream = new FileOutputStream(etcPath.resolve(jettyMavenXml).toFile()))
+             FileOutputStream fileStream =
+                 new FileOutputStream(etcPath.resolve(jettyMavenXml).toFile()))
         {
             IO.copy(jettyMavenStream, fileStream);
         }
 
-        //if there were plugin dependencies, copy them into lib/ext
+        // if there were plugin dependencies, copy them into lib/ext
         if (libExtJarFiles != null && !libExtJarFiles.isEmpty())
         {
             Path libExtPath = Files.createDirectories(libPath.resolve("ext"));
             for (File f : libExtJarFiles)
             {
                 try (InputStream jarStream = new FileInputStream(f);
-                     FileOutputStream fileStream = new FileOutputStream(libExtPath.resolve(f.getName()).toFile()))
+                     FileOutputStream fileStream = new FileOutputStream(
+                         libExtPath.resolve(f.getName()).toFile()))
                 {
                     IO.copy(jarStream, fileStream);
                 }
@@ -405,8 +418,7 @@ public abstract class AbstractHomeForker extends AbstractForker
         }
     }
 
-    private void configureJettyHome()
-        throws Exception
+    private void configureJettyHome() throws Exception
     {
         if (jettyHome == null && jettyHomeZip == null)
             throw new IllegalStateException("No jettyHome");
@@ -418,10 +430,11 @@ public abstract class AbstractHomeForker extends AbstractForker
         {
             try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
             {
-                Resource res = resourceFactory.newJarFileResource(jettyHomeZip.toPath().toUri());
+                Resource res =
+                    resourceFactory.newJarFileResource(jettyHomeZip.toPath().toUri());
                 res.copyTo(baseDir.toPath());
             }
-            //zip will unpack to target/jetty-home-<VERSION>
+            // zip will unpack to target/jetty-home-<VERSION>
             jettyHome = new File(baseDir, "jetty-home-" + version);
         }
     }

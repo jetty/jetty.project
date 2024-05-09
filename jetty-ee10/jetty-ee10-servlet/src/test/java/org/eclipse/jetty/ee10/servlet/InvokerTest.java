@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -42,8 +41,14 @@ public class InvokerTest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
-        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
+        _connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendServerVersion(false);
+        _connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendDateHeader(false);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
         _server.addConnector(_connector);
@@ -67,14 +72,9 @@ public class InvokerTest
     public void testInvoker() throws Exception
     {
         String requestPath = "/servlet/" + TestServlet.class.getName();
-        String request = "GET " + requestPath + " HTTP/1.0\r\n" +
-            "Host: tester\r\n" +
-            "\r\n";
+        String request = "GET " + requestPath + " HTTP/1.0\r\n" + "Host: tester\r\n" + "\r\n";
 
-        String expectedResponse = "HTTP/1.1 200 OK\r\n" +
-            "Content-Length: 20\r\n" +
-            "\r\n" +
-            "Invoked TestServlet!";
+        String expectedResponse = "HTTP/1.1 200 OK\r\n" + "Content-Length: 20\r\n" + "\r\n" + "Invoked TestServlet!";
 
         String response = _connector.getResponse(request);
         assertEquals(expectedResponse, response);
@@ -83,7 +83,8 @@ public class InvokerTest
     public static class TestServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.getWriter().append("Invoked TestServlet!");
             response.getWriter().close();

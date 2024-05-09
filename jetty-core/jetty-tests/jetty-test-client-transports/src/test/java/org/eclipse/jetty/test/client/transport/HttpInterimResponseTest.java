@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
@@ -29,10 +32,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HttpInterimResponseTest extends AbstractTest
 {
@@ -107,7 +106,8 @@ public class HttpInterimResponseTest extends AbstractTest
                     {
                         response.getHeaders().put("X-Header-Foo", "Foo");
                         response.getHeaders().add(hints);
-                        return Callback.Completable.with(c -> Content.Sink.write(response, true, "response-content", c));
+                        return Callback.Completable.with(
+                            c -> Content.Sink.write(response, true, "response-content", c));
                     });
                 callback.completeWith(completable);
                 return true;
@@ -123,7 +123,9 @@ public class HttpInterimResponseTest extends AbstractTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals("X-Value", response.getHeaders().get("X-Header"));
         assertEquals("Foo", response.getHeaders().get("X-Header-Foo"));
-        assertThat(response.getHeaders().getValuesList(HttpHeader.LINK), contains("</main.css>; rel=preload", "</style.css>; rel=preload"));
+        assertThat(
+            response.getHeaders().getValuesList(HttpHeader.LINK),
+            contains("</main.css>; rel=preload", "</style.css>; rel=preload"));
         assertEquals("response-content", response.getContentAsString());
     }
 }

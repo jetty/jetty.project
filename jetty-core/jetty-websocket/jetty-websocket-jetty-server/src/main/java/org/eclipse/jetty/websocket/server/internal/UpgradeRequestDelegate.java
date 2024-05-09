@@ -20,7 +20,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -53,9 +52,7 @@ class UpgradeRequestDelegate implements UpgradeRequest
     @Override
     public List<ExtensionConfig> getExtensions()
     {
-        return request.getExtensions().stream()
-            .map(JettyExtensionConfig::new)
-            .collect(Collectors.toList());
+        return request.getExtensions().stream().map(JettyExtensionConfig::new).collect(Collectors.toList());
     }
 
     @Override

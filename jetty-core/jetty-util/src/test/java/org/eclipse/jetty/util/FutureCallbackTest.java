@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 
 public class FutureCallbackTest
 {
@@ -80,7 +79,8 @@ public class FutureCallbackTest
                 e.printStackTrace();
             }
             fcb.succeeded();
-        }).start();
+        })
+            .start();
 
         latch.await();
         long start = NanoTime.now();
@@ -127,7 +127,8 @@ public class FutureCallbackTest
                 e.printStackTrace();
             }
             fcb.failed(ex);
-        }).start();
+        })
+            .start();
 
         latch.await();
         long start = NanoTime.now();
@@ -172,11 +173,13 @@ public class FutureCallbackTest
                 e.printStackTrace();
             }
             fcb.cancel(true);
-        }).start();
+        })
+            .start();
 
         latch.await();
         long start = NanoTime.now();
-        CancellationException e = assertThrows(CancellationException.class, () -> fcb.get(10000, TimeUnit.MILLISECONDS));
+        CancellationException e =
+            assertThrows(CancellationException.class, () -> fcb.get(10000, TimeUnit.MILLISECONDS));
         assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
 
         assertThat(NanoTime.millisSince(start), Matchers.greaterThan(10L));

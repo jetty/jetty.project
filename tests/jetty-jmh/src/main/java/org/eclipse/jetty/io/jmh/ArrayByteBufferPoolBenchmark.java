@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io.jmh;
 
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -45,7 +44,9 @@ public class ArrayByteBufferPoolBenchmark
             .warmupTime(TimeValue.milliseconds(500))
             .measurementIterations(10)
             .measurementTime(TimeValue.milliseconds(500))
-            .addProfiler(AsyncProfiler.class, "dir=/tmp;output=flamegraph;event=cpu;interval=500000;libPath=" + asyncProfilerPath)
+            .addProfiler(
+                AsyncProfiler.class,
+                "dir=/tmp;output=flamegraph;event=cpu;interval=500000;libPath=" + asyncProfilerPath)
             .forks(1)
             .threads(32)
             .build();
@@ -54,14 +55,19 @@ public class ArrayByteBufferPoolBenchmark
 
     @Param("0")
     int minCapacity;
+
     @Param("65536")
     int maxCapacity;
+
     @Param("4096")
     int factor;
+
     @Param("-1")
     int maxBucketSize;
+
     @Param({"0", "1048576"})
     long maxMemory;
+
     @Param({"true"})
     boolean statisticsEnabled;
 
@@ -81,7 +87,8 @@ public class ArrayByteBufferPoolBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public void inputFixedCapacityOutputRandomCapacity()
     {
         // Simulate a read from the network.
@@ -106,7 +113,8 @@ public class ArrayByteBufferPoolBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public void inputFixedCapacityOutputRandomCapacityMigrating()
     {
         // Simulate a read from the network.
@@ -126,7 +134,8 @@ public class ArrayByteBufferPoolBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public void fastPathAcquireRelease()
     {
         RetainableByteBuffer buffer = pool.acquire(65535, true);

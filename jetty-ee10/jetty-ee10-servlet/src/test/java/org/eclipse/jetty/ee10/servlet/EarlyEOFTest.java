@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
@@ -25,6 +27,10 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -33,13 +39,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EarlyEOFTest
 {
@@ -71,7 +70,8 @@ public class EarlyEOFTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 AsyncContext asyncContext = request.startAsync();
 
@@ -93,12 +93,13 @@ public class EarlyEOFTest
 
         try (SocketChannel channel = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            String request = """
-                POST /ctx/path/early HTTP/1.1\r
-                Host: localhost\r
-                Content-Length: 10\r
-                
-                0""";
+            String request =
+                """
+                    POST /ctx/path/early HTTP/1.1\r
+                    Host: localhost\r
+                    Content-Length: 10\r
+
+                    0""";
             channel.write(UTF_8.encode(request));
             // Close output before sending the whole content.
             channel.shutdownOutput();

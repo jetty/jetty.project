@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
@@ -234,9 +233,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         {
             while (id == null || id.length() == 0)
             {
-                long r0 = _weakRandom
-                    ? (hashCode() ^ Runtime.getRuntime().freeMemory() ^ _random.nextInt() ^ ((seedTerm) << 32))
-                    : _random.nextLong();
+                long r0 = _weakRandom ? (hashCode() ^ Runtime.getRuntime().freeMemory() ^ _random.nextInt() ^ ((seedTerm) << 32)) : _random.nextLong();
                 if (r0 < 0)
                     r0 = -r0;
 
@@ -251,16 +248,14 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
                         _random.setSeed(_random.nextLong() ^ System.currentTimeMillis() ^ seedTerm ^ Runtime.getRuntime().freeMemory());
                 }
 
-                long r1 = _weakRandom
-                    ? (hashCode() ^ Runtime.getRuntime().freeMemory() ^ _random.nextInt() ^ ((seedTerm) << 32))
-                    : _random.nextLong();
+                long r1 = _weakRandom ? (hashCode() ^ Runtime.getRuntime().freeMemory() ^ _random.nextInt() ^ ((seedTerm) << 32)) : _random.nextLong();
                 if (r1 < 0)
                     r1 = -r1;
 
                 id = Long.toString(r0, 36) + Long.toString(r1, 36);
 
-                //add in the id of the node to ensure unique id across cluster
-                //NOTE this is different to the node suffix which denotes which node the request was received on
+                // add in the id of the node to ensure unique id across cluster
+                // NOTE this is different to the node suffix which denotes which node the request was received on
                 if (!StringUtil.isBlank(_workerName))
                     id = _workerName + id;
 
@@ -269,7 +264,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         }
         return id;
     }
-    
+
     @Override
     public boolean isIdInUse(String id)
     {
@@ -426,8 +421,8 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     @Override
     public void invalidateAll(String id)
     {
-        //tell all contexts that may have a session object with this id to
-        //get rid of them
+        // tell all contexts that may have a session object with this id to
+        // get rid of them
         for (SessionManager manager : getSessionManagers())
         {
             try
@@ -440,11 +435,11 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
             }
         }
     }
-    
+
     public void scavenge()
     {
-        //tell all contexts that may have a session object with this id to
-        //get rid of them
+        // tell all contexts that may have a session object with this id to
+        // get rid of them
         for (SessionManager manager : getSessionManagers())
         {
             try
@@ -465,10 +460,10 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     @Override
     public String renewSessionId(String oldClusterId, String oldNodeId, Request request)
     {
-        //generate a new id
+        // generate a new id
         String newClusterId = newSessionId(request.hashCode());
 
-        //tell all contexts to update the id 
+        // tell all contexts to update the id
         for (SessionManager manager : getSessionManagers())
         {
             try
@@ -496,8 +491,8 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         Collection<SessionManager> tmp = _server.getContainedBeans(SessionManager.class);
         for (SessionManager sm : tmp)
         {
-            //This method can be called on shutdown when the handlers are STOPPING, so only
-            //check that they are not already stopped
+            // This method can be called on shutdown when the handlers are STOPPING, so only
+            // check that they are not already stopped
             if (!sm.isStopped() && !sm.isFailed())
                 managers.add(sm);
         }

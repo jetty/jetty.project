@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.maven.SelectiveJarResource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -26,9 +28,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class TestSelectiveJarResource
@@ -83,7 +82,7 @@ public class TestSelectiveJarResource
             assertFalse(Files.exists(unpackDir.resolve("cc/c2.html")));
         }
     }
-    
+
     @Test
     public void testIncludesExcludes(WorkDir workDir) throws Exception
     {

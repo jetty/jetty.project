@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.docs.programming.server.websocket;
 
-import java.util.List;
-import java.util.Map;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.util.List;
+import java.util.Map;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
@@ -107,7 +106,8 @@ public class WebSocketServerDocs
             try
             {
                 // Retrieve the ServerContainer from the ServletContext attributes.
-                ServerContainer container = (ServerContainer)getServletContext().getAttribute(ServerContainer.class.getName());
+                ServerContainer container =
+                    (ServerContainer)getServletContext().getAttribute(ServerContainer.class.getName());
 
                 // Configure the ServerContainer.
                 container.setDefaultMaxTextMessageBufferSize(128 * 1024);
@@ -116,11 +116,9 @@ public class WebSocketServerDocs
                 container.addEndpoint(MyJavaxWebSocketEndPoint.class);
 
                 // Advanced registration of your WebSocket endpoints.
-                container.addEndpoint(
-                    ServerEndpointConfig.Builder.create(MyJavaxWebSocketEndPoint.class, "/ws")
-                        .subprotocols(List.of("my-ws-protocol"))
-                        .build()
-                );
+                container.addEndpoint(ServerEndpointConfig.Builder.create(MyJavaxWebSocketEndPoint.class, "/ws")
+                    .subprotocols(List.of("my-ws-protocol"))
+                    .build());
             }
             catch (DeploymentException x)
             {
@@ -150,11 +148,9 @@ public class WebSocketServerDocs
             container.addEndpoint(MyJavaxWebSocketEndPoint.class);
 
             // Advanced registration of your WebSocket endpoints.
-            container.addEndpoint(
-                ServerEndpointConfig.Builder.create(MyJavaxWebSocketEndPoint.class, "/ws")
-                    .subprotocols(List.of("my-ws-protocol"))
-                    .build()
-            );
+            container.addEndpoint(ServerEndpointConfig.Builder.create(MyJavaxWebSocketEndPoint.class, "/ws")
+                .subprotocols(List.of("my-ws-protocol"))
+                .build());
         });
 
         // Starting the Server will start the ServletContextHandler.
@@ -235,7 +231,8 @@ public class WebSocketServerDocs
                     try
                     {
                         // This is a WebSocket upgrade request, perform a direct upgrade.
-                        boolean upgraded = container.upgrade((rq, rs, cb) -> new EchoEndPoint(), request, response, callback);
+                        boolean upgraded =
+                            container.upgrade((rq, rs, cb) -> new EchoEndPoint(), request, response, callback);
                         if (upgraded)
                             return true;
                         // This was supposed to be a WebSocket upgrade request, but something went wrong.
@@ -244,7 +241,8 @@ public class WebSocketServerDocs
                     }
                     catch (Exception x)
                     {
-                        Response.writeError(request, response, callback, HttpStatus.UPGRADE_REQUIRED_426, "failed to upgrade", x);
+                        Response.writeError(
+                            request, response, callback, HttpStatus.UPGRADE_REQUIRED_426, "failed to upgrade", x);
                         return true;
                     }
                 }
@@ -287,7 +285,8 @@ public class WebSocketServerDocs
             container.addMapping("/ws/chat/{room}", (upgradeRequest, upgradeResponse, callback) ->
             {
                 // Retrieve the URI template.
-                UriTemplatePathSpec pathSpec = (UriTemplatePathSpec)upgradeRequest.getAttribute(PathSpec.class.getName());
+                UriTemplatePathSpec pathSpec =
+                    (UriTemplatePathSpec)upgradeRequest.getAttribute(PathSpec.class.getName());
 
                 // Match the URI template.
                 String pathInContext = Request.getPathInContext(upgradeRequest);

@@ -23,4 +23,3 @@ public final class WebSocketConstants
     public static final String SEC_WEBSOCKET_KEY = "Sec-WebSocket-Key";
     public static final int SPEC_VERSION = 13;
 }
-

@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.demos;
 
 import java.io.FileNotFoundException;
 import java.util.Collections;
-
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
@@ -53,7 +52,7 @@ public class SecuredHelloHandler
 
         LoginService loginService = new HashLoginService("MyRealm", realmResource);
         server.addBean(loginService);
-        
+
         ServletContextHandler context = new ServletContextHandler();
         server.setHandler(context);
 
@@ -69,10 +68,8 @@ public class SecuredHelloHandler
         // This constraint requires authentication and in addition that an
         // authenticated user be a member of a given set of roles for
         // authorization purposes.
-        Constraint constraint = new Constraint.Builder()
-            .name("auth")
-            .roles("user", "admin")
-            .build();
+        Constraint constraint =
+            new Constraint.Builder().name("auth").roles("user", "admin").build();
 
         // Binds a url pattern with the previously created constraint. The roles
         // for this constraint mapping are mined from the Constraint itself

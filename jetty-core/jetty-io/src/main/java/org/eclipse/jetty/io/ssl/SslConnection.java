@@ -31,7 +31,6 @@ import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -175,19 +174,43 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         this(byteBufferPool, executor, null, endPoint, sslEngine, false, false);
     }
 
-    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, SslContextFactory sslContextFactory, EndPoint endPoint, SSLEngine sslEngine)
+    public SslConnection(
+                         ByteBufferPool byteBufferPool,
+                         Executor executor,
+                         SslContextFactory sslContextFactory,
+                         EndPoint endPoint,
+                         SSLEngine sslEngine)
     {
         this(byteBufferPool, executor, sslContextFactory, endPoint, sslEngine, false, false);
     }
 
     @Deprecated
-    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine, boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
+    public SslConnection(
+                         ByteBufferPool byteBufferPool,
+                         Executor executor,
+                         EndPoint endPoint,
+                         SSLEngine sslEngine,
+                         boolean useDirectBuffersForEncryption,
+                         boolean useDirectBuffersForDecryption)
     {
-        this(byteBufferPool, executor, null, endPoint, sslEngine, useDirectBuffersForEncryption, useDirectBuffersForDecryption);
+        this(
+            byteBufferPool,
+            executor,
+            null,
+            endPoint,
+            sslEngine,
+            useDirectBuffersForEncryption,
+            useDirectBuffersForDecryption);
     }
 
-    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, SslContextFactory sslContextFactory, EndPoint endPoint, SSLEngine sslEngine,
-                         boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
+    public SslConnection(
+                         ByteBufferPool byteBufferPool,
+                         Executor executor,
+                         SslContextFactory sslContextFactory,
+                         EndPoint endPoint,
+                         SSLEngine sslEngine,
+                         boolean useDirectBuffersForEncryption,
+                         boolean useDirectBuffersForDecryption)
     {
         // This connection does not execute calls to onFillable(), so they will be called by the selector thread.
         // onFillable() does not block and will only wakeup another thread to do the actual reading and handling.
@@ -420,12 +443,16 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         int di = b == null ? -1 : b.remaining();
 
         Connection connection = _sslEndPoint.getConnection();
-        return String.format("%s@%x{%s,eio=%d/%d,di=%d,fill=%s,flush=%s}~>%s=>%s",
+        return String.format(
+            "%s@%x{%s,eio=%d/%d,di=%d,fill=%s,flush=%s}~>%s=>%s",
             getClass().getSimpleName(),
             hashCode(),
             _sslEngine.getHandshakeStatus(),
-            ei, eo, di,
-            _fillState, _flushState,
+            ei,
+            eo,
+            di,
+            _fillState,
+            _flushState,
             _sslEndPoint.toEndPointString(),
             connection instanceof AbstractConnection ? ((AbstractConnection)connection).toConnectionString() : connection);
     }
@@ -739,14 +766,16 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             try
                             {
                                 _underflown = false;
-                                unwrapResult = SslConnection.this.unwrap(_sslEngine, _encryptedInput.getByteBuffer(), appIn);
+                                unwrapResult =
+                                    SslConnection.this.unwrap(_sslEngine, _encryptedInput.getByteBuffer(), appIn);
                             }
                             finally
                             {
                                 BufferUtil.flipToFlush(appIn, pos);
                             }
                             if (LOG.isDebugEnabled())
-                                LOG.debug("unwrap net_filled={} {} encryptedBuffer={} unwrapBuffer={} appBuffer={}",
+                                LOG.debug(
+                                    "unwrap net_filled={} {} encryptedBuffer={} unwrapBuffer={} appBuffer={}",
                                     netFilled,
                                     StringUtil.replace(unwrapResult.toString(), '\n', ' '),
                                     _encryptedInput,
@@ -790,7 +819,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         Throwable closeFailure = closeInbound();
                                         if (_flushState == FlushState.WAIT_FOR_FILL)
                                         {
-                                            Throwable handshakeFailure = new SSLHandshakeException("Abruptly closed by peer");
+                                            Throwable handshakeFailure =
+                                                new SSLHandshakeException("Abruptly closed by peer");
                                             if (closeFailure != null)
                                                 handshakeFailure.addSuppressed(closeFailure);
                                             throw handshakeFailure;
@@ -845,7 +875,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         if (_flushState == FlushState.WAIT_FOR_FILL)
                         {
                             _flushState = FlushState.IDLE;
-                            getExecutor().execute(() -> _sslEndPoint.getWriteFlusher().onFail(failure));
+                            getExecutor()
+                                .execute(
+                                    () -> _sslEndPoint.getWriteFlusher().onFail(failure));
                         }
                         throw failure;
                     }
@@ -856,7 +888,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         if (_flushState == FlushState.WAIT_FOR_FILL)
                         {
                             _flushState = FlushState.IDLE;
-                            getExecutor().execute(() -> _sslEndPoint.getWriteFlusher().completeWrite());
+                            getExecutor()
+                                .execute(
+                                    () -> _sslEndPoint.getWriteFlusher().completeWrite());
                         }
 
                         if (LOG.isDebugEnabled())
@@ -882,7 +916,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 try (AutoLock l = _lock.lock())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug(">needFillInterest s={}/{} uf={} ei={} di={} {}",
+                        LOG.debug(
+                            ">needFillInterest s={}/{} uf={} ei={} di={} {}",
                             _flushState,
                             _fillState,
                             _underflown,
@@ -935,7 +970,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("<needFillInterest s={}/{} f={} i={} w={}", _flushState, _fillState, fillable, interest, BufferUtil.toDetailString(write));
+                        LOG.debug(
+                            "<needFillInterest s={}/{} f={} i={} w={}",
+                            _flushState,
+                            _fillState,
+                            fillable,
+                            interest,
+                            BufferUtil.toDetailString(write));
                 }
 
                 if (write != null)
@@ -959,9 +1000,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             if (_handshake.compareAndSet(HandshakeState.HANDSHAKE, HandshakeState.SUCCEEDED))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("handshake succeeded {} {} {}/{}", SslConnection.this,
+                    LOG.debug(
+                        "handshake succeeded {} {} {}/{}",
+                        SslConnection.this,
                         _sslEngine.getUseClientMode() ? "client" : "resumed server",
-                        _sslEngine.getSession().getProtocol(), _sslEngine.getSession().getCipherSuite());
+                        _sslEngine.getSession().getProtocol(),
+                        _sslEngine.getSession().getCipherSuite());
                 notifyHandshakeSucceeded(_sslEngine);
             }
             else if (isHandshakeSucceeded())
@@ -1116,7 +1160,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 BufferUtil.flipToFlush(encryptedOutputBuffer, pos);
                             }
                             if (LOG.isDebugEnabled())
-                                LOG.debug("wrap {} {} ioDone={}/{}",
+                                LOG.debug(
+                                    "wrap {} {} ioDone={}/{}",
                                     StringUtil.replace(wrapResult.toString(), '\n', ' '),
                                     _encryptedOutput,
                                     _sslEngine.isInboundDone(),
@@ -1188,8 +1233,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
                                     if (isEmpty)
                                     {
-                                        if (wrapResult.getHandshakeStatus() != HandshakeStatus.NEED_WRAP ||
-                                            wrapResult.bytesProduced() == 0)
+                                        if (wrapResult.getHandshakeStatus() != HandshakeStatus.NEED_WRAP || wrapResult.bytesProduced() == 0)
                                             return result = true;
                                     }
                                     break;
@@ -1299,7 +1343,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("<onIncompleteFlush s={}/{} fi={} w={}", _flushState, _fillState, fillInterest, BufferUtil.toDetailString(write));
+                        LOG.debug(
+                            "<onIncompleteFlush s={}/{} fi={} w={}",
+                            _flushState,
+                            _fillState,
+                            fillInterest,
+                            BufferUtil.toDetailString(write));
                 }
 
                 if (write != null)
@@ -1365,14 +1414,18 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         }
                         if (write != null)
                         {
-                            endPoint.write(Callback.from(() ->
-                            {
-                                try (AutoLock l = _lock.lock())
-                                {
-                                    _flushState = FlushState.IDLE;
-                                    releaseEmptyEncryptedOutputBuffer();
-                                }
-                            }, t -> disconnect()), write);
+                            endPoint.write(
+                                Callback.from(
+                                    () ->
+                                    {
+                                        try (AutoLock l = _lock.lock())
+                                        {
+                                            _flushState = FlushState.IDLE;
+                                            releaseEmptyEncryptedOutputBuffer();
+                                        }
+                                    },
+                                    t -> disconnect()),
+                                write);
                         }
                     }
                 }
@@ -1617,8 +1670,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     discardEncryptedOutputBuffer();
 
                     _flushState = FlushState.IDLE;
-                    failFillInterest = _fillState == FillState.WAIT_FOR_FLUSH ||
-                        _fillState == FillState.INTERESTED;
+                    failFillInterest = _fillState == FillState.WAIT_FOR_FLUSH || _fillState == FillState.INTERESTED;
                     if (failFillInterest)
                         _fillState = FillState.IDLE;
                 }
@@ -1653,9 +1705,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 String cipherSuite = sslSession.getCipherSuite();
 
-                X509Certificate[] peerCertificates = _sslContextFactory != null
-                    ? _sslContextFactory.getX509CertChain(sslSession)
-                    : SslContextFactory.getCertChain(sslSession);
+                X509Certificate[] peerCertificates = _sslContextFactory != null ? _sslContextFactory.getX509CertChain(sslSession) : SslContextFactory.getCertChain(sslSession);
 
                 byte[] bytes = sslSession.getId();
                 String idStr = StringUtil.toHexString(bytes);

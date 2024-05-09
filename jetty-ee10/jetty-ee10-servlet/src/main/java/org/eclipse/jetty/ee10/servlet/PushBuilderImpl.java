@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.http.PushBuilder;
 import java.util.Objects;
 import java.util.Set;
-
-import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
@@ -123,8 +122,14 @@ class PushBuilderImpl implements PushBuilder
                 pushParam = "jsessionid=" + _sessionId;
         }
 
-        HttpURI pushURI = HttpURI.build(_request.getHttpURI(), pushPath, pushParam, pushQuery).normalize();
-        MetaData.Request push = new MetaData.Request(_request.getBeginNanoTime(), _method, pushURI, _request.getConnectionMetaData().getHttpVersion(), _headers);
+        HttpURI pushURI = HttpURI.build(_request.getHttpURI(), pushPath, pushParam, pushQuery)
+            .normalize();
+        MetaData.Request push = new MetaData.Request(
+            _request.getBeginNanoTime(),
+            _method,
+            pushURI,
+            _request.getConnectionMetaData().getHttpVersion(),
+            _headers);
         _request.push(push);
 
         _path = null;

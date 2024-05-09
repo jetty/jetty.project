@@ -18,7 +18,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.TimeZone;
-
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -189,7 +188,13 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
         {
             if (_filename != null)
             {
-                _fileOut = new RolloverFileOutputStream(_filename, _append, _retainDays, TimeZone.getTimeZone(getTimeZone()), _filenameDateFormat, null);
+                _fileOut = new RolloverFileOutputStream(
+                    _filename,
+                    _append,
+                    _retainDays,
+                    TimeZone.getTimeZone(getTimeZone()),
+                    _filenameDateFormat,
+                    null);
                 _closeOut = true;
                 LOG.info("Opened {}", getDatedFilename());
             }

@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
-
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.generator.MessageGenerator;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
@@ -82,7 +81,12 @@ public class MessageFlusher extends IteratingCallback
         QuicStreamEndPoint endPoint = entry.endPoint;
         List<ByteBuffer> buffers = accumulator.getByteBuffers();
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} buffers ({} bytes) for stream #{} on {}", buffers.size(), accumulator.getTotalLength(), endPoint.getStreamId(), this);
+            LOG.debug(
+                "writing {} buffers ({} bytes) for stream #{} on {}",
+                buffers.size(),
+                accumulator.getTotalLength(),
+                endPoint.getStreamId(),
+                this);
 
         endPoint.write(this, buffers, Frame.isLast(frame));
         return Action.SCHEDULED;

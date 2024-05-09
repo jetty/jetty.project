@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.eclipse.jetty.toolchain.test.Net;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyConfigurationTest
 {

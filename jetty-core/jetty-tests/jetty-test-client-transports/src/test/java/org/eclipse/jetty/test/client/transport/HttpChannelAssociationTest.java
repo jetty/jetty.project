@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
@@ -49,8 +50,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HttpChannelAssociationTest extends AbstractTest
 {
     @ParameterizedTest
@@ -66,12 +65,11 @@ public class HttpChannelAssociationTest extends AbstractTest
         client.start();
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
-            .send(result ->
-            {
-                if (result.isFailed())
-                    latch.countDown();
-            });
+        client.newRequest(newURI(transport)).send(result ->
+        {
+            if (result.isFailed())
+                latch.countDown();
+        });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -97,17 +95,17 @@ public class HttpChannelAssociationTest extends AbstractTest
         client.start();
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
-            .send(result ->
-            {
-                if (result.isSucceeded())
-                    latch.countDown();
-            });
+        client.newRequest(newURI(transport)).send(result ->
+        {
+            if (result.isSucceeded())
+                latch.countDown();
+        });
 
         assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
-    private HttpClientTransport newHttpClientTransport(Transport transport, Predicate<HttpExchange> code) throws Exception
+    private HttpClientTransport newHttpClientTransport(Transport transport, Predicate<HttpExchange> code)
+        throws Exception
     {
         return switch (transport)
         {
@@ -120,7 +118,8 @@ public class HttpChannelAssociationTest extends AbstractTest
                 yield new HttpClientTransportOverHTTP(clientConnector)
                 {
                     @Override
-                    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+                    public org.eclipse.jetty.io.Connection newConnection(
+                                                                         EndPoint endPoint, Map<String, Object> context)
                     {
                         return new HttpConnectionOverHTTP(endPoint, context)
                         {
@@ -150,7 +149,8 @@ public class HttpChannelAssociationTest extends AbstractTest
                 yield new HttpClientTransportOverHTTP2(http2Client)
                 {
                     @Override
-                    protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
+                    protected Connection newConnection(
+                                                       Destination destination, Session session, HTTP2Connection connection)
                     {
                         return new HttpConnectionOverHTTP2(destination, session, connection)
                         {
@@ -178,7 +178,8 @@ public class HttpChannelAssociationTest extends AbstractTest
                 yield new HttpClientTransportOverHTTP3(http3Client)
                 {
                     @Override
-                    protected org.eclipse.jetty.client.Connection newConnection(Destination destination, HTTP3SessionClient session)
+                    protected org.eclipse.jetty.client.Connection newConnection(
+                                                                                Destination destination, HTTP3SessionClient session)
                     {
                         return new HttpConnectionOverHTTP3(destination, session)
                         {
@@ -206,7 +207,8 @@ public class HttpChannelAssociationTest extends AbstractTest
                 yield new HttpClientTransportOverFCGI(clientConnector, "")
                 {
                     @Override
-                    protected org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Destination destination, Promise<Connection> promise)
+                    protected org.eclipse.jetty.io.Connection newConnection(
+                                                                            EndPoint endPoint, Destination destination, Promise<Connection> promise)
                     {
                         return new HttpConnectionOverFCGI(endPoint, destination, promise)
                         {

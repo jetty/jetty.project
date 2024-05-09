@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.eclipse.jetty.http.ComplianceViolationException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -38,7 +37,8 @@ public final class HttpCookieUtils
      */
     public static final String SAME_SITE_DEFAULT_ATTRIBUTE = "org.eclipse.jetty.cookie.sameSiteDefault";
 
-    private static final Index<String> KNOWN_ATTRIBUTES = new Index.Builder<String>().caseSensitive(false)
+    private static final Index<String> KNOWN_ATTRIBUTES = new Index.Builder<String>()
+        .caseSensitive(false)
         .with(HttpCookie.COMMENT_ATTRIBUTE)
         .with(HttpCookie.DOMAIN_ATTRIBUTE)
         .with(HttpCookie.EXPIRES_ATTRIBUTE)
@@ -65,10 +65,10 @@ public final class HttpCookieUtils
         if (cookie == null || cookie.getSameSite() != null)
             return cookie;
 
-        //sameSite is not set, use the default configured for the context, if one exists
+        // sameSite is not set, use the default configured for the context, if one exists
         HttpCookie.SameSite contextDefault = getSameSiteDefault(attributes);
         if (contextDefault == null)
-            return cookie; //no default set
+            return cookie; // no default set
 
         return HttpCookie.from(cookie, HttpCookie.SAME_SITE_ATTRIBUTE, contextDefault.getAttributeValue());
     }
@@ -94,7 +94,8 @@ public final class HttpCookieUtils
 
         try
         {
-            HttpCookie.SameSite samesite = Enum.valueOf(HttpCookie.SameSite.class, o.toString().trim().toUpperCase(Locale.ENGLISH));
+            HttpCookie.SameSite samesite =
+                Enum.valueOf(HttpCookie.SameSite.class, o.toString().trim().toUpperCase(Locale.ENGLISH));
             contextAttributes.setAttribute(SAME_SITE_DEFAULT_ATTRIBUTE, samesite);
             return samesite;
         }
@@ -139,9 +140,7 @@ public final class HttpCookieUtils
         // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
         int version = httpCookie.getVersion();
         String comment = httpCookie.getComment();
-        if (version == 0 && (comment != null || isQuoteNeeded(name) || isQuoteNeeded(value) || quoteDomain || quotePath ||
-                             QuotedStringTokenizer.isQuoted(name) || QuotedStringTokenizer.isQuoted(value) ||
-                             QuotedStringTokenizer.isQuoted(path) || QuotedStringTokenizer.isQuoted(domain)))
+        if (version == 0 && (comment != null || isQuoteNeeded(name) || isQuoteNeeded(value) || quoteDomain || quotePath || QuotedStringTokenizer.isQuoted(name) || QuotedStringTokenizer.isQuoted(value) || QuotedStringTokenizer.isQuoted(path) || QuotedStringTokenizer.isQuoted(domain)))
             version = 1;
 
         if (version == 1)
@@ -220,7 +219,10 @@ public final class HttpCookieUtils
         }
         catch (IllegalArgumentException e)
         {
-            throw new ComplianceViolationException(CookieCompliance.RFC6265, CookieCompliance.Violation.INVALID_COOKIES, "RFC6265 Cookie name must be a valid RFC2616 Token");
+            throw new ComplianceViolationException(
+                CookieCompliance.RFC6265,
+                CookieCompliance.Violation.INVALID_COOKIES,
+                "RFC6265 Cookie name must be a valid RFC2616 Token");
         }
 
         // Ensure that Per RFC6265, Cookie.value follows syntax rules
@@ -283,7 +285,7 @@ public final class HttpCookieUtils
             }
         }
 
-        //Add all other attributes
+        // Add all other attributes
         for (Map.Entry<String, String> e : attributes.entrySet())
         {
             if (KNOWN_ATTRIBUTES.contains(e.getKey()))
@@ -334,7 +336,7 @@ public final class HttpCookieUtils
      */
     public static boolean match(String setCookieHeader, String name, String domain, String path)
     {
-        //Parse the bare minimum
+        // Parse the bare minimum
         List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookieHeader);
         if (cookies.size() != 1)
             return false;
@@ -364,7 +366,8 @@ public final class HttpCookieUtils
      *
      * @return true if old and new names match exactly and the old and new domains match case-insensitively and the paths match exactly
      */
-    private static boolean match(String oldName, String oldDomain, String oldPath, String newName, String newDomain, String newPath)
+    private static boolean match(
+                                 String oldName, String oldDomain, String oldPath, String newName, String newDomain, String newPath)
     {
         if (oldName == null)
         {

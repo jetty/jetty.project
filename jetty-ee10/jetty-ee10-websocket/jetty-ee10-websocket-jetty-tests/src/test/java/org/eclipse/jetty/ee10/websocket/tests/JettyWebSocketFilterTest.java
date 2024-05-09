@@ -13,6 +13,21 @@
 
 package org.eclipse.jetty.ee10.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebListener;
+import jakarta.servlet.http.HttpServlet;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -24,14 +39,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebListener;
-import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -51,14 +58,6 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketFilterTest
 {
@@ -87,7 +86,8 @@ public class JettyWebSocketFilterTest
         start(null, servletHolder);
     }
 
-    public void start(JettyWebSocketServletContainerInitializer.Configurator configurator, ServletHolder servletHolder) throws Exception
+    public void start(JettyWebSocketServletContainerInitializer.Configurator configurator, ServletHolder servletHolder)
+        throws Exception
     {
         contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
@@ -114,7 +114,8 @@ public class JettyWebSocketFilterTest
 
         // After mapping is added we have an UpgradeFilter.
         assertThat(contextHandler.getServletHandler().getFilters().length, is(1));
-        FilterHolder filterHolder = contextHandler.getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
+        FilterHolder filterHolder =
+            contextHandler.getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
         assertNotNull(filterHolder);
         assertThat(filterHolder.getState(), is(AbstractLifeCycle.STARTED));
         assertThat(filterHolder.getFilter(), instanceOf(WebSocketUpgradeFilter.class));
@@ -139,7 +140,8 @@ public class JettyWebSocketFilterTest
         start(null, null);
 
         // JettyWebSocketServerContainer has already been created.
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
+        JettyWebSocketServerContainer container =
+            JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
         assertNotNull(container);
 
         // We should have no WebSocketUpgradeFilter installed because we have added no mappings.
@@ -148,7 +150,8 @@ public class JettyWebSocketFilterTest
         // After mapping is added we have an UpgradeFilter.
         container.addMapping("/", EchoSocket.class);
         assertThat(contextHandler.getServletHandler().getFilters().length, is(1));
-        FilterHolder filterHolder = contextHandler.getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
+        FilterHolder filterHolder =
+            contextHandler.getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
         assertNotNull(filterHolder);
         assertThat(filterHolder.getState(), is(AbstractLifeCycle.STARTED));
         assertThat(filterHolder.getFilter(), instanceOf(WebSocketUpgradeFilter.class));
@@ -175,7 +178,8 @@ public class JettyWebSocketFilterTest
             @Override
             public void init()
             {
-                JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(getServletContext());
+                JettyWebSocketServerContainer container =
+                    JettyWebSocketServerContainer.getContainer(getServletContext());
                 if (container == null)
                     throw new IllegalArgumentException("Missing JettyWebSocketServerContainer");
 
@@ -185,7 +189,8 @@ public class JettyWebSocketFilterTest
 
         // After mapping is added we have an UpgradeFilter.
         assertThat(contextHandler.getServletHandler().getFilters().length, is(1));
-        FilterHolder filterHolder = contextHandler.getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
+        FilterHolder filterHolder =
+            contextHandler.getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
         assertNotNull(filterHolder);
         assertThat(filterHolder.getState(), is(AbstractLifeCycle.STARTED));
         assertThat(filterHolder.getFilter(), instanceOf(WebSocketUpgradeFilter.class));
@@ -211,7 +216,8 @@ public class JettyWebSocketFilterTest
         String idleTimeoutFilter2 = "3999";
         start((context, container) ->
         {
-            ServletContextHandler contextHandler = Objects.requireNonNull(ServletContextHandler.getServletContextHandler(context));
+            ServletContextHandler contextHandler =
+                Objects.requireNonNull(ServletContextHandler.getServletContextHandler(context));
 
             // This filter replaces the default filter as we use the pre-defined name.
             FilterHolder filterHolder = new FilterHolder(WebSocketUpgradeFilter.class);
@@ -232,7 +238,8 @@ public class JettyWebSocketFilterTest
         });
 
         // Verify we have manually added 2 WebSocketUpgrade Filters.
-        List<FilterHolder> upgradeFilters = Arrays.stream(contextHandler.getServletHandler().getFilters())
+        List<FilterHolder> upgradeFilters = Arrays.stream(
+            contextHandler.getServletHandler().getFilters())
             .filter(holder -> holder.getFilter() instanceof WebSocketUpgradeFilter)
             .collect(Collectors.toList());
         assertThat(contextHandler.getServletHandler().getFilters().length, is(2));
@@ -243,12 +250,16 @@ public class JettyWebSocketFilterTest
             assertThat(filterHolder.getFilter(), instanceOf(WebSocketUpgradeFilter.class));
         }
 
-        // The /echo path should not match either of the upgrade filters even though it has a valid mapping, we get 404 response.
+        // The /echo path should not match either of the upgrade filters even though it has a valid mapping, we get 404
+        // response.
         URI firstUri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
-        ExecutionException error = assertThrows(ExecutionException.class, () -> client.connect(new EventSocket(), firstUri).get(5, TimeUnit.SECONDS));
+        ExecutionException error =
+            assertThrows(ExecutionException.class, () -> client.connect(new EventSocket(), firstUri)
+                .get(5, TimeUnit.SECONDS));
         assertThat(error.getMessage(), containsString("404 Not Found"));
 
-        // The /primaryFilter/echo path should convert to lower case and have idleTimeout configured on the first upgradeFilter.
+        // The /primaryFilter/echo path should convert to lower case and have idleTimeout configured on the first
+        // upgradeFilter.
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/primaryFilter/echo");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
@@ -261,7 +272,8 @@ public class JettyWebSocketFilterTest
         assertThat(socket.textMessages.poll(), is("hello world"));
         assertThat(socket.textMessages.poll(), is(idleTimeoutFilter1));
 
-        // The /secondaryFilter/echo path should convert to upper case and have idleTimeout configured on the second upgradeFilter.
+        // The /secondaryFilter/echo path should convert to upper case and have idleTimeout configured on the second
+        // upgradeFilter.
         uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/secondaryFilter/echo");
         socket = new EventSocket();
         connect = client.connect(socket, uri);
@@ -280,9 +292,11 @@ public class JettyWebSocketFilterTest
     {
         start((context, container) ->
         {
-            ServletContextHandler contextHandler = Objects.requireNonNull(ServletContextHandler.getServletContextHandler(context));
+            ServletContextHandler contextHandler =
+                Objects.requireNonNull(ServletContextHandler.getServletContextHandler(context));
 
-            // This custom filter replaces the default filter as we use the pre-defined name, and adds mapping in init().
+            // This custom filter replaces the default filter as we use the pre-defined name, and adds mapping in
+            // init().
             FilterHolder filterHolder = new FilterHolder(MyUpgradeFilter.class);
             filterHolder.setName(WebSocketUpgradeFilter.class.getName());
             contextHandler.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -378,7 +392,8 @@ public class JettyWebSocketFilterTest
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
-            JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(sce.getServletContext());
+            JettyWebSocketServerContainer container =
+                JettyWebSocketServerContainer.getContainer(sce.getServletContext());
             container.addMapping("/echo", EchoSocket.class);
         }
 
@@ -401,7 +416,8 @@ public class JettyWebSocketFilterTest
         @Override
         public void init(FilterConfig config) throws ServletException
         {
-            JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(config.getServletContext());
+            JettyWebSocketServerContainer container =
+                JettyWebSocketServerContainer.getContainer(config.getServletContext());
             container.addMapping("/echo", EchoSocket.class);
             super.init(config);
         }

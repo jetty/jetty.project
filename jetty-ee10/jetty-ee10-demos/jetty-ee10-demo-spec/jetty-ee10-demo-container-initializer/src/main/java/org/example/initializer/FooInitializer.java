@@ -13,15 +13,14 @@
 
 package org.example.initializer;
 
-import java.util.ArrayList;
-import java.util.Set;
-
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.annotation.HandlesTypes;
+import java.util.ArrayList;
+import java.util.Set;
 
 @HandlesTypes({jakarta.servlet.Servlet.class, Foo.class})
 public class FooInitializer implements ServletContainerInitializer
@@ -38,7 +37,6 @@ public class FooInitializer implements ServletContainerInitializer
         @Override
         public void contextDestroyed(ServletContextEvent sce)
         {
-
         }
     }
 
@@ -51,10 +49,10 @@ public class FooInitializer implements ServletContainerInitializer
             if (sce.getServletContext().getAttribute("org.example.AnnotationTest.listenerTest") != null)
                 throw new IllegalStateException("FooListener already initialized");
 
-            //Can add a ServletContextListener from a ServletContainerInitializer
+            // Can add a ServletContextListener from a ServletContainerInitializer
             sce.getServletContext().setAttribute("org.example.AnnotationTest.listenerTest", Boolean.TRUE);
 
-            //Can't add a ServletContextListener from a ServletContextListener
+            // Can't add a ServletContextListener from a ServletContextListener
             try
             {
                 sce.getServletContext().addListener(new BarListener());
@@ -73,7 +71,6 @@ public class FooInitializer implements ServletContainerInitializer
         @Override
         public void contextDestroyed(ServletContextEvent sce)
         {
-
         }
     }
 
@@ -88,7 +85,7 @@ public class FooInitializer implements ServletContainerInitializer
         context.setAttribute("org.example.AnnotationTest.complete", (reg == null));
         context.addListener(new FooListener());
 
-        //test adding jsp file dynamically
+        // test adding jsp file dynamically
         ServletRegistration.Dynamic jspFile = context.addJspFile("dynamic.jsp", "/dynamic.jsp");
         context.setAttribute("org.example.jsp.file", (jspFile != null));
         jspFile.addMapping("/dynamicjsp/*");

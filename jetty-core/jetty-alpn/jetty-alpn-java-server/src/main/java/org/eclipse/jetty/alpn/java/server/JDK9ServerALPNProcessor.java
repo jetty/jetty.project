@@ -16,7 +16,6 @@ package org.eclipse.jetty.alpn.java.server;
 import java.util.List;
 import java.util.function.BiFunction;
 import javax.net.ssl.SSLEngine;
-
 import org.eclipse.jetty.alpn.server.ALPNServerConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
@@ -50,7 +49,8 @@ public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandsha
         sslEngine.setHandshakeApplicationProtocolSelector(new ALPNCallback((ALPNServerConnection)connection));
     }
 
-    private static final class ALPNCallback implements BiFunction<SSLEngine, List<String>, String>, SslHandshakeListener
+    private static final class ALPNCallback
+        implements BiFunction<SSLEngine, List<String>, String>, SslHandshakeListener
     {
         private final ALPNServerConnection alpnConnection;
 

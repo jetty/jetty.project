@@ -20,7 +20,7 @@ import java.util.Set;
 
 /**
  * ConsoleReader
- * 
+ *
  * Reads lines from the System console and supplies them
  * to ConsoleReader.Listeners.
  */
@@ -32,17 +32,17 @@ public class ConsoleReader implements Runnable
     }
 
     public Set<ConsoleReader.Listener> listeners = new HashSet<>();
-    
+
     public void addListener(ConsoleReader.Listener listener)
     {
         listeners.add(listener);
     }
-    
+
     public void removeListener(ConsoleReader.Listener listener)
     {
         listeners.remove(listener);
     }
-    
+
     public void run()
     {
         Console console = System.console();
@@ -57,10 +57,10 @@ public class ConsoleReader implements Runnable
                 signalEvent(line);
         }
     }
-    
+
     private void signalEvent(String line)
     {
-        for (ConsoleReader.Listener l:listeners)
+        for (ConsoleReader.Listener l : listeners)
             l.consoleEvent(line);
     }
 }

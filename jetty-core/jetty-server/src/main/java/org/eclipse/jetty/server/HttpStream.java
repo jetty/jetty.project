@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
@@ -80,7 +79,8 @@ public interface HttpStream extends Callback
      * @param content A buffer of content to send or null if no content.
      * @param callback The callback to invoke when the send is completed successfully or in failure.
      */
-    void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback);
+    void send(
+              MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback);
 
     /**
      * <p>Pushes the given {@code resource} to the client.</p>
@@ -174,7 +174,12 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+        public void send(
+                         MetaData.Request request,
+                         MetaData.Response response,
+                         boolean last,
+                         ByteBuffer content,
+                         Callback callback)
         {
             getWrapped().send(request, response, last, content, callback);
         }

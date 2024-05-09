@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Optional;
-
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
@@ -69,13 +68,9 @@ public abstract class DownloadFileInitializer extends FileInitializer
 
         try
         {
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(uri)
-                .GET()
-                .build();
+            HttpRequest request = HttpRequest.newBuilder().uri(uri).GET().build();
 
-            HttpResponse<InputStream> response =
-                httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
             int status = response.statusCode();
 
@@ -85,10 +80,7 @@ public abstract class DownloadFileInitializer extends FileInitializer
                 Optional<String> location = response.headers().firstValue("Location");
                 if (location.isPresent())
                 {
-                    throw new IOException("URL GET Failure [status " + status + "] on " + uri +
-                        " wanting to redirect to insecure HTTP location (use " +
-                        StartArgs.ARG_ALLOW_INSECURE_HTTP_DOWNLOADS + " to bypass): " +
-                        location.get());
+                    throw new IOException("URL GET Failure [status " + status + "] on " + uri + " wanting to redirect to insecure HTTP location (use " + StartArgs.ARG_ALLOW_INSECURE_HTTP_DOWNLOADS + " to bypass): " + location.get());
                 }
             }
 
@@ -113,7 +105,8 @@ public abstract class DownloadFileInitializer extends FileInitializer
         if (httpClient == null)
         {
             httpClient = HttpClient.newBuilder()
-                .followRedirects(allowInsecureHttpDownloads() ? HttpClient.Redirect.ALWAYS : HttpClient.Redirect.NORMAL)
+                .followRedirects(
+                    allowInsecureHttpDownloads() ? HttpClient.Redirect.ALWAYS : HttpClient.Redirect.NORMAL)
                 .proxy(ProxySelector.getDefault())
                 .build();
         }

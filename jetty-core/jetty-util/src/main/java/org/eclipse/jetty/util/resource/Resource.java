@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -110,8 +109,7 @@ public abstract class Resource implements Iterable<Resource>
         String thisURIString = URIUtil.correctURI(thisURI).toASCIIString();
         String otherURIString = URIUtil.correctURI(otherURI).toASCIIString();
 
-        return otherURIString.startsWith(thisURIString) &&
-            (thisURIString.length() == otherURIString.length() || otherURIString.charAt(thisURIString.length()) == '/');
+        return otherURIString.startsWith(thisURIString) && (thisURIString.length() == otherURIString.length() || otherURIString.charAt(thisURIString.length()) == '/');
     }
 
     /**
@@ -332,8 +330,7 @@ public abstract class Resource implements Iterable<Resource>
      * @param destination the destination file or directory to use (created if it does not exist).
      * @throws IOException if unable to copy the resource
      */
-    public void copyTo(Path destination)
-        throws IOException
+    public void copyTo(Path destination) throws IOException
     {
         if (!exists())
             throw new IOException("Resource does not exist: " + getFileName());
@@ -347,14 +344,16 @@ public abstract class Resource implements Iterable<Resource>
             if (isDirectory())
             {
                 // if we reached this point, we have a Resource implementation that needs custom copyTo.
-                throw new UnsupportedOperationException("Directory Resources without a Path must implement copyTo: " + this);
+                throw new UnsupportedOperationException(
+                    "Directory Resources without a Path must implement copyTo: " + this);
             }
 
             // assume that this Resource is a File.
             String filename = getFileName();
             if (StringUtil.isBlank(filename))
             {
-                throw new UnsupportedOperationException("File Resources without a Path must implement getFileName: " + this);
+                throw new UnsupportedOperationException(
+                    "File Resources without a Path must implement getFileName: " + this);
             }
 
             Path destFile = destination;
@@ -365,7 +364,8 @@ public abstract class Resource implements Iterable<Resource>
 
             // use old school stream based copy (without a Path)
             try (InputStream in = newInputStream(); // use non-path newInputStream
-                 OutputStream out = Files.newOutputStream(destFile,
+                 OutputStream out = Files.newOutputStream(
+                     destFile,
                      StandardOpenOption.CREATE,
                      StandardOpenOption.WRITE,
                      StandardOpenOption.TRUNCATE_EXISTING))
@@ -414,7 +414,7 @@ public abstract class Resource implements Iterable<Resource>
 
             boolean noDepth = true;
 
-            for (Iterator<Resource> i = children.iterator(); noDepth && i.hasNext(); )
+            for (Iterator<Resource> i = children.iterator(); noDepth && i.hasNext();)
             {
                 Resource resource = i.next();
                 if (resource.isDirectory())
@@ -429,7 +429,7 @@ public abstract class Resource implements Iterable<Resource>
                 return children;
 
             ArrayList<Resource> deep = new ArrayList<>();
-            for (Resource r: children)
+            for (Resource r : children)
             {
                 deep.add(r);
                 if (r.isDirectory())

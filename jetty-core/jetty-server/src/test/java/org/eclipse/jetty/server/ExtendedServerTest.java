@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -34,8 +35,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 /**
  * Extended Server Tester.
  */
@@ -44,32 +43,36 @@ public class ExtendedServerTest extends HttpServerTestBase
     @BeforeEach
     public void init() throws Exception
     {
-        initServer(new ServerConnector(_server, new HttpConnectionFactory()
-        {
-            @Override
-            public Connection newConnection(Connector connector, EndPoint endPoint)
+        initServer(
+            new ServerConnector(_server, new HttpConnectionFactory()
             {
-                HttpConnection connection = new ExtendedHttpConnection(getHttpConfiguration(), connector, endPoint);
-                connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
-                connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
-                configure(connection, connector, endPoint);
-                return connection;
-            }
-        })
-        {
-            @Override
-            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+                @Override
+                public Connection newConnection(Connector connector, EndPoint endPoint)
+                {
+                    HttpConnection connection =
+                        new ExtendedHttpConnection(getHttpConfiguration(), connector, endPoint);
+                    connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+                    connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
+                    configure(connection, connector, endPoint);
+                    return connection;
+                }
+            })
             {
-                return new ExtendedEndPoint(channel, selectSet, key, getScheduler());
-            }
-        });
+                @Override
+                protected SocketChannelEndPoint newEndPoint(
+                                                            SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+                {
+                    return new ExtendedEndPoint(channel, selectSet, key, getScheduler());
+                }
+            });
     }
 
     private static class ExtendedEndPoint extends SocketChannelEndPoint
     {
         private volatile long _lastSelected;
 
-        public ExtendedEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
+        public ExtendedEndPoint(
+                                SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
         {
             super(channel, selector, key, scheduler);
         }
@@ -102,8 +105,14 @@ public class ExtendedServerTest extends HttpServerTestBase
                 @Override
                 public Runnable onRequest(MetaData.Request request)
                 {
-                    Runnable todo =  super.onRequest(request);
-                    getRequest().setAttribute("DispatchedAt", ((ExtendedEndPoint)getConnectionMetaData().getConnection().getEndPoint()).getLastSelected());
+                    Runnable todo = super.onRequest(request);
+                    getRequest()
+                        .setAttribute(
+                            "DispatchedAt",
+                            ((ExtendedEndPoint)getConnectionMetaData()
+                                .getConnection()
+                                .getEndPoint())
+                                .getLastSelected());
                     return todo;
                 }
             };
@@ -147,7 +156,10 @@ public class ExtendedServerTest extends HttpServerTestBase
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            response.write(true, BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"), callback);
+            response.write(
+                true,
+                BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"),
+                callback);
             return true;
         }
     }

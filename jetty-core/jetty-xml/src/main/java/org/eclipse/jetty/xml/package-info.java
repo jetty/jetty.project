@@ -15,4 +15,3 @@
  * Jetty Xml : IoC Mechanism for Jetty Configuration
  */
 package org.eclipse.jetty.xml;
-

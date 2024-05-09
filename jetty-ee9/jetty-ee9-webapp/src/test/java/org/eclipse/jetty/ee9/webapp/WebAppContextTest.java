@@ -13,6 +13,26 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.GenericServlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
@@ -29,11 +49,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import jakarta.servlet.GenericServlet;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
@@ -73,22 +88,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Isolated
 @ExtendWith(WorkDirExtension.class)
@@ -158,7 +157,8 @@ public class WebAppContextTest
         File webXml = MavenTestingUtils.getTargetFile("test-classes/web-with-default-context-path.xml");
         File webXmlEmptyPath = MavenTestingUtils.getTargetFile("test-classes/web-with-empty-default-context-path.xml");
         File webDefaultXml = MavenTestingUtils.getTargetFile("test-classes/web-default-with-default-context-path.xml");
-        File overrideWebXml = MavenTestingUtils.getTargetFile("test-classes/override-web-with-default-context-path.xml");
+        File overrideWebXml =
+            MavenTestingUtils.getTargetFile("test-classes/override-web-with-default-context-path.xml");
         assertNotNull(webXml);
         assertNotNull(webDefaultXml);
         assertNotNull(overrideWebXml);
@@ -168,14 +168,14 @@ public class WebAppContextTest
         wac.setResourceBase(MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
         server.setHandler(wac);
 
-        //test that an empty default-context-path defaults to root
+        // test that an empty default-context-path defaults to root
         wac.setDescriptor(webXmlEmptyPath.getAbsolutePath());
         server.start();
         assertEquals("/", wac.getContextPath());
 
         server.stop();
 
-        //test web-default.xml value is used
+        // test web-default.xml value is used
         wac.setDescriptor(null);
         wac.setDefaultsDescriptor(webDefaultXml.getAbsolutePath());
         server.start();
@@ -183,21 +183,21 @@ public class WebAppContextTest
 
         server.stop();
 
-        //test web.xml value is used
+        // test web.xml value is used
         wac.setDescriptor(webXml.getAbsolutePath());
         server.start();
         assertEquals("/two", wac.getContextPath());
 
         server.stop();
 
-        //test override-web.xml value is used
+        // test override-web.xml value is used
         wac.setOverrideDescriptor(overrideWebXml.getAbsolutePath());
         server.start();
         assertEquals("/three", wac.getContextPath());
 
         server.stop();
 
-        //test that explicitly set context path is used instead
+        // test that explicitly set context path is used instead
         wac.setContextPath("/foo");
         server.start();
         assertEquals("/foo", wac.getContextPath());
@@ -210,7 +210,8 @@ public class WebAppContextTest
         File webXml = MavenTestingUtils.getTargetFile("test-classes/web-with-default-context-path.xml");
         File webXmlEmptyPath = MavenTestingUtils.getTargetFile("test-classes/web-with-empty-default-context-path.xml");
         File webDefaultXml = MavenTestingUtils.getTargetFile("test-classes/web-default-with-default-context-path.xml");
-        File overrideWebXml = MavenTestingUtils.getTargetFile("test-classes/override-web-with-default-context-path.xml");
+        File overrideWebXml =
+            MavenTestingUtils.getTargetFile("test-classes/override-web-with-default-context-path.xml");
         assertNotNull(webXml);
         assertNotNull(webDefaultXml);
         assertNotNull(overrideWebXml);
@@ -229,14 +230,14 @@ public class WebAppContextTest
         assertNotNull(wac.getServer());
         assertNotNull(wac.getCoreContextHandler().getServer());
 
-        //test that an empty default-context-path defaults to root
+        // test that an empty default-context-path defaults to root
         wac.setDescriptor(webXmlEmptyPath.getAbsolutePath());
         server.start();
         assertEquals("/", wac.getContextPath());
 
         server.stop();
 
-        //test web-default.xml value is used
+        // test web-default.xml value is used
         wac.setDescriptor(null);
         wac.setDefaultsDescriptor(webDefaultXml.getAbsolutePath());
         server.start();
@@ -244,21 +245,21 @@ public class WebAppContextTest
 
         server.stop();
 
-        //test web.xml value is used
+        // test web.xml value is used
         wac.setDescriptor(webXml.getAbsolutePath());
         server.start();
         assertEquals("/two", wac.getContextPath());
 
         server.stop();
 
-        //test override-web.xml value is used
+        // test override-web.xml value is used
         wac.setOverrideDescriptor(overrideWebXml.getAbsolutePath());
         server.start();
         assertEquals("/three", wac.getContextPath());
 
         server.stop();
 
-        //test that explicitly set context path is used instead
+        // test that explicitly set context path is used instead
         wac.setContextPath("/foo");
         server.start();
         assertEquals("/foo", wac.getContextPath());
@@ -275,9 +276,10 @@ public class WebAppContextTest
 
         Server server = newServer();
 
-        //test if no classnames set, its the defaults
+        // test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertThat(wac.getConfigurations().stream()
+        assertThat(
+            wac.getConfigurations().stream()
                 .map(c -> c.getClass().getName())
                 .collect(Collectors.toList()),
             Matchers.containsInAnyOrder(knownAndEnabled));
@@ -295,7 +297,9 @@ public class WebAppContextTest
         Configurations.cleanKnown();
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
-        List<String> actualConfigurations = wac.getConfigurations().stream().map(c -> c.getClass().getName()).collect(Collectors.toList());
+        List<String> actualConfigurations = wac.getConfigurations().stream()
+            .map(c -> c.getClass().getName())
+            .collect(Collectors.toList());
         List<String> expectedConfigurations = new ArrayList<>();
 
         JmxConfiguration jmx = new JmxConfiguration();
@@ -323,7 +327,7 @@ public class WebAppContextTest
         wac.setConfigurations(configs);
         assertThat(wac.getConfigurations(), Matchers.contains(configs));
 
-        //test that explicit config instances override any from server
+        // test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = newServer();
         server.setAttribute(Configurations.class.getName(), classNames);
@@ -399,8 +403,12 @@ public class WebAppContextTest
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            assertTrue(resourceFactory.newResource(context.getServletContext().getResource("/WEB-INF/classes/SomeClass.class")).exists());
-            assertTrue(resourceFactory.newResource(context.getServletContext().getResource("/classes/SomeClass.class")).exists());
+            assertTrue(resourceFactory
+                .newResource(context.getServletContext().getResource("/WEB-INF/classes/SomeClass.class"))
+                .exists());
+            assertTrue(resourceFactory
+                .newResource(context.getServletContext().getResource("/classes/SomeClass.class"))
+                .exists());
         }
     }
 
@@ -431,34 +439,126 @@ public class WebAppContextTest
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setUriCompliance(UriCompliance.UNSAFE);
 
         server.start();
 
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/%2e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002e/%u002e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%2e%2e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%u002e%u002e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
+        assertThat(
+            HttpTester.parseResponse(connector.getResponse(
+                "GET /test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.OK_200));
+        assertThat(
+            HttpTester.parseResponse(connector.getResponse(
+                "GET /%2e/%2e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.OK_200));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /%u002e/%u002e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.OK_200));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /foo/%2e%2e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.OK_200));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /foo/%u002e%u002e/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.OK_200));
 
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF/ HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /web-inf/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2e/%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002e/%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%2e%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /foo/%u002e%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%2E/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /%u002E/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET //WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF%2ftest.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(connector.getResponse(
+                "GET /WEB-INF HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(connector.getResponse(
+                "GET /WEB-INF/ HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(connector.getResponse(
+                "GET /WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(connector.getResponse(
+                "GET /web-inf/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /%2e/%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /%u002e/%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /foo/%2e%2e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /foo/%u002e%u002e/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /%2E/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /%u002E/WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(connector.getResponse(
+                "GET //WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
+        assertThat(
+            HttpTester.parseResponse(
+                connector.getResponse(
+                    "GET /WEB-INF%2ftest.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
+            is(HttpStatus.NOT_FOUND_404));
     }
-        
+
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "/WEB-INF",
         "/WEB-INF/",
         "/WEB-INF/test.xml",
@@ -478,7 +578,10 @@ public class WebAppContextTest
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+        connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setUriCompliance(UriCompliance.LEGACY);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
@@ -491,7 +594,10 @@ public class WebAppContextTest
 
         server.start();
 
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET " + path + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(),
+        assertThat(
+            HttpTester.parseResponse(connector.getResponse(
+                "GET " + path + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n"))
+                .getStatus(),
             Matchers.anyOf(is(HttpStatus.NOT_FOUND_404), is(HttpStatus.BAD_REQUEST_400)));
     }
 
@@ -517,12 +623,13 @@ public class WebAppContextTest
 
         server.start();
 
-        String rawResponse = connector.getResponse("""
-            GET http://localhost:8080 HTTP/1.1\r
-            Host: localhost:8080\r
-            Connection: close\r
-            \r
-            """);
+        String rawResponse = connector.getResponse(
+            """
+                GET http://localhost:8080 HTTP/1.1\r
+                Host: localhost:8080\r
+                Connection: close\r
+                \r
+                """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat("Response OK", response.getStatus(), is(HttpStatus.OK_200));
     }
@@ -535,7 +642,13 @@ public class WebAppContextTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
+        WebAppContext context = new WebAppContext(
+            null,
+            null,
+            null,
+            null,
+            null,
+            new ErrorPageErrorHandler(),
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
@@ -622,7 +735,9 @@ public class WebAppContextTest
         server.start();
 
         ServletContext servletContext = context.getServletContext();
-        assertThat(servletContext.getResourcePaths("/WEB-INF/"), containsInAnyOrder("/WEB-INF/zero.xml", "/WEB-INF/one.xml"));
+        assertThat(
+            servletContext.getResourcePaths("/WEB-INF/"),
+            containsInAnyOrder("/WEB-INF/zero.xml", "/WEB-INF/one.xml"));
     }
 
     @Test
@@ -635,19 +750,13 @@ public class WebAppContextTest
         context.setBaseResource(ResourceFactory.combine(
             context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer0/")),
             context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer1/")),
-            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/with_dirs/"))
-        ));
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/with_dirs/"))));
         server.setHandler(context);
         server.start();
 
         ServletContext servletContext = context.getServletContext();
         Set<String> results = servletContext.getResourcePaths("/WEB-INF/");
-        String[] expected = {
-            "/WEB-INF/zero.xml",
-            "/WEB-INF/one.xml",
-            "/WEB-INF/bar/",
-            "/WEB-INF/foo/"
-        };
+        String[] expected = {"/WEB-INF/zero.xml", "/WEB-INF/one.xml", "/WEB-INF/bar/", "/WEB-INF/foo/"};
         assertThat(results, containsInAnyOrder(expected));
     }
 
@@ -672,48 +781,58 @@ public class WebAppContextTest
 
         Set<String> resourcePaths = servletContext.getResourcePaths("/");
         String[] expected = {
-            "/WEB-INF/",
-            "/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt",
-            };
+            "/WEB-INF/", "/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt",
+        };
         assertThat(resourcePaths.size(), is(2));
         assertThat(resourcePaths, containsInAnyOrder(expected));
 
         String realPath = servletContext.getRealPath("/");
         assertThat(realPath, notNullValue());
         assertThat(servletContext.getRealPath("/WEB-INF/"), endsWith("/WEB-INF/"));
-        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
-        //assertThat(servletContext.getRealPath(resourcePaths.get(1)), endsWith("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and
+        // MountedPathResourceTest.testJarFileResourceAccessBackSlash())
+        // assertThat(servletContext.getRealPath(resourcePaths.get(1)),
+        // endsWith("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
 
         assertThat(servletContext.getResource("/WEB-INF/"), notNullValue());
-        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
-        //assertThat(servletContext.getResource("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"), notNullValue());
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and
+        // MountedPathResourceTest.testJarFileResourceAccessBackSlash())
+        // assertThat(servletContext.getResource("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"),
+        // notNullValue());
 
-        HttpTester.Response response1 = HttpTester.parseResponse(connector.getResponse("""
-            GET /resource HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """));
+        HttpTester.Response response1 = HttpTester.parseResponse(
+            connector.getResponse(
+                """
+                    GET /resource HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """));
 
         assertThat(response1.getStatus(), is(HttpStatus.OK_200));
         assertThat(response1.getContent(), containsString("/WEB-INF"));
         assertThat(response1.getContent(), containsString("/WEB-INF/lib"));
         assertThat(response1.getContent(), containsString("/WEB-INF/lib/odd-resource.jar"));
-        assertThat(response1.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
+        assertThat(
+            response1.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
 
-        HttpTester.Response response2 = HttpTester.parseResponse(connector.getResponse("""
-            GET /real HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """));
+        HttpTester.Response response2 = HttpTester.parseResponse(
+            connector.getResponse(
+                """
+                    GET /real HTTP/1.1\r
+                    Host: local\r
+                    Connection: close\r
+                    \r
+                    """));
 
         assertThat(response2.getStatus(), is(HttpStatus.OK_200));
         assertThat(response2.getContent(), containsString("/WEB-INF"));
         assertThat(response2.getContent(), containsString("/WEB-INF/lib"));
         assertThat(response2.getContent(), containsString("/WEB-INF/lib/odd-resource.jar"));
-        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
-        //assertThat(response2.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and
+        // MountedPathResourceTest.testJarFileResourceAccessBackSlash())
+        // assertThat(response2.getContent(),
+        // containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
     }
 
     public static Stream<Arguments> extraClasspathGlob()
@@ -727,7 +846,8 @@ public class WebAppContextTest
         references.add(Arguments.of("absolute extLibs with glob", extLibs.toString() + File.separator + "*"));
 
         // Establish a relative extraClassPath reference
-        String relativeExtLibsDir = MavenTestingUtils.getBasePath().relativize(extLibs).toString();
+        String relativeExtLibsDir =
+            MavenTestingUtils.getBasePath().relativize(extLibs).toString();
 
         // This will be in the String form similar to "src/test/resources/ext/*" (with trailing slash and glob)
         references.add(Arguments.of("relative extLibs with glob", relativeExtLibsDir + File.separator + "*"));
@@ -770,8 +890,7 @@ public class WebAppContextTest
         List<URI> expectedUris;
         try (Stream<Path> s = Files.list(extLibsDir))
         {
-            expectedUris = s
-                .filter(Files::isRegularFile)
+            expectedUris = s.filter(Files::isRegularFile)
                 .filter(FileID::isLibArchive)
                 .sorted(Comparator.naturalOrder())
                 .map(Path::toUri)
@@ -802,7 +921,8 @@ public class WebAppContextTest
         references.add(Arguments.of(extLibs.toString()));
 
         // Establish a relative extraClassPath reference
-        String relativeExtLibsDir = MavenTestingUtils.getBasePath().relativize(extLibs).toString();
+        String relativeExtLibsDir =
+            MavenTestingUtils.getBasePath().relativize(extLibs).toString();
 
         // This will be in the String form similar to "src/test/resources/ext/" (with trailing slash)
         references.add(Arguments.of(relativeExtLibsDir + File.separator));
@@ -873,8 +993,11 @@ public class WebAppContextTest
         List<String> serverClasses = List.of(context.getServerClasses());
         assertThat("Should have environment specific test pattern", serverClasses, hasItem(testPattern));
         assertThat("Should have pattern from defaults", serverClasses, hasItem("org.eclipse.jetty."));
-        assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
-        for (String defaultServerClass: WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
+        assertThat(
+            "Should have pattern from JaasConfiguration",
+            serverClasses,
+            hasItem("-org.eclipse.jetty.security.jaas."));
+        for (String defaultServerClass : WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
             assertThat("Should have default patterns", serverClasses, hasItem(defaultServerClass));
     }
 
@@ -902,7 +1025,10 @@ public class WebAppContextTest
         assertThat("Should have environment specific test pattern", systemClasses, hasItem(testPattern));
         assertThat("Should have pattern from defaults", systemClasses, hasItem("javax."));
         assertThat("Should have pattern from defaults", systemClasses, hasItem("jakarta."));
-        assertThat("Should have pattern from JaasConfiguration", systemClasses, hasItem("org.eclipse.jetty.security.jaas."));
+        assertThat(
+            "Should have pattern from JaasConfiguration",
+            systemClasses,
+            hasItem("org.eclipse.jetty.security.jaas."));
         for (String defaultSystemClass : WebAppClassLoading.DEFAULT_PROTECTED_CLASSES)
         {
             assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));

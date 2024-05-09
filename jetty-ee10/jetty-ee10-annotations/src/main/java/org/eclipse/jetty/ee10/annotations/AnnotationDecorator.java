@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.annotations;
 
 import java.util.Objects;
-
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
@@ -79,6 +78,5 @@ public class AnnotationDecorator implements Decorator
     @Override
     public void destroy(Object o)
     {
-
     }
 }

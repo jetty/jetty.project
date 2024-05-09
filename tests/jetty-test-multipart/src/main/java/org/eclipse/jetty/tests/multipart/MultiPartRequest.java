@@ -20,7 +20,6 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 
@@ -42,7 +41,8 @@ public class MultiPartRequest
         String prev = headers.put(name, value);
 
         if (prev != null)
-            throw new IllegalStateException("Lost previous header [" + name + ": " + prev + "] when setting value to " + value);
+            throw new IllegalStateException(
+                "Lost previous header [" + name + ": " + prev + "] when setting value to " + value);
     }
 
     public Map<String, String> getHeaders()

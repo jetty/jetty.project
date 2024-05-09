@@ -16,7 +16,6 @@ package org.eclipse.jetty.util;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-
 import org.slf4j.LoggerFactory;
 
 /**

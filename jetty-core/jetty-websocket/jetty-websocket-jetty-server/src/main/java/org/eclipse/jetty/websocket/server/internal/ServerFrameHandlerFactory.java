@@ -30,7 +30,8 @@ public class ServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFactory
     }
 
     @Override
-    public FrameHandler newFrameHandler(Object webSocketEndPoint, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
+    public FrameHandler newFrameHandler(
+                                        Object webSocketEndPoint, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
     {
         JettyWebSocketFrameHandler frameHandler = newJettyFrameHandler(webSocketEndPoint);
         frameHandler.setUpgradeRequest(new UpgradeRequestDelegate(upgradeRequest));

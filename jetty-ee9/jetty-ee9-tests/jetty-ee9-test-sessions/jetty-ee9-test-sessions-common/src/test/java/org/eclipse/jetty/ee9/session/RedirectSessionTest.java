@@ -13,13 +13,15 @@
 
 package org.eclipse.jetty.ee9.session;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -28,9 +30,6 @@ import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * RedirectSessionTest
@@ -58,11 +57,11 @@ public class RedirectSessionTest
             testServer.start();
             int serverPort = testServer.getPort();
             HttpClient client = new HttpClient();
-            client.setFollowRedirects(true); //ensure client handles redirects
+            client.setFollowRedirects(true); // ensure client handles redirects
             client.start();
             try
             {
-                //make a request to the first servlet, which will redirect
+                // make a request to the first servlet, which will redirect
                 ContentResponse response = client.GET("http://localhost:" + serverPort + "/context/one");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
@@ -82,9 +81,10 @@ public class RedirectSessionTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
-            //create a session
+            // create a session
             HttpSession session = request.getSession(true);
             assertNotNull(session);
             session.setAttribute("servlet1", "servlet1");
@@ -97,9 +97,10 @@ public class RedirectSessionTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
-            //the session should exist after the redirect
+            // the session should exist after the redirect
             HttpSession sess = request.getSession(false);
             assertNotNull(sess);
             assertNotNull(sess.getAttribute("servlet1"));

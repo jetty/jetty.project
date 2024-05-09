@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.decoders;
 
-import java.lang.reflect.InvocationTargetException;
-
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
+import java.lang.reflect.InvocationTargetException;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.InitException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.slf4j.Logger;
@@ -37,12 +36,23 @@ public class RegisteredDecoder
 
     private Decoder instance;
 
-    public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType, EndpointConfig endpointConfig, WebSocketComponents components)
+    public RegisteredDecoder(
+                             Class<? extends Decoder> decoder,
+                             Class<? extends Decoder> interfaceType,
+                             Class<?> objectType,
+                             EndpointConfig endpointConfig,
+                             WebSocketComponents components)
     {
         this(decoder, interfaceType, objectType, endpointConfig, components, false);
     }
 
-    public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType, EndpointConfig endpointConfig, WebSocketComponents components, boolean primitive)
+    public RegisteredDecoder(
+                             Class<? extends Decoder> decoder,
+                             Class<? extends Decoder> interfaceType,
+                             Class<?> objectType,
+                             EndpointConfig endpointConfig,
+                             WebSocketComponents components,
+                             boolean primitive)
     {
         this.decoder = decoder;
         this.interfaceType = interfaceType;
@@ -72,7 +82,10 @@ public class RegisteredDecoder
                 instance.init(config);
                 return (T)instance;
             }
-            catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
+            catch (InstantiationException
+                | IllegalAccessException
+                | NoSuchMethodException
+                | InvocationTargetException e)
             {
                 throw new InitException("Unable to init Decoder for type:" + decoder.getName(), e);
             }

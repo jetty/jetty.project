@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.demos;
 
 import java.lang.management.ManagementFactory;
-
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.io.ConnectionStatistics;
@@ -28,11 +27,9 @@ public class OneServletContextJmxStats
         Server server = new Server(port);
 
         // Add JMX tracking to Server
-        server.addBean(new MBeanContainer(ManagementFactory
-            .getPlatformMBeanServer()));
+        server.addBean(new MBeanContainer(ManagementFactory.getPlatformMBeanServer()));
 
-        ServletContextHandler context = new ServletContextHandler(
-            ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 

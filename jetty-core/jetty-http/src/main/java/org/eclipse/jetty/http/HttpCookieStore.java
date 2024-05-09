@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -300,7 +299,8 @@ public interface HttpCookieStore
                 while (domain != null)
                 {
                     List<StoredHttpCookie> stored = cookies.get(domain);
-                    Iterator<StoredHttpCookie> iterator = stored == null ? Collections.emptyIterator() : stored.iterator();
+                    Iterator<StoredHttpCookie> iterator =
+                        stored == null ? Collections.emptyIterator() : stored.iterator();
                     while (iterator.hasNext())
                     {
                         StoredHttpCookie cookie = iterator.next();
@@ -317,7 +317,8 @@ public interface HttpCookieStore
                             continue;
 
                         // Match the domain.
-                        if (!domainMatches(uriDomain, cookie.domain, cookie.getWrapped().getDomain()))
+                        if (!domainMatches(
+                            uriDomain, cookie.domain, cookie.getWrapped().getDomain()))
                             continue;
 
                         // Match the path.
@@ -478,9 +479,7 @@ public interface HttpCookieStore
                     return true;
                 if (!(obj instanceof StoredHttpCookie that))
                     return false;
-                return getName().equals(that.getName()) &&
-                       domain.equalsIgnoreCase(that.domain) &&
-                       path.equals(that.path);
+                return getName().equals(that.getName()) && domain.equalsIgnoreCase(that.domain) && path.equals(that.path);
             }
         }
     }

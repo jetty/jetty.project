@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 
 public class ResponseListenersTest
 {
@@ -35,12 +34,14 @@ public class ResponseListenersTest
     public void testContentSourceDemultiplexerSpuriousWakeup()
     {
         TestSource contentSource = new TestSource(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {3}), true));
 
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
 
@@ -93,14 +94,16 @@ public class ResponseListenersTest
     public void testContentSourceDemultiplexerFailOnTransientException()
     {
         TestSource contentSource = new TestSource(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), false),
             null,
             Content.Chunk.from(new TimeoutException("timeout"), false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {3}), true));
 
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
         ResponseListeners responseListeners = new ResponseListeners();
@@ -165,12 +168,13 @@ public class ResponseListenersTest
     public void testContentSourceDemultiplexerFailOnTerminalException()
     {
         TestSource contentSource = new TestSource(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), false),
             null,
-            Content.Chunk.from(new ArithmeticException(), true)
-        );
+            Content.Chunk.from(new ArithmeticException(), true));
 
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
         ResponseListeners responseListeners = new ResponseListeners();

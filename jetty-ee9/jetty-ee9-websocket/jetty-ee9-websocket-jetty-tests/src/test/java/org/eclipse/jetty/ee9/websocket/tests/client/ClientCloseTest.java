@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.ee9.websocket.tests.client;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -21,7 +33,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.websocket.api.Frame;
@@ -50,25 +61,14 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.time.Duration.ofSeconds;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ClientCloseTest
 {
     private Server server;
     private WebSocketClient client;
     private BlockingArrayQueue<ServerEndpoint> serverEndpoints = new BlockingArrayQueue<>();
 
-    private Session confirmConnection(CloseTrackingEndpoint clientSocket, Future<Session> clientFuture) throws Exception
+    private Session confirmConnection(CloseTrackingEndpoint clientSocket, Future<Session> clientFuture)
+        throws Exception
     {
         // Wait for client connect on via future
         Session session = clientFuture.get(30, SECONDS);
@@ -202,7 +202,8 @@ public class ClientCloseTest
         confirmConnection(clientSocket, clientConnectFuture);
 
         clientSocket.getSession().getRemote().sendString("too-large-message");
-        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.MESSAGE_TOO_LARGE), containsString("Text message too large"));
+        clientSocket.assertReceivedCloseEvent(
+            timeout, is(StatusCode.MESSAGE_TOO_LARGE), containsString("Text message too large"));
 
         // client should have noticed the error
         assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
@@ -236,9 +237,7 @@ public class ClientCloseTest
 
         // client reads -1 (EOF)
         // client triggers close event on client ws-endpoint
-        clientSocket.assertReceivedCloseEvent(2000,
-            is(StatusCode.ABNORMAL),
-            containsString("Session Closed"));
+        clientSocket.assertReceivedCloseEvent(2000, is(StatusCode.ABNORMAL), containsString("Session Closed"));
 
         clientSessionTracker.assertClosedProperly(client);
     }
@@ -266,9 +265,7 @@ public class ClientCloseTest
         clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
         // client close should occur
-        clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
-            is(StatusCode.SHUTDOWN),
-            containsString("Timeout"));
+        clientSocket.assertReceivedCloseEvent(clientTimeout * 2, is(StatusCode.SHUTDOWN), containsString("Timeout"));
 
         // client idle timeout triggers close event on client ws-endpoint
         assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
@@ -344,7 +341,10 @@ public class ClientCloseTest
             // clients disconnect
             for (int i = 0; i < sessionCount; i++)
             {
-                clientSockets.get(i).assertReceivedCloseEvent(2000, is(StatusCode.SHUTDOWN), containsString("Container being shut down"));
+                clientSockets
+                    .get(i)
+                    .assertReceivedCloseEvent(
+                        2000, is(StatusCode.SHUTDOWN), containsString("Container being shut down"));
             }
 
             // ensure all Sessions are gone. connections are gone. etc. (client and server)

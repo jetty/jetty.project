@@ -15,4 +15,3 @@
  * Jetty Deploy : Webapp Deployment Providers
  */
 package org.eclipse.jetty.deploy.providers;
-

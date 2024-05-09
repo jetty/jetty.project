@@ -19,7 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.StartLog;
@@ -184,14 +183,16 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             {
                 extractLocation = extractLocation.replaceFirst("^[/\\\\]*", "");
                 if (!extractLocation.endsWith("/"))
-                    throw new IOException("Extract mode can only unpack to a directory, end your URL with a slash: " + location);
+                    throw new IOException(
+                        "Extract mode can only unpack to a directory, end your URL with a slash: " + location);
                 destination = _basehome.getBasePath().resolve(extractLocation);
 
                 if (Files.exists(destination) && !Files.isDirectory(destination))
                     throw new IOException("Destination already exists, and is not a directory: " + destination);
 
                 if (!destination.startsWith(_basehome.getBasePath()))
-                    throw new IOException("For security reasons, Jetty start is unable to extract outside of the ${jetty.base} - " + location);
+                    throw new IOException(
+                        "For security reasons, Jetty start is unable to extract outside of the ${jetty.base} - " + location);
             }
 
             FS.extract(localFile, destination);
@@ -305,8 +306,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
         return coords;
     }
 
-    protected void download(Coordinates coords, Path destination)
-        throws IOException
+    protected void download(Coordinates coords, Path destination) throws IOException
     {
         if (coords.version.endsWith("-SNAPSHOT"))
         {
@@ -371,8 +371,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
      * @param destination the destination File
      */
     @Override
-    protected void download(URI uri, Path destination)
-        throws IOException
+    protected void download(URI uri, Path destination) throws IOException
     {
         super.download(uri, destination);
     }

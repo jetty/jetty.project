@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
@@ -23,17 +28,12 @@ import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class DynamicListenerTests extends AbstractJettyHomeTest
 {
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee8", "ee9", "ee10"})
+    @ValueSource(strings =
+    {"ee8", "ee9", "ee10"})
     public void testSimpleWebAppWithJSP(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

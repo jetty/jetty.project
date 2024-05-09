@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.BufferUtil;
@@ -48,12 +47,9 @@ public abstract class ByteBufferChunk implements Content.Chunk
     @Override
     public String toString()
     {
-        return "%s@%x[l=%b,b=%s]".formatted(
-            getClass().getSimpleName(),
-            hashCode(),
-            isLast(),
-            BufferUtil.toDetailString(getByteBuffer())
-        );
+        return "%s@%x[l=%b,b=%s]"
+            .formatted(
+                getClass().getSimpleName(), hashCode(), isLast(), BufferUtil.toDetailString(getByteBuffer()));
     }
 
     public static class WithReferenceCount extends ByteBufferChunk
@@ -130,7 +126,7 @@ public abstract class ByteBufferChunk implements Content.Chunk
             boolean released = super.release();
             if (released)
             {
-                Consumer<ByteBuffer>  consumer = releaser.getAndSet(null);
+                Consumer<ByteBuffer> consumer = releaser.getAndSet(null);
                 if (consumer != null)
                     consumer.accept(getByteBuffer());
             }

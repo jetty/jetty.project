@@ -14,7 +14,6 @@
 package org.eclipse.jetty.deploy.bindings;
 
 import java.util.LinkedList;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;

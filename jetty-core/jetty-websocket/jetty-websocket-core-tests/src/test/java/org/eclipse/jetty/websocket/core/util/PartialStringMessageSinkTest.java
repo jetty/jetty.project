@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.websocket.core.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -22,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
@@ -34,13 +40,6 @@ import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PartialStringMessageSinkTest
 {
@@ -133,7 +132,8 @@ public class PartialStringMessageSinkTest
         messageSink.accept(new Frame(OpCode.TEXT, continuationUtf8Payload).setFin(true), continuationCallback);
 
         // Callback should fail and we only received the first frame which had no full character.
-        RuntimeException error = assertThrows(RuntimeException.class, () -> continuationCallback.block(5, TimeUnit.SECONDS));
+        RuntimeException error =
+            assertThrows(RuntimeException.class, () -> continuationCallback.block(5, TimeUnit.SECONDS));
         assertThat(error.getCause(), instanceOf(BadPayloadException.class));
         List<String> message = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
         assertThat(message.size(), is(1));
@@ -160,7 +160,10 @@ public class PartialStringMessageSinkTest
         public MethodHandle getMethodHandle() throws Exception
         {
             return MethodHandles.lookup()
-                .findVirtual(this.getClass(), "onMessage", MethodType.methodType(void.class, String.class, boolean.class))
+                .findVirtual(
+                    this.getClass(),
+                    "onMessage",
+                    MethodType.methodType(void.class, String.class, boolean.class))
                 .bindTo(this);
         }
     }

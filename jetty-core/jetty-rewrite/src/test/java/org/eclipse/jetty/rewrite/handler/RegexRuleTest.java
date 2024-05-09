@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
@@ -25,10 +28,6 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RegexRuleTest extends AbstractRuleTest
 {
@@ -48,21 +47,17 @@ public class RegexRuleTest extends AbstractRuleTest
             Arguments.of(".*\\.do|.*\\.jsp", "/hello.jsp"),
             Arguments.of(".*\\.do|.*\\.jsp", "/abc/hello.do"),
             Arguments.of(".*\\.do|.*\\.jsp", "/abc/hello.jsp"),
-
             Arguments.of("/abc/.*.htm|/def/.*.htm", "/abc/hello.htm"),
             Arguments.of("/abc/.*.htm|/def/.*.htm", "/abc/def/hello.htm"),
 
             // regex: /abc/*.jsp
             Arguments.of("/abc/.*.jsp", "/abc/hello.jsp"),
-            Arguments.of("/abc/.*.jsp", "/abc/def/hello.jsp")
-        );
+            Arguments.of("/abc/.*.jsp", "/abc/def/hello.jsp"));
     }
 
     public static Stream<Arguments> noMatches()
     {
-        return Stream.of(
-            Arguments.of("/abc/.*.jsp", "/hello.jsp")
-        );
+        return Stream.of(Arguments.of("/abc/.*.jsp", "/hello.jsp"));
     }
 
     private void start(RegexRule rule) throws Exception
@@ -86,11 +81,12 @@ public class RegexRuleTest extends AbstractRuleTest
         TestRegexRule rule = new TestRegexRule(pattern);
         start(rule);
 
-        String request = """
-            GET $U HTTP/1.1
-            Host: localhost
-                        
-            """.replace("$U", uri);
+        String request =
+            """
+                GET $U HTTP/1.1
+                Host: localhost
+
+                """.replace("$U", uri);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -104,11 +100,12 @@ public class RegexRuleTest extends AbstractRuleTest
         TestRegexRule rule = new TestRegexRule(pattern);
         start(rule);
 
-        String request = """
-            GET $U HTTP/1.1
-            Host: localhost
-                        
-            """.replace("$U", uri);
+        String request =
+            """
+                GET $U HTTP/1.1
+                Host: localhost
+
+                """.replace("$U", uri);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());

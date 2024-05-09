@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_STOP_PROPS;
+import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
+import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
+import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,16 +37,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.util.FileID;
-
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_STOP_PROPS;
-import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
-import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
-import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
 
 /**
  * Main start class.
@@ -132,7 +131,8 @@ public class Main
             {
                 // e.printStackTrace();
             }
-        }).start();
+        })
+            .start();
     }
 
     private void dumpClasspathWithVersions(String name, PrintStream out, Classpath classpath)
@@ -178,7 +178,8 @@ public class Main
         return "";
     }
 
-    public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException
+    public void invokeMain(ClassLoader classloader, StartArgs args)
+        throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException
     {
         if (args.getSelectedModules().isEmpty())
         {
@@ -319,13 +320,15 @@ public class Main
         Props argProps = args.getJettyEnvironment().getProperties();
         if (!argProps.containsKey(BaseHome.JETTY_HOME))
             argProps.setProperty(home);
-        argProps.setProperty(BaseHome.JETTY_HOME + ".uri",
+        argProps.setProperty(
+            BaseHome.JETTY_HOME + ".uri",
             normalizeURI(baseHome.getHomePath().toUri().toString()),
             home.source);
         Prop base = props.getProp(BaseHome.JETTY_BASE);
         if (!argProps.containsKey(BaseHome.JETTY_BASE))
             argProps.setProperty(base);
-        argProps.setProperty(BaseHome.JETTY_BASE + ".uri",
+        argProps.setProperty(
+            BaseHome.JETTY_BASE + ".uri",
             normalizeURI(baseHome.getBasePath().toUri().toString()),
             base.source);
 
@@ -336,7 +339,9 @@ public class Main
         unknownModules.removeAll(sortedSelectedModules);
         if (unknownModules.size() >= 1)
         {
-            throw new UsageException(UsageException.ERR_UNKNOWN, "Unknown module%s=[%s] List available with --list-modules",
+            throw new UsageException(
+                UsageException.ERR_UNKNOWN,
+                "Unknown module%s=[%s] List available with --list-modules",
                 unknownModules.size() > 1 ? 's' : "",
                 String.join(", ", unknownModules));
         }
@@ -357,8 +362,9 @@ public class Main
         {
             if (enabled.getVersion().isNewerThan(START_VERSION))
             {
-                throw new UsageException(UsageException.ERR_BAD_GRAPH, "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion() +
-                    "] which is newer than this version of jetty [" + START_VERSION + "]");
+                throw new UsageException(
+                    UsageException.ERR_BAD_GRAPH,
+                    "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion() + "] which is newer than this version of jetty [" + START_VERSION + "]");
             }
         }
 
@@ -482,7 +488,9 @@ public class Main
                 .filter(module -> !module.getJvmArgs().isEmpty())
                 .map(Module::getName)
                 .collect(Collectors.toList());
-            StartLog.warn("Forking second JVM due to forking module(s): %s. Use --dry-run to generate the command line to avoid forking.", execModules);
+            StartLog.warn(
+                "Forking second JVM due to forking module(s): %s. Use --dry-run to generate the command line to avoid forking.",
+                execModules);
 
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             StartLog.endStartLog();
@@ -505,9 +513,14 @@ public class Main
         {
             StartLog.warn("Unknown Arguments detected.  Consider using --dry-run or --exec");
             if (args.hasSystemProperties())
-                args.getSystemProperties().forEach((k, v) -> StartLog.warn("  Argument: -D%s=%s (interpreted as a System property, from %s)", k, System.getProperty(k), v));
+                args.getSystemProperties()
+                    .forEach((k, v) -> StartLog.warn(
+                        "  Argument: -D%s=%s (interpreted as a System property, from %s)",
+                        k, System.getProperty(k), v));
             if (args.hasJvmArgs())
-                args.getJvmArgSources().forEach((jvmArg, source) -> StartLog.warn("  Argument: %s (interpreted as a JVM argument, from %s)", jvmArg, source));
+                args.getJvmArgSources()
+                    .forEach((jvmArg, source) -> StartLog.warn(
+                        "  Argument: %s (interpreted as a JVM argument, from %s)", jvmArg, source));
         }
 
         ClassLoader cl = classpath.getClassLoader();

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.session.hazelcast;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStore;
 import org.eclipse.jetty.server.Server;
@@ -27,8 +29,6 @@ import org.eclipse.jetty.session.UnreadableSessionDataException;
 import org.eclipse.jetty.session.test.tools.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * HazelcastSessionDataStoreTest
@@ -71,7 +71,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         return _testHelper.checkSessionExists(data);
     }
-    
+
     @Override
     @Test
     public void testStoreSession() throws Exception

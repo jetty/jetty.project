@@ -13,31 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.eclipse.jetty.io.ConnectionStatistics;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.Invocable;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -52,6 +27,30 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class StatisticsHandlerTest
 {
@@ -129,12 +128,13 @@ public class StatisticsHandlerTest
         });
         _server.start();
 
-        String request = """
-            POST / HTTP/1.1\r
-            Host: localhost\r
-            Content-Length: 1000\r
-            \r
-            """;
+        String request =
+            """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Length: 1000\r
+                \r
+                """;
 
         try (StacklessLogging ignore = new StacklessLogging(Response.class))
         {
@@ -161,75 +161,78 @@ public class StatisticsHandlerTest
         AtomicReference<Throwable> exceptionRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         int expectedContentLength = 1000;
-        StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
+        StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(
+            new Handler.Abstract.NonBlocking()
             {
-                write(response, 0, new Callback()
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
                 {
-                    @Override
-                    public void succeeded()
-                    {
-                        callback.succeeded();
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        callback.failed(x);
-                        exceptionRef.set(x);
-                        latch.countDown();
-                    }
-                });
-                return true;
-            }
-
-            private void write(Response response, int counter, Callback finalCallback)
-            {
-                try
-                {
-                    Thread.sleep(1);
-                }
-                catch (InterruptedException e)
-                {
-                    // ignore
-                }
-
-                if (counter < expectedContentLength)
-                {
-                    Callback cb = new Callback()
+                    write(response, 0, new Callback()
                     {
                         @Override
                         public void succeeded()
                         {
-                            write(response, counter + 1, finalCallback);
+                            callback.succeeded();
+                            latch.countDown();
                         }
 
                         @Override
                         public void failed(Throwable x)
                         {
-                            finalCallback.failed(x);
+                            callback.failed(x);
+                            exceptionRef.set(x);
+                            latch.countDown();
                         }
-                    };
-                    response.write(false, ByteBuffer.allocate(1), cb);
+                    });
+                    return true;
                 }
-                else
+
+                private void write(Response response, int counter, Callback finalCallback)
                 {
-                    response.write(true, ByteBuffer.allocate(1), finalCallback);
+                    try
+                    {
+                        Thread.sleep(1);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        // ignore
+                    }
+
+                    if (counter < expectedContentLength)
+                    {
+                        Callback cb = new Callback()
+                        {
+                            @Override
+                            public void succeeded()
+                            {
+                                write(response, counter + 1, finalCallback);
+                            }
+
+                            @Override
+                            public void failed(Throwable x)
+                            {
+                                finalCallback.failed(x);
+                            }
+                        };
+                        response.write(false, ByteBuffer.allocate(1), cb);
+                    }
+                    else
+                    {
+                        response.write(true, ByteBuffer.allocate(1), finalCallback);
+                    }
                 }
-            }
-        }, 0, 1000);
+            },
+            0,
+            1000);
 
         _latchHandler.setHandler(mdrh);
         _server.start();
 
         String request = """
-                GET / HTTP/1.1
-                Host: localhost
-                
-                """;
+            GET / HTTP/1.1
+            Host: localhost
+
+            """;
 
         LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
 
@@ -323,12 +326,13 @@ public class StatisticsHandlerTest
         });
         _server.start();
 
-        String request = """
+        String request =
+            """
                 POST / HTTP/1.1
                 Host: localhost
                 Transfer-Encoding: chunked
                 Connection: close
-                
+
                 0a
                 0123456789
                 """;
@@ -432,7 +436,9 @@ public class StatisticsHandlerTest
     @Test
     public void testHandlingIncrementThenAcceptingIncrement() throws Exception
     {
-        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        CyclicBarrier[] barrier = {
+            new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)
+        };
         _statsHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -443,9 +449,9 @@ public class StatisticsHandlerTest
 
                 barrier[2].await();
                 barrier[3].await();
-                
+
                 callback.succeeded();
-                
+
                 barrier[4].await();
                 return true;
             }
@@ -489,7 +495,14 @@ public class StatisticsHandlerTest
     @Test
     public void testHandlingIncrementThenAsyncSuccessIncrement() throws Exception
     {
-        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        CyclicBarrier[] barrier = {
+            new CyclicBarrier(2),
+            new CyclicBarrier(2),
+            new CyclicBarrier(2),
+            new CyclicBarrier(2),
+            new CyclicBarrier(2),
+            new CyclicBarrier(2)
+        };
         _statsHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -513,7 +526,8 @@ public class StatisticsHandlerTest
                     {
                         callback.failed(x);
                     }
-                }).start();
+                })
+                    .start();
 
                 return true;
             }
@@ -575,11 +589,12 @@ public class StatisticsHandlerTest
 
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
-            String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
+            String request =
+                """
+                    GET / HTTP/1.1\r
+                    Host: localhost\r
+                    \r
+                    """;
             String response = _connector.getResponse(request);
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
@@ -615,11 +630,12 @@ public class StatisticsHandlerTest
 
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
-            String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
+            String request =
+                """
+                    GET / HTTP/1.1\r
+                    Host: localhost\r
+                    \r
+                    """;
             String response = _connector.getResponse(request);
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
@@ -658,7 +674,8 @@ public class StatisticsHandlerTest
                         // ignore
                     }
                     callback.failed(new IllegalStateException("expected"));
-                }).start();
+                })
+                    .start();
                 return true;
             }
         });
@@ -666,11 +683,12 @@ public class StatisticsHandlerTest
 
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
-            String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
+            String request =
+                """
+                    GET / HTTP/1.1\r
+                    Host: localhost\r
+                    \r
+                    """;
             String response = _connector.getResponse(request);
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
@@ -706,11 +724,12 @@ public class StatisticsHandlerTest
 
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
-            String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
+            String request =
+                """
+                    GET / HTTP/1.1\r
+                    Host: localhost\r
+                    \r
+                    """;
             String response = _connector.getResponse(request);
             assertThat(response, containsString("HTTP/1.1 200 OK"));
         }
@@ -805,14 +824,18 @@ public class StatisticsHandlerTest
             //      serialized on the return of the call to handle.   Perhaps we should wrap the callback for
             //      those times?
 
-            assertThat(_statsHandler.getRequestTimeTotal(), allOf(
-                greaterThan(TimeUnit.MILLISECONDS.toNanos(requestTime + wastedTime) * 3 / 4),
-                lessThan(TimeUnit.MILLISECONDS.toNanos(requestTime + wastedTime) * 5 / 4)));
+            assertThat(
+                _statsHandler.getRequestTimeTotal(),
+                allOf(
+                    greaterThan(TimeUnit.MILLISECONDS.toNanos(requestTime + wastedTime) * 3 / 4),
+                    lessThan(TimeUnit.MILLISECONDS.toNanos(requestTime + wastedTime) * 5 / 4)));
             assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
             assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 1.0);
-            assertThat(_statsHandler.getHandleTimeTotal(), allOf(
-                greaterThan(TimeUnit.MILLISECONDS.toNanos(handleTime + wastedTime) * 3 / 4),
-                lessThan(TimeUnit.MILLISECONDS.toNanos(handleTime + wastedTime) * 5 / 4)));
+            assertThat(
+                _statsHandler.getHandleTimeTotal(),
+                allOf(
+                    greaterThan(TimeUnit.MILLISECONDS.toNanos(handleTime + wastedTime) * 3 / 4),
+                    lessThan(TimeUnit.MILLISECONDS.toNanos(handleTime + wastedTime) * 5 / 4)));
             assertEquals(_statsHandler.getHandleTimeTotal(), _statsHandler.getHandleTimeMax());
             assertEquals(_statsHandler.getHandleTimeTotal(), _statsHandler.getHandleTimeMean(), 1.0);
         }

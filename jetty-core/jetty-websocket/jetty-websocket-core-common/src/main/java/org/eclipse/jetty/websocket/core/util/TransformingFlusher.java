@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.util;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StaticException;

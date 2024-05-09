@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.handlers;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class AbstractHandler extends Endpoint implements MessageHandler
 {

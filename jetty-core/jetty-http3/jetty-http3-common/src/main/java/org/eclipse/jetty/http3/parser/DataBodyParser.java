@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.parser;
 
 import java.nio.ByteBuffer;
 import java.util.function.BooleanSupplier;
-
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
@@ -122,6 +121,7 @@ public class DataBodyParser extends BodyParser
 
     private enum State
     {
-        INIT, DATA
+        INIT,
+        DATA
     }
 }

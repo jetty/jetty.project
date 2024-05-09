@@ -13,14 +13,22 @@
 
 package org.eclipse.jetty.ee9.session;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -35,15 +43,6 @@ import org.eclipse.jetty.session.test.AbstractSessionTestBase;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * NonClusteredSessionScavengingTest
@@ -66,14 +65,14 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
         String contextPath = "/";
         String servletMapping = "/server";
         int inactivePeriod = 3;
-        int scavengePeriod = 0; //turn off scavenging
+        int scavengePeriod = 0; // turn off scavenging
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
 
-        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod,
-            cacheFactory, storeFactory);
+        SessionTestSupport server1 =
+            new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context1 = server1.addContext(contextPath);
         context1.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionListener listener = new TestHttpSessionListener();
@@ -96,16 +95,18 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
 
-                //test session was created
+                // test session was created
                 SessionManager m1 = context1.getSessionHandler().getSessionManager();
                 assertEquals(1, m1.getSessionsCreated());
-                assertThat(listener.createdSessions, Matchers.contains(SessionTestSupport.extractSessionId(sessionCookie)));
+                assertThat(
+                    listener.createdSessions,
+                    Matchers.contains(SessionTestSupport.extractSessionId(sessionCookie)));
 
                 // Wait a while to ensure that the session should have expired, if the
-                //scavenger was running
+                // scavenger was running
                 pause(2 * inactivePeriod);
 
-                //check the session listener did not get called
+                // check the session listener did not get called
                 assertTrue(listener.destroyedSessions.isEmpty());
             }
             finally
@@ -131,10 +132,13 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
 
-        SessionTestSupport server = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod,
-            cacheFactory, storeFactory);
+        SessionTestSupport server =
+            new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
-        _dataStore = context.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore();
+        _dataStore = context.getSessionHandler()
+            .getSessionManager()
+            .getSessionCache()
+            .getSessionDataStore();
 
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "/";
@@ -147,7 +151,8 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
             client.start();
             try
             {
-                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=create");
+                ContentResponse response = client.GET(
+                    "http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
@@ -159,11 +164,14 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
 
                 // The session should not be there anymore, but we present an old cookie
                 // The server should create a new session.
-                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=old-create");
+                Request request = client.newRequest(
+                    "http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=old-create");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie2 = response.getHeaders().get("Set-Cookie");
-                assertNotEquals(SessionTestSupport.extractSessionId(sessionCookie), SessionTestSupport.extractSessionId(sessionCookie2));
+                assertNotEquals(
+                    SessionTestSupport.extractSessionId(sessionCookie),
+                    SessionTestSupport.extractSessionId(sessionCookie2));
             }
             finally
             {
@@ -188,10 +196,13 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
 
-        SessionTestSupport server = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod,
-            cacheFactory, storeFactory);
+        SessionTestSupport server =
+            new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
-        _dataStore = context.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore();
+        _dataStore = context.getSessionHandler()
+            .getSessionManager()
+            .getSessionCache()
+            .getSessionDataStore();
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "/";
 
@@ -203,8 +214,9 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
             client.start();
             try
             {
-                //create an immortal session
-                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=create");
+                // create an immortal session
+                ContentResponse response = client.GET(
+                    "http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
@@ -215,7 +227,8 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
                 assertTrue(_dataStore.exists(SessionTestSupport.extractSessionId(sessionCookie)));
 
                 // Test that the session is still there
-                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=old-test");
+                Request request = client.newRequest(
+                    "http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=old-test");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }
@@ -235,7 +248,8 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
         String id;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
             if ("create".equals(action))

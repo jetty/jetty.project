@@ -41,8 +41,7 @@ public class MockDataSource implements DataSource
     }
 
     @Override
-    public Connection getConnection(String username, String password)
-        throws SQLException
+    public Connection getConnection(String username, String password) throws SQLException
     {
         return null;
     }

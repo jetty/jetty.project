@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.jmx;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -55,12 +54,12 @@ public class ServerMBean extends Handler.AbstractMBean
     public String getUpTime()
     {
         Duration upTime = Duration.between(startup, Instant.now());
-        return "%d:%02d:%02d:%02d.%03d".formatted(
-            upTime.toDaysPart(),
-            upTime.toHoursPart(),
-            upTime.toMinutesPart(),
-            upTime.toSecondsPart(),
-            upTime.toMillisPart()
-        );
+        return "%d:%02d:%02d:%02d.%03d"
+            .formatted(
+                upTime.toDaysPart(),
+                upTime.toHoursPart(),
+                upTime.toMinutesPart(),
+                upTime.toSecondsPart(),
+                upTime.toMillisPart());
     }
 }

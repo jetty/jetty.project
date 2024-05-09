@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.docs.programming.client.http3;
 
+import static java.lang.System.Logger.Level.INFO;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -21,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
@@ -35,8 +36,6 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
 public class HTTP3ClientDocs
@@ -78,7 +77,10 @@ public class HTTP3ClientDocs
 
         // Connect to the server, the CompletableFuture will be
         // notified when the connection is succeeded (or failed).
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        CompletableFuture<Session.Client> sessionCF =
+            http3Client.connect(serverAddress, new Session.Client.Listener()
+            {
+            });
 
         // Block to obtain the Session.
         // Alternatively you can use the CompletableFuture APIs to avoid blocking.
@@ -116,22 +118,27 @@ public class HTTP3ClientDocs
         http3Client.start();
         // tag::newStream[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        CompletableFuture<Session.Client> sessionCF =
+            http3Client.connect(serverAddress, new Session.Client.Listener()
+            {
+            });
         Session.Client session = sessionCF.get();
 
         // Configure the request headers.
-        HttpFields requestHeaders = HttpFields.build()
-            .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
+        HttpFields requestHeaders = HttpFields.build().put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
 
         // The request metadata with method, URI and headers.
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
+        MetaData.Request request = new MetaData.Request(
+            "GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
 
         // The HTTP/3 HEADERS frame, with endStream=true
         // to signal that this request has no content.
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 
         // Open a Stream by sending the HEADERS frame.
-        session.newRequest(headersFrame, new Stream.Client.Listener() {});
+        session.newRequest(headersFrame, new Stream.Client.Listener()
+        {
+        });
         // end::newStream[]
     }
 
@@ -142,22 +149,27 @@ public class HTTP3ClientDocs
         http3Client.start();
         // tag::newStreamWithData[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        CompletableFuture<Session.Client> sessionCF =
+            http3Client.connect(serverAddress, new Session.Client.Listener()
+            {
+            });
         Session.Client session = sessionCF.get();
 
         // Configure the request headers.
-        HttpFields requestHeaders = HttpFields.build()
-            .put(HttpHeader.CONTENT_TYPE, "application/json");
+        HttpFields requestHeaders = HttpFields.build().put(HttpHeader.CONTENT_TYPE, "application/json");
 
         // The request metadata with method, URI and headers.
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
+        MetaData.Request request = new MetaData.Request(
+            "POST", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
 
         // The HTTP/3 HEADERS frame, with endStream=false to
         // signal that there will be more frames in this stream.
         HeadersFrame headersFrame = new HeadersFrame(request, false);
 
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newRequest(headersFrame, new Stream.Client.Listener() {});
+        CompletableFuture<Stream> streamCF = session.newRequest(headersFrame, new Stream.Client.Listener()
+        {
+        });
 
         // Block to obtain the Stream.
         // Alternatively you can use the CompletableFuture APIs to avoid blocking.
@@ -185,12 +197,15 @@ public class HTTP3ClientDocs
         HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        CompletableFuture<Session.Client> sessionCF =
+            http3Client.connect(serverAddress, new Session.Client.Listener()
+            {
+            });
         Session.Client session = sessionCF.get();
 
-        HttpFields requestHeaders = HttpFields.build()
-            .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
+        HttpFields requestHeaders = HttpFields.build().put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
+        MetaData.Request request = new MetaData.Request(
+            "GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 
         // tag::responseListener[]
@@ -244,12 +259,15 @@ public class HTTP3ClientDocs
         HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        CompletableFuture<Session.Client> sessionCF =
+            http3Client.connect(serverAddress, new Session.Client.Listener()
+            {
+            });
         Session.Client session = sessionCF.get();
 
-        HttpFields requestHeaders = HttpFields.build()
-            .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        HttpFields requestHeaders = HttpFields.build().put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
+        MetaData.Request request = new MetaData.Request(
+            "GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 
         // tag::reset[]

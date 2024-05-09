@@ -46,16 +46,14 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
      * @param options the option map
      */
     @Override
-    public void initialize(Subject subject,
-                           CallbackHandler callbackHandler,
-                           Map<String, ?> sharedState,
-                           Map<String, ?> options)
+    public void initialize(
+                           Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
     {
         try
         {
             super.initialize(subject, callbackHandler, sharedState, options);
 
-            //get the datasource jndi name
+            // get the datasource jndi name
             dbJNDIName = (String)options.get("dbJNDIName");
 
             InitialContext ic = new InitialContext();
@@ -75,8 +73,7 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
      * @see AbstractDatabaseLoginModule#getConnection()
      */
     @Override
-    public Connection getConnection()
-        throws Exception
+    public Connection getConnection() throws Exception
     {
         return dataSource.getConnection();
     }

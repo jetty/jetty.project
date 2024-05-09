@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.component.LifeCycle;
 
 public interface Scheduler extends LifeCycle

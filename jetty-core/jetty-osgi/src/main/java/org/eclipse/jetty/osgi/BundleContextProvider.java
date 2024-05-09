@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
@@ -78,8 +77,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             try
             {
                 String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-                if ((StringUtil.isBlank(serverName) && _serverName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) ||
-                    (!StringUtil.isBlank(serverName) && (serverName.equals(_serverName))))
+                if ((StringUtil.isBlank(serverName) && _serverName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) || (!StringUtil.isBlank(serverName) && (serverName.equals(_serverName))))
                 {
                     if (bundleAdded(bundle))
                         return bundle;
@@ -115,15 +113,19 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
     protected void doStart() throws Exception
     {
         String serverName = (String)getServer().getAttribute(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-        
-        //Track bundles that are ContextHandlers that should be deployed
-        _tracker = new ContextBundleTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), serverName);
+
+        // Track bundles that are ContextHandlers that should be deployed
+        _tracker = new ContextBundleTracker(
+            FrameworkUtil.getBundle(this.getClass()).getBundleContext(), serverName);
         _tracker.open();
 
-        //register as an osgi service for deploying contexts defined in a bundle, advertising the name of the jetty Server instance we are related to
+        // register as an osgi service for deploying contexts defined in a bundle, advertising the name of the jetty
+        // Server instance we are related to
         Dictionary<String, String> properties = new Hashtable<String, String>();
         properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, serverName);
-        _serviceRegForBundles = FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(BundleProvider.class.getName(), this, properties);
+        _serviceRegForBundles = FrameworkUtil.getBundle(this.getClass())
+            .getBundleContext()
+            .registerService(BundleProvider.class.getName(), this, properties);
         super.doStart();
     }
 
@@ -132,7 +134,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
     {
         _tracker.close();
 
-        //unregister ourselves
+        // unregister ourselves
         if (_serviceRegForBundles != null)
         {
             try
@@ -154,40 +156,44 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
     {
         if (bundle == null)
             return false;
-        
+
         if (!isDeployable(bundle))
             return false;
 
-        //If the bundle defines a Web-ContextPath then its probably a webapp and the BundleWebAppProvider should deploy it
+        // If the bundle defines a Web-ContextPath then its probably a webapp and the BundleWebAppProvider should deploy
+        // it
         if (bundle.getHeaders().get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("BundleContextProvider ignoring bundle {} with {} set", bundle.getSymbolicName(), OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+                LOG.debug(
+                    "BundleContextProvider ignoring bundle {} with {} set",
+                    bundle.getSymbolicName(),
+                    OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
             return false;
         }
-        
-        //comma separated list of context xml files, each of which is a separate ContextHandler to deploy
+
+        // comma separated list of context xml files, each of which is a separate ContextHandler to deploy
         String contextFiles = bundle.getHeaders().get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
 
-        //no contexts to deploy, ignore it
+        // no contexts to deploy, ignore it
         if (contextFiles == null)
             return false;
 
-        //is the bundle destined for my environment?
+        // is the bundle destined for my environment?
         String jettyHome = (String)getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
         Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
-        
+
         boolean added = false;
-     
+
         String[] tmp = contextFiles.split("[,;]");
         for (String contextFile : tmp)
-        {            
+        {
             OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
             URI contextFilePath = Util.resolvePathAsLocalizedURI(contextFile, app.getBundle(), jettyHomePath);
-            
-            //set up the single context file for this deployment
+
+            // set up the single context file for this deployment
             app.getProperties().put(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toString());
-            
+
             _appMap.put(app.getPath(), app);
             List<App> apps = _bundleMap.get(bundle);
             if (apps == null)
@@ -200,7 +206,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             added = true;
         }
 
-        return added; //true if even 1 context from this bundle was added
+        return added; // true if even 1 context from this bundle was added
     }
 
     /**
@@ -225,6 +231,6 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
                 }
             }
         }
-        return removed; //true if even 1 context was removed associated with this bundle
+        return removed; // true if even 1 context was removed associated with this bundle
     }
 }

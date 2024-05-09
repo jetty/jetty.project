@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server.sockets.pong;
 
-import java.nio.charset.StandardCharsets;
-
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.PongMessage;
 import jakarta.websocket.Session;
+import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class PongMessageEndpoint extends Endpoint implements MessageHandler.Whole<PongMessage>

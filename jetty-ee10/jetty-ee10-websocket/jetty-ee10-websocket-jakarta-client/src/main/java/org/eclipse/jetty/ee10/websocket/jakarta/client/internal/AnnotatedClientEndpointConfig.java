@@ -13,18 +13,18 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.client.internal;
 
-import java.util.Collections;
-import java.util.List;
-
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.DeploymentException;
+import java.util.Collections;
+import java.util.List;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.ClientEndpointConfigWrapper;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 public class AnnotatedClientEndpointConfig extends ClientEndpointConfigWrapper
 {
-    public AnnotatedClientEndpointConfig(ClientEndpoint anno, WebSocketComponents components) throws DeploymentException
+    public AnnotatedClientEndpointConfig(ClientEndpoint anno, WebSocketComponents components)
+        throws DeploymentException
     {
         try
         {
@@ -40,8 +40,7 @@ public class AnnotatedClientEndpointConfig extends ClientEndpointConfigWrapper
         }
         catch (Throwable t)
         {
-            String err = "Unable to instantiate ClientEndpoint.configurator() of " + anno.configurator().getName() +
-                " defined as annotation in " + anno.getClass().getName();
+            String err = "Unable to instantiate ClientEndpoint.configurator() of " + anno.configurator().getName() + " defined as annotation in " + anno.getClass().getName();
             throw new DeploymentException(err, t);
         }
     }

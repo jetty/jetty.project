@@ -28,7 +28,6 @@ public class ClassA
 
     public static class Foo
     {
-
     }
 
     @Sample(7)

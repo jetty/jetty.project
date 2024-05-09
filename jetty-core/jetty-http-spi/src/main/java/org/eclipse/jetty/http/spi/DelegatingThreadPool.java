@@ -17,14 +17,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.TryExecutor;
 
-public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPool, TryExecutor, VirtualThreads.Configurable
+public class DelegatingThreadPool extends ContainerLifeCycle
+    implements ThreadPool, TryExecutor, VirtualThreads.Configurable
 {
     private Executor _executor; // memory barrier provided by start/stop semantics
     private TryExecutor _tryExecutor;
@@ -116,8 +116,7 @@ public class DelegatingThreadPool extends ContainerLifeCycle implements ThreadPo
         {
             final ThreadPoolExecutor tpe = (ThreadPoolExecutor)executor;
             // getActiveCount() locks the thread pool, so execute it last
-            return tpe.getPoolSize() == tpe.getMaximumPoolSize() &&
-                tpe.getQueue().size() >= tpe.getPoolSize() - tpe.getActiveCount();
+            return tpe.getPoolSize() == tpe.getMaximumPoolSize() && tpe.getQueue().size() >= tpe.getPoolSize() - tpe.getActiveCount();
         }
         return false;
     }

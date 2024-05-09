@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
@@ -328,7 +327,8 @@ public class Parser
         boolean isDataFrame = OpCode.isDataFrame(OpCode.getOpCode(firstByte));
 
         // Always autoFragment data frames if payloadLength is greater than maxFrameSize.
-        // We have already checked payload size in checkFrameSize, so we know we can autoFragment if larger than maxFrameSize.
+        // We have already checked payload size in checkFrameSize, so we know we can autoFragment if larger than
+        // maxFrameSize.
         long maxFrameSize = configuration.getMaxFrameSize();
         if (maxFrameSize > 0 && isDataFrame && payloadLength > maxFrameSize)
             return autoFragment(buffer, (int)Math.min(available, maxFrameSize));
@@ -406,7 +406,8 @@ public class Parser
     @Override
     public String toString()
     {
-        return String
-            .format("Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]", hashCode(), state, cursor, firstByte, mask == null ? "-" : StringUtil.toHexString(mask), payloadLength);
+        return String.format(
+            "Parser@%x[s=%s,c=%d,o=0x%x,m=%s,l=%d]",
+            hashCode(), state, cursor, firstByte, mask == null ? "-" : StringUtil.toHexString(mask), payloadLength);
     }
 }

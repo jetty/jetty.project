@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.util.Set;
-
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
@@ -49,7 +48,7 @@ public interface SessionCache extends LifeCycle
 {
     public static final int NEVER_EVICT = -1;
     public static final int EVICT_ON_SESSION_EXIT = 0;
-    public static final int EVICT_ON_INACTIVITY = 1; //any number equal or greater is time in seconds
+    public static final int EVICT_ON_INACTIVITY = 1; // any number equal or greater is time in seconds
 
     /**
      * @param context the {@link SessionContext} to use for this cache
@@ -88,12 +87,13 @@ public interface SessionCache extends LifeCycle
      * @return the Session after changing its id
      * @throws Exception if any error occurred
      */
-    ManagedSession renewSessionId(String oldId, String newId, String oldExtendedId, String newExtendedId) throws Exception;
-    
+    ManagedSession renewSessionId(String oldId, String newId, String oldExtendedId, String newExtendedId)
+        throws Exception;
+
     /**
      * Adds a new Session, with a never-before-used id,
      *  to the cache.
-     * 
+     *
      * @param id id
      * @param session session
      */
@@ -121,7 +121,7 @@ public interface SessionCache extends LifeCycle
 
     /**
      * Called when a response is about to be committed. The
-     * cache can write the session to ensure that the 
+     * cache can write the session to ensure that the
      * SessionDataStore contains changes to the session
      * that occurred during the lifetime of the request. This
      * can help ensure that if a subsequent request goes to a
@@ -129,7 +129,7 @@ public interface SessionCache extends LifeCycle
      * changes via the shared store.
      */
     void commit(ManagedSession session) throws Exception;
-    
+
     /**
      * Check to see if a Session is in the cache. Does NOT consult
      * the SessionDataStore.
@@ -252,7 +252,7 @@ public interface SessionCache extends LifeCycle
      * @return if <code>true</code> unloadable session will be deleted
      */
     boolean isRemoveUnloadableSessions();
-    
+
     /**
      * If true, a dirty session will be written to the SessionDataStore
      * just before a response is returned to the client. This ensures
@@ -260,19 +260,19 @@ public interface SessionCache extends LifeCycle
      * node see the changed session data.
      */
     void setFlushOnResponseCommit(boolean flushOnResponse);
-    
+
     /**
      * @return <code>true</code> if dirty sessions should be written
      * before the response is committed.
      */
     boolean isFlushOnResponseCommit();
-    
+
     /**
      * If true, all existing sessions in the cache will be invalidated when
      * the server shuts down. Default is false.
      * @param invalidateOnShutdown true invalidate all sessions in cache on server shutdown
      */
     void setInvalidateOnShutdown(boolean invalidateOnShutdown);
-    
+
     boolean isInvalidateOnShutdown();
 }

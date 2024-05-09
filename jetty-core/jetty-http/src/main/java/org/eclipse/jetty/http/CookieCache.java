@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * Cookie parser
  * @deprecated Use {@code org.eclipse.jetty.server.CookieCache}
  */
-@Deprecated (forRemoval = true)
+@Deprecated(forRemoval = true)
 public class CookieCache implements CookieParser.Handler, ComplianceViolation.Listener
 {
     protected static final Logger LOG = LoggerFactory.getLogger(CookieCache.class);
@@ -64,7 +63,13 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
     }
 
     @Override
-    public void addCookie(String cookieName, String cookieValue, int cookieVersion, String cookieDomain, String cookiePath, String cookieComment)
+    public void addCookie(
+                          String cookieName,
+                          String cookieValue,
+                          int cookieVersion,
+                          String cookieDomain,
+                          String cookiePath,
+                          String cookieComment)
     {
         if (StringUtil.isEmpty(cookieDomain) && StringUtil.isEmpty(cookiePath) && cookieVersion <= 0 && StringUtil.isEmpty(cookieComment))
             _cookieList.add(HttpCookie.from(cookieName, cookieValue));

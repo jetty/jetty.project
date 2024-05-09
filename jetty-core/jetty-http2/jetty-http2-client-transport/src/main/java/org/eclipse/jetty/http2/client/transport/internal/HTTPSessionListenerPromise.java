@@ -17,7 +17,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicMarkableReference;
-
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -31,7 +30,8 @@ import org.eclipse.jetty.util.Promise;
 
 public class HTTPSessionListenerPromise implements Session.Listener, Promise<Session>
 {
-    private final AtomicMarkableReference<HttpConnectionOverHTTP2> connection = new AtomicMarkableReference<>(null, false);
+    private final AtomicMarkableReference<HttpConnectionOverHTTP2> connection =
+        new AtomicMarkableReference<>(null, false);
     private final Map<String, Object> context;
 
     public HTTPSessionListenerPromise(Map<String, Object> context)
@@ -74,7 +74,8 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
     private void onServerPreface(Session session)
     {
         HTTP2Connection http2Connection = (HTTP2Connection)context.get(HTTP2Connection.class.getName());
-        HttpConnectionOverHTTP2 connection = (HttpConnectionOverHTTP2)newConnection(destination(), session, http2Connection);
+        HttpConnectionOverHTTP2 connection =
+            (HttpConnectionOverHTTP2)newConnection(destination(), session, http2Connection);
         if (this.connection.compareAndSet(null, connection, false, true))
         {
             // The connection promise must be called synchronously

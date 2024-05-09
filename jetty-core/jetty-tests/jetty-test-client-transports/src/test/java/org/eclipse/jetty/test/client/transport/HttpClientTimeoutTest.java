@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -23,7 +32,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
-
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
@@ -52,15 +60,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentest4j.TestAbortedException;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class HttpClientTimeoutTest extends AbstractTest
 {
     @ParameterizedTest
@@ -86,8 +85,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         start(transport, new TimeoutHandler(2 * timeout));
 
         CountDownLatch latch = new CountDownLatch(1);
-        Request request = client.newRequest(newURI(transport))
-            .timeout(timeout, TimeUnit.MILLISECONDS);
+        Request request = client.newRequest(newURI(transport)).timeout(timeout, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
             assertTrue(result.isFailed());
@@ -108,8 +106,7 @@ public class HttpClientTimeoutTest extends AbstractTest
 
         // The first request has a long timeout
         CountDownLatch firstLatch = new CountDownLatch(1);
-        Request request = client.newRequest(newURI(transport))
-            .timeout(4 * timeout, TimeUnit.MILLISECONDS);
+        Request request = client.newRequest(newURI(transport)).timeout(4 * timeout, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
             assertFalse(result.isFailed());
@@ -118,8 +115,7 @@ public class HttpClientTimeoutTest extends AbstractTest
 
         // Second request has a short timeout and should fail in the queue
         CountDownLatch secondLatch = new CountDownLatch(1);
-        request = client.newRequest(newURI(transport))
-            .timeout(timeout, TimeUnit.MILLISECONDS);
+        request = client.newRequest(newURI(transport)).timeout(timeout, TimeUnit.MILLISECONDS);
         request.send(result ->
         {
             assertTrue(result.isFailed());
@@ -230,16 +226,19 @@ public class HttpClientTimeoutTest extends AbstractTest
         client = new HttpClient(newHttpClientTransport(transport))
         {
             @Override
-            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(
+                                                                         SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
-                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                return new SslClientConnectionFactory(
+                    sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine)
+                        return new SslConnection(
+                            getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine)
                         {
                             @Override
                             protected boolean onReadTimeout(TimeoutException timeout)
@@ -258,8 +257,7 @@ public class HttpClientTimeoutTest extends AbstractTest
 
         assertThrows(TimeoutException.class, () ->
         {
-            client.newRequest(newURI(transport))
-                .send();
+            client.newRequest(newURI(transport)).send();
         });
         assertFalse(sslIdle.get());
     }
@@ -296,12 +294,11 @@ public class HttpClientTimeoutTest extends AbstractTest
 
         CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest(host, port);
-        request.scheme(newURI(transport).getScheme())
-            .send(result ->
-            {
-                if (result.isFailed())
-                    latch.countDown();
-            });
+        request.scheme(newURI(transport).getScheme()).send(result ->
+        {
+            if (result.isFailed())
+                latch.countDown();
+        });
 
         assertTrue(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
         assertNotNull(request.getAbortCause());
@@ -354,21 +351,18 @@ public class HttpClientTimeoutTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(1);
         Request request = client.newRequest(host, port);
         String scheme = newURI(transport).getScheme();
-        request.scheme(scheme)
-            .send(result ->
+        request.scheme(scheme).send(result ->
+        {
+            if (result.isFailed())
             {
-                if (result.isFailed())
+                // Retry
+                client.newRequest(host, port).scheme(scheme).send(retryResult ->
                 {
-                    // Retry
-                    client.newRequest(host, port)
-                        .scheme(scheme)
-                        .send(retryResult ->
-                        {
-                            if (retryResult.isFailed())
-                                latch.countDown();
-                        });
-                }
-            });
+                    if (retryResult.isFailed())
+                        latch.countDown();
+                });
+            }
+        });
 
         assertTrue(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
         assertNotNull(request.getAbortCause());
@@ -404,10 +398,9 @@ public class HttpClientTimeoutTest extends AbstractTest
         // TODO: assert a more specific Throwable
         assertThrows(Exception.class, () ->
         {
-            request.timeout(timeout, TimeUnit.MILLISECONDS)
-                .send(result ->
-                {
-                });
+            request.timeout(timeout, TimeUnit.MILLISECONDS).send(result ->
+            {
+            });
         });
 
         Thread.sleep(2 * timeout);
@@ -424,7 +417,11 @@ public class HttpClientTimeoutTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(
+                                  org.eclipse.jetty.server.Request request,
+                                  org.eclipse.jetty.server.Response response,
+                                  Callback callback)
+                throws Exception
             {
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     Thread.sleep(3 * timeout);
@@ -461,7 +458,11 @@ public class HttpClientTimeoutTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(
+                                  org.eclipse.jetty.server.Request request,
+                                  org.eclipse.jetty.server.Response response,
+                                  Callback callback)
+                throws Exception
             {
                 if (org.eclipse.jetty.server.Request.getPathInContext(request).startsWith("/one"))
                     serverLatch.await();
@@ -474,14 +475,12 @@ public class HttpClientTimeoutTest extends AbstractTest
 
         // Send the first request so that the others get queued.
         CountDownLatch latch1 = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
-            .path("/one")
-            .send(result ->
-            {
-                Assertions.assertTrue(result.isSucceeded());
-                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
-                latch1.countDown();
-            });
+        client.newRequest(newURI(transport)).path("/one").send(result ->
+        {
+            Assertions.assertTrue(result.isSucceeded());
+            Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+            latch1.countDown();
+        });
 
         // Queue a second request, it should expire in the queue.
         long timeout = 1000;
@@ -506,7 +505,8 @@ public class HttpClientTimeoutTest extends AbstractTest
             .send(result ->
             {
                 Assertions.assertTrue(result.isSucceeded());
-                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                Assertions.assertEquals(
+                    HttpStatus.OK_200, result.getResponse().getStatus());
                 latch3.countDown();
             });
 
@@ -553,7 +553,9 @@ public class HttpClientTimeoutTest extends AbstractTest
         }
 
         @Override
-        public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean handle(
+                              org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            throws Exception
         {
             TimeUnit.MILLISECONDS.sleep(timeout);
             Content.copy(request, response, callback);

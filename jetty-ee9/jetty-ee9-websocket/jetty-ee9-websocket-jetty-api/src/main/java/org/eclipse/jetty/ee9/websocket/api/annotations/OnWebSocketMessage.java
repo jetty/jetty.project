@@ -19,7 +19,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketPartialListener;
 
@@ -60,7 +59,7 @@ import org.eclipse.jetty.ee9.websocket.api.WebSocketPartialListener;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value =
-    {ElementType.METHOD})
+{ElementType.METHOD})
 public @interface OnWebSocketMessage
 {
     /* no config */

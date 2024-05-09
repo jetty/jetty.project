@@ -40,7 +40,8 @@ public class SecurityUtils
             // Lookup first the new API, since for Java versions where both exists, the
             // new API delegates to the old API (for example Java 18, 19 and 20).
             // Otherwise (Java 17), lookup the old API.
-            return lookup.findStatic(Subject.class, "callAs", MethodType.methodType(Object.class, Subject.class, Callable.class));
+            return lookup.findStatic(
+                Subject.class, "callAs", MethodType.methodType(Object.class, Subject.class, Callable.class));
         }
         catch (Throwable x)
         {
@@ -51,7 +52,8 @@ public class SecurityUtils
                 MethodHandle doAs = lookup.findStatic(Subject.class, "doAs", oldSignature);
                 // Convert the Callable used in the new API to the PrivilegedAction used in the old API.
                 MethodType convertSignature = MethodType.methodType(PrivilegedAction.class, Callable.class);
-                MethodHandle converter = lookup.findStatic(SecurityUtils.class, "callableToPrivilegedAction", convertSignature);
+                MethodHandle converter =
+                    lookup.findStatic(SecurityUtils.class, "callableToPrivilegedAction", convertSignature);
                 return MethodHandles.filterArguments(doAs, 1, converter);
             }
             catch (Throwable t)
@@ -68,7 +70,8 @@ public class SecurityUtils
             // Use reflection to work with Java versions that have and don't have AccessController.
             Class<?> klass = ClassLoader.getPlatformClassLoader().loadClass("java.security.AccessController");
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            return lookup.findStatic(klass, "doPrivileged", MethodType.methodType(Object.class, PrivilegedAction.class));
+            return lookup.findStatic(
+                klass, "doPrivileged", MethodType.methodType(Object.class, PrivilegedAction.class));
         }
         catch (Throwable x)
         {
@@ -107,8 +110,7 @@ public class SecurityUtils
             return;
         try
         {
-            securityManager.getClass().getMethod("checkPermission")
-                .invoke(securityManager, permission);
+            securityManager.getClass().getMethod("checkPermission").invoke(securityManager, permission);
         }
         catch (SecurityException x)
         {

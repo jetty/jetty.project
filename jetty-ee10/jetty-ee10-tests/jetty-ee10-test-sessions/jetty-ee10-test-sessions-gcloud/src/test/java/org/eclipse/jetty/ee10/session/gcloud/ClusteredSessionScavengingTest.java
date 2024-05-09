@@ -25,7 +25,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
 
-    public GCloudSessionTestSupport testSupport = new GCloudSessionTestSupport(getClass().getSimpleName());
+    public GCloudSessionTestSupport testSupport =
+        new GCloudSessionTestSupport(getClass().getSimpleName());
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()

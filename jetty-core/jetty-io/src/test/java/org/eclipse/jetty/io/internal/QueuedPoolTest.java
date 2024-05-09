@@ -13,13 +13,6 @@
 
 package org.eclipse.jetty.io.internal;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
-import org.eclipse.jetty.util.Pool;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -29,6 +22,12 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import org.eclipse.jetty.util.Pool;
+import org.junit.jupiter.api.Test;
 
 public class QueuedPoolTest
 {
@@ -266,9 +265,7 @@ public class QueuedPoolTest
         assertThat(pool.stream().count(), is(0L));
         pool.reserve().enable("aaa", false);
         pool.reserve().enable("bbb", false);
-        List<String> objects = pool.stream()
-            .map(Pool.Entry::getPooled)
-            .toList();
+        List<String> objects = pool.stream().map(Pool.Entry::getPooled).toList();
         assertThat(objects, equalTo(Arrays.asList("aaa", "bbb")));
         assertThat(pool.size(), is(2));
     }

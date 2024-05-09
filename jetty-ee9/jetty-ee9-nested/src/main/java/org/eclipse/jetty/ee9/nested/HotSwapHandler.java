@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.util.List;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
 import org.eclipse.jetty.server.Server;
 
 /**
@@ -85,7 +84,8 @@ public class HotSwapHandler extends AbstractHandlerContainer
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         Handler handler = _handler;
         if (handler != null && isStarted() && handler.isStarted())

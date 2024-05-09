@@ -15,7 +15,6 @@ package org.eclipse.jetty.client.transport;
 
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;

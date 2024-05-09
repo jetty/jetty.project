@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.XmlClientConfigBuilder;
@@ -25,6 +22,8 @@ import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import java.io.IOException;
+import java.util.Arrays;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
@@ -37,12 +36,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Factory to construct {@link HazelcastSessionDataStore}
  */
-public class HazelcastSessionDataStoreFactory
-    extends AbstractSessionDataStoreFactory
+public class HazelcastSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     implements SessionDataStoreFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(HazelcastSessionDataStoreFactory.class);
-    
+
     private String hazelcastInstanceName = "JETTY_DISTRIBUTED_SESSION_INSTANCE";
 
     private boolean onlyClient;
@@ -74,8 +72,7 @@ public class HazelcastSessionDataStoreFactory
     }
 
     @Override
-    public SessionDataStore getSessionDataStore(SessionManager sessionManager)
-        throws Exception
+    public SessionDataStore getSessionDataStore(SessionManager sessionManager) throws Exception
     {
         HazelcastSessionDataStore hazelcastSessionDataStore = new HazelcastSessionDataStore();
 
@@ -118,11 +115,12 @@ public class HazelcastSessionDataStoreFactory
                             LOG.warn("Both configurationLocation and clientConfig are set, using clientConfig");
                             config = clientConfig;
                         }
-                        if (config.getSerializationConfig().getSerializerConfigs().stream().noneMatch(s ->
-                            SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
-                            LOG.warn("Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
+                        if (config.getSerializationConfig().getSerializerConfigs().stream()
+                            .noneMatch(s -> SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
+                            LOG.warn(
+                                "Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
                     }
-                    
+
                     hazelcastInstance = HazelcastClient.newHazelcastClient(config);
                 }
                 else
@@ -166,9 +164,10 @@ public class HazelcastSessionDataStoreFactory
                             LOG.warn("Both configurationLocation and serverConfig are set, using serverConfig");
                             config = serverConfig;
                         }
-                        if (config.getSerializationConfig().getSerializerConfigs().stream().noneMatch(s ->
-                            SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
-                            LOG.warn("Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
+                        if (config.getSerializationConfig().getSerializerConfigs().stream()
+                            .noneMatch(s -> SessionData.class.getName().equals(s.getTypeClassName()) && s.getImplementation() instanceof SessionDataSerializer))
+                            LOG.warn(
+                                "Hazelcast xml config is missing org.eclipse.jetty.hazelcast.session.SessionDataSerializer - sessions may not serialize correctly");
                     }
                     config.setInstanceName(hazelcastInstanceName);
                     hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance(config);

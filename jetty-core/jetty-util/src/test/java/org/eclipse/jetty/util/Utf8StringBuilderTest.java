@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -23,21 +33,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class Utf8StringBuilderTest
@@ -310,7 +309,8 @@ public class Utf8StringBuilderTest
         sources.add(Arguments.of("00", "\u0000", matchJavaBehavior)); // null control char
         sources.add(Arguments.of("E282AC", "€", matchJavaBehavior)); // euro symbol
         sources.add(Arguments.of("EFBFBD", "�", matchJavaBehavior)); // the replacement character itself
-        // "overlong" UTF-8 sequences - (the utf-8 codepage specifies that C0/C1 should be rejected for "overlong" encoding)
+        // "overlong" UTF-8 sequences - (the utf-8 codepage specifies that C0/C1 should be rejected for "overlong"
+        // encoding)
         // "hi" (ascii) is bytes 0x68 0x69, which can be represented in overlong encoding of
         // C1 (11000001) + A8 (10101000) = 'h'
         // C1 (11000001) + A9 (10101001) = 'i'
@@ -326,12 +326,12 @@ public class Utf8StringBuilderTest
         sources.add(Arguments.of("C328", "�(", matchJavaBehavior)); // incomplete sequence followed by normal char
         sources.add(Arguments.of("A0A1", "��", matchJavaBehavior)); // invalid 2 octet sequence
         sources.add(Arguments.of("E228A1", "�(�", matchJavaBehavior)); // incomplete + normal + incomplete
-        sources.add(Arguments.of("E28228", "�(", matchJavaBehavior));  // invalid 3 octet sequence
+        sources.add(Arguments.of("E28228", "�(", matchJavaBehavior)); // invalid 3 octet sequence
         sources.add(Arguments.of("F0288CBC", "�(��", matchJavaBehavior)); // invalid 4 octet sequence
         sources.add(Arguments.of("F09028BC", "�(�", matchJavaBehavior)); // invalid 4 octet sequence
-        sources.add(Arguments.of("F0288C28", "�(�(", matchJavaBehavior));  // invalid 4 octet sequence
-        sources.add(Arguments.of("F8A1A1A1A1", "�����", matchJavaBehavior));  // valid sequence, but not unicode
-        sources.add(Arguments.of("FCA1A1A1A1A1", "������", matchJavaBehavior));  // valid sequence, but not unicode
+        sources.add(Arguments.of("F0288C28", "�(�(", matchJavaBehavior)); // invalid 4 octet sequence
+        sources.add(Arguments.of("F8A1A1A1A1", "�����", matchJavaBehavior)); // valid sequence, but not unicode
+        sources.add(Arguments.of("FCA1A1A1A1A1", "������", matchJavaBehavior)); // valid sequence, but not unicode
         sources.add(Arguments.of("F8A1A1A1", "����", matchJavaBehavior)); // F8 codepage not supported
         sources.add(Arguments.of("C0AF", "��", matchJavaBehavior));
         sources.add(Arguments.of("F08080AF", "����", matchJavaBehavior));
@@ -376,7 +376,7 @@ public class Utf8StringBuilderTest
         }
 
         Utf8StringBuilder utf8Builder = new Utf8StringBuilder();
-        for (byte b: inputBytes)
+        for (byte b : inputBytes)
         {
             try
             {

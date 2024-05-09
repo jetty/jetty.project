@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.Part;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -37,10 +40,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.Part;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
@@ -71,7 +70,8 @@ import org.slf4j.LoggerFactory;
 class MultiPartInputStreamLegacyParser implements MultiPart.Parser
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartInputStreamLegacyParser.class);
-    public static final MultipartConfigElement __DEFAULT_MULTIPART_CONFIG = new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
+    public static final MultipartConfigElement __DEFAULT_MULTIPART_CONFIG =
+        new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
     public static final MultiMap<Part> EMPTY_MAP = new MultiMap<>(Collections.emptyMap());
     private final int _maxParts;
     private int _numParts;
@@ -109,8 +109,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
         protected long _size = 0;
         protected boolean _temporary = true;
 
-        public MultiPart(String name, String filename)
-            throws IOException
+        public MultiPart(String name, String filename) throws IOException
         {
             _name = name;
             _filename = filename;
@@ -119,7 +118,8 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
         @Override
         public String toString()
         {
-            return String.format("Part{n=%s,fn=%s,ct=%s,s=%d,t=%b,f=%s}", _name, _filename, _contentType, _size, _temporary, _file);
+            return String.format(
+                "Part{n=%s,fn=%s,ct=%s,s=%d,t=%b,f=%s}", _name, _filename, _contentType, _size, _temporary, _file);
         }
 
         protected void setContentType(String contentType)
@@ -127,12 +127,11 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             _contentType = contentType;
         }
 
-        protected void open()
-            throws IOException
+        protected void open() throws IOException
         {
-            //We will either be writing to a file, if it has a filename on the content-disposition
-            //and otherwise a byte-array-input-stream, OR if we exceed the getFileSizeThreshold, we
-            //will need to change to write to a file.
+            // We will either be writing to a file, if it has a filename on the content-disposition
+            // and otherwise a byte-array-input-stream, OR if we exceed the getFileSizeThreshold, we
+            // will need to change to write to a file.
             if (isWriteFilesWithFilenames() && _filename != null && _filename.trim().length() > 0)
             {
                 createFile();
@@ -145,14 +144,12 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             }
         }
 
-        protected void close()
-            throws IOException
+        protected void close() throws IOException
         {
             _out.close();
         }
 
-        protected void write(int b)
-            throws IOException
+        protected void write(int b) throws IOException
         {
             if (MultiPartInputStreamLegacyParser.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartInputStreamLegacyParser.this._config.getMaxFileSize())
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
@@ -164,8 +161,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             _size++;
         }
 
-        protected void write(byte[] bytes, int offset, int length)
-            throws IOException
+        protected void write(byte[] bytes, int offset, int length) throws IOException
         {
             if (MultiPartInputStreamLegacyParser.this._config.getMaxFileSize() > 0 && _size + length > MultiPartInputStreamLegacyParser.this._config.getMaxFileSize())
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
@@ -177,8 +173,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             _size += length;
         }
 
-        protected void createFile()
-            throws IOException
+        protected void createFile() throws IOException
         {
             Path parent = MultiPartInputStreamLegacyParser.this._tmpDir.toPath();
             Path tempFile = Files.createTempFile(parent, "MultiPart", "");
@@ -189,7 +184,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
 
             if (_size > 0 && _out != null)
             {
-                //already written some bytes, so need to copy them into the file
+                // already written some bytes, so need to copy them into the file
                 _out.flush();
                 _bout.writeTo(bos);
                 _out.close();
@@ -249,12 +244,12 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
         {
             if (_file != null)
             {
-                //written to a file, whether temporary or not
+                // written to a file, whether temporary or not
                 return new BufferedInputStream(new FileInputStream(_file));
             }
             else
             {
-                //part content is in memory
+                // part content is in memory
                 return new ByteArrayInputStream(_bout.getBuf(), 0, _bout.size());
             }
         }
@@ -303,7 +298,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             {
                 _temporary = false;
 
-                //part data is only in the ByteArrayOutputStream and never been written to disk
+                // part data is only in the ByteArrayOutputStream and never been written to disk
                 _file = new File(_tmpDir, fileName);
 
                 BufferedOutputStream bos = null;
@@ -322,7 +317,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             }
             else
             {
-                //the part data is already written to a temporary file, just rename it
+                // the part data is already written to a temporary file, just rename it
                 _temporary = false;
 
                 Path src = _file.toPath();
@@ -384,7 +379,13 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
      * @param contextTmpDir javax.servlet.context.tempdir
      * @param maxParts the maximum number of parts that can be parsed from the multipart content (0 for no parts allowed, -1 for unlimited parts).
      */
-    public MultiPartInputStreamLegacyParser(MultiPartCompliance multiPartCompliance, InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, int maxParts)
+    public MultiPartInputStreamLegacyParser(
+                                            MultiPartCompliance multiPartCompliance,
+                                            InputStream in,
+                                            String contentType,
+                                            MultipartConfigElement config,
+                                            File contextTmpDir,
+                                            int maxParts)
     {
         _multiPartCompliance = multiPartCompliance;
         _contentType = contentType;
@@ -462,8 +463,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
      * @throws IOException if unable to get the parts
      */
     @Override
-    public Collection<Part> getParts()
-        throws IOException
+    public Collection<Part> getParts() throws IOException
     {
         if (!_parsed)
             parse();
@@ -487,8 +487,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
      * @throws IOException if unable to get the part
      */
     @Override
-    public Part getPart(String name)
-        throws IOException
+    public Part getPart(String name) throws IOException
     {
         if (!_parsed)
             parse();
@@ -501,8 +500,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
      *
      * @throws IOException the exception (if present)
      */
-    protected void throwIfError()
-        throws IOException
+    protected void throwIfError() throws IOException
     {
         if (_err != null)
         {
@@ -519,22 +517,23 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
      */
     protected void parse()
     {
-        //have we already parsed the input?
+        // have we already parsed the input?
         if (_parsed)
             return;
         _parsed = true;
 
-        //initialize
-        long total = 0; //keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize
+        // initialize
+        long total = 0; // keep running total of size of bytes read from input and throw an exception if exceeds
+        // MultipartConfigElement._maxRequestSize
         _parts = new MultiMap<>();
 
-        //if its not a multipart request, don't parse it
+        // if its not a multipart request, don't parse it
         if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
             return;
 
         try
         {
-            //sort out the location to which to write the files
+            // sort out the location to which to write the files
 
             if (_config.getLocation() == null)
                 _tmpDir = _contextTmpDir;
@@ -558,7 +557,8 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             {
                 int bend = _contentType.indexOf(";", bstart);
                 bend = (bend < 0 ? _contentType.length() : bend);
-                contentTypeBoundary = unquote(value(_contentType.substring(bstart, bend)).trim());
+                contentTypeBoundary =
+                    unquote(value(_contentType.substring(bstart, bend)).trim());
             }
 
             String boundary = "--" + contentTypeBoundary;
@@ -607,7 +607,8 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             // check compliance of preamble
             // this will show up as whitespace before the boundary that exists after the preamble
             if (Character.isWhitespace(untrimmed.charAt(0)))
-                nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
+                nonComplianceWarnings.add(new ComplianceViolation.Event(
+                    MultiPartCompliance.LEGACY,
                     MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY,
                     String.format("0x%02x", untrimmed.charAt(0))));
 
@@ -626,19 +627,20 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 {
                     line = ((ReadLineInputStream)_in).readLine();
 
-                    //No more input
+                    // No more input
                     if (line == null)
                         break outer;
 
-                    //end of headers:
+                    // end of headers:
                     if ("".equals(line))
                         break;
 
                     total += line.length();
                     if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
-                        throw new IllegalStateException("Request exceeds maxRequestSize (" + _config.getMaxRequestSize() + ")");
+                        throw new IllegalStateException(
+                            "Request exceeds maxRequestSize (" + _config.getMaxRequestSize() + ")");
 
-                    //get content-disposition and content-type
+                    // get content-disposition and content-type
                     int c = line.indexOf(':');
                     if (c > 0)
                     {
@@ -686,11 +688,11 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 {
                     continue;
                 }
-                //It is valid for reset and submit buttons to have an empty name.
-                //If no name is supplied, the browser skips sending the info for that field.
-                //However, if you supply the empty string as the name, the browser sends the
-                //field, with name as the empty string. So, only continue this loop if we
-                //have not yet seen a name field.
+                // It is valid for reset and submit buttons to have an empty name.
+                // If no name is supplied, the browser skips sending the info for that field.
+                // However, if you supply the empty string as the name, the browser sends the
+                // field, with name as the empty string. So, only continue this loop if we
+                // have not yet seen a name field.
                 if (name == null)
                 {
                     continue;
@@ -699,9 +701,10 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 // Check if we can create a new part.
                 _numParts++;
                 if (_maxParts >= 0 && _numParts > _maxParts)
-                    throw new IllegalStateException(String.format("Form with too many parts [%d > %d]", _numParts, _maxParts));
+                    throw new IllegalStateException(
+                        String.format("Form with too many parts [%d > %d]", _numParts, _maxParts));
 
-                //Have a new Part
+                // Have a new Part
                 MultiPart part = new MultiPart(name, filename);
                 part.setHeaders(headers);
                 part.setContentType(contentType);
@@ -711,8 +714,10 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 InputStream partInput = null;
                 if ("base64".equalsIgnoreCase(contentTransferEncoding))
                 {
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING, contentTransferEncoding));
+                    nonComplianceWarnings.add(new ComplianceViolation.Event(
+                        MultiPartCompliance.LEGACY,
+                        MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
+                        contentTransferEncoding));
                     if (_multiPartCompliance.allows(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING))
                         partInput = new Base64InputStream((ReadLineInputStream)_in);
                     else
@@ -720,8 +725,10 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 }
                 else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding))
                 {
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING, contentTransferEncoding));
+                    nonComplianceWarnings.add(new ComplianceViolation.Event(
+                        MultiPartCompliance.LEGACY,
+                        MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
+                        contentTransferEncoding));
                     partInput = new FilterInputStream(_in)
                     {
                         @Override
@@ -761,7 +768,8 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                         {
                             total++;
                             if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
-                                throw new IllegalStateException("Request exceeds maxRequestSize (" + _config.getMaxRequestSize() + ")");
+                                throw new IllegalStateException(
+                                    "Request exceeds maxRequestSize (" + _config.getMaxRequestSize() + ")");
 
                             state = -2;
 
@@ -818,7 +826,8 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                             b = -1;
                         }
 
-                        // Boundary match. If we've run out of input or we matched the entire final boundary marker, then this is the last part.
+                        // Boundary match. If we've run out of input or we matched the entire final boundary marker,
+                        // then this is the last part.
                         if (b > 0 || c == -1)
                         {
                             if (b == byteBoundary.length)
@@ -856,11 +865,11 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 EnumSet<ReadLineInputStream.Termination> term = ((ReadLineInputStream)_in).getLineTerminations();
 
                 if (term.contains(ReadLineInputStream.Termination.CR))
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.CR_LINE_TERMINATION, "0x13"));
+                    nonComplianceWarnings.add(new ComplianceViolation.Event(
+                        MultiPartCompliance.LEGACY, MultiPartCompliance.Violation.CR_LINE_TERMINATION, "0x13"));
                 if (term.contains(ReadLineInputStream.Termination.LF))
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.LF_LINE_TERMINATION, "0x10"));
+                    nonComplianceWarnings.add(new ComplianceViolation.Event(
+                        MultiPartCompliance.LEGACY, MultiPartCompliance.Violation.LF_LINE_TERMINATION, "0x10"));
             }
             else
                 throw new IOException("Incomplete parts");
@@ -913,8 +922,8 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
 
         if (value.matches(".??[a-z,A-Z]\\:\\\\[^\\\\].*"))
         {
-            //incorrectly escaped IE filenames that have the whole path
-            //we just strip any leading & trailing quotes and leave it as is
+            // incorrectly escaped IE filenames that have the whole path
+            // we just strip any leading & trailing quotes and leave it as is
             char first = value.charAt(0);
             if (first == '"' || first == '\'')
                 value = value.substring(1);
@@ -925,10 +934,10 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             return value;
         }
         else
-            //unquote the string, but allow any backslashes that don't
-            //form a valid escape sequence to remain as many browsers
-            //even on *nix systems will not escape a filename containing
-            //backslashes
+            // unquote the string, but allow any backslashes that don't
+            // form a valid escape sequence to remain as many browsers
+            // even on *nix systems will not escape a filename containing
+            // backslashes
             return unquoteOnly(value, true);
     }
 
@@ -957,11 +966,12 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 _markpos = 0;
                 _line = _in.readLine();
                 if (_line == null)
-                    return -1;  //nothing left
+                    return -1; // nothing left
                 if (_line.startsWith("--"))
-                    _buffer = ("\r\n" + _line + "\r\n").getBytes(StandardCharsets.UTF_8); //boundary marking end of part
+                    _buffer =
+                        ("\r\n" + _line + "\r\n").getBytes(StandardCharsets.UTF_8); // boundary marking end of part
                 else if (_line.isEmpty())
-                    _buffer = CRLF; //blank line
+                    _buffer = CRLF; // blank line
                 else
                 {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream((4 * _line.length() / 3) + 2);
@@ -1103,13 +1113,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                         b.append('"');
                         break;
                     case 'u':
-                        b.append((char)(
-                                (TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 24) +
-                                    (TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 16) +
-                                    (TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 8) +
-                                    (TypeUtil.convertHexDigit((byte)s.charAt(i++)))
-                            )
-                        );
+                        b.append((char)((TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 24) + (TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 16) + (TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 8) + (TypeUtil.convertHexDigit((byte)s.charAt(i++)))));
                         break;
                     default:
                         if (lenient && !isValidEscaping(c))
@@ -1138,8 +1142,6 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
      */
     private static boolean isValidEscaping(char c)
     {
-        return ((c == 'n') || (c == 'r') || (c == 't') ||
-            (c == 'f') || (c == 'b') || (c == '\\') ||
-            (c == '/') || (c == '"') || (c == 'u'));
+        return ((c == 'n') || (c == 'r') || (c == 't') || (c == 'f') || (c == 'b') || (c == '\\') || (c == '/') || (c == '"') || (c == 'u'));
     }
 }

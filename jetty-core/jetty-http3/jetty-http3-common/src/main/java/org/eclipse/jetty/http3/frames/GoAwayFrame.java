@@ -39,6 +39,7 @@ public class GoAwayFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s@%x[lastId=%d,graceful=%b]", getClass().getSimpleName(), hashCode(), getLastId(), isGraceful());
+        return String.format(
+            "%s@%x[lastId=%d,graceful=%b]", getClass().getSimpleName(), hashCode(), getLastId(), isGraceful());
     }
 }

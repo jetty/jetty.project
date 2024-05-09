@@ -66,8 +66,10 @@ public class JettyAutobahnServer
         server.addConnector(connector);
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
-            container.addMapping("/", (request, response, callback) -> new JettyAutobahnSocket()));
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(
+            server,
+            context,
+            container -> container.addMapping("/", (request, response, callback) -> new JettyAutobahnSocket()));
         context.setHandler(wsHandler);
 
         server.setHandler(context);

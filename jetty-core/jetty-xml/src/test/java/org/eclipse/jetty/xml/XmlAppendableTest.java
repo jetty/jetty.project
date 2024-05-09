@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.xml;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class XmlAppendableTest
 {
@@ -42,7 +41,12 @@ public class XmlAppendableTest
         out.tag("tag", attr, "content");
 
         out.openTag("level1").tag("tag", "content").tag("tag", "content").closeTag();
-        out.openTag("level1", attr).openTag("level2").tag("tag", "content").tag("tag", "content").closeTag().closeTag();
+        out.openTag("level1", attr)
+            .openTag("level2")
+            .tag("tag", "content")
+            .tag("tag", "content")
+            .closeTag()
+            .closeTag();
 
         out.closeTag();
 

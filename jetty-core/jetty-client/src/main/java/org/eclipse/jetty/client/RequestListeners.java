@@ -16,7 +16,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.BiFunction;
-
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,25 +38,13 @@ public class RequestListeners implements Dumpable
     public boolean addListener(Request.Listener listener)
     {
         // Use binary OR to avoid short-circuit.
-        return addQueuedListener(listener) |
-               addBeginListener(listener) |
-               addHeadersListener(listener) |
-               addCommitListener(listener) |
-               addContentListener(listener) |
-               addSuccessListener(listener) |
-               addFailureListener(listener);
+        return addQueuedListener(listener) | addBeginListener(listener) | addHeadersListener(listener) | addCommitListener(listener) | addContentListener(listener) | addSuccessListener(listener) | addFailureListener(listener);
     }
 
     public boolean removeListener(Request.Listener listener)
     {
         // Use binary OR to avoid short-circuit.
-        return removeQueuedListener(listener) |
-               removeBeginListener(listener) |
-               removeHeadersListener(listener) |
-               removeCommitListener(listener) |
-               removeContentListener(listener) |
-               removeSuccessListener(listener) |
-               removeFailureListener(listener);
+        return removeQueuedListener(listener) | removeBeginListener(listener) | removeHeadersListener(listener) | removeCommitListener(listener) | removeContentListener(listener) | removeSuccessListener(listener) | removeFailureListener(listener);
     }
 
     public boolean addQueuedListener(Request.QueuedListener listener)
@@ -415,19 +402,20 @@ public class RequestListeners implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this,
+        Dumpable.dumpObjects(
+            out,
+            indent,
+            this,
             new ListenerDump("queued", getQueuedListener()),
             new ListenerDump("begin", getBeginListener()),
             new ListenerDump("headers", getHeadersListener()),
             new ListenerDump("commit", getCommitListener()),
             new ListenerDump("content", getContentListener()),
             new ListenerDump("success", getSuccessListener()),
-            new ListenerDump("failure", getFailureListener())
-        );
+            new ListenerDump("failure", getFailureListener()));
     }
 
-    private record ListenerDump(String name, Object listener)
-    {
+    private record ListenerDump(String name, Object listener) {
         @Override
         public String toString()
         {
@@ -491,7 +479,8 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    private static class QueuedListenerLink extends Link<Request.QueuedListener, QueuedListenerLink> implements Request.QueuedListener
+    private static class QueuedListenerLink extends Link<Request.QueuedListener, QueuedListenerLink>
+        implements Request.QueuedListener
     {
         private QueuedListenerLink(Request.QueuedListener prev, Request.QueuedListener next)
         {
@@ -506,7 +495,8 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    private static class BeginListenerLink extends Link<Request.BeginListener, BeginListenerLink> implements Request.BeginListener
+    private static class BeginListenerLink extends Link<Request.BeginListener, BeginListenerLink>
+        implements Request.BeginListener
     {
         private BeginListenerLink(Request.BeginListener prev, Request.BeginListener next)
         {
@@ -521,7 +511,8 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    private static class HeadersListenerLink extends Link<Request.HeadersListener, HeadersListenerLink> implements Request.HeadersListener
+    private static class HeadersListenerLink extends Link<Request.HeadersListener, HeadersListenerLink>
+        implements Request.HeadersListener
     {
         private HeadersListenerLink(Request.HeadersListener prev, Request.HeadersListener next)
         {
@@ -536,7 +527,8 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    private static class CommitListenerLink extends Link<Request.CommitListener, CommitListenerLink> implements Request.CommitListener
+    private static class CommitListenerLink extends Link<Request.CommitListener, CommitListenerLink>
+        implements Request.CommitListener
     {
         private CommitListenerLink(Request.CommitListener prev, Request.CommitListener next)
         {
@@ -551,7 +543,8 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    private static class ContentListenerLink extends Link<Request.ContentListener, ContentListenerLink> implements Request.ContentListener
+    private static class ContentListenerLink extends Link<Request.ContentListener, ContentListenerLink>
+        implements Request.ContentListener
     {
         private ContentListenerLink(Request.ContentListener prev, Request.ContentListener next)
         {
@@ -566,7 +559,8 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    private static class SuccessListenerLink extends Link<Request.SuccessListener, SuccessListenerLink> implements Request.SuccessListener
+    private static class SuccessListenerLink extends Link<Request.SuccessListener, SuccessListenerLink>
+        implements Request.SuccessListener
     {
         private SuccessListenerLink(Request.SuccessListener prev, Request.SuccessListener next)
         {
@@ -581,7 +575,8 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    private static class FailureListenerLink extends Link<Request.FailureListener, FailureListenerLink> implements Request.FailureListener
+    private static class FailureListenerLink extends Link<Request.FailureListener, FailureListenerLink>
+        implements Request.FailureListener
     {
         private FailureListenerLink(Request.FailureListener prev, Request.FailureListener next)
         {

@@ -97,7 +97,6 @@ public class UriPatternPredicate implements Predicate<URI>
     private boolean match(Pattern pattern, URI uri)
     {
         String s = uri.toString();
-        return ((pattern == null && isNullInclusive) ||
-            (pattern != null && pattern.matcher(s).matches()));
+        return ((pattern == null && isNullInclusive) || (pattern != null && pattern.matcher(s).matches()));
     }
 }

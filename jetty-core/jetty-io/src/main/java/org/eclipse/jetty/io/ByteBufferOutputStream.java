@@ -15,7 +15,6 @@ package org.eclipse.jetty.io;
 
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.BufferUtil;
 
 /**

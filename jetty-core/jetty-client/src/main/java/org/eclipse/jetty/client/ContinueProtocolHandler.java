@@ -88,7 +88,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
                 // or it does and wants to refuse the request content,
                 // or we got some other HTTP status code like a redirect.
                 ResponseListeners listeners = exchange.getResponseListeners();
-                HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
+                HttpContentResponse contentResponse =
+                    new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
                 listeners.emitSuccess(contentResponse);
                 exchange.proceed(new HttpRequestException("Expectation failed", request));
             }
@@ -106,8 +107,10 @@ public class ContinueProtocolHandler implements ProtocolHandler
             HttpExchange exchange = conversation.getExchanges().peekLast();
             assert exchange.getResponse() == response;
             ResponseListeners listeners = exchange.getResponseListeners();
-            HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
-            listeners.emitFailureComplete(new Result(exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure));
+            HttpContentResponse contentResponse =
+                new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
+            listeners.emitFailureComplete(
+                new Result(exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure));
         }
 
         @Override

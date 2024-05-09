@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.quickstart;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;

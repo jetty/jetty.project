@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.util.thread;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.core.StringContains.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.Closeable;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -26,7 +38,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -36,18 +47,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 {
@@ -60,7 +59,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         private final CountDownLatch _enteredRemoveThread;
         private final CountDownLatch _exitRemoveThread;
 
-        public TestQueuedThreadPool(AtomicInteger started, CountDownLatch enteredRemoveThread, CountDownLatch exitRemoveThread)
+        public TestQueuedThreadPool(
+                                    AtomicInteger started, CountDownLatch enteredRemoveThread, CountDownLatch exitRemoveThread)
         {
             _started = started;
             _enteredRemoveThread = enteredRemoveThread;
@@ -598,7 +598,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         // let the jobs run
         latch.countDown();
 
-        for (int i = 5; i-- > 0; )
+        for (int i = 5; i-- > 0;)
         {
             Thread.sleep(timeout / 2);
             tp.execute(job);
@@ -607,7 +607,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         // Assert that steady rate of jobs doesn't prevent some idling out
         assertThat(tp.getThreads(), lessThan(threads));
         threads = tp.getThreads();
-        for (int i = 5; i-- > 0; )
+        for (int i = 5; i-- > 0;)
         {
             Thread.sleep(timeout / 2);
             tp.execute(job);
@@ -707,7 +707,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
     private void waitForReserved(QueuedThreadPool tp, int reserved)
     {
-        await().during(100, TimeUnit.MILLISECONDS).atMost(10, TimeUnit.SECONDS).until(() -> tp.getBean(ReservedThreadExecutor.class).getAvailable(), is(reserved));
+        await().during(100, TimeUnit.MILLISECONDS)
+            .atMost(10, TimeUnit.SECONDS)
+            .until(() -> tp.getBean(ReservedThreadExecutor.class).getAvailable(), is(reserved));
     }
 
     private void waitForThreads(QueuedThreadPool tp, int threads)
@@ -777,9 +779,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         threadPool.start();
 
         // Verify that join does not timeout after waiting twice the stopTimeout.
-        assertThrows(Throwable.class, () ->
-            assertTimeoutPreemptively(Duration.ofMillis(stopTimeout * 2), threadPool::join)
-        );
+        assertThrows(
+            Throwable.class, () -> assertTimeoutPreemptively(Duration.ofMillis(stopTimeout * 2), threadPool::join));
 
         // After stopping the ThreadPool join should unblock.
         LifeCycle.stop(threadPool);
@@ -826,7 +827,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
                 e.printStackTrace();
             }
         });
-        pool.tryExecute(() -> {});
+        pool.tryExecute(() ->
+        {
+        });
         started.await();
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
@@ -872,18 +875,20 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         QueuedThreadPool tp = new QueuedThreadPool();
         try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
         {
-            //change the current thread's classloader to something else
-            Thread.currentThread().setContextClassLoader(new URLClassLoader(new URL[] {}));
-            
-            //create a new thread
+            // change the current thread's classloader to something else
+            Thread.currentThread().setContextClassLoader(new URLClassLoader(new URL[]{}));
+
+            // create a new thread
             Thread t = tp.newThread(() ->
             {
-                //the executing thread should be still set to the classloader of the QueuedThreadPool,
-                //not that of the thread that created this thread.
-                assertThat(Thread.currentThread().getContextClassLoader(), Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
+                // the executing thread should be still set to the classloader of the QueuedThreadPool,
+                // not that of the thread that created this thread.
+                assertThat(
+                    Thread.currentThread().getContextClassLoader(),
+                    Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
             });
-            
-            //new thread should be set to the classloader of the QueuedThreadPool
+
+            // new thread should be set to the classloader of the QueuedThreadPool
             assertThat(t.getContextClassLoader(), Matchers.equalTo(QueuedThreadPool.class.getClassLoader()));
         }
     }
@@ -912,7 +917,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         // Run some job to spawn threads.
         for (int i = 0; i < 3; ++i)
         {
-            tp.tryExecute(() -> {});
+            tp.tryExecute(() ->
+            {
+            });
         }
         int spawned = 13;
         List<RunningJob> jobs = new ArrayList<>();
@@ -948,7 +955,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             assertThat(tp.getLeasedThreads(), Matchers.equalTo(leasedThreads));
             assertThat(tp.getReadyThreads(), Matchers.equalTo(tp.getIdleThreads() + tp.getAvailableReservedThreads()));
             assertThat(tp.getUtilizedThreads(), Matchers.equalTo(transientJobs));
-            assertThat(tp.getThreads(), Matchers.equalTo(tp.getReadyThreads() + tp.getLeasedThreads() + tp.getUtilizedThreads()));
+            assertThat(
+                tp.getThreads(),
+                Matchers.equalTo(tp.getReadyThreads() + tp.getLeasedThreads() + tp.getUtilizedThreads()));
             assertThat(tp.getBusyThreads(), Matchers.equalTo(tp.getUtilizedThreads() + tp.getLeasedThreads()));
         }
         finally

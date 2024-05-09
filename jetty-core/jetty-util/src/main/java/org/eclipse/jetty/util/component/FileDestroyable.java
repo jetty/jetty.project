@@ -18,7 +18,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;

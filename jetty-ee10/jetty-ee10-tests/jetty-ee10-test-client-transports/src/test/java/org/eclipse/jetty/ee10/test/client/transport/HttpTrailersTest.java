@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.ee10.test.client.transport;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,11 +35,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.InputStreamResponseListener;
@@ -40,12 +45,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpTrailersTest extends AbstractTest
 {
@@ -92,8 +91,7 @@ public class HttpTrailersTest extends AbstractTest
 
         HttpFields trailers = HttpFields.build().put(trailerName, trailerValue).asImmutable();
 
-        Request request = client.newRequest(newURI(transport))
-            .trailersSupplier(() -> trailers);
+        Request request = client.newRequest(newURI(transport)).trailersSupplier(() -> trailers);
         if (content != null)
             request.method(HttpMethod.POST).body(new BytesRequestContent(content));
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
@@ -269,9 +267,7 @@ public class HttpTrailersTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .timeout(15, TimeUnit.SECONDS)
-            .send(listener);
+        client.newRequest(newURI(transport)).timeout(15, TimeUnit.SECONDS).send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
@@ -322,16 +318,14 @@ public class HttpTrailersTest extends AbstractTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
-            .timeout(5, TimeUnit.SECONDS)
-            .send(result ->
-            {
-                Response response = result.getResponse();
-                assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertNull(response.getTrailers());
-                assertNull(response.getHeaders().get("name"));
-                latch.countDown();
-            });
+        client.newRequest(newURI(transport)).timeout(5, TimeUnit.SECONDS).send(result ->
+        {
+            Response response = result.getResponse();
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertNull(response.getTrailers());
+            assertNull(response.getHeaders().get("name"));
+            latch.countDown();
+        });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

@@ -195,8 +195,6 @@ public class Classpath implements Iterable<Path>
     @Override
     public String toString()
     {
-        return elements.stream()
-            .map(Path::toString)
-            .collect(Collectors.joining(FS.pathSeparator()));
+        return elements.stream().map(Path::toString).collect(Collectors.joining(FS.pathSeparator()));
     }
 }

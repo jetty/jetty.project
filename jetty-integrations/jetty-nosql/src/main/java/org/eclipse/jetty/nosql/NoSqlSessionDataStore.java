@@ -15,7 +15,6 @@ package org.eclipse.jetty.nosql;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.eclipse.jetty.session.ObjectStreamSessionDataStore;
 import org.eclipse.jetty.session.SessionData;
 
@@ -30,7 +29,14 @@ public abstract class NoSqlSessionDataStore extends ObjectStreamSessionDataStore
         private Object _version;
         private Set<String> _dirtyAttributes = new HashSet<>();
 
-        public NoSqlSessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
+        public NoSqlSessionData(
+                                String id,
+                                String cpath,
+                                String vhost,
+                                long created,
+                                long accessed,
+                                long lastAccessed,
+                                long maxInactiveMs)
         {
             super(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
             setVersion(0L);
@@ -69,6 +75,13 @@ public abstract class NoSqlSessionDataStore extends ObjectStreamSessionDataStore
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new NoSqlSessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+        return new NoSqlSessionData(
+            id,
+            _context.getCanonicalContextPath(),
+            _context.getVhost(),
+            created,
+            accessed,
+            lastAccessed,
+            maxInactiveMs);
     }
 }

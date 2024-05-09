@@ -13,12 +13,18 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.EOFException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpStatus;
@@ -38,13 +44,6 @@ import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ClientResponseTest
 {
@@ -99,8 +98,8 @@ public class ClientResponseTest
             @Override
             public void onHandshakeRequest(Request request)
             {
-                request.onResponseContentSource((resp, source) ->
-                    assertDoesNotThrow(() -> contentFuture.complete(IO.toString(Content.Source.asInputStream(source)))));
+                request.onResponseContentSource((resp, source) -> assertDoesNotThrow(
+                    () -> contentFuture.complete(IO.toString(Content.Source.asInputStream(source)))));
             }
 
             @Override
@@ -110,11 +109,14 @@ public class ClientResponseTest
             }
         };
 
-        Throwable t = assertThrows(Throwable.class, () ->
-            _client.connect(clientEndpoint, uri, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS));
+        Throwable t = assertThrows(
+            Throwable.class, () -> _client.connect(clientEndpoint, uri, upgradeRequest, upgradeListener)
+                .get(5, TimeUnit.SECONDS));
         assertThat(t, instanceOf(ExecutionException.class));
         assertThat(t.getCause(), instanceOf(UpgradeException.class));
-        assertThat(t.getCause().getMessage(), containsString("Failed to upgrade to websocket: Unexpected HTTP Response Status Code: 418"));
+        assertThat(
+            t.getCause().getMessage(),
+            containsString("Failed to upgrade to websocket: Unexpected HTTP Response Status Code: 418"));
 
         Response response = responseFuture.get(5, TimeUnit.SECONDS);
         String content = contentFuture.get(5, TimeUnit.SECONDS);
@@ -154,8 +156,9 @@ public class ClientResponseTest
             }
         };
 
-        Throwable t = assertThrows(Throwable.class, () ->
-            _client.connect(clientEndpoint, uri, upgradeRequest, upgradeListener).get(5, TimeUnit.SECONDS));
+        Throwable t = assertThrows(
+            Throwable.class, () -> _client.connect(clientEndpoint, uri, upgradeRequest, upgradeListener)
+                .get(5, TimeUnit.SECONDS));
         assertThat(t, instanceOf(ExecutionException.class));
         assertThat(t.getCause(), instanceOf(EOFException.class));
 

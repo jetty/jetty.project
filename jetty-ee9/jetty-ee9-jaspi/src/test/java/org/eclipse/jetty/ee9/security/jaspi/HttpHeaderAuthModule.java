@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.ee9.security.jaspi;
 
-import java.util.Map;
-import javax.security.auth.Subject;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-
 import jakarta.security.auth.message.AuthException;
 import jakarta.security.auth.message.AuthStatus;
 import jakarta.security.auth.message.MessageInfo;
@@ -27,6 +22,10 @@ import jakarta.security.auth.message.callback.GroupPrincipalCallback;
 import jakarta.security.auth.message.module.ServerAuthModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Map;
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
 
 /**
  * Example JASPI Auth Module based on http://www.trajano.net/2014/06/creating-a-simple-jaspic-auth-module/
@@ -37,7 +36,8 @@ public class HttpHeaderAuthModule implements ServerAuthModule
     /**
      * Supported message types. For our case we only need to deal with HTTP servlet request and responses. On Java EE 7 this will handle WebSockets as well.
      */
-    private static final Class<?>[] SUPPORTED_MESSAGE_TYPES = new Class<?>[]
+    private static final Class<?>[] SUPPORTED_MESSAGE_TYPES =
+        new Class<?>[]
         {HttpServletRequest.class, HttpServletResponse.class};
 
     /**
@@ -69,7 +69,9 @@ public class HttpHeaderAuthModule implements ServerAuthModule
      * @param options options
      */
     @Override
-    public void initialize(final MessagePolicy requestPolicy, MessagePolicy responsePolicy, CallbackHandler h, Map options) throws AuthException
+    public void initialize(
+                           final MessagePolicy requestPolicy, MessagePolicy responsePolicy, CallbackHandler h, Map options)
+        throws AuthException
     {
         handler = h;
     }
@@ -87,7 +89,8 @@ public class HttpHeaderAuthModule implements ServerAuthModule
      * Validation occurs here.
      */
     @Override
-    public AuthStatus validateRequest(final MessageInfo messageInfo, final Subject client, final Subject serviceSubject) throws AuthException
+    public AuthStatus validateRequest(final MessageInfo messageInfo, final Subject client, final Subject serviceSubject)
+        throws AuthException
     {
 
         // Take the request from the messageInfo structure.
@@ -102,12 +105,11 @@ public class HttpHeaderAuthModule implements ServerAuthModule
             }
 
             // Store the user name that was in the header and also set a group.
-            handler.handle(new Callback[]
-                {
-                    new CallerPrincipalCallback(client, userName),
-                    new GroupPrincipalCallback(client, new String[]
-                        {"users"})
-                });
+            handler.handle(new Callback[]{
+                new CallerPrincipalCallback(client, userName),
+                new GroupPrincipalCallback(client, new String[]
+                {"users"})
+            });
             return AuthStatus.SUCCESS;
         }
         catch (final Exception e)

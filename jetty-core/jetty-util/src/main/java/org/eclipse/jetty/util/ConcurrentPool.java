@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -120,7 +119,11 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     public ConcurrentPool(StrategyType strategyType, int maxSize, ToIntFunction<P> maxMultiplex)
     {
         if (maxSize > OPTIMAL_MAX_SIZE && LOG.isDebugEnabled())
-            LOG.debug("{} configured with max size {} which is above the recommended value {}", getClass().getSimpleName(), maxSize, OPTIMAL_MAX_SIZE);
+            LOG.debug(
+                "{} configured with max size {} which is above the recommended value {}",
+                getClass().getSimpleName(),
+                maxSize,
+                OPTIMAL_MAX_SIZE);
         this.maxSize = maxSize;
         this.strategyType = Objects.requireNonNull(strategyType);
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
@@ -218,7 +221,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
         int index = startIndex(size);
 
-        for (int tries = size; tries-- > 0; )
+        for (int tries = size; tries-- > 0;)
         {
             try
             {
@@ -393,14 +396,14 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("entries", entries));
+        Dumpable.dumpObjects(out, indent, this, new DumpableCollection("entries", entries));
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x[strategy=%s,inUse=%d,size=%d,max=%d,leaked=%d,terminated=%b]",
+        return String.format(
+            "%s@%x[strategy=%s,inUse=%d,size=%d,max=%d,leaked=%d,terminated=%b]",
             getClass().getSimpleName(),
             hashCode(),
             strategyType,
@@ -685,7 +688,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public String toString()
         {
             long encoded = state.get();
-            return String.format("%s@%x{terminated=%b,multiplex=%d,pooled=%s}",
+            return String.format(
+                "%s@%x{terminated=%b,multiplex=%d,pooled=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 AtomicBiInteger.getHi(encoded) < 0,
@@ -749,7 +753,12 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _strong == null ? "acquired" : "released", _weak.get());
+            return "%s@%x{%s,%s}"
+                .formatted(
+                    this.getClass().getSimpleName(),
+                    hashCode(),
+                    _strong == null ? "acquired" : "released",
+                    _weak.get());
         }
     }
 }

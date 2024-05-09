@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.MessageHandler;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -21,14 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import jakarta.websocket.Endpoint;
-import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.MessageHandler;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.server.ServerContainer;
-import jakarta.websocket.server.ServerEndpoint;
-import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
@@ -194,7 +193,8 @@ public class SessionTest
         });
         cases.addCase("With DefaultServlet only", context -> context.addServlet(DefaultServlet.class, "/"));
         cases.addCase("With Servlet Mapped to '/*'", context -> context.addServlet(DefaultServlet.class, "/*"));
-        cases.addCase("With Servlet Mapped to '/info/*'", context -> context.addServlet(DefaultServlet.class, "/info/*"));
+        cases.addCase(
+            "With Servlet Mapped to '/info/*'", context -> context.addServlet(DefaultServlet.class, "/info/*"));
         return cases.stream();
     }
 
@@ -214,21 +214,29 @@ public class SessionTest
         ServerContainer container = server.getServerContainer();
         container.addEndpoint(SessionInfoSocket.class); // default behavior
         Class<?> endpointClass = SessionInfoSocket.class;
-        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/").build());
-        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/{b}/").build());
-        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/{b}/{c}/").build());
-        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/{b}/{c}/{d}/").build());
+        container.addEndpoint(
+            ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/").build());
+        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/{b}/")
+            .build());
+        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/{b}/{c}/")
+            .build());
+        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/info/{a}/{b}/{c}/{d}/")
+            .build());
 
         endpointClass = SessionInfoEndpoint.class;
-        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/").build());
-        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/").build());
-        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/{b}/").build());
-        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/{b}/{c}/").build());
-        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/{b}/{c}/{d}/").build());
+        container.addEndpoint(
+            ServerEndpointConfig.Builder.create(endpointClass, "/einfo/").build());
+        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/")
+            .build());
+        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/{b}/")
+            .build());
+        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/{b}/{c}/")
+            .build());
+        container.addEndpoint(ServerEndpointConfig.Builder.create(endpointClass, "/einfo/{a}/{b}/{c}/{d}/")
+            .build());
     }
 
-    private void assertResponse(String requestPath, String requestMessage,
-                                String expectedResponse) throws Exception
+    private void assertResponse(String requestPath, String requestMessage, String expectedResponse) throws Exception
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(requestMessage));
@@ -250,8 +258,7 @@ public class SessionTest
     public void testPathParamsAnnotatedEmpty(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/info/", "pathParams",
-            "pathParams[0]");
+        assertResponse("/info/", "pathParams", "pathParams[0]");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -259,8 +266,7 @@ public class SessionTest
     public void testPathParamsAnnotatedSingle(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/info/apple/", "pathParams",
-            "pathParams[1]: 'a'=apple");
+        assertResponse("/info/apple/", "pathParams", "pathParams[1]: 'a'=apple");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -268,8 +274,7 @@ public class SessionTest
     public void testPathParamsAnnotatedDouble(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/info/apple/pear/", "pathParams",
-            "pathParams[2]: 'a'=apple: 'b'=pear");
+        assertResponse("/info/apple/pear/", "pathParams", "pathParams[2]: 'a'=apple: 'b'=pear");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -277,8 +282,7 @@ public class SessionTest
     public void testPathParamsAnnotatedTriple(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/info/apple/pear/cherry/", "pathParams",
-            "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
+        assertResponse("/info/apple/pear/cherry/", "pathParams", "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -286,8 +290,7 @@ public class SessionTest
     public void testPathParamsEndpointEmpty(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/einfo/", "pathParams",
-            "pathParams[0]");
+        assertResponse("/einfo/", "pathParams", "pathParams[0]");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -295,8 +298,7 @@ public class SessionTest
     public void testPathParamsEndpointSingle(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/einfo/apple/", "pathParams",
-            "pathParams[1]: 'a'=apple");
+        assertResponse("/einfo/apple/", "pathParams", "pathParams[1]: 'a'=apple");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -304,8 +306,7 @@ public class SessionTest
     public void testPathParamsEndpointDouble(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/einfo/apple/pear/", "pathParams",
-            "pathParams[2]: 'a'=apple: 'b'=pear");
+        assertResponse("/einfo/apple/pear/", "pathParams", "pathParams[2]: 'a'=apple: 'b'=pear");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -313,8 +314,7 @@ public class SessionTest
     public void testPathParamsEndpointTriple(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/einfo/apple/pear/cherry/", "pathParams",
-            "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
+        assertResponse("/einfo/apple/pear/cherry/", "pathParams", "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -322,8 +322,7 @@ public class SessionTest
     public void testRequestUriAnnotatedBasic(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/info/", "requestUri",
-            "requestUri=" + server.getWsUri().toASCIIString() + "info/");
+        assertResponse("/info/", "requestUri", "requestUri=" + server.getWsUri().toASCIIString() + "info/");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -331,9 +330,10 @@ public class SessionTest
     public void testRequestUriAnnotatedWithPathParam(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/info/apple/banana/", "requestUri",
-            "requestUri=" + server.getWsUri().toASCIIString() +
-                "info/apple/banana/");
+        assertResponse(
+            "/info/apple/banana/",
+            "requestUri",
+            "requestUri=" + server.getWsUri().toASCIIString() + "info/apple/banana/");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -341,10 +341,10 @@ public class SessionTest
     public void testRequestUriAnnotatedWithPathParamWithQuery(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/info/apple/banana/?fruit=fresh&store=grandmasfarm",
+        assertResponse(
+            "/info/apple/banana/?fruit=fresh&store=grandmasfarm",
             "requestUri",
-            "requestUri=" + server.getWsUri().toASCIIString() +
-                "info/apple/banana/?fruit=fresh&store=grandmasfarm");
+            "requestUri=" + server.getWsUri().toASCIIString() + "info/apple/banana/?fruit=fresh&store=grandmasfarm");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -352,8 +352,8 @@ public class SessionTest
     public void testRequestUriEndpointBasic(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/einfo/", "requestUri",
-            "requestUri=" + server.getWsUri().toASCIIString() + "einfo/");
+        assertResponse(
+            "/einfo/", "requestUri", "requestUri=" + server.getWsUri().toASCIIString() + "einfo/");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -361,7 +361,9 @@ public class SessionTest
     public void testRequestUriEndpointWithPathParam(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/einfo/apple/banana/", "requestUri",
+        assertResponse(
+            "/einfo/apple/banana/",
+            "requestUri",
             "requestUri=" + server.getWsUri().toASCIIString() + "einfo/apple/banana/");
     }
 
@@ -370,9 +372,9 @@ public class SessionTest
     public void testRequestUriEndpointWithPathParamWithQuery(Case testCase) throws Exception
     {
         setup(testCase);
-        assertResponse("/einfo/apple/banana/?fruit=fresh&store=grandmasfarm",
+        assertResponse(
+            "/einfo/apple/banana/?fruit=fresh&store=grandmasfarm",
             "requestUri",
-            "requestUri=" + server.getWsUri().toASCIIString() +
-                "einfo/apple/banana/?fruit=fresh&store=grandmasfarm");
+            "requestUri=" + server.getWsUri().toASCIIString() + "einfo/apple/banana/?fruit=fresh&store=grandmasfarm");
     }
 }

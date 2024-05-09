@@ -55,12 +55,18 @@ public abstract class AbstractPathSpec implements PathSpec
     @Override
     public final int hashCode()
     {
-        return Objects.hash(getGroup().ordinal(), getSpecLength(), getDeclaration(), getClass().getName());
+        return Objects.hash(
+            getGroup().ordinal(),
+            getSpecLength(),
+            getDeclaration(),
+            getClass().getName());
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%s{%s,%s}", getClass().getSimpleName(), Integer.toHexString(hashCode()), getGroup(), getDeclaration());
+        return String.format(
+            "%s@%s{%s,%s}",
+            getClass().getSimpleName(), Integer.toHexString(hashCode()), getGroup(), getDeclaration());
     }
 }

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util;
 
 import java.util.concurrent.atomic.LongAdder;
-
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -33,18 +32,10 @@ public class PoolStrategyBenchmark
 {
     private Pool<String> pool;
 
-    @Param({
-        "First",
-        "Random",
-        "RoundRobin",
-        "ThreadId"
-    })
+    @Param({"First", "Random", "RoundRobin", "ThreadId"})
     public static String POOL_TYPE;
 
-    @Param({
-        "4",
-        "16"
-    })
+    @Param({"4", "16"})
     public static int SIZE;
 
     private static final LongAdder misses = new LongAdder();
@@ -74,7 +65,9 @@ public class PoolStrategyBenchmark
     @TearDown
     public void tearDown()
     {
-        System.err.printf("%nMISSES = %d (%d%%)%n", misses.longValue(), 100 * misses.longValue() / (hits.longValue() + misses.longValue()));
+        System.err.printf(
+            "%nMISSES = %d (%d%%)%n",
+            misses.longValue(), 100 * misses.longValue() / (hits.longValue() + misses.longValue()));
         System.err.printf("AVERAGE = %d%n", total.longValue() / hits.longValue());
         pool.terminate();
         pool = null;

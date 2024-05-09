@@ -31,7 +31,6 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
-
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
@@ -56,7 +55,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
     public static final String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.security.jaas.JAASRole";
     public static final String[] DEFAULT_ROLE_CLASS_NAMES = {DEFAULT_ROLE_CLASS_NAME};
     public static final ThreadLocal<JAASLoginService> INSTANCE = new ThreadLocal<>();
-    
+
     protected String[] _roleClassNames = DEFAULT_ROLE_CLASS_NAMES;
     protected String _callbackHandlerClass;
     protected String _realmName;
@@ -182,7 +181,8 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
+    public UserIdentity login(
+                              String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
     {
         try
         {
@@ -192,9 +192,10 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
             else
             {
                 Class<?> clazz = Loader.loadClass(_callbackHandlerClass);
-                callbackHandler = (CallbackHandler)clazz.getDeclaredConstructor().newInstance();
+                callbackHandler =
+                    (CallbackHandler)clazz.getDeclaredConstructor().newInstance();
             }
-            
+
             if (callbackHandler instanceof DefaultCallbackHandler dch)
             {
                 dch.setRequest(request);
@@ -202,17 +203,16 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
                 dch.setUserName(username);
             }
 
-            //set up the login context
+            // set up the login context
             Subject subject = new Subject();
             INSTANCE.set(this);
-            LoginContext loginContext = 
-                (_configuration == null ? new LoginContext(_loginModuleName, subject, callbackHandler)
-                : new LoginContext(_loginModuleName, subject, callbackHandler, _configuration));
+            LoginContext loginContext = (_configuration == null ? new LoginContext(_loginModuleName, subject, callbackHandler) : new LoginContext(_loginModuleName, subject, callbackHandler, _configuration));
 
             loginContext.login();
 
-            //login success
-            JAASUserPrincipal userPrincipal = new JAASUserPrincipal(getUserName(callbackHandler), subject, loginContext);
+            // login success
+            JAASUserPrincipal userPrincipal =
+                new JAASUserPrincipal(getUserName(callbackHandler), subject, loginContext);
             subject.getPrincipals().add(userPrincipal);
 
             return _identityService.newUserIdentity(subject, userPrincipal, getGroups(subject));
@@ -231,7 +231,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
         {
             INSTANCE.remove();
         }
-        
+
         return null;
     }
 
@@ -281,11 +281,11 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
 
         return groups.toArray(new String[0]);
     }
-    
+
     /**
      * Check whether the class, its superclasses or any interfaces they implement
      * is one of the classes that represents a role.
-     * 
+     *
      * @param clazz the class to check
      * @param roleClassNames the list of classnames that represent roles
      * @return true if the class is a role class
@@ -293,8 +293,8 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
     private static boolean isRoleClass(Class<?> clazz, List<String> roleClassNames)
     {
         Class<?> c = clazz;
-        
-        //add the class, its interfaces and superclasses to the list to test
+
+        // add the class, its interfaces and superclasses to the list to test
         List<String> classnames = new ArrayList<>();
         while (c != null)
         {
@@ -302,7 +302,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
             Arrays.stream(c.getInterfaces()).map(Class::getName).forEach(classnames::add);
             c = c.getSuperclass();
         }
-        
+
         return roleClassNames.stream().anyMatch(classnames::contains);
     }
 }

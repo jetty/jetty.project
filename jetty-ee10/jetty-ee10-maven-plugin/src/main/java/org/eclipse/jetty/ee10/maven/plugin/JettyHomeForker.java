@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.File;
-
 import org.eclipse.jetty.maven.AbstractHomeForker;
 
 /**
@@ -47,16 +46,15 @@ public class JettyHomeForker extends AbstractHomeForker
         this.baseDir = baseDir;
     }
 
-    protected void redeployWebApp()
-        throws Exception
+    protected void redeployWebApp() throws Exception
     {
         generateWebAppPropertiesFile();
         webappPath.resolve("maven.xml").toFile().setLastModified(System.currentTimeMillis());
     }
 
-    protected void generateWebAppPropertiesFile()
-        throws Exception
+    protected void generateWebAppPropertiesFile() throws Exception
     {
-        WebAppPropertyConverter.toProperties(webApp, etcPath.resolve("maven.props").toFile(), contextXml);
+        WebAppPropertyConverter.toProperties(
+            webApp, etcPath.resolve("maven.props").toFile(), contextXml);
     }
 }

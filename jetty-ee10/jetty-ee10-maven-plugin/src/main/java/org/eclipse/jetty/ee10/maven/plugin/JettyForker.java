@@ -38,7 +38,7 @@ public class JettyForker extends AbstractServerForker
     @Override
     public void generateWebApp() throws Exception
     {
-        //Run the webapp to create the quickstart file and properties file
+        // Run the webapp to create the quickstart file and properties file
         generator = new QuickStartGenerator(forkWebXml.toPath(), webApp);
         generator.setContextXml(contextXml);
         generator.setWebAppProps(webAppPropsFile.toPath());
@@ -46,11 +46,10 @@ public class JettyForker extends AbstractServerForker
         generator.generate();
     }
 
-    protected void redeployWebApp()
-        throws Exception 
+    protected void redeployWebApp() throws Exception
     {
-        //regenerating the quickstart will be noticed by the JettyForkedChild process
-        //which will redeploy the webapp
+        // regenerating the quickstart will be noticed by the JettyForkedChild process
+        // which will redeploy the webapp
         generator.generate();
     }
 }

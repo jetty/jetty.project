@@ -13,17 +13,19 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.ReentrantLock;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
@@ -34,9 +36,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 
 public class ContextScopeListenerTest
 {
@@ -71,26 +70,28 @@ public class ContextScopeListenerTest
     @Test
     public void testAsyncServlet() throws Exception
     {
-        _contextHandler.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+        _contextHandler.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                if  (req.getDispatcherType() == DispatcherType.ASYNC)
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                 {
-                    _history.add("asyncDispatch");
-                    return;
-                }
+                    if (req.getDispatcherType() == DispatcherType.ASYNC)
+                    {
+                        _history.add("asyncDispatch");
+                        return;
+                    }
 
-                _history.add("doGet");
-                AsyncContext asyncContext = req.startAsync();
-                asyncContext.start(() ->
-                {
-                    _history.add("asyncRunnable");
-                    asyncContext.dispatch("/dispatch");
-                });
-            }
-        }), "/");
+                    _history.add("doGet");
+                    AsyncContext asyncContext = req.startAsync();
+                    asyncContext.start(() ->
+                    {
+                        _history.add("asyncRunnable");
+                        asyncContext.dispatch("/dispatch");
+                    });
+                }
+            }),
+            "/");
 
         _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
@@ -98,17 +99,20 @@ public class ContextScopeListenerTest
             private final ReentrantLock _lock = new ReentrantLock();
 
             @Override
-            public void enterScope(ContextHandler.APIContext context, org.eclipse.jetty.ee9.nested.Request request, Object reason)
+            public void enterScope(
+                                   ContextHandler.APIContext context, org.eclipse.jetty.ee9.nested.Request request, Object reason)
             {
                 _lock.lock();
-                String pathInContext = (request == null) ? "null" : URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
+                String pathInContext =
+                    (request == null) ? "null" : URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
                 _history.add("enterScope " + pathInContext);
             }
 
             @Override
             public void exitScope(ContextHandler.APIContext context, org.eclipse.jetty.ee9.nested.Request request)
             {
-                String pathInContext = (request == null) ? "null" : URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
+                String pathInContext =
+                    (request == null) ? "null" : URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
                 _history.add("exitScope " + pathInContext);
                 _lock.unlock();
             }
@@ -128,8 +132,7 @@ public class ContextScopeListenerTest
             "asyncDispatch",
             "exitScope /dispatch",
             "enterScope /dispatch",
-            "exitScope /dispatch"
-        );
+            "exitScope /dispatch");
     }
 
     private void assertHistory(String... values)

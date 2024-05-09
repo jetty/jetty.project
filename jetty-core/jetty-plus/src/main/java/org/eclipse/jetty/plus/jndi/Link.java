@@ -21,8 +21,8 @@ public class Link extends NamingEntry
 
     public Link(Object scope, String jndiName, String link) throws NamingException
     {
-        //jndiName is the name according to the web.xml
-        //objectToBind is the name in the environment
+        // jndiName is the name according to the web.xml
+        // objectToBind is the name in the environment
         super(scope, jndiName, link);
         _link = link;
     }

@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +100,7 @@ public class CertificateValidator
         {
             Enumeration<String> aliases = keyStore.aliases();
 
-            for (; aliases.hasMoreElements(); )
+            for (; aliases.hasMoreElements();)
             {
                 String alias = aliases.nextElement();
 
@@ -135,8 +134,8 @@ public class CertificateValidator
             catch (KeyStoreException kse)
             {
                 LOG.debug("Unable to validate alias: {}", keyAlias, kse);
-                throw new CertificateException("Unable to validate certificate" +
-                    " for alias [" + keyAlias + "]: " + kse.getMessage(), kse);
+                throw new CertificateException(
+                    "Unable to validate certificate" + " for alias [" + keyAlias + "]: " + kse.getMessage(), kse);
             }
             result = keyAlias;
         }
@@ -183,8 +182,9 @@ public class CertificateValidator
             catch (KeyStoreException kse)
             {
                 LOG.debug("Unable to validate certificate", kse);
-                throw new CertificateException("Unable to validate certificate" +
-                    (certAlias == null ? "" : " for alias [" + certAlias + "]") + ": " + kse.getMessage(), kse);
+                throw new CertificateException(
+                    "Unable to validate certificate" + (certAlias == null ? "" : " for alias [" + certAlias + "]") + ": " + kse.getMessage(),
+                    kse);
             }
 
             validate(certChain);
@@ -245,7 +245,8 @@ public class CertificateValidator
             }
 
             // Build certification path
-            CertPathBuilderResult buildResult = CertPathBuilder.getInstance("PKIX").build(pbParams);
+            CertPathBuilderResult buildResult =
+                CertPathBuilder.getInstance("PKIX").build(pbParams);
 
             // Validate certification path
             CertPathValidator.getInstance("PKIX").validate(buildResult.getCertPath(), pbParams);

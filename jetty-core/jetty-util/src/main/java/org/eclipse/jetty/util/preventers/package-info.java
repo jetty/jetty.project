@@ -15,4 +15,3 @@
  * Jetty Util : Common Memory Leak Prevention Tooling
  */
 package org.eclipse.jetty.util.preventers;
-

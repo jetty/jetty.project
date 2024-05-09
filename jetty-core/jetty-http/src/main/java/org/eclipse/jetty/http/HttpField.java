@@ -17,7 +17,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -34,13 +33,19 @@ public class HttpField
      * A constant {@link QuotedStringTokenizer} configured for quoting/tokenizing {@code parameters} lists as defined by
      * <a href="https://www.rfc-editor.org/rfc/rfc9110#name-parameters">RFC9110</a>
      */
-    public static final QuotedStringTokenizer PARAMETER_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEmbeddedQuotes().returnQuotes().build();
+    public static final QuotedStringTokenizer PARAMETER_TOKENIZER = QuotedStringTokenizer.builder()
+        .delimiters(";")
+        .ignoreOptionalWhiteSpace()
+        .allowEmbeddedQuotes()
+        .returnQuotes()
+        .build();
 
     /**
      * A constant {@link QuotedStringTokenizer} configured for quoting/tokenizing a single {@code parameter} as defined by
      * <a href="https://www.rfc-editor.org/rfc/rfc9110#name-parameters">RFC9110</a>
      */
-    public static final QuotedStringTokenizer NAME_VALUE_TOKENIZER = QuotedStringTokenizer.builder().delimiters("=").build();
+    public static final QuotedStringTokenizer NAME_VALUE_TOKENIZER =
+        QuotedStringTokenizer.builder().delimiters("=").build();
 
     private static final String ZERO_QUALITY = "q=0";
 
@@ -281,7 +286,7 @@ public class HttpField
                     switch (c)
                     {
                         case '\\' -> state = 3; // quoted character
-                        case '"' -> state = 4;  // end quote
+                        case '"' -> state = 4; // end quote
                         default ->
                         {
                             if (match >= 0)

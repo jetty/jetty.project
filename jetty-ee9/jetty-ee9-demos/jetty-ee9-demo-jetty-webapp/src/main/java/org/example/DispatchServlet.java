@@ -13,10 +13,6 @@
 
 package org.example;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -26,6 +22,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 
 /**
  * Test Servlet RequestDispatcher.
@@ -235,14 +234,7 @@ public class DispatchServlet extends HttpServlet
         {
             sres.setContentType("text/html");
             PrintWriter pout = sres.getWriter();
-            pout.write(
-                "<h1>Dispatch URL must be of the form: </h1>" +
-                    "<PRE>" +
-                    prefix + "/includeW/path\n" +
-                    prefix + "/includeS/path\n" +
-                    prefix + "/forward/path\n" +
-                    prefix + "/includeN/name\n" +
-                    prefix + "/forwardC/_context/path\n</PRE>");
+            pout.write("<h1>Dispatch URL must be of the form: </h1>" + "<PRE>" + prefix + "/includeW/path\n" + prefix + "/includeS/path\n" + prefix + "/forward/path\n" + prefix + "/includeN/name\n" + prefix + "/forwardC/_context/path\n</PRE>");
         }
     }
 

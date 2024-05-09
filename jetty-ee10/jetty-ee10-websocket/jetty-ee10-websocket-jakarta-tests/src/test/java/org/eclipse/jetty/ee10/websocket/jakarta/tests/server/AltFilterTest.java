@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSServer;
@@ -28,10 +31,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Testing the use of an alternate {@link WebSocketUpgradeFilter}
@@ -55,7 +54,8 @@ public class AltFilterTest
         {
             wsb.start();
 
-            FilterHolder filterWebXml = app.getWebAppContext().getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
+            FilterHolder filterWebXml =
+                app.getWebAppContext().getServletHandler().getFilter(WebSocketUpgradeFilter.class.getName());
             assertThat(filterWebXml, notNullValue());
             assertThat(app.getWebAppContext().getServletHandler().getFilters().length, equalTo(1));
             assertThat(filterWebXml.getInitParameter("customParam"), equalTo("true"));

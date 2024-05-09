@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
@@ -105,7 +104,9 @@ public class GZIPContentDecoder implements Destroyable
         {
             _inflateds.add(_inflated);
             _inflated = null;
-            int length = _inflateds.stream().mapToInt(RetainableByteBuffer::remaining).sum();
+            int length = _inflateds.stream()
+                .mapToInt(RetainableByteBuffer::remaining)
+                .sum();
             RetainableByteBuffer result = acquire(length);
             for (RetainableByteBuffer buffer : _inflateds)
             {
@@ -413,7 +414,22 @@ public class GZIPContentDecoder implements Destroyable
 
     private enum State
     {
-        INITIAL, ID, CM, FLG, MTIME, XFL, OS, FLAGS, EXTRA_LENGTH, EXTRA, NAME, COMMENT, HCRC, DATA, CRC, ISIZE
+        INITIAL,
+        ID,
+        CM,
+        FLG,
+        MTIME,
+        XFL,
+        OS,
+        FLAGS,
+        EXTRA_LENGTH,
+        EXTRA,
+        NAME,
+        COMMENT,
+        HCRC,
+        DATA,
+        CRC,
+        ISIZE
     }
 
     /**

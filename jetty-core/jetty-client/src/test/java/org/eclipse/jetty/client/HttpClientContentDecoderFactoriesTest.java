@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.client;
 
-import java.nio.ByteBuffer;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
+import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -27,10 +30,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientServerTest
 {
@@ -76,7 +75,10 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), is("the answer is forty two"));
 
-        assertThat("Decoder leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+        assertThat(
+            "Decoder leaks: " + bufferPool.dumpLeaks(),
+            bufferPool.getLeaks().size(),
+            is(0));
     }
 
     @ParameterizedTest

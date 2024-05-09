@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.ee9.websocket.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
@@ -27,10 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(TestTrackerExtension.class)
 public class WebSocketClientBadUriTest
@@ -67,7 +66,7 @@ public class WebSocketClientBadUriTest
             Arguments.of("/sockets/echo"),
             Arguments.of("#echo"),
             Arguments.of("localhost:8080/echo")
-            // @formatter:on
+        // @formatter:on
         );
     }
 

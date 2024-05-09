@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -23,13 +33,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpTester;
@@ -44,10 +47,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class QoSFilterTest
 {
@@ -108,7 +107,8 @@ public class QoSFilterTest
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
         holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, "" + maxQos);
-        context.getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        context.getServletHandler()
+            .addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         List<Worker> workers = new ArrayList<>();
         for (int i = 0; i < numConnections; ++i)
@@ -130,7 +130,8 @@ public class QoSFilterTest
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
         holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, String.valueOf(maxQos));
-        context.getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        context.getServletHandler()
+            .addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         List<Worker2> workers = new ArrayList<>();
         for (int i = 0; i < numConnections; ++i)
@@ -233,7 +234,8 @@ public class QoSFilterTest
         private static int __maxSleepers;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             try
             {

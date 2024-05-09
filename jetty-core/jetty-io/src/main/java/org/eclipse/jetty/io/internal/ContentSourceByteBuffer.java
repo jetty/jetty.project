@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io.internal;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;

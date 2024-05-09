@@ -13,18 +13,22 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.handlers;
 
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import static jakarta.websocket.CloseReason.CloseCodes.NORMAL_CLOSURE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.EventSocket;
@@ -39,11 +43,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static jakarta.websocket.CloseReason.CloseCodes.NORMAL_CLOSURE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class MessageHandlerTest
 {
     private Server server;
@@ -52,14 +51,18 @@ public class MessageHandlerTest
 
     private static Stream<Arguments> getBinaryHandlers()
     {
-        return Stream.concat(BinaryHandlers.getBinaryHandlers(),
-            Stream.of(ComboMessageHandler.class, ExtendedMessageHandler.class).map(Arguments::of));
+        return Stream.concat(
+            BinaryHandlers.getBinaryHandlers(),
+            Stream.of(ComboMessageHandler.class, ExtendedMessageHandler.class)
+                .map(Arguments::of));
     }
 
     private static Stream<Arguments> getTextHandlers()
     {
-        return Stream.concat(TextHandlers.getTextHandlers(),
-            Stream.of(ComboMessageHandler.class, ExtendedMessageHandler.class).map(Arguments::of));
+        return Stream.concat(
+            TextHandlers.getTextHandlers(),
+            Stream.of(ComboMessageHandler.class, ExtendedMessageHandler.class)
+                .map(Arguments::of));
     }
 
     @BeforeEach
@@ -76,11 +79,13 @@ public class MessageHandlerTest
             Stream<Arguments> argumentsStream = Stream.concat(getBinaryHandlers(), getTextHandlers());
             for (Class<?> c : getClassListFromArguments(argumentsStream))
             {
-                container.addEndpoint(ServerEndpointConfig.Builder.create(c, "/" + c.getSimpleName()).build());
+                container.addEndpoint(ServerEndpointConfig.Builder.create(c, "/" + c.getSimpleName())
+                    .build());
             }
 
-            container.addEndpoint(ServerEndpointConfig.Builder.create(LongMessageHandler.class,
-                "/" + LongMessageHandler.class.getSimpleName()).build());
+            container.addEndpoint(ServerEndpointConfig.Builder.create(
+                LongMessageHandler.class, "/" + LongMessageHandler.class.getSimpleName())
+                .build());
         });
 
         server.setHandler(contextHandler);
@@ -140,7 +145,8 @@ public class MessageHandlerTest
     public void testLongDecoderHandler() throws Exception
     {
         EventSocket clientEndpoint = new EventSocket();
-        Session session = client.connectToServer(clientEndpoint, serverUri.resolve(LongMessageHandler.class.getSimpleName()));
+        Session session =
+            client.connectToServer(clientEndpoint, serverUri.resolve(LongMessageHandler.class.getSimpleName()));
 
         // Send and receive echo on client.
         String payload = Long.toString(Long.MAX_VALUE);

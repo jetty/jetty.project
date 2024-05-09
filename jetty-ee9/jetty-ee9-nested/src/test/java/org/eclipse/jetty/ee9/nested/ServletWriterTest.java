@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,21 +32,12 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletWriterTest
 {
@@ -75,7 +74,9 @@ public class ServletWriterTest
         start(chars.length, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 serverThreadRef.set(Thread.currentThread());
                 jettyRequest.setHandled(true);
@@ -92,10 +93,7 @@ public class ServletWriterTest
 
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
-            String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(UTF_8));
             output.flush();

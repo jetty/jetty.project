@@ -18,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.eclipse.jetty.ee9.annotations.AnnotationDecorator;
 import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee9.webapp.Configuration;
@@ -32,7 +31,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,8 +75,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     public enum Mode
     {
-        GENERATE,  // Generate quickstart-web.xml and then stop
-        AUTO,      // use quickstart depending on the existence of quickstart-web.xml
+        GENERATE, // Generate quickstart-web.xml and then stop
+        AUTO, // use quickstart depending on the existence of quickstart-web.xml
         QUICKSTART // Use quickstart-web.xml
     }
 
@@ -117,7 +115,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Mode mode = getModeForContext(context);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("mode={} quickStartWebXml={} isReadableFile={} for {}",
+            LOG.debug(
+                "mode={} quickStartWebXml={} isReadableFile={} for {}",
                 mode,
                 quickStartWebXml,
                 Files.isRegularFile(quickStartWebXml),
@@ -192,17 +191,19 @@ public class QuickStartConfiguration extends AbstractConfiguration
         }
         else
         {
-            //add the processor to handle normal web.xml content
+            // add the processor to handle normal web.xml content
             context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
 
-            //add a processor to handle extended web.xml format
+            // add a processor to handle extended web.xml format
             QuickStartDescriptorProcessor quickStartDescriptorProcessor = new QuickStartDescriptorProcessor();
             context.getMetaData().addDescriptorProcessor(quickStartDescriptorProcessor);
 
             context.setAttribute(QuickStartDescriptorProcessor.class.getName(), quickStartDescriptorProcessor);
 
-            //add a decorator that will find introspectable annotations
-            context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
+            // add a decorator that will find introspectable annotations
+            context.getObjectFactory()
+                .addDecorator(new AnnotationDecorator(
+                    context)); // this must be the last Decorator because they are run in reverse order!
 
             if (LOG.isDebugEnabled())
                 LOG.debug("configured {}", this);
@@ -219,14 +220,14 @@ public class QuickStartConfiguration extends AbstractConfiguration
     public void deconfigure(WebAppContext context) throws Exception
     {
         super.deconfigure(context);
-        QuickStartDescriptorProcessor quickStartDescriptorProcessor = (QuickStartDescriptorProcessor)context.getAttribute(QuickStartDescriptorProcessor.class.getName());
+        QuickStartDescriptorProcessor quickStartDescriptorProcessor =
+            (QuickStartDescriptorProcessor)context.getAttribute(QuickStartDescriptorProcessor.class.getName());
         IO.close(quickStartDescriptorProcessor);
         IO.close(_resourceFactory);
         _resourceFactory = null;
     }
 
-    protected void quickStart(WebAppContext context)
-        throws Exception
+    protected void quickStart(WebAppContext context) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.info("Quickstarting {}", context);
@@ -239,8 +240,12 @@ public class QuickStartConfiguration extends AbstractConfiguration
             throw new IllegalStateException("Quickstart doesn't exist: " + quickStartWebXml);
         Resource quickStartWebResource = context.getResourceFactory().newResource(quickStartWebXml);
         context.getMetaData().setWebDescriptor(new WebDescriptor(quickStartWebResource));
-        context.getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebDescriptor().getMajorVersion());
-        context.getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebDescriptor().getMinorVersion());
+        context.getServletContext()
+            .setEffectiveMajorVersion(
+                context.getMetaData().getWebDescriptor().getMajorVersion());
+        context.getServletContext()
+            .setEffectiveMinorVersion(
+                context.getMetaData().getWebDescriptor().getMinorVersion());
     }
 
     /**

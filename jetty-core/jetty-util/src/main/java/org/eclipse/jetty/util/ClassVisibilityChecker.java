@@ -52,7 +52,7 @@ public interface ClassVisibilityChecker
      * @return True if the class is a system class.
      * @deprecated use {@link #isProtectedClass(Class)}
      */
-    @Deprecated (forRemoval = true, since = "12.0.9")
+    @Deprecated(forRemoval = true, since = "12.0.9")
     default boolean isSystemClass(Class<?> clazz)
     {
         return isProtectedClass(clazz);
@@ -69,7 +69,7 @@ public interface ClassVisibilityChecker
      * @return True if the class is a server class.
      * @deprecated use {@link #isHiddenClass(Class)}
      */
-    @Deprecated (forRemoval = true, since = "12.0.9")
+    @Deprecated(forRemoval = true, since = "12.0.9")
     default boolean isServerClass(Class<?> clazz)
     {
         return isHiddenClass(clazz);

@@ -88,12 +88,12 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
     {
         _queryManager = queryManager;
     }
-    
+
     public void setSerialization(boolean serialization)
     {
         _serialization = serialization;
     }
-    
+
     public boolean getSerialization()
     {
         return _serialization;

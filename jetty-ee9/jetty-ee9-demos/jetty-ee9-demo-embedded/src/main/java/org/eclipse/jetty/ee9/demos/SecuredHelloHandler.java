@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.demos;
 
 import java.io.FileNotFoundException;
 import java.util.Collections;
-
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;

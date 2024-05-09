@@ -28,7 +28,9 @@ public class Source
     public enum Origin
     {
         EMBEDDED,
-        JAKARTA_API, DESCRIPTOR, ANNOTATION
+        JAKARTA_API,
+        DESCRIPTOR,
+        ANNOTATION
     }
 
     public final Origin _origin;

@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,21 +48,21 @@ public class ManagedAttributeListener
         if (_managedAttributes.contains(event.getName()))
             updateBean(event.getName(), event.getValue(), event.getServletContext().getAttribute(event.getName()));
     }
-
+    
     @Override
     public void attributeRemoved(ServletContextAttributeEvent event)
     {
         if (_managedAttributes.contains(event.getName()))
             updateBean(event.getName(), event.getValue(), null);
     }
-
+    
     @Override
     public void attributeAdded(ServletContextAttributeEvent event)
     {
         if (_managedAttributes.contains(event.getName()))
             updateBean(event.getName(), null, event.getValue());
     }
-
+    
     @Override
     public void contextInitialized(ServletContextEvent event)
     {
@@ -74,7 +73,7 @@ public class ManagedAttributeListener
                 updateBean(name, null, event.getServletContext().getAttribute(name));
         }
     }
-
+    
     @Override
     public void contextDestroyed(ServletContextEvent event)
     {
@@ -84,13 +83,13 @@ public class ManagedAttributeListener
                 updateBean(name, event.getServletContext().getAttribute(name), null);
         }
     }
-
+    
     protected void updateBean(String name, Object oldBean, Object newBean)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("update {} {}->{} on {}", name, oldBean, newBean, _context);
         _context.updateBean(oldBean, newBean, false);
     }
-
+    
      */
 }

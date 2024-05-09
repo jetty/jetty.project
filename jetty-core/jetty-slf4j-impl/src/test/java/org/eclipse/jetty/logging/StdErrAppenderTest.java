@@ -14,7 +14,6 @@
 package org.eclipse.jetty.logging;
 
 import java.util.Properties;
-
 import org.junit.jupiter.api.Test;
 import org.slf4j.event.Level;
 

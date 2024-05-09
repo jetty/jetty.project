@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.ServletResponseWrapper;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
@@ -25,14 +32,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Supplier;
-
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.ServletResponseWrapper;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpServletResponseWrapper;
-import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpCookie;
@@ -68,7 +67,8 @@ import org.eclipse.jetty.util.URIUtil;
 public class Response implements HttpServletResponse
 {
     private static final int __MIN_BUFFER_SIZE = 1;
-    private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
+    private static final HttpField __EXPIRES_01JAN1970 =
+        new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
     public static final int NO_CONTENT_LENGTH = -1;
     public static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
@@ -87,13 +87,16 @@ public class Response implements HttpServletResponse
      * to support the {@code SameSite} attribute.
      **/
     private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
+
     private static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
     private static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
     private static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
 
     public enum OutputType
     {
-        NONE, STREAM, WRITER
+        NONE,
+        STREAM,
+        WRITER
     }
 
     /**
@@ -104,7 +107,8 @@ public class Response implements HttpServletResponse
     public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
     private final HttpChannel _channel;
-    private final AtomicBiInteger _errorSentAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
+    private final AtomicBiInteger _errorSentAndIncludes =
+        new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
     private HttpFields.Mutable _fields;
@@ -152,8 +156,10 @@ public class Response implements HttpServletResponse
         SET_CHARACTER_ENCODING
     }
 
-    private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.DEFAULT, EncodingFrom.INFERRED, EncodingFrom.SET_LOCALE);
-    private static final EnumSet<EncodingFrom> __explicitCharset = EnumSet.of(EncodingFrom.SET_LOCALE, EncodingFrom.SET_CHARACTER_ENCODING, EncodingFrom.SET_CONTENT_TYPE);
+    private static final EnumSet<EncodingFrom> __localeOverride =
+        EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.DEFAULT, EncodingFrom.INFERRED, EncodingFrom.SET_LOCALE);
+    private static final EnumSet<EncodingFrom> __explicitCharset =
+        EnumSet.of(EncodingFrom.SET_LOCALE, EncodingFrom.SET_CHARACTER_ENCODING, EncodingFrom.SET_CONTENT_TYPE);
 
     public static Response getBaseResponse(ServletResponse servletResponse)
     {
@@ -259,18 +265,19 @@ public class Response implements HttpServletResponse
     {
         if (StringUtil.isBlank(cookie.getName()))
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
-     
+
         // add the set cookie
-        _fields.add(new SetCookieHttpField(checkSameSite(cookie), getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()));
+        _fields.add(new SetCookieHttpField(
+            checkSameSite(cookie), getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()));
 
         // Expire responses with set-cookie headers so they do not get cached.
         _fields.put(__EXPIRES_01JAN1970);
     }
-    
+
     /**
-     * Check that samesite is set on the cookie. If not, use a 
+     * Check that samesite is set on the cookie. If not, use a
      * context default value, if one has been set.
-     * 
+     *
      * @param cookie the cookie to check
      * @return either the original cookie, or a new one that has the samesit default set
      */
@@ -279,12 +286,12 @@ public class Response implements HttpServletResponse
         if (cookie == null || cookie.getSameSite() != null)
             return cookie;
 
-        //sameSite is not set, use the default configured for the context, if one exists
+        // sameSite is not set, use the default configured for the context, if one exists
         ContextHandler.APIContext apiContext = _channel.getRequest().getContext();
         Context context = (apiContext == null) ? null : apiContext.getCoreContext();
         SameSite contextDefault = HttpCookieUtils.getSameSiteDefault(context);
         if (contextDefault == null)
-            return cookie; //no default set
+            return cookie; // no default set
 
         return HttpCookie.from(cookie, HttpCookie.SAME_SITE_ATTRIBUTE, contextDefault.getAttributeValue());
     }
@@ -292,7 +299,7 @@ public class Response implements HttpServletResponse
     @Override
     public void addCookie(Cookie cookie)
     {
-        //Servlet Spec 9.3 Include method: cannot set a cookie if handling an include
+        // Servlet Spec 9.3 Include method: cannot set a cookie if handling an include
         if (isMutable())
         {
             if (StringUtil.isBlank(cookie.getName()))
@@ -310,22 +317,28 @@ public class Response implements HttpServletResponse
      */
     public void replaceCookie(HttpCookie cookie)
     {
-        for (ListIterator<HttpField> i = _fields.listIterator(); i.hasNext(); )
+        for (ListIterator<HttpField> i = _fields.listIterator(); i.hasNext();)
         {
             HttpField field = i.next();
 
             if (field.getHeader() == HttpHeader.SET_COOKIE)
             {
-                CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
-                
+                CookieCompliance compliance =
+                    getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
+
                 if (field instanceof HttpCookieUtils.SetCookieHttpField)
                 {
-                    if (!HttpCookieUtils.match(((HttpCookieUtils.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                    if (!HttpCookieUtils.match(
+                        ((HttpCookieUtils.SetCookieHttpField)field).getHttpCookie(),
+                        cookie.getName(),
+                        cookie.getDomain(),
+                        cookie.getPath()))
                         continue;
                 }
                 else
                 {
-                    if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                    if (!HttpCookieUtils.match(
+                        field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                         continue;
                 }
 
@@ -422,8 +435,7 @@ public class Response implements HttpServletResponse
 
             if (suffix <= prefix)
                 return url.substring(0, prefix + sessionURLPrefix.length()) + id;
-            return url.substring(0, prefix + sessionURLPrefix.length()) + id +
-                url.substring(suffix);
+            return url.substring(0, prefix + sessionURLPrefix.length()) + id + url.substring(suffix);
         }
 
         // edit the session
@@ -432,13 +444,11 @@ public class Response implements HttpServletResponse
             suffix = url.indexOf('#');
         if (suffix < 0)
         {
-            return url +
-                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
+            return url + ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + // if no path, insert the root path
                 sessionURLPrefix + id;
         }
 
-        return url.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
+        return url.substring(0, suffix) + ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + // if no path so insert the root path
             sessionURLPrefix + id + url.substring(suffix);
     }
 
@@ -544,8 +554,10 @@ public class Response implements HttpServletResponse
      */
     public void sendRedirect(String location, boolean consumeAll) throws IOException
     {
-        sendRedirect(getHttpChannel().getRequest().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-            ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER, location, consumeAll);
+        sendRedirect(
+            getHttpChannel().getRequest().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER,
+            location,
+            consumeAll);
     }
 
     /**
@@ -572,9 +584,7 @@ public class Response implements HttpServletResponse
 
         if (!URIUtil.hasScheme(location))
         {
-            StringBuilder buf = _channel.getHttpConfiguration().isRelativeRedirectAllowed()
-                ? new StringBuilder()
-                : _channel.getRequest().getRootURL();
+            StringBuilder buf = _channel.getHttpConfiguration().isRelativeRedirectAllowed() ? new StringBuilder() : _channel.getRequest().getRootURL();
             if (location.startsWith("/"))
             {
                 // absolute in context
@@ -811,7 +821,8 @@ public class Response implements HttpServletResponse
             return _mimeType.getCharsetString();
 
         // Get MimeTypes from context
-        MimeTypes mimeTypes = _channel.getRequest().getCoreRequest().getContext().getMimeTypes();
+        MimeTypes mimeTypes =
+            _channel.getRequest().getCoreRequest().getContext().getMimeTypes();
 
         // Try charset assumed from content type (assumed charsets are not added to content type header).
         encoding = mimeTypes.getCharsetAssumedFromContentType(_contentType);
@@ -1113,7 +1124,7 @@ public class Response implements HttpServletResponse
             {
                 // too late to change the character encoding;
                 _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                if (_characterEncoding != null  && (_mimeType == null || !_mimeType.isCharsetAssumed()))
+                if (_characterEncoding != null && (_mimeType == null || !_mimeType.isCharsetAssumed()))
                     _contentType = _contentType + ";charset=" + _characterEncoding;
                 _mimeType = MimeTypes.CACHE.get(_contentType);
             }
@@ -1139,7 +1150,8 @@ public class Response implements HttpServletResponse
         if (isCommitted())
             throw new IllegalStateException("cannot set buffer size after response is in committed state");
         if (getContentCount() > 0)
-            throw new IllegalStateException("cannot set buffer size after response has " + getContentCount() + " bytes already written");
+            throw new IllegalStateException(
+                "cannot set buffer size after response has " + getContentCount() + " bytes already written");
         if (size < __MIN_BUFFER_SIZE)
             size = __MIN_BUFFER_SIZE;
         _out.setBufferSize(size);
@@ -1199,7 +1211,7 @@ public class Response implements HttpServletResponse
         }
 
         // recreate session cookies
-        ContextHandler.CoreContextRequest coreRequest =  getHttpChannel().getCoreRequest();
+        ContextHandler.CoreContextRequest coreRequest = getHttpChannel().getCoreRequest();
         Request request = getHttpChannel().getRequest();
         HttpSession httpSession = request.getSession(false);
         if (httpSession != null && httpSession.isNew())
@@ -1207,7 +1219,8 @@ public class Response implements HttpServletResponse
             SessionManager sessionManager = coreRequest.getSessionManager();
             if (sessionManager != null)
             {
-                HttpCookie cookie = sessionManager.getSessionCookie(coreRequest.getManagedSession(), request.isSecure());
+                HttpCookie cookie =
+                    sessionManager.getSessionCookie(coreRequest.getManagedSession(), request.isSecure());
                 if (cookie != null)
                     addCookie(cookie);
             }
@@ -1225,7 +1238,7 @@ public class Response implements HttpServletResponse
         _encodingFrom = EncodingFrom.NOT_SET;
 
         // remove the content related response headers and keep all others
-        for (Iterator<HttpField> i = getHttpFields().iterator(); i.hasNext(); )
+        for (Iterator<HttpField> i = getHttpFields().iterator(); i.hasNext();)
         {
             HttpField field = i.next();
             if (field.getHeader() == null)
@@ -1297,7 +1310,13 @@ public class Response implements HttpServletResponse
 
     protected MetaData.Response newResponseMetaData()
     {
-        return new MetaData.Response(getStatus(), getReason(), _channel.getRequest().getHttpVersion(), _channel.getCoreResponse().getHeaders(), getLongContentLength(), getTrailers());
+        return new MetaData.Response(
+            getStatus(),
+            getReason(),
+            _channel.getRequest().getHttpVersion(),
+            _channel.getCoreResponse().getHeaders(),
+            getLongContentLength(),
+            getTrailers());
     }
 
     @Override
@@ -1372,7 +1391,9 @@ public class Response implements HttpServletResponse
     @Override
     public String toString()
     {
-        return String.format("%s %d %s%n%s", _channel.getRequest().getHttpVersion(), _status, _reason == null ? "" : _reason, _fields);
+        return String.format(
+            "%s %d %s%n%s",
+            _channel.getRequest().getHttpVersion(), _status, _reason == null ? "" : _reason, _fields);
     }
 
     public void putHeaders(HttpContent content, long contentLength, boolean etag)
@@ -1506,7 +1527,8 @@ public class Response implements HttpServletResponse
         {
             _cookie = cookie;
             String comment = cookie.getComment();
-            // HttpOnly was supported as a comment in cookie flags before the Cookie implementation so need to check that.
+            // HttpOnly was supported as a comment in cookie flags before the Cookie implementation so need to check
+            // that.
             _httpOnly = cookie.isHttpOnly() || isHttpOnlyInComment(comment);
             _sameSite = getSameSiteFromComment(comment);
             _partitioned = isPartitionedInComment(comment);

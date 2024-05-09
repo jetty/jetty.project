@@ -34,7 +34,8 @@ public class RFC9110QuotedStringTokenizer implements QuotedStringTokenizer
     private final boolean _embeddedQuotes;
     private final boolean _escapeOnlyQuote;
 
-    RFC9110QuotedStringTokenizer(String delim,
+    RFC9110QuotedStringTokenizer(
+                                 String delim,
                                  boolean optionalWhiteSpace,
                                  boolean returnDelimiters,
                                  boolean returnQuotes,
@@ -344,8 +345,12 @@ public class RFC9110QuotedStringTokenizer implements QuotedStringTokenizer
     public String toString()
     {
         StringBuilder out = new StringBuilder();
-        out.append(getClass().getSimpleName()).append('@').append(Long.toHexString(hashCode()))
-            .append("{'").append(_delim).append('\'');
+        out.append(getClass().getSimpleName())
+            .append('@')
+            .append(Long.toHexString(hashCode()))
+            .append("{'")
+            .append(_delim)
+            .append('\'');
 
         if (_optionalWhiteSpace)
             out.append(",optionalWhiteSpace");

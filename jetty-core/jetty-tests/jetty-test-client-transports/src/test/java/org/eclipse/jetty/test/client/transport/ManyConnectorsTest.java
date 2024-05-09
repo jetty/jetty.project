@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.ServerSocketChannel;
-
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
@@ -34,9 +36,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 @ExtendWith(WorkDirExtension.class)
 public class ManyConnectorsTest
 {
@@ -50,7 +49,8 @@ public class ManyConnectorsTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 1})
+    @ValueSource(ints =
+    {0, 1})
     public void testManyConnectors(int acceptors) throws Exception
     {
         HttpConfiguration httpConfig = new HttpConfiguration();
@@ -58,10 +58,12 @@ public class ManyConnectorsTest
         server.addConnector(connector1);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslContextFactory.setKeyStorePath(
+            MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslContextFactory.setKeyStorePassword("storepwd");
         ServerQuicConfiguration quicConfig = new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
-        QuicServerConnector connector2 = new QuicServerConnector(server, quicConfig, new HTTP3ServerConnectionFactory(quicConfig, httpConfig));
+        QuicServerConnector connector2 =
+            new QuicServerConnector(server, quicConfig, new HTTP3ServerConnectionFactory(quicConfig, httpConfig));
         server.addConnector(connector2);
 
         connector1.addEventListener(new NetworkConnector.Listener()

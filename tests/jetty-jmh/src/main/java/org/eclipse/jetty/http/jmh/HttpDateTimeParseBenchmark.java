@@ -19,7 +19,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpDateTime;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -51,8 +50,10 @@ public class HttpDateTimeParseBenchmark
         size = 40;
         expires = new String[size];
 
-        long startTime = ZonedDateTime.parse("Mon, 01 Jan 1900 01:00:00 GMT", DateTimeFormatter.RFC_1123_DATE_TIME).toEpochSecond();
-        long endTime = ZonedDateTime.parse("Fri, 31 Dec 2100 23:59:59 GMT", DateTimeFormatter.RFC_1123_DATE_TIME).toEpochSecond();
+        long startTime = ZonedDateTime.parse("Mon, 01 Jan 1900 01:00:00 GMT", DateTimeFormatter.RFC_1123_DATE_TIME)
+            .toEpochSecond();
+        long endTime = ZonedDateTime.parse("Fri, 31 Dec 2100 23:59:59 GMT", DateTimeFormatter.RFC_1123_DATE_TIME)
+            .toEpochSecond();
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
         ZoneId zoneGMT = ZoneId.of("GMT");
@@ -65,7 +66,8 @@ public class HttpDateTimeParseBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testParseDateTimeOld()
     {
         int entry = ThreadLocalRandom.current().nextInt(size);
@@ -73,7 +75,8 @@ public class HttpDateTimeParseBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public ZonedDateTime testParseNew()
     {
         int entry = ThreadLocalRandom.current().nextInt(size);
@@ -94,5 +97,3 @@ public class HttpDateTimeParseBenchmark
         new Runner(opt).run();
     }
 }
-
-

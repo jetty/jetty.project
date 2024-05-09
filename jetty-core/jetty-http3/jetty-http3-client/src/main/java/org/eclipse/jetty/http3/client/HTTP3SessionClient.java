@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.client;
 
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
@@ -118,20 +117,19 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         stream.setListener(listener);
         stream.onOpen();
 
-        stream.writeFrame(frame)
-            .whenComplete((r, x) ->
+        stream.writeFrame(frame).whenComplete((r, x) ->
+        {
+            if (x == null)
             {
-                if (x == null)
-                {
-                    stream.updateClose(frame.isLast(), true);
-                    promise.succeeded(stream);
-                }
-                else
-                {
-                    removeStream(stream, x);
-                    promise.failed(x);
-                }
-            });
+                stream.updateClose(frame.isLast(), true);
+                promise.succeeded(stream);
+            }
+            else
+            {
+                removeStream(stream, x);
+                promise.failed(x);
+            }
+        });
 
         return promise;
     }

@@ -17,7 +17,6 @@ import java.io.FileNotFoundException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -89,7 +88,8 @@ public class TestServer
         // Setup context
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        Path realmPropPath = webappProjectRoot.resolve("jetty-ee10/jetty-ee10-demos/jetty-ee10-demo-jetty-webapp/src/test/resources/test-realm.properties");
+        Path realmPropPath = webappProjectRoot.resolve(
+            "jetty-ee10/jetty-ee10-demos/jetty-ee10-demo-jetty-webapp/src/test/resources/test-realm.properties");
         if (!Files.exists(realmPropPath))
             throw new FileNotFoundException(realmPropPath.toString());
         Resource realmResource = ResourceFactory.of(server).newResource(realmPropPath);
@@ -105,14 +105,14 @@ public class TestServer
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/test");
         webapp.setParentLoaderPriority(true);
-        Path webappBase = webappProjectRoot.resolve("jetty-ee10/jetty-ee10-demos/jetty-ee10-demo-jetty-webapp/src/main/webapp");
+        Path webappBase =
+            webappProjectRoot.resolve("jetty-ee10/jetty-ee10-demos/jetty-ee10-demo-jetty-webapp/src/main/webapp");
         if (!Files.exists(webappBase))
             throw new FileNotFoundException(webappBase.toString());
         webapp.setBaseResource(webapp.getResourceFactory().newResource(webappBase));
-        webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
-            ".*/test-jetty-webapp/target/classes.*$|" +
-                ".*/jakarta.servlet.api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard.*\\.jar$"
-        );
+        webapp.setAttribute(
+            MetaInfConfiguration.CONTAINER_JAR_PATTERN,
+            ".*/test-jetty-webapp/target/classes.*$|" + ".*/jakarta.servlet.api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard.*\\.jar$");
 
         webapp.setAttribute("testAttribute", "testValue");
         Path sessionDir = Files.createTempDirectory("sessions");
@@ -140,7 +140,7 @@ public class TestServer
         server.join();
     }
 
-    //TODO how to restart server?
+    // TODO how to restart server?
     /*
     private static class RestartHandler extends HandlerWrapper
     {

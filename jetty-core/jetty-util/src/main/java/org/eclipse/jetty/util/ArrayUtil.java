@@ -28,7 +28,7 @@ public class ArrayUtil
     {
         if (item == null || array == null)
             return array;
-        for (int i = array.length; i-- > 0; )
+        for (int i = array.length; i-- > 0;)
         {
             if (item.equals(array[i]))
             {
@@ -159,4 +159,3 @@ public class ArrayUtil
         // prevents instantiation
     }
 }
-

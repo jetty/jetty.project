@@ -13,12 +13,19 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -36,14 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PathMappingsHandlerTest
 {
@@ -95,12 +94,13 @@ public class PathMappingsHandlerTest
 
         startServer(contextHandler);
 
-        HttpTester.Response response = executeRequest("""
-            GET / HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-             
-            """);
+        HttpTester.Response response = executeRequest(
+            """
+                GET / HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+
+                """);
         assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
     }
 
@@ -119,20 +119,22 @@ public class PathMappingsHandlerTest
 
         startServer(contextHandler);
 
-        HttpTester.Response response = executeRequest("""
-            GET /hello HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-             
-            """);
+        HttpTester.Response response = executeRequest(
+            """
+                GET /hello HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+
+                """);
         assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
 
-        response = executeRequest("""
-            GET /hello.php HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-             
-            """);
+        response = executeRequest(
+            """
+                GET /hello.php HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+
+                """);
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals("PhpExample Hit", response.getContent());
     }
@@ -144,8 +146,7 @@ public class PathMappingsHandlerTest
             Arguments.of("/index.html", HttpStatus.OK_200, "FakeSpecificStaticHandler Hit"),
             Arguments.of("/index.php", HttpStatus.OK_200, "PhpHandler Hit"),
             Arguments.of("/config.php", HttpStatus.OK_200, "PhpHandler Hit"),
-            Arguments.of("/css/main.css", HttpStatus.OK_200, "FakeResourceHandler Hit")
-        );
+            Arguments.of("/css/main.css", HttpStatus.OK_200, "FakeResourceHandler Hit"));
     }
 
     /**
@@ -155,25 +156,29 @@ public class PathMappingsHandlerTest
      */
     @ParameterizedTest
     @MethodSource("severalMappingsInput")
-    public void testSeveralMappingAndNoWrapper(String requestPath, int expectedStatus, String expectedResponseBody) throws Exception
+    public void testSeveralMappingAndNoWrapper(String requestPath, int expectedStatus, String expectedResponseBody)
+        throws Exception
     {
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/");
 
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
         pathMappingsHandler.addMapping(new ServletPathSpec("/"), new SimpleHandler("FakeResourceHandler Hit"));
-        pathMappingsHandler.addMapping(new ServletPathSpec("/index.html"), new SimpleHandler("FakeSpecificStaticHandler Hit"));
+        pathMappingsHandler.addMapping(
+            new ServletPathSpec("/index.html"), new SimpleHandler("FakeSpecificStaticHandler Hit"));
         pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new SimpleHandler("PhpHandler Hit"));
         contextHandler.setHandler(pathMappingsHandler);
 
         startServer(contextHandler);
 
-        HttpTester.Response response = executeRequest("""
-            GET %s HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-             
-            """.formatted(requestPath));
+        HttpTester.Response response = executeRequest(
+            """
+                GET %s HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+
+                """
+                .formatted(requestPath));
         assertEquals(expectedStatus, response.getStatus());
         assertEquals(expectedResponseBody, response.getContent());
     }
@@ -186,7 +191,8 @@ public class PathMappingsHandlerTest
 
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
         pathMappingsHandler.addMapping(new ServletPathSpec("/"), new SimpleHandler("FakeResourceHandler Hit"));
-        pathMappingsHandler.addMapping(new ServletPathSpec("/index.html"), new SimpleHandler("FakeSpecificStaticHandler Hit"));
+        pathMappingsHandler.addMapping(
+            new ServletPathSpec("/index.html"), new SimpleHandler("FakeSpecificStaticHandler Hit"));
         pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new SimpleHandler("PhpHandler Hit"));
         contextHandler.setHandler(pathMappingsHandler);
 
@@ -261,7 +267,9 @@ public class PathMappingsHandlerTest
         pathMappingsHandler.addMapping(new ServletPathSpec("/index.html"), new SimpleHandler("specific"));
         pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), sequence);
 
-        List<String> actualHandlers = pathMappingsHandler.getDescendants().stream().map(Objects::toString).toList();
+        List<String> actualHandlers = pathMappingsHandler.getDescendants().stream()
+            .map(Objects::toString)
+            .toList();
 
         String[] expectedHandlers = {
             "SimpleHandler[msg=\"default\"]",
@@ -278,7 +286,9 @@ public class PathMappingsHandlerTest
     public void testAddLoopSelf()
     {
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
-        assertThrows(IllegalStateException.class, () -> pathMappingsHandler.addMapping(new ServletPathSpec("/self"), pathMappingsHandler));
+        assertThrows(
+            IllegalStateException.class,
+            () -> pathMappingsHandler.addMapping(new ServletPathSpec("/self"), pathMappingsHandler));
     }
 
     @Test
@@ -288,7 +298,9 @@ public class PathMappingsHandlerTest
         PathMappingsHandler pathMappingsHandler = new PathMappingsHandler();
         contextHandler.setHandler(pathMappingsHandler);
 
-        assertThrows(IllegalStateException.class, () -> pathMappingsHandler.addMapping(new ServletPathSpec("/loop"), contextHandler));
+        assertThrows(
+            IllegalStateException.class,
+            () -> pathMappingsHandler.addMapping(new ServletPathSpec("/loop"), contextHandler));
     }
 
     private static class SimpleHandler extends Handler.Abstract

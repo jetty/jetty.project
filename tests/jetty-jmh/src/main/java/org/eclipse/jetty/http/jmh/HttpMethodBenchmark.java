@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.BufferUtil;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -53,14 +52,16 @@ public class HttpMethodBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public HttpMethod testTrieGetBest() throws Exception
     {
         return HttpMethod.LOOK_AHEAD.getBest(GET, 0, GET.remaining());
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public HttpMethod testIntSwitch() throws Exception
     {
         switch (GET.getInt(0))
@@ -79,7 +80,8 @@ public class HttpMethodBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public HttpMethod testMapGet() throws Exception
     {
         for (int i = 0; i < GET.remaining(); i++)
@@ -91,14 +93,16 @@ public class HttpMethodBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public HttpMethod testHttpMethodPost() throws Exception
     {
         return HttpMethod.lookAheadGet(POST);
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public HttpMethod testHttpMethodMove() throws Exception
     {
         return HttpMethod.lookAheadGet(MOVE);
@@ -118,5 +122,3 @@ public class HttpMethodBenchmark
         new Runner(opt).run();
     }
 }
-
-

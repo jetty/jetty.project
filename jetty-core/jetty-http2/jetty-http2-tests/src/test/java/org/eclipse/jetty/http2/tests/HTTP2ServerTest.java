@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -27,7 +33,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -60,12 +65,6 @@ import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HTTP2ServerTest extends AbstractServerTest
 {
@@ -352,24 +351,26 @@ public class HTTP2ServerTest extends AbstractServerTest
         });
         server.stop();
 
-        ServerConnector connector2 = new ServerConnector(server, new HTTP2ServerConnectionFactory(new HttpConfiguration()))
-        {
-            @Override
-            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+        ServerConnector connector2 =
+            new ServerConnector(server, new HTTP2ServerConnectionFactory(new HttpConfiguration()))
             {
-                return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
+                @Override
+                protected SocketChannelEndPoint newEndPoint(
+                                                            SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
                 {
-                    @Override
-                    public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
+                    return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                     {
-                        if (broken.get())
-                            callback.failed(new IOException("explicitly_thrown_by_test"));
-                        else
-                            super.write(callback, buffers);
-                    }
-                };
-            }
-        };
+                        @Override
+                        public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
+                        {
+                            if (broken.get())
+                                callback.failed(new IOException("explicitly_thrown_by_test"));
+                            else
+                                super.write(callback, buffers);
+                        }
+                    };
+                }
+            };
         server.addConnector(connector2);
         server.start();
 
@@ -389,7 +390,9 @@ public class HTTP2ServerTest extends AbstractServerTest
             // The server will close the connection abruptly since it
             // cannot write and therefore cannot even send the GO_AWAY.
             Parser parser = new Parser(bufferPool, 8192);
-            parser.init(new Parser.Listener() {});
+            parser.init(new Parser.Listener()
+            {
+            });
             boolean closed = parseResponse(client, parser, 2 * delay);
             assertTrue(closed);
         }
@@ -429,7 +432,9 @@ public class HTTP2ServerTest extends AbstractServerTest
                 output.flush();
 
                 Parser parser = new Parser(bufferPool, 8192);
-                parser.init(new Parser.Listener() {});
+                parser.init(new Parser.Listener()
+                {
+                });
                 boolean closed = parseResponse(client, parser);
 
                 assertTrue(closed);
@@ -549,17 +554,23 @@ public class HTTP2ServerTest extends AbstractServerTest
             continuationFrameHeader.put(4, (byte)0);
             // Add a last, empty, CONTINUATION frame.
             ByteBuffer last = ByteBuffer.wrap(new byte[]{
-                0, 0, 0, // Length
+                0,
+                0,
+                0, // Length
                 (byte)FrameType.CONTINUATION.getType(),
                 (byte)Flags.END_HEADERS,
-                0, 0, 0, 1 // Stream ID
+                0,
+                0,
+                0,
+                1 // Stream ID
             });
             accumulator.append(RetainableByteBuffer.wrap(last));
             return accumulator;
         });
     }
 
-    private void testRequestWithContinuationFrames(PriorityFrame priorityFrame, Callable<ByteBufferPool.Accumulator> frames) throws Exception
+    private void testRequestWithContinuationFrames(
+                                                   PriorityFrame priorityFrame, Callable<ByteBufferPool.Accumulator> frames) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
         startServer(new ServerSessionListener()

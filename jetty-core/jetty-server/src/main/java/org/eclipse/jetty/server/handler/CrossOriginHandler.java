@@ -17,7 +17,6 @@ import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -59,8 +58,10 @@ import org.slf4j.LoggerFactory;
 public class CrossOriginHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(CrossOriginHandler.class);
-    private static final PreEncodedHttpField ACCESS_CONTROL_ALLOW_CREDENTIALS_TRUE = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
-    private static final PreEncodedHttpField VARY_ORIGIN = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ORIGIN.asString());
+    private static final PreEncodedHttpField ACCESS_CONTROL_ALLOW_CREDENTIALS_TRUE =
+        new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+    private static final PreEncodedHttpField VARY_ORIGIN =
+        new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ORIGIN.asString());
 
     private boolean allowCredentials = false;
     private Set<String> allowedHeaders = Set.of("Content-Type");
@@ -314,13 +315,19 @@ public class CrossOriginHandler extends Handler.Wrapper
     {
         resolveAllowedOrigins();
         resolveAllowedTimingOrigins();
-        accessControlAllowMethodsField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS, String.join(",", getAllowedMethods()));
-        accessControlAllowHeadersField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS, String.join(",", getAllowedHeaders()));
-        accessControlExposeHeadersField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS, String.join(",", getExposedHeaders()));
-        accessControlMaxAge = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_MAX_AGE, getPreflightMaxAge().toSeconds());
+        accessControlAllowMethodsField =
+            new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS, String.join(",", getAllowedMethods()));
+        accessControlAllowHeadersField =
+            new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS, String.join(",", getAllowedHeaders()));
+        accessControlExposeHeadersField = new PreEncodedHttpField(
+            HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS, String.join(",", getExposedHeaders()));
+        accessControlMaxAge = new PreEncodedHttpField(
+            HttpHeader.ACCESS_CONTROL_MAX_AGE, getPreflightMaxAge().toSeconds());
 
         if (anyOriginAllowed && isAllowCredentials())
-            LOG.warn("{} configured with insecure parameters allowedOrigins=* and allowCredentials=true", getClass().getSimpleName());
+            LOG.warn(
+                "{} configured with insecure parameters allowedOrigins=* and allowCredentials=true",
+                getClass().getSimpleName());
 
         super.doStart();
     }
@@ -368,7 +375,10 @@ public class CrossOriginHandler extends Handler.Wrapper
             if (timingOriginMatches(origins))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("cross-origin request matches allowed timing origins: {} {}", request, getAllowedTimingOriginPatterns());
+                    LOG.debug(
+                        "cross-origin request matches allowed timing origins: {} {}",
+                        request,
+                        getAllowedTimingOriginPatterns());
                 response.getHeaders().put(HttpHeader.TIMING_ALLOW_ORIGIN, origins);
             }
 
@@ -377,7 +387,10 @@ public class CrossOriginHandler extends Handler.Wrapper
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("cross-origin request does not match allowed origins: {} {}", request, getAllowedOriginPatterns());
+                LOG.debug(
+                    "cross-origin request does not match allowed origins: {} {}",
+                    request,
+                    getAllowedOriginPatterns());
 
             if (isDeliverNonAllowedOriginRequests())
             {
@@ -395,7 +408,8 @@ public class CrossOriginHandler extends Handler.Wrapper
                 {
                     if (isWebSocketUpgrade(request) && !isDeliverNonAllowedOriginWebSocketUpgradeRequests())
                     {
-                        Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "origin not allowed");
+                        Response.writeError(
+                            request, response, callback, HttpStatus.BAD_REQUEST_400, "origin not allowed");
                         return true;
                     }
                 }

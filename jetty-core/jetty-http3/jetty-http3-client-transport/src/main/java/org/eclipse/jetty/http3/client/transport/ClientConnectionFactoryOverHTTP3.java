@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.client.transport;
 
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http3.client.HTTP3Client;

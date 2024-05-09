@@ -13,6 +13,17 @@
 
 package org.eclipse.jetty.util.resource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -24,7 +35,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -39,27 +49,22 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(WorkDirExtension.class)
 public class ResourceFactoryTest
 {
     public WorkDir workDir;
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "keystore.p12", "/keystore.p12",
-        "TestData/alphabet.txt", "/TestData/alphabet.txt",
-        "TestData/", "/TestData/", "TestData", "/TestData"
+    @ValueSource(strings =
+    {
+        "keystore.p12",
+        "/keystore.p12",
+        "TestData/alphabet.txt",
+        "/TestData/alphabet.txt",
+        "TestData/",
+        "/TestData/",
+        "TestData",
+        "/TestData"
     })
     public void testNewClassLoaderResourceExists(String reference)
     {
@@ -72,7 +77,8 @@ public class ResourceFactoryTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"does-not-exist.dat", "non-existent/dir/contents.txt", "/../"})
+    @ValueSource(strings =
+    {"does-not-exist.dat", "non-existent/dir/contents.txt", "/../"})
     public void testNewClassLoaderResourceDoesNotExists(String reference)
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
@@ -100,17 +106,24 @@ public class ResourceFactoryTest
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            assertThrows(IllegalArgumentException.class,
+            assertThrows(
+                IllegalArgumentException.class,
                 () -> resourceFactory.newClassLoaderResource(reference),
                 "Bad Reference [" + reference + "] should have failed");
         }
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "keystore.p12", "/keystore.p12",
-        "TestData/alphabet.txt", "/TestData/alphabet.txt",
-        "TestData/", "/TestData/", "TestData", "/TestData"
+    @ValueSource(strings =
+    {
+        "keystore.p12",
+        "/keystore.p12",
+        "TestData/alphabet.txt",
+        "/TestData/alphabet.txt",
+        "TestData/",
+        "/TestData/",
+        "TestData",
+        "/TestData"
     })
     public void testNewClassPathResourceExists(String reference)
     {
@@ -123,7 +136,8 @@ public class ResourceFactoryTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"does-not-exist.dat", "non-existent/dir/contents.txt", "/../"})
+    @ValueSource(strings =
+    {"does-not-exist.dat", "non-existent/dir/contents.txt", "/../"})
     public void testNewClassPathResourceDoesNotExists(String reference)
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
@@ -139,7 +153,8 @@ public class ResourceFactoryTest
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            assertThrows(IllegalArgumentException.class,
+            assertThrows(
+                IllegalArgumentException.class,
                 () -> resourceFactory.newClassPathResource(reference),
                 "Bad Reference [" + reference + "] should have failed");
         }
@@ -151,14 +166,15 @@ public class ResourceFactoryTest
         // Try this as a normal String input first.
         // We are subject to the URIUtil.toURI(String) behaviors here.
         // Since the `ftp` scheme is not registered, it's not recognized as a supported URI.
-        IllegalArgumentException iae = assertThrows(IllegalArgumentException.class,
-            () -> ResourceFactory.root().newResource("ftp://webtide.com/favicon.ico"));
+        IllegalArgumentException iae = assertThrows(IllegalArgumentException.class, () -> ResourceFactory.root()
+            .newResource("ftp://webtide.com/favicon.ico"));
         assertThat(iae.getMessage(), containsString("URI scheme not registered: ftp"));
 
         // Now try it as a formal URI object as input.
         URI uri = URI.create("ftp://webtide.com/favicon.ico");
         // This is an unsupported URI scheme
-        iae = assertThrows(IllegalArgumentException.class, () -> ResourceFactory.root().newResource(uri));
+        iae = assertThrows(
+            IllegalArgumentException.class, () -> ResourceFactory.root().newResource(uri));
         assertThat(iae.getMessage(), containsString("URI scheme not registered: ftp"));
     }
 
@@ -302,13 +318,10 @@ public class ResourceFactoryTest
             String config = String.format("%s,%s,%s", dir, foo, bar);
 
             // Split using commas
-            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
+            List<URI> uris =
+                resourceFactory.split(config).stream().map(Resource::getURI).toList();
 
-            URI[] expected = new URI[]{
-                dir.toUri(),
-                foo.toUri(),
-                bar.toUri()
-            };
+            URI[] expected = new URI[]{dir.toUri(), foo.toUri(), bar.toUri()};
             assertThat(uris, contains(expected));
         }
     }
@@ -330,13 +343,10 @@ public class ResourceFactoryTest
             String config = String.format("%s|%s|%s", dir, foo, bar);
 
             // Split using commas
-            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
+            List<URI> uris =
+                resourceFactory.split(config).stream().map(Resource::getURI).toList();
 
-            URI[] expected = new URI[]{
-                dir.toUri(),
-                foo.toUri(),
-                bar.toUri()
-            };
+            URI[] expected = new URI[]{dir.toUri(), foo.toUri(), bar.toUri()};
             assertThat(uris, contains(expected));
         }
     }
@@ -358,13 +368,10 @@ public class ResourceFactoryTest
             String config = String.format("%s;%s;%s", dir, foo, bar);
 
             // Split using commas
-            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
+            List<URI> uris =
+                resourceFactory.split(config).stream().map(Resource::getURI).toList();
 
-            URI[] expected = new URI[]{
-                dir.toUri(),
-                foo.toUri(),
-                bar.toUri()
-            };
+            URI[] expected = new URI[]{dir.toUri(), foo.toUri(), bar.toUri()};
             assertThat(uris, contains(expected));
         }
     }
@@ -388,7 +395,8 @@ public class ResourceFactoryTest
             String config = String.format("%s;%s;%s%s*", dir, foo, bar, File.separator);
 
             // Split using commas
-            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
+            List<URI> uris =
+                resourceFactory.split(config).stream().map(Resource::getURI).toList();
 
             URI[] expected = new URI[]{
                 dir.toUri(),

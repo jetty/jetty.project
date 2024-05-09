@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.echo;
 
-import java.io.IOException;
-
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
 
 @ServerEndpoint("/echo/text/basic/stateless")
 public class EchoStatelessBasicTextSocket

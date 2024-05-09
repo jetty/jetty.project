@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnector;
@@ -37,12 +42,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Socks4ProxyTest
 {
@@ -120,14 +119,11 @@ public class Socks4ProxyTest
             read = channel.read(buffer);
             assertEquals(buffer.capacity(), read);
             buffer.flip();
-            assertEquals(method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
+            assertEquals(
+                method + " " + path, StandardCharsets.UTF_8.decode(buffer).toString());
 
             // Response
-            String response =
-                "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+            String response = "HTTP/1.1 200 OK\r\n" + "Content-Length: 0\r\n" + "Connection: close\r\n" + "\r\n";
             channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -181,11 +177,7 @@ public class Socks4ProxyTest
             assertEquals(method, StandardCharsets.UTF_8.decode(buffer).toString());
 
             // Response
-            String response =
-                "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+            String response = "HTTP/1.1 200 OK\r\n" + "Content-Length: 0\r\n" + "Connection: close\r\n" + "\r\n";
             channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -263,11 +255,7 @@ public class Socks4ProxyTest
             }
 
             // Send the response.
-            String response =
-                "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+            String response = "HTTP/1.1 200 OK\r\n" + "Content-Length: 0\r\n" + "Connection: close\r\n" + "\r\n";
             OutputStream output = sslSocket.getOutputStream();
             output.write(response.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -287,15 +275,15 @@ public class Socks4ProxyTest
         // Use an address to avoid resolution of "localhost" to multiple addresses.
         String serverHost = "127.0.0.13";
         int serverPort = proxyPort + 1; // Any port will do
-        Request request = client.newRequest(serverHost, serverPort)
-            .timeout(timeout, TimeUnit.MILLISECONDS);
+        Request request = client.newRequest(serverHost, serverPort).timeout(timeout, TimeUnit.MILLISECONDS);
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         try (SocketChannel ignored = proxy.accept())
         {
             // Accept the connection, but do not reply and don't close.
 
-            ExecutionException x = assertThrows(ExecutionException.class, () -> completable.get(2 * timeout, TimeUnit.MILLISECONDS));
+            ExecutionException x =
+                assertThrows(ExecutionException.class, () -> completable.get(2 * timeout, TimeUnit.MILLISECONDS));
             assertThat(x.getCause(), instanceOf(TimeoutException.class));
         }
     }
@@ -318,7 +306,8 @@ public class Socks4ProxyTest
         {
             // Accept the connection, but do not reply and don't close.
 
-            ExecutionException x = assertThrows(ExecutionException.class, () -> completable.get(2 * idleTimeout, TimeUnit.MILLISECONDS));
+            ExecutionException x = assertThrows(
+                ExecutionException.class, () -> completable.get(2 * idleTimeout, TimeUnit.MILLISECONDS));
             assertThat(x.getCause(), instanceOf(TimeoutException.class));
         }
     }

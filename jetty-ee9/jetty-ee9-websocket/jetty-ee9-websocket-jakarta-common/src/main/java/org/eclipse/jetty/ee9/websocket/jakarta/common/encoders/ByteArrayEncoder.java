@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.encoders;
 
-import java.nio.ByteBuffer;
-
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
+import java.nio.ByteBuffer;
 
 public class ByteArrayEncoder implements Encoder.Binary<byte[]>
 {

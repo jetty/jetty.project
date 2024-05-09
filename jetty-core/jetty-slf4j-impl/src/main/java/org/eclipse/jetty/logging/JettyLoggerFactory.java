@@ -31,7 +31,6 @@ import javax.management.MBeanNotificationInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.ReflectionException;
-
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
@@ -255,7 +254,8 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
     }
 
     @Override
-    public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException, ReflectionException
+    public Object invoke(String actionName, Object[] params, String[] signature)
+        throws MBeanException, ReflectionException
     {
         Objects.requireNonNull(actionName, "Action Name");
 
@@ -287,43 +287,35 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
             MBeanAttributeInfo[] attrs = new MBeanAttributeInfo[2];
 
             attrs[0] = new MBeanAttributeInfo(
-                "LoggerCount",
-                "java.lang.Integer",
-                "Count of Registered Loggers by Name.",
-                true,
-                false,
-                false);
+                "LoggerCount", "java.lang.Integer", "Count of Registered Loggers by Name.", true, false, false);
             attrs[1] = new MBeanAttributeInfo(
-                "LoggerNames",
-                "java.lang.String[]",
-                "List of Registered Loggers by Name.",
-                true,
-                false,
-                false);
+                "LoggerNames", "java.lang.String[]", "List of Registered Loggers by Name.", true, false, false);
 
             MBeanOperationInfo[] operations = new MBeanOperationInfo[]{
                 new MBeanOperationInfo(
                     "setLoggerLevel",
                     "Set the logging level at the named logger",
-                    new MBeanParameterInfo[]{
+                    new MBeanParameterInfo[]
+                    {
                         new MBeanParameterInfo("loggerName", "java.lang.String", "The name of the logger"),
-                        new MBeanParameterInfo("level", "java.lang.String", "The name of the level [DEBUG, INFO, WARN, ERROR]")
+                        new MBeanParameterInfo(
+                            "level", "java.lang.String", "The name of the level [DEBUG, INFO, WARN, ERROR]")
                     },
                     "boolean",
-                    MBeanOperationInfo.ACTION
-                ),
+                    MBeanOperationInfo.ACTION),
                 new MBeanOperationInfo(
                     "getLoggerLevel",
                     "Get the logging level at the named logger",
-                    new MBeanParameterInfo[]{
+                    new MBeanParameterInfo[]
+                    {
                         new MBeanParameterInfo("loggerName", "java.lang.String", "The name of the logger")
                     },
                     "java.lang.String",
-                    MBeanOperationInfo.INFO
-                )
+                    MBeanOperationInfo.INFO)
             };
 
-            mBeanInfo = new MBeanInfo(this.getClass().getName(),
+            mBeanInfo = new MBeanInfo(
+                this.getClass().getName(),
                 "Jetty Slf4J Logger Factory",
                 attrs,
                 new MBeanConstructorInfo[0],

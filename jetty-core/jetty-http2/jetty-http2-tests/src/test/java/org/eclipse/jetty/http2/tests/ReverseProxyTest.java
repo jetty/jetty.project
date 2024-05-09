@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -44,9 +46,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReverseProxyTest
 {
@@ -105,7 +104,14 @@ public class ReverseProxyTest
         String host = "localhost";
         int port = proxyConnector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields, -1);
+        return new MetaData.Request(
+            method,
+            HttpScheme.HTTP.asString(),
+            new HostPortHttpField(authority),
+            path,
+            HttpVersion.HTTP_2,
+            fields,
+            -1);
     }
 
     @AfterEach
@@ -124,17 +130,20 @@ public class ReverseProxyTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                assertEquals(HttpVersion.HTTP_1_1.asString(), request.getConnectionMetaData().getProtocol());
+                assertEquals(
+                    HttpVersion.HTTP_1_1.asString(),
+                    request.getConnectionMetaData().getProtocol());
                 callback.succeeded();
                 return true;
             }
         });
-        startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->
-            HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort())));
+        startProxy(new ProxyHandler.Reverse(clientToProxyRequest -> HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort())));
         startClient();
 
         CountDownLatch clientLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener() {});
+        Session session = newClient(new Session.Listener()
+        {
+        });
         MetaData.Request metaData = newRequest("GET", "/", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
@@ -162,20 +171,26 @@ public class ReverseProxyTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(content), Callback.from(() ->
-                {
-                    callback.succeeded();
-                    serverLatch.countDown();
-                }, callback::failed));
+                response.write(
+                    true,
+                    ByteBuffer.wrap(content),
+                    Callback.from(
+                        () ->
+                        {
+                            callback.succeeded();
+                            serverLatch.countDown();
+                        },
+                        callback::failed));
                 return true;
             }
         });
-        startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->
-            HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort())));
+        startProxy(new ProxyHandler.Reverse(clientToProxyRequest -> HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort())));
         startClient();
 
         CountDownLatch clientLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener() {});
+        Session session = newClient(new Session.Listener()
+        {
+        });
         MetaData.Request metaData = newRequest("GET", "/", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()

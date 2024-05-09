@@ -13,8 +13,6 @@
 
 package org.example.test;
 
-import java.util.logging.Logger;
-
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletContextAttributeEvent;
 import jakarta.servlet.ServletContextAttributeListener;
@@ -30,9 +28,11 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+import java.util.logging.Logger;
 
 @WebListener
-public class AnnotatedListener implements HttpSessionListener,
+public class AnnotatedListener
+    implements HttpSessionListener,
     HttpSessionAttributeListener,
     HttpSessionActivationListener,
     ServletContextListener,

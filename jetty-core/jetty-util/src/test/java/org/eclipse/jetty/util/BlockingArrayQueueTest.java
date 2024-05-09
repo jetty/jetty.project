@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.util;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -23,18 +32,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class BlockingArrayQueueTest
 {
@@ -137,14 +136,14 @@ public class BlockingArrayQueueTest
             assertEquals(s, queue.size());
             assertEquals(c, queue.getCapacity());
 
-            for (int i = queue.size(); i-- > 0; )
+            for (int i = queue.size(); i-- > 0;)
             {
                 queue.poll();
             }
             assertEquals(0, queue.size());
             assertEquals(c, queue.getCapacity());
 
-            for (int i = queue.getCapacity(); i-- > 0; )
+            for (int i = queue.getCapacity(); i-- > 0;)
             {
                 queue.add("a");
             }

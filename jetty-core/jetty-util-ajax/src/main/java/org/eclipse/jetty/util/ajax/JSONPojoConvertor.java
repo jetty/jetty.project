@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import org.eclipse.jetty.util.ajax.JSON.Output;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,7 +207,8 @@ public class JSONPojoConvertor implements JSON.Convertor
                 catch (Exception e)
                 {
                     // TODO throw exception?
-                    LOG.warn("{}#{} not set from value {}={}: {}",
+                    LOG.warn(
+                        "{}#{} not set from value {}={}: {}",
                         _pojoClass.getName(),
                         setter.getPropertyName(),
                         setter.getType().getName(),
@@ -233,10 +233,7 @@ public class JSONPojoConvertor implements JSON.Convertor
             catch (Exception e)
             {
                 // TODO throw exception?
-                LOG.warn("{}#{} excluded: {}",
-                    _pojoClass.getName(),
-                    entry.getKey(),
-                    e.toString());
+                LOG.warn("{}#{} excluded: {}", _pojoClass.getName(), entry.getKey(), e.toString());
             }
         }
     }

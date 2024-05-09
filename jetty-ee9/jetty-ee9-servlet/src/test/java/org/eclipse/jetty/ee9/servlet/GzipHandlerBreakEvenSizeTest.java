@@ -13,14 +13,18 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Arrays;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Arrays;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpField;
@@ -35,11 +39,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 public class GzipHandlerBreakEvenSizeTest
 {
@@ -75,7 +74,8 @@ public class GzipHandlerBreakEvenSizeTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2, 3, 4, 5, 10, 15, 20, 21, 22, 23, 24, 25, 50, 100, 300, 500})
+    @ValueSource(ints =
+    {0, 1, 2, 3, 4, 5, 10, 15, 20, 21, 22, 23, 24, 25, 50, 100, 300, 500})
     public void testRequestSized(int size) throws Exception
     {
         URI uri = server.getURI().resolve("/content?size=" + size);
@@ -84,7 +84,10 @@ public class GzipHandlerBreakEvenSizeTest
             .send();
 
         assertThat("Status Code", response.getStatus(), is(200));
-        assertThat("Size Requested", response.getHeaders().getField("X-SizeRequested").getIntValue(), is(size));
+        assertThat(
+            "Size Requested",
+            response.getHeaders().getField("X-SizeRequested").getIntValue(),
+            is(size));
 
         if (size > GzipHandler.BREAK_EVEN_GZIP_SIZE)
         {

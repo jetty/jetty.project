@@ -26,7 +26,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentSourceRequestContent;
 import org.eclipse.jetty.client.ContinueProtocolHandler;
@@ -72,9 +71,12 @@ import org.slf4j.LoggerFactory;
 public abstract class ProxyHandler extends Handler.Abstract
 {
     private static final Logger LOG = LoggerFactory.getLogger(ProxyHandler.class);
-    private static final String CLIENT_TO_PROXY_REQUEST_ATTRIBUTE = ProxyHandler.class.getName() + ".clientToProxyRequest";
-    private static final String PROXY_TO_CLIENT_RESPONSE_ATTRIBUTE = ProxyHandler.class.getName() + ".proxyToClientResponse";
-    private static final String PROXY_TO_SERVER_CONTINUE_ATTRIBUTE = ProxyHandler.class.getName() + ".proxyToServerContinue";
+    private static final String CLIENT_TO_PROXY_REQUEST_ATTRIBUTE =
+        ProxyHandler.class.getName() + ".clientToProxyRequest";
+    private static final String PROXY_TO_CLIENT_RESPONSE_ATTRIBUTE =
+        ProxyHandler.class.getName() + ".proxyToClientResponse";
+    private static final String PROXY_TO_SERVER_CONTINUE_ATTRIBUTE =
+        ProxyHandler.class.getName() + ".proxyToServerContinue";
     private static final EnumSet<HttpHeader> HOP_HEADERS = EnumSet.of(
         HttpHeader.CONNECTION,
         HttpHeader.KEEP_ALIVE,
@@ -84,8 +86,7 @@ public abstract class ProxyHandler extends Handler.Abstract
         HttpHeader.TRANSFER_ENCODING,
         HttpHeader.TE,
         HttpHeader.TRAILER,
-        HttpHeader.UPGRADE
-    );
+        HttpHeader.UPGRADE);
 
     private HttpClient httpClient;
     private String proxyToServerHost;
@@ -214,23 +215,30 @@ public abstract class ProxyHandler extends Handler.Abstract
     }
 
     @Override
-    public boolean handle(Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+    public boolean handle(
+                          Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("""
-                {} C2P received request
-                {}
-                {}""",
+            LOG.debug(
+                """
+                    {} C2P received request
+                    {}
+                    {}""",
                 requestId(clientToProxyRequest),
                 clientToProxyRequest,
                 clientToProxyRequest.getHeaders());
 
         HttpURI rewritten = rewriteHttpURI(clientToProxyRequest);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} URI rewrite {} => {}", requestId(clientToProxyRequest), clientToProxyRequest.getHttpURI(), rewritten);
+            LOG.debug(
+                "{} URI rewrite {} => {}",
+                requestId(clientToProxyRequest),
+                clientToProxyRequest.getHttpURI(),
+                rewritten);
 
         var proxyToServerRequest = newProxyToServerRequest(clientToProxyRequest, rewritten);
-        proxyToServerRequest.attribute(CLIENT_TO_PROXY_REQUEST_ATTRIBUTE, clientToProxyRequest)
+        proxyToServerRequest
+            .attribute(CLIENT_TO_PROXY_REQUEST_ATTRIBUTE, clientToProxyRequest)
             .attribute(PROXY_TO_CLIENT_RESPONSE_ATTRIBUTE, proxyToClientResponse);
 
         copyRequestHeaders(clientToProxyRequest, proxyToServerRequest);
@@ -248,20 +256,27 @@ public abstract class ProxyHandler extends Handler.Abstract
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} P2S continuing request", requestId(clientToProxyRequest));
-                    var proxyToServerRequestContent = newProxyToServerRequestContent(clientToProxyRequest, proxyToClientResponse, proxyToServerRequest);
-                    Content.copy(proxyToServerRequestContent, delayedProxyToServerRequestContent,
-                        Callback.from(delayedProxyToServerRequestContent::close, delayedProxyToServerRequestContent::fail));
+                    var proxyToServerRequestContent = newProxyToServerRequestContent(
+                        clientToProxyRequest, proxyToClientResponse, proxyToServerRequest);
+                    Content.copy(
+                        proxyToServerRequestContent,
+                        delayedProxyToServerRequestContent,
+                        Callback.from(
+                            delayedProxyToServerRequestContent::close,
+                            delayedProxyToServerRequestContent::fail));
                 };
                 proxyToServerRequest.attribute(PROXY_TO_SERVER_CONTINUE_ATTRIBUTE, action);
             }
             else
             {
-                var proxyToServerRequestContent = newProxyToServerRequestContent(clientToProxyRequest, proxyToClientResponse, proxyToServerRequest);
+                var proxyToServerRequestContent = newProxyToServerRequestContent(
+                    clientToProxyRequest, proxyToClientResponse, proxyToServerRequest);
                 proxyToServerRequest.body(proxyToServerRequestContent);
             }
         }
 
-        sendProxyToServerRequest(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
+        sendProxyToServerRequest(
+            clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
         return true;
     }
 
@@ -273,13 +288,14 @@ public abstract class ProxyHandler extends Handler.Abstract
      */
     protected abstract HttpURI rewriteHttpURI(Request clientToProxyRequest);
 
-    protected org.eclipse.jetty.client.Request newProxyToServerRequest(Request clientToProxyRequest, HttpURI newHttpURI)
+    protected org.eclipse.jetty.client.Request newProxyToServerRequest(
+                                                                       Request clientToProxyRequest, HttpURI newHttpURI)
     {
-        return getHttpClient().newRequest(newHttpURI.toURI())
-            .method(clientToProxyRequest.getMethod());
+        return getHttpClient().newRequest(newHttpURI.toURI()).method(clientToProxyRequest.getMethod());
     }
 
-    protected void copyRequestHeaders(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest)
+    protected void copyRequestHeaders(
+                                      Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest)
     {
         Set<String> headersToRemove = findConnectionHeaders(clientToProxyRequest);
 
@@ -326,7 +342,8 @@ public abstract class ProxyHandler extends Handler.Abstract
         return hopHeaders;
     }
 
-    protected void addProxyHeaders(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest)
+    protected void addProxyHeaders(
+                                   Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest)
     {
         addViaHeader(clientToProxyRequest, proxyToServerRequest);
         addForwardedHeader(clientToProxyRequest, proxyToServerRequest);
@@ -355,7 +372,8 @@ public abstract class ProxyHandler extends Handler.Abstract
         }));
     }
 
-    protected void addForwardedHeader(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest)
+    protected void addForwardedHeader(
+                                      Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest)
     {
         String byAttr = Request.getLocalAddr(clientToProxyRequest);
         String forAttr = Request.getRemoteAddr(clientToProxyRequest);
@@ -365,12 +383,12 @@ public abstract class ProxyHandler extends Handler.Abstract
         // For example, a client with a forward proxy may want to communicate in clear-text with the
         // server (so the scheme is http), but securely with the forward proxy (so isSecure() is true).
         String protoAttr = scheme == null ? (clientToProxyRequest.isSecure() ? "https" : "http") : scheme;
-        String forwardedValue = "by=%s;for=%s;host=%s;proto=%s".formatted(
-            HttpField.PARAMETER_TOKENIZER.quote(byAttr),
-            HttpField.PARAMETER_TOKENIZER.quote(forAttr),
-            HttpField.PARAMETER_TOKENIZER.quote(hostAttr),
-            protoAttr
-        );
+        String forwardedValue = "by=%s;for=%s;host=%s;proto=%s"
+            .formatted(
+                HttpField.PARAMETER_TOKENIZER.quote(byAttr),
+                HttpField.PARAMETER_TOKENIZER.quote(forAttr),
+                HttpField.PARAMETER_TOKENIZER.quote(hostAttr),
+                protoAttr);
 
         proxyToServerRequest.headers(headers -> headers.computeField(HttpHeader.FORWARDED, (header, fields) ->
         {
@@ -396,8 +414,7 @@ public abstract class ProxyHandler extends Handler.Abstract
         if (clientToProxyRequest.getLength() > 0)
             return true;
         HttpFields headers = clientToProxyRequest.getHeaders();
-        return headers.get(HttpHeader.CONTENT_TYPE) != null ||
-               headers.get(HttpHeader.TRANSFER_ENCODING) != null;
+        return headers.get(HttpHeader.CONTENT_TYPE) != null || headers.get(HttpHeader.TRANSFER_ENCODING) != null;
     }
 
     private boolean expects100Continue(Request clientToProxyRequest)
@@ -405,16 +422,24 @@ public abstract class ProxyHandler extends Handler.Abstract
         return HttpHeaderValue.CONTINUE.is(clientToProxyRequest.getHeaders().get(HttpHeader.EXPECT));
     }
 
-    protected org.eclipse.jetty.client.Request.Content newProxyToServerRequestContent(Request clientToProxyRequest, Response proxyToClientResponse, org.eclipse.jetty.client.Request proxyToServerRequest)
+    protected org.eclipse.jetty.client.Request.Content newProxyToServerRequestContent(
+                                                                                      Request clientToProxyRequest,
+                                                                                      Response proxyToClientResponse,
+                                                                                      org.eclipse.jetty.client.Request proxyToServerRequest)
     {
         return new ProxyRequestContent(clientToProxyRequest);
     }
 
-    protected void sendProxyToServerRequest(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+    protected void sendProxyToServerRequest(
+                                            Request clientToProxyRequest,
+                                            org.eclipse.jetty.client.Request proxyToServerRequest,
+                                            Response proxyToClientResponse,
+                                            Callback proxyToClientCallback)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("""
+            LOG.debug(
+                """
                     {} P2S sending request
                     {}
                     {}""",
@@ -422,12 +447,18 @@ public abstract class ProxyHandler extends Handler.Abstract
                 proxyToServerRequest,
                 proxyToServerRequest.getHeaders());
         }
-        proxyToServerRequest.send(newServerToProxyResponseListener(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback));
+        proxyToServerRequest.send(newServerToProxyResponseListener(
+            clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback));
     }
 
-    protected org.eclipse.jetty.client.Response.CompleteListener newServerToProxyResponseListener(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+    protected org.eclipse.jetty.client.Response.CompleteListener newServerToProxyResponseListener(
+                                                                                                  Request clientToProxyRequest,
+                                                                                                  org.eclipse.jetty.client.Request proxyToServerRequest,
+                                                                                                  Response proxyToClientResponse,
+                                                                                                  Callback proxyToClientCallback)
     {
-        return new ProxyResponseListener(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
+        return new ProxyResponseListener(
+            clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback);
     }
 
     protected HttpField filterServerToProxyResponseField(HttpField serverToProxyResponseField)
@@ -435,16 +466,28 @@ public abstract class ProxyHandler extends Handler.Abstract
         return serverToProxyResponseField;
     }
 
-    protected void onServerToProxyResponseFailure(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, org.eclipse.jetty.client.Response serverToProxyResponse, Response proxyToClientResponse, Callback proxyToClientCallback, Throwable failure)
+    protected void onServerToProxyResponseFailure(
+                                                  Request clientToProxyRequest,
+                                                  org.eclipse.jetty.client.Request proxyToServerRequest,
+                                                  org.eclipse.jetty.client.Response serverToProxyResponse,
+                                                  Response proxyToClientResponse,
+                                                  Callback proxyToClientCallback,
+                                                  Throwable failure)
     {
         int status = HttpStatus.BAD_GATEWAY_502;
         if (failure instanceof TimeoutException)
             status = HttpStatus.GATEWAY_TIMEOUT_504;
-        Callback callback = new ProxyToClientResponseFailureCallback(clientToProxyRequest, proxyToServerRequest, serverToProxyResponse, proxyToClientResponse, proxyToClientCallback);
+        Callback callback = new ProxyToClientResponseFailureCallback(
+            clientToProxyRequest,
+            proxyToServerRequest,
+            serverToProxyResponse,
+            proxyToClientResponse,
+            proxyToClientCallback);
         Response.writeError(clientToProxyRequest, proxyToClientResponse, callback, status);
     }
 
-    protected void onServerToProxyResponse100Continue(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest)
+    protected void onServerToProxyResponse100Continue(
+                                                      Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} P2C 100 continue response", requestId(clientToProxyRequest));
@@ -452,26 +495,45 @@ public abstract class ProxyHandler extends Handler.Abstract
         action.run();
     }
 
-    protected void onServerToProxyResponse102Processing(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields serverToProxyResponseHeaders, Response proxyToClientResponse)
+    protected void onServerToProxyResponse102Processing(
+                                                        Request clientToProxyRequest,
+                                                        org.eclipse.jetty.client.Request proxyToServerRequest,
+                                                        HttpFields serverToProxyResponseHeaders,
+                                                        Response proxyToClientResponse)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} P2C 102 interim response {}", requestId(clientToProxyRequest), serverToProxyResponseHeaders);
         proxyToClientResponse.writeInterim(HttpStatus.PROCESSING_102, serverToProxyResponseHeaders);
     }
 
-    protected void onServerToProxyResponse103EarlyHints(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields serverToProxyResponseHeaders, Response proxyToClientResponse)
+    protected void onServerToProxyResponse103EarlyHints(
+                                                        Request clientToProxyRequest,
+                                                        org.eclipse.jetty.client.Request proxyToServerRequest,
+                                                        HttpFields serverToProxyResponseHeaders,
+                                                        Response proxyToClientResponse)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} P2C 103 interim response {}", requestId(clientToProxyRequest), serverToProxyResponseHeaders);
         proxyToClientResponse.writeInterim(HttpStatus.EARLY_HINTS_103, serverToProxyResponseHeaders);
     }
 
-    protected void onProxyToClientResponseComplete(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, org.eclipse.jetty.client.Response serverToProxyResponse, Response proxyToClientResponse, Callback proxyToClientCallback)
+    protected void onProxyToClientResponseComplete(
+                                                   Request clientToProxyRequest,
+                                                   org.eclipse.jetty.client.Request proxyToServerRequest,
+                                                   org.eclipse.jetty.client.Response serverToProxyResponse,
+                                                   Response proxyToClientResponse,
+                                                   Callback proxyToClientCallback)
     {
         proxyToClientCallback.succeeded();
     }
 
-    protected void onProxyToClientResponseFailure(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, org.eclipse.jetty.client.Response serverToProxyResponse, Response proxyToClientResponse, Callback proxyToClientCallback, Throwable failure)
+    protected void onProxyToClientResponseFailure(
+                                                  Request clientToProxyRequest,
+                                                  org.eclipse.jetty.client.Request proxyToServerRequest,
+                                                  org.eclipse.jetty.client.Response serverToProxyResponse,
+                                                  Response proxyToClientResponse,
+                                                  Callback proxyToClientCallback,
+                                                  Throwable failure)
     {
         // There is no point trying to write an error,
         // we already know we cannot write to the client.
@@ -602,14 +664,19 @@ public abstract class ProxyHandler extends Handler.Abstract
         }
     }
 
-    protected class ProxyResponseListener extends Callback.Completable implements org.eclipse.jetty.client.Response.Listener
+    protected class ProxyResponseListener extends Callback.Completable
+        implements org.eclipse.jetty.client.Response.Listener
     {
         private final Request clientToProxyRequest;
         private final org.eclipse.jetty.client.Request proxyToServerRequest;
         private final Response proxyToClientResponse;
         private final Callback proxyToClientCallback;
 
-        public ProxyResponseListener(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+        public ProxyResponseListener(
+                                     Request clientToProxyRequest,
+                                     org.eclipse.jetty.client.Request proxyToServerRequest,
+                                     Response proxyToClientResponse,
+                                     Callback proxyToClientCallback)
         {
             this.clientToProxyRequest = clientToProxyRequest;
             this.proxyToServerRequest = proxyToServerRequest;
@@ -628,7 +695,8 @@ public abstract class ProxyHandler extends Handler.Abstract
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("""
+                LOG.debug(
+                    """
                         {} S2P received response
                         {}
                         {}""",
@@ -647,7 +715,8 @@ public abstract class ProxyHandler extends Handler.Abstract
             }
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("""
+                LOG.debug(
+                    """
                         {} P2C sending response
                         {}
                         {}""",
@@ -658,11 +727,17 @@ public abstract class ProxyHandler extends Handler.Abstract
         }
 
         @Override
-        public void onContent(org.eclipse.jetty.client.Response serverToProxyResponse, Content.Chunk serverToProxyChunk, Runnable serverToProxyDemander)
+        public void onContent(
+                              org.eclipse.jetty.client.Response serverToProxyResponse,
+                              Content.Chunk serverToProxyChunk,
+                              Runnable serverToProxyDemander)
         {
             ByteBuffer serverToProxyContent = serverToProxyChunk.getByteBuffer();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} S2P received content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent));
+                LOG.debug(
+                    "{} S2P received content {}",
+                    requestId(clientToProxyRequest),
+                    BufferUtil.toDetailString(serverToProxyContent));
 
             serverToProxyChunk.retain();
             Callback callback = new Callback()
@@ -671,7 +746,10 @@ public abstract class ProxyHandler extends Handler.Abstract
                 public void succeeded()
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} P2C succeeded to write content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent));
+                        LOG.debug(
+                            "{} P2C succeeded to write content {}",
+                            requestId(clientToProxyRequest),
+                            BufferUtil.toDetailString(serverToProxyContent));
                     serverToProxyChunk.release();
                     serverToProxyDemander.run();
                 }
@@ -680,7 +758,11 @@ public abstract class ProxyHandler extends Handler.Abstract
                 public void failed(Throwable failure)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} P2C failed to write content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent), failure);
+                        LOG.debug(
+                            "{} P2C failed to write content {}",
+                            requestId(clientToProxyRequest),
+                            BufferUtil.toDetailString(serverToProxyContent),
+                            failure);
                     serverToProxyChunk.release();
                     // Cannot write towards the client, abort towards the server.
                     serverToProxyResponse.abort(failure);
@@ -713,22 +795,50 @@ public abstract class ProxyHandler extends Handler.Abstract
                     if (failure == null)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} P2C response complete {}", requestId(clientToProxyRequest), proxyToClientResponse);
-                        onProxyToClientResponseComplete(clientToProxyRequest, proxyToServerRequest, result.getResponse(), proxyToClientResponse, proxyToClientCallback);
+                            LOG.debug(
+                                "{} P2C response complete {}",
+                                requestId(clientToProxyRequest),
+                                proxyToClientResponse);
+                        onProxyToClientResponseComplete(
+                            clientToProxyRequest,
+                            proxyToServerRequest,
+                            result.getResponse(),
+                            proxyToClientResponse,
+                            proxyToClientCallback);
                     }
                     else
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} P2C response failure {}", requestId(clientToProxyRequest), proxyToClientResponse, failure);
-                        onProxyToClientResponseFailure(clientToProxyRequest, proxyToServerRequest, result.getResponse(), proxyToClientResponse, proxyToClientCallback, failure);
+                            LOG.debug(
+                                "{} P2C response failure {}",
+                                requestId(clientToProxyRequest),
+                                proxyToClientResponse,
+                                failure);
+                        onProxyToClientResponseFailure(
+                            clientToProxyRequest,
+                            proxyToServerRequest,
+                            result.getResponse(),
+                            proxyToClientResponse,
+                            proxyToClientCallback,
+                            failure);
                     }
                 });
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} S2P failure {}", requestId(clientToProxyRequest), result.getResponse(), result.getFailure());
-                onServerToProxyResponseFailure(clientToProxyRequest, proxyToServerRequest, result.getResponse(), proxyToClientResponse, proxyToClientCallback, result.getFailure());
+                    LOG.debug(
+                        "{} S2P failure {}",
+                        requestId(clientToProxyRequest),
+                        result.getResponse(),
+                        result.getFailure());
+                onServerToProxyResponseFailure(
+                    clientToProxyRequest,
+                    proxyToServerRequest,
+                    result.getResponse(),
+                    proxyToClientResponse,
+                    proxyToClientCallback,
+                    result.getFailure());
             }
         }
     }
@@ -741,7 +851,12 @@ public abstract class ProxyHandler extends Handler.Abstract
         private final Response proxyToClientResponse;
         private final Callback proxyToClientCallback;
 
-        private ProxyToClientResponseFailureCallback(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, org.eclipse.jetty.client.Response serverToProxyResponse, Response proxyToClientResponse, Callback proxyToClientCallback)
+        private ProxyToClientResponseFailureCallback(
+                                                     Request clientToProxyRequest,
+                                                     org.eclipse.jetty.client.Request proxyToServerRequest,
+                                                     org.eclipse.jetty.client.Response serverToProxyResponse,
+                                                     Response proxyToClientResponse,
+                                                     Callback proxyToClientCallback)
         {
             this.clientToProxyRequest = clientToProxyRequest;
             this.proxyToServerRequest = proxyToServerRequest;
@@ -755,7 +870,12 @@ public abstract class ProxyHandler extends Handler.Abstract
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} P2C response complete {}", requestId(clientToProxyRequest), proxyToClientResponse);
-            onProxyToClientResponseComplete(clientToProxyRequest, proxyToServerRequest, serverToProxyResponse, proxyToClientResponse, proxyToClientCallback);
+            onProxyToClientResponseComplete(
+                clientToProxyRequest,
+                proxyToServerRequest,
+                serverToProxyResponse,
+                proxyToClientResponse,
+                proxyToClientCallback);
         }
 
         @Override
@@ -763,7 +883,13 @@ public abstract class ProxyHandler extends Handler.Abstract
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} P2C response failure {}", requestId(clientToProxyRequest), proxyToClientResponse, x);
-            onProxyToClientResponseFailure(clientToProxyRequest, proxyToServerRequest, serverToProxyResponse, proxyToClientResponse, proxyToClientCallback, x);
+            onProxyToClientResponseFailure(
+                clientToProxyRequest,
+                proxyToServerRequest,
+                serverToProxyResponse,
+                proxyToClientResponse,
+                proxyToClientCallback,
+                x);
         }
 
         @Override
@@ -779,7 +905,8 @@ public abstract class ProxyHandler extends Handler.Abstract
         protected void onContinue(org.eclipse.jetty.client.Request proxyToServerRequest)
         {
             super.onContinue(proxyToServerRequest);
-            var clientToProxyRequest = (Request)proxyToServerRequest.getAttributes().get(CLIENT_TO_PROXY_REQUEST_ATTRIBUTE);
+            var clientToProxyRequest =
+                (Request)proxyToServerRequest.getAttributes().get(CLIENT_TO_PROXY_REQUEST_ATTRIBUTE);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} S2P received 100 Continue", requestId(clientToProxyRequest));
             onServerToProxyResponse100Continue(clientToProxyRequest, proxyToServerRequest);
@@ -789,28 +916,36 @@ public abstract class ProxyHandler extends Handler.Abstract
     private class ProxyProcessingProtocolHandler extends ProcessingProtocolHandler
     {
         @Override
-        protected void onProcessing(org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields serverToProxyResponseHeaders)
+        protected void onProcessing(
+                                    org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields serverToProxyResponseHeaders)
         {
             super.onProcessing(proxyToServerRequest, serverToProxyResponseHeaders);
-            var clientToProxyRequest = (Request)proxyToServerRequest.getAttributes().get(CLIENT_TO_PROXY_REQUEST_ATTRIBUTE);
+            var clientToProxyRequest =
+                (Request)proxyToServerRequest.getAttributes().get(CLIENT_TO_PROXY_REQUEST_ATTRIBUTE);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} S2P received 102 Processing", requestId(clientToProxyRequest));
-            var proxyToClientResponse = (Response)proxyToServerRequest.getAttributes().get(PROXY_TO_CLIENT_RESPONSE_ATTRIBUTE);
-            onServerToProxyResponse102Processing(clientToProxyRequest, proxyToServerRequest, serverToProxyResponseHeaders, proxyToClientResponse);
+            var proxyToClientResponse =
+                (Response)proxyToServerRequest.getAttributes().get(PROXY_TO_CLIENT_RESPONSE_ATTRIBUTE);
+            onServerToProxyResponse102Processing(
+                clientToProxyRequest, proxyToServerRequest, serverToProxyResponseHeaders, proxyToClientResponse);
         }
     }
 
     private class ProxyEarlyHintsProtocolHandler extends EarlyHintsProtocolHandler
     {
         @Override
-        protected void onEarlyHints(org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields serverToProxyResponseHeaders)
+        protected void onEarlyHints(
+                                    org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields serverToProxyResponseHeaders)
         {
             super.onEarlyHints(proxyToServerRequest, serverToProxyResponseHeaders);
-            var clientToProxyRequest = (Request)proxyToServerRequest.getAttributes().get(CLIENT_TO_PROXY_REQUEST_ATTRIBUTE);
+            var clientToProxyRequest =
+                (Request)proxyToServerRequest.getAttributes().get(CLIENT_TO_PROXY_REQUEST_ATTRIBUTE);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} S2P received 103 Early Hints", requestId(clientToProxyRequest));
-            var proxyToClientResponse = (Response)proxyToServerRequest.getAttributes().get(PROXY_TO_CLIENT_RESPONSE_ATTRIBUTE);
-            onServerToProxyResponse103EarlyHints(clientToProxyRequest, proxyToServerRequest, serverToProxyResponseHeaders, proxyToClientResponse);
+            var proxyToClientResponse =
+                (Response)proxyToServerRequest.getAttributes().get(PROXY_TO_CLIENT_RESPONSE_ATTRIBUTE);
+            onServerToProxyResponse103EarlyHints(
+                clientToProxyRequest, proxyToServerRequest, serverToProxyResponseHeaders, proxyToClientResponse);
         }
     }
 }

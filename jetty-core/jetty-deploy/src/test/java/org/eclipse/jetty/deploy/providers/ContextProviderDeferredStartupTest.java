@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.deploy.providers;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -20,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
@@ -32,17 +37,9 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ContextProvider} behaviors when in Deferred Startup mode
@@ -159,16 +156,19 @@ public class ContextProviderDeferredStartupTest
             server.start();
 
             // Wait till the webapp is deployed and started
-            await().atMost(Duration.ofSeconds(5)).until(() ->
-            {
-                List<ContextHandler> children = server.getDescendants(ContextHandler.class);
-                if (children == null || children.isEmpty())
-                    return false;
-                ContextHandler contextHandler = children.get(0);
-                if (contextHandler.isStarted())
-                    return contextHandler.getContextPath();
-                return null;
-            }, is("/bar"));
+            await().atMost(Duration.ofSeconds(5))
+                .until(
+                    () ->
+                    {
+                        List<ContextHandler> children = server.getDescendants(ContextHandler.class);
+                        if (children == null || children.isEmpty())
+                            return false;
+                        ContextHandler contextHandler = children.get(0);
+                        if (contextHandler.isStarted())
+                            return contextHandler.getContextPath();
+                        return null;
+                    },
+                    is("/bar"));
 
             String[] expectedOrderedEvents = {
                 // The deepest component starts first
@@ -183,7 +183,8 @@ public class ContextProviderDeferredStartupTest
             };
 
             assertThat(eventQueue.size(), is(expectedOrderedEvents.length));
-            // collect string array representing ACTUAL scan events (useful for meaningful error message on failed assertion)
+            // collect string array representing ACTUAL scan events (useful for meaningful error message on failed
+            // assertion)
             String scanEventsStr = "[\"" + String.join("\", \"", eventQueue) + "\"]";
             for (int i = 0; i < expectedOrderedEvents.length; i++)
             {

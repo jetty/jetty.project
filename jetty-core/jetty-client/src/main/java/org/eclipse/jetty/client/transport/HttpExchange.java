@@ -329,16 +329,23 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     {
         try (AutoLock l = lock.lock())
         {
-            return String.format("%s@%x{req=%s[%s/%s] res=%s[%s/%s]}",
+            return String.format(
+                "%s@%x{req=%s[%s/%s] res=%s[%s/%s]}",
                 HttpExchange.class.getSimpleName(),
                 hashCode(),
-                request, requestState, requestFailure,
-                response, responseState, responseFailure);
+                request,
+                requestState,
+                requestFailure,
+                response,
+                responseState,
+                responseFailure);
         }
     }
 
     private enum State
     {
-        PENDING, COMPLETED, TERMINATED
+        PENDING,
+        COMPLETED,
+        TERMINATED
     }
 }

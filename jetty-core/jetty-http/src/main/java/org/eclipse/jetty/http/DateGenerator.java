@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.ThreadIdPool;
 
@@ -33,10 +32,10 @@ public class DateGenerator
         __GMT.setID("GMT");
     }
 
-    static final String[] DAYS =
-        {"Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-    static final String[] MONTHS =
-        {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan"};
+    static final String[] DAYS = {"Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+    static final String[] MONTHS = {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan"
+    };
 
     private static final ThreadIdPool<DateGenerator> __dateGenerator = new ThreadIdPool<>();
 

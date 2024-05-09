@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * ScopedHandler.
@@ -117,7 +116,9 @@ public abstract class ScopedHandler extends HandlerWrapper
     }
 
     @Override
-    public final void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public final void handle(
+                             String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         if (isStarted())
         {
@@ -155,7 +156,8 @@ public abstract class ScopedHandler extends HandlerWrapper
      * @throws IOException if unable to handle the request or response processing
      * @throws ServletException if unable to handle the request or response due to underlying servlet issue
      */
-    public final void nextScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public final void nextScope(
+                                String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
         if (_nextScope != null)
@@ -177,7 +179,8 @@ public abstract class ScopedHandler extends HandlerWrapper
      * @throws IOException if unable to handle the request or response processing
      * @throws ServletException if unable to handle the request or response due to underlying servlet issue
      */
-    public abstract void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public abstract void doHandle(
+                                  String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException;
 
     /**
@@ -189,7 +192,9 @@ public abstract class ScopedHandler extends HandlerWrapper
      * @throws IOException if unable to handle the request or response processing
      * @throws ServletException if unable to handle the request or response due to underlying servlet issue
      */
-    public final void nextHandle(String target, final Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public final void nextHandle(
+                                 String target, final Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         if (_nextScope != null && _nextScope == _handler)
             _nextScope.doHandle(target, baseRequest, request, response);

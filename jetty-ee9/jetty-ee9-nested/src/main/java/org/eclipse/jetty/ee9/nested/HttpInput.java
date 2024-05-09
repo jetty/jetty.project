@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.atomic.LongAdder;
-
-import jakarta.servlet.ReadListener;
-import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.BufferUtil;
@@ -237,7 +236,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             LOG.debug("setting read listener to {} {}", readListener, this);
         if (_readListener != null)
             throw new IllegalStateException("ReadListener already set");
-        //illegal if async not started
+        // illegal if async not started
         if (!_httpChannel.getState().isAsyncStarted())
             throw new IllegalStateException("Async not started");
         _readListener = Objects.requireNonNull(readListener);
@@ -293,7 +292,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             Content content = _contentProducer.nextContent();
             if (content == null)
                 throw new IllegalStateException("read on unready input");
-            
+
             if (!content.isSpecial())
             {
                 int read = buffer == null ? get(content, b, off, len) : get(content, buffer);
@@ -444,10 +443,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "@" + hashCode() +
-            " cs=" + _httpChannel.getState() +
-            " cp=" + _contentProducer +
-            " eof=" + _consumedEof;
+        return getClass().getSimpleName() + "@" + hashCode() + " cs=" + _httpChannel.getState() + " cp=" + _contentProducer + " eof=" + _consumedEof;
     }
 
     /**
@@ -708,8 +704,14 @@ public class HttpInput extends ServletInputStream implements Runnable
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s,spc=%s,eof=%s,err=%s}", getClass().getSimpleName(), hashCode(),
-                BufferUtil.toDetailString(_content), isSpecial(), isEof(), getError());
+            return String.format(
+                "%s@%x{%s,spc=%s,eof=%s,err=%s}",
+                getClass().getSimpleName(),
+                hashCode(),
+                BufferUtil.toDetailString(_content),
+                isSpecial(),
+                isEof(),
+                getError());
         }
     }
 

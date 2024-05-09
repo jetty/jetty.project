@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.start;
 
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,10 +28,7 @@ import java.util.Stack;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.start.Props.Prop;
-
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * Management of Properties.
@@ -380,8 +379,9 @@ public final class Props implements Iterable<Prop>
                 Properties properties = new Properties();
                 properties.load(in);
                 String urlStr = url.toExternalForm();
-                properties.stringPropertyNames().forEach((name) ->
-                    props.setProperty(name, properties.getProperty(name), urlStr));
+                properties
+                    .stringPropertyNames()
+                    .forEach((name) -> props.setProperty(name, properties.getProperty(name), urlStr));
             }
             catch (IOException x)
             {

@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee9.jstl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,7 +25,6 @@ import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration;
@@ -39,10 +42,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-
 @ExtendWith(WorkDirExtension.class)
 public class JspIncludeTest
 {
@@ -58,20 +57,20 @@ public class JspIncludeTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
-        
-        //Base dir for test
+
+        // Base dir for test
         File testDir = tmpPath.toFile();
         File testLibDir = new File(testDir, "WEB-INF/lib");
         FS.ensureDirExists(testLibDir);
-                
-        //Make a taglib jar
+
+        // Make a taglib jar
         File srcTagLibDir = MavenPaths.findTestResourceDir("taglibjar").toFile();
         File scratchTagLibDir = new File(testDir, JspIncludeTest.class.getSimpleName() + "-taglib-scratch");
         IO.copy(srcTagLibDir, scratchTagLibDir);
-        File tagLibJar =  new File(testLibDir, "testtaglib.jar");
+        File tagLibJar = new File(testLibDir, "testtaglib.jar");
         JAR.create(scratchTagLibDir, tagLibJar);
-        
-        //Copy content
+
+        // Copy content
         File destWebAppDir = new File(testDir, "webapp");
         FS.ensureDirExists(destWebAppDir);
         File srcWebAppDir = MavenPaths.findTestResourceDir("webapp").toFile();
@@ -124,8 +123,9 @@ public class JspIncludeTest
             if (HttpURLConnection.HTTP_OK != connection.getResponseCode())
             {
                 String body = getPotentialBody(connection);
-                String err = String.format("GET request failed (%d %s) %s%n%s", connection.getResponseCode(), connection.getResponseMessage(),
-                    uri.toASCIIString(), body);
+                String err = String.format(
+                    "GET request failed (%d %s) %s%n%s",
+                    connection.getResponseCode(), connection.getResponseMessage(), uri.toASCIIString(), body);
                 throw new IOException(err);
             }
             in = connection.getInputStream();
@@ -137,8 +137,14 @@ public class JspIncludeTest
             // System.out.printf("Response%n%s",response);
             assertThat("Response", response, containsString("<h2> Hello, this is the top page."));
             assertThat("Response", response, containsString("<h3> This is the included page"));
-            assertThat("Response Header[main-page-key]", connection.getHeaderField("main-page-key"), is("main-page-value"));
-            assertThat("Response Header[included-page-key]", connection.getHeaderField("included-page-key"), is("included-page-value"));
+            assertThat(
+                "Response Header[main-page-key]",
+                connection.getHeaderField("main-page-key"),
+                is("main-page-value"));
+            assertThat(
+                "Response Header[included-page-key]",
+                connection.getHeaderField("included-page-key"),
+                is("included-page-value"));
         }
         finally
         {

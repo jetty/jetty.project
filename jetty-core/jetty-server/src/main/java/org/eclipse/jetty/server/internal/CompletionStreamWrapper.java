@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.internal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -66,7 +65,7 @@ public class CompletionStreamWrapper extends HttpStream.Wrapper
         // completion can only be called once because it is protected by the HttpChannelState.
 
         // completion events in reverse order
-        for (int i = _listeners.size(); i-- > 0; )
+        for (int i = _listeners.size(); i-- > 0;)
         {
             Consumer<Throwable> r = _listeners.get(i);
             try

@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import jakarta.websocket.EncodeException;
+import jakarta.websocket.Encoder;
+import jakarta.websocket.EndpointConfig;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -20,10 +29,6 @@ import java.nio.ByteBuffer;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
-
-import jakarta.websocket.EncodeException;
-import jakarta.websocket.Encoder;
-import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.encoders.IntegerEncoder;
@@ -32,12 +37,6 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AvailableEncodersTest
 {
@@ -52,7 +51,8 @@ public class AvailableEncodersTest
 
     private final AvailableEncoders encoders = new AvailableEncoders(testConfig, components);
 
-    public <T> void assertTextEncoder(Class<T> type, T value, String expectedEncoded) throws IllegalAccessException, InstantiationException, EncodeException
+    public <T> void assertTextEncoder(Class<T> type, T value, String expectedEncoded)
+        throws IllegalAccessException, InstantiationException, EncodeException
     {
         Encoder.Text<T> encoder = (Encoder.Text<T>)encoders.getInstanceFor(type);
         assertThat("Encoder", encoder, notNullValue());
@@ -211,7 +211,8 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCustomEncoderTime() throws IllegalAccessException, InstantiationException, EncodeException, IOException
+    public void testCustomEncoderTime()
+        throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
         encoders.register(TimeEncoder.class);
 
@@ -226,7 +227,8 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCustomEncoderDate() throws IllegalAccessException, InstantiationException, EncodeException, IOException
+    public void testCustomEncoderDate()
+        throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
         encoders.register(DateEncoder.class);
 
@@ -241,7 +243,8 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCustomEncoderDateTime() throws IllegalAccessException, InstantiationException, EncodeException, IOException
+    public void testCustomEncoderDateTime()
+        throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
         encoders.register(DateTimeEncoder.class);
 
@@ -260,14 +263,16 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCustomEncoderValidDualText() throws IllegalAccessException, InstantiationException, EncodeException, IOException
+    public void testCustomEncoderValidDualText()
+        throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
         encoders.register(ValidDualEncoder.class);
         assertTextEncoder(Integer.class, 1234567, "[1,234,567]");
     }
 
     @Test
-    public void testCustomEncoderValidDualBinary() throws IllegalAccessException, InstantiationException, EncodeException, IOException
+    public void testCustomEncoderValidDualBinary()
+        throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
         encoders.register(ValidDualEncoder.class);
         long value = 0x112233445566L;

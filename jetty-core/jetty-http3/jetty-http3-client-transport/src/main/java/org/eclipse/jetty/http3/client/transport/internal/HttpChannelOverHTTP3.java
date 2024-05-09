@@ -111,9 +111,6 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     @Override
     public String toString()
     {
-        return String.format("%s[send=%s,recv=%s]",
-            super.toString(),
-            sender,
-            receiver);
+        return String.format("%s[send=%s,recv=%s]", super.toString(), sender, receiver);
     }
 }

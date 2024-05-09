@@ -27,12 +27,17 @@ public class RegisteredEncoder
     public final boolean primitive;
     public Encoder instance;
 
-    public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType)
+    public RegisteredEncoder(
+                             Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType)
     {
         this(encoder, interfaceType, objectType, false);
     }
 
-    public RegisteredEncoder(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceType, Class<?> objectType, boolean primitive)
+    public RegisteredEncoder(
+                             Class<? extends Encoder> encoder,
+                             Class<? extends Encoder> interfaceType,
+                             Class<?> objectType,
+                             boolean primitive)
     {
         this.encoder = encoder;
         this.interfaceType = interfaceType;

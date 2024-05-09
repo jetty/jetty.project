@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.server.internal;
 
+import jakarta.websocket.HandshakeResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import jakarta.websocket.HandshakeResponse;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public class JsrHandshakeResponse implements HandshakeResponse
@@ -30,7 +29,9 @@ public class JsrHandshakeResponse implements HandshakeResponse
     {
         this.delegate = resp;
         this.headers = delegate.getHeaders().getFieldNamesCollection().stream()
-            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(delegate.getHeaders().getValuesList(name))));
+            .collect(Collectors.toMap(
+                (name) -> name,
+                (name) -> new ArrayList<>(delegate.getHeaders().getValuesList(name))));
     }
 
     @Override

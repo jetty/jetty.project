@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.websocket.jakarta.client.internal;
 
 import java.net.URI;
 import java.security.Principal;
-
 import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequest;
@@ -27,7 +26,11 @@ public class JakartaClientUpgradeRequest extends CoreClientUpgradeRequest implem
 {
     private final JakartaWebSocketFrameHandler frameHandler;
 
-    public JakartaClientUpgradeRequest(JakartaWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
+    public JakartaClientUpgradeRequest(
+                                       JakartaWebSocketClientContainer clientContainer,
+                                       WebSocketCoreClient coreClient,
+                                       URI requestURI,
+                                       Object websocketPojo)
     {
         super(coreClient, requestURI);
         frameHandler = clientContainer.newFrameHandler(websocketPojo, this);

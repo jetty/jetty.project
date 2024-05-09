@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.Socket;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.HelloHandler;
@@ -32,10 +35,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @Disabled // TODO
 public class NotAcceptingTest
@@ -173,7 +172,8 @@ public class NotAcceptingTest
                     {
                         local[i] = client;
                         client.addInputAndExecute(BufferUtil.toBuffer("GET /three HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-                        response = HttpTester.parseResponse(client.getResponse(false, idleTimeout, TimeUnit.MILLISECONDS));
+                        response =
+                            HttpTester.parseResponse(client.getResponse(false, idleTimeout, TimeUnit.MILLISECONDS));
 
                         // A few local connections may succeed
                         if (i == local.length - 1)
@@ -308,11 +308,9 @@ public class NotAcceptingTest
 
         server.start();
 
-        try (
-            Socket async0 = new Socket("localhost", asyncConnector.getLocalPort());
-            Socket async1 = new Socket("localhost", asyncConnector.getLocalPort());
-            Socket async2 = new Socket("localhost", asyncConnector.getLocalPort());
-        )
+        try (Socket async0 = new Socket("localhost", asyncConnector.getLocalPort());
+             Socket async1 = new Socket("localhost", asyncConnector.getLocalPort());
+             Socket async2 = new Socket("localhost", asyncConnector.getLocalPort());)
         {
             String expectedContent = "Hello" + System.lineSeparator();
 
@@ -332,10 +330,8 @@ public class NotAcceptingTest
 
         limit.age(45, TimeUnit.MINUTES);
 
-        try (
-            Socket async0 = new Socket("localhost", asyncConnector.getLocalPort());
-            Socket async1 = new Socket("localhost", asyncConnector.getLocalPort());
-        )
+        try (Socket async0 = new Socket("localhost", asyncConnector.getLocalPort());
+             Socket async1 = new Socket("localhost", asyncConnector.getLocalPort());)
         {
             String expectedContent = "Hello" + System.lineSeparator();
 
@@ -372,17 +368,15 @@ public class NotAcceptingTest
         server.start();
 
         LOG.debug("CONNECT:");
-        try (
-            LocalEndPoint local0 = localConnector.connect();
-            LocalEndPoint local1 = localConnector.connect();
-            LocalEndPoint local2 = localConnector.connect();
-            Socket blocking0 = new Socket("localhost", blockingConnector.getLocalPort());
-            Socket blocking1 = new Socket("localhost", blockingConnector.getLocalPort());
-            Socket blocking2 = new Socket("localhost", blockingConnector.getLocalPort());
-            Socket async0 = new Socket("localhost", asyncConnector.getLocalPort());
-            Socket async1 = new Socket("localhost", asyncConnector.getLocalPort());
-            Socket async2 = new Socket("localhost", asyncConnector.getLocalPort());
-        )
+        try (LocalEndPoint local0 = localConnector.connect();
+             LocalEndPoint local1 = localConnector.connect();
+             LocalEndPoint local2 = localConnector.connect();
+             Socket blocking0 = new Socket("localhost", blockingConnector.getLocalPort());
+             Socket blocking1 = new Socket("localhost", blockingConnector.getLocalPort());
+             Socket blocking2 = new Socket("localhost", blockingConnector.getLocalPort());
+             Socket async0 = new Socket("localhost", asyncConnector.getLocalPort());
+             Socket async1 = new Socket("localhost", asyncConnector.getLocalPort());
+             Socket async2 = new Socket("localhost", asyncConnector.getLocalPort());)
         {
             String expectedContent = "Hello" + System.lineSeparator();
 
@@ -412,7 +406,8 @@ public class NotAcceptingTest
             {
                 // Close a async connection
                 HttpTester.Input in = HttpTester.from(async1.getInputStream());
-                async1.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\nConnection: close\r\n\r\n".getBytes());
+                async1.getOutputStream()
+                    .write("GET /test HTTP/1.1\r\nHost:localhost\r\nConnection: close\r\n\r\n".getBytes());
                 HttpTester.Response response = HttpTester.parseResponse(in);
                 assertThat(response.getStatus(), is(200));
                 assertThat(response.getContent(), is(expectedContent));

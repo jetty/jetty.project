@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.content.HttpContent.Factory;
 
@@ -36,7 +35,8 @@ public class PreCompressedHttpContentFactory implements HttpContent.Factory
         this(factory, Arrays.asList(preCompressedFormats));
     }
 
-    public PreCompressedHttpContentFactory(HttpContent.Factory factory, List<CompressedContentFormat> preCompressedFormats)
+    public PreCompressedHttpContentFactory(
+                                           HttpContent.Factory factory, List<CompressedContentFormat> preCompressedFormats)
     {
         _factory = factory;
         _preCompressedFormats = preCompressedFormats;

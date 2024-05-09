@@ -26,7 +26,8 @@ public class MemoryUtils
         int value = defaultValue;
         try
         {
-            value = Integer.parseInt(System.getProperty("org.eclipse.jetty.util.cacheLineBytes", String.valueOf(defaultValue)));
+            value = Integer.parseInt(
+                System.getProperty("org.eclipse.jetty.util.cacheLineBytes", String.valueOf(defaultValue)));
         }
         catch (Exception ignored)
         {

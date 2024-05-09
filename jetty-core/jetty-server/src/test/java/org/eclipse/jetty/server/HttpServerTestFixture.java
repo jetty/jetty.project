@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.Socket;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
-
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -34,8 +35,6 @@ import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-
-import static org.junit.jupiter.api.Assertions.fail;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpServerTestFixture
@@ -70,7 +69,8 @@ public class HttpServerTestFixture
     protected void initServer(ServerConnector connector) throws Exception
     {
         _connector = connector;
-        _httpConfiguration = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
+        _httpConfiguration =
+            _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _httpConfiguration.setSendDateHeader(false);
         _httpConfiguration.setSendServerVersion(false);
         _server.addConnector(_connector);
@@ -81,7 +81,9 @@ public class HttpServerTestFixture
     {
         try
         {
-            Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> _bufferPool.getLeaks().size(), Matchers.is(0));
+            Awaitility.await()
+                .atMost(5, TimeUnit.SECONDS)
+                .until(() -> _bufferPool.getLeaks().size(), Matchers.is(0));
         }
         catch (Exception e)
         {
@@ -206,10 +208,12 @@ public class HttpServerTestFixture
         public boolean handle(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            Content.Source.asString(request, StandardCharsets.UTF_8, Promise.from(
-                s -> Content.Sink.write(response, true, "read %d%n" + s.length(), callback),
-                callback::failed
-            ));
+            Content.Source.asString(
+                request,
+                StandardCharsets.UTF_8,
+                Promise.from(
+                    s -> Content.Sink.write(response, true, "read %d%n" + s.length(), callback),
+                    callback::failed));
             return true;
         }
     }
@@ -233,7 +237,8 @@ public class HttpServerTestFixture
             if (chars != null)
                 throw new IllegalStateException("chars no longer supported"); // TODO remove
 
-            String data = "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            String data =
+                "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             while (data.length() < block)
             {
                 data += data;

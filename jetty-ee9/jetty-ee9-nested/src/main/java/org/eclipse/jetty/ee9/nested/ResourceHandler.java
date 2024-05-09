@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
@@ -132,8 +131,10 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(baseResource, _mimeTypes);
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
-        contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
-        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _bufferPool);
+        contentFactory =
+            new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+        contentFactory = new ValidatingCachingHttpContentFactory(
+            contentFactory, Duration.ofSeconds(1).toMillis(), _bufferPool);
         return contentFactory;
     }
 
@@ -205,7 +206,8 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         if (baseRequest.isHandled())
             return;

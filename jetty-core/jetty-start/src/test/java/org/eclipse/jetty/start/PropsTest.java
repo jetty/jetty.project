@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.start;
 
-import org.eclipse.jetty.start.Props.Prop;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import org.eclipse.jetty.start.Props.Prop;
+import org.junit.jupiter.api.Test;
 
 public class PropsTest
 {

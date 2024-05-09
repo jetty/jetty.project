@@ -13,30 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -50,6 +26,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class RequestListenersTest
 {
@@ -105,12 +104,14 @@ public class RequestListenersTest
             }
         });
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET / HTTP/1.1
-            Host: localhost
-            Connection: close
-                            
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(
+            connector.getResponse(
+                """
+                    GET / HTTP/1.1
+                    Host: localhost
+                    Connection: close
+
+                    """));
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         await().atMost(5, TimeUnit.SECONDS).until(() -> history, contains("zero", "one", "two", "three", "four"));
@@ -148,19 +149,22 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET /path HTTP/1.0
-            Host: localhost
-                        
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(
+            connector.getResponse("""
+                GET /path HTTP/1.0
+                Host: localhost
+
+                """));
 
         assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
     }
 
     @ParameterizedTest
-    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
-    public void testIdleTimeoutListenerCompletesCallback(boolean failIdleTimeout, boolean succeedCallback) throws Exception
+    @CsvSource(
+    {"true,true", "true,false", "false,true", "false,false"})
+    public void testIdleTimeoutListenerCompletesCallback(boolean failIdleTimeout, boolean succeedCallback)
+        throws Exception
     {
         CountDownLatch failureLatch = new CountDownLatch(1);
         startServer(new Handler.Abstract()
@@ -185,21 +189,26 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            POST / HTTP/1.1
-            Host: localhost
-            Content-Length: 1
-            Connection: close
-                            
-            """, 2000 * idleTimeout, TimeUnit.MILLISECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Length: 1
+                Connection: close
+
+                """,
+            2000 * idleTimeout,
+            TimeUnit.MILLISECONDS));
 
         int expectedStatus = succeedCallback ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500;
         assertEquals(expectedStatus, response.getStatus());
-        assertThat(failureLatch.await(idleTimeout + 500, TimeUnit.MILLISECONDS), is(failIdleTimeout && !succeedCallback));
+        assertThat(
+            failureLatch.await(idleTimeout + 500, TimeUnit.MILLISECONDS), is(failIdleTimeout && !succeedCallback));
     }
 
     @ParameterizedTest
-    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
+    @CsvSource(
+    {"true,true", "true,false", "false,true", "false,false"})
     public void testIdleTimeoutListenerFailsRequest(boolean failIdleTimeout, boolean succeedCallback) throws Exception
     {
         AtomicInteger failures = new AtomicInteger();
@@ -230,12 +239,15 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            POST / HTTP/1.1
-            Host: localhost
-            Content-Length: 1
-                            
-            """, 2 * idleTimeout, TimeUnit.MILLISECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Length: 1
+
+                """,
+            2 * idleTimeout,
+            TimeUnit.MILLISECONDS));
 
         int expectedStatus = succeedCallback ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500;
         assertEquals(expectedStatus, response.getStatus());
@@ -265,12 +277,15 @@ public class RequestListenersTest
         long idleTimeout = 500;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET / HTTP/1.1
-            Host: localhost
-            Connection: close
-                            
-            """, 3 * idleTimeout, TimeUnit.MILLISECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                GET / HTTP/1.1
+                Host: localhost
+                Connection: close
+
+                """,
+            3 * idleTimeout,
+            TimeUnit.MILLISECONDS));
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(idleTimeouts.get(), greaterThan(1));
@@ -298,13 +313,14 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
-            POST / HTTP/1.1
-            Host: localhost
-            Content-Length: 1
-            Connection: close
-                            
-            """))
+        try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(
+            """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Length: 1
+                Connection: close
+
+                """))
         {
 
             // Get the callback as promised by the error listener.
@@ -312,7 +328,8 @@ public class RequestListenersTest
             assertNotNull(callback);
             Content.Sink.write(responseRef.get(), true, "OK", callback);
 
-            HttpTester.Response response = HttpTester.parseResponse(endPoint.waitForResponse(false, 3 * idleTimeout, TimeUnit.MILLISECONDS));
+            HttpTester.Response response =
+                HttpTester.parseResponse(endPoint.waitForResponse(false, 3 * idleTimeout, TimeUnit.MILLISECONDS));
 
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), is("OK"));
@@ -336,20 +353,25 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            POST / HTTP/1.1
-            Host: localhost
-            Content-Length: 1
-            Connection: close
-                            
-            """, 3 * idleTimeout, TimeUnit.MILLISECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Length: 1
+                Connection: close
+
+                """,
+            3 * idleTimeout,
+            TimeUnit.MILLISECONDS));
 
         // The first time the listener returns false, but does not
         // complete the callback, so another idle timeout elapses.
         // The second time the listener returns true, the failure
         // listener is called, which fails the Handler callback.
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-        assertThat(response.getContent(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
+        assertThat(
+            response.getContent(),
+            containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
         assertThat(idleTimeoutFailure.get(), instanceOf(TimeoutException.class));
     }
 
@@ -369,14 +391,18 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET / HTTP/1.1
-            Host: localhost
-            Connection: close
-                        
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(
+            connector.getResponse(
+                """
+                    GET / HTTP/1.1
+                    Host: localhost
+                    Connection: close
+
+                    """));
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-        assertThat(response.getContent(), containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
+        assertThat(
+            response.getContent(),
+            containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
     }
 
     @Test
@@ -397,13 +423,14 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
-            POST / HTTP/1.1
-            Host: localhost
-            Content-Length: 1
-            Connection: close
-                        
-            """))
+        try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(
+            """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Length: 1
+                Connection: close
+
+                """))
         {
 
             Callback callback = callbackCompletable.get(5 * idleTimeout, TimeUnit.MILLISECONDS);
@@ -417,7 +444,8 @@ public class RequestListenersTest
 
             callback.succeeded();
 
-            HttpTester.Response response = HttpTester.parseResponse(endPoint.waitForResponse(false, idleTimeout, TimeUnit.MILLISECONDS));
+            HttpTester.Response response =
+                HttpTester.parseResponse(endPoint.waitForResponse(false, idleTimeout, TimeUnit.MILLISECONDS));
 
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
         }
@@ -440,7 +468,9 @@ public class RequestListenersTest
                 // Issue a large write that will be congested.
                 // The idle timeout should fail the write callback.
                 ByteBuffer byteBuffer = ByteBuffer.allocate(128 * 1024 * 1024);
-                response.write(false, byteBuffer, Callback.from(() -> {}, x -> writeFailed.complete(callback)));
+                response.write(false, byteBuffer, Callback.from(() ->
+                {
+                }, x -> writeFailed.complete(callback)));
 
                 return true;
             }
@@ -452,13 +482,14 @@ public class RequestListenersTest
         {
             // Do not grow the output so the response will be congested.
             endPoint.setGrowOutput(false);
-            endPoint.addInputAndExecute("""
-                POST / HTTP/1.1
-                Host: localhost
-                Content-Length: 1
-                Connection: close
-                            
-                """);
+            endPoint.addInputAndExecute(
+                """
+                    POST / HTTP/1.1
+                    Host: localhost
+                    Content-Length: 1
+                    Connection: close
+
+                    """);
 
             Callback callback = writeFailed.get(5 * idleTimeout, TimeUnit.MILLISECONDS);
 
@@ -466,7 +497,9 @@ public class RequestListenersTest
             Response response = responseRef.get();
             CountDownLatch writeFailedLatch = new CountDownLatch(1);
             // Use a non-empty buffer to avoid short-circuit the write.
-            response.write(false, ByteBuffer.allocate(16), Callback.from(() -> {}, x -> writeFailedLatch.countDown()));
+            response.write(false, ByteBuffer.allocate(16), Callback.from(() ->
+            {
+            }, x -> writeFailedLatch.countDown()));
             assertTrue(writeFailedLatch.await(5, TimeUnit.SECONDS));
 
             // The write side has failed, but the read side has not.

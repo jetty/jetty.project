@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.util.Set;
-
 import jakarta.servlet.AsyncContext;
+import java.util.Set;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Attributes;
 
@@ -24,27 +23,24 @@ import org.eclipse.jetty.util.Attributes;
  */
 public class ServletAttributes extends Attributes.Synthetic
 {
-    private static final Set<String> ATTRIBUTES =
-        Set.of(
-            Request.SSL_CIPHER_SUITE,
-            Request.SSL_KEY_SIZE,
-            Request.SSL_SESSION_ID,
-            Request.PEER_CERTIFICATES,
-            AsyncContext.ASYNC_REQUEST_URI,
-            AsyncContext.ASYNC_CONTEXT_PATH,
-            AsyncContext.ASYNC_SERVLET_PATH,
-            AsyncContext.ASYNC_PATH_INFO,
-            AsyncContext.ASYNC_QUERY_STRING,
-            AsyncContext.ASYNC_MAPPING
-        );
+    private static final Set<String> ATTRIBUTES = Set.of(
+        Request.SSL_CIPHER_SUITE,
+        Request.SSL_KEY_SIZE,
+        Request.SSL_SESSION_ID,
+        Request.PEER_CERTIFICATES,
+        AsyncContext.ASYNC_REQUEST_URI,
+        AsyncContext.ASYNC_CONTEXT_PATH,
+        AsyncContext.ASYNC_SERVLET_PATH,
+        AsyncContext.ASYNC_PATH_INFO,
+        AsyncContext.ASYNC_QUERY_STRING,
+        AsyncContext.ASYNC_MAPPING);
 
     private record Async(
         String requestURI,
         String contextPath,
         String pathInContext,
         ServletPathMapping mapping,
-        String queryString)
-    {
+        String queryString) {
     }
 
     private Async _async;
@@ -79,7 +75,12 @@ public class ServletAttributes extends Attributes.Synthetic
         return ATTRIBUTES;
     }
 
-    public void setAsyncAttributes(String requestURI, String contextPath, String pathInContext, ServletPathMapping servletPathMapping, String queryString)
+    public void setAsyncAttributes(
+                                   String requestURI,
+                                   String contextPath,
+                                   String pathInContext,
+                                   ServletPathMapping servletPathMapping,
+                                   String queryString)
     {
         _async = new Async(requestURI, contextPath, pathInContext, servletPathMapping, queryString);
     }

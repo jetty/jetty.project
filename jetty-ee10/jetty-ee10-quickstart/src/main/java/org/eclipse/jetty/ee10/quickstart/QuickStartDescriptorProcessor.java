@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.quickstart;
 
+import jakarta.servlet.ServletContext;
 import java.io.Closeable;
 import java.net.URI;
 import java.util.ArrayList;
@@ -20,8 +21,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.servlet.ServletContainerInitializerHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
@@ -126,8 +125,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
      * @param node the context-param node in the xml file
      * @throws Exception if some resources cannot be read
      */
-    public void visitContextParam(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
-        throws Exception
+    public void visitContextParam(WebAppContext context, Descriptor descriptor, XmlParser.Node node) throws Exception
     {
         String name = node.getString("param-name", false, true);
         String value = node.getString("param-value", false, true);
@@ -138,9 +136,12 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         {
             case QuickStartGeneratorConfiguration.ORIGIN ->
             {
-                //value already contains what we need
+                // value already contains what we need
             }
-            case ServletContext.ORDERED_LIBS, AnnotationConfiguration.CONTAINER_INITIALIZERS, MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES ->
+            case ServletContext.ORDERED_LIBS,
+                AnnotationConfiguration.CONTAINER_INITIALIZERS,
+                MetaInfConfiguration.METAINF_TLDS,
+                MetaInfConfiguration.METAINF_RESOURCES ->
             {
                 context.removeAttribute(name);
 
@@ -157,8 +158,8 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         // handle values
         switch (name)
         {
-            case QuickStartGeneratorConfiguration.ORIGIN ->
-                context.setAttribute(QuickStartGeneratorConfiguration.ORIGIN, value);
+            case QuickStartGeneratorConfiguration.ORIGIN -> context.setAttribute(
+                QuickStartGeneratorConfiguration.ORIGIN, value);
 
             case ServletContext.ORDERED_LIBS ->
             {
@@ -174,8 +175,10 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
             {
                 for (String s : values)
                 {
-                    visitServletContainerInitializerHolder(context,
-                        ServletContainerInitializerHolder.fromString(Thread.currentThread().getContextClassLoader(), s));
+                    visitServletContainerInitializerHolder(
+                        context,
+                        ServletContainerInitializerHolder.fromString(
+                            Thread.currentThread().getContextClassLoader(), s));
                 }
             }
             case MetaInfConfiguration.METAINF_TLDS ->
@@ -188,11 +191,14 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
                 for (String i : values)
                 {
                     String entry = normalizer.expand(i);
-                    tlds.add(context.getResourceFactory().newResource(entry).getURI().toURL());
+                    tlds.add(context.getResourceFactory()
+                        .newResource(entry)
+                        .getURI()
+                        .toURL());
                 }
 
-                //empty list signals that tlds were prescanned but none found.
-                //a missing METAINF_TLDS attribute means that prescanning was not done.
+                // empty list signals that tlds were prescanned but none found.
+                // a missing METAINF_TLDS attribute means that prescanning was not done.
                 context.setAttribute(MetaInfConfiguration.METAINF_TLDS, tlds);
             }
             case MetaInfConfiguration.METAINF_RESOURCES ->
@@ -212,18 +218,19 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
                 }
             }
             default ->
-            {
-            }
+                {
+                }
         }
     }
-    
+
     /**
      * Ensure the ServletContainerInitializerHolder will be started by adding it to the context.
-     * 
+     *
      * @param context the context to which to add the ServletContainerInitializerHolder
      * @param sciHolder the ServletContainerInitializerHolder
      */
-    public void visitServletContainerInitializerHolder(WebAppContext context, ServletContainerInitializerHolder sciHolder)
+    public void visitServletContainerInitializerHolder(
+                                                       WebAppContext context, ServletContainerInitializerHolder sciHolder)
     {
         if (sciHolder == null)
             return;
@@ -232,7 +239,8 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
 
     public void visitMetaInfResource(WebAppContext context, Resource dir)
     {
-        Collection<Resource> metaInfResources = (Collection<Resource>)context.getAttribute(MetaInfConfiguration.METAINF_RESOURCES);
+        Collection<Resource> metaInfResources =
+            (Collection<Resource>)context.getAttribute(MetaInfConfiguration.METAINF_RESOURCES);
         if (metaInfResources == null)
         {
             metaInfResources = new HashSet<>();
@@ -240,7 +248,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
         }
         metaInfResources.add(dir);
 
-        //also add to base resource of webapp
+        // also add to base resource of webapp
         List<Resource> collection = new ArrayList<>();
         collection.add(context.getBaseResource());
         collection.addAll(metaInfResources);

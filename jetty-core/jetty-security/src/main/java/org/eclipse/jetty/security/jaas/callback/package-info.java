@@ -15,4 +15,3 @@
  * Jetty Jaas : Jaas Callbacks
  */
 package org.eclipse.jetty.security.jaas.callback;
-

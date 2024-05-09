@@ -13,10 +13,18 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -30,15 +38,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class PartialRFC2616Test
 {
     private Server server;
@@ -49,7 +48,10 @@ public class PartialRFC2616Test
     {
         server = new Server();
         connector = new LocalConnector(server);
-        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616);
+        connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setHttpCompliance(HttpCompliance.RFC2616);
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
 
@@ -130,15 +132,7 @@ public class PartialRFC2616Test
     {
         int offset = 0;
         // Chunk last
-        String response = connector.getResponse(
-            "GET /R1 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Transfer-Encoding: chunked,identity\n" +
-                "Content-Type: text/plain\n" +
-                "\r\n" +
-                "5;\r\n" +
-                "123\r\n\r\n" +
-                "0;\r\n\r\n");
+        String response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "Transfer-Encoding: chunked,identity\n" + "Content-Type: text/plain\n" + "\r\n" + "5;\r\n" + "123\r\n\r\n" + "0;\r\n\r\n");
         checkContains(response, offset, "HTTP/1.1 400 Bad", "Chunked last");
     }
 
@@ -148,33 +142,7 @@ public class PartialRFC2616Test
         String response;
         int offset = 0;
         // Chunked
-        LocalEndPoint endp = connector.executeRequest(
-            "GET /R1 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Transfer-Encoding: chunked\n" +
-                "Content-Type: text/plain\n" +
-                "\n" +
-                "2;\n" +
-                "12\n" +
-                "3;\n" +
-                "345\n" +
-                "0;\n\n" +
-
-                "GET /R2 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Transfer-Encoding: chunked\n" +
-                "Content-Type: text/plain\n" +
-                "\n" +
-                "4;\n" +
-                "6789\n" +
-                "5;\n" +
-                "abcde\n" +
-                "0;\n\n" +
-
-                "GET /R3 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Connection: close\n" +
-                "\n");
+        LocalEndPoint endp = connector.executeRequest("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "Transfer-Encoding: chunked\n" + "Content-Type: text/plain\n" + "\n" + "2;\n" + "12\n" + "3;\n" + "345\n" + "0;\n\n" + "GET /R2 HTTP/1.1\n" + "Host: localhost\n" + "Transfer-Encoding: chunked\n" + "Content-Type: text/plain\n" + "\n" + "4;\n" + "6789\n" + "5;\n" + "abcde\n" + "0;\n\n" + "GET /R3 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
         offset = 0;
         response = endp.getResponse();
         offset = checkContains(response, offset, "HTTP/1.1 200", "3.6.1 Chunking");
@@ -193,33 +161,7 @@ public class PartialRFC2616Test
     {
         String response;
         int offset = 0;
-        LocalEndPoint endp = connector.executeRequest(
-            "POST /R1 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Transfer-Encoding: chunked\n" +
-                "Content-Type: text/plain\n" +
-                "\n" +
-                "3;\n" +
-                "fgh\n" +
-                "3;\n" +
-                "Ijk\n" +
-                "0;\n\n" +
-
-                "POST /R2 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Transfer-Encoding: chunked\n" +
-                "Content-Type: text/plain\n" +
-                "\n" +
-                "4;\n" +
-                "lmno\n" +
-                "5;\n" +
-                "Pqrst\n" +
-                "0;\n\n" +
-
-                "GET /R3 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Connection: close\n" +
-                "\n");
+        LocalEndPoint endp = connector.executeRequest("POST /R1 HTTP/1.1\n" + "Host: localhost\n" + "Transfer-Encoding: chunked\n" + "Content-Type: text/plain\n" + "\n" + "3;\n" + "fgh\n" + "3;\n" + "Ijk\n" + "0;\n\n" + "POST /R2 HTTP/1.1\n" + "Host: localhost\n" + "Transfer-Encoding: chunked\n" + "Content-Type: text/plain\n" + "\n" + "4;\n" + "lmno\n" + "5;\n" + "Pqrst\n" + "0;\n\n" + "GET /R3 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
         offset = 0;
         response = endp.getResponse();
         checkNotContained(response, "HTTP/1.1 100", "3.6.1 Chunking");
@@ -242,23 +184,7 @@ public class PartialRFC2616Test
         String response;
         int offset = 0;
         // Chunked and keep alive
-        LocalEndPoint endp = connector.executeRequest(
-            "GET /R1 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Transfer-Encoding: chunked\n" +
-                "Content-Type: text/plain\n" +
-                "Connection: keep-alive\n" +
-                "\n" +
-                "3;\n" +
-                "123\n" +
-                "3;\n" +
-                "456\n" +
-                "0;\n\n" +
-
-                "GET /R2 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Connection: close\n" +
-                "\n");
+        LocalEndPoint endp = connector.executeRequest("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "Transfer-Encoding: chunked\n" + "Content-Type: text/plain\n" + "Connection: keep-alive\n" + "\n" + "3;\n" + "123\n" + "3;\n" + "456\n" + "0;\n\n" + "GET /R2 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
         offset = 0;
         response = endp.getResponse();
         offset = checkContains(response, offset, "HTTP/1.1 200", "3.6.1 Chunking") + 10;
@@ -272,7 +198,8 @@ public class PartialRFC2616Test
     public void test39() throws Exception
     {
         HttpFields fields = HttpFields.build()
-            .put("Q", "bbb;q=0.5,aaa,ccc;q=0.002,d;q=0,e;q=0.0001,ddd;q=0.001,aa2,abb;q=0.7").asImmutable();
+            .put("Q", "bbb;q=0.5,aaa,ccc;q=0.002,d;q=0,e;q=0.0001,ddd;q=0.001,aa2,abb;q=0.7")
+            .asImmutable();
         List<String> list = fields.getQualityCSV("Q");
         assertEquals("aaa", HttpField.getValueParameters(list.get(0), null), "Quality parameters");
         assertEquals("aa2", HttpField.getValueParameters(list.get(1), null), "Quality parameters");
@@ -288,23 +215,7 @@ public class PartialRFC2616Test
         int offset = 0;
 
         // If _content length not used, second request will not be read.
-        LocalEndPoint endp = connector.executeRequest(
-            "\r\n" +
-                "GET /R1 HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n" +
-                "\r\n" +
-                "\r\n" +
-                "\r\n" +
-                "GET /R2 HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n" +
-                " \r\n" +
-                "GET /R3 HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n"
-        );
+        LocalEndPoint endp = connector.executeRequest("\r\n" + "GET /R1 HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n" + "\r\n" + "\r\n" + "\r\n" + "GET /R2 HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n" + " \r\n" + "GET /R3 HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
 
         String response = endp.getResponse();
         offset = checkContains(response, offset, "HTTP/1.1 200 OK", "2. identity") + 10;
@@ -327,19 +238,7 @@ public class PartialRFC2616Test
         String response;
         int offset = 0;
         // If _content length not used, second request will not be read.
-        LocalEndPoint endp = connector.executeRequest(
-            "GET /R1 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Transfer-Encoding: identity\n" +
-                "Content-Type: text/plain\n" +
-                "Content-Length: 5\n" +
-                "\n" +
-                "123\r\n" +
-                "GET /R2 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Transfer-Encoding: other\n" +
-                "Connection: close\n" +
-                "\n");
+        LocalEndPoint endp = connector.executeRequest("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "Transfer-Encoding: identity\n" + "Content-Type: text/plain\n" + "Content-Length: 5\n" + "\n" + "123\r\n" + "GET /R2 HTTP/1.1\n" + "Host: localhost\n" + "Transfer-Encoding: other\n" + "Connection: close\n" + "\n");
         offset = 0;
         response = endp.getResponse();
         offset = checkContains(response, offset, "HTTP/1.1 400 ", "2. identity") + 10;
@@ -355,27 +254,7 @@ public class PartialRFC2616Test
         // treat content length and chunking as a bad request.
         int offset = 0;
         String response;
-        LocalEndPoint endp = connector.executeRequest(
-            "GET /R1 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Transfer-Encoding: chunked\n" +
-                "Content-Type: text/plain\n" +
-                "Content-Length: 100\n" +
-                "\n" +
-                "3;\n" +
-                "123\n" +
-                "3;\n" +
-                "456\n" +
-                "0;\n" +
-                "\n" +
-
-                "GET /R2 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Connection: close\n" +
-                "Content-Type: text/plain\n" +
-                "Content-Length: 6\n" +
-                "\n" +
-                "abcdef");
+        LocalEndPoint endp = connector.executeRequest("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "Transfer-Encoding: chunked\n" + "Content-Type: text/plain\n" + "Content-Length: 100\n" + "\n" + "3;\n" + "123\n" + "3;\n" + "456\n" + "0;\n" + "\n" + "GET /R2 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "Content-Type: text/plain\n" + "Content-Length: 6\n" + "\n" + "abcdef");
         response = endp.getResponse();
         offset = checkContains(response, offset, "HTTP/1.1 400 ", "3. ignore c-l") + 1;
         checkNotContained(response, offset, "/R2", "3. _content-length");
@@ -416,9 +295,7 @@ public class PartialRFC2616Test
         // Default Host
         int offset = 0;
         String response = connector.getResponse(
-            "GET http://VirtualHost:8888/path/R1 HTTP/1.1\n" +
-            "Host: wronghost\n" +
-            "Connection: close\n" + "\n");
+            "GET http://VirtualHost:8888/path/R1 HTTP/1.1\n" + "Host: wronghost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "Virtual host") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "Virtual host") + 1;
         offset = checkContains(response, offset, "pathInContext=/path/R1", "Virtual host") + 1;
@@ -430,14 +307,16 @@ public class PartialRFC2616Test
     {
         // Default Host
         int offset = 0;
-        String response = connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
+        String response =
+            connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "Default host") + 1;
         offset = checkContains(response, offset, "Dump Handler", "Default host") + 1;
         offset = checkContains(response, offset, "pathInContext=/path/R1", "Default host") + 1;
 
         // Virtual Host
         offset = 0;
-        response = connector.getResponse("GET /path/R2 HTTP/1.1\n" + "Host: VirtualHost\n" + "Connection: close\n" + "\n");
+        response =
+            connector.getResponse("GET /path/R2 HTTP/1.1\n" + "Host: VirtualHost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "Default host") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "virtual host") + 1;
         offset = checkContains(response, offset, "pathInContext=/path/R2", "Default host") + 1;
@@ -448,14 +327,16 @@ public class PartialRFC2616Test
     {
         // Virtual Host
         int offset = 0;
-        String response = connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: VirtualHost\n" + "Connection: close\n" + "\n");
+        String response =
+            connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: VirtualHost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "2. virtual host field") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "2. virtual host field") + 1;
         offset = checkContains(response, offset, "pathInContext=/path/R1", "2. virtual host field") + 1;
 
         // Virtual Host case insensitive
         offset = 0;
-        response = connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: ViRtUalhOst\n" + "Connection: close\n" + "\n");
+        response =
+            connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: ViRtUalhOst\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "2. virtual host field") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "2. virtual host field") + 1;
         offset = checkContains(response, offset, "pathInContext=/path/R1", "2. virtual host field") + 1;
@@ -470,13 +351,13 @@ public class PartialRFC2616Test
     public void test81() throws Exception
     {
         int offset = 0;
-        String response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n", 250, TimeUnit.MILLISECONDS);
+        String response =
+            connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n", 250, TimeUnit.MILLISECONDS);
         offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "8.1.2 default") + 10;
         checkContains(response, offset, "Content-Length: ", "8.1.2 default");
 
-        LocalEndPoint endp = connector.executeRequest("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n" +
-            "GET /R2 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n" +
-            "GET /R3 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
+        LocalEndPoint endp =
+            connector.executeRequest("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n" + "GET /R2 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n" + "GET /R3 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
 
         offset = 0;
         response = endp.getResponse();
@@ -499,13 +380,7 @@ public class PartialRFC2616Test
     {
         // Expect Failure
         int offset = 0;
-        String response = connector.getResponse(
-            "GET /R1 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Expect: unknown\n" +
-                "Content-Type: text/plain\n" +
-                "Content-Length: 8\n" +
-                "\n");
+        String response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "Expect: unknown\n" + "Content-Type: text/plain\n" + "Content-Length: 8\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 417", "8.2.3 expect failure") + 1;
     }
 
@@ -514,15 +389,7 @@ public class PartialRFC2616Test
     {
         // Expect with body: client sends the content right away, we should not send 100-Continue
         int offset = 0;
-        String response = connector.getResponse(
-            "GET /R1 HTTP/1.1\n" +
-                "Host: localhost\n" +
-                "Expect: 100-continue\n" +
-                "Content-Type: text/plain\n" +
-                "Content-Length: 8\n" +
-                "Connection: close\n" +
-                "\n" +
-                "123456\r\n");
+        String response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "Expect: 100-continue\n" + "Content-Type: text/plain\n" + "Content-Length: 8\n" + "Connection: close\n" + "\n" + "123456\r\n");
         checkNotContained(response, offset, "HTTP/1.1 100 ", "8.2.3 expect 100");
         offset = checkContains(response, offset, "HTTP/1.1 200 OK", "8.2.3 expect with body") + 1;
     }
@@ -532,13 +399,7 @@ public class PartialRFC2616Test
     {
         int offset = 0;
         // Expect 100
-        LocalConnector.LocalEndPoint endp = connector.executeRequest("GET /R1 HTTP/1.1\n" +
-            "Host: localhost\n" +
-            "Connection: close\n" +
-            "Expect: 100-continue\n" +
-            "Content-Type: text/plain\n" +
-            "Content-Length: 8\n" +
-            "\n");
+        LocalConnector.LocalEndPoint endp = connector.executeRequest("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "Expect: 100-continue\n" + "Content-Type: text/plain\n" + "Content-Length: 8\n" + "\n");
         String infomational = endp.getResponse();
         offset = checkContains(infomational, offset, "HTTP/1.1 100 ", "8.2.3 expect 100") + 1;
         checkNotContained(infomational, offset, "HTTP/1.1 200", "8.2.3 expect 100");
@@ -555,12 +416,7 @@ public class PartialRFC2616Test
     {
         // Expect 100 not sent
         int offset = 0;
-        String response = connector.getResponse("GET /R1?error=401 HTTP/1.1\n" +
-            "Host: localhost\n" +
-            "Expect: 100-continue\n" +
-            "Content-Type: text/plain\n" +
-            "Content-Length: 8\n" +
-            "\n");
+        String response = connector.getResponse("GET /R1?error=401 HTTP/1.1\n" + "Host: localhost\n" + "Expect: 100-continue\n" + "Content-Type: text/plain\n" + "Content-Length: 8\n" + "\n");
         checkNotContained(response, offset, "HTTP/1.1 100", "8.2.3 expect 100");
         offset = checkContains(response, offset, "HTTP/1.1 401 ", "8.2.3 expect 100") + 1;
         offset = checkContains(response, offset, "Connection: close", "8.2.3 expect 100") + 1;
@@ -571,17 +427,12 @@ public class PartialRFC2616Test
     {
         int offset = 0;
 
-        String response = connector.getResponse("OPTIONS * HTTP/1.1\n" +
-            "Connection: close\n" +
-            "Host: localhost\n" +
-            "\n");
+        String response =
+            connector.getResponse("OPTIONS * HTTP/1.1\n" + "Connection: close\n" + "Host: localhost\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "200") + 1;
 
         offset = 0;
-        response = connector.getResponse("GET * HTTP/1.1\n" +
-            "Connection: close\n" +
-            "Host: localhost\n" +
-            "\n");
+        response = connector.getResponse("GET * HTTP/1.1\n" + "Connection: close\n" + "Host: localhost\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 400", "400") + 1;
     }
 
@@ -642,10 +493,7 @@ public class PartialRFC2616Test
             offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "19.6.2 default close") + 10;
             checkNotContained(response, offset, "Connection: close", "19.6.2 not assumed");
 
-            LocalEndPoint endp = connector.executeRequest(
-                "GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "Connection: keep-alive\n" + "\n" +
-                    "GET /R2 HTTP/1.0\n" + "Host: localhost\n" + "Connection: close\n" + "\n" +
-                    "GET /R3 HTTP/1.0\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
+            LocalEndPoint endp = connector.executeRequest("GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "Connection: keep-alive\n" + "\n" + "GET /R2 HTTP/1.0\n" + "Host: localhost\n" + "Connection: close\n" + "\n" + "GET /R3 HTTP/1.0\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
 
             offset = 0;
             response = endp.getResponse();
@@ -666,11 +514,7 @@ public class PartialRFC2616Test
             assertThat("19.6.2 closed", response, nullValue());
 
             offset = 0;
-            endp = connector.executeRequest(
-                "GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "Connection: keep-alive\n" + "Content-Length: 10\n" + "\n" + "1234567890\n" +
-                    "GET /RA HTTP/1.0\n" + "Host: localhost\n" + "Connection: keep-alive\n" + "Content-Length: 10\n" + "\n" + "ABCDEFGHIJ\n" +
-                    "GET /R2 HTTP/1.0\n" + "Host: localhost\n" + "Connection: close\n" + "\n" +
-                    "GET /R3 HTTP/1.0\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
+            endp = connector.executeRequest("GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "Connection: keep-alive\n" + "Content-Length: 10\n" + "\n" + "1234567890\n" + "GET /RA HTTP/1.0\n" + "Host: localhost\n" + "Connection: keep-alive\n" + "Content-Length: 10\n" + "\n" + "ABCDEFGHIJ\n" + "GET /R2 HTTP/1.0\n" + "Host: localhost\n" + "Connection: close\n" + "\n" + "GET /R3 HTTP/1.0\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
 
             offset = 0;
             response = endp.getResponse();

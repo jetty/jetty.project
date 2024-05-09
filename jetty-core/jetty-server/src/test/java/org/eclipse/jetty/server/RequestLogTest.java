@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -21,7 +29,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
@@ -36,14 +43,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test raw behaviors of RequestLog and how Request / Response objects behave during
@@ -64,7 +63,8 @@ public class RequestLogTest
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=UTF-8");
-            Content.Sink.write(response, true, "Got %s to %s%n".formatted(request.getMethod(), request.getHttpURI()), callback);
+            Content.Sink.write(
+                response, true, "Got %s to %s%n".formatted(request.getMethod(), request.getHttpURI()), callback);
             return true;
         }
     }
@@ -92,8 +92,10 @@ public class RequestLogTest
         {
             BlockingArrayQueue<String> requestLogLines = new BlockingArrayQueue<>();
 
-            server = createServer((request, response1) ->
-                    requestLogLines.add(String.format("method:%s|uri:%s|status:%d", request.getMethod(), request.getHttpURI(), response1.getStatus())),
+            server = createServer(
+                (request, response1) -> requestLogLines.add(String.format(
+                    "method:%s|uri:%s|status:%d",
+                    request.getMethod(), request.getHttpURI(), response1.getStatus())),
                 new NormalResponse());
             server.start();
 
@@ -103,12 +105,14 @@ public class RequestLogTest
                  OutputStream out = socket.getOutputStream();
                  InputStream in = socket.getInputStream())
             {
-                String rawRequest = """
-                    GET /hello HTTP/1.1
-                    Host: %s
-                    Connection: close
-                    
-                    """.formatted(baseURI.getRawAuthority());
+                String rawRequest =
+                    """
+                        GET /hello HTTP/1.1
+                        Host: %s
+                        Connection: close
+
+                        """
+                        .formatted(baseURI.getRawAuthority());
                 out.write(rawRequest.getBytes(UTF_8));
                 out.flush();
 
@@ -137,7 +141,8 @@ public class RequestLogTest
      * The RequestLog accidentally attempts to read the Request body content due to the use of Request.getParameterNames() API.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"/hello", "/hello?a=b"})
+    @ValueSource(strings =
+    {"/hello", "/hello?a=b"})
     public void testNormalPostFormRequest(String requestPath) throws Exception
     {
         Server server = null;
@@ -145,22 +150,29 @@ public class RequestLogTest
         {
             BlockingArrayQueue<String> requestLogLines = new BlockingArrayQueue<>();
 
-            server = createServer((request, response1) ->
-            {
-                try
+            server = createServer(
+                (request, response1) ->
                 {
-                    // Use API that would trigger a read of the request
-                    Fields params = Request.getParameters(request);
+                    try
+                    {
+                        // Use API that would trigger a read of the request
+                        Fields params = Request.getParameters(request);
 
-                    // This should result in only params from the query string, not from request body, as nothing is read during RequestLog execution
-                    requestLogLines.add(String.format("method:%s|uri:%s|params.size:%d|status:%d", request.getMethod(), request.getHttpURI(), params.getSize(), response1.getStatus()));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-
-            }, new NormalResponse());
+                        // This should result in only params from the query string, not from request body, as
+                        // nothing is read during RequestLog execution
+                        requestLogLines.add(String.format(
+                            "method:%s|uri:%s|params.size:%d|status:%d",
+                            request.getMethod(),
+                            request.getHttpURI(),
+                            params.getSize(),
+                            response1.getStatus()));
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                },
+                new NormalResponse());
             server.start();
 
             URI baseURI = server.getURI();
@@ -177,14 +189,16 @@ public class RequestLogTest
 
                 byte[] bufForm = form.toString().getBytes(UTF_8);
 
-                String rawRequest = """
-                    POST %s HTTP/1.1
-                    Host: %s
-                    Content-Type: application/x-www-form-urlencoded
-                    Content-Length: %d
-                    Connection: close
-                    
-                    """.formatted(requestPath, baseURI.getRawAuthority(), bufForm.length);
+                String rawRequest =
+                    """
+                        POST %s HTTP/1.1
+                        Host: %s
+                        Content-Type: application/x-www-form-urlencoded
+                        Content-Length: %d
+                        Connection: close
+
+                        """
+                        .formatted(requestPath, baseURI.getRawAuthority(), bufForm.length);
 
                 out.write(rawRequest.getBytes(UTF_8));
                 out.write(bufForm);
@@ -203,9 +217,11 @@ public class RequestLogTest
                 int querySize = 0;
                 if (requestPath.contains("?"))
                     querySize = 1; // assuming that parameterized version only has 1 query value
-                assertThat("RequestLog", reqlog, containsString("method:POST|uri:%s|params.size:%d|status:200"
-                    .formatted(expectedURI, querySize)
-                ));
+                assertThat(
+                    "RequestLog",
+                    reqlog,
+                    containsString(
+                        "method:POST|uri:%s|params.size:%d|status:200".formatted(expectedURI, querySize)));
             }
         }
         finally
@@ -228,22 +244,28 @@ public class RequestLogTest
         {
             BlockingArrayQueue<String> requestLogLines = new BlockingArrayQueue<>();
 
-            server = createServer((request, response1) ->
-            {
-                try
+            server = createServer(
+                (request, response1) ->
                 {
-                    // Use API that would trigger a read of the request
-                    Fields params = Request.getParameters(request);
+                    try
+                    {
+                        // Use API that would trigger a read of the request
+                        Fields params = Request.getParameters(request);
 
-                    // This should result in no params, as nothing is read during RequestLog execution
-                    requestLogLines.add(String.format("method:%s|uri:%s|params.size:%d|status:%d", request.getMethod(), request.getHttpURI(), params.getSize(), response1.getStatus()));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-
-            }, new NormalResponse());
+                        // This should result in no params, as nothing is read during RequestLog execution
+                        requestLogLines.add(String.format(
+                            "method:%s|uri:%s|params.size:%d|status:%d",
+                            request.getMethod(),
+                            request.getHttpURI(),
+                            params.getSize(),
+                            response1.getStatus()));
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                },
+                new NormalResponse());
             server.start();
 
             URI baseURI = server.getURI();
@@ -260,15 +282,17 @@ public class RequestLogTest
 
                 byte[] bufForm = form.toString().getBytes(UTF_8);
 
-                String rawRequest = """
-                    POST /hello HTTP/1.1
-                    Host: %s
-                    Content-Type: application/x-www-form-urlencoded
-                    Content-Length: %d
-                    Transfer-Encoding: chunked
-                    Connection: close
-                    
-                    """.formatted(baseURI.getRawAuthority(), bufForm.length);
+                String rawRequest =
+                    """
+                        POST /hello HTTP/1.1
+                        Host: %s
+                        Content-Type: application/x-www-form-urlencoded
+                        Content-Length: %d
+                        Transfer-Encoding: chunked
+                        Connection: close
+
+                        """
+                        .formatted(baseURI.getRawAuthority(), bufForm.length);
 
                 out.write(rawRequest.getBytes(UTF_8));
                 out.write(bufForm);
@@ -280,7 +304,10 @@ public class RequestLogTest
                 assertThat("Status Code Response", response.getStatus(), is(400));
 
                 // Find body content (always last line)
-                assertThat("Body Content", response.getContent(), containsString("<td>Transfer-Encoding and Content-Length</td>"));
+                assertThat(
+                    "Body Content",
+                    response.getContent(),
+                    containsString("<td>Transfer-Encoding and Content-Length</td>"));
 
                 // We should see a requestlog entry for this 400 response
                 String reqlog = requestLogLines.poll(3, TimeUnit.SECONDS);
@@ -308,7 +335,9 @@ public class RequestLogTest
             RequestLog requestLog = (request, response) ->
             {
                 String xname = response.getHeaders().get("X-Name");
-                requestLogLines.add(String.format("method:%s|uri:%s|header[x-name]:%s|status:%d", request.getMethod(), request.getHttpURI(), xname, response.getStatus()));
+                requestLogLines.add(String.format(
+                    "method:%s|uri:%s|header[x-name]:%s|status:%d",
+                    request.getMethod(), request.getHttpURI(), xname, response.getStatus()));
             };
 
             Handler handler = new Handler.Abstract()
@@ -327,10 +356,11 @@ public class RequestLogTest
                         // This shouldn't change the status for the RequestLog output
                         response.setStatus(204);
                         // attempting to set a response header after commit shouldn't be possible
-                        UnsupportedOperationException unsupported = assertThrows(UnsupportedOperationException.class, () ->
-                        {
-                            response.getHeaders().put("X-Name", "post-commit");
-                        });
+                        UnsupportedOperationException unsupported =
+                            assertThrows(UnsupportedOperationException.class, () ->
+                            {
+                                response.getHeaders().put("X-Name", "post-commit");
+                            });
                         assertThat(unsupported.getMessage(), is("Read Only"));
                         // finish response
                         response.write(true, null, callback);
@@ -349,12 +379,14 @@ public class RequestLogTest
                  OutputStream out = socket.getOutputStream();
                  InputStream in = socket.getInputStream())
             {
-                String rawRequest = """
-                    GET /world HTTP/1.1
-                    Host: %s
-                    Connection: close
-                    
-                    """.formatted(baseURI.getRawAuthority());
+                String rawRequest =
+                    """
+                        GET /world HTTP/1.1
+                        Host: %s
+                        Connection: close
+
+                        """
+                        .formatted(baseURI.getRawAuthority());
 
                 out.write(rawRequest.getBytes(UTF_8));
                 out.flush();
@@ -370,7 +402,10 @@ public class RequestLogTest
 
                 // We should see a requestlog entry for the original 202 response
                 String reqlog = requestLogLines.poll(3, TimeUnit.SECONDS);
-                assertThat("RequestLog", reqlog, containsString("method:GET|uri:%s|header[x-name]:actual|status:202".formatted(expectedURI)));
+                assertThat(
+                    "RequestLog",
+                    reqlog,
+                    containsString("method:GET|uri:%s|header[x-name]:actual|status:202".formatted(expectedURI)));
             }
         }
         finally
@@ -395,7 +430,8 @@ public class RequestLogTest
             {
                 SocketAddress remoteAddress = request.getConnectionMetaData().getRemoteSocketAddress();
                 SocketAddress localAddress = request.getConnectionMetaData().getLocalSocketAddress();
-                requestLogLines.add(String.format("method:%s|uri:%s|remote-addr:%s|local-addr:%s|status:%d",
+                requestLogLines.add(String.format(
+                    "method:%s|uri:%s|remote-addr:%s|local-addr:%s|status:%d",
                     request.getMethod(), request.getHttpURI(), remoteAddress, localAddress, response.getStatus()));
             };
 
@@ -405,14 +441,23 @@ public class RequestLogTest
                 public boolean handle(Request request, Response response, Callback callback) throws Exception
                 {
                     response.setStatus(202);
-                    response.getHeaders().put("X-RemoteAddr", Objects.toString(request.getConnectionMetaData().getRemoteSocketAddress(), "<null>"));
-                    response.getHeaders().put("X-LocalAddr", Objects.toString(request.getConnectionMetaData().getLocalSocketAddress(), "<null>"));
+                    response.getHeaders()
+                        .put(
+                            "X-RemoteAddr",
+                            Objects.toString(
+                                request.getConnectionMetaData().getRemoteSocketAddress(), "<null>"));
+                    response.getHeaders()
+                        .put(
+                            "X-LocalAddr",
+                            Objects.toString(
+                                request.getConnectionMetaData().getLocalSocketAddress(), "<null>"));
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
 
                     String msg = "Got %s to %s%n".formatted(request.getMethod(), request.getHttpURI());
                     Callback testCallback = Callback.from(callback, () ->
                     {
-                        EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                        EndPoint endPoint =
+                            request.getConnectionMetaData().getConnection().getEndPoint();
                         // Close connection
                         endPoint.close();
                         // Wait for endpoint to be closed
@@ -432,12 +477,14 @@ public class RequestLogTest
                  OutputStream out = socket.getOutputStream();
                  InputStream in = socket.getInputStream())
             {
-                String rawRequest = """
-                    GET /world HTTP/1.1
-                    Host: %s
-                    Connection: close
-                    
-                    """.formatted(baseURI.getRawAuthority());
+                String rawRequest =
+                    """
+                        GET /world HTTP/1.1
+                        Host: %s
+                        Connection: close
+
+                        """
+                        .formatted(baseURI.getRawAuthority());
 
                 out.write(rawRequest.getBytes(UTF_8));
                 out.flush();
@@ -459,8 +506,11 @@ public class RequestLogTest
 
                 // We should see a requestlog entry for this 400 response
                 String reqlog = requestLogLines.poll(3, TimeUnit.SECONDS);
-                assertThat("RequestLog", reqlog, containsString("method:GET|uri:%s|remote-addr:%s|local-addr:%s|status:202"
-                    .formatted(expectedURI, remoteAddrStr, localAddrStr)));
+                assertThat(
+                    "RequestLog",
+                    reqlog,
+                    containsString("method:GET|uri:%s|remote-addr:%s|local-addr:%s|status:202"
+                        .formatted(expectedURI, remoteAddrStr, localAddrStr)));
             }
         }
         finally

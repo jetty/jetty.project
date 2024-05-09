@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee10;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -24,10 +28,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Simple tests against DispatchServlet.
@@ -95,10 +95,7 @@ public class DispatchServletTest
         ServletHolder dispatch = context.addServlet(DispatchServlet.class, "/dispatch/*");
         context.addServlet(DefaultServlet.class, "/");
 
-        String request = "GET /tests/dispatch/includeN/" + dispatch.getName() + " HTTP/1.1\n" +
-            "Host: tester\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = "GET /tests/dispatch/includeN/" + dispatch.getName() + " HTTP/1.1\n" + "Host: tester\n" + "Connection: close\n" + "\n";
         String response = connector.getResponse(request);
 
         String msg = "Response code on SelfRefDoS";
@@ -113,8 +110,7 @@ public class DispatchServletTest
         context.addServlet(DispatchServlet.class, "/dispatch/*");
         context.addServlet(DefaultServlet.class, "/");
 
-        String[] selfRefs =
-            {"/dispatch/forward", "/dispatch/includeS", "/dispatch/includeW", "/dispatch/includeN"};
+        String[] selfRefs = {"/dispatch/forward", "/dispatch/includeS", "/dispatch/includeW", "/dispatch/includeN"};
 
         /*
          * Number of nested dispatch requests. 220 is a good value, as it won't
@@ -125,21 +121,16 @@ public class DispatchServletTest
 
         for (String selfRef : selfRefs)
         {
-            String request = "GET /tests" +
-                selfRef.repeat(nestedDepth) +
-                "/ HTTP/1.1\n" +
-                "Host: tester\n" +
-                "Connection: close\n" +
-                "\n";
+            String request = "GET /tests" + selfRef.repeat(nestedDepth) + "/ HTTP/1.1\n" + "Host: tester\n" + "Connection: close\n" + "\n";
             String response = connector.getResponse(request);
 
             StringBuilder msg = new StringBuilder();
             msg.append("Response code on nested \"").append(selfRef).append("\"");
             msg.append(" (depth:").append(nestedDepth).append(")");
 
-            assertFalse(response.startsWith("HTTP/1.1 413 "),
-                msg + " should not be code 413 (Request Entity Too Large)," +
-                    "the nestedDepth in the TestCase is too large (reduce it)");
+            assertFalse(
+                response.startsWith("HTTP/1.1 413 "),
+                msg + " should not be code 413 (Request Entity Too Large)," + "the nestedDepth in the TestCase is too large (reduce it)");
 
             assertFalse(response.startsWith("HTTP/1.1 500 "), msg + " should not be code 500.");
             assertThat(response, Matchers.startsWith("HTTP/1.1 403 "));

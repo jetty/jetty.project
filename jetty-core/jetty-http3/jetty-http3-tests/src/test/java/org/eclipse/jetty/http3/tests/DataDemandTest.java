@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -24,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -41,14 +48,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DataDemandTest extends AbstractClientServerTest
 {
@@ -96,10 +95,15 @@ public class DataDemandTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream =
+            session.newRequest(request, new Stream.Client.Listener()
+            {
+            }).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.allocate(8192), true));
 
         assertTrue(serverStreamLatch.await(5, TimeUnit.SECONDS));
@@ -166,10 +170,15 @@ public class DataDemandTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream =
+            session.newRequest(request, new Stream.Client.Listener()
+            {
+            }).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.allocate(16), false));
 
         assertTrue(serverStreamLatch.await(5, TimeUnit.SECONDS));
@@ -181,7 +190,8 @@ public class DataDemandTest extends AbstractClientServerTest
         Stream serverStream = serverStreamRef.get();
         serverStream.demand();
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> onDataAvailableCalls.get() == 2 && ((HTTP3Stream)serverStream).hasDemand());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> onDataAvailableCalls.get() == 2 && ((HTTP3Stream)serverStream).hasDemand());
 
         stream.data(new DataFrame(ByteBuffer.allocate(32), true));
 
@@ -244,10 +254,15 @@ public class DataDemandTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream =
+            session.newRequest(request, new Stream.Client.Listener()
+            {
+            }).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.allocate(16), false));
 
         assertTrue(serverStreamLatch.await(5, TimeUnit.SECONDS));
@@ -285,11 +300,17 @@ public class DataDemandTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
-        stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true)).get(5, TimeUnit.SECONDS);
+        Stream stream =
+            session.newRequest(request, new Stream.Client.Listener()
+            {
+            }).get(5, TimeUnit.SECONDS);
+        stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true))
+            .get(5, TimeUnit.SECONDS);
 
         assertTrue(serverTrailerLatch.await(5, TimeUnit.SECONDS));
     }
@@ -336,17 +357,23 @@ public class DataDemandTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream =
+            session.newRequest(request, new Stream.Client.Listener()
+            {
+            }).get(5, TimeUnit.SECONDS);
 
         stream.data(new DataFrame(ByteBuffer.allocate(dataLength), false));
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
         long calls = onDataAvailableCalls.get();
 
-        stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true)).get(5, TimeUnit.SECONDS);
+        stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true))
+            .get(5, TimeUnit.SECONDS);
 
         assertTrue(serverTrailerLatch.await(5, TimeUnit.SECONDS));
         // In order to detect that the trailer have arrived, we must call
@@ -392,10 +419,15 @@ public class DataDemandTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream =
+            session.newRequest(request, new Stream.Client.Listener()
+            {
+            }).get(5, TimeUnit.SECONDS);
 
         byte[] bytesSent = new byte[16384];
         new Random().nextBytes(bytesSent);
@@ -403,7 +435,9 @@ public class DataDemandTest extends AbstractClientServerTest
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
 
-        assertEquals(bytesSent.length, datas.stream().mapToInt(d -> d.getByteBuffer().remaining()).sum());
+        assertEquals(
+            bytesSent.length,
+            datas.stream().mapToInt(d -> d.getByteBuffer().remaining()).sum());
         byte[] bytesReceived = new byte[bytesSent.length];
         ByteBuffer buffer = ByteBuffer.wrap(bytesReceived);
         datas.forEach(d -> buffer.put(d.getByteBuffer()));
@@ -448,10 +482,15 @@ public class DataDemandTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream =
+            session.newRequest(request, new Stream.Client.Listener()
+            {
+            }).get(5, TimeUnit.SECONDS);
 
         stream.data(new DataFrame(ByteBuffer.allocate(4096), true));
 
@@ -513,7 +552,8 @@ public class DataDemandTest extends AbstractClientServerTest
                     {
                         x.printStackTrace();
                     }
-                }).start();
+                })
+                    .start();
 
                 return new Stream.Server.Listener()
                 {
@@ -526,10 +566,15 @@ public class DataDemandTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream =
+            session.newRequest(request, new Stream.Client.Listener()
+            {
+            }).get(5, TimeUnit.SECONDS);
 
         // Send a first chunk of data.
         stream.data(new DataFrame(ByteBuffer.allocate(16 * 1024), false));
@@ -601,11 +646,15 @@ public class DataDemandTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Stream stream =
+            session.newRequest(request, new Stream.Client.Listener()
+            {
+            }).get(5, TimeUnit.SECONDS);
 
         // Send a first chunk to trigger reads.
         stream.data(new DataFrame(ByteBuffer.allocate(16), false));
@@ -630,7 +679,9 @@ public class DataDemandTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         CountDownLatch latch = new CountDownLatch(1);
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
@@ -650,7 +701,8 @@ public class DataDemandTest extends AbstractClientServerTest
 
                 if (++dataCalls == 1)
                 {
-                    String content = StandardCharsets.UTF_8.decode(data.getByteBuffer()).toString();
+                    String content =
+                        StandardCharsets.UTF_8.decode(data.getByteBuffer()).toString();
                     assertEquals("hello", content);
                     assertTrue(data.isLast());
                     data.release();

@@ -29,8 +29,7 @@ public class WebAppConfiguration extends AbstractConfiguration
             .protectAndExpose(
                 "org.eclipse.jetty.ee10.servlet.StatisticsServlet",
                 "org.eclipse.jetty.ee10.servlet.DefaultServlet",
-                "org.eclipse.jetty.ee10.servlet.NoJspServlet"
-            )
+                "org.eclipse.jetty.ee10.servlet.NoJspServlet")
             .expose("org.eclipse.jetty.ee10.servlet.listener."));
     }
 }

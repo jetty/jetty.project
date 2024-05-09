@@ -21,12 +21,16 @@ public class PathSpecAssert
     public static void assertMatch(PathSpec spec, String path)
     {
         boolean match = spec.matches(path);
-        assertThat(spec.getClass().getSimpleName() + " '" + spec + "' should match path '" + path + "'", match, is(true));
+        assertThat(
+            spec.getClass().getSimpleName() + " '" + spec + "' should match path '" + path + "'", match, is(true));
     }
 
     public static void assertNotMatch(PathSpec spec, String path)
     {
         boolean match = spec.matches(path);
-        assertThat(spec.getClass().getSimpleName() + " '" + spec + "' should not match path '" + path + "'", match, is(false));
+        assertThat(
+            spec.getClass().getSimpleName() + " '" + spec + "' should not match path '" + path + "'",
+            match,
+            is(false));
     }
 }

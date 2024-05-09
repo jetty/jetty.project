@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
+
+import jakarta.servlet.RequestDispatcher;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-
-import jakarta.servlet.RequestDispatcher;
 import org.eclipse.jetty.ee10.servlet.ServletChannelState.Action;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -43,8 +44,6 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /**
  * The ServletChannel contains the state and behaviors associated with the Servlet API
@@ -119,10 +118,7 @@ public class ServletChannel
         _response = _servletContextRequest.getServletContextResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("associate {} -> {} : {}",
-                this,
-                _servletContextRequest,
-                _state);
+            LOG.debug("associate {} -> {} : {}", this, _servletContextRequest, _state);
     }
 
     /**
@@ -151,11 +147,7 @@ public class ServletChannel
         _state.openOutput();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("associate {} -> {},{},{}",
-                this,
-                _request,
-                _response,
-                _callback);
+            LOG.debug("associate {} -> {},{},{}", this, _request, _response, _callback);
     }
 
     public ServletContextHandler.ServletScopedContext getContext()
@@ -358,14 +350,12 @@ public class ServletChannel
 
     public InetSocketAddress getLocalAddress()
     {
-        return getRequest().getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress
-            ? inetSocketAddress : null;
+        return getRequest().getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress ? inetSocketAddress : null;
     }
 
     public InetSocketAddress getRemoteAddress()
     {
-        return getRequest().getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddress
-            ? inetSocketAddress : null;
+        return getRequest().getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddress ? inetSocketAddress : null;
     }
 
     /**
@@ -450,7 +440,8 @@ public class ServletChannel
 
                     case SEND_ERROR:
                     {
-                        Object errorException = _servletContextRequest.getAttribute((RequestDispatcher.ERROR_EXCEPTION));
+                        Object errorException =
+                            _servletContextRequest.getAttribute((RequestDispatcher.ERROR_EXCEPTION));
                         Throwable cause = errorException instanceof Throwable throwable ? throwable : null;
                         try
                         {
@@ -459,21 +450,25 @@ public class ServletChannel
 
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
-                            Integer code = (Integer)_servletContextRequest.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                            Integer code =
+                                (Integer)_servletContextRequest.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
                             if (code == null)
                                 code = HttpStatus.INTERNAL_SERVER_ERROR_500;
                             getServletContextResponse().setStatus(code);
 
                             // The handling of the original dispatch failed, and we are now going to either generate
-                            // and error response ourselves or dispatch for an error page.  If there is content left over
+                            // and error response ourselves or dispatch for an error page.  If there is content left
+                            // over
                             // from the failed dispatch, then we try to consume it here and if we fail we add a
                             // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
                             // by then.
                             if (!_httpInput.consumeAvailable())
-                                ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
+                                ResponseUtils.ensureNotPersistent(
+                                    _servletContextRequest, _servletContextRequest.getServletContextResponse());
 
                             ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
-                            Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
+                            Request.Handler errorHandler = ErrorHandler.getErrorHandler(
+                                getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body or have no ErrorHandler, then create a minimal error response.
                             if (HttpStatus.hasNoBody(getServletContextResponse().getStatus()) || errorHandler == null)
@@ -483,17 +478,29 @@ public class ServletChannel
                             else
                             {
                                 // We do not notify ServletRequestListener on this dispatch because it might not
-                                // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
+                                // be dispatched to an error page, so we delegate this responsibility to the
+                                // ErrorHandler.
                                 reopen();
                                 _state.errorHandling();
 
-                                // TODO We currently directly call the errorHandler here, but this is not correct in the case of async errors,
-                                //      because since a failure has already occurred, the errorHandler is unable to write a response.
-                                //      Instead, we should fail the callback, so that it calls Response.writeError(...) with an ErrorResponse
-                                //      that ignores existing failures.   However, the error handler needs to be able to call servlet pages,
-                                //      so it will need to do a new call to associate(req,res,callback) or similar, to make the servlet request and
-                                //      response wrap the error request and response.  Have to think about what callback is passed.
-                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), Callback.from(() -> _state.errorHandlingComplete(null), _state::errorHandlingComplete));
+                                // TODO We currently directly call the errorHandler here, but this is not correct in the
+                                // case of async errors,
+                                //      because since a failure has already occurred, the errorHandler is unable to
+                                // write a response.
+                                //      Instead, we should fail the callback, so that it calls Response.writeError(...)
+                                // with an ErrorResponse
+                                //      that ignores existing failures.   However, the error handler needs to be able to
+                                // call servlet pages,
+                                //      so it will need to do a new call to associate(req,res,callback) or similar, to
+                                // make the servlet request and
+                                //      response wrap the error request and response.  Have to think about what callback
+                                // is passed.
+                                errorHandler.handle(
+                                    getServletContextRequest(),
+                                    getServletContextResponse(),
+                                    Callback.from(
+                                        () -> _state.errorHandlingComplete(null),
+                                        _state::errorHandlingComplete));
                             }
                         }
                         catch (Throwable x)
@@ -545,7 +552,8 @@ public class ServletChannel
 
                     case WRITE_CALLBACK:
                     {
-                        _context.run(() -> _servletContextRequest.getHttpOutput().run());
+                        _context.run(
+                            () -> _servletContextRequest.getHttpOutput().run());
                         break;
                     }
 
@@ -567,13 +575,15 @@ public class ServletChannel
                             long written = response.getContentBytesWritten();
                             if (response.isContentIncomplete(written))
                             {
-                                sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, response.getContentLength()));
+                                sendErrorOrAbort("Insufficient content written %d < %d"
+                                    .formatted(written, response.getContentLength()));
                                 break;
                             }
                         }
 
                         // Set a close callback on the HttpOutput to make it an async callback
-                        response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
+                        response.completeOutput(
+                            Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
                         break;
                     }
 
@@ -583,7 +593,8 @@ public class ServletChannel
             }
             catch (Throwable failure)
             {
-                if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
+                if ("org.eclipse.jetty.continuation.ContinuationThrowable"
+                    .equals(failure.getClass().getName()))
                     LOG.trace("IGNORED", failure);
                 else
                     handleException(failure);
@@ -616,7 +627,9 @@ public class ServletChannel
                 return false;
             }
 
-            getServletContextResponse().getServletApiResponse().sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
+            getServletContextResponse()
+                .getServletApiResponse()
+                .sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
             return true;
         }
         catch (Throwable x)
@@ -651,14 +664,22 @@ public class ServletChannel
         {
             // No stack trace unless there is debug turned on
             if (LOG.isDebugEnabled())
-                LOG.warn("handleException {}", _servletContextRequest.getServletApiRequest().getRequestURI(), failure);
+                LOG.warn(
+                    "handleException {}",
+                    _servletContextRequest.getServletApiRequest().getRequestURI(),
+                    failure);
             else
-                LOG.warn("handleException {} {}", _servletContextRequest.getServletApiRequest().getRequestURI(), noStack.toString());
+                LOG.warn(
+                    "handleException {} {}",
+                    _servletContextRequest.getServletApiRequest().getRequestURI(),
+                    noStack.toString());
         }
         else
         {
             ServletContextRequest request = _servletContextRequest;
-            LOG.warn(request == null ? "unknown request" : request.getServletApiRequest().getRequestURI(), failure);
+            LOG.warn(
+                request == null ? "unknown request" : request.getServletApiRequest().getRequestURI(),
+                failure);
         }
 
         if (isCommitted())
@@ -704,7 +725,11 @@ public class ServletChannel
         try
         {
             _state.completing();
-            getServletContextResponse().write(true, getServletContextResponse().getHttpOutput().getByteBuffer(), Callback.from(() -> _state.completed(null), _state::completed));
+            getServletContextResponse()
+                .write(
+                    true,
+                    getServletContextResponse().getHttpOutput().getByteBuffer(),
+                    Callback.from(() -> _state.completed(null), _state::completed));
         }
         catch (Throwable x)
         {
@@ -718,13 +743,12 @@ public class ServletChannel
     {
         if (_servletContextRequest == null)
         {
-            return String.format("%s@%x{null}",
-                getClass().getSimpleName(),
-                hashCode());
+            return String.format("%s@%x{null}", getClass().getSimpleName(), hashCode());
         }
 
         long timeStamp = Request.getTimeStamp(_servletContextRequest);
-        return String.format("%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
+        return String.format(
+            "%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
             getClass().getSimpleName(),
             hashCode(),
             _state,
@@ -748,7 +772,11 @@ public class ServletChannel
     {
         ServletApiRequest apiRequest = _servletContextRequest.getServletApiRequest();
         if (LOG.isDebugEnabled())
-            LOG.debug("onCompleted for {} written app={} net={}", apiRequest.getRequestURI(), getHttpOutput().getWritten(), getBytesWritten());
+            LOG.debug(
+                "onCompleted for {} written app={} net={}",
+                apiRequest.getRequestURI(),
+                getHttpOutput().getWritten(),
+                getBytesWritten());
 
         if (getServer().getRequestLog() instanceof CustomRequestLog)
         {
@@ -820,8 +848,13 @@ public class ServletChannel
         {
             servletContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
             ServletHandler servletHandler = servletContextHandler.getServletHandler();
-            ServletHandler.MappedServlet mappedServlet = servletContextRequest.getMatchedResource().getResource();
-            mappedServlet.handle(servletHandler, Request.getPathInContext(servletContextRequest), servletApiRequest, servletContextRequest.getHttpServletResponse());
+            ServletHandler.MappedServlet mappedServlet =
+                servletContextRequest.getMatchedResource().getResource();
+            mappedServlet.handle(
+                servletHandler,
+                Request.getPathInContext(servletContextRequest),
+                servletApiRequest,
+                servletContextRequest.getHttpServletResponse());
         }
         finally
         {

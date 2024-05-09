@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -380,16 +379,15 @@ public class CombinedResource extends Resource
     @Override
     public String toString()
     {
-        return _resources.stream()
-            .map(Resource::toString)
-            .collect(Collectors.joining(", ", "[", "]"));
+        return _resources.stream().map(Resource::toString).collect(Collectors.joining(", ", "[", "]"));
     }
 
     @Override
     public boolean contains(Resource other)
     {
         // Every resource from the (possibly combined) other resource ...
-        loop: for (Resource o : other)
+        loop:
+        for (Resource o : other)
         {
             // Must be contained in at least one of this resources
             for (Resource r : _resources)
@@ -426,7 +424,8 @@ public class CombinedResource extends Resource
         // otherwise the other resource must also be some kind of combined resource.
         // So every resource in the other combined must have the same relative relationship to us
         Path relative = null;
-        loop : for (Resource o : other)
+        loop:
+        for (Resource o : other)
         {
             if (!o.exists())
                 continue;

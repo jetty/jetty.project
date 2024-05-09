@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.plus.webapp;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
-
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.plus.jndi.Transaction;
 import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
@@ -42,13 +41,16 @@ public class PlusConfiguration extends AbstractConfiguration
 
     public PlusConfiguration()
     {
-        addDependencies(EnvConfiguration.class, WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class);
+        addDependencies(
+            EnvConfiguration.class,
+            WebXmlConfiguration.class,
+            MetaInfConfiguration.class,
+            FragmentConfiguration.class);
         addDependents(JettyWebXmlConfiguration.class);
     }
 
     @Override
-    public void preConfigure(WebAppContext context)
-        throws Exception
+    public void preConfigure(WebAppContext context) throws Exception
     {
         context.getObjectFactory().addDecorator(new PlusDecorator(context));
     }
@@ -60,8 +62,7 @@ public class PlusConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public void configure(WebAppContext context)
-        throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
         bindUserTransaction(context);
 
@@ -71,13 +72,12 @@ public class PlusConfiguration extends AbstractConfiguration
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
-        //lock this webapp's java:comp namespace as per J2EE spec
+        // lock this webapp's java:comp namespace as per J2EE spec
         lockCompEnv(context);
     }
 
     @Override
-    public void deconfigure(WebAppContext context)
-        throws Exception
+    public void deconfigure(WebAppContext context) throws Exception
     {
         unlockCompEnv(context);
         _key = null;
@@ -85,8 +85,7 @@ public class PlusConfiguration extends AbstractConfiguration
         context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, null);
     }
 
-    public void bindUserTransaction(WebAppContext context)
-        throws Exception
+    public void bindUserTransaction(WebAppContext context) throws Exception
     {
         try
         {
@@ -105,8 +104,7 @@ public class PlusConfiguration extends AbstractConfiguration
         }
     }
 
-    protected void lockCompEnv(WebAppContext wac)
-        throws Exception
+    protected void lockCompEnv(WebAppContext wac) throws Exception
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
@@ -123,8 +121,7 @@ public class PlusConfiguration extends AbstractConfiguration
         }
     }
 
-    protected void unlockCompEnv(WebAppContext wac)
-        throws Exception
+    protected void unlockCompEnv(WebAppContext wac) throws Exception
     {
         if (_key != null)
         {

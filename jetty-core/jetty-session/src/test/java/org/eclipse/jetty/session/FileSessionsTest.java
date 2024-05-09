@@ -13,8 +13,13 @@
 
 package org.eclipse.jetty.session;
 
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -22,12 +27,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * TestFileSessions
@@ -37,14 +36,14 @@ public class FileSessionsTest
 {
     public WorkDir workDir;
     FileTestHelper _helper;
-    
+
     public class TestSessionContext extends SessionContext
     {
         public TestSessionContext(String workerName, String canonicalPath, String vhost)
         {
             _workerName = workerName;
             _canonicalContextPath = canonicalPath;
-            _vhost = vhost; 
+            _vhost = vhost;
         }
     }
 
@@ -66,34 +65,36 @@ public class FileSessionsTest
     @Test
     public void testLoadForeignContext() throws Exception
     {
-        //create the SessionDataStore
+        // create the SessionDataStore
         TestableSessionManager sessionManager = new TestableSessionManager();
-        
+
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
         FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionManager);
         store.setDeleteUnrestorableFiles(true);
-        SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
+        SessionContext sessionContext =
+            new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
         store.initialize(sessionContext);
 
-        //make a file for foobar context
+        // make a file for foobar context
         _helper.createFile((System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "__foobar_0.0.0.0_1234");
 
         store.start();
 
-        //test this context can't load it
+        // test this context can't load it
         assertNull(store.load("1234"));
     }
 
     @Test
     public void testFilenamesWithContext() throws Exception
     {
-        //create the SessionDataStore
+        // create the SessionDataStore
         TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
         FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionManager);
-        SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
+        SessionContext sessionContext =
+            new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
         store.initialize(sessionContext);
 
         String s = store.getIdWithContext("1234");
@@ -115,7 +116,7 @@ public class FileSessionsTest
         }
         catch (Exception e)
         {
-            //expected
+            // expected
         }
 
         try
@@ -125,7 +126,7 @@ public class FileSessionsTest
         }
         catch (Exception e)
         {
-            //expected;
+            // expected;
         }
 
         try
@@ -135,7 +136,7 @@ public class FileSessionsTest
         }
         catch (IllegalStateException e)
         {
-            //expected;
+            // expected;
         }
 
         s = store.getContextFromFilename("100__test_0.0.0.0_1234");
@@ -150,7 +151,7 @@ public class FileSessionsTest
         }
         catch (StringIndexOutOfBoundsException e)
         {
-            //expected;
+            // expected;
         }
 
         s = store.getIdWithContextFromFilename("100__test_0.0.0.0_1234");
@@ -166,12 +167,12 @@ public class FileSessionsTest
     @Test
     public void testFilenamesWithDefaultContext() throws Exception
     {
-        //create the SessionDataStore
+        // create the SessionDataStore
         TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
         FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionManager);
-        //The root context path is translated into "" by Context.getContextPath
+        // The root context path is translated into "" by Context.getContextPath
         SessionContext sessionContext = new TestSessionContext("foo", "", "0.0.0.0");
         store.initialize(sessionContext);
 
@@ -191,7 +192,7 @@ public class FileSessionsTest
         }
         catch (Exception e)
         {
-            //expected
+            // expected
         }
 
         s = store.getContextFromFilename("100__0.0.0.0_1234");
@@ -211,61 +212,65 @@ public class FileSessionsTest
     public void testSweep() throws Exception
     {
         int gracePeriodSec = 10;
-        //create the SessionDataStore
+        // create the SessionDataStore
         TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(gracePeriodSec);
         SessionDataStore store = factory.getSessionDataStore(sessionManager);
-        SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/foobar"), "0.0.0.0");
+        SessionContext sessionContext =
+            new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/foobar"), "0.0.0.0");
         store.initialize(sessionContext);
 
         store.start();
 
-        //create file not for our context that expired long ago and should be removed by sweep
+        // create file not for our context that expired long ago and should be removed by sweep
         _helper.createFile("101__foobar_0.0.0.0_sessiona");
         _helper.assertSessionExists("sessiona", true);
 
-        //create a file not for our context that is not expired and should be ignored
-        String nonExpiredForeign = (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "__foobar_0.0.0.0_sessionb";
+        // create a file not for our context that is not expired and should be ignored
+        String nonExpiredForeign =
+            (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "__foobar_0.0.0.0_sessionb";
         _helper.createFile(nonExpiredForeign);
         _helper.assertFileExists(nonExpiredForeign, true);
 
-        //create a file not for our context that is recently expired, a thus ignored by sweep
-        String expiredForeign = (System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(1)) + "__foobar_0.0.0.0_sessionc";
+        // create a file not for our context that is recently expired, a thus ignored by sweep
+        String expiredForeign =
+            (System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(1)) + "__foobar_0.0.0.0_sessionc";
         _helper.createFile(expiredForeign);
         _helper.assertFileExists(expiredForeign, true);
 
-        //create a file that is not a session file, it should be ignored
+        // create a file that is not a session file, it should be ignored
         _helper.createFile("whatever.txt");
         _helper.assertFileExists("whatever.txt", true);
 
-        //create a file that is not a valid session filename, should be ignored
+        // create a file that is not a valid session filename, should be ignored
         _helper.createFile("nonNumber__0.0.0.0_spuriousFile");
         _helper.assertFileExists("nonNumber__0.0.0.0_spuriousFile", true);
 
-        //create a file that is a non-expired session file for our context that should be ignored
+        // create a file that is a non-expired session file for our context that should be ignored
         String nonExpired = (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "__test_0.0.0.0_sessionb";
         _helper.createFile(nonExpired);
         _helper.assertFileExists(nonExpired, true);
 
-        //create a file that is a never-expire session file for our context that should be ignored
+        // create a file that is a never-expire session file for our context that should be ignored
         String neverExpired = "0__test_0.0.0.0_sessionc";
         _helper.createFile(neverExpired);
         _helper.assertFileExists(neverExpired, true);
 
-        //create a file that is a never-expire session file for another context that should be ignored
+        // create a file that is a never-expire session file for another context that should be ignored
         String foreignNeverExpired = "0__other_0.0.0.0_sessionc";
         _helper.createFile(foreignNeverExpired);
         _helper.assertFileExists(foreignNeverExpired, true);
 
-        //sweep - we're expecting a debug log with exception stacktrace due to file named 
-        //nonNumber__0.0.0.0_spuriousFile so suppress it
+        // sweep - we're expecting a debug log with exception stacktrace due to file named
+        // nonNumber__0.0.0.0_spuriousFile so suppress it
         try (StacklessLogging ignored = new StacklessLogging(FileSessionsTest.class.getPackage()))
         {
-            ((FileSessionDataStore)store).sweepDisk(System.currentTimeMillis() - (10 * TimeUnit.SECONDS.toMillis(gracePeriodSec)));
+            ((FileSessionDataStore)store)
+                .sweepDisk(System.currentTimeMillis() - (10 * TimeUnit.SECONDS.toMillis(gracePeriodSec)));
         }
 
-        //check results
+        // check results
         _helper.assertSessionExists("sessiona", false);
         _helper.assertFileExists("whatever.txt", true);
         _helper.assertFileExists("nonNumber__0.0.0.0_spuriousFile", true);
@@ -280,58 +285,60 @@ public class FileSessionsTest
      * Test that when it initializes, the FileSessionDataStore deletes old expired sessions.
      */
     @Test
-    public void testInitialize()
-        throws Exception
+    public void testInitialize() throws Exception
     {
-        //create the SessionDataStore
+        // create the SessionDataStore
         TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
         SessionDataStore store = factory.getSessionDataStore(sessionManager);
-        SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/"), "0.0.0.0");
+        SessionContext sessionContext =
+            new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/"), "0.0.0.0");
         store.initialize(sessionContext);
 
-        //create file not for our context that expired long ago and should be removed 
+        // create file not for our context that expired long ago and should be removed
         _helper.createFile("101_foobar_0.0.0.0_sessiona");
         _helper.assertSessionExists("sessiona", true);
 
-        //create a file not for our context that is not expired and should be ignored
-        String nonExpiredForeign = (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "_foobar_0.0.0.0_sessionb";
+        // create a file not for our context that is not expired and should be ignored
+        String nonExpiredForeign =
+            (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "_foobar_0.0.0.0_sessionb";
         _helper.createFile(nonExpiredForeign);
         _helper.assertFileExists(nonExpiredForeign, true);
 
-        //create a file not for our context that is recently expired, a thus ignored 
-        String expiredForeign = (System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(1)) + "_foobar_0.0.0.0_sessionc";
+        // create a file not for our context that is recently expired, a thus ignored
+        String expiredForeign =
+            (System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(1)) + "_foobar_0.0.0.0_sessionc";
         _helper.createFile(expiredForeign);
         _helper.assertFileExists(expiredForeign, true);
 
-        //create a file that is not a session file, it should be ignored
+        // create a file that is not a session file, it should be ignored
         _helper.createFile("whatever.txt");
         _helper.assertFileExists("whatever.txt", true);
 
-        //create a file that is not a valid session filename, should be ignored
+        // create a file that is not a valid session filename, should be ignored
         _helper.createFile("nonNumber_0.0.0.0_spuriousFile");
         _helper.assertFileExists("nonNumber_0.0.0.0_spuriousFile", true);
 
-        //create a file that is a non-expired session file for our context that should be ignored
+        // create a file that is a non-expired session file for our context that should be ignored
         String nonExpired = (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1)) + "_test_0.0.0.0_sessionb";
         _helper.createFile(nonExpired);
         _helper.assertFileExists(nonExpired, true);
 
-        //create a file that is a never-expire session file for our context that should be ignored
+        // create a file that is a never-expire session file for our context that should be ignored
         String neverExpired = "0_test_0.0.0.0_sessionc";
         _helper.createFile(neverExpired);
         _helper.assertFileExists(neverExpired, true);
 
-        //create a file that is a never-expire session file for another context that should be ignored
+        // create a file that is a never-expire session file for another context that should be ignored
         String foreignNeverExpired = "0_test_0.0.0.0_sessionc";
         _helper.createFile(foreignNeverExpired);
         _helper.assertFileExists(foreignNeverExpired, true);
 
-        //walk all files in the store
+        // walk all files in the store
         ((FileSessionDataStore)store).initializeStore();
 
-        //check results
+        // check results
         _helper.assertSessionExists("sessiona", false);
         _helper.assertFileExists("whatever.txt", true);
         _helper.assertFileExists("nonNumber_0.0.0.0_spuriousFile", true);
@@ -347,16 +354,16 @@ public class FileSessionsTest
      * file should be deleted.
      */
     @Test
-    public void testDeleteUnrestorableFiles()
-        throws Exception
+    public void testDeleteUnrestorableFiles() throws Exception
     {
-        //create the SessionDataStore
+        // create the SessionDataStore
         TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
         SessionDataStore store = factory.getSessionDataStore(sessionManager);
-        SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
-        ((FileSessionDataStore)store).setDeleteUnrestorableFiles(true); //invalid file will be removed
+        SessionContext sessionContext =
+            new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
+        ((FileSessionDataStore)store).setDeleteUnrestorableFiles(true); // invalid file will be removed
         store.initialize(sessionContext);
 
         String expectedFilename = (System.currentTimeMillis() + 10000) + "__test_0.0.0.0_validFile123";
@@ -372,7 +379,7 @@ public class FileSessionsTest
         }
         catch (Exception e)
         {
-            //expected exception
+            // expected exception
         }
 
         _helper.assertFileExists(expectedFilename, false);
@@ -385,30 +392,30 @@ public class FileSessionsTest
      * same session should be deleted.
      */
     @Test
-    public void testLoadOnlyMostRecentFiles()
-        throws Exception
+    public void testLoadOnlyMostRecentFiles() throws Exception
     {
-        //create the SessionDataStore
+        // create the SessionDataStore
         TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(100);
         SessionDataStore store = factory.getSessionDataStore(sessionManager);
-        SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
+        SessionContext sessionContext =
+            new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
         store.initialize(sessionContext);
 
         long now = System.currentTimeMillis();
 
-        //create a file for session abc that expired 5sec ago
+        // create a file for session abc that expired 5sec ago
         long exp = now - 5000L;
         String name1 = Long.toString(exp) + "__test_0.0.0.0_abc";
         _helper.createFile(name1);
 
-        //create a file for same session that expired 4 sec ago
+        // create a file for same session that expired 4 sec ago
         exp = now - 4000L;
         String name2 = Long.toString(exp) + "__test_0.0.0.0_abc";
         _helper.createFile(name2);
 
-        //make a file for same session that expired 3 sec ago
+        // make a file for same session that expired 3 sec ago
         exp = now - 3000L;
         String name3 = Long.toString(exp) + "__test_0.0.0.0_abc";
         _helper.createFile(name3);

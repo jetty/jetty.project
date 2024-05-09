@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * Handler to adjust the idle timeout of requests while dispatched.
@@ -68,7 +67,8 @@ public class IdleTimeoutHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         final HttpChannel channel = baseRequest.getHttpChannel();
         final long idle_timeout = baseRequest.getHttpChannel().getIdleTimeout();

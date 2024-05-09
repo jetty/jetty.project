@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -114,7 +113,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         this(configuration, redirectPath, errorPage, null);
     }
 
-    public OpenIdAuthenticator(OpenIdConfiguration configuration, String redirectPath, String errorPage, String logoutRedirectPath)
+    public OpenIdAuthenticator(
+                               OpenIdConfiguration configuration, String redirectPath, String errorPage, String logoutRedirectPath)
     {
         _openIdConfiguration = configuration;
         setRedirectPath(redirectPath);
@@ -327,9 +327,10 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
             @SuppressWarnings("rawtypes")
             String idToken = (String)((Map)openIdResponse).get("id_token");
-            sendRedirect(request, response, endSessionEndpoint +
-                    "?id_token_hint=" + UrlEncoded.encodeString(idToken, StandardCharsets.UTF_8) +
-                    ((redirectUri == null) ? "" : "&post_logout_redirect_uri=" + UrlEncoded.encodeString(redirectUri, StandardCharsets.UTF_8)));
+            sendRedirect(
+                request,
+                response,
+                endSessionEndpoint + "?id_token_hint=" + UrlEncoded.encodeString(idToken, StandardCharsets.UTF_8) + ((redirectUri == null) ? "" : "&post_logout_redirect_uri=" + UrlEncoded.encodeString(redirectUri, StandardCharsets.UTF_8)));
         }
         catch (Throwable t)
         {
@@ -358,7 +359,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         {
             Session session = request.getSession(false);
             if (session == null)
-                return request; //not authenticated yet
+                return request; // not authenticated yet
 
             HttpURI juri = (HttpURI)session.getAttribute(J_URI);
             HttpURI uri = request.getHttpURI();
@@ -403,7 +404,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Constraint.Authorization getConstraintAuthentication(String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
+    public Constraint.Authorization getConstraintAuthentication(
+                                                                String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
     {
         Session session = getSession.apply(false);
         if (_openIdConfiguration.isLogoutWhenIdTokenIsExpired() && hasExpiredIdToken(session))
@@ -417,7 +419,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public AuthenticationState validateRequest(Request request, Response response, Callback cb) throws ServerAuthException
+    public AuthenticationState validateRequest(Request request, Response response, Callback cb)
+        throws ServerAuthException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("validateRequest({},{})", request, response);
@@ -492,7 +495,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     return AuthenticationState.SEND_FAILURE;
                 }
 
-                LoginAuthenticator.UserAuthenticationSent openIdAuth = new LoginAuthenticator.UserAuthenticationSent(getAuthenticationType(), user);
+                LoginAuthenticator.UserAuthenticationSent openIdAuth =
+                    new LoginAuthenticator.UserAuthenticationSent(getAuthenticationType(), user);
                 if (LOG.isDebugEnabled())
                     LOG.debug("authenticated {}->{}", openIdAuth, uriRedirectInfo.getUri());
 
@@ -507,19 +511,26 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
                 // Redirect to the original URI.
                 response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
-                int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-                    ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
-                Response.sendRedirect(request, response, cb, redirectCode, uriRedirectInfo.getUri().toString(), true);
+                int redirectCode =
+                    request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
+                Response.sendRedirect(
+                    request,
+                    response,
+                    cb,
+                    redirectCode,
+                    uriRedirectInfo.getUri().toString(),
+                    true);
                 return openIdAuth;
             }
 
             // Look for cached authentication in the Session.
-            AuthenticationState authenticationState = (AuthenticationState)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
+            AuthenticationState authenticationState =
+                (AuthenticationState)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
             if (authenticationState != null)
             {
                 // Has authentication been revoked?
-                if (authenticationState instanceof AuthenticationState.Succeeded && _loginService != null &&
-                    !_loginService.validate(((AuthenticationState.Succeeded)authenticationState).getUserIdentity()))
+                if (authenticationState instanceof AuthenticationState.Succeeded && _loginService != null && !_loginService.validate(
+                    ((AuthenticationState.Succeeded)authenticationState).getUserIdentity()))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("auth revoked {}", authenticationState);
@@ -532,7 +543,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                         HttpURI jUri = (HttpURI)session.getAttribute(J_URI);
                         if (jUri != null)
                         {
-                            // Check if the request is for the same url as the original and restore params if it was a post.
+                            // Check if the request is for the same url as the original and restore params if it was a
+                            // post.
                             if (LOG.isDebugEnabled())
                                 LOG.debug("auth retry {}->{}", authenticationState, jUri);
 
@@ -583,7 +595,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     {
                         try
                         {
-                            session.setAttribute(J_POST, FormFields.from(request).get());
+                            session.setAttribute(
+                                J_POST, FormFields.from(request).get());
                         }
                         catch (ExecutionException e)
                         {
@@ -601,8 +614,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String challengeUri = getChallengeUri(request);
             if (LOG.isDebugEnabled())
                 LOG.debug("challenge {}->{}", session.getId(), challengeUri);
-            int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-                ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
+            int redirectCode =
+                request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
             Response.sendRedirect(request, response, cb, redirectCode, challengeUri, true);
             return AuthenticationState.CHALLENGE;
         }
@@ -642,12 +655,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String redirectUri = URIUtil.addPaths(contextPath, _errorPage);
             if (message != null)
             {
-                String query = URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
+                String query =
+                    URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
                 redirectUri = URIUtil.addPathQuery(URIUtil.addPaths(contextPath, _errorPath), query);
             }
 
-            int redirectCode = request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-                ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
+            int redirectCode =
+                request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
             Response.sendRedirect(request, response, callback, redirectCode, redirectUri, true);
         }
     }
@@ -672,8 +686,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     private String getRedirectUri(Request request)
     {
-        final StringBuilder redirectUri = URIUtil.newURIBuilder(request.getHttpURI().getScheme(),
-            Request.getServerName(request), Request.getServerPort(request));
+        final StringBuilder redirectUri = URIUtil.newURIBuilder(
+            request.getHttpURI().getScheme(), Request.getServerName(request), Request.getServerPort(request));
         redirectUri.append(URIUtil.addPaths(request.getContext().getContextPath(), _redirectPath));
         return redirectUri.toString();
     }
@@ -696,12 +710,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             scopes.append(" ").append(s);
         }
 
-        return _openIdConfiguration.getAuthEndpoint() +
-            "?client_id=" + UrlEncoded.encodeString(_openIdConfiguration.getClientId(), StandardCharsets.UTF_8) +
-            "&redirect_uri=" + UrlEncoded.encodeString(getRedirectUri(request), StandardCharsets.UTF_8) +
-            "&scope=openid" + UrlEncoded.encodeString(scopes.toString(), StandardCharsets.UTF_8) +
-            "&state=" + antiForgeryToken +
-            "&response_type=code";
+        return _openIdConfiguration.getAuthEndpoint() + "?client_id=" + UrlEncoded.encodeString(_openIdConfiguration.getClientId(), StandardCharsets.UTF_8) + "&redirect_uri=" + UrlEncoded.encodeString(getRedirectUri(request), StandardCharsets.UTF_8) + "&scope=openid" + UrlEncoded.encodeString(scopes.toString(), StandardCharsets.UTF_8) + "&state=" + antiForgeryToken + "&response_type=code";
     }
 
     private UriRedirectInfo removeAndClearCsrfMap(Session session, String csrf)

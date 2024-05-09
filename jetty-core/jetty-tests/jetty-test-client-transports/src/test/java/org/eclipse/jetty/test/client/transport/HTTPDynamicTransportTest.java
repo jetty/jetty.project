@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -22,7 +28,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -74,12 +79,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HTTPDynamicTransportTest extends AbstractTransportTest
 {
     private SslContextFactory.Server sslServer;
@@ -92,7 +91,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
     public void prepare(WorkDir workDir) throws Exception
     {
         sslServer = new SslContextFactory.Server();
-        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslServer.setKeyStorePath(
+            MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
         pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
@@ -132,8 +132,7 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
             clientConnector,
             HttpClientConnectionFactory.HTTP11,
             new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client),
-            new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)
-        );
+            new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client));
         HttpClient httpClient = new HttpClient(httpClientTransport);
         server.addBean(httpClient);
 
@@ -141,7 +140,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
 
         for (HttpVersion httpVersion : List.of(HttpVersion.HTTP_1_1, HttpVersion.HTTP_2, HttpVersion.HTTP_3))
         {
-            ContentResponse response = httpClient.newRequest("localhost", port)
+            ContentResponse response = httpClient
+                .newRequest("localhost", port)
                 .version(httpVersion)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
@@ -171,7 +171,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                Content.Sink.write(response, true, request.getConnectionMetaData().getProtocol(), callback);
+                Content.Sink.write(
+                    response, true, request.getConnectionMetaData().getProtocol(), callback);
                 return true;
             }
         });
@@ -180,15 +181,15 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
             clientConnector,
             new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client),
             new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client),
-            HttpClientConnectionFactory.HTTP11
-        );
+            HttpClientConnectionFactory.HTTP11);
         HttpClient httpClient = new HttpClient(httpClientTransport);
         server.addBean(httpClient);
 
         server.start();
 
         // No explicit version, HttpClientTransport preference wins.
-        ContentResponse response = httpClient.newRequest("localhost", port)
+        ContentResponse response = httpClient
+            .newRequest("localhost", port)
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -197,7 +198,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         assertThat(response.getContentAsString(), containsString("/3"));
 
         // Non-secure scheme, must not be HTTP/3.
-        response = httpClient.newRequest("localhost", port)
+        response = httpClient
+            .newRequest("localhost", port)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -235,7 +237,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                Content.Sink.write(response, true, request.getConnectionMetaData().getProtocol(), callback);
+                Content.Sink.write(
+                    response, true, request.getConnectionMetaData().getProtocol(), callback);
                 return true;
             }
         });
@@ -244,15 +247,15 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
             clientConnector,
             new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client),
             new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client),
-            HttpClientConnectionFactory.HTTP11
-        );
+            HttpClientConnectionFactory.HTTP11);
         HttpClient httpClient = new HttpClient(httpClientTransport);
         server.addBean(httpClient);
 
         server.start();
 
         // No explicit version, non-secure, HttpClientTransport preference wins.
-        ContentResponse response = httpClient.newRequest("localhost", port)
+        ContentResponse response = httpClient
+            .newRequest("localhost", port)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -260,7 +263,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         assertThat(response.getContentAsString(), containsString("/2"));
 
         // Secure scheme, but must not be HTTP/3.
-        response = httpClient.newRequest("localhost", securePort)
+        response = httpClient
+            .newRequest("localhost", securePort)
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -293,7 +297,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                Content.Sink.write(response, true, request.getConnectionMetaData().getProtocol(), callback);
+                Content.Sink.write(
+                    response, true, request.getConnectionMetaData().getProtocol(), callback);
                 return true;
             }
         });
@@ -302,15 +307,15 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
             clientConnector,
             new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client),
             new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client),
-            HttpClientConnectionFactory.HTTP11
-        );
+            HttpClientConnectionFactory.HTTP11);
         HttpClient httpClient = new HttpClient(httpClientTransport);
         server.addBean(httpClient);
 
         server.start();
 
         // Secure scheme, must negotiate HTTP/1.
-        ContentResponse response = httpClient.newRequest("localhost", securePort)
+        ContentResponse response = httpClient
+            .newRequest("localhost", securePort)
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -334,8 +339,7 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         HttpClientTransportDynamic httpClientTransport = new HttpClientTransportDynamic(
             clientConnector,
             new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client),
-            new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client)
-        );
+            new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
         HttpClient httpClient = new HttpClient(httpClientTransport);
         server.addBean(httpClient);
 
@@ -344,14 +348,15 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         // The client will attempt a request with H3 due to client preference.
         // The attempt to connect via QUIC/UDP will time out (there is no immediate
         // failure like would happen with TCP not listening on the connector port).
-        assertThrows(TimeoutException.class, () -> httpClient.newRequest("localhost", tcpSecure.getLocalPort())
+        assertThrows(TimeoutException.class, () -> httpClient
+            .newRequest("localhost", tcpSecure.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(1, TimeUnit.SECONDS)
-            .send()
-        );
+            .send());
 
         // Make sure the client can speak H2.
-        ContentResponse response = httpClient.newRequest("localhost", tcpSecure.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", tcpSecure.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .version(HttpVersion.HTTP_2)
             .timeout(5, TimeUnit.SECONDS)
@@ -374,12 +379,14 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
 
         server.setHandler(new EmptyServerHandler());
 
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(new ClientConnector(), HttpClientConnectionFactory.HTTP11));
+        HttpClient httpClient = new HttpClient(
+            new HttpClientTransportDynamic(new ClientConnector(), HttpClientConnectionFactory.HTTP11));
         server.addBean(httpClient);
 
         server.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", tcp.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", tcp.getLocalPort())
             .transport(new Transport.TCPUnix(unixDomainPath))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -411,11 +418,15 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
 
         Transport.TCPUnix transport = new Transport.TCPUnix(unixDomainPath);
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        http2Client.connect(transport, null, new HTTP2ClientConnectionFactory(), new Session.Listener() {}, promise, null);
+        http2Client.connect(
+            transport, null, new HTTP2ClientConnectionFactory(), new Session.Listener()
+            {
+            }, promise, null);
         Session session = promise.get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/path"), HttpVersion.HTTP_2, HttpFields.EMPTY);
+        MetaData.Request request = new MetaData.Request(
+            "GET", HttpURI.from("http://localhost/path"), HttpVersion.HTTP_2, HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request, null, true), new Stream.Listener()
         {
             @Override
@@ -444,7 +455,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
 
         server.start();
 
-        ContentResponse response = httpClient.newRequest("http://localhost/")
+        ContentResponse response = httpClient
+            .newRequest("http://localhost/")
             .transport(new MemoryTransport(local))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -456,7 +468,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
     public void testHighLevelH2OverQUIC(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
-        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslServer.setKeyStorePath(
+            MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
 
         ConnectionFactory h2c = new HTTP2CServerConnectionFactory(new HttpConfiguration());
@@ -467,7 +480,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
 
         server.setHandler(new EmptyServerHandler());
 
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client)));
+        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(
+            clientConnector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client)));
         server.addBean(httpClient);
 
         SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
@@ -478,7 +492,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         ClientQuicConfiguration clientQuicConfiguration = new ClientQuicConfiguration(sslClient, null);
         QuicTransport transport = new QuicTransport(clientQuicConfiguration);
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -490,7 +505,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
     public void testHighLevelH3OverMemory(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
-        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslServer.setKeyStorePath(
+            MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
 
         HttpConnectionFactory h1 = new HttpConnectionFactory();
@@ -503,14 +519,16 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
 
         server.setHandler(new EmptyServerHandler());
 
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
+        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(
+            clientConnector, new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
         server.addBean(httpClient);
 
         server.start();
 
         Transport transport = new QuicTransport(new MemoryTransport(connector), http3Client.getQuicConfiguration());
 
-        ContentResponse response = httpClient.newRequest("https://localhost/")
+        ContentResponse response = httpClient
+            .newRequest("https://localhost/")
             .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send();

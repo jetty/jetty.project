@@ -13,6 +13,20 @@
 
 package org.eclipse.jetty.ee9.test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,10 +40,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
@@ -44,7 +54,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
@@ -55,17 +64,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GzipWithSendErrorTest
 {
@@ -135,7 +133,10 @@ public class GzipWithSendErrorTest
             .send();
 
         assertEquals(400, response.getStatus(), "Response status on /fail (normal-B)");
-        assertThat("Response content on /fail (normal-B)", response.getContentAsString(), containsString("<title>Error 400 Bad Request</title>"));
+        assertThat(
+            "Response content on /fail (normal-B)",
+            response.getContentAsString(),
+            containsString("<title>Error 400 Bad Request</title>"));
 
         response = client.newRequest(serverURI.resolve("/submit"))
             .method(HttpMethod.POST)
@@ -180,7 +181,7 @@ public class GzipWithSendErrorTest
         AtomicLong inputContentReceived = new AtomicLong(0L);
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
-        
+
         connector.addBean(new HttpChannel.Listener()
         {
             @Override
@@ -251,14 +252,26 @@ public class GzipWithSendErrorTest
         assertThat("Request Input Content Consumed none", inputContentConsumed.get(), is(0L));
         // Content arrived to the HttpChannel, but not to the HttpInput.
         assertThat("Request Input Content Received", inputContentReceived.get(), is(0L));
-        assertThat("Request Input Content Received less then initial buffer", inputContentReceived.get(), lessThanOrEqualTo((long)sizeActuallySent));
-        assertThat("Request Connection BytesIn should have some minimal data", inputBytesIn.get(), greaterThanOrEqualTo(1024L));
+        assertThat(
+            "Request Input Content Received less then initial buffer",
+            inputContentReceived.get(),
+            lessThanOrEqualTo((long)sizeActuallySent));
+        assertThat(
+            "Request Connection BytesIn should have some minimal data",
+            inputBytesIn.get(),
+            greaterThanOrEqualTo(1024L));
         long requestBytesSent = sizeActuallySent + 512; // Take into account headers and chunked metadata.
-        assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo(requestBytesSent));
+        assertThat(
+            "Request Connection BytesIn read should not have read all of the data",
+            inputBytesIn.get(),
+            lessThanOrEqualTo(requestBytesSent));
 
         // Now provide rest
-        content.write(true, ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
-        
+        content.write(
+            true,
+            ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent),
+            Callback.NOOP);
+
         content.close();
 
         assertTrue(clientResultComplete.await(5, TimeUnit.SECONDS));
@@ -276,7 +289,8 @@ public class GzipWithSendErrorTest
      * </p>
      */
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testGzipConsumeAllChunkedBlockingOnLastBuffer(boolean read) throws Exception
     {
         URI serverURI = server.getURI();
@@ -301,7 +315,7 @@ public class GzipWithSendErrorTest
                 serverRequestCompleteLatch.countDown();
             }
         });
-        
+
         // This is a doubly-compressed (with gzip) test resource.
         // There's no point putting into SCM the full 1MB file, when the
         // 3KB version is adequate.
@@ -350,17 +364,32 @@ public class GzipWithSendErrorTest
         // System.out.printf("Input BytesIn Count: %,d%n", inputBytesIn.get());
 
         // Servlet read of body content.
-        assertThat("Request Input Content Consumed " + (read ? "some" : "none"), inputContentConsumed.get(), is(read ? 1L : 0L));
+        assertThat(
+            "Request Input Content Consumed " + (read ? "some" : "none"),
+            inputContentConsumed.get(),
+            is(read ? 1L : 0L));
         // Content arrived to the HttpChannel, but not to the HttpInput.
         assertThat("Request Input Content Received", inputContentReceived.get(), read ? greaterThan(0L) : is(0L));
-        assertThat("Request Input Content Received less then initial buffer", inputContentReceived.get(), lessThanOrEqualTo((long)sizeActuallySent));
-        assertThat("Request Connection BytesIn should have some minimal data", inputBytesIn.get(), greaterThanOrEqualTo(1024L));
+        assertThat(
+            "Request Input Content Received less then initial buffer",
+            inputContentReceived.get(),
+            lessThanOrEqualTo((long)sizeActuallySent));
+        assertThat(
+            "Request Connection BytesIn should have some minimal data",
+            inputBytesIn.get(),
+            greaterThanOrEqualTo(1024L));
         long requestBytesSent = sizeActuallySent + 512; // Take into account headers and chunked metadata.
-        assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo(requestBytesSent));
+        assertThat(
+            "Request Connection BytesIn read should not have read all of the data",
+            inputBytesIn.get(),
+            lessThanOrEqualTo(requestBytesSent));
 
         // Now provide rest
-        content.write(true, ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
-        
+        content.write(
+            true,
+            ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent),
+            Callback.NOOP);
+
         content.close();
 
         assertTrue(clientResultComplete.await(5, TimeUnit.SECONDS));

@@ -22,7 +22,6 @@ import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLSession;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -421,7 +420,8 @@ public interface EndPoint extends Closeable
             return cipherSuite == null ? 0 : SslContextFactory.deduceKeyLength(cipherSuite);
         }
 
-        static SslSessionData from(SSLSession sslSession, String sslSessionId, String cipherSuite, X509Certificate[] peerCertificates)
+        static SslSessionData from(
+                                   SSLSession sslSession, String sslSessionId, String cipherSuite, X509Certificate[] peerCertificates)
         {
             return new SslSessionData()
             {
@@ -453,9 +453,8 @@ public interface EndPoint extends Closeable
 
         static SslSessionData withCipherSuite(SslSessionData baseData, String cipherSuite)
         {
-            return (baseData == null)
-                ? from(null, null, cipherSuite, null)
-                : from(
+            return (baseData == null) ? from(null, null, cipherSuite, null) :
+                from(
                     baseData.sslSession(),
                     baseData.sslSessionId(),
                     cipherSuite != null ? cipherSuite : baseData.cipherSuite(),
@@ -464,9 +463,8 @@ public interface EndPoint extends Closeable
 
         static SslSessionData withSslSessionId(SslSessionData baseData, String sslSessionId)
         {
-            return (baseData == null)
-                ? from(null, sslSessionId, null, null)
-                : from(
+            return (baseData == null) ? from(null, sslSessionId, null, null) :
+                from(
                     baseData.sslSession(),
                     sslSessionId != null ? sslSessionId : baseData.sslSessionId(),
                     baseData.cipherSuite(),

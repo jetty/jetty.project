@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.InputStream;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 

@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.coders;
 
-import java.net.URI;
-import java.util.Collections;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.CloseReason;
@@ -28,6 +27,10 @@ import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.net.URI;
+import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.encoders.AvailableEncoders;
@@ -41,10 +44,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EncoderLifeCycleTest
 {
@@ -63,8 +62,10 @@ public class EncoderLifeCycleTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        JakartaWebSocketServletContainerInitializer.configure(contextHandler, ((servletContext, serverContainer) ->
-            serverContainer.addEndpoint(ServerEndpointConfig.Builder.create(EchoSocket.class, "/").build())));
+        JakartaWebSocketServletContainerInitializer.configure(
+            contextHandler,
+            ((servletContext, serverContainer) -> serverContainer.addEndpoint(ServerEndpointConfig.Builder.create(EchoSocket.class, "/")
+                .build())));
 
         // Start Server
         server.start();
@@ -147,7 +148,8 @@ public class EncoderLifeCycleTest
     }
 
     @ParameterizedTest
-    @ValueSource(classes = {StringHolder.class, StringHolderSubtype.class})
+    @ValueSource(classes =
+    {StringHolder.class, StringHolderSubtype.class})
     public void testEncoderLifeCycle(Class<? extends StringHolder> clazz) throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();

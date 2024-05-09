@@ -18,7 +18,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.Connection;
@@ -130,19 +129,30 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         connect((SocketAddress)address, context);
     }
 
-    protected void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    protected void connect(
+                           SocketAddress address,
+                           ClientConnectionFactory factory,
+                           Session.Listener listener,
+                           Promise<Session> promise,
+                           Map<String, Object> context)
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         getHTTP2Client().connect(destination.getOrigin().getTransport(), address, factory, listener, promise, context);
     }
 
-    protected void connect(InetSocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    protected void connect(
+                           InetSocketAddress address,
+                           ClientConnectionFactory factory,
+                           Session.Listener listener,
+                           Promise<Session> promise,
+                           Map<String, Object> context)
     {
         connect((SocketAddress)address, factory, listener, promise, context);
     }
 
     @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+        throws IOException
     {
         endPoint.setIdleTimeout(getHttpClient().getIdleTimeout());
 

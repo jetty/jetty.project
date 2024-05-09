@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -28,7 +27,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 /**
  * AbstractJettyEmbedder
- * Starts jetty within the current process. 
+ * Starts jetty within the current process.
  */
 public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
 {
@@ -172,7 +171,7 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
     {
         this.stopKey = stopKey;
     }
-    
+
     public void setWebAppProperties(Properties props)
     {
         if (webAppProperties != null)
@@ -186,7 +185,7 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
             webAppProperties.putAll(props);
         }
     }
-    
+
     public String getContextXml()
     {
         return contextXml;
@@ -196,7 +195,7 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
     {
         this.contextXml = contextXml;
     }
-    
+
     public void doStart() throws Exception
     {
         super.doStart();
@@ -205,17 +204,17 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
         configureShutdownMonitor();
         server.start();
     }
-    
+
     protected abstract void redeployWebApp() throws Exception;
 
     public void redeployWebApp(Properties webaAppProperties) throws Exception
     {
-         setWebAppProperties(webaAppProperties);
-         redeployWebApp();
+        setWebAppProperties(webaAppProperties);
+        redeployWebApp();
     }
 
     public abstract void stopWebApp() throws Exception;
-    
+
     public void join() throws InterruptedException
     {
         server.join();
@@ -234,7 +233,7 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
 
     protected void configureServer() throws Exception
     {
-        //apply any configs from jetty.xml files first
+        // apply any configs from jetty.xml files first
         Server tmp = ServerSupport.applyXmlConfigurations(new Server(), jettyXmlFiles, jettyProperties);
 
         if (tmp != null)
@@ -242,13 +241,13 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
 
         server.setStopAtShutdown(stopAtShutdown);
 
-        //ensure there's a connector
+        // ensure there's a connector
         if (httpConnector != null)
             httpConnector.setServer(server);
 
         ServerSupport.configureConnectors(server, httpConnector, jettyProperties);
 
-        //set up handler structure
+        // set up handler structure
         ServerSupport.configureHandlers(server, contextHandlers, requestLog);
 
         // set up security realms
@@ -258,10 +257,10 @@ public abstract class AbstractJettyEmbedder extends ContainerLifeCycle
     protected abstract void configureWebApp() throws Exception;
 
     protected abstract void addWebAppToServer() throws Exception;
-    
+
     protected void applyWebAppProperties() throws Exception
     {
-        //apply properties to the webapp if there are any
+        // apply properties to the webapp if there are any
         if (contextXml != null)
         {
             if (webAppProperties == null)

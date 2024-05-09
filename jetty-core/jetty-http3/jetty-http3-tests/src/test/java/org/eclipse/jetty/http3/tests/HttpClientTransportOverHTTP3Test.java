@@ -13,13 +13,18 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
@@ -32,12 +37,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
 {
     @Test
@@ -48,14 +47,17 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                HttpVersion version = HttpVersion.fromString(request.getConnectionMetaData().getProtocol());
-                response.setStatus(version == HttpVersion.HTTP_3 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
+                HttpVersion version =
+                    HttpVersion.fromString(request.getConnectionMetaData().getProtocol());
+                response.setStatus(
+                    version == HttpVersion.HTTP_3 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
                 callback.succeeded();
                 return true;
             }
         });
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .onRequestBegin(request ->
             {
@@ -82,7 +84,8 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             }
         });
 
-        ContentResponse response = httpClient.newRequest("https://localhost:" + connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("https://localhost:" + connector.getLocalPort())
             .timeout(10, TimeUnit.SECONDS)
             .send();
         assertEquals(content, response.getContentAsString());
@@ -105,7 +108,8 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         AtomicInteger contentCount = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(1);
-        httpClient.newRequest("https://localhost:" + connector.getLocalPort())
+        httpClient
+            .newRequest("https://localhost:" + connector.getLocalPort())
             .onResponseContentSource(new Response.ContentSourceListener()
             {
                 @Override
@@ -169,7 +173,8 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         AtomicInteger contentCount = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(1);
-        httpClient.newRequest("localhost", connector.getLocalPort())
+        httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .onResponseContentSource((response, contentSource) ->
             {
@@ -214,7 +219,8 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
         AtomicReference<Content.Source> contentSourceRef = new AtomicReference<>();
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch latch = new CountDownLatch(1);
-        httpClient.newRequest("localhost", connector.getLocalPort())
+        httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .onResponseContentSource((response, contentSource) ->
             {
@@ -263,7 +269,8 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             }
         });
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -280,5 +287,4 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
     {
         assertThat(response.getHeaders().getValuesList(header), equalTo(Arrays.asList(values)));
     }
-
 }

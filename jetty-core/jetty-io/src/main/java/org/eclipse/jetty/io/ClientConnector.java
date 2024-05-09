@@ -31,7 +31,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -73,10 +72,13 @@ import org.slf4j.LoggerFactory;
 public class ClientConnector extends ContainerLifeCycle
 {
     public static final String CLIENT_CONNECTOR_CONTEXT_KEY = "org.eclipse.jetty.client.connector";
-    public static final String REMOTE_SOCKET_ADDRESS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".remoteSocketAddress";
-    public static final String CLIENT_CONNECTION_FACTORY_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".clientConnectionFactory";
+    public static final String REMOTE_SOCKET_ADDRESS_CONTEXT_KEY =
+        CLIENT_CONNECTOR_CONTEXT_KEY + ".remoteSocketAddress";
+    public static final String CLIENT_CONNECTION_FACTORY_CONTEXT_KEY =
+        CLIENT_CONNECTOR_CONTEXT_KEY + ".clientConnectionFactory";
     public static final String CONNECTION_PROMISE_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".connectionPromise";
-    public static final String APPLICATION_PROTOCOLS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".applicationProtocols";
+    public static final String APPLICATION_PROTOCOLS_CONTEXT_KEY =
+        CLIENT_CONNECTOR_CONTEXT_KEY + ".applicationProtocols";
     private static final Logger LOG = LoggerFactory.getLogger(ClientConnector.class);
 
     /**
@@ -597,7 +599,8 @@ public class ClientConnector extends ContainerLifeCycle
         }
 
         @Override
-        public Connection newConnection(SelectableChannel channel, EndPoint endPoint, Object attachment) throws IOException
+        public Connection newConnection(SelectableChannel channel, EndPoint endPoint, Object attachment)
+            throws IOException
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
@@ -689,19 +692,30 @@ public class ClientConnector extends ContainerLifeCycle
          * @return a new {@link SocketChannel} with an associated {@link SocketAddress} to connect to
          * @throws IOException if the socket channel or the socket address cannot be created
          */
-        public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
+        public ChannelWithAddress newChannelWithAddress(
+                                                        ClientConnector clientConnector, SocketAddress address, Map<String, Object> context)
+            throws IOException
         {
             return new ChannelWithAddress(SocketChannel.open(), address);
         }
 
-        public EndPoint newEndPoint(ClientConnector clientConnector, SocketAddress address, SelectableChannel selectable, ManagedSelector selector, SelectionKey selectionKey)
+        public EndPoint newEndPoint(
+                                    ClientConnector clientConnector,
+                                    SocketAddress address,
+                                    SelectableChannel selectable,
+                                    ManagedSelector selector,
+                                    SelectionKey selectionKey)
         {
-            return new SocketChannelEndPoint((SocketChannel)selectable, selector, selectionKey, clientConnector.getScheduler());
+            return new SocketChannelEndPoint(
+                (SocketChannel)selectable, selector, selectionKey, clientConnector.getScheduler());
         }
 
-        public Connection newConnection(ClientConnector clientConnector, SocketAddress address, EndPoint endPoint, Map<String, Object> context) throws IOException
+        public Connection newConnection(
+                                        ClientConnector clientConnector, SocketAddress address, EndPoint endPoint, Map<String, Object> context)
+            throws IOException
         {
-            ClientConnectionFactory factory = (ClientConnectionFactory)context.get(CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
+            ClientConnectionFactory factory =
+                (ClientConnectionFactory)context.get(CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
             return factory.newConnection(endPoint, context);
         }
 
@@ -744,7 +758,9 @@ public class ClientConnector extends ContainerLifeCycle
                 }
 
                 @Override
-                public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
+                public ChannelWithAddress newChannelWithAddress(
+                                                                ClientConnector clientConnector, SocketAddress address, Map<String, Object> context)
+                    throws IOException
                 {
                     SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
                     UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(path);

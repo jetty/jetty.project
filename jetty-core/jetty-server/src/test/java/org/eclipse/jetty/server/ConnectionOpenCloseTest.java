@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -36,12 +41,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConnectionOpenCloseTest extends AbstractHttpTest
 {
@@ -144,11 +143,8 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         {
             socket.setSoTimeout((int)connector.getIdleTimeout());
             OutputStream output = socket.getOutputStream();
-            output.write((
-                "GET / HTTP/1.1\r\n" +
-                    "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n").getBytes(StandardCharsets.UTF_8));
+            output.write(("GET / HTTP/1.1\r\n" + "Host: localhost:" + connector.getLocalPort() + "\r\n" + "Connection: close\r\n" + "\r\n")
+                .getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             InputStream inputStream = socket.getInputStream();
@@ -212,14 +208,14 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
             }
         });
 
-        Socket socket = sslContextFactory.getSslContext().getSocketFactory().createSocket("localhost", connector.getLocalPort());
+        Socket socket = sslContextFactory
+            .getSslContext()
+            .getSocketFactory()
+            .createSocket("localhost", connector.getLocalPort());
         socket.setSoTimeout((int)connector.getIdleTimeout());
         OutputStream output = socket.getOutputStream();
-        output.write((
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+        output.write(("GET / HTTP/1.1\r\n" + "Host: localhost:" + connector.getLocalPort() + "\r\n" + "Connection: close\r\n" + "\r\n")
+            .getBytes(StandardCharsets.UTF_8));
         output.flush();
 
         // Read to EOF

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.util.List;
-
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;

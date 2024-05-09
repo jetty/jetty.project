@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Test various {@link jakarta.websocket.Encoder.Text} scenarios

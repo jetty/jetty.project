@@ -25,4 +25,3 @@
  * </p>
  */
 package org.eclipse.jetty.util.resource;
-

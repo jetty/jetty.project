@@ -17,7 +17,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
 
@@ -54,7 +53,8 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
         if (endPoint instanceof ProxyConnectionFactory.ProxyEndPoint)
         {
             EndPoint underlyingEndpoint = ((ProxyConnectionFactory.ProxyEndPoint)endPoint).unwrap();
-            request = new ProxyRequest(request, underlyingEndpoint.getLocalSocketAddress(), underlyingEndpoint.getRemoteSocketAddress());
+            request = new ProxyRequest(
+                request, underlyingEndpoint.getLocalSocketAddress(), underlyingEndpoint.getRemoteSocketAddress());
         }
         return request;
     }

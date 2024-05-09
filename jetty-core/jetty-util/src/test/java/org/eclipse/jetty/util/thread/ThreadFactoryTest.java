@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.util.thread;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ThreadFactoryTest
 {
@@ -49,12 +48,14 @@ public class ThreadFactoryTest
 
                     if (!thread.getName().startsWith("My-"))
                     {
-                        multiException.add(new AssertionError("Thread " + thread.getName() + " does not start with 'My-'"));
+                        multiException.add(
+                            new AssertionError("Thread " + thread.getName() + " does not start with 'My-'"));
                     }
 
                     if (!thread.getThreadGroup().getName().equalsIgnoreCase("my-group"))
                     {
-                        multiException.add(new AssertionError("Thread Group " + thread.getThreadGroup().getName() + " is not 'my-group'"));
+                        multiException.add(new AssertionError(
+                            "Thread Group " + thread.getThreadGroup().getName() + " is not 'my-group'"));
                     }
 
                     threadsLatch.countDown();

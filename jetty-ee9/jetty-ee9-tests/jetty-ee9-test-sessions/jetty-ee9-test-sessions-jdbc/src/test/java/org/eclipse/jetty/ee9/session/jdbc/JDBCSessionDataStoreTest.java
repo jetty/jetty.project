@@ -55,8 +55,7 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     }
 
     @Override
-    public void persistSession(SessionData data)
-        throws Exception
+    public void persistSession(SessionData data) throws Exception
     {
         JdbcTestHelper.insertSession(data, sessionTableName, false);
     }
@@ -64,12 +63,21 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        JdbcTestHelper.insertUnreadableSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(),
-            data.getCreated(), data.getAccessed(), data.getLastAccessed(),
-            data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(),
-            data.getLastSaved(), sessionTableName);
+        JdbcTestHelper.insertUnreadableSession(
+            data.getId(),
+            data.getContextPath(),
+            data.getVhost(),
+            data.getLastNode(),
+            data.getCreated(),
+            data.getAccessed(),
+            data.getLastAccessed(),
+            data.getMaxInactiveMs(),
+            data.getExpiry(),
+            data.getCookieSet(),
+            data.getLastSaved(),
+            sessionTableName);
     }
-    
+
     @Test
     public void testCleanOrphans() throws Exception
     {

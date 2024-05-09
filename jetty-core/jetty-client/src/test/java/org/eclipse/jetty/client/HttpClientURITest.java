@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -27,7 +34,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -42,13 +48,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientURITest extends AbstractHttpClientServerTest
 {
@@ -89,7 +88,8 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
                 serverLatchRef.get().countDown();
             }
         });
-        connector.getContainedBeans(HttpConfiguration.class)
+        connector
+            .getContainedBeans(HttpConfiguration.class)
             .forEach(httpConfig -> httpConfig.setUriCompliance(UriCompliance.from("DEFAULT,AMBIGUOUS_EMPTY_SEGMENT")));
 
         serverLatchRef.set(new CountDownLatch(1));
@@ -137,7 +137,8 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         // Internationalized Domain Name.
         // String exampleHost = scheme + "://пример.рф";
         String exampleHost = scenario.getScheme() + "://\uD0BF\uD180\uD0B8\uD0BC\uD0B5\uD180.\uD180\uD184";
-        String incorrectlyDecoded = new String(exampleHost.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
+        String incorrectlyDecoded =
+            new String(exampleHost.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
 
         // Simple server that only parses clear-text HTTP/1.1.
         IDNRedirectServer server = new IDNRedirectServer(exampleHost);
@@ -491,8 +492,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         });
 
         String uri = scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/path?" + rawQuery;
-        Request request = client.newRequest(uri)
-            .timeout(5, TimeUnit.SECONDS);
+        Request request = client.newRequest(uri).timeout(5, TimeUnit.SECONDS);
         assertEquals(rawQuery, request.getQuery());
 
         ContentResponse response = request.send();
@@ -644,7 +644,8 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
                 while (!Thread.currentThread().isInterrupted())
                 {
                     try (Socket clientSocket = serverSocket.accept();
-                         BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), StandardCharsets.UTF_8));
+                         BufferedReader reader = new BufferedReader(
+                             new InputStreamReader(clientSocket.getInputStream(), StandardCharsets.UTF_8));
                          PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), false))
                     {
                         // Ignore the request.
@@ -656,7 +657,9 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
                         }
 
                         writer.append("HTTP/1.1 302 Found\r\n")
-                            .append("Location: ").append(location).append("\r\n")
+                            .append("Location: ")
+                            .append(location)
+                            .append("\r\n")
                             .append("Content-Length: 0\r\n")
                             .append("Connection: close\r\n")
                             .append("\r\n");

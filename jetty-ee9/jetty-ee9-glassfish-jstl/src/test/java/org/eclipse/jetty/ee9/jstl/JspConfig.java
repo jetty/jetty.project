@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.jstl;
 
+import jakarta.servlet.ServletContext;
 import java.io.File;
 import java.net.URI;
-
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 
 /**
@@ -28,7 +27,8 @@ public class JspConfig
     public static void init(WebAppContext context, URI baseUri, File scratchDir)
     {
         context.setAttribute(ServletContext.TEMPDIR, scratchDir);
-        context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+        context.setAttribute(
+            "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
             System.getProperty("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern"));
         context.setWar(baseUri.toASCIIString());
         context.setResourceBase(baseUri.toASCIIString());

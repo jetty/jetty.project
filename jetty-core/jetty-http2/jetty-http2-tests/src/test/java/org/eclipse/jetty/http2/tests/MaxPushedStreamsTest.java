@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -21,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.stream.IntStream;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -39,9 +41,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MaxPushedStreamsTest extends AbstractTest
 {
@@ -72,15 +71,19 @@ public class MaxPushedStreamsTest extends AbstractTest
                 CompletableFuture<List<Stream>> result = CompletableFuture.completedFuture(new ArrayList<>());
                 // Push maxPushed resources...
                 IntStream.range(0, maxPushed)
-                    .mapToObj(i -> new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_" + i, HttpFields.EMPTY)))
+                    .mapToObj(i -> new PushPromiseFrame(
+                        stream.getId(), 0, newRequest("GET", "/push_" + i, HttpFields.EMPTY)))
                     .map(pushFrame -> stream.push(pushFrame, null))
                     // ... wait for the pushed streams...
-                    .reduce(result, (cfList, cfStream) -> cfList.thenCombine(cfStream, add),
+                    .reduce(
+                        result,
+                        (cfList, cfStream) -> cfList.thenCombine(cfStream, add),
                         (cfList1, cfList2) -> cfList1.thenCombine(cfList2, addAll))
                     // ... then push one extra stream, the client must reject it...
                     .thenApply(streams ->
                     {
-                        PushPromiseFrame extraPushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_extra", HttpFields.EMPTY));
+                        PushPromiseFrame extraPushFrame = new PushPromiseFrame(
+                            stream.getId(), 0, newRequest("GET", "/push_extra", HttpFields.EMPTY));
                         stream.push(extraPushFrame, new Stream.Listener()
                         {
                             @Override
@@ -102,7 +105,8 @@ public class MaxPushedStreamsTest extends AbstractTest
                     // ... then send the response.
                     .thenRun(() ->
                     {
-                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                        MetaData.Response response = new MetaData.Response(
+                            HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true));
                     });
                 return null;
@@ -110,7 +114,9 @@ public class MaxPushedStreamsTest extends AbstractTest
         });
         http2Client.setMaxConcurrentPushedStreams(maxPushed);
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch responseLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()

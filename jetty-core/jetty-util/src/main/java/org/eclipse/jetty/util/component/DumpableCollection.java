@@ -51,4 +51,3 @@ public class DumpableCollection implements Dumpable
         Dumpable.dumpObjects(out, indent, _name + " size=" + (array == null ? 0 : array.length), array);
     }
 }
-

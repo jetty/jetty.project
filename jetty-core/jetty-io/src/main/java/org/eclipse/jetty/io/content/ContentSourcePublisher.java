@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io.content;
 
 import java.util.concurrent.Flow;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.thread.AutoLock;

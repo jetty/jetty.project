@@ -17,5 +17,4 @@ import java.util.EventListener;
 
 public class SomeListener implements EventListener
 {
-
 }

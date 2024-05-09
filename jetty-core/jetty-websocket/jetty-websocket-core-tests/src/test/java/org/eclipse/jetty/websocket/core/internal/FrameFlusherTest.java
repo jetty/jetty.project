@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
@@ -25,7 +32,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
@@ -42,13 +48,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FrameFlusherTest
 {
@@ -80,7 +79,8 @@ public class FrameFlusherTest
         int maxGather = 1;
         FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather);
 
-        Frame closeFrame = new Frame(OpCode.CLOSE).setPayload(CloseStatus.asPayloadBuffer(CloseStatus.MESSAGE_TOO_LARGE, "Message be to big"));
+        Frame closeFrame = new Frame(OpCode.CLOSE)
+            .setPayload(CloseStatus.asPayloadBuffer(CloseStatus.MESSAGE_TOO_LARGE, "Message be to big"));
         Frame textFrame = new Frame(OpCode.TEXT).setPayload("Hello").setFin(true);
 
         FutureCallback closeCallback = new FutureCallback();
@@ -92,8 +92,7 @@ public class FrameFlusherTest
 
         closeCallback.get(5, TimeUnit.SECONDS);
         // If this throws a TimeoutException then the callback wasn't called.
-        ExecutionException x = assertThrows(ExecutionException.class,
-            () -> textFrameCallback.get(5, TimeUnit.SECONDS));
+        ExecutionException x = assertThrows(ExecutionException.class, () -> textFrameCallback.get(5, TimeUnit.SECONDS));
         assertThat(x.getCause(), instanceOf(ClosedChannelException.class));
     }
 
@@ -136,7 +135,9 @@ public class FrameFlusherTest
                     }
                     else
                     {
-                        frame = new Frame(OpCode.TEXT).setPayload("Short Message: " + i).setFin(true);
+                        frame = new Frame(OpCode.TEXT)
+                            .setPayload("Short Message: " + i)
+                            .setFin(true);
                     }
                     frameFlusher.enqueue(frame, callback, false);
                     frameFlusher.iterate();
@@ -163,16 +164,17 @@ public class FrameFlusherTest
 
         CountDownLatch flusherFailure = new CountDownLatch(1);
         AtomicReference<Throwable> error = new AtomicReference<>();
-        FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather)
-        {
-            @Override
-            public void onCompleteFailure(Throwable failure)
+        FrameFlusher frameFlusher =
+            new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather)
             {
-                error.set(failure);
-                flusherFailure.countDown();
-                super.onCompleteFailure(failure);
-            }
-        };
+                @Override
+                public void onCompleteFailure(Throwable failure)
+                {
+                    error.set(failure);
+                    flusherFailure.countDown();
+                    super.onCompleteFailure(failure);
+                }
+            };
 
         frameFlusher.setIdleTimeout(100);
         endPoint.setBlockTime(200);
@@ -304,7 +306,7 @@ public class FrameFlusherTest
         @Override
         public void close(Throwable cause)
         {
-            //ignore
+            // ignore
         }
     }
 }

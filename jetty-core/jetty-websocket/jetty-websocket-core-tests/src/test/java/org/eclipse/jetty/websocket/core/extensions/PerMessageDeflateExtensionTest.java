@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -20,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -40,11 +44,6 @@ import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Client side behavioral tests for permessage-deflate extension.
@@ -89,7 +88,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.parseIncomingHex(
             // basic, 1 block, compressed with 0 compression level (aka, uncompressed).
-            "0xc1 0x07",  // (HEADER added for this test)
+            "0xc1 0x07", // (HEADER added for this test)
             "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00" // example frame from RFC
         );
 
@@ -108,7 +107,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        tester.parseIncomingHex(// basic, 1 block, compressed with 0 compression level (aka, uncompressed).
+        tester.parseIncomingHex( // basic, 1 block, compressed with 0 compression level (aka, uncompressed).
             // Fragment 1
             "0x41 0x03 0xf2 0x48 0xcd",
             // Fragment 2
@@ -131,7 +130,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        tester.parseIncomingHex(// context takeover (2 messages)
+        tester.parseIncomingHex( // context takeover (2 messages)
             // message 1
             "0xc1 0x07", // (HEADER added for this test)
             "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00",
@@ -154,14 +153,13 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        tester.parseIncomingHex(// 2 message, shared LZ77 window
+        tester.parseIncomingHex( // 2 message, shared LZ77 window
             // message 1
             "0xc1 0x07", // (HEADER added for this test)
             "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00",
             // message 2
             "0xc1 0x05", // (HEADER added for this test)
-            "0xf2 0x00 0x11 0x00 0x00"
-        );
+            "0xf2 0x00 0x11 0x00 0x00");
 
         tester.assertHasFrames("Hello", "Hello");
     }
@@ -178,7 +176,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        tester.parseIncomingHex(// 1 message / no compression
+        tester.parseIncomingHex( // 1 message / no compression
             "0xc1 0x0b 0x00 0x05 0x00 0xfa 0xff 0x48 0x65 0x6c 0x6c 0x6f 0x00" // example frame
         );
 
@@ -197,7 +195,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        tester.parseIncomingHex(// 1 message
+        tester.parseIncomingHex( // 1 message
             "0xc1 0x08", // header
             "0xf3 0x48 0xcd 0xc9 0xc9 0x07 0x00 0x00" // example payload
         );
@@ -217,10 +215,9 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        tester.parseIncomingHex(// 1 message, 1 frame, 2 deflate blocks
+        tester.parseIncomingHex( // 1 message, 1 frame, 2 deflate blocks
             "0xc1 0x0d", // (HEADER added for this test)
-            "0xf2 0x48 0x05 0x00 0x00 0x00 0xff 0xff 0xca 0xc9 0xc9 0x07 0x00"
-        );
+            "0xf2 0x48 0x05 0x00 0x00 0x00 0xff 0xff 0xca 0xc9 0xc9 0x07 0x00");
 
         tester.assertHasFrames("Hello");
     }
@@ -235,14 +232,13 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        tester.parseIncomingHex(// 1 message, 3 frame
+        tester.parseIncomingHex( // 1 message, 3 frame
             "410C", // HEADER TEXT / fin=false / rsv1=true
             "F248CDC9C95700000000FFFF",
             "000B", // HEADER CONTINUATION / fin=false / rsv1=false
             "0ACF2FCA4901000000FFFF",
             "8003", // HEADER CONTINUATION / fin=true / rsv1=false
-            "520400"
-        );
+            "520400");
 
         Frame txtFrame = new Frame(OpCode.TEXT, false, "Hello ");
         Frame con1Frame = new Frame(OpCode.CONTINUATION, false, "World");
@@ -264,8 +260,9 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        Throwable t = assertThrows(Throwable.class, () ->
-            tester.parseIncomingHex(// 1 message, 3 frame
+        Throwable t = assertThrows(
+            Throwable.class,
+            () -> tester.parseIncomingHex( // 1 message, 3 frame
                 "410C", // Header TEXT / fin=false / rsv1=true
                 "F248CDC9C95700000000FFFF", // Payload
                 "400B", // Header CONTINUATION / fin=false / rsv1=true
@@ -313,7 +310,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
         assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+        ByteBufferAssert.assertEquals(
+            "Frame.payload", expected, actual.getPayload().slice());
     }
 
     /**
@@ -367,7 +365,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
             ByteBuffer expected = BufferUtil.toBuffer(quote.get(i), StandardCharsets.UTF_8);
             assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-            ByteBufferAssert.assertEquals(prefix + ".payload", expected, actual.getPayload().slice());
+            ByteBufferAssert.assertEquals(
+                prefix + ".payload", expected, actual.getPayload().slice());
             i++;
         }
     }
@@ -441,7 +440,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
         assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+        ByteBufferAssert.assertEquals(
+            "Frame.payload", expected, actual.getPayload().slice());
     }
 
     /**
@@ -522,13 +522,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
         assertThat("Frame.payloadLength", actual.getPayloadLength(), is(1));
-        //assertThat("Frame.payload", actual.getPayload(), is(BufferUtil.EMPTY_BUFFER));
+        // assertThat("Frame.payload", actual.getPayload(), is(BufferUtil.EMPTY_BUFFER));
     }
 
     @Test
     public void testPyWebSocketClientNoContextTakeoverThreeOra()
     {
-        ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate; client_max_window_bits; client_no_context_takeover");
+        ExtensionTool.Tester tester =
+            clientExtensions.newTester("permessage-deflate; client_max_window_bits; client_no_context_takeover");
 
         tester.assertNegotiated("permessage-deflate");
 
@@ -566,13 +567,14 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     @Test
     public void testPyWebSocketServerNoContextTakeoverThreeOra()
     {
-        ExtensionTool.Tester tester = serverExtensions.newTester("permessage-deflate; client_max_window_bits; client_no_context_takeover");
+        ExtensionTool.Tester tester =
+            serverExtensions.newTester("permessage-deflate; client_max_window_bits; client_no_context_takeover");
 
         tester.assertNegotiated("permessage-deflate");
 
         // Captured from Pywebsocket (r790) - 3 messages with similar parts.
 
-        tester.parseIncomingHex(// context takeover (3 messages)
+        tester.parseIncomingHex( // context takeover (3 messages)
             "c1 89 88 bc 1b b1 82 75  34 fb 84 bd 79 b1 88", // ToraTora
             "c1 8b 50 86 88 b2 22 aa  41 9d 1a f2 43 b3 42 86 88", // AtoraFlora
             "c1 8b e2 3e 05 53 e8 f6  cd 9a cd 74 09 52 80 3e 05" // PhloraTora
@@ -590,7 +592,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         // Captured from Pywebsocket (r790) - "tora" sent 3 times.
 
-        tester.parseIncomingHex(// context takeover (3 messages)
+        tester.parseIncomingHex( // context takeover (3 messages)
             "c1 86 69 39 fe 91 43 f0  d1 db 6d 39", // tora 1
             "c1 85 2d f3 eb 96 07 f2  89 96 2d", // tora 2
             "c1 84 53 ad a5 34 51 cc  a5 34" // tora 3
@@ -606,15 +608,21 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     private WebSocketCoreSession newSession(ExtensionConfig config)
     {
-        return newSessionFromConfig(new ConfigurationCustomizer(), config == null ? Collections.emptyList() : Collections.singletonList(config));
+        return newSessionFromConfig(
+            new ConfigurationCustomizer(),
+            config == null ? Collections.emptyList() : Collections.singletonList(config));
     }
 
-    private WebSocketCoreSession newSessionFromConfig(ConfigurationCustomizer configuration, List<ExtensionConfig> configs)
+    private WebSocketCoreSession newSessionFromConfig(
+                                                      ConfigurationCustomizer configuration, List<ExtensionConfig> configs)
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(configs, configs);
-        exStack.setLastDemand(() -> {}); // Never delegate to WebSocketConnection as it is null for this test.
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
+        exStack.setLastDemand(() ->
+        {
+        }); // Never delegate to WebSocketConnection as it is null for this test.
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(
+            new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
         configuration.customize(configuration);
         return coreSession;
     }

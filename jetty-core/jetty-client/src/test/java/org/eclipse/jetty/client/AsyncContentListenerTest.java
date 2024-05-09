@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+
 import java.io.Closeable;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.HttpResponse;
@@ -27,21 +30,19 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-
 public class AsyncContentListenerTest
 {
     @Test
     public void testTransientFailureBecomesTerminal()
     {
         TestSource originalSource = new TestSource(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {1}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {2}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), false),
             Content.Chunk.from(new NumberFormatException(), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {3}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {3}), true));
 
         List<Content.Chunk> collectedChunks = new ArrayList<>();
         Response.AsyncContentListener asyncContentListener = (response, chunk, demander) ->
@@ -51,7 +52,8 @@ public class AsyncContentListenerTest
             demander.run();
         };
 
-        HttpResponse response = new HttpResponse(new HttpRequest(new HttpClient(), new HttpConversation(), URI.create("http://localhost")));
+        HttpResponse response = new HttpResponse(
+            new HttpRequest(new HttpClient(), new HttpConversation(), URI.create("http://localhost")));
         asyncContentListener.onContentSource(response, originalSource);
 
         assertThat(collectedChunks.size(), is(2));
@@ -88,7 +90,7 @@ public class AsyncContentListenerTest
                 for (Content.Chunk chunk : chunks)
                 {
                     if (chunk != null)
-                      chunk.release();
+                        chunk.release();
                 }
                 chunks = null;
             }

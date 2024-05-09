@@ -13,17 +13,21 @@
 
 package org.eclipse.jetty.ee9.proxy;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -36,11 +40,6 @@ import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BalancerServletTest
 {
@@ -80,8 +79,10 @@ public class BalancerServletTest
         ServletHolder balancerServletHolder = new ServletHolder(BalancerServlet.class);
         balancerServletHolder.setInitParameter("stickySessions", String.valueOf(stickySessions));
         balancerServletHolder.setInitParameter("proxyPassReverse", "true");
-        balancerServletHolder.setInitParameter("balancerMember." + "node1" + ".proxyTo", "http://localhost:" + getServerPort(server1));
-        balancerServletHolder.setInitParameter("balancerMember." + "node2" + ".proxyTo", "http://localhost:" + getServerPort(server2));
+        balancerServletHolder.setInitParameter(
+            "balancerMember." + "node1" + ".proxyTo", "http://localhost:" + getServerPort(server1));
+        balancerServletHolder.setInitParameter(
+            "balancerMember." + "node2" + ".proxyTo", "http://localhost:" + getServerPort(server2));
 
         balancer = createServer(balancerServletHolder, null);
         balancer.start();

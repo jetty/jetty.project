@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -78,9 +77,23 @@ public class UnixDomainServerConnector extends AbstractConnector
         this(server, null, null, null, acceptors, selectors, factories);
     }
 
-    public UnixDomainServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, int acceptors, int selectors, ConnectionFactory... factories)
+    public UnixDomainServerConnector(
+                                     Server server,
+                                     Executor executor,
+                                     Scheduler scheduler,
+                                     ByteBufferPool bufferPool,
+                                     int acceptors,
+                                     int selectors,
+                                     ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, bufferPool, acceptors, factories.length > 0 ? factories : new ConnectionFactory[]{new HttpConnectionFactory()});
+        super(
+            server,
+            executor,
+            scheduler,
+            bufferPool,
+            acceptors,
+            factories.length > 0 ? factories : new ConnectionFactory[]
+            {new HttpConnectionFactory()});
         selectorManager = newSelectorManager(getExecutor(), getScheduler(), selectors);
         installBean(selectorManager, true);
     }
@@ -228,7 +241,10 @@ public class UnixDomainServerConnector extends AbstractConnector
             if (channel instanceof ServerSocketChannel)
                 serverChannel = (ServerSocketChannel)channel;
             else
-                LOG.warn("Unable to use System.inheritedChannel() {}. Trying a new Unix-Domain ServerSocketChannel at {}", channel, getUnixDomainPath());
+                LOG.warn(
+                    "Unable to use System.inheritedChannel() {}. Trying a new Unix-Domain ServerSocketChannel at {}",
+                    channel,
+                    getUnixDomainPath());
         }
         if (serverChannel == null)
             serverChannel = bindServerSocketChannel();
@@ -297,7 +313,8 @@ public class UnixDomainServerConnector extends AbstractConnector
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
-            SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, selectionKey, getScheduler());
+            SocketChannelEndPoint endPoint =
+                new SocketChannelEndPoint((SocketChannel)channel, selector, selectionKey, getScheduler());
             endPoint.setIdleTimeout(getIdleTimeout());
             return endPoint;
         }

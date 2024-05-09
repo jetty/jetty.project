@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee10.apache.jsp;
 
+import jakarta.servlet.ServletContext;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import jakarta.servlet.ServletContext;
 import org.apache.jasper.servlet.JasperInitializer;
 import org.apache.jasper.servlet.TldScanner;
 import org.apache.juli.logging.Log;
@@ -44,7 +43,8 @@ public class JettyJasperInitializer extends JasperInitializer
         /**
          *
          */
-        private NullTldScanner(ServletContext context, boolean namespaceAware, boolean validation, boolean blockExternal)
+        private NullTldScanner(
+                               ServletContext context, boolean namespaceAware, boolean validation, boolean blockExternal)
         {
             super(context, namespaceAware, validation, blockExternal);
         }
@@ -52,7 +52,7 @@ public class JettyJasperInitializer extends JasperInitializer
         @Override
         public void scan() throws IOException, SAXException
         {
-            return; //do nothing
+            return; // do nothing
         }
 
         @Override
@@ -64,7 +64,7 @@ public class JettyJasperInitializer extends JasperInitializer
         @Override
         public void scanJars()
         {
-            return; //do nothing
+            return; // do nothing
         }
     }
 
@@ -73,7 +73,8 @@ public class JettyJasperInitializer extends JasperInitializer
      * by the MetaInfConfiguration.
      */
     @Override
-    public TldScanner newTldScanner(ServletContext context, boolean namespaceAware, boolean validate, boolean blockExternal)
+    public TldScanner newTldScanner(
+                                    ServletContext context, boolean namespaceAware, boolean validate, boolean blockExternal)
     {
         String tmp = context.getInitParameter("org.eclipse.jetty.jsp.precompiled");
         if (tmp != null && !tmp.isEmpty() && Boolean.valueOf(tmp))

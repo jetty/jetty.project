@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.jmx;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.acme.Derived;
+import com.acme.DerivedExtended;
+import com.acme.DerivedManaged;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,17 +30,8 @@ import javax.management.AttributeNotFoundException;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.ReflectionException;
-
-import com.acme.Derived;
-import com.acme.DerivedExtended;
-import com.acme.DerivedManaged;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ObjectMBeanUtilTest
 {
@@ -61,7 +60,10 @@ public class ObjectMBeanUtilTest
         assertNull(objectMBean.getObjectNameBasis(), "This method call always returns null in the actual code");
         assertNull(objectMBean.getObjectContextBasis(), "This method call always returns null in the actual code");
         assertEquals(container, objectMBean.getMBeanContainer(), "Mbean container should be equal");
-        assertEquals("Test the mbean extended stuff", objectMBeanInfo.getDescription(), "Mbean description must be equal to : Test the mbean extended stuff");
+        assertEquals(
+            "Test the mbean extended stuff",
+            objectMBeanInfo.getDescription(),
+            "Mbean description must be equal to : Test the mbean extended stuff");
     }
 
     @Test
@@ -72,15 +74,19 @@ public class ObjectMBeanUtilTest
 
         MBeanException e = assertThrows(MBeanException.class, () -> objectMBean.getAttribute("doodle4"));
 
-        assertNotNull(e, "An InvocationTargetException must have occurred by now as doodle4() internally throwing exception");
+        assertNotNull(
+            e, "An InvocationTargetException must have occurred by now as doodle4() internally throwing exception");
     }
 
     @Test
     public void testGetAttributeAttributeNotFoundException()
     {
-        AttributeNotFoundException e = assertThrows(AttributeNotFoundException.class, () -> objectMBean.getAttribute("ffname"));
+        AttributeNotFoundException e =
+            assertThrows(AttributeNotFoundException.class, () -> objectMBean.getAttribute("ffname"));
 
-        assertNotNull(e, "An AttributeNotFoundException must have occurred by now as there is no attribute with the name ffname in bean");
+        assertNotNull(
+            e,
+            "An AttributeNotFoundException must have occurred by now as there is no attribute with the name ffname in bean");
     }
 
     @Test
@@ -99,9 +105,12 @@ public class ObjectMBeanUtilTest
     {
         objectMBean.setAttribute(null);
 
-        AttributeNotFoundException e = assertThrows(AttributeNotFoundException.class, () -> objectMBean.getAttribute(null));
+        AttributeNotFoundException e =
+            assertThrows(AttributeNotFoundException.class, () -> objectMBean.getAttribute(null));
 
-        assertNotNull(e, "An AttributeNotFoundException must have occurred by now as there is no attribute with the name null");
+        assertNotNull(
+            e,
+            "An AttributeNotFoundException must have occurred by now as there is no attribute with the name null");
     }
 
     @Test
@@ -109,9 +118,12 @@ public class ObjectMBeanUtilTest
     {
         attribute = new Attribute("fnameee", "charu");
 
-        AttributeNotFoundException e = assertThrows(AttributeNotFoundException.class, () -> objectMBean.setAttribute(attribute));
+        AttributeNotFoundException e =
+            assertThrows(AttributeNotFoundException.class, () -> objectMBean.setAttribute(attribute));
 
-        assertNotNull(e, "An AttributeNotFoundException must have occurred by now as there is no attribute " + "with the name ffname in bean");
+        assertNotNull(
+            e,
+            "An AttributeNotFoundException must have occurred by now as there is no attribute " + "with the name ffname in bean");
     }
 
     @Test
@@ -146,7 +158,9 @@ public class ObjectMBeanUtilTest
         mBeanDerivedManaged.getMBeanInfo();
 
         assertNotNull(mBeanDerivedManaged.getAttribute("aliasNames"), "Address object shouldn't be null");
-        assertNull(mBeanDerivedManaged.getAttribute("derived"), "Derived object shouldn't registered with container so its value will be null");
+        assertNull(
+            mBeanDerivedManaged.getAttribute("derived"),
+            "Derived object shouldn't registered with container so its value will be null");
     }
 
     private Derived[] getArrayTypeAttribute()
@@ -191,7 +205,8 @@ public class ObjectMBeanUtilTest
     @Test
     public void testInvokeMBeanException()
     {
-        ReflectionException e = assertThrows(ReflectionException.class, () -> objectMBean.invoke("doodle2", new Object[0], new String[0]));
+        ReflectionException e = assertThrows(
+            ReflectionException.class, () -> objectMBean.invoke("doodle2", new Object[0], new String[0]));
 
         assertNotNull(e, "An ReflectionException must have occurred by now as doodle2() in Derived bean is private");
     }
@@ -199,7 +214,8 @@ public class ObjectMBeanUtilTest
     @Test
     public void testInvokeReflectionException()
     {
-        MBeanException e = assertThrows(MBeanException.class, () -> objectMBean.invoke("doodle1", new Object[0], new String[0]));
+        MBeanException e =
+            assertThrows(MBeanException.class, () -> objectMBean.invoke("doodle1", new Object[0], new String[0]));
 
         assertNotNull(e, "MBeanException is null");
     }
@@ -217,12 +233,12 @@ public class ObjectMBeanUtilTest
     {
         // DerivedMBean contains a managed method with the name good,
         // we must call this method without any arguments.
-        ReflectionException e = assertThrows(ReflectionException.class, () ->
-            objectMBean.invoke("good", new Object[0], new String[]{
-                "int aone"
-            }));
+        ReflectionException e = assertThrows(
+            ReflectionException.class, () -> objectMBean.invoke("good", new Object[0], new String[]
+            {"int aone"}));
 
-        assertNotNull(e, "A ReflectionException must have occurred by now as we cannot call a method with wrong signature");
+        assertNotNull(
+            e, "A ReflectionException must have occurred by now as we cannot call a method with wrong signature");
     }
 
     @Test

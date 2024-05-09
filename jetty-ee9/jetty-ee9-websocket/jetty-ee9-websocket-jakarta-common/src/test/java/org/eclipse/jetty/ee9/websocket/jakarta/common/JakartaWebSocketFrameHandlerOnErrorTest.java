@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.OnError;
 import jakarta.websocket.Session;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.sockets.TrackingSocket;
 import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
 
 public class JakartaWebSocketFrameHandlerOnErrorTest extends AbstractJakartaWebSocketFrameHandlerTest
 {
@@ -55,12 +54,12 @@ public class JakartaWebSocketFrameHandlerOnErrorTest extends AbstractJakartaWebS
     @Test
     public void testInvokeErrorSessionThrowable() throws Exception
     {
-        assertOnErrorInvocation(new ErrorSessionThrowableSocket(),
+        assertOnErrorInvocation(
+            new ErrorSessionThrowableSocket(),
             allOf(
                 containsString("onError(JakartaWebSocketSession@"),
                 containsString(ErrorSessionThrowableSocket.class.getName()),
-                containsString(EXPECTED_THROWABLE)
-            ));
+                containsString(EXPECTED_THROWABLE)));
     }
 
     @ClientEndpoint
@@ -76,11 +75,8 @@ public class JakartaWebSocketFrameHandlerOnErrorTest extends AbstractJakartaWebS
     @Test
     public void testInvokeErrorThrowable() throws Exception
     {
-        assertOnErrorInvocation(new ErrorThrowableSocket(),
-            allOf(
-                containsString("onError("),
-                containsString(EXPECTED_THROWABLE)
-            ));
+        assertOnErrorInvocation(
+            new ErrorThrowableSocket(), allOf(containsString("onError("), containsString(EXPECTED_THROWABLE)));
     }
 
     @ClientEndpoint
@@ -96,11 +92,11 @@ public class JakartaWebSocketFrameHandlerOnErrorTest extends AbstractJakartaWebS
     @Test
     public void testInvokeErrorThrowableSession() throws Exception
     {
-        assertOnErrorInvocation(new ErrorThrowableSessionSocket(),
+        assertOnErrorInvocation(
+            new ErrorThrowableSessionSocket(),
             allOf(
                 containsString("onError("),
                 containsString(ErrorThrowableSessionSocket.class.getName()),
-                containsString(EXPECTED_THROWABLE)
-            ));
+                containsString(EXPECTED_THROWABLE)));
     }
 }

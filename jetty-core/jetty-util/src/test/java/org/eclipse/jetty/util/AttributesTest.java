@@ -13,20 +13,19 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class AttributesTest
 {
@@ -37,8 +36,7 @@ public class AttributesTest
             new Attributes.Wrapper(new Attributes.Mapped()),
             new Attributes.Layer(new Attributes.Mapped()),
             new TestSynthetic(new Attributes.Mapped()),
-            new AttributesMap()
-        );
+            new AttributesMap());
     }
 
     @ParameterizedTest

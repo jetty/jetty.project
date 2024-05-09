@@ -13,10 +13,15 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
-import java.lang.reflect.InvocationTargetException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.servlet.ServletMapping;
@@ -30,17 +35,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @ExtendWith(WorkDirExtension.class)
 public class StandardDescriptorProcessorTest
 {
-    //TODO add tests for other methods
+    // TODO add tests for other methods
     Server _server;
 
     @BeforeEach
@@ -59,7 +57,7 @@ public class StandardDescriptorProcessorTest
     @Test
     public void testJettyApiDefaults(WorkDir workDir) throws Exception
     {
-        //Test that the DefaultServlet named "default" defined by jetty api is not redefined by webdefault-ee10.xml
+        // Test that the DefaultServlet named "default" defined by jetty api is not redefined by webdefault-ee10.xml
         Path docroot = workDir.getEmptyPathDir();
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
@@ -82,7 +80,7 @@ public class StandardDescriptorProcessorTest
 
         ServletHolder[] holders = wac.getServletHandler().getServlets();
         ServletHolder holder = null;
-        for (ServletHolder h:holders)
+        for (ServletHolder h : holders)
         {
             if ("default".equals(h.getName()))
             {
@@ -112,8 +110,8 @@ public class StandardDescriptorProcessorTest
         wac.setServer(_server);
         wac.setBaseResourceAsPath(docroot);
         wac.setThrowUnavailableOnStartupException(true);
-        //add a mapping that will conflict with the webdefault-ee10.xml mapping
-        //for the default servlet
+        // add a mapping that will conflict with the webdefault-ee10.xml mapping
+        // for the default servlet
         ServletHolder defaultServlet = new ServletHolder(DefaultServlet.class);
         defaultServlet.setName("noname");
         wac.getServletHandler().addServletWithMapping(defaultServlet, "/");
@@ -137,7 +135,7 @@ public class StandardDescriptorProcessorTest
     @Test
     public void testDuplicateServletMappingsFromDescriptors(WorkDir workDir) throws Exception
     {
-        //Test that the DefaultServlet mapping from webdefault-ee10.xml can be overridden in web.xml
+        // Test that the DefaultServlet mapping from webdefault-ee10.xml can be overridden in web.xml
         Path docroot = workDir.getEmptyPathDir();
         Path webXml = MavenPaths.findTestResourceFile("web-redefine-mapping.xml");
         WebAppContext wac = new WebAppContext();
@@ -163,7 +161,7 @@ public class StandardDescriptorProcessorTest
     @Test
     public void testBadDuplicateServletMappingsFromDescriptors(WorkDir workDir) throws Exception
     {
-        //Test that the same mapping cannot be redefined to a different servlet in the same (non-default) descriptor
+        // Test that the same mapping cannot be redefined to a different servlet in the same (non-default) descriptor
         Path docroot = workDir.getEmptyPathDir();
         Path webXml = MavenPaths.findTestResourceFile("web-redefine-mapping-fail.xml");
         WebAppContext wac = new WebAppContext();
@@ -188,33 +186,37 @@ public class StandardDescriptorProcessorTest
         wac.setDescriptor(webXml.toUri().toURL().toString());
         wac.start();
         assertEquals(54, TimeUnit.SECONDS.toMinutes(wac.getSessionHandler().getMaxInactiveInterval()));
-        
-        //test the CookieConfig attributes and getters, and the getters on SessionHandler
-        //name
-        assertEquals("SPECIALSESSIONID", wac.getSessionHandler().getSessionCookieConfig().getName());
+
+        // test the CookieConfig attributes and getters, and the getters on SessionHandler
+        // name
+        assertEquals(
+            "SPECIALSESSIONID",
+            wac.getSessionHandler().getSessionCookieConfig().getName());
         assertEquals("SPECIALSESSIONID", wac.getSessionHandler().getSessionCookie());
-        
-        //comment
-        assertEquals("nocomment", wac.getSessionHandler().getSessionCookieConfig().getComment());
+
+        // comment
+        assertEquals(
+            "nocomment", wac.getSessionHandler().getSessionCookieConfig().getComment());
         assertEquals("nocomment", wac.getSessionHandler().getSessionComment());
-        
-        //domain
-        assertEquals("universe", wac.getSessionHandler().getSessionCookieConfig().getDomain());
+
+        // domain
+        assertEquals(
+            "universe", wac.getSessionHandler().getSessionCookieConfig().getDomain());
         assertEquals("universe", wac.getSessionHandler().getSessionDomain());
-        
-        //path
+
+        // path
         assertEquals("foo", wac.getSessionHandler().getSessionCookieConfig().getPath());
         assertEquals("foo", wac.getSessionHandler().getSessionPath());
-        
-        //max-age
+
+        // max-age
         assertEquals(10, wac.getSessionHandler().getSessionCookieConfig().getMaxAge());
         assertEquals(10, wac.getSessionHandler().getMaxCookieAge());
-        
-        //secure
+
+        // secure
         assertEquals(false, wac.getSessionHandler().getSessionCookieConfig().isSecure());
         assertEquals(false, wac.getSessionHandler().isSecureCookies());
-        
-        //httponly
+
+        // httponly
         assertEquals(false, wac.getSessionHandler().getSessionCookieConfig().isHttpOnly());
         assertEquals(false, wac.getSessionHandler().isHttpOnly());
     }

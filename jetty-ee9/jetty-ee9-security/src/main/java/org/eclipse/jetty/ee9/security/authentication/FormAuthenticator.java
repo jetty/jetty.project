@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.ee9.security.authentication;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Locale;
-
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -27,6 +22,10 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Locale;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.ee9.nested.Request;
@@ -190,41 +189,41 @@ public class FormAuthenticator extends LoginAuthenticator
         if (session == null)
             return;
 
-        //clean up session
+        // clean up session
         session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
     }
 
     @Override
     public void prepareRequest(ServletRequest request)
     {
-        //if this is a request resulting from a redirect after auth is complete
-        //(ie its from a redirect to the original request uri) then due to 
-        //browser handling of 302 redirects, the method may not be the same as
-        //that of the original request. Replace the method and original post
-        //params (if it was a post).
+        // if this is a request resulting from a redirect after auth is complete
+        // (ie its from a redirect to the original request uri) then due to
+        // browser handling of 302 redirects, the method may not be the same as
+        // that of the original request. Replace the method and original post
+        // params (if it was a post).
         //
-        //See Servlet Spec 3.1 sec 13.6.3
+        // See Servlet Spec 3.1 sec 13.6.3
         HttpServletRequest httpRequest = (HttpServletRequest)request;
         HttpSession session = httpRequest.getSession(false);
         if (session == null || session.getAttribute(SessionAuthentication.__J_AUTHENTICATED) == null)
-            return; //not authenticated yet
+            return; // not authenticated yet
 
         String juri = (String)session.getAttribute(__J_URI);
         if (juri == null || juri.length() == 0)
-            return; //no original uri saved
+            return; // no original uri saved
 
         String method = (String)session.getAttribute(__J_METHOD);
         if (method == null || method.length() == 0)
-            return; //didn't save original request method
+            return; // didn't save original request method
 
         StringBuffer buf = httpRequest.getRequestURL();
         if (httpRequest.getQueryString() != null)
             buf.append("?").append(httpRequest.getQueryString());
 
         if (!juri.equals(buf.toString()))
-            return; //this request is not for the same url as the original
+            return; // this request is not for the same url as the original
 
-        //restore the original request's method on this request
+        // restore the original request's method on this request
         if (LOG.isDebugEnabled())
             LOG.debug("Restoring original method {} for {} with method {}", method, juri, httpRequest.getMethod());
         Request baseRequest = Request.getBaseRequest(request);
@@ -232,7 +231,8 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory)
+        throws ServerAuthException
     {
         final HttpServletRequest request = (HttpServletRequest)req;
         final HttpServletResponse response = (HttpServletResponse)res;
@@ -305,7 +305,9 @@ public class FormAuthenticator extends LoginAuthenticator
                 else
                 {
                     LOG.debug("auth failed {}->{}", username, _formErrorPage);
-                    baseResponse.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formErrorPage)), true);
+                    baseResponse.sendRedirect(
+                        response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formErrorPage)),
+                        true);
                 }
 
                 return Authentication.SEND_FAILURE;
@@ -317,9 +319,7 @@ public class FormAuthenticator extends LoginAuthenticator
             if (authentication != null)
             {
                 // Has authentication been revoked?
-                if (authentication instanceof Authentication.User &&
-                    _loginService != null &&
-                    !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
+                if (authentication instanceof Authentication.User && _loginService != null && !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
                 {
                     LOG.debug("auth revoked {}", authentication);
                     session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
@@ -331,8 +331,8 @@ public class FormAuthenticator extends LoginAuthenticator
                         String jUri = (String)session.getAttribute(__J_URI);
                         if (jUri != null)
                         {
-                            //check if the request is for the same url as the original and restore
-                            //params if it was a post
+                            // check if the request is for the same url as the original and restore
+                            // params if it was a post
                             LOG.debug("auth retry {}->{}", authentication, jUri);
                             StringBuffer buf = request.getRequestURL();
                             if (request.getQueryString() != null)
@@ -398,7 +398,8 @@ public class FormAuthenticator extends LoginAuthenticator
             else
             {
                 LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
-                baseResponse.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formLoginPage)), true);
+                baseResponse.sendRedirect(
+                    response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formLoginPage)), true);
             }
             return Authentication.SEND_CONTINUE;
         }
@@ -427,7 +428,8 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser)
+        throws ServerAuthException
     {
         return true;
     }
@@ -507,12 +509,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
         private boolean notIgnored(String name)
         {
-            if (HttpHeader.CACHE_CONTROL.is(name) ||
-                HttpHeader.PRAGMA.is(name) ||
-                HttpHeader.ETAG.is(name) ||
-                HttpHeader.EXPIRES.is(name) ||
-                HttpHeader.LAST_MODIFIED.is(name) ||
-                HttpHeader.AGE.is(name))
+            if (HttpHeader.CACHE_CONTROL.is(name) || HttpHeader.PRAGMA.is(name) || HttpHeader.ETAG.is(name) || HttpHeader.EXPIRES.is(name) || HttpHeader.LAST_MODIFIED.is(name) || HttpHeader.AGE.is(name))
                 return false;
             return true;
         }

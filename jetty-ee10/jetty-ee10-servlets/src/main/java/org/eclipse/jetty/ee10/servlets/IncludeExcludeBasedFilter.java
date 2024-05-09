@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.servlets;
 
-import java.util.Objects;
-
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Objects;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.util.IncludeExclude;
@@ -120,7 +119,8 @@ public abstract class IncludeExcludeBasedFilter implements Filter
         else
         {
             String requestUrl = httpRequest.getPathInfo();
-            mimeType = Objects.requireNonNullElse(httpRequest.getServletContext().getMimeType(requestUrl), "");
+            mimeType =
+                Objects.requireNonNullElse(httpRequest.getServletContext().getMimeType(requestUrl), "");
             LOG.debug("Guessed mime type is {}", mimeType);
         }
 
@@ -165,9 +165,6 @@ public abstract class IncludeExcludeBasedFilter implements Filter
     @Override
     public String toString()
     {
-        return "filter configuration:\n" +
-            "paths:\n" + _paths + "\n" +
-            "mime types:\n" + _mimeTypes + "\n" +
-            "http methods:\n" + _httpMethods;
+        return "filter configuration:\n" + "paths:\n" + _paths + "\n" + "mime types:\n" + _mimeTypes + "\n" + "http methods:\n" + _httpMethods;
     }
 }

@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.websocket.OnError;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -20,11 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
-import jakarta.websocket.OnError;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.Session;
-import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
@@ -37,10 +40,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test various {@link jakarta.websocket.Decoder.Binary Decoder.Binary} / {@link jakarta.websocket.Encoder.Binary Encoder.Binary} echo behavior of Java Primitives

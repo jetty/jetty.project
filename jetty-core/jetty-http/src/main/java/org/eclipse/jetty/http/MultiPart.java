@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
@@ -33,7 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ChunksContentSource;
@@ -49,9 +51,6 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * <p>Namespace class for interrelated classes that provide
@@ -376,13 +375,8 @@ public class MultiPart
         @Override
         public String toString()
         {
-            return "%s@%x[name=%s,fileName=%s,length=%d]".formatted(
-                getClass().getSimpleName(),
-                hashCode(),
-                getName(),
-                getFileName(),
-                getLength()
-            );
+            return "%s@%x[name=%s,fileName=%s,length=%d]"
+                .formatted(getClass().getSimpleName(), hashCode(), getName(), getFileName(), getLength());
         }
     }
 
@@ -447,13 +441,8 @@ public class MultiPart
         @Override
         public String toString()
         {
-            return "%s@%x[name=%s,fileName=%s,length=%d]".formatted(
-                getClass().getSimpleName(),
-                hashCode(),
-                getName(),
-                getFileName(),
-                getLength()
-            );
+            return "%s@%x[name=%s,fileName=%s,length=%d]"
+                .formatted(getClass().getSimpleName(), hashCode(), getName(), getFileName(), getLength());
         }
     }
 
@@ -481,13 +470,8 @@ public class MultiPart
         @Override
         public String toString()
         {
-            return "%s@%x[name=%s,fileName=%s,path=%s]".formatted(
-                getClass().getSimpleName(),
-                hashCode(),
-                getName(),
-                getFileName(),
-                getPath()
-            );
+            return "%s@%x[name=%s,fileName=%s,path=%s]"
+                .formatted(getClass().getSimpleName(), hashCode(), getName(), getFileName(), getPath());
         }
     }
 
@@ -515,13 +499,8 @@ public class MultiPart
         @Override
         public String toString()
         {
-            return "%s@%x[name=%s,fileName=%s,length=%d]".formatted(
-                getClass().getSimpleName(),
-                hashCode(),
-                getName(),
-                getFileName(),
-                getLength()
-            );
+            return "%s@%x[name=%s,fileName=%s,length=%d]"
+                .formatted(getClass().getSimpleName(), hashCode(), getName(), getFileName(), getLength());
         }
     }
 
@@ -885,7 +864,11 @@ public class MultiPart
 
         private enum State
         {
-            FIRST, MIDDLE, HEADERS, CONTENT, COMPLETE
+            FIRST,
+            MIDDLE,
+            HEADERS,
+            CONTENT,
+            COMPLETE
         }
     }
 
@@ -942,12 +925,15 @@ public class MultiPart
                 List.of(
                     MultiPartCompliance.Violation.CR_LINE_TERMINATION,
                     MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
-                    MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY
-                ).forEach(violation ->
-                {
-                    if (compliance.allows(violation))
-                        LOG.debug("{} ignoring violation {}: unable to allow it", getClass().getName(), violation.name());
-                });
+                    MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY)
+                    .forEach(violation ->
+                    {
+                        if (compliance.allows(violation))
+                            LOG.debug(
+                                "{} ignoring violation {}: unable to allow it",
+                                getClass().getName(),
+                                violation.name());
+                    });
             }
             reset();
         }
@@ -1049,7 +1035,8 @@ public class MultiPart
                             {
                                 numParts++;
                                 if (maxParts >= 0 && numParts > maxParts)
-                                    throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", numParts, maxParts));
+                                    throw new IllegalStateException(
+                                        String.format("Form with too many keys [%d > %d]", numParts, maxParts));
 
                                 notifyPartBegin();
                                 state = State.HEADER_START;
@@ -1606,7 +1593,7 @@ public class MultiPart
         {
             if (eols != null)
             {
-                for (MultiPartCompliance.Violation violation: eols)
+                for (MultiPartCompliance.Violation violation : eols)
                 {
                     notifyViolation(violation);
                 }
@@ -1711,7 +1698,15 @@ public class MultiPart
 
         private enum State
         {
-            PREAMBLE, BOUNDARY, BOUNDARY_CLOSE, HEADER_START, HEADER_NAME, HEADER_VALUE, CONTENT_START, CONTENT, EPILOGUE
+            PREAMBLE,
+            BOUNDARY,
+            BOUNDARY_CLOSE,
+            HEADER_START,
+            HEADER_NAME,
+            HEADER_VALUE,
+            CONTENT_START,
+            CONTENT,
+            EPILOGUE
         }
     }
 
@@ -1753,8 +1748,10 @@ public class MultiPart
                     if (lowerToken.startsWith(namePrefix))
                     {
                         int index = lowerToken.indexOf(namePrefix);
-                        String value = token.substring(index + namePrefix.length()).trim();
-                        name = CONTENT_DISPOSITION_TOKENIZER.unquote(value); // TODO should the tokenizer be returnQuotes == false ?
+                        String value =
+                            token.substring(index + namePrefix.length()).trim();
+                        name = CONTENT_DISPOSITION_TOKENIZER.unquote(
+                            value); // TODO should the tokenizer be returnQuotes == false ?
                     }
                     else if (lowerToken.startsWith(fileNamePrefix))
                     {

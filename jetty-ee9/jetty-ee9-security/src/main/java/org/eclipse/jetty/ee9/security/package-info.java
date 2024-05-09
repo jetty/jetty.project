@@ -15,4 +15,3 @@
  * Jetty Security : Modular Support for Security in Jetty
  */
 package org.eclipse.jetty.ee9.security;
-

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.util.List;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 
 public interface Instruction

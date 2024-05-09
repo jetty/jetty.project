@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
-import java.net.URI;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -23,6 +24,9 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.net.URI;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
@@ -48,11 +52,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class JettyClientClassLoaderTest
 {
@@ -87,7 +86,8 @@ public class JettyClientClassLoaderTest
         @OnWebSocketConnect
         public void onOpen(Session session) throws Exception
         {
-            session.getRemote().sendString("ContextClassLoader: " + Thread.currentThread().getContextClassLoader());
+            session.getRemote()
+                .sendString("ContextClassLoader: " + Thread.currentThread().getContextClassLoader());
         }
 
         @OnWebSocketMessage
@@ -121,13 +121,15 @@ public class JettyClientClassLoaderTest
             URI wsEchoUri = URI.create("ws://localhost:" + req.getServerPort() + "/echo");
             ClientSocket clientSocket = new ClientSocket();
 
-            try (Session ignored = clientContainer.connect(clientSocket, wsEchoUri).get(5, TimeUnit.SECONDS))
+            try (Session ignored =
+                clientContainer.connect(clientSocket, wsEchoUri).get(5, TimeUnit.SECONDS))
             {
                 String recv = clientSocket.textMessages.poll(5, TimeUnit.SECONDS);
                 assertNotNull(recv);
                 resp.setStatus(HttpStatus.OK_200);
                 resp.getWriter().println(recv);
-                resp.getWriter().println("ClientClassLoader: " + clientContainer.getClass().getClassLoader());
+                resp.getWriter()
+                    .println("ClientClassLoader: " + clientContainer.getClass().getClassLoader());
             }
             catch (Exception e)
             {

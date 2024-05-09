@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.Reader;
-
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

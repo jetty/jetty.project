@@ -118,7 +118,7 @@ public class OSGiWebappConstants
      * that are in fact not embedded in a bundle
      */
     public static final String JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE = "Jetty-bundleInstall";
-    
+
     /**
      * Property naming the environment (eg ee8/ee9/ee10 etc)
      */

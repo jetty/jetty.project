@@ -62,7 +62,8 @@ public class DeprecationWarning implements Decorator
                 Deprecated supDepr = superClazz.getAnnotation(Deprecated.class);
                 if (supDepr != null)
                 {
-                    LOG.warn("Using indirect @Deprecated {} {} - (seen from {})", typeName, superClazz.getName(), clazz);
+                    LOG.warn(
+                        "Using indirect @Deprecated {} {} - (seen from {})", typeName, superClazz.getName(), clazz);
                 }
 
                 superClazz = superClazz.getSuperclass();

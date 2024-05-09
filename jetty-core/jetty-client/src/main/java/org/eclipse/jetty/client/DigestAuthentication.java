@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.StringUtil;
@@ -113,7 +112,16 @@ public class DigestAuthentication extends AbstractAuthentication
         String realm = getRealm();
         if (ANY_REALM.equals(realm))
             realm = headerInfo.getRealm();
-        return new DigestResult(headerInfo.getHeader(), response.getContent(), realm, user, password, algorithm, nonce, clientQOP, opaque);
+        return new DigestResult(
+            headerInfo.getHeader(),
+            response.getContent(),
+            realm,
+            user,
+            password,
+            algorithm,
+            nonce,
+            clientQOP,
+            opaque);
     }
 
     private MessageDigest getMessageDigest(String algorithm)
@@ -141,7 +149,16 @@ public class DigestAuthentication extends AbstractAuthentication
         private final String qop;
         private final String opaque;
 
-        public DigestResult(HttpHeader header, byte[] content, String realm, String user, String password, String algorithm, String nonce, String qop, String opaque)
+        public DigestResult(
+                            HttpHeader header,
+                            byte[] content,
+                            String realm,
+                            String user,
+                            String password,
+                            String algorithm,
+                            String nonce,
+                            String qop,
+                            String opaque)
         {
             this.header = header;
             this.content = content;

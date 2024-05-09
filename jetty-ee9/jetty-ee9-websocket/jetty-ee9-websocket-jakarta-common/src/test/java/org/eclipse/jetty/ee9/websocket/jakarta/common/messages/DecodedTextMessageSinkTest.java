@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.messages;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.websocket.DecodeException;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.EndpointConfig;
 import java.lang.invoke.MethodHandle;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -23,18 +29,11 @@ import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.Decoder;
-import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class DecodedTextMessageSinkTest extends AbstractMessageSinkTest
 {
@@ -47,7 +46,8 @@ public class DecodedTextMessageSinkTest extends AbstractMessageSinkTest
         DecodedDateCopy copy = new DecodedDateCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Date.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
-        DecodedTextMessageSink<Calendar> sink = new DecodedTextMessageSink<>(session.getCoreSession(), copyHandle, decoders);
+        DecodedTextMessageSink<Calendar> sink =
+            new DecodedTextMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback finCallback = new FutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("2018.02.13").setFin(true), finCallback);
@@ -64,7 +64,8 @@ public class DecodedTextMessageSinkTest extends AbstractMessageSinkTest
         DecodedDateCopy copy = new DecodedDateCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Date.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
-        DecodedTextMessageSink<Calendar> sink = new DecodedTextMessageSink<>(session.getCoreSession(), copyHandle, decoders);
+        DecodedTextMessageSink<Calendar> sink =
+            new DecodedTextMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -399,9 +398,9 @@ public class LowResourceMonitor extends ContainerLifeCycle
         String getReason();
     }
 
-    //------------------------------------------------------
+    // ------------------------------------------------------
     // default implementations for backward compat
-    //------------------------------------------------------
+    // ------------------------------------------------------
 
     public class MainThreadPoolLowResourceCheck implements LowResourceCheck
     {
@@ -537,7 +536,8 @@ public class LowResourceMonitor extends ContainerLifeCycle
         @Override
         public boolean isLowOnResources()
         {
-            long memory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+            long memory =
+                Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
             if (maxMemory > 0 && memory > maxMemory)
             {
                 reason = "Max memory exceeded: " + memory + ">" + maxMemory;

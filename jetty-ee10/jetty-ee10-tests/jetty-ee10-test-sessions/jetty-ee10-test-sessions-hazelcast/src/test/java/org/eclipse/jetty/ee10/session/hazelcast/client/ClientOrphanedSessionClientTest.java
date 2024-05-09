@@ -18,8 +18,7 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.tools.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;
 
-public class ClientOrphanedSessionClientTest
-    extends AbstractClusteredOrphanedSessionTest
+public class ClientOrphanedSessionClientTest extends AbstractClusteredOrphanedSessionTest
 {
     HazelcastTestHelper _testHelper = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
 

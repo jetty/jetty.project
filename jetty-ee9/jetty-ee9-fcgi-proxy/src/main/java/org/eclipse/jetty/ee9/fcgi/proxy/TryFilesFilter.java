@@ -13,13 +13,6 @@
 
 package org.eclipse.jetty.ee9.fcgi.proxy;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -29,6 +22,12 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -77,7 +76,8 @@ public class TryFilesFilter implements Filter
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+        throws IOException, ServletException
     {
         HttpServletRequest httpRequest = (HttpServletRequest)request;
         HttpServletResponse httpResponse = (HttpServletResponse)response;
@@ -114,7 +114,9 @@ public class TryFilesFilter implements Filter
         }
     }
 
-    protected void fallback(HttpServletRequest request, HttpServletResponse response, FilterChain chain, String fallback) throws IOException, ServletException
+    protected void fallback(
+                            HttpServletRequest request, HttpServletResponse response, FilterChain chain, String fallback)
+        throws IOException, ServletException
     {
         String resolved = resolve(request, fallback);
         request.getServletContext().getRequestDispatcher(resolved).forward(request, response);

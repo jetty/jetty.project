@@ -13,20 +13,6 @@
 
 package org.eclipse.jetty.util.ajax;
 
-import java.io.IOException;
-import java.lang.reflect.Array;
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TimeZone;
-
-import org.eclipse.jetty.util.DateCache;
-import org.eclipse.jetty.util.ajax.JSON.Output;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -36,27 +22,26 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
+import org.eclipse.jetty.util.DateCache;
+import org.eclipse.jetty.util.ajax.JSON.Output;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 public class JSONTest
 {
     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 
     private JSON json;
-    private String test = "\n\n\n\t\t    " +
-        "// ignore this ,a [ \" \n" +
-        "/* and this \n" +
-        "/* and * // this \n" +
-        "*/" +
-        "{ " +
-        "\"onehundred\" : 100  ," +
-        "\"small\":-0.2," +
-        "\"name\" : \"fred\"  ," +
-        "\"empty\" : {}  ," +
-        "\"map\" : {\"a\":-1.0e2}  ," +
-        "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
-        "\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}," +
-        "\"NaN\": NaN," +
-        "\"undefined\": undefined," +
-        "}";
+    private String test = "\n\n\n\t\t    " + "// ignore this ,a [ \" \n" + "/* and this \n" + "/* and * // this \n" + "*/" + "{ " + "\"onehundred\" : 100  ," + "\"small\":-0.2," + "\"name\" : \"fred\"  ," + "\"empty\" : {}  ," + "\"map\" : {\"a\":-1.0e2}  ," + "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
+        "\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}," + "\"NaN\": NaN," + "\"undefined\": undefined," + "}";
 
     @BeforeEach
     public void resetJSON()
@@ -105,7 +90,9 @@ public class JSONTest
         assertTrue(s.contains("\"n7\":{\"x\":\"value\"}"));
         assertTrue(s.contains("\"n8\":[1,2,3,4]"));
         assertTrue(s.contains("\"n9\":[{},  [],  {}]"));
-        assertTrue(s.contains("\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}"));
+        assertTrue(
+            s.contains(
+                "\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}"));
 
         Gadget gadget = new Gadget();
         gadget.setModulated(true);
@@ -235,16 +222,7 @@ public class JSONTest
     @Test
     public void testStripComment()
     {
-        String test = "\n\n\n\t\t    " +
-            "// ignore this ,a [ \" \n" +
-            "/* " +
-            "{ " +
-            "\"onehundred\" : 100  ," +
-            "\"name\" : \"fred\"  ," +
-            "\"empty\" : {}  ," +
-            "\"map\" : {\"a\":-1.0e2}  ," +
-            "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
-            "} */";
+        String test = "\n\n\n\t\t    " + "// ignore this ,a [ \" \n" + "/* " + "{ " + "\"onehundred\" : 100  ," + "\"name\" : \"fred\"  ," + "\"empty\" : {}  ," + "\"map\" : {\"a\":-1.0e2}  ," + "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," + "} */";
 
         Object o = json.fromJSON(test);
         assertNull(o);
@@ -343,7 +321,8 @@ public class JSONTest
     {
         // test case#1 - force timezone to GMT
         JSON json = new JSON();
-        json.addConvertor(Date.class, new JSONDateConvertor("MM/dd/yyyy HH:mm:ss zzz", TimeZone.getTimeZone("GMT"), false));
+        json.addConvertor(
+            Date.class, new JSONDateConvertor("MM/dd/yyyy HH:mm:ss zzz", TimeZone.getTimeZone("GMT"), false));
         json.addConvertor(Object.class, new JSONObjectConvertor());
 
         Woggle w0 = new Woggle();
@@ -407,7 +386,8 @@ public class JSONTest
     {
         JSON json = new JSON();
         Locale l = new Locale("en", "US");
-        json.addConvertor(Date.class, new JSONDateConvertor(DateCache.DEFAULT_FORMAT, TimeZone.getTimeZone("GMT"), false, l));
+        json.addConvertor(
+            Date.class, new JSONDateConvertor(DateCache.DEFAULT_FORMAT, TimeZone.getTimeZone("GMT"), false, l));
         json.addConvertor(Enum.class, new JSONEnumConvertor(false));
         json.addConvertor(Object.class, new JSONObjectConvertor());
 
@@ -440,7 +420,8 @@ public class JSONTest
         assertTrue(js.contains("\"Green\""));
         assertFalse(js.contains("\"Blue\""));
 
-        json.addConvertor(Date.class, new JSONDateConvertor(DateCache.DEFAULT_FORMAT, TimeZone.getTimeZone("GMT"), true, l));
+        json.addConvertor(
+            Date.class, new JSONDateConvertor(DateCache.DEFAULT_FORMAT, TimeZone.getTimeZone("GMT"), true, l));
         json.addConvertor(Enum.class, new JSONEnumConvertor(false));
         w0.nested = null;
         buf = new StringBuffer();
@@ -460,7 +441,8 @@ public class JSONTest
         Map<String, Object> map3 = (Map<String, Object>)map2.get("g0");
         assertEquals(Color.Green.toString(), map3.get("other"));
 
-        json.addConvertor(Date.class, new JSONDateConvertor(DateCache.DEFAULT_FORMAT, TimeZone.getTimeZone("GMT"), true, l));
+        json.addConvertor(
+            Date.class, new JSONDateConvertor(DateCache.DEFAULT_FORMAT, TimeZone.getTimeZone("GMT"), true, l));
         json.addConvertor(Enum.class, new JSONEnumConvertor(true));
         buf = new StringBuffer();
         json.append(buf, map);

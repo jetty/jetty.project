@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.internal;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -37,7 +36,8 @@ public class ControlStreamConnection extends AbstractConnection implements Conne
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
 
-    public ControlStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ControlParser parser)
+    public ControlStreamConnection(
+                                   EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ControlParser parser)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;

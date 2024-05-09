@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io.internal;
 
 import java.nio.charset.Charset;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Promise;

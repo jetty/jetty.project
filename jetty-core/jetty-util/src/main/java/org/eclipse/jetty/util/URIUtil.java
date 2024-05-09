@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,8 +80,7 @@ public final class URIUtil
     /**
      * The characters that are supported by the URI class and that can be decoded by {@link #canonicalPath(String)}
      */
-    private static final boolean[] URI_SUPPORTED_CHARACTERS = new boolean[]
-    {
+    private static final boolean[] URI_SUPPORTED_CHARACTERS = new boolean[]{
         false, // 0x00 is illegal
         false, // 0x01 is illegal
         false, // 0x02 is illegal
@@ -116,100 +114,100 @@ public final class URIUtil
         false, // 0x1e is illegal
         false, // 0x1f is illegal
         false, // 0x20 space is illegal
-        true,  // 0x21
+        true, // 0x21
         false, // 0x22 " is illegal
         false, // 0x23 # is special
-        true,  // 0x24
+        true, // 0x24
         false, // 0x25 % must remain encoded
-        true,  // 0x26
-        true,  // 0x27
-        true,  // 0x28
-        true,  // 0x29
-        true,  // 0x2a
-        true,  // 0x2b
-        true,  // 0x2c
-        true,  // 0x2d
-        true,  // 0x2e
+        true, // 0x26
+        true, // 0x27
+        true, // 0x28
+        true, // 0x29
+        true, // 0x2a
+        true, // 0x2b
+        true, // 0x2c
+        true, // 0x2d
+        true, // 0x2e
         false, // 0x2f / is a delimiter
-        true,  // 0x30
-        true,  // 0x31
-        true,  // 0x32
-        true,  // 0x33
-        true,  // 0x34
-        true,  // 0x35
-        true,  // 0x36
-        true,  // 0x37
-        true,  // 0x38
-        true,  // 0x39
-        true,  // 0x3a
+        true, // 0x30
+        true, // 0x31
+        true, // 0x32
+        true, // 0x33
+        true, // 0x34
+        true, // 0x35
+        true, // 0x36
+        true, // 0x37
+        true, // 0x38
+        true, // 0x39
+        true, // 0x3a
         false, // 0x3b ; is path parameter
         false, // 0x3c < is illegal
-        true,  // 0x3d
+        true, // 0x3d
         false, // 0x3e > is illegal
         false, // 0x3f ? is special
-        true,  // 0x40
-        true,  // 0x41
-        true,  // 0x42
-        true,  // 0x43
-        true,  // 0x44
-        true,  // 0x45
-        true,  // 0x46
-        true,  // 0x47
-        true,  // 0x48
-        true,  // 0x49
-        true,  // 0x4a
-        true,  // 0x4b
-        true,  // 0x4c
-        true,  // 0x4d
-        true,  // 0x4e
-        true,  // 0x4f
-        true,  // 0x50
-        true,  // 0x51
-        true,  // 0x52
-        true,  // 0x53
-        true,  // 0x54
-        true,  // 0x55
-        true,  // 0x56
-        true,  // 0x57
-        true,  // 0x58
-        true,  // 0x59
-        true,  // 0x5a
+        true, // 0x40
+        true, // 0x41
+        true, // 0x42
+        true, // 0x43
+        true, // 0x44
+        true, // 0x45
+        true, // 0x46
+        true, // 0x47
+        true, // 0x48
+        true, // 0x49
+        true, // 0x4a
+        true, // 0x4b
+        true, // 0x4c
+        true, // 0x4d
+        true, // 0x4e
+        true, // 0x4f
+        true, // 0x50
+        true, // 0x51
+        true, // 0x52
+        true, // 0x53
+        true, // 0x54
+        true, // 0x55
+        true, // 0x56
+        true, // 0x57
+        true, // 0x58
+        true, // 0x59
+        true, // 0x5a
         false, // 0x5b [ is illegal
         false, // 0x5c \ is illegal
         false, // 0x5d ] is illegal
         false, // 0x5e ^ is illegal
-        true,  // 0x5f
+        true, // 0x5f
         false, // 0x60 ` is illegal
-        true,  // 0x61
-        true,  // 0x62
-        true,  // 0x63
-        true,  // 0x64
-        true,  // 0x65
-        true,  // 0x66
-        true,  // 0x67
-        true,  // 0x68
-        true,  // 0x69
-        true,  // 0x6a
-        true,  // 0x6b
-        true,  // 0x6c
-        true,  // 0x6d
-        true,  // 0x6e
-        true,  // 0x6f
-        true,  // 0x70
-        true,  // 0x71
-        true,  // 0x72
-        true,  // 0x73
-        true,  // 0x74
-        true,  // 0x75
-        true,  // 0x76
-        true,  // 0x77
-        true,  // 0x78
-        true,  // 0x79
-        true,  // 0x7a
+        true, // 0x61
+        true, // 0x62
+        true, // 0x63
+        true, // 0x64
+        true, // 0x65
+        true, // 0x66
+        true, // 0x67
+        true, // 0x68
+        true, // 0x69
+        true, // 0x6a
+        true, // 0x6b
+        true, // 0x6c
+        true, // 0x6d
+        true, // 0x6e
+        true, // 0x6f
+        true, // 0x70
+        true, // 0x71
+        true, // 0x72
+        true, // 0x73
+        true, // 0x74
+        true, // 0x75
+        true, // 0x76
+        true, // 0x77
+        true, // 0x78
+        true, // 0x79
+        true, // 0x7a
         false, // 0x7b { is illegal
         false, // 0x7c | is illegal
         false, // 0x7d } is illegal
-        true,  // 0x7e
+        true, // 0x7e
         false, // 0x7f DEL is illegal
     };
 
@@ -223,7 +221,7 @@ public final class URIUtil
     {
         ENCODE_PATH_NEEDS_ENCODING = new boolean[128];
         // Special characters
-        for (char c: "%?;#\"'<> [\\]^`{|}".toCharArray())
+        for (char c : "%?;#\"'<> [\\]^`{|}".toCharArray())
             ENCODE_PATH_NEEDS_ENCODING[c] = true;
         // control characters
         ENCODE_PATH_NEEDS_ENCODING[0x7f] = true;
@@ -434,9 +432,7 @@ public final class URIUtil
      * @return The StringBuilder or null if no substitutions required.
      */
     // TODO: remove, only used in URIUtilTest?
-    public static StringBuilder encodeString(StringBuilder buf,
-                                             String path,
-                                             String encode)
+    public static StringBuilder encodeString(StringBuilder buf, String path, String encode)
     {
         if (buf == null)
         {
@@ -513,7 +509,7 @@ public final class URIUtil
                                 int[] codePoints = {(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16))};
                                 String str = new String(codePoints, 0, 1);
                                 byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
-                                for (byte b: bytes)
+                                for (byte b : bytes)
                                     builder.append(b);
                                 i += 5;
                             }
@@ -589,8 +585,8 @@ public final class URIUtil
             char c = path.charAt(i);
             switch (c)
             {
-                case '?' :
-                case '#' :
+                case '?':
+                case '#':
                     return false;
             }
         }
@@ -657,7 +653,7 @@ public final class URIUtil
             int[] codePoints = {code};
             String str = new String(codePoints, 0, 1);
             byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
-            for (byte b: bytes)
+            for (byte b : bytes)
             {
                 builder.append('%');
                 appendHexValue(builder, b);
@@ -813,9 +809,7 @@ public final class URIUtil
             slash = c == '/';
         }
 
-        String canonical = (builder != null)
-            ? (onBadUtf8 == null ? builder.toCompleteString() : builder.takeCompleteString(onBadUtf8))
-            : encodedPath;
+        String canonical = (builder != null) ? (onBadUtf8 == null ? builder.toCompleteString() : builder.takeCompleteString(onBadUtf8)) : encodedPath;
         return normal ? canonical : normalizePath(canonical);
     }
 
@@ -1017,7 +1011,8 @@ public final class URIUtil
         int i = 0;
 
         // Initially just loop looking if we may need to normalize
-        loop: while (i < end)
+        loop:
+        while (i < end)
         {
             char c = pathQuery.charAt(i);
             switch (c)
@@ -1054,7 +1049,8 @@ public final class URIUtil
         // Loop looking for single and double dot segments
         int dots = 1;
         i++;
-        loop : while (i < end)
+        loop:
+        while (i < end)
         {
             char c = pathQuery.charAt(i);
             switch (c)
@@ -1140,7 +1136,8 @@ public final class URIUtil
         int i = 0;
 
         // Initially just loop looking if we may need to normalize
-        loop: while (i < end)
+        loop:
+        while (i < end)
         {
             char c = path.charAt(i);
             switch (c)
@@ -1329,12 +1326,7 @@ public final class URIUtil
             char c = uri.charAt(i);
             if (c == ':')
                 return true;
-            if (!(c >= 'a' && c <= 'z' ||
-                c >= 'A' && c <= 'Z' ||
-                (i > 0 && (c >= '0' && c <= '9' ||
-                    c == '.' ||
-                    c == '+' ||
-                    c == '-'))))
+            if (!(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || (i > 0 && (c >= '0' && c <= '9' || c == '.' || c == '+' || c == '-'))))
             {
                 break;
             }
@@ -1628,9 +1620,7 @@ public final class URIUtil
             return true;
 
         // unsafe characters
-        if (codepoint == '"' || codepoint == '<' || codepoint == '>' || codepoint == '%' ||
-            codepoint == '{' || codepoint == '}' || codepoint == '|' || codepoint == '\\' ||
-            codepoint == '^' || codepoint == '`')
+        if (codepoint == '"' || codepoint == '<' || codepoint == '>' || codepoint == '%' || codepoint == '{' || codepoint == '}' || codepoint == '|' || codepoint == '\\' || codepoint == '^' || codepoint == '`')
             return true;
 
         // additional raw characters rejected by java.net.URI
@@ -2009,7 +1999,7 @@ public final class URIUtil
 
         int bangSlash = uriString.indexOf("!/");
         if (bangSlash >= 0)
-           uriString = uriString.substring(0, bangSlash);
+            uriString = uriString.substring(0, bangSlash);
 
         if (uri.getScheme().equalsIgnoreCase("jar"))
         {

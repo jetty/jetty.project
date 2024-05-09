@@ -30,7 +30,8 @@ public class Resource
     @Path("/security")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public void putSecurity(@Context HttpServletRequest httpRequest, Security security, @Suspended final AsyncResponse asyncResponse)
+    public void putSecurity(
+                            @Context HttpServletRequest httpRequest, Security security, @Suspended final AsyncResponse asyncResponse)
     {
         if (security.getPrincipal() == null)
             throw new NullPointerException("principal must no be null");

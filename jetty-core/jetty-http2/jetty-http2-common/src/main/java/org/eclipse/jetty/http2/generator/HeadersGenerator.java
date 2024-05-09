@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
@@ -50,10 +49,21 @@ public class HeadersGenerator extends FrameGenerator
     public int generate(ByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
-        return generateHeaders(accumulator, headersFrame.getStreamId(), headersFrame.getMetaData(), headersFrame.getPriority(), headersFrame.isEndStream());
+        return generateHeaders(
+            accumulator,
+            headersFrame.getStreamId(),
+            headersFrame.getMetaData(),
+            headersFrame.getPriority(),
+            headersFrame.isEndStream());
     }
 
-    public int generateHeaders(ByteBufferPool.Accumulator accumulator, int streamId, MetaData metaData, PriorityFrame priority, boolean endStream) throws HpackException
+    public int generateHeaders(
+                               ByteBufferPool.Accumulator accumulator,
+                               int streamId,
+                               MetaData metaData,
+                               PriorityFrame priority,
+                               boolean endStream)
+        throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -138,8 +148,12 @@ public class HeadersGenerator extends FrameGenerator
     {
         if (priority != null)
         {
-            priorityGenerator.generatePriorityBody(header, priority.getStreamId(),
-                priority.getParentStreamId(), priority.getWeight(), priority.isExclusive());
+            priorityGenerator.generatePriorityBody(
+                header,
+                priority.getStreamId(),
+                priority.getParentStreamId(),
+                priority.getWeight(),
+                priority.isExclusive());
         }
     }
 }

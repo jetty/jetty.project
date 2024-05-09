@@ -15,4 +15,3 @@
  * Jetty Servlet : Useful Servlet Listeners
  */
 package org.eclipse.jetty.ee10.servlet.listener;
-

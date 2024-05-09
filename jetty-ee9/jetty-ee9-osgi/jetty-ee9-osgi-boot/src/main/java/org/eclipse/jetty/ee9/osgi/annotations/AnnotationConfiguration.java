@@ -13,12 +13,9 @@
 
 package org.eclipse.jetty.ee9.osgi.annotations;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
+import jakarta.servlet.ServletContainerInitializer;
 import java.util.HashSet;
 import java.util.Set;
-
-import jakarta.servlet.ServletContainerInitializer;
 import org.eclipse.jetty.ee9.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.ee9.osgi.boot.OSGiMetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.Configuration;
@@ -41,7 +38,8 @@ import org.slf4j.LoggerFactory;
  */
 public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.AnnotationConfiguration
 {
-    private static final Logger LOG = LoggerFactory.getLogger(org.eclipse.jetty.ee9.annotations.AnnotationConfiguration.class);
+    private static final Logger LOG =
+        LoggerFactory.getLogger(org.eclipse.jetty.ee9.annotations.AnnotationConfiguration.class);
 
     public class BundleParserTask extends ParserTask
     {
@@ -56,7 +54,8 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
         {
             if (_parser != null)
             {
-                org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser osgiAnnotationParser = (org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser)_parser;
+                org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser osgiAnnotationParser =
+                    (org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser)_parser;
                 Bundle bundle = osgiAnnotationParser.getBundle(_resource);
                 if (_stat != null)
                     _stat.start();
@@ -119,13 +118,14 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
 
         Bundle webbundle = (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
         @SuppressWarnings("unchecked")
-        Set<Bundle> fragAndRequiredBundles = (Set<Bundle>)context.getAttribute(OSGiMetaInfConfiguration.FRAGMENT_AND_REQUIRED_BUNDLES);
+        Set<Bundle> fragAndRequiredBundles =
+            (Set<Bundle>)context.getAttribute(OSGiMetaInfConfiguration.FRAGMENT_AND_REQUIRED_BUNDLES);
         if (fragAndRequiredBundles != null)
         {
-            //index and scan fragments
+            // index and scan fragments
             for (Bundle bundle : fragAndRequiredBundles)
             {
-                //skip bundles that have been uninstalled since we discovered them
+                // skip bundles that have been uninstalled since we discovered them
                 if (bundle.getState() == Bundle.UNINSTALLED)
                     continue;
 
@@ -137,31 +137,31 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
 
                 if (bundle.getHeaders().get(Constants.FRAGMENT_HOST) != null)
                 {
-                    //a fragment indeed:
+                    // a fragment indeed:
                     parseFragmentBundle(context, oparser, webbundle, bundle);
                     _webInfLibStats.increment();
                 }
             }
         }
-        //scan ourselves
+        // scan ourselves
         oparser.indexBundle(ResourceFactory.of(context), webbundle);
         parseWebBundle(context, oparser, webbundle);
         _webInfLibStats.increment();
 
-        //scan the WEB-INF/lib
+        // scan the WEB-INF/lib
         super.parseWebInfLib(context, parser);
         if (fragAndRequiredBundles != null)
         {
-            //scan the required bundles
+            // scan the required bundles
             for (Bundle requiredBundle : fragAndRequiredBundles)
             {
-                //skip bundles that have been uninstalled since we discovered them
+                // skip bundles that have been uninstalled since we discovered them
                 if (requiredBundle.getState() == Bundle.UNINSTALLED)
                     continue;
 
                 if (requiredBundle.getHeaders().get(Constants.FRAGMENT_HOST) == null)
                 {
-                    //a bundle indeed:
+                    // a bundle indeed:
                     parseRequiredBundle(context, oparser, webbundle, requiredBundle);
                     _webInfLibStats.increment();
                 }
@@ -178,8 +178,8 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
      * @param fragmentBundle The OSGi fragment bundle to scan
      * @throws Exception if unable to parse fragment bundle
      */
-    protected void parseFragmentBundle(WebAppContext context, AnnotationParser parser,
-                                       Bundle webbundle, Bundle fragmentBundle) throws Exception
+    protected void parseFragmentBundle(
+                                       WebAppContext context, AnnotationParser parser, Bundle webbundle, Bundle fragmentBundle) throws Exception
     {
         parseBundle(context, parser, webbundle, fragmentBundle);
     }
@@ -192,8 +192,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
      * @param webbundle The current webbundle
      * @throws Exception if unable to parse the web bundle
      */
-    protected void parseWebBundle(WebAppContext context, AnnotationParser parser, Bundle webbundle)
-        throws Exception
+    protected void parseWebBundle(WebAppContext context, AnnotationParser parser, Bundle webbundle) throws Exception
     {
         parseBundle(context, parser, webbundle, webbundle);
     }
@@ -204,7 +203,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
     {
         Bundle webbundle = (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
         String bundleClasspath = (String)webbundle.getHeaders().get(Constants.BUNDLE_CLASSPATH);
-        //only scan WEB-INF/classes if we didn't already scan it with parseWebBundle
+        // only scan WEB-INF/classes if we didn't already scan it with parseWebBundle
         if (StringUtil.isBlank(bundleClasspath) || !bundleClasspath.contains("WEB-INF/classes"))
             super.parseWebInfClasses(context, parser);
     }
@@ -218,14 +217,14 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.A
      * @param requiredBundle The OSGi required bundle to scan
      * @throws Exception if unable to parse the required bundle
      */
-    protected void parseRequiredBundle(WebAppContext context, AnnotationParser parser,
-                                       Bundle webbundle, Bundle requiredBundle) throws Exception
+    protected void parseRequiredBundle(
+                                       WebAppContext context, AnnotationParser parser, Bundle webbundle, Bundle requiredBundle) throws Exception
     {
         parseBundle(context, parser, webbundle, requiredBundle);
     }
 
-    protected void parseBundle(WebAppContext context, AnnotationParser parser,
-                               Bundle webbundle, Bundle bundle) throws Exception
+    protected void parseBundle(WebAppContext context, AnnotationParser parser, Bundle webbundle, Bundle bundle)
+        throws Exception
     {
 
         Resource bundleRes = parser.getResource(bundle);

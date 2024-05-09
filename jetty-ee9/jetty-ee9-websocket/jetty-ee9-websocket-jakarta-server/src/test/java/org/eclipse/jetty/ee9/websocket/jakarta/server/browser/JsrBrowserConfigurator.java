@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.server.browser;
 
-import java.util.Collections;
-import java.util.List;
-
 import jakarta.websocket.Extension;
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.util.Collections;
+import java.util.List;
 import org.eclipse.jetty.http.QuotedCSV;
 
 public class JsrBrowserConfigurator extends ServerEndpointConfig.Configurator

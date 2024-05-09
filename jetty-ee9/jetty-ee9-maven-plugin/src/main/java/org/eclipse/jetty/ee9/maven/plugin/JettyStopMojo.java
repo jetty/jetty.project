@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -43,25 +42,25 @@ public class JettyStopMojo extends AbstractWebAppMojo
      */
     @Parameter
     protected int stopWait;
-    
+
     @Override
     protected void startJettyEmbedded() throws MojoExecutionException
     {
-        //Does not start jetty
+        // Does not start jetty
         return;
     }
 
     @Override
     protected void startJettyForked() throws MojoExecutionException
     {
-        //Does not start jetty
+        // Does not start jetty
         return;
     }
 
     @Override
     protected void startJettyHome() throws MojoExecutionException
     {
-        //Does not start jetty
+        // Does not start jetty
         return;
     }
 
@@ -77,7 +76,7 @@ public class JettyStopMojo extends AbstractWebAppMojo
 
         if (stopWait > 0)
         {
-            //try to get the pid of the forked jetty process
+            // try to get the pid of the forked jetty process
             Long pid = null;
             try
             {
@@ -90,21 +89,21 @@ public class JettyStopMojo extends AbstractWebAppMojo
             }
             catch (ConnectException e)
             {
-                //jetty not running, no point continuing
+                // jetty not running, no point continuing
                 getLog().info("Jetty not running!");
                 return;
             }
             catch (Exception e)
             {
-                //jetty running, try to stop it regardless of error
+                // jetty running, try to stop it regardless of error
                 getLog().error(e);
             }
 
-            //now send the stop command and wait for confirmation - either an ack from jetty, or
-            //that the process has stopped
+            // now send the stop command and wait for confirmation - either an ack from jetty, or
+            // that the process has stopped
             if (pid == null)
             {
-                //no pid, so just wait until jetty reports itself stopped
+                // no pid, so just wait until jetty reports itself stopped
                 try
                 {
                     getLog().info("Waiting " + stopWait + " seconds for jetty to stop");
@@ -126,55 +125,57 @@ public class JettyStopMojo extends AbstractWebAppMojo
             }
             else
             {
-                //wait for pid to stop
+                // wait for pid to stop
                 getLog().info("Waiting " + stopWait + " seconds for jetty " + pid + " to stop");
                 Optional<ProcessHandle> optional = ProcessHandle.of(pid);
                 final long remotePid = pid.longValue();
-                optional.ifPresentOrElse(p -> 
-                {
-                    try
+                optional.ifPresentOrElse(
+                    p ->
                     {
-                        //if running in the same process, just send the stop
-                        //command and wait for the response
-                        if (ProcessHandle.current().pid() == remotePid)
+                        try
                         {
-                            send(stopKey + "\r\n" + command + "\r\n", stopWait);
-                        }
-                        else
-                        {
-                            //running forked, so wait for the process
-                            send(stopKey + "\r\n" + command + "\r\n", 0);
-                            CompletableFuture<ProcessHandle> future = p.onExit();
-                            if (p.isAlive())
+                            // if running in the same process, just send the stop
+                            // command and wait for the response
+                            if (ProcessHandle.current().pid() == remotePid)
                             {
-                                p = future.get(stopWait, TimeUnit.SECONDS);
+                                send(stopKey + "\r\n" + command + "\r\n", stopWait);
                             }
-
-                            if (p.isAlive())
-                                getLog().info("Couldn't verify server process stop");
                             else
-                                getLog().info("Server process stopped");
+                            {
+                                // running forked, so wait for the process
+                                send(stopKey + "\r\n" + command + "\r\n", 0);
+                                CompletableFuture<ProcessHandle> future = p.onExit();
+                                if (p.isAlive())
+                                {
+                                    p = future.get(stopWait, TimeUnit.SECONDS);
+                                }
+
+                                if (p.isAlive())
+                                    getLog().info("Couldn't verify server process stop");
+                                else
+                                    getLog().info("Server process stopped");
+                            }
                         }
-                    }
-                    catch (ConnectException e)
-                    {
-                        //jetty not listening on the given port, don't wait for the process
-                        getLog().info("Jetty not running!");
-                    }
-                    catch (TimeoutException e)
-                    {
-                        getLog().error("Timeout expired while waiting for server process to stop");
-                    }
-                    catch (Throwable e)
-                    {
-                        getLog().error(e);
-                    }
-                }, () -> getLog().info("Process not running"));
+                        catch (ConnectException e)
+                        {
+                            // jetty not listening on the given port, don't wait for the process
+                            getLog().info("Jetty not running!");
+                        }
+                        catch (TimeoutException e)
+                        {
+                            getLog().error("Timeout expired while waiting for server process to stop");
+                        }
+                        catch (Throwable e)
+                        {
+                            getLog().error(e);
+                        }
+                    },
+                    () -> getLog().info("Process not running"));
             }
         }
         else
         {
-            //send the stop command but don't wait to verify the stop
+            // send the stop command but don't wait to verify the stop
             getLog().info("Stopping jetty");
             try
             {
@@ -193,24 +194,24 @@ public class JettyStopMojo extends AbstractWebAppMojo
 
     /**
      * Send a command to a jetty process, optionally waiting for a response.
-     * 
+     *
      * @param command the command to send
      * @param wait length of time in sec to wait for a response
      * @return the response, if any, to the command
      * @throws Exception if there is an unspecified problem
      */
-    private String send(String command, int wait)
-        throws Exception
+    private String send(String command, int wait) throws Exception
     {
         String response = null;
-        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort); OutputStream out = s.getOutputStream();)
+        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort);
+             OutputStream out = s.getOutputStream();)
         {
             out.write(command.getBytes());
             out.flush();
 
             if (wait > 0)
             {
-                //Wait for a response
+                // Wait for a response
                 s.setSoTimeout(wait * 1000);
 
                 try (LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));)
@@ -222,7 +223,7 @@ public class JettyStopMojo extends AbstractWebAppMojo
             {
                 try
                 {
-                    //Wait only a small amount of time to ensure TCP has sent the message
+                    // Wait only a small amount of time to ensure TCP has sent the message
                     s.setSoTimeout(1000);
                     s.getInputStream().read();
                 }
@@ -234,7 +235,7 @@ public class JettyStopMojo extends AbstractWebAppMojo
                         getLog().info(e.getMessage() + " after sending command: " + command + ". Check the server state.");
                 }
             }
-            
+
             return response;
         }
     }

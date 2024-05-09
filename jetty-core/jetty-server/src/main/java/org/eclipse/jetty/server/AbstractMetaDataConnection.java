@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.net.SocketAddress;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;

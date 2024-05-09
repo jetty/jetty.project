@@ -37,7 +37,8 @@ public class PlusDecorator implements Decorator
     @Override
     public Object decorate(Object o)
     {
-        InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+        InjectionCollection injections =
+            (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
         if (injections != null)
             injections.inject(o);
 

@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
 import java.net.URI;
 import java.util.List;
-
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.FrameEcho;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.WholeMessageEcho;
 import org.eclipse.jetty.server.Server;

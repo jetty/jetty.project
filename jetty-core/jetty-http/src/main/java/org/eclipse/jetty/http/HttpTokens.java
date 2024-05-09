@@ -29,22 +29,26 @@ public class HttpTokens
 
     public enum EndOfContent
     {
-        UNKNOWN_CONTENT, NO_CONTENT, EOF_CONTENT, CONTENT_LENGTH, CHUNKED_CONTENT
+        UNKNOWN_CONTENT,
+        NO_CONTENT,
+        EOF_CONTENT,
+        CONTENT_LENGTH,
+        CHUNKED_CONTENT
     }
 
     public enum Type
     {
-        CNTL,    // Control characters excluding LF, CR
-        HTAB,    // Horizontal tab 
-        LF,      // Line feed
-        CR,      // Carriage return
-        SPACE,   // Space 
-        COLON,   // Colon character
-        DIGIT,   // Digit
-        ALPHA,   // Alpha
-        TCHAR,   // token characters excluding COLON,DIGIT,ALPHA, which is equivalent to VCHAR excluding delimiters
-        VCHAR,   // Visible characters excluding COLON,DIGIT,ALPHA
-        OTEXT    // Obsolete text
+        CNTL, // Control characters excluding LF, CR
+        HTAB, // Horizontal tab
+        LF, // Line feed
+        CR, // Carriage return
+        SPACE, // Space
+        COLON, // Colon character
+        DIGIT, // Digit
+        ALPHA, // Alpha
+        TCHAR, // token characters excluding COLON,DIGIT,ALPHA, which is equivalent to VCHAR excluding delimiters
+        VCHAR, // Visible characters excluding COLON,DIGIT,ALPHA
+        OTEXT // Obsolete text
     }
 
     public static Token getToken(byte b)
@@ -83,22 +87,13 @@ public class HttpTokens
             //                | "{" | "}" | SP | HT
             // CTL            = <any US-ASCII control character
             //                  (octets 0 - 31) and DEL (127)>
-            _rfc2616Token = b >= 32 && b < 127 &&
-                b != '(' && b !=  ')' && b !=  '<' && b !=  '>' && b !=  '@' &&
-                b !=  ',' && b !=  ';' && b !=  ':' && b !=  '\\' && b !=  '"' &&
-                b !=  '/' && b !=  '[' && b !=  ']' && b !=  '?' && b !=  '=' &&
-                b !=  '{' && b !=  '}' && b !=  ' ';
+            _rfc2616Token = b >= 32 && b < 127 && b != '(' && b != ')' && b != '<' && b != '>' && b != '@' && b != ',' && b != ';' && b != ':' && b != '\\' && b != '"' && b != '/' && b != '[' && b != ']' && b != '?' && b != '=' && b != '{' && b != '}' && b != ' ';
 
             // cookie-octet      = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
             //                     ; US-ASCII characters excluding CTLs,
             //                     ; whitespace DQUOTE, comma, semicolon,
             //                     ; and backslash
-            _rfc6265CookieOctet =
-                b == 0x21 ||
-                b >= 0x23 && b <= 0x2B ||
-                b >= 0x2D && b <= 0x3A ||
-                b >= 0x3C && b <= 0x5B ||
-                b >= 0x5D && b <= 0x7E;
+            _rfc6265CookieOctet = b == 0x21 || b >= 0x23 && b <= 0x2B || b >= 0x2D && b <= 0x3A || b >= 0x3C && b <= 0x5B || b >= 0x5D && b <= 0x7E;
         }
 
         public Type getType()
@@ -276,4 +271,3 @@ public class HttpTokens
         return (c >= 256 || c < ' ');
     }
 }
-

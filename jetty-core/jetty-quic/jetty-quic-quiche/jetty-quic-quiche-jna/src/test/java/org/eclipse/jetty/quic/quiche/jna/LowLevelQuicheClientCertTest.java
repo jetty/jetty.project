@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.quic.quiche.jna;
 
+import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MIN_CLIENT_INITIAL_LEN;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.core.Is.is;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
@@ -25,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-
 import org.eclipse.jetty.quic.quiche.PemExporter;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
@@ -35,15 +43,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MIN_CLIENT_INITIAL_LEN;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.Is.is;
 
 @ExtendWith(WorkDirExtension.class)
 public class LowLevelQuicheClientCertTest
@@ -137,7 +136,8 @@ public class LowLevelQuicheClientCertTest
         assertThat(Arrays.equals(configuredServerCertificate, receivedServerCertificate), is(true));
     }
 
-    private void drainServerToFeedClient(Map.Entry<JnaQuicheConnection, JnaQuicheConnection> entry, int expectedSize) throws IOException
+    private void drainServerToFeedClient(Map.Entry<JnaQuicheConnection, JnaQuicheConnection> entry, int expectedSize)
+        throws IOException
     {
         JnaQuicheConnection clientQuicheConnection = entry.getKey();
         JnaQuicheConnection serverQuicheConnection = entry.getValue();
@@ -150,7 +150,11 @@ public class LowLevelQuicheClientCertTest
         assertThat(fed, is(expectedSize));
     }
 
-    private void drainServerToFeedClient(Map.Entry<JnaQuicheConnection, JnaQuicheConnection> entry, int expectedSizeLowerBound, int expectedSizeUpperBound) throws IOException
+    private void drainServerToFeedClient(
+                                         Map.Entry<JnaQuicheConnection, JnaQuicheConnection> entry,
+                                         int expectedSizeLowerBound,
+                                         int expectedSizeUpperBound)
+        throws IOException
     {
         JnaQuicheConnection clientQuicheConnection = entry.getKey();
         JnaQuicheConnection serverQuicheConnection = entry.getValue();
@@ -158,13 +162,18 @@ public class LowLevelQuicheClientCertTest
 
         int drained = serverQuicheConnection.drainCipherBytes(buffer);
 
-        assertThat(drained, is(both(greaterThanOrEqualTo(expectedSizeLowerBound)).and(lessThanOrEqualTo(expectedSizeUpperBound))));
+        assertThat(
+            drained,
+            is(both(greaterThanOrEqualTo(expectedSizeLowerBound)).and(lessThanOrEqualTo(expectedSizeUpperBound))));
         buffer.flip();
         int fed = clientQuicheConnection.feedCipherBytes(buffer, clientSocketAddress, serverSocketAddress);
-        assertThat(fed, is(both(greaterThanOrEqualTo(expectedSizeLowerBound)).and(lessThanOrEqualTo(expectedSizeUpperBound))));
+        assertThat(
+            fed,
+            is(both(greaterThanOrEqualTo(expectedSizeLowerBound)).and(lessThanOrEqualTo(expectedSizeUpperBound))));
     }
 
-    private void drainClientToFeedServer(Map.Entry<JnaQuicheConnection, JnaQuicheConnection> entry, int expectedSize) throws IOException
+    private void drainClientToFeedServer(Map.Entry<JnaQuicheConnection, JnaQuicheConnection> entry, int expectedSize)
+        throws IOException
     {
         JnaQuicheConnection clientQuicheConnection = entry.getKey();
         JnaQuicheConnection serverQuicheConnection = entry.getValue();
@@ -182,14 +191,16 @@ public class LowLevelQuicheClientCertTest
         ByteBuffer buffer = ByteBuffer.allocate(QUICHE_MIN_CLIENT_INITIAL_LEN);
         ByteBuffer buffer2 = ByteBuffer.allocate(QUICHE_MIN_CLIENT_INITIAL_LEN);
 
-        JnaQuicheConnection clientQuicheConnection = JnaQuicheConnection.connect(clientQuicheConfig, clientSocketAddress, serverSocketAddress);
+        JnaQuicheConnection clientQuicheConnection =
+            JnaQuicheConnection.connect(clientQuicheConfig, clientSocketAddress, serverSocketAddress);
         connectionsToDisposeOf.add(clientQuicheConnection);
 
         int drained = clientQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(1200));
         buffer.flip();
 
-        JnaQuicheConnection serverQuicheConnection = JnaQuicheConnection.tryAccept(serverQuicheConfig, tokenValidator, buffer, serverSocketAddress, clientSocketAddress);
+        JnaQuicheConnection serverQuicheConnection = JnaQuicheConnection.tryAccept(
+            serverQuicheConfig, tokenValidator, buffer, serverSocketAddress, clientSocketAddress);
         assertThat(serverQuicheConnection, is(nullValue()));
         boolean negotiated = JnaQuicheConnection.negotiate(tokenMinter, buffer, buffer2);
         assertThat(negotiated, is(true));
@@ -203,7 +214,8 @@ public class LowLevelQuicheClientCertTest
         assertThat(drained, is(1200));
         buffer.flip();
 
-        serverQuicheConnection = JnaQuicheConnection.tryAccept(serverQuicheConfig, tokenValidator, buffer, serverSocketAddress, clientSocketAddress);
+        serverQuicheConnection = JnaQuicheConnection.tryAccept(
+            serverQuicheConfig, tokenValidator, buffer, serverSocketAddress, clientSocketAddress);
         assertThat(serverQuicheConnection, is(not(nullValue())));
         connectionsToDisposeOf.add(serverQuicheConnection);
 
@@ -218,7 +230,8 @@ public class LowLevelQuicheClientCertTest
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
         assertThat(clientQuicheConnection.isConnectionEstablished(), is(false));
 
-        AbstractMap.SimpleImmutableEntry<JnaQuicheConnection, JnaQuicheConnection> entry = new AbstractMap.SimpleImmutableEntry<>(clientQuicheConnection, serverQuicheConnection);
+        AbstractMap.SimpleImmutableEntry<JnaQuicheConnection, JnaQuicheConnection> entry =
+            new AbstractMap.SimpleImmutableEntry<>(clientQuicheConnection, serverQuicheConnection);
 
         int protosLen = 0;
         for (String proto : clientQuicheConfig.getApplicationProtos())

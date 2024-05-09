@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -44,71 +43,131 @@ public class HpackContext
 {
     private static final Logger LOG = LoggerFactory.getLogger(HpackContext.class);
     private static final String EMPTY = "";
-    public static final String[][] STATIC_TABLE =
-        {
-            {null, null},
-            /* 1  */ {":authority", EMPTY},
-            /* 2  */ {":method", "GET"},
-            /* 3  */ {":method", "POST"},
-            /* 4  */ {":path", "/"},
-            /* 5  */ {":path", "/index.html"},
-            /* 6  */ {":scheme", "http"},
-            /* 7  */ {":scheme", "https"},
-            /* 8  */ {":status", "200"},
-            /* 9  */ {":status", "204"},
-            /* 10 */ {":status", "206"},
-            /* 11 */ {":status", "304"},
-            /* 12 */ {":status", "400"},
-            /* 13 */ {":status", "404"},
-            /* 14 */ {":status", "500"},
-            /* 15 */ {"accept-charset", EMPTY},
-            /* 16 */ {"accept-encoding", "gzip, deflate"},
-            /* 17 */ {"accept-language", EMPTY},
-            /* 18 */ {"accept-ranges", EMPTY},
-            /* 19 */ {"accept", EMPTY},
-            /* 20 */ {"access-control-allow-origin", EMPTY},
-            /* 21 */ {"age", EMPTY},
-            /* 22 */ {"allow", EMPTY},
-            /* 23 */ {"authorization", EMPTY},
-            /* 24 */ {"cache-control", EMPTY},
-            /* 25 */ {"content-disposition", EMPTY},
-            /* 26 */ {"content-encoding", EMPTY},
-            /* 27 */ {"content-language", EMPTY},
-            /* 28 */ {"content-length", EMPTY},
-            /* 29 */ {"content-location", EMPTY},
-            /* 30 */ {"content-range", EMPTY},
-            /* 31 */ {"content-type", EMPTY},
-            /* 32 */ {"cookie", EMPTY},
-            /* 33 */ {"date", EMPTY},
-            /* 34 */ {"etag", EMPTY},
-            /* 35 */ {"expect", EMPTY},
-            /* 36 */ {"expires", EMPTY},
-            /* 37 */ {"from", EMPTY},
-            /* 38 */ {"host", EMPTY},
-            /* 39 */ {"if-match", EMPTY},
-            /* 40 */ {"if-modified-since", EMPTY},
-            /* 41 */ {"if-none-match", EMPTY},
-            /* 42 */ {"if-range", EMPTY},
-            /* 43 */ {"if-unmodified-since", EMPTY},
-            /* 44 */ {"last-modified", EMPTY},
-            /* 45 */ {"link", EMPTY},
-            /* 46 */ {"location", EMPTY},
-            /* 47 */ {"max-forwards", EMPTY},
-            /* 48 */ {"proxy-authenticate", EMPTY},
-            /* 49 */ {"proxy-authorization", EMPTY},
-            /* 50 */ {"range", EMPTY},
-            /* 51 */ {"referer", EMPTY},
-            /* 52 */ {"refresh", EMPTY},
-            /* 53 */ {"retry-after", EMPTY},
-            /* 54 */ {"server", EMPTY},
-            /* 55 */ {"set-cookie", EMPTY},
-            /* 56 */ {"strict-transport-security", EMPTY},
-            /* 57 */ {"transfer-encoding", EMPTY},
-            /* 58 */ {"user-agent", EMPTY},
-            /* 59 */ {"vary", EMPTY},
-            /* 60 */ {"via", EMPTY},
-            /* 61 */ {"www-authenticate", EMPTY}
-        };
+    public static final String[][] STATIC_TABLE = {
+        {null, null},
+        /* 1  */
+        {":authority", EMPTY},
+        /* 2  */
+        {":method", "GET"},
+        /* 3  */
+        {":method", "POST"},
+        /* 4  */
+        {":path", "/"},
+        /* 5  */
+        {":path", "/index.html"},
+        /* 6  */
+        {":scheme", "http"},
+        /* 7  */
+        {":scheme", "https"},
+        /* 8  */
+        {":status", "200"},
+        /* 9  */
+        {":status", "204"},
+        /* 10 */
+        {":status", "206"},
+        /* 11 */
+        {":status", "304"},
+        /* 12 */
+        {":status", "400"},
+        /* 13 */
+        {":status", "404"},
+        /* 14 */
+        {":status", "500"},
+        /* 15 */
+        {"accept-charset", EMPTY},
+        /* 16 */
+        {"accept-encoding", "gzip, deflate"},
+        /* 17 */
+        {"accept-language", EMPTY},
+        /* 18 */
+        {"accept-ranges", EMPTY},
+        /* 19 */
+        {"accept", EMPTY},
+        /* 20 */
+        {"access-control-allow-origin", EMPTY},
+        /* 21 */
+        {"age", EMPTY},
+        /* 22 */
+        {"allow", EMPTY},
+        /* 23 */
+        {"authorization", EMPTY},
+        /* 24 */
+        {"cache-control", EMPTY},
+        /* 25 */
+        {"content-disposition", EMPTY},
+        /* 26 */
+        {"content-encoding", EMPTY},
+        /* 27 */
+        {"content-language", EMPTY},
+        /* 28 */
+        {"content-length", EMPTY},
+        /* 29 */
+        {"content-location", EMPTY},
+        /* 30 */
+        {"content-range", EMPTY},
+        /* 31 */
+        {"content-type", EMPTY},
+        /* 32 */
+        {"cookie", EMPTY},
+        /* 33 */
+        {"date", EMPTY},
+        /* 34 */
+        {"etag", EMPTY},
+        /* 35 */
+        {"expect", EMPTY},
+        /* 36 */
+        {"expires", EMPTY},
+        /* 37 */
+        {"from", EMPTY},
+        /* 38 */
+        {"host", EMPTY},
+        /* 39 */
+        {"if-match", EMPTY},
+        /* 40 */
+        {"if-modified-since", EMPTY},
+        /* 41 */
+        {"if-none-match", EMPTY},
+        /* 42 */
+        {"if-range", EMPTY},
+        /* 43 */
+        {"if-unmodified-since", EMPTY},
+        /* 44 */
+        {"last-modified", EMPTY},
+        /* 45 */
+        {"link", EMPTY},
+        /* 46 */
+        {"location", EMPTY},
+        /* 47 */
+        {"max-forwards", EMPTY},
+        /* 48 */
+        {"proxy-authenticate", EMPTY},
+        /* 49 */
+        {"proxy-authorization", EMPTY},
+        /* 50 */
+        {"range", EMPTY},
+        /* 51 */
+        {"referer", EMPTY},
+        /* 52 */
+        {"refresh", EMPTY},
+        /* 53 */
+        {"retry-after", EMPTY},
+        /* 54 */
+        {"server", EMPTY},
+        /* 55 */
+        {"set-cookie", EMPTY},
+        /* 56 */
+        {"strict-transport-security", EMPTY},
+        /* 57 */
+        {"transfer-encoding", EMPTY},
+        /* 58 */
+        {"user-agent", EMPTY},
+        /* 59 */
+        {"vary", EMPTY},
+        /* 60 */
+        {"via", EMPTY},
+        /* 61 */
+        {"www-authenticate", EMPTY}
+    };
 
     private static final Map<HttpField, Entry> __staticFieldMap = new HashMap<>();
     private static final Index<StaticEntry> __staticNameMap;
@@ -134,7 +193,6 @@ public class HpackContext
                 {
                     case C_METHOD:
                     {
-
                         HttpMethod method = HttpMethod.CACHE.get(value);
                         if (method != null)
                             entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, method));
@@ -143,7 +201,6 @@ public class HpackContext
 
                     case C_SCHEME:
                     {
-
                         HttpScheme scheme = HttpScheme.CACHE.get(value);
                         if (scheme != null)
                             entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, scheme));
@@ -162,7 +219,9 @@ public class HpackContext
             }
 
             if (entry == null)
-                entry = new StaticEntry(i, header == null ? new HttpField(STATIC_TABLE[i][0], value) : new HttpField(header, name, value));
+                entry = new StaticEntry(
+                    i,
+                    header == null ? new HttpField(STATIC_TABLE[i][0], value) : new HttpField(header, name, value));
 
             __staticTable[i] = entry;
 
@@ -203,7 +262,8 @@ public class HpackContext
     public void resize(int newMaxDynamicTableSize)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _maxTableSize, newMaxDynamicTableSize));
+            LOG.debug(
+                String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _maxTableSize, newMaxDynamicTableSize));
         _maxTableSize = newMaxDynamicTableSize;
         _dynamicTable.evict();
     }
@@ -314,7 +374,9 @@ public class HpackContext
     @Override
     public String toString()
     {
-        return String.format("HpackContext@%x{entries=%d,size=%d,max=%d}", hashCode(), _dynamicTable.size(), _tableSize, _maxTableSize);
+        return String.format(
+            "HpackContext@%x{entries=%d,size=%d,max=%d}",
+            hashCode(), _dynamicTable.size(), _tableSize, _maxTableSize);
     }
 
     private class DynamicTable
@@ -386,7 +448,9 @@ public class HpackContext
                     _nameMap.remove(lc);
             }
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", HpackContext.this.hashCode(), _dynamicTable.size(), _tableSize, _maxTableSize));
+                LOG.debug(String.format(
+                    "HdrTbl[%x] entries=%d, size=%d, max=%d",
+                    HpackContext.this.hashCode(), _dynamicTable.size(), _tableSize, _maxTableSize));
         }
 
         private void evictAll()

@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.client.misbehaving;
 
-import java.util.LinkedList;
-import java.util.concurrent.CountDownLatch;
-
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
+import java.util.LinkedList;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * A JSR-356 Endpoint that tosses a RuntimeException during its onOpen call

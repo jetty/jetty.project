@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.io;
 
-import java.util.concurrent.TimeoutException;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class IdleTimeoutTest
 {

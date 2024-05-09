@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
@@ -96,23 +95,10 @@ public class OptionalSslConnectionFactory extends DetectorConnectionFactory
         {
             // Plain text HTTP to an HTTPS port,
             // write a minimal response.
-            String body =
-                "<!DOCTYPE html>\r\n" +
-                    "<html>\r\n" +
-                    "<head><title>Bad Request</title></head>\r\n" +
-                    "<body>" +
-                    "<h1>Bad Request</h1>" +
-                    "<p>HTTP request to HTTPS port</p>" +
-                    "</body>\r\n" +
-                    "</html>";
-            String response =
-                "HTTP/1.1 400 Bad Request\r\n" +
-                    "Content-Type: text/html\r\n" +
-                    "Content-Length: " + body.length() + "\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n" +
-                    body;
-            Callback.Completable.with(c -> endPoint.write(c, ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII))))
+            String body = "<!DOCTYPE html>\r\n" + "<html>\r\n" + "<head><title>Bad Request</title></head>\r\n" + "<body>" + "<h1>Bad Request</h1>" + "<p>HTTP request to HTTPS port</p>" + "</body>\r\n" + "</html>";
+            String response = "HTTP/1.1 400 Bad Request\r\n" + "Content-Type: text/html\r\n" + "Content-Length: " + body.length() + "\r\n" + "Connection: close\r\n" + "\r\n" + body;
+            Callback.Completable.with(
+                c -> endPoint.write(c, ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII))))
                 .whenComplete((r, x) -> endPoint.close());
         }
         else

@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.util;
 
-import org.eclipse.jetty.websocket.core.util.ReflectUtils;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.eclipse.jetty.websocket.core.util.ReflectUtils;
+import org.junit.jupiter.api.Test;
 
 public class ReflectUtilsTest
 {
@@ -128,7 +128,8 @@ public class ReflectUtilsTest
     private void assertFindGenericClass(Class<?> baseClass, Class<?> ifaceClass, Class<?> expectedClass)
     {
         Class<?> foundClass = ReflectUtils.findGenericClassFor(baseClass, ifaceClass);
-        String msg = String.format("Expecting %s<%s> found on %s", ifaceClass.getName(), expectedClass.getName(), baseClass.getName());
+        String msg = String.format(
+            "Expecting %s<%s> found on %s", ifaceClass.getName(), expectedClass.getName(), baseClass.getName());
         assertEquals(expectedClass, foundClass, msg);
     }
 }

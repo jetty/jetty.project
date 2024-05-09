@@ -13,14 +13,19 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
@@ -28,12 +33,6 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SessionTrackingTest
 {
@@ -99,14 +98,16 @@ public class SessionTrackingTest
         EventSocket clientSocket2 = new EventSocket();
         EventSocket clientSocket3 = new EventSocket();
 
-        try (Session session1 = client.connectToServer(clientSocket1, server.getWsUri().resolve("/session-info/1")))
+        try (Session session1 =
+            client.connectToServer(clientSocket1, server.getWsUri().resolve("/session-info/1")))
         {
             Session serverSession1 = serverSessions.poll(5, TimeUnit.SECONDS);
             assertNotNull(serverSession1);
             sendTextFrameToAll("openSessions|in-1", session1);
             assertThat(clientSocket1.textMessages.poll(5, TimeUnit.SECONDS), is("openSessions(@in-1).size=1"));
 
-            try (Session session2 = client.connectToServer(clientSocket2, server.getWsUri().resolve("/session-info/2")))
+            try (Session session2 =
+                client.connectToServer(clientSocket2, server.getWsUri().resolve("/session-info/2")))
             {
                 Session serverSession2 = serverSessions.poll(5, TimeUnit.SECONDS);
                 assertNotNull(serverSession2);
@@ -114,7 +115,8 @@ public class SessionTrackingTest
                 assertThat(clientSocket1.textMessages.poll(5, TimeUnit.SECONDS), is("openSessions(@in-2).size=2"));
                 assertThat(clientSocket2.textMessages.poll(5, TimeUnit.SECONDS), is("openSessions(@in-2).size=2"));
 
-                try (Session session3 = client.connectToServer(clientSocket3, server.getWsUri().resolve("/session-info/3")))
+                try (Session session3 =
+                    client.connectToServer(clientSocket3, server.getWsUri().resolve("/session-info/3")))
                 {
                     Session serverSession3 = serverSessions.poll(5, TimeUnit.SECONDS);
                     assertNotNull(serverSession3);
@@ -130,7 +132,9 @@ public class SessionTrackingTest
 
                     // assert session is closed, and we have received the notification from the SessionListener
                     session3.close();
-                    assertThat(server.getTrackingListener().getClosedSessions().poll(5, TimeUnit.SECONDS), sameInstance(serverSession3));
+                    assertThat(
+                        server.getTrackingListener().getClosedSessions().poll(5, TimeUnit.SECONDS),
+                        sameInstance(serverSession3));
                     assertTrue(clientSocket3.closeLatch.await(5, TimeUnit.SECONDS));
                 }
 
@@ -140,7 +144,9 @@ public class SessionTrackingTest
 
                 // assert session is closed, and we have received the notification from the SessionListener
                 session2.close();
-                assertThat(server.getTrackingListener().getClosedSessions().poll(5, TimeUnit.SECONDS), sameInstance(serverSession2));
+                assertThat(
+                    server.getTrackingListener().getClosedSessions().poll(5, TimeUnit.SECONDS),
+                    sameInstance(serverSession2));
                 assertTrue(clientSocket2.closeLatch.await(5, TimeUnit.SECONDS));
             }
 
@@ -149,7 +155,9 @@ public class SessionTrackingTest
 
             // assert session is closed, and we have received the notification from the SessionListener
             session1.close();
-            assertThat(server.getTrackingListener().getClosedSessions().poll(5, TimeUnit.SECONDS), sameInstance(serverSession1));
+            assertThat(
+                server.getTrackingListener().getClosedSessions().poll(5, TimeUnit.SECONDS),
+                sameInstance(serverSession1));
             assertTrue(clientSocket1.closeLatch.await(5, TimeUnit.SECONDS));
         }
     }

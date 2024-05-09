@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.jmx;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.matchesRegex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -23,17 +28,11 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
-
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.matchesRegex;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Running the tests of this class in the same JVM results often in
@@ -89,7 +88,8 @@ public class ConnectorServerTest
         ServerSocket serverSocket = new ServerSocket(0);
         int registryPort = serverSocket.getLocalPort();
         serverSocket.close();
-        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi://:" + registryPort + "/jmxrmi"), objectName);
+        connectorServer = new ConnectorServer(
+            new JMXServiceURL("service:jmx:rmi:///jndi/rmi://:" + registryPort + "/jmxrmi"), objectName);
         connectorServer.start();
 
         // Verify that I can connect to the RMI registry using a non-loopback address.
@@ -107,7 +107,8 @@ public class ConnectorServerTest
         ServerSocket serverSocket = new ServerSocket(0);
         int registryPort = serverSocket.getLocalPort();
         serverSocket.close();
-        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi://0.0.0.0:" + registryPort + "/jmxrmi"), objectName);
+        connectorServer = new ConnectorServer(
+            new JMXServiceURL("service:jmx:rmi:///jndi/rmi://0.0.0.0:" + registryPort + "/jmxrmi"), objectName);
         connectorServer.start();
 
         // Verify that I can connect to the RMI registry using a non-loopback address.
@@ -119,7 +120,8 @@ public class ConnectorServerTest
     @Test
     public void testLocalhostRegistryBindsToLoopback() throws Exception
     {
-        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi://localhost:1099/jmxrmi"), objectName);
+        connectorServer = new ConnectorServer(
+            new JMXServiceURL("service:jmx:rmi:///jndi/rmi://localhost:1099/jmxrmi"), objectName);
         connectorServer.start();
 
         InetAddress localHost = InetAddress.getLocalHost();
@@ -147,26 +149,34 @@ public class ConnectorServerTest
         assertThrows(ConnectException.class, () ->
         {
             // Verify that I cannot connect to the RMI server using the loopback address.
-            new Socket(InetAddress.getLoopbackAddress(), connectorServer.getAddress().getPort()).close();
+            new Socket(
+                InetAddress.getLoopbackAddress(),
+                connectorServer.getAddress().getPort())
+                .close();
         });
     }
 
     @Test
     public void testAnyRMIHostBindsToAny() throws Exception
     {
-        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi://0.0.0.0/jndi/rmi:///jmxrmi"), objectName);
+        connectorServer =
+            new ConnectorServer(new JMXServiceURL("service:jmx:rmi://0.0.0.0/jndi/rmi:///jmxrmi"), objectName);
         connectorServer.start();
 
         // Verify that I can connect to the RMI server using a non-loopback address.
         new Socket(InetAddress.getLocalHost(), connectorServer.getAddress().getPort()).close();
         // Verify that I can connect to the RMI server using the loopback address.
-        new Socket(InetAddress.getLoopbackAddress(), connectorServer.getAddress().getPort()).close();
+        new Socket(
+            InetAddress.getLoopbackAddress(),
+            connectorServer.getAddress().getPort())
+            .close();
     }
 
     @Test
     public void testLocalhostRMIBindsToLoopback() throws Exception
     {
-        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:1099/jmxrmi"), objectName);
+        connectorServer = new ConnectorServer(
+            new JMXServiceURL("service:jmx:rmi://localhost/jndi/rmi://localhost:1099/jmxrmi"), objectName);
         connectorServer.start();
         JMXServiceURL address = connectorServer.getAddress();
 
@@ -191,7 +201,8 @@ public class ConnectorServerTest
         int port = server.getLocalPort();
         server.close();
 
-        connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi://localhost:" + port + "/jndi/rmi:///jmxrmi"), objectName);
+        connectorServer = new ConnectorServer(
+            new JMXServiceURL("service:jmx:rmi://localhost:" + port + "/jndi/rmi:///jmxrmi"), objectName);
         connectorServer.start();
 
         JMXServiceURL address = connectorServer.getAddress();
@@ -215,7 +226,8 @@ public class ConnectorServerTest
         int port = serverSocket.getLocalPort();
         serverSocket.close();
 
-        connectorServer = new ConnectorServer(new JMXServiceURL("rmi", host, port, "/jndi/rmi://" + host + ":" + port + "/jmxrmi"), objectName);
+        connectorServer = new ConnectorServer(
+            new JMXServiceURL("rmi", host, port, "/jndi/rmi://" + host + ":" + port + "/jmxrmi"), objectName);
         connectorServer.start();
 
         JMXServiceURL address = connectorServer.getAddress();
@@ -226,7 +238,8 @@ public class ConnectorServerTest
     public void testJMXOverTLS() throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourcePath("keystore.p12").toString();
+        String keyStorePath =
+            MavenTestingUtils.getTestResourcePath("keystore.p12").toString();
         String keyStorePassword = "storepwd";
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword(keyStorePassword);
@@ -244,7 +257,11 @@ public class ConnectorServerTest
         System.setProperty("javax.net.ssl.trustStore", keyStorePath);
         System.setProperty("javax.net.ssl.trustStorePassword", keyStorePassword);
 
-        connectorServer = new ConnectorServer(new JMXServiceURL("rmi", null, 1100, "/jndi/rmi://localhost:1100/jmxrmi"), null, objectName, sslContextFactory);
+        connectorServer = new ConnectorServer(
+            new JMXServiceURL("rmi", null, 1100, "/jndi/rmi://localhost:1100/jmxrmi"),
+            null,
+            objectName,
+            sslContextFactory);
         connectorServer.start();
 
         // The client needs to talk TLS to the RMI registry to download

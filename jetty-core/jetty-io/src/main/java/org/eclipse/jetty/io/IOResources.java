@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
@@ -48,7 +47,8 @@ public class IOResources
      * @return a {@link RetainableByteBuffer} containing the resource's contents.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static RetainableByteBuffer toRetainableByteBuffer(Resource resource, ByteBufferPool bufferPool, boolean direct) throws IllegalArgumentException
+    public static RetainableByteBuffer toRetainableByteBuffer(
+                                                              Resource resource, ByteBufferPool bufferPool, boolean direct) throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -97,7 +97,8 @@ public class IOResources
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
 
-            ByteBufferAggregator aggregator = new ByteBufferAggregator(bufferPool, direct, length > -1 ? length : 4096, length > -1 ? length : Integer.MAX_VALUE);
+            ByteBufferAggregator aggregator = new ByteBufferAggregator(
+                bufferPool, direct, length > -1 ? length : 4096, length > -1 ? length : Integer.MAX_VALUE);
             byte[] byteArray = new byte[4096];
             while (true)
             {
@@ -128,7 +129,9 @@ public class IOResources
      * @return the {@link Content.Source}.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static Content.Source asContentSource(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct) throws IllegalArgumentException
+    public static Content.Source asContentSource(
+                                                 Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct)
+        throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -178,7 +181,9 @@ public class IOResources
      * @return the {@link Content.Source}.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static Content.Source asContentSource(Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length) throws IllegalArgumentException
+    public static Content.Source asContentSource(
+                                                 Resource resource, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length)
+        throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -206,7 +211,8 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
-            RangedInputStreamContentSource contentSource = new RangedInputStreamContentSource(inputStream, bufferPool, first, length);
+            RangedInputStreamContentSource contentSource =
+                new RangedInputStreamContentSource(inputStream, bufferPool, first, length);
             if (bufferSize > 0)
             {
                 contentSource.setBufferSize(bufferSize);
@@ -260,7 +266,14 @@ public class IOResources
      * @param callback the callback to notify when the copy is done.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, Callback callback) throws IllegalArgumentException
+    public static void copy(
+                            Resource resource,
+                            Content.Sink sink,
+                            ByteBufferPool bufferPool,
+                            int bufferSize,
+                            boolean direct,
+                            Callback callback)
+        throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -310,7 +323,16 @@ public class IOResources
      * @param callback the callback to notify when the copy is done.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static void copy(Resource resource, Content.Sink sink, ByteBufferPool bufferPool, int bufferSize, boolean direct, long first, long length, Callback callback) throws IllegalArgumentException
+    public static void copy(
+                            Resource resource,
+                            Content.Sink sink,
+                            ByteBufferPool bufferPool,
+                            int bufferSize,
+                            boolean direct,
+                            long first,
+                            long length,
+                            Callback callback)
+        throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -359,12 +381,23 @@ public class IOResources
         private RetainableByteBuffer retainableByteBuffer;
         private boolean terminated;
 
-        public PathToSinkCopier(Path path, Content.Sink sink, ByteBufferPool pool, int bufferSize, boolean direct, Callback callback) throws IOException
+        public PathToSinkCopier(
+                                Path path, Content.Sink sink, ByteBufferPool pool, int bufferSize, boolean direct, Callback callback)
+            throws IOException
         {
             this(path, sink, pool, bufferSize, direct, -1L, -1L, callback);
         }
 
-        public PathToSinkCopier(Path path, Content.Sink sink, ByteBufferPool pool, int bufferSize, boolean direct, long first, long length, Callback callback) throws IOException
+        public PathToSinkCopier(
+                                Path path,
+                                Content.Sink sink,
+                                ByteBufferPool pool,
+                                int bufferSize,
+                                boolean direct,
+                                long first,
+                                long length,
+                                Callback callback)
+            throws IOException
         {
             super(callback);
             this.channel = Files.newByteChannel(path);
@@ -489,7 +522,8 @@ public class IOResources
     {
         private long toRead;
 
-        public RangedInputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool, long first, long length) throws IOException
+        public RangedInputStreamContentSource(
+                                              InputStream inputStream, ByteBufferPool bufferPool, long first, long length) throws IOException
         {
             super(inputStream, bufferPool);
             inputStream.skipNBytes(first);

@@ -26,7 +26,6 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -426,7 +425,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                             // Don't grow larger than MAX_BUFFER_SIZE to avoid memory issues.
                             if (_out.capacity() < MAX_BUFFER_SIZE)
                             {
-                                long newBufferCapacity = Math.min((long)(_out.capacity() + b.remaining() * 1.5), MAX_BUFFER_SIZE);
+                                long newBufferCapacity =
+                                    Math.min((long)(_out.capacity() + b.remaining() * 1.5), MAX_BUFFER_SIZE);
                                 ByteBuffer n = BufferUtil.allocate(Math.toIntExact(newBufferCapacity));
                                 BufferUtil.append(n, _out);
                                 _out = n;

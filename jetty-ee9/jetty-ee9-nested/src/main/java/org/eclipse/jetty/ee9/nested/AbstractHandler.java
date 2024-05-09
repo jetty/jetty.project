@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -50,7 +49,9 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
     }
 
     @Override
-    public abstract void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
+    public abstract void handle(
+                                String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException;
 
     /**
      * Deprecated error page generation
@@ -62,10 +63,12 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
      * @throws ServletException if unable to handle the request or response due to underlying servlet issue
      */
     @Deprecated
-    protected void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    protected void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         Object o = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-        int code = (o instanceof Integer) ? ((Integer)o).intValue() : (o != null ? Integer.parseInt(o.toString()) : 500);
+        int code =
+            (o instanceof Integer) ? ((Integer)o).intValue() : (o != null ? Integer.parseInt(o.toString()) : 500);
         response.setStatus(code);
         baseRequest.setHandled(true);
     }
@@ -124,7 +127,9 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
     public abstract static class ErrorDispatchHandler extends AbstractHandler
     {
         @Override
-        public final void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public final void handle(
+                                 String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             if (baseRequest.getDispatcherType() == DispatcherType.ERROR)
                 doError(target, baseRequest, request, response);
@@ -144,6 +149,8 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
          * @throws ServletException if unable to handle the request or response due to underlying servlet issue
          */
         @Deprecated
-        protected abstract void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
+        protected abstract void doNonErrorHandle(
+                                                 String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException;
     }
 }

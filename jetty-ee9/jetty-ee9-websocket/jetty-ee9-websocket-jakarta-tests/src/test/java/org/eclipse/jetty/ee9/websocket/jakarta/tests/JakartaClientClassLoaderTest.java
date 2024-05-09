@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
-import java.net.URI;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -28,6 +29,9 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import java.net.URI;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
@@ -45,11 +49,6 @@ import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class JakartaClientClassLoaderTest
 {
@@ -86,7 +85,8 @@ public class JakartaClientClassLoaderTest
         @OnOpen
         public void onOpen(Session session)
         {
-            session.getAsyncRemote().sendText("ContextClassLoader: " + Thread.currentThread().getContextClassLoader());
+            session.getAsyncRemote()
+                .sendText("ContextClassLoader: " + Thread.currentThread().getContextClassLoader());
         }
 
         @OnMessage
@@ -113,7 +113,8 @@ public class JakartaClientClassLoaderTest
                 assertNotNull(recv);
                 resp.setStatus(HttpStatus.OK_200);
                 resp.getWriter().println(recv);
-                resp.getWriter().println("ClientClassLoader: " + clientContainer.getClass().getClassLoader());
+                resp.getWriter()
+                    .println("ClientClassLoader: " + clientContainer.getClass().getClassLoader());
             }
             catch (Exception e)
             {
@@ -183,7 +184,8 @@ public class JakartaClientClassLoaderTest
 
         // Verify that we used Servers version of WebSocketClient.
         ClassLoader serverClassLoader = server.getServer().getClass().getClassLoader();
-        assertThat(response.getContentAsString(), containsString("ClientClassLoader: " + serverClassLoader));    }
+        assertThat(response.getContentAsString(), containsString("ClientClassLoader: " + serverClassLoader));
+    }
 
     @Test
     public void websocketProvidedByWebApp() throws Exception

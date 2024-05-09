@@ -13,18 +13,21 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
@@ -36,10 +39,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test various {@link jakarta.websocket.Decoder.Text Decoder.Text} / {@link jakarta.websocket.Encoder.Text Encoder.Text} echo behavior of Java Primitives
@@ -314,14 +313,30 @@ public class PrimitivesTextEchoTest
         addCase(data, IntegerEchoSocket.class, Integer.toString(0), "0");
         addCase(data, IntegerEchoSocket.class, Integer.toString(100_000), "100000");
         addCase(data, IntegerEchoSocket.class, Integer.toString(-2_000_000), "-2000000");
-        addCase(data, IntegerEchoSocket.class, Integer.toString(Integer.MAX_VALUE), Integer.toString(Integer.MAX_VALUE));
-        addCase(data, IntegerEchoSocket.class, Integer.toString(Integer.MIN_VALUE), Integer.toString(Integer.MIN_VALUE));
+        addCase(
+            data,
+            IntegerEchoSocket.class,
+            Integer.toString(Integer.MAX_VALUE),
+            Integer.toString(Integer.MAX_VALUE));
+        addCase(
+            data,
+            IntegerEchoSocket.class,
+            Integer.toString(Integer.MIN_VALUE),
+            Integer.toString(Integer.MIN_VALUE));
 
         addCase(data, IntegerObjEchoSocket.class, Integer.toString(0), "0");
         addCase(data, IntegerObjEchoSocket.class, Integer.toString(100_000), "100000");
         addCase(data, IntegerObjEchoSocket.class, Integer.toString(-2_000_000), "-2000000");
-        addCase(data, IntegerObjEchoSocket.class, Integer.toString(Integer.MAX_VALUE), Integer.toString(Integer.MAX_VALUE));
-        addCase(data, IntegerObjEchoSocket.class, Integer.toString(Integer.MIN_VALUE), Integer.toString(Integer.MIN_VALUE));
+        addCase(
+            data,
+            IntegerObjEchoSocket.class,
+            Integer.toString(Integer.MAX_VALUE),
+            Integer.toString(Integer.MAX_VALUE));
+        addCase(
+            data,
+            IntegerObjEchoSocket.class,
+            Integer.toString(Integer.MIN_VALUE),
+            Integer.toString(Integer.MIN_VALUE));
 
         addCase(data, LongEchoSocket.class, Long.toString(0), "0");
         addCase(data, LongEchoSocket.class, Long.toString(100_000), "100000");

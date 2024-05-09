@@ -14,7 +14,6 @@
 package org.eclipse.jetty.security.openid;
 
 import java.util.Collection;
-
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Context;

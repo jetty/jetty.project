@@ -13,20 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Stream;
-
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.eclipse.jetty.util.AbstractTrie.requiredCapacity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -39,65 +25,47 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class TrieTest
 {
-    private static final String[] KEYS =
-    {
-        "hello",
-        "helloHello",
-        "He",
-        "HELL",
-        "wibble",
-        "Wobble",
-        "foo-bar",
-        "foo+bar",
-        "HELL4"
+    private static final String[] KEYS = {
+        "hello", "helloHello", "He", "HELL", "wibble", "Wobble", "foo-bar", "foo+bar", "HELL4"
     };
-    private static final String[] X_KEYS = Arrays.stream(KEYS).map(s -> "%" + s + "%").toArray(String[]::new);
-    private static final String[] NOT_KEYS =
-    {
-        "h",
-        "helloHell",
-        "helloHelloHELLO",
-        "wibble0",
-        "foo_bar",
-        "foo-bar-bob",
-        "HELL5",
-        "\u0000"
+    private static final String[] X_KEYS =
+        Arrays.stream(KEYS).map(s -> "%" + s + "%").toArray(String[]::new);
+    private static final String[] NOT_KEYS = {
+        "h", "helloHell", "helloHelloHELLO", "wibble0", "foo_bar", "foo-bar-bob", "HELL5", "\u0000"
     };
 
-    private static final String[] BEST_NOT_KEYS =
-    {
-        null,
-        "hello",
-        "helloHello",
-        "wibble",
-        null,
-        "foo-bar",
-        "HELL",
-        null,
+    private static final String[] BEST_NOT_KEYS = {
+        null, "hello", "helloHello", "wibble", null, "foo-bar", "HELL", null,
     };
 
-    private static final String[] BEST_NOT_KEYS_LOWER =
-    {
-        null,
-        "hello",
-        "hello",
-        "wibble",
-        null,
-        "foo-bar",
-        null,
-        null,
+    private static final String[] BEST_NOT_KEYS_LOWER = {
+        null, "hello", "hello", "wibble", null, "foo-bar", null, null,
     };
 
-    private static final String[] X_NOT_KEYS = Arrays.stream(NOT_KEYS).map(s -> "%" + s + "%%%%").toArray(String[]::new);
+    private static final String[] X_NOT_KEYS =
+        Arrays.stream(NOT_KEYS).map(s -> "%" + s + "%%%%").toArray(String[]::new);
 
     public static Stream<Arguments> implementations()
     {
         List<AbstractTrie<Integer>> impls = new ArrayList<>();
 
-        for (boolean caseSensitive : new boolean[] {true, false})
+        for (boolean caseSensitive : new boolean[]{true, false})
         {
             impls.add(new ArrayTrie<Integer>(caseSensitive, 128));
             impls.add(new ArrayTernaryTrie<Integer>(caseSensitive, 128));
@@ -120,7 +88,7 @@ public class TrieTest
     {
         List<AbstractTrie<Integer>> impls = new ArrayList<>();
 
-        for (boolean caseSensitive : new boolean[] {true, false})
+        for (boolean caseSensitive : new boolean[]{true, false})
         {
             impls.add(new ArrayTrie<Integer>(caseSensitive, 128));
             impls.add(new ArrayTernaryTrie<Integer>(caseSensitive, 128));
@@ -163,8 +131,12 @@ public class TrieTest
                 // Assert that all getBest() variants do work on full tries.
                 assertNotNull(trie.getBest(key), "key=" + key);
                 assertNotNull(trie.getBest(key.getBytes(StandardCharsets.US_ASCII), 0, key.length()), "key=" + key);
-                assertNotNull(trie.getBest(toAsciiDirectByteBuffer(key, 0), 0, key.length()), "key=" + key); // has to be a direct buffer
-                assertNull(trie.getBest(toAsciiDirectByteBuffer(key, key.length()), 0, key.length()), "key=" + key);  // has to be a direct buffer
+                assertNotNull(
+                    trie.getBest(toAsciiDirectByteBuffer(key, 0), 0, key.length()),
+                    "key=" + key); // has to be a direct buffer
+                assertNull(
+                    trie.getBest(toAsciiDirectByteBuffer(key, key.length()), 0, key.length()),
+                    "key=" + key); // has to be a direct buffer
                 break;
             }
         }
@@ -226,7 +198,10 @@ public class TrieTest
         for (int i = 0; i < KEYS.length; i++)
             assertThat(Integer.toString(i), trie.get(BufferUtil.toBuffer(X_KEYS[i]), 1, KEYS[i].length()), is(i));
         for (int i = 0; i < NOT_KEYS.length; i++)
-            assertThat(Integer.toString(i), trie.get(BufferUtil.toBuffer(X_NOT_KEYS[i]), 1, NOT_KEYS[i].length()), nullValue());
+            assertThat(
+                Integer.toString(i),
+                trie.get(BufferUtil.toBuffer(X_NOT_KEYS[i]), 1, NOT_KEYS[i].length()),
+                nullValue());
         for (int i = 0; i < KEYS.length; i++)
         {
             String k = X_KEYS[i].toLowerCase();
@@ -254,7 +229,10 @@ public class TrieTest
         for (int i = 0; i < KEYS.length; i++)
             assertThat(Integer.toString(i), trie.get(BufferUtil.toDirectBuffer(X_KEYS[i]), 1, KEYS[i].length()), is(i));
         for (int i = 0; i < NOT_KEYS.length; i++)
-            assertThat(Integer.toString(i), trie.get(BufferUtil.toDirectBuffer(X_NOT_KEYS[i]), 1, NOT_KEYS[i].length()), nullValue());
+            assertThat(
+                Integer.toString(i),
+                trie.get(BufferUtil.toDirectBuffer(X_NOT_KEYS[i]), 1, NOT_KEYS[i].length()),
+                nullValue());
         for (int i = 0; i < KEYS.length; i++)
         {
             String k = X_KEYS[i].toLowerCase();
@@ -362,11 +340,15 @@ public class TrieTest
         if (!(trie instanceof ArrayTrie<?> || trie instanceof ArrayTernaryTrie<?>))
             return;
 
-        assertFalse(trie.put("Large: This is a really large key and should blow the maximum size of the array trie as lots of nodes should already be used.", 99));
+        assertFalse(trie.put(
+            "Large: This is a really large key and should blow the maximum size of the array trie as lots of nodes should already be used.",
+            99));
         testGetString(trie);
         testGetBestArray(trie);
         testGetBestBuffer(trie);
-        assertNull(trie.getBest("Large: This is a really large key and should blow the maximum size of the array trie as lots of nodes should already be used."));
+        assertNull(
+            trie.getBest(
+                "Large: This is a really large key and should blow the maximum size of the array trie as lots of nodes should already be used."));
     }
 
     @Test
@@ -395,7 +377,9 @@ public class TrieTest
         assertThat(requiredCapacity(Set.of("111", "ADEF", "AQPR4", "AQZ", "999"), false), is(1 + 15));
         assertThat(requiredCapacity(Set.of("utf-16", "utf-8"), false), is(1 + 7));
         assertThat(requiredCapacity(Set.of("utf-16", "utf-8", "utf16", "utf8"), false), is(1 + 10));
-        assertThat(requiredCapacity(Set.of("utf-8", "utf8", "utf-16", "utf16", "iso-8859-1", "iso_8859_1"), false), is(1 + 27));
+        assertThat(
+            requiredCapacity(Set.of("utf-8", "utf8", "utf-16", "utf16", "iso-8859-1", "iso_8859_1"), false),
+            is(1 + 27));
     }
 
     @Test

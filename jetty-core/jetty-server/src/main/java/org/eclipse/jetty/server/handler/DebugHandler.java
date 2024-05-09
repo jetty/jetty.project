@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Locale;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.AbstractConnector;
@@ -60,10 +59,9 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         String ex = null;
         try
         {
-            print(name, "REQUEST " + Request.getRemoteAddr(request) +
-                " " + request.getMethod() +
-                " " + request.getHeaders().get("Cookie") +
-                "; " + request.getHeaders().get("User-Agent"));
+            print(
+                name,
+                "REQUEST " + Request.getRemoteAddr(request) + " " + request.getMethod() + " " + request.getHeaders().get("Cookie") + "; " + request.getHeaders().get("User-Agent"));
             thread.setName(name);
 
             return getHandler().handle(request, response, callback);
@@ -76,7 +74,9 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         finally
         {
             // TODO this should be done in a completion event
-            print(name, "RESPONSE " + response.getStatus() + (ex == null ? "" : ("/" + ex)) + " " + response.getHeaders().get(HttpHeader.CONTENT_TYPE));
+            print(
+                name,
+                "RESPONSE " + response.getStatus() + (ex == null ? "" : ("/" + ex)) + " " + response.getHeaders().get(HttpHeader.CONTENT_TYPE));
         }
     }
 

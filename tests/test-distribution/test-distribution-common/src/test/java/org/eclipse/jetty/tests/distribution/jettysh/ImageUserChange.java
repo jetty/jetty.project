@@ -22,19 +22,12 @@ public class ImageUserChange extends ImageFromDSL
 {
     public ImageUserChange(ImageOS osImage)
     {
-        super(osImage, "user-change", builder ->
-            builder
-                .from(osImage.getDockerImageName())
-                // setup "jetty" user and Jetty Base directory
-                .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh ; " +
-                    "mkdir -p ${JETTY_BASE} ; " +
-                    "useradd --home-dir=${JETTY_BASE} --shell=/bin/bash jetty ; " +
-                    "chown jetty:jetty ${JETTY_BASE} ; " +
-                    "chmod a+w ${JETTY_BASE} ; " +
-                    "echo \"JETTY_USER=jetty\" >> /etc/default/jetty") // user change
-                .user("jetty")
-                // Configure Jetty Base
-                .workDir("${JETTY_BASE}")
-                .build());
+        super(osImage, "user-change", builder -> builder.from(osImage.getDockerImageName())
+            // setup "jetty" user and Jetty Base directory
+            .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh ; " + "mkdir -p ${JETTY_BASE} ; " + "useradd --home-dir=${JETTY_BASE} --shell=/bin/bash jetty ; " + "chown jetty:jetty ${JETTY_BASE} ; " + "chmod a+w ${JETTY_BASE} ; " + "echo \"JETTY_USER=jetty\" >> /etc/default/jetty") // user change
+            .user("jetty")
+            // Configure Jetty Base
+            .workDir("${JETTY_BASE}")
+            .build());
     }
 }

@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.tests.server;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint;
@@ -44,10 +47,6 @@ import org.eclipse.jetty.websocket.core.util.TextUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class PartialListenerTest
 {
@@ -280,7 +279,8 @@ public class PartialListenerTest
         public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
         {
             // our testcases always send bytes limited in the US-ASCII range.
-            partialEvents.offer(String.format("BINARY[payload=<<<%s>>>, fin=%b]", BufferUtil.toUTF8String(payload), fin));
+            partialEvents.offer(
+                String.format("BINARY[payload=<<<%s>>>, fin=%b]", BufferUtil.toUTF8String(payload), fin));
         }
 
         @Override

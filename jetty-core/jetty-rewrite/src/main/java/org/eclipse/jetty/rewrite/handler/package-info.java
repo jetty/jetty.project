@@ -15,4 +15,3 @@
  * Jetty Rewrite : Rewrite Handler and Rules for Jetty
  */
 package org.eclipse.jetty.rewrite.handler;
-

@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.util.EventListener;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.EventListener;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ListenerHolderTest
 {
@@ -32,13 +31,13 @@ public class ListenerHolderTest
     {
         try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, ServletContextHandler.class))
         {
-            //test without a ServletContextHandler or current ContextHandler
+            // test without a ServletContextHandler or current ContextHandler
             ListenerHolder holder = new ListenerHolder();
             holder.setHeldClass(DummyListener.class);
             EventListener listener = holder.createInstance();
             assertNotNull(listener);
 
-            //test with a ServletContextHandler
+            // test with a ServletContextHandler
             Server server = new Server();
             ServletContextHandler context = new ServletContextHandler();
             server.setHandler(context);

@@ -25,5 +25,6 @@ module org.eclipse.jetty.ee9.security.openid
 
     exports org.eclipse.jetty.ee9.security.openid;
 
-    provides Authenticator.Factory with OpenIdAuthenticatorFactory;
+    provides Authenticator.Factory with
+        OpenIdAuthenticatorFactory;
 }

@@ -23,7 +23,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.start.BaseBuilder;
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.Module;
@@ -102,7 +101,8 @@ public class StartIniBuilder implements BaseBuilder.Config
         if (module.hasIniTemplate() || !module.isTransitive())
         {
             // Append to start.ini
-            try (BufferedWriter writer = Files.newBufferedWriter(startIni, StandardCharsets.UTF_8, StandardOpenOption.APPEND, StandardOpenOption.CREATE))
+            try (BufferedWriter writer = Files.newBufferedWriter(
+                startIni, StandardCharsets.UTF_8, StandardOpenOption.APPEND, StandardOpenOption.CREATE))
             {
                 module.writeIniSection(writer, props);
             }

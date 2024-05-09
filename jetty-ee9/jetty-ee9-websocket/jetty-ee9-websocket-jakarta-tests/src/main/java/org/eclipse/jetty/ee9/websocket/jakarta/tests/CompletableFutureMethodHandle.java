@@ -17,7 +17,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
@@ -28,7 +27,8 @@ public class CompletableFutureMethodHandle
     {
         Method method = ReflectUtils.findMethod(CompletableFuture.class, "complete", type);
         MethodHandles.Lookup lookup = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
-        MethodHandle completeHandle = InvokerUtils.mutatedInvoker(lookup, CompletableFuture.class, method, new InvokerUtils.Arg(type));
+        MethodHandle completeHandle =
+            InvokerUtils.mutatedInvoker(lookup, CompletableFuture.class, method, new InvokerUtils.Arg(type));
         return completeHandle.bindTo(future);
     }
 }

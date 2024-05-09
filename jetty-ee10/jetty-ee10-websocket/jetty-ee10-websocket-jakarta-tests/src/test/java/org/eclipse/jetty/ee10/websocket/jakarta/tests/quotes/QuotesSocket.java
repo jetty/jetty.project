@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.quotes;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.OnClose;
@@ -23,6 +20,8 @@ import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSEventTracker;
 
 @ClientEndpoint(decoders = QuotesDecoder.class, subprotocols = "quotes")

@@ -13,10 +13,6 @@
 
 package org.example;
 
-import java.io.IOException;
-import javax.naming.InitialContext;
-import javax.sql.DataSource;
-
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
@@ -24,6 +20,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.UserTransaction;
+import java.io.IOException;
+import javax.naming.InitialContext;
+import javax.sql.DataSource;
 
 /**
  * JNDITest
@@ -58,7 +57,8 @@ public class JNDITest extends HttpServlet
 
     private void postConstruct()
     {
-        resourceNameMappingInjectionResult = "Injection of resource to locally mapped name (java:comp/env/mydatasource as java:comp/env/mydatasource1): " + (myDS != null ? "<span class=\"pass\">PASS</span>" : "<span class=\"fail\">FAIL</span>");
+        resourceNameMappingInjectionResult =
+            "Injection of resource to locally mapped name (java:comp/env/mydatasource as java:comp/env/mydatasource1): " + (myDS != null ? "<span class=\"pass\">PASS</span>" : "<span class=\"fail\">FAIL</span>");
         envEntryOverrideResult = "Override of EnvEntry in jetty-env.xml (java:comp/env/wiggle): " + (wiggle == 55.0 ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL(expected 55.0, got " + wiggle + ")") + "</span>";
         postConstructResult = "PostConstruct method called: <span class=\"pass\">PASS</span>";
     }

@@ -13,13 +13,19 @@
 
 package org.eclipse.jetty.test.jmx;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.lang.management.ManagementFactory;
 import java.util.Set;
 import javax.management.Attribute;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -32,13 +38,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerJMXTest
 {
@@ -81,7 +80,8 @@ public class ServerJMXTest
         // Verify the Handler is there.
         // It is an anonymous class of this test class something like ServerJMXTest$1,
         // so its domain will be the package name of this test class.
-        Set<ObjectName> objectNames = mbeanServer.queryNames(ObjectName.getInstance(getClass().getPackageName() + ":*"), null);
+        Set<ObjectName> objectNames =
+            mbeanServer.queryNames(ObjectName.getInstance(getClass().getPackageName() + ":*"), null);
         assertNotNull(objectNames);
         assertEquals(1, objectNames.size());
         ObjectName objectName = objectNames.iterator().next();
@@ -112,7 +112,8 @@ public class ServerJMXTest
         });
         start(context);
 
-        Set<ObjectName> objectNames = mbeanServer.queryNames(ObjectName.getInstance(context.getClass().getPackageName() + ":*"), null);
+        Set<ObjectName> objectNames =
+            mbeanServer.queryNames(ObjectName.getInstance(context.getClass().getPackageName() + ":*"), null);
         assertNotNull(objectNames);
         assertEquals(1, objectNames.size());
         ObjectName contextHandlerObjectName = objectNames.iterator().next();
@@ -160,7 +161,8 @@ public class ServerJMXTest
         context.setErrorHandler(new ErrorHandler());
         start(context);
 
-        Set<ObjectName> objectNames = mbeanServer.queryNames(ObjectName.getInstance(context.getClass().getPackageName() + ":type=contexthandler,*"), null);
+        Set<ObjectName> objectNames = mbeanServer.queryNames(
+            ObjectName.getInstance(context.getClass().getPackageName() + ":type=contexthandler,*"), null);
         assertNotNull(objectNames);
         assertEquals(1, objectNames.size());
         ObjectName contextHandlerObjectName = objectNames.iterator().next();
@@ -171,7 +173,8 @@ public class ServerJMXTest
         Object displayNameValue = mbeanServer.getAttribute(contextHandlerObjectName, "displayName");
         assertEquals(displayName, displayNameValue);
 
-        objectNames = mbeanServer.queryNames(ObjectName.getInstance(context.getClass().getPackageName() + ":type=errorhandler,*"), null);
+        objectNames = mbeanServer.queryNames(
+            ObjectName.getInstance(context.getClass().getPackageName() + ":type=errorhandler,*"), null);
         assertEquals(1, objectNames.size());
         ObjectName errorHandlerObjectName = objectNames.iterator().next();
 
@@ -191,7 +194,7 @@ public class ServerJMXTest
         assertSame(handler, context.getErrorHandler());
     }
 
-        @Test
+    @Test
     public void testContextHandlerOperations() throws Exception
     {
         ContextHandler context = new ContextHandler("/ctx");
@@ -207,7 +210,8 @@ public class ServerJMXTest
         context.setHandler(handler);
         start(context);
 
-        Set<ObjectName> objectNames = mbeanServer.queryNames(ObjectName.getInstance(context.getClass().getPackageName() + ":*"), null);
+        Set<ObjectName> objectNames =
+            mbeanServer.queryNames(ObjectName.getInstance(context.getClass().getPackageName() + ":*"), null);
         assertNotNull(objectNames);
         assertEquals(1, objectNames.size());
         ObjectName contextHandlerObjectName = objectNames.iterator().next();

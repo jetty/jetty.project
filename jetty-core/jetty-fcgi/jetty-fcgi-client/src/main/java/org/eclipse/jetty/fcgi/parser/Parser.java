@@ -15,7 +15,6 @@ package org.eclipse.jetty.fcgi.parser;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.slf4j.Logger;
@@ -107,7 +106,11 @@ public abstract class Parser
                         {
                             ContentParser.Result result = contentParser.parse(buffer);
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Parsed request {} content {} result={}", headerParser.getRequest(), headerParser.getFrameType(), result);
+                                LOG.debug(
+                                    "Parsed request {} content {} result={}",
+                                    headerParser.getRequest(),
+                                    headerParser.getFrameType(),
+                                    result);
 
                             if (result == ContentParser.Result.PENDING)
                             {
@@ -206,6 +209,9 @@ public abstract class Parser
 
     private enum State
     {
-        INITIAL, HEADER, CONTENT, PADDING
+        INITIAL,
+        HEADER,
+        CONTENT,
+        PADDING
     }
 }

@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Condition;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -59,7 +58,10 @@ public class ManagedSession implements Session
      */
     public enum State
     {
-        VALID, INVALID, INVALIDATING, CHANGING
+        VALID,
+        INVALID,
+        INVALIDATING,
+        CHANGING
     }
 
     /**
@@ -68,9 +70,10 @@ public class ManagedSession implements Session
      */
     public enum IdState
     {
-        SET, CHANGING
+        SET,
+        CHANGING
     }
-    
+
     private final API _api;
 
     protected final SessionData _sessionData; // the actual data associated with
@@ -96,7 +99,7 @@ public class ManagedSession implements Session
     private final List<ValueListener> _valueListenerList = new CopyOnWriteArrayList<>();
 
     /**
-     * Create a new session object. The session could be an 
+     * Create a new session object. The session could be an
      * entirely new session, or could be being re-inflated from
      * persistent store.
      *
@@ -130,7 +133,7 @@ public class ManagedSession implements Session
     {
         return (T)_api;
     }
-    
+
     /**
      * Returns the current number of requests that are active in the Session.
      *
@@ -155,7 +158,7 @@ public class ManagedSession implements Session
         onSetCookieGenerated();
         return sessionCookie;
     }
-    
+
     /**
      * Set the time that the cookie was set and clear the idChanged flag.
      */
@@ -213,8 +216,8 @@ public class ManagedSession implements Session
             // start the inactivity timer if necessary
             if (_requests == 0)
             {
-                //update the expiry time to take account of the time all requests spent inside of the
-                //session.
+                // update the expiry time to take account of the time all requests spent inside of the
+                // session.
                 long now = System.currentTimeMillis();
                 _sessionData.calcAndSetExpiry(now);
                 _sessionInactivityTimer.schedule(calculateInactivityTimeout(now));
@@ -275,15 +278,15 @@ public class ManagedSession implements Session
      */
     public void onSessionActivation()
     {
-        //A passivate listener might remove a non-serializable attribute that
-        //the activate listener might put back in again, which would spuriously
-        //set the dirty bit to true, causing another round of passivate/activate
-        //when the request exits. The store clears the dirty bit if it does a
-        //save, so ensure dirty flag is set to the value determined by the store,
-        //not a passivation listener.
+        // A passivate listener might remove a non-serializable attribute that
+        // the activate listener might put back in again, which would spuriously
+        // set the dirty bit to true, causing another round of passivate/activate
+        // when the request exits. The store clears the dirty bit if it does a
+        // save, so ensure dirty flag is set to the value determined by the store,
+        // not a passivation listener.
         boolean dirty = getSessionData().isDirty();
-        
-        try 
+
+        try
         {
             for (Session.ValueListener listener : _valueListenerList)
                 listener.onSessionActivation(this);
@@ -383,10 +386,10 @@ public class ManagedSession implements Session
         {
             _sessionData.setMaxInactiveMs((long)secs * 1000L);
             _sessionData.calcAndSetExpiry();
-            //dirty metadata writes can be skipped, but changing the
-            //maxinactiveinterval should write the session out because
-            //it may affect the session on other nodes, or on the same
-            //node in the case of the nullsessioncache
+            // dirty metadata writes can be skipped, but changing the
+            // maxinactiveinterval should write the session out because
+            // it may affect the session on other nodes, or on the same
+            // node in the case of the nullsessioncache
             _sessionData.setDirty(true);
 
             if (LOG.isDebugEnabled())
@@ -414,7 +417,9 @@ public class ManagedSession implements Session
 
         try (AutoLock ignored = _lock.lock())
         {
-            time = getSessionManager().calculateInactivityTimeout(getId(), _sessionData.getExpiry() - now, _sessionData.getMaxInactiveMs());
+            time = getSessionManager()
+                .calculateInactivityTimeout(
+                    getId(), _sessionData.getExpiry() - now, _sessionData.getMaxInactiveMs());
         }
         return time;
     }
@@ -442,12 +447,7 @@ public class ManagedSession implements Session
     protected void checkValidForWrite() throws IllegalStateException
     {
         if (_state == State.INVALID)
-            throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId() +
-                " created=" + _sessionData.getCreated() +
-                " accessed=" + _sessionData.getAccessed() +
-                " lastaccessed=" + _sessionData.getLastAccessed() +
-                " maxInactiveMs=" + _sessionData.getMaxInactiveMs() +
-                " expiry=" + _sessionData.getExpiry());
+            throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId() + " created=" + _sessionData.getCreated() + " accessed=" + _sessionData.getAccessed() + " lastaccessed=" + _sessionData.getLastAccessed() + " maxInactiveMs=" + _sessionData.getMaxInactiveMs() + " expiry=" + _sessionData.getExpiry());
 
         if (_state == State.INVALIDATING)
             return; // in the process of being invalidated, listeners may try to
@@ -465,12 +465,7 @@ public class ManagedSession implements Session
     protected void checkValidForRead() throws IllegalStateException
     {
         if (_state == State.INVALID)
-            throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() +
-                " created=" + _sessionData.getCreated() +
-                " accessed=" + _sessionData.getAccessed() +
-                " lastaccessed=" + _sessionData.getLastAccessed() +
-                " maxInactiveMs=" + _sessionData.getMaxInactiveMs() +
-                " expiry=" + _sessionData.getExpiry());
+            throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() + " created=" + _sessionData.getCreated() + " accessed=" + _sessionData.getAccessed() + " lastaccessed=" + _sessionData.getLastAccessed() + " maxInactiveMs=" + _sessionData.getMaxInactiveMs() + " expiry=" + _sessionData.getExpiry());
 
         if (_state == State.INVALIDATING)
             return;
@@ -620,7 +615,6 @@ public class ManagedSession implements Session
      * as a request enters the session if the session has expired, or called by
      * manager as a result of scavenger expiring session
      */
-
     @Override
     public void invalidate()
     {
@@ -820,13 +814,9 @@ public class ManagedSession implements Session
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return String.format("%s@%x{id=%s,x=%s,req=%d,res=%b}",
-                getClass().getSimpleName(),
-                hashCode(),
-                _sessionData.getId(),
-                _extendedId,
-                _requests,
-                _resident);
+            return String.format(
+                "%s@%x{id=%s,x=%s,req=%d,res=%b}",
+                getClass().getSimpleName(), hashCode(), _sessionData.getId(), _extendedId, _requests, _resident);
         }
     }
 }

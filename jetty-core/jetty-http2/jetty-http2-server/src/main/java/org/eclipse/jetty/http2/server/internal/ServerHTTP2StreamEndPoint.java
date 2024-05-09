@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.server.internal;
 
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
-
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.HTTP2StreamEndPoint;

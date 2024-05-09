@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.encoders;
 
+import jakarta.websocket.Encoder;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import jakarta.websocket.Encoder;
 
 /**
  * A {@code Future&lt;Void&gt;} that is already failed as a result of an Encode error
@@ -30,7 +29,9 @@ public class EncodeFailedFuture implements Future<Void>
 
     public EncodeFailedFuture(Object data, Encoder encoder, Class<?> encoderType, Throwable cause)
     {
-        this.msg = String.format("Unable to encode %s using %s as %s", data.getClass().getName(), encoder.getClass().getName(), encoderType.getName());
+        this.msg = String.format(
+            "Unable to encode %s using %s as %s",
+            data.getClass().getName(), encoder.getClass().getName(), encoderType.getName());
         this.cause = cause;
     }
 

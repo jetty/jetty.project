@@ -13,20 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.ToIntFunction;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.FIRST;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.RANDOM;
@@ -43,6 +29,19 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.ToIntFunction;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ConcurrentPoolTest
 {
@@ -62,8 +61,7 @@ public class ConcurrentPoolTest
             (maxEntries, maxMultiplex) -> new ConcurrentPool<>(FIRST, maxEntries, maxMultiplex),
             (maxEntries, maxMultiplex) -> new ConcurrentPool<>(RANDOM, maxEntries, maxMultiplex),
             (maxEntries, maxMultiplex) -> new ConcurrentPool<>(THREAD_ID, maxEntries, maxMultiplex),
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(ROUND_ROBIN, maxEntries, maxMultiplex)
-        );
+            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(ROUND_ROBIN, maxEntries, maxMultiplex));
     }
 
     @ParameterizedTest
@@ -332,9 +330,7 @@ public class ConcurrentPoolTest
         assertThat(pool.stream().count(), is(0L));
         pool.reserve().enable("aaa", false);
         pool.reserve().enable("bbb", false);
-        List<String> objects = pool.stream()
-            .map(Pool.Entry::getPooled)
-            .toList();
+        List<String> objects = pool.stream().map(Pool.Entry::getPooled).toList();
         assertThat(objects, equalTo(Arrays.asList("aaa", "bbb")));
         assertThat(pool.size(), is(2));
     }
@@ -522,10 +518,12 @@ public class ConcurrentPoolTest
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getInUseCount(), is(2));
 
-        assertThat(pool.acquire(e ->
-        {
-            throw new IllegalStateException();
-        }), nullValue());
+        assertThat(
+            pool.acquire(e ->
+            {
+                throw new IllegalStateException();
+            }),
+            nullValue());
 
         e2.release();
         assertThat(pool.size(), is(2));
@@ -543,10 +541,12 @@ public class ConcurrentPoolTest
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getInUseCount(), is(1));
 
-        assertThrows(IllegalStateException.class, () -> pool.acquire(e ->
-        {
-            throw new IllegalStateException();
-        }));
+        assertThrows(
+            IllegalStateException.class,
+            () -> pool.acquire(e ->
+            {
+                throw new IllegalStateException();
+            }));
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getInUseCount(), is(1));
@@ -616,12 +616,15 @@ public class ConcurrentPoolTest
 
     private void waitForGC(ConcurrentPool<String> pool, int size)
     {
-        await().atMost(5, TimeUnit.SECONDS).until(() ->
-        {
-            System.gc();
-            pool.sweep();
-            return pool.size();
-        }, is(size));
+        await().atMost(5, TimeUnit.SECONDS)
+            .until(
+                () ->
+                {
+                    System.gc();
+                    pool.sweep();
+                    return pool.size();
+                },
+                is(size));
     }
 
     @ParameterizedTest
@@ -732,12 +735,15 @@ public class ConcurrentPoolTest
 
         e0 = null;
         AtomicReference<Pool.Entry<String>> entry = new AtomicReference<>();
-        await().atMost(5, TimeUnit.SECONDS).until(() ->
-        {
-            System.gc();
-            entry.set(pool.reserve());
-            return entry.get();
-        }, notNullValue());
+        await().atMost(5, TimeUnit.SECONDS)
+            .until(
+                () ->
+                {
+                    System.gc();
+                    entry.set(pool.reserve());
+                    return entry.get();
+                },
+                notNullValue());
 
         Pool.Entry<String> e3 = entry.get();
         assertThat(e3, notNullValue());

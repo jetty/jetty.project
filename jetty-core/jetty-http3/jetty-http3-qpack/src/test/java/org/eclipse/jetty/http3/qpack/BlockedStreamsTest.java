@@ -13,8 +13,19 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
+import static org.eclipse.jetty.http3.qpack.QpackTestUtil.encode;
+import static org.eclipse.jetty.http3.qpack.QpackTestUtil.toBuffer;
+import static org.eclipse.jetty.http3.qpack.QpackTestUtil.toMetaData;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.QpackException.SessionException;
@@ -27,18 +38,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.eclipse.jetty.http3.qpack.QpackTestUtil.encode;
-import static org.eclipse.jetty.http3.qpack.QpackTestUtil.toBuffer;
-import static org.eclipse.jetty.http3.qpack.QpackTestUtil.toMetaData;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BlockedStreamsTest
 {
@@ -138,7 +137,8 @@ public class BlockedStreamsTest
         assertNull(_decoderHandler.getMetaData());
         assertNull(_decoderHandler.getInstruction());
 
-        // The encoder hasn't received any InsertCountIncrementInstruction and so it thinks there are two streams blocked.
+        // The encoder hasn't received any InsertCountIncrementInstruction and so it thinks there are two streams
+        // blocked.
         // It should only encode literal entries to not risk blocking another stream on the decoder.
         HttpField entry3 = new HttpField("name3", "value3");
         buffer = encode(_encoder, 3, toMetaData("GET", "/", "http", entry3));

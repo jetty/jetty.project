@@ -15,4 +15,3 @@
  * Jetty Util : Simple JSON Utility classes
  */
 package org.eclipse.jetty.util.ajax;
-

@@ -55,8 +55,7 @@ import java.util.ListIterator;
  * @see java.util.List
  */
 @SuppressWarnings("serial")
-public class LazyList
-    implements Cloneable, Serializable
+public class LazyList implements Cloneable, Serializable
 {
     private static final String[] __EMPTY_STRING_ARRAY = new String[0];
 
@@ -305,7 +304,7 @@ public class LazyList
         {
             List<?> l = (List<?>)list;
             String[] a = new String[l.size()];
-            for (int i = l.size(); i-- > 0; )
+            for (int i = l.size(); i-- > 0;)
             {
                 Object o = l.get(i);
                 if (o != null)
@@ -447,4 +446,3 @@ public class LazyList
         return l.listIterator();
     }
 }
-

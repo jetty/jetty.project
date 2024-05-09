@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.osgi.test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
 public class SimpleEchoSocket
 {
     private final CountDownLatch closeLatch;
+
     @SuppressWarnings("unused")
     private Session session;
 

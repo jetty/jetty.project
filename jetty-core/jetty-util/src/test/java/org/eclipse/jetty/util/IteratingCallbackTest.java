@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IteratingCallbackTest
 {
@@ -117,16 +116,19 @@ public class IteratingCallbackTest
         };
 
         cb.iterate();
-        scheduler.schedule(new Runnable()
-        {
-            @Override
-            public void run()
+        scheduler.schedule(
+            new Runnable()
             {
-                cb.iterate();
-                if (!cb.isSucceeded())
-                    scheduler.schedule(this, 50, TimeUnit.MILLISECONDS);
-            }
-        }, 49, TimeUnit.MILLISECONDS);
+                @Override
+                public void run()
+                {
+                    cb.iterate();
+                    if (!cb.isSucceeded())
+                        scheduler.schedule(this, 50, TimeUnit.MILLISECONDS);
+                }
+            },
+            49,
+            TimeUnit.MILLISECONDS);
 
         assertTrue(cb.waitForComplete());
 
@@ -212,14 +214,17 @@ public class IteratingCallbackTest
                         return Action.SCHEDULED;
 
                     case 3:
-                        scheduler.schedule(new Runnable()
-                        {
-                            @Override
-                            public void run()
+                        scheduler.schedule(
+                            new Runnable()
                             {
-                                idle.countDown();
-                            }
-                        }, 5, TimeUnit.MILLISECONDS);
+                                @Override
+                                public void run()
+                                {
+                                    idle.countDown();
+                                }
+                            },
+                            5,
+                            TimeUnit.MILLISECONDS);
                         return Action.IDLE;
 
                     case 2:

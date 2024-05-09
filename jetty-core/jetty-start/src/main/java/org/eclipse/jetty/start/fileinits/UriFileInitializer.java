@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.StartArgs;
 
@@ -43,7 +42,8 @@ public class UriFileInitializer extends DownloadFileInitializer
         Path destination = getDestination(uri, location);
 
         if (Files.isDirectory(destination))
-            destination = destination.resolve(uri.getSchemeSpecificPart().substring(uri.getRawSchemeSpecificPart().lastIndexOf('/') + 1));
+            destination = destination.resolve(uri.getSchemeSpecificPart()
+                .substring(uri.getRawSchemeSpecificPart().lastIndexOf('/') + 1));
 
         if (isFilePresent(destination))
             return false;

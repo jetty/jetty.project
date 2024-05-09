@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
 import java.util.function.LongSupplier;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -205,7 +204,7 @@ public class HpackDecoder
                     else
                         name = toISO88591String(buffer, length);
                     check:
-                    for (int i = name.length(); i-- > 0; )
+                    for (int i = name.length(); i-- > 0;)
                     {
                         char c = name.charAt(i);
                         if (c > 0xff)
@@ -284,7 +283,8 @@ public class HpackDecoder
 
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("decoded '{}' by {}/{}/{}",
+                    LOG.debug(
+                        "decoded '{}' by {}/{}/{}",
                         field,
                         nameIndex > 0 ? "IdxName" : (huffmanName ? "HuffName" : "LitName"),
                         huffmanValue ? "HuffVal" : "LitVal",
@@ -320,7 +320,8 @@ public class HpackDecoder
         }
         catch (EncodingException e)
         {
-            HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
+            HpackException.CompressionException compressionException =
+                new HpackException.CompressionException(e.getMessage());
             compressionException.initCause(e);
             throw compressionException;
         }
@@ -342,7 +343,8 @@ public class HpackDecoder
         }
         catch (EncodingException e)
         {
-            HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
+            HpackException.CompressionException compressionException =
+                new HpackException.CompressionException(e.getMessage());
             compressionException.initCause(e);
             throw compressionException;
         }

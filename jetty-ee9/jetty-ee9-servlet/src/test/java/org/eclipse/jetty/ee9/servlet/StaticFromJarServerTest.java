@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -36,10 +39,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class StaticFromJarServerTest
 {
@@ -104,9 +103,7 @@ public class StaticFromJarServerTest
     public void testGetDir0Test0() throws Exception
     {
         URI uri = server.getURI().resolve("/dir0/test0.txt");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
@@ -121,9 +118,7 @@ public class StaticFromJarServerTest
     public void testGetDir0Listing() throws Exception
     {
         URI uri = server.getURI().resolve("/dir0/");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
@@ -139,9 +134,7 @@ public class StaticFromJarServerTest
     public void testGetDir1Test1() throws Exception
     {
         URI uri = server.getURI().resolve("/dir1/test1.txt");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);

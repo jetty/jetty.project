@@ -13,18 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.thread.AutoLock;
-import org.junit.jupiter.api.Test;
-
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,6 +24,17 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.junit.jupiter.api.Test;
+
 public class AsyncContentProducerTest extends AbstractContentProducerTest
 {
     @Test
@@ -44,16 +43,23 @@ public class AsyncContentProducerTest extends AbstractContentProducerTest
         List<Content.Chunk> chunks = List.of(
             Content.Chunk.from(ByteBuffer.wrap("1 hello 1".getBytes(US_ASCII)), false),
             Content.Chunk.from(ByteBuffer.wrap("2 howdy 2".getBytes(US_ASCII)), false),
-            Content.Chunk.from(ByteBuffer.wrap("3 hey ya 3".getBytes(US_ASCII)), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap("3 hey ya 3".getBytes(US_ASCII)), true));
         int totalContentBytesCount = countRemaining(chunks);
         String originalContentString = asString(chunks);
 
         ArrayDelayedServletChannel servletChannel = new ArrayDelayedServletChannel(chunks);
         ContentProducer contentProducer = servletChannel.getAsyncContentProducer();
 
-        Throwable error = readAndAssertContent(contentProducer, servletChannel.getLock(), servletChannel.getContentPresenceCheckSupplier(), totalContentBytesCount, originalContentString,
-            chunks.size() * 2, 0, 3, c -> fail(c.getFailure()));
+        Throwable error = readAndAssertContent(
+            contentProducer,
+            servletChannel.getLock(),
+            servletChannel.getContentPresenceCheckSupplier(),
+            totalContentBytesCount,
+            originalContentString,
+            chunks.size() * 2,
+            0,
+            3,
+            c -> fail(c.getFailure()));
         assertThat(error, nullValue());
     }
 
@@ -64,17 +70,23 @@ public class AsyncContentProducerTest extends AbstractContentProducerTest
             Content.Chunk.from(ByteBuffer.wrap("1 hello 1".getBytes(US_ASCII)), false),
             Content.Chunk.from(ByteBuffer.wrap("2 howdy 2".getBytes(US_ASCII)), false),
             Content.Chunk.from(ByteBuffer.wrap("3 hey ya 3".getBytes(US_ASCII)), false),
-            Content.Chunk.EOF
-        );
+            Content.Chunk.EOF);
         int totalContentBytesCount = countRemaining(chunks);
         String originalContentString = asString(chunks);
 
         ArrayDelayedServletChannel servletChannel = new ArrayDelayedServletChannel(chunks);
         ContentProducer contentProducer = servletChannel.getAsyncContentProducer();
 
-        Throwable error = readAndAssertContent(contentProducer, servletChannel.getLock(), servletChannel.getContentPresenceCheckSupplier(),
-            totalContentBytesCount, originalContentString,
-            chunks.size() * 2, 0, 4, c -> fail(c.getFailure()));
+        Throwable error = readAndAssertContent(
+            contentProducer,
+            servletChannel.getLock(),
+            servletChannel.getContentPresenceCheckSupplier(),
+            totalContentBytesCount,
+            originalContentString,
+            chunks.size() * 2,
+            0,
+            4,
+            c -> fail(c.getFailure()));
         assertThat(error, nullValue());
     }
 
@@ -86,17 +98,23 @@ public class AsyncContentProducerTest extends AbstractContentProducerTest
             Content.Chunk.from(ByteBuffer.wrap("1 hello 1".getBytes(US_ASCII)), false),
             Content.Chunk.from(ByteBuffer.wrap("2 howdy 2".getBytes(US_ASCII)), false),
             Content.Chunk.from(ByteBuffer.wrap("3 hey ya 3".getBytes(US_ASCII)), false),
-            Content.Chunk.from(expectedError, true)
-        );
+            Content.Chunk.from(expectedError, true));
         int totalContentBytesCount = countRemaining(chunks);
         String originalContentString = asString(chunks);
 
         ArrayDelayedServletChannel servletChannel = new ArrayDelayedServletChannel(chunks);
         ContentProducer contentProducer = servletChannel.getAsyncContentProducer();
 
-        Throwable error = readAndAssertContent(contentProducer, servletChannel.getLock(), servletChannel.getContentPresenceCheckSupplier(),
-            totalContentBytesCount, originalContentString,
-            chunks.size() * 2, 0, 4, c -> fail(c.getFailure()));
+        Throwable error = readAndAssertContent(
+            contentProducer,
+            servletChannel.getLock(),
+            servletChannel.getContentPresenceCheckSupplier(),
+            totalContentBytesCount,
+            originalContentString,
+            chunks.size() * 2,
+            0,
+            4,
+            c -> fail(c.getFailure()));
         assertThat(error, is(expectedError));
     }
 
@@ -110,17 +128,23 @@ public class AsyncContentProducerTest extends AbstractContentProducerTest
             Content.Chunk.from(new TimeoutException("timeout 2"), false),
             Content.Chunk.from(ByteBuffer.wrap("3 hey ya 3".getBytes(US_ASCII)), false),
             Content.Chunk.from(new TimeoutException("timeout 3"), false),
-            Content.Chunk.EOF
-        );
+            Content.Chunk.EOF);
         int totalContentBytesCount = countRemaining(chunks);
         String originalContentString = asString(chunks);
 
         ArrayDelayedServletChannel servletChannel = new ArrayDelayedServletChannel(chunks);
         ContentProducer contentProducer = servletChannel.getAsyncContentProducer();
 
-        Throwable error = readAndAssertContent(contentProducer, servletChannel.getLock(), servletChannel.getContentPresenceCheckSupplier(),
-            totalContentBytesCount, originalContentString,
-            chunks.size() * 2, 0, 7, new Consumer<>()
+        Throwable error = readAndAssertContent(
+            contentProducer,
+            servletChannel.getLock(),
+            servletChannel.getContentPresenceCheckSupplier(),
+            totalContentBytesCount,
+            originalContentString,
+            chunks.size() * 2,
+            0,
+            7,
+            new Consumer<>()
             {
                 int counter;
 
@@ -145,7 +169,16 @@ public class AsyncContentProducerTest extends AbstractContentProducerTest
         assertThat(error, nullValue());
     }
 
-    private Throwable readAndAssertContent(ContentProducer contentProducer, AutoLock lock, BooleanSupplier isThereContent, int totalContentBytesCount, String originalContentString, int totalContentCount, int readyCount, int notReadyCount, Consumer<Content.Chunk> transientErrorConsumer)
+    private Throwable readAndAssertContent(
+                                           ContentProducer contentProducer,
+                                           AutoLock lock,
+                                           BooleanSupplier isThereContent,
+                                           int totalContentBytesCount,
+                                           String originalContentString,
+                                           int totalContentCount,
+                                           int readyCount,
+                                           int notReadyCount,
+                                           Consumer<Content.Chunk> transientErrorConsumer)
     {
         int readBytes = 0;
         String consumedString = "";

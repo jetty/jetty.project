@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.websocket.jakarta.common.util;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 

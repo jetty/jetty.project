@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
@@ -41,10 +44,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 
 public class HTTP1TransportTest extends AbstractTransportTest
 {
@@ -70,7 +69,8 @@ public class HTTP1TransportTest extends AbstractTransportTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -82,7 +82,8 @@ public class HTTP1TransportTest extends AbstractTransportTest
         assertThat(destination.getOrigin().getTransport(), sameInstance(Transport.TCP_IP));
 
         HttpClientTransportOverHTTP httpClientTransport = (HttpClientTransportOverHTTP)httpClient.getTransport();
-        int networkConnections = httpClientTransport.getClientConnector().getSelectorManager().getTotalKeys();
+        int networkConnections =
+            httpClientTransport.getClientConnector().getSelectorManager().getTotalKeys();
         assertThat(networkConnections, is(1));
     }
 
@@ -94,7 +95,8 @@ public class HTTP1TransportTest extends AbstractTransportTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .transport(Transport.TCP_IP)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -110,7 +112,8 @@ public class HTTP1TransportTest extends AbstractTransportTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("http://localhost/")
+        ContentResponse response = httpClient
+            .newRequest("http://localhost/")
             .transport(new MemoryTransport(connector))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -118,7 +121,8 @@ public class HTTP1TransportTest extends AbstractTransportTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         HttpClientTransportOverHTTP httpClientTransport = (HttpClientTransportOverHTTP)httpClient.getTransport();
-        int networkConnections = httpClientTransport.getClientConnector().getSelectorManager().getTotalKeys();
+        int networkConnections =
+            httpClientTransport.getClientConnector().getSelectorManager().getTotalKeys();
         assertThat(networkConnections, is(0));
     }
 
@@ -131,7 +135,8 @@ public class HTTP1TransportTest extends AbstractTransportTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("http://localhost/")
+        ContentResponse response = httpClient
+            .newRequest("http://localhost/")
             .transport(new Transport.TCPUnix(connector.getUnixDomainPath()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -143,7 +148,8 @@ public class HTTP1TransportTest extends AbstractTransportTest
     public void testQUICTransport(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
-        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslServer.setKeyStorePath(
+            MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
 
         Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
@@ -161,7 +167,8 @@ public class HTTP1TransportTest extends AbstractTransportTest
 
         server.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .transport(new QuicTransport(clientQuicConfig))
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)

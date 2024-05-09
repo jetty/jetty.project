@@ -15,7 +15,6 @@ package org.eclipse.jetty.start.config;
 
 import java.util.Collections;
 import java.util.Set;
-
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.StartIni;

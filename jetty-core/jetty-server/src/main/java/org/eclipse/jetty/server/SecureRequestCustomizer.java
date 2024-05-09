@@ -19,7 +19,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -70,9 +69,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      * @param stsIncludeSubdomains If true, an include subdomain property is sent with any Strict-Transport-Security header
      */
     public SecureRequestCustomizer(
-        @Name("sniHostCheck") boolean sniHostCheck,
-        @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
-        @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
+                                   @Name("sniHostCheck") boolean sniHostCheck,
+                                   @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
+                                   @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
     {
         this(false, sniHostCheck, stsMaxAgeSeconds, stsIncludeSubdomains);
     }
@@ -84,10 +83,10 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      * @param stsIncludeSubdomains If true, an include subdomain property is sent with any Strict-Transport-Security header
      */
     public SecureRequestCustomizer(
-        @Name("sniRequired") boolean sniRequired,
-        @Name("sniHostCheck") boolean sniHostCheck,
-        @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
-        @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
+                                   @Name("sniRequired") boolean sniRequired,
+                                   @Name("sniHostCheck") boolean sniHostCheck,
+                                   @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
+                                   @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
     {
         _sniRequired = sniRequired;
         _sniHostCheck = sniHostCheck;
@@ -185,7 +184,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         if (stsMaxAge < 0)
             _stsField = null;
         else
-            _stsField = new PreEncodedHttpField(HttpHeader.STRICT_TRANSPORT_SECURITY, String.format("max-age=%d%s", stsMaxAge, isStsIncludeSubDomains() ? "; includeSubDomains" : ""));
+            _stsField = new PreEncodedHttpField(
+                HttpHeader.STRICT_TRANSPORT_SECURITY,
+                String.format("max-age=%d%s", stsMaxAge, isStsIncludeSubDomains() ? "; includeSubDomains" : ""));
     }
 
     @Override
@@ -266,10 +267,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     protected class SecureRequestWithSslSessionData extends Request.AttributesWrapper
     {
-        private static final Set<String> ATTRIBUTES = Set.of(
-            EndPoint.SslSessionData.ATTRIBUTE,
-            X509_ATTRIBUTE
-        );
+        private static final Set<String> ATTRIBUTES = Set.of(EndPoint.SslSessionData.ATTRIBUTE, X509_ATTRIBUTE);
 
         protected SecureRequestWithSslSessionData(Request request, EndPoint.SslSessionData sslSessionData)
         {

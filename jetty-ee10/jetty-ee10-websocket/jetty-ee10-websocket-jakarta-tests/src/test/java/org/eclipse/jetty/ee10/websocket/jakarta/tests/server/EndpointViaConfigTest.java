@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
-import java.net.URI;
-import java.nio.file.Path;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import com.acme.websocket.BasicEchoEndpoint;
 import com.acme.websocket.BasicEchoEndpointConfigContextListener;
+import java.net.URI;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -33,9 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Example of an {@link jakarta.websocket.Endpoint} extended echo server added programmatically via the

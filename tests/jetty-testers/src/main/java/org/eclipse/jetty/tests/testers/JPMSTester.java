@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -280,12 +279,15 @@ public class JPMSTester extends ProcessWrapper
             Path workDir = config.getWorkingDirectory();
             IO.copyDir(classesDir, workDir);
 
-            String modulePath = config.getModulePaths().stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+            String modulePath = config.getModulePaths().stream()
+                .map(Path::toString)
+                .collect(Collectors.joining(File.pathSeparator));
             if (!modulePath.isEmpty())
                 modulePath += File.pathSeparator;
             modulePath += workDir.toString();
 
-            String classPath = config.getClassPaths().stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
+            String classPath =
+                config.getClassPaths().stream().map(Path::toString).collect(Collectors.joining(File.pathSeparator));
 
             ModuleReference module = compileModuleInfo(modulePath, classPath);
 
@@ -300,7 +302,8 @@ public class JPMSTester extends ProcessWrapper
                 commands.add(classPath);
             }
             commands.add("--module");
-            commands.add("%s/%s".formatted(module.descriptor().name(), config.getMainClass().getName()));
+            commands.add("%s/%s"
+                .formatted(module.descriptor().name(), config.getMainClass().getName()));
             commands.addAll(config.getArgs());
 
             LOG.info("executing: " + String.join(" ", commands));
@@ -324,7 +327,12 @@ public class JPMSTester extends ProcessWrapper
 
             Path workDir = config.getWorkingDirectory();
             Path moduleInfoPath = workDir.resolve("module-info.java");
-            Files.writeString(moduleInfoPath, config.getModuleInfo(), StandardCharsets.US_ASCII, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+            Files.writeString(
+                moduleInfoPath,
+                config.getModuleInfo(),
+                StandardCharsets.US_ASCII,
+                StandardOpenOption.CREATE_NEW,
+                StandardOpenOption.WRITE);
             commands.add(moduleInfoPath.toString());
 
             // This additional class is necessary to be able to compile module-info.java.
@@ -332,7 +340,12 @@ public class JPMSTester extends ProcessWrapper
             // use the one derived from the main class for now.
             String packageName = config.getMainClass().getPackageName();
             Path bogusClassPath = workDir.resolve(packageName.replace('.', '/')).resolve("Bogus.java");
-            Files.writeString(bogusClassPath, "package %s; class Bogus {}".formatted(packageName), StandardCharsets.US_ASCII, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+            Files.writeString(
+                bogusClassPath,
+                "package %s; class Bogus {}".formatted(packageName),
+                StandardCharsets.US_ASCII,
+                StandardOpenOption.CREATE_NEW,
+                StandardOpenOption.WRITE);
             commands.add(bogusClassPath.toString());
 
             LOG.info("executing: " + String.join(" ", commands));

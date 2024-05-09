@@ -18,7 +18,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -35,16 +34,16 @@ public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
     /**
      * The name of the file to generate into
      */
-    @Parameter (defaultValue = "${project.build.directory}/effective-web.xml")
+    @Parameter(defaultValue = "${project.build.directory}/effective-web.xml")
     protected File effectiveWebXml;
-    
+
     @Override
     public void configureWebApp() throws Exception
     {
         super.configureWebApp();
 
-        //Try to determine if we're using an unassembled webapp, or an
-        //external||prebuilt webapp
+        // Try to determine if we're using an unassembled webapp, or an
+        // external||prebuilt webapp
         String war = webApp.getWar();
         Path path = null;
         if (war != null)
@@ -60,13 +59,12 @@ public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
             }
         }
 
-        
         if ((path == null) || (path.startsWith("src") || !path.endsWith(".war")))
         {
             super.configureUnassembledWebApp();
         }
     }
-    
+
     /**
      * Override so we can call the parent's method in a different order.
      */

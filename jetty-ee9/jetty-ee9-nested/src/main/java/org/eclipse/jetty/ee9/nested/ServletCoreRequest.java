@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import static org.eclipse.jetty.util.URIUtil.addEncodedPaths;
+import static org.eclipse.jetty.util.URIUtil.encodePath;
+
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -22,10 +28,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
@@ -42,9 +44,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.URIUtil;
 
-import static org.eclipse.jetty.util.URIUtil.addEncodedPaths;
-import static org.eclipse.jetty.util.URIUtil.encodePath;
-
 /**
  * Wrap a {@link jakarta.servlet.ServletRequest} as a core {@link Request}.
  * <p>
@@ -60,7 +59,8 @@ public class ServletCoreRequest implements Request
 {
     public Request wrap(HttpServletRequest httpServletRequest)
     {
-        org.eclipse.jetty.ee9.nested.Request baseRequest = Objects.requireNonNull(org.eclipse.jetty.ee9.nested.Request.getBaseRequest(httpServletRequest));
+        org.eclipse.jetty.ee9.nested.Request baseRequest =
+            Objects.requireNonNull(org.eclipse.jetty.ee9.nested.Request.getBaseRequest(httpServletRequest));
         ContextHandler.CoreContextRequest coreContextRequest = baseRequest.getCoreRequest();
         return new ServletCoreRequest(coreContextRequest, httpServletRequest, coreContextRequest);
     }
@@ -73,7 +73,8 @@ public class ServletCoreRequest implements Request
     private final boolean _wrapped;
     private Content.Source _source;
 
-    ServletCoreRequest(ContextHandler.CoreContextRequest coreContextRequest, HttpServletRequest request, Attributes attributes)
+    ServletCoreRequest(
+                       ContextHandler.CoreContextRequest coreContextRequest, HttpServletRequest request, Attributes attributes)
     {
         _servletRequest = request;
         _wrapped = !(request instanceof Request);
@@ -99,14 +100,16 @@ public class ServletCoreRequest implements Request
         boolean included = includedServletPath != null;
 
         HttpURI.Mutable builder = HttpURI.build();
-        builder.scheme(request.getScheme())
-            .authority(request.getServerName(), request.getServerPort());
+        builder.scheme(request.getScheme()).authority(request.getServerName(), request.getServerPort());
 
         // TODO if (included)
-        //    builder.path(addEncodedPaths(request.getContextPath(), encodePath(DefaultServlet.getIncludedPathInContext(request, includedServletPath, false))));
+        //    builder.path(addEncodedPaths(request.getContextPath(),
+        // encodePath(DefaultServlet.getIncludedPathInContext(request, includedServletPath, false))));
         // else
         if (request.getDispatcherType() != DispatcherType.REQUEST)
-            builder.path(addEncodedPaths(request.getContextPath(), encodePath(URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()))));
+            builder.path(addEncodedPaths(
+                request.getContextPath(),
+                encodePath(URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()))));
         else
             builder.path(request.getRequestURI());
         builder.query(request.getQueryString());
@@ -118,7 +121,8 @@ public class ServletCoreRequest implements Request
     private Content.Source source() throws IOException
     {
         if (_source == null)
-            _source = _wrapped ? new InputStreamContentSource(getServletRequest().getInputStream()) : _coreContextRequest;
+            _source =
+                _wrapped ? new InputStreamContentSource(getServletRequest().getInputStream()) : _coreContextRequest;
         return _source;
     }
 

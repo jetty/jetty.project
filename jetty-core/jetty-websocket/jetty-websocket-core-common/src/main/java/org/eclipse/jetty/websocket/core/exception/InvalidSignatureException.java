@@ -16,13 +16,13 @@ package org.eclipse.jetty.websocket.core.exception;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
-
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
 @SuppressWarnings("serial")
 public class InvalidSignatureException extends InvalidWebSocketException
 {
-    public static InvalidSignatureException build(Class<?> pojo, Class<? extends Annotation> methodAnnotationClass, Method method)
+    public static InvalidSignatureException build(
+                                                  Class<?> pojo, Class<? extends Annotation> methodAnnotationClass, Method method)
     {
         StringBuilder err = new StringBuilder();
         err.append("Invalid ");

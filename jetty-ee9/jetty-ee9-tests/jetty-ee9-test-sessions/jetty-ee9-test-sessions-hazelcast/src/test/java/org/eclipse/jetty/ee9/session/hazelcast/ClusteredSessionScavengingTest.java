@@ -22,12 +22,11 @@ import org.junit.jupiter.api.AfterEach;
 /**
  * ClusteredSessionScavengingTest
  */
-public class ClusteredSessionScavengingTest
-    extends AbstractClusteredSessionScavengingTest
+public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
     HazelcastSessionDataStoreFactory factory;
 
-    HazelcastTestHelper _testHelper  = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
+    HazelcastTestHelper _testHelper = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
 
     @AfterEach
     public void shutdown()

@@ -22,29 +22,20 @@ public class ImageOSUbuntuJammyJDK17 extends ImageOS
 {
     public ImageOSUbuntuJammyJDK17()
     {
-        super("ubuntu-22.04-jdk17-jetty12",
-            builder ->
-                builder
-                    .from("ubuntu:22.04")
-                    .run("apt update ; " +
-                        "apt -y upgrade ; " +
-                        "apt install -y openjdk-17-jdk-headless ; " +
-                        "apt install -y curl vim net-tools ")
-                    .env("TEST_DIR", "/var/test")
-                    .env("JETTY_HOME", "$TEST_DIR/jetty-home")
-                    .env("JETTY_BASE", "$TEST_DIR/jetty-base")
-                    .env("PATH", "$PATH:${JETTY_HOME}/bin/")
-                    .user("root")
-                    // Configure /etc/default/jetty
-                    .run("echo \"JETTY_HOME=${JETTY_HOME}\" > /etc/default/jetty ; " +
-                        "echo \"JETTY_BASE=${JETTY_BASE}\" >> /etc/default/jetty ; " +
-                        "echo \"JETTY_RUN=${JETTY_BASE}\" >> /etc/default/jetty ")
-                    // setup Jetty Home
-                    .copy("/opt/jetty/", "${JETTY_HOME}/")
-                    .env("PATH", "$PATH:${JETTY_HOME}/bin/")
-                    .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh")
-                    .build()
-        );
+        super("ubuntu-22.04-jdk17-jetty12", builder -> builder.from("ubuntu:22.04")
+            .run("apt update ; " + "apt -y upgrade ; " + "apt install -y openjdk-17-jdk-headless ; " + "apt install -y curl vim net-tools ")
+            .env("TEST_DIR", "/var/test")
+            .env("JETTY_HOME", "$TEST_DIR/jetty-home")
+            .env("JETTY_BASE", "$TEST_DIR/jetty-base")
+            .env("PATH", "$PATH:${JETTY_HOME}/bin/")
+            .user("root")
+            // Configure /etc/default/jetty
+            .run("echo \"JETTY_HOME=${JETTY_HOME}\" > /etc/default/jetty ; " + "echo \"JETTY_BASE=${JETTY_BASE}\" >> /etc/default/jetty ; " + "echo \"JETTY_RUN=${JETTY_BASE}\" >> /etc/default/jetty ")
+            // setup Jetty Home
+            .copy("/opt/jetty/", "${JETTY_HOME}/")
+            .env("PATH", "$PATH:${JETTY_HOME}/bin/")
+            .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh")
+            .build());
         withFileFromFile("/opt/jetty/", getJettyHomeDir());
     }
 }

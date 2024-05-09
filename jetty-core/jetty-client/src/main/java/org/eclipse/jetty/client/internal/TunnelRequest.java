@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.internal;
 
 import java.net.URI;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;

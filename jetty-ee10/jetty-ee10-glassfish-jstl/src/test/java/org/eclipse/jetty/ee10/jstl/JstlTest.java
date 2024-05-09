@@ -13,14 +13,18 @@
 
 package org.eclipse.jetty.ee10.jstl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+
+import jakarta.servlet.jsp.JspException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-
-import jakarta.servlet.jsp.JspException;
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
@@ -32,11 +36,6 @@ import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 public class JstlTest
 {
@@ -51,38 +50,39 @@ public class JstlTest
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
-        
-        //Base dir for test
+
+        // Base dir for test
         File testDir = MavenTestingUtils.getTargetTestingDir("jstl");
         File testLibDir = new File(testDir, "WEB-INF/lib");
         FS.ensureDirExists(testLibDir);
-                
-        //Make a taglib jar
+
+        // Make a taglib jar
         File srcTagLibDir = MavenTestingUtils.getProjectDir("src/test/taglibjar");
-        File scratchTagLibDir = MavenTestingUtils.getTargetFile("tests/" + JstlTest.class.getSimpleName() + "-taglib-scratch");
+        File scratchTagLibDir =
+            MavenTestingUtils.getTargetFile("tests/" + JstlTest.class.getSimpleName() + "-taglib-scratch");
         IO.copy(srcTagLibDir, scratchTagLibDir);
-        File tagLibJar =  new File(testLibDir, "testtaglib.jar");
+        File tagLibJar = new File(testLibDir, "testtaglib.jar");
         JAR.create(scratchTagLibDir, tagLibJar);
-        
-        //Copy content
+
+        // Copy content
         File srcWebAppDir = MavenTestingUtils.getProjectDir("src/test/webapp");
         IO.copyDir(srcWebAppDir, testDir);
 
         // Configure WebAppCont
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        
+
         File scratchDir = MavenTestingUtils.getTargetFile("tests/" + JstlTest.class.getSimpleName() + "-scratch");
         FS.ensureEmpty(scratchDir);
         JspConfig.init(context, testDir.toURI(), scratchDir);
-        
+
         context.addConfiguration(new AnnotationConfiguration());
-        
+
         server.setHandler(context);
-        
+
         // Start Server
         server.start();
-        
+
         // Figure out Base URI
         String host = connector.getHost();
         if (host == null)
@@ -103,7 +103,8 @@ public class JstlTest
     @Test
     public void testUrlsBasic() throws IOException
     {
-        HttpURLConnection http = (HttpURLConnection)baseUri.resolve("/urls.jsp").toURL().openConnection();
+        HttpURLConnection http =
+            (HttpURLConnection)baseUri.resolve("/urls.jsp").toURL().openConnection();
         assertThat("http response", http.getResponseCode(), is(200));
         try (InputStream input = http.getInputStream())
         {
@@ -117,7 +118,8 @@ public class JstlTest
     @Test
     public void testCatchBasic() throws IOException
     {
-        HttpURLConnection http = (HttpURLConnection)baseUri.resolve("/catch-basic.jsp").toURL().openConnection();
+        HttpURLConnection http =
+            (HttpURLConnection)baseUri.resolve("/catch-basic.jsp").toURL().openConnection();
         assertThat("http response", http.getResponseCode(), is(200));
         try (InputStream input = http.getInputStream())
         {
@@ -131,7 +133,8 @@ public class JstlTest
     @Test
     public void testCatchTaglib() throws IOException
     {
-        HttpURLConnection http = (HttpURLConnection)baseUri.resolve("/catch-taglib.jsp").toURL().openConnection();
+        HttpURLConnection http =
+            (HttpURLConnection)baseUri.resolve("/catch-taglib.jsp").toURL().openConnection();
         assertThat("http response", http.getResponseCode(), is(200));
         try (InputStream input = http.getInputStream())
         {

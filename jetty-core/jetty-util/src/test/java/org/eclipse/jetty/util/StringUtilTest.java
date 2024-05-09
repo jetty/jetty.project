@@ -13,13 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.stream.Stream;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -32,6 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class StringUtilTest
@@ -127,8 +126,7 @@ public class StringUtilTest
             Arguments.of("abcabcabc", "cab", "X", "abXcabc"),
 
             // matches at end of string
-            Arguments.of("abc", "c", "foo", "abfoo")
-        );
+            Arguments.of("abc", "c", "foo", "abfoo"));
     }
 
     @ParameterizedTest
@@ -177,9 +175,9 @@ public class StringUtilTest
         assertThat(StringUtil.indexOfControlChars("\t"), is(0));
         assertThat(StringUtil.indexOfControlChars(";\n"), is(1));
         assertThat(StringUtil.indexOfControlChars("abc\fz"), is(3));
-        //@checkstyle-disable-check : IllegalTokenText
+        // @checkstyle-disable-check : IllegalTokenText
         assertThat(StringUtil.indexOfControlChars("z\010"), is(1));
-        //@checkstyle-enable-check : IllegalTokenText
+        // @checkstyle-enable-check : IllegalTokenText
         assertThat(StringUtil.indexOfControlChars(":\u001c"), is(1));
 
         assertThat(StringUtil.indexOfControlChars(null), is(-1));

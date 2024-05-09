@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee9.session.hazelcast;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStore;
 import org.eclipse.jetty.server.Server;
@@ -28,8 +30,6 @@ import org.eclipse.jetty.session.test.tools.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * HazelcastSessionDataStoreTest
  */
@@ -40,7 +40,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         super();
     }
 
-    HazelcastTestHelper _testHelper  = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
+    HazelcastTestHelper _testHelper = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
@@ -71,7 +71,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         return _testHelper.checkSessionExists(data);
     }
-    
+
     @Override
     @Test
     public void testStoreSession() throws Exception
@@ -111,8 +111,10 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         context.getSessionHandler().getSessionManager().setSessionIdManager(idMgr);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler().getSessionManager());
-        SessionContext sessionContext = new SessionContext(context.getSessionHandler().getSessionManager());
+        SessionDataStore store =
+            factory.getSessionDataStore(context.getSessionHandler().getSessionManager());
+        SessionContext sessionContext =
+            new SessionContext(context.getSessionHandler().getSessionManager());
         store.initialize(sessionContext);
 
         // persist a session

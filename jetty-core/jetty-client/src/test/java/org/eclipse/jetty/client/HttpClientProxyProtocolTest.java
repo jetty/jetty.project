@@ -13,12 +13,18 @@
 
 package org.eclipse.jetty.client;
 
+import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
+import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V2;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -39,13 +45,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
-import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V2;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientProxyProtocolTest
 {
@@ -111,9 +110,8 @@ public class HttpClientProxyProtocolTest
         int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
         V1.Tag tag = new V1.Tag("127.0.0.1", clientPort);
 
-        ContentResponse response = client.newRequest("localhost", serverPort)
-            .tag(tag)
-            .send();
+        ContentResponse response =
+            client.newRequest("localhost", serverPort).tag(tag).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort), response.getContentAsString());
     }
@@ -150,9 +148,8 @@ public class HttpClientProxyProtocolTest
         int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
         V2.Tag tag = new V2.Tag("127.0.0.1", clientPort);
 
-        ContentResponse response = client.newRequest("localhost", serverPort)
-            .tag(tag)
-            .send();
+        ContentResponse response =
+            client.newRequest("localhost", serverPort).tag(tag).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort), response.getContentAsString());
     }
@@ -180,7 +177,8 @@ public class HttpClientProxyProtocolTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                EndPoint endPoint =
+                    request.getConnectionMetaData().getConnection().getEndPoint();
                 assertTrue(endPoint instanceof ProxyConnectionFactory.ProxyEndPoint);
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
                 if (Request.getPathInContext(request).equals("/tls_version"))
@@ -217,9 +215,7 @@ public class HttpClientProxyProtocolTest
         // Make another request with the same address information, but different TLV.
         V2.Tag.TLV tlv2 = new V2.Tag.TLV(0x01, "http/1.1".getBytes(StandardCharsets.UTF_8));
         V2.Tag tag2 = new V2.Tag("127.0.0.1", clientPort, Collections.singletonList(tlv2));
-        response = client.newRequest("localhost", serverPort)
-            .tag(tag2)
-            .send();
+        response = client.newRequest("localhost", serverPort).tag(tag2).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort), response.getContentAsString());
 
@@ -268,9 +264,7 @@ public class HttpClientProxyProtocolTest
 
         // The previous connection has been closed.
         // Make another request from the same client address.
-        response = client.newRequest("localhost", serverPort)
-            .tag(tag)
-            .send();
+        response = client.newRequest("localhost", serverPort).tag(tag).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort), response.getContentAsString());
         destinations = client.getDestinations();
@@ -280,9 +274,7 @@ public class HttpClientProxyProtocolTest
         // Make another request from a different client address.
         int clientPort2 = clientPort + 1;
         V1.Tag tag2 = new V1.Tag("127.0.0.1", clientPort2);
-        response = client.newRequest("localhost", serverPort)
-            .tag(tag2)
-            .send();
+        response = client.newRequest("localhost", serverPort).tag(tag2).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort2), response.getContentAsString());
         destinations = client.getDestinations();

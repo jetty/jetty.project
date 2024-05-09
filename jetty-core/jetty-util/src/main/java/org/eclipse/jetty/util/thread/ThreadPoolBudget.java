@@ -18,7 +18,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
@@ -105,9 +104,7 @@ public class ThreadPoolBudget
     @ManagedAttribute("the number of threads leased to components")
     public int getLeasedThreads()
     {
-        return leases.stream()
-            .mapToInt(Lease::getThreads)
-            .sum();
+        return leases.stream().mapToInt(Lease::getThreads).sum();
     }
 
     public void reset()
@@ -146,7 +143,8 @@ public class ThreadPoolBudget
         if (left <= 0)
         {
             printInfoOnLeases();
-            throw new IllegalStateException(String.format("Insufficient configured threads: required=%d < max=%d for %s", required, maxThreads, pool));
+            throw new IllegalStateException(String.format(
+                "Insufficient configured threads: required=%d < max=%d for %s", required, maxThreads, pool));
         }
 
         if (left < warnAt)
@@ -154,7 +152,13 @@ public class ThreadPoolBudget
             if (warned.compareAndSet(false, true))
             {
                 printInfoOnLeases();
-                LOG.info("Low configured threads: (max={} - required={})={} < warnAt={} for {}", maxThreads, required, left, warnAt, pool);
+                LOG.info(
+                    "Low configured threads: (max={} - required={})={} < warnAt={} for {}",
+                    maxThreads,
+                    required,
+                    left,
+                    warnAt,
+                    pool);
             }
             return false;
         }

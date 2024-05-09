@@ -14,7 +14,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -119,7 +118,8 @@ public class InvalidURIRule extends Rule
         Character.UnicodeBlock block = Character.UnicodeBlock.of(codepoint);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
+            LOG.debug(
+                "{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
 
         if (codepoint == REPLACEMENT_CHAR_CODEPOINT)
             return false;

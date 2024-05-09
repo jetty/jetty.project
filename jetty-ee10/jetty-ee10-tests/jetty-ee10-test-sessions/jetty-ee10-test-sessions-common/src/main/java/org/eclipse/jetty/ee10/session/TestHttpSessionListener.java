@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * TestSessionListener
@@ -55,7 +54,7 @@ public class TestHttpSessionListener implements HttpSessionListener
                 attributeException = e;
             }
         }
-        
+
         if (lastAccessTime)
         {
             try

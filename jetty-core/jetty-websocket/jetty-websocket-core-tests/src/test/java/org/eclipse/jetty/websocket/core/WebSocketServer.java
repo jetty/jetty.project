@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core;
 
 import java.net.URI;
 import java.util.List;
-
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;

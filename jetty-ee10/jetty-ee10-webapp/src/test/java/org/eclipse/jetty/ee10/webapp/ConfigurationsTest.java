@@ -13,17 +13,17 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Isolated;
-
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.jetty.ee10.webapp.Configurations.getKnown;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 
 @Isolated("Access static field of Configurations")
 public class ConfigurationsTest
@@ -53,10 +53,10 @@ public class ConfigurationsTest
             ConfigHarry.class.getName(),
             ConfigAdditionalHarry.class.getName(),
             ConfigExtendedDick.class.getName(),
-            ConfigFoo.class.getName()
-        );
+            ConfigFoo.class.getName());
 
-        assertThat(getKnown().stream().map(c -> c.getClass().getName()).collect(toList()),
+        assertThat(
+            getKnown().stream().map(c -> c.getClass().getName()).collect(toList()),
             contains(
                 ConfigFoo.class.getName(),
                 ConfigBar.class.getName(),
@@ -67,8 +67,7 @@ public class ConfigurationsTest
                 ConfigDick.class.getName(),
                 ConfigExtendedDick.class.getName(),
                 ConfigHarry.class.getName(),
-                ConfigAdditionalHarry.class.getName()
-            ));
+                ConfigAdditionalHarry.class.getName()));
     }
 
     @Test
@@ -84,8 +83,7 @@ public class ConfigurationsTest
             ConfigHarry.class.getName(),
             ConfigAdditionalHarry.class.getName(),
             ConfigExtendedDick.class.getName(),
-            ConfigFoo.class.getName()
-        );
+            ConfigFoo.class.getName());
 
         Configurations configs = new Configurations(
             ConfigBar.class.getName(),
@@ -96,14 +94,14 @@ public class ConfigurationsTest
             ConfigDick.class.getName(),
             ConfigHarry.class.getName(),
             ConfigAdditionalHarry.class.getName(),
-            ConfigFoo.class.getName()
-        );
+            ConfigFoo.class.getName());
 
         configs.add(ConfigExtendedDick.class.getName());
 
         configs.sort();
 
-        assertThat(configs.stream().map(c -> c.getClass().getName()).collect(toList()),
+        assertThat(
+            configs.stream().map(c -> c.getClass().getName()).collect(toList()),
             contains(
                 ConfigFoo.class.getName(),
                 ConfigBar.class.getName(),
@@ -113,24 +111,19 @@ public class ConfigurationsTest
                 ConfigTom.class.getName(),
                 ConfigExtendedDick.class.getName(),
                 ConfigHarry.class.getName(),
-                ConfigAdditionalHarry.class.getName()
-            ));
+                ConfigAdditionalHarry.class.getName()));
     }
 
     @Test
     public void testDuplicates()
     {
-        Configurations.setKnown(
-            ConfigBar.class.getName(),
-            ConfigZ.class.getName()
-        );
+        Configurations.setKnown(ConfigBar.class.getName(), ConfigZ.class.getName());
 
-        Configurations configs = new Configurations(
-            ConfigBar.class.getName(),
-            ConfigZ.class.getName());
+        Configurations configs = new Configurations(ConfigBar.class.getName(), ConfigZ.class.getName());
         configs.add(ConfigZ.class.getName());
         configs.sort();
-        assertThat(configs.stream().map(c -> c.getClass().getName()).collect(toList()),
+        assertThat(
+            configs.stream().map(c -> c.getClass().getName()).collect(toList()),
             contains(ConfigBar.class.getName(), ConfigZ.class.getName()));
         assertThat(configs.getConfigurations().size(), equalTo(2));
     }
@@ -138,7 +131,7 @@ public class ConfigurationsTest
     @Test
     public void testReplacementWithInstances()
     {
-        //ConfigDick should be replaced by ReplacementDick
+        // ConfigDick should be replaced by ReplacementDick
         Configurations configs = new Configurations(
             new ConfigDick(),
             new ConfigBar(),
@@ -149,12 +142,12 @@ public class ConfigurationsTest
             new ReplacementDick(),
             new ConfigHarry(),
             new ConfigAdditionalHarry(),
-            new ConfigFoo()
-        );
+            new ConfigFoo());
 
         configs.sort();
 
-        assertThat(configs.stream().map(c -> c.getClass().getName()).collect(toList()),
+        assertThat(
+            configs.stream().map(c -> c.getClass().getName()).collect(toList()),
             contains(
                 ConfigFoo.class.getName(),
                 ConfigBar.class.getName(),
@@ -164,15 +157,13 @@ public class ConfigurationsTest
                 ConfigTom.class.getName(),
                 ReplacementDick.class.getName(),
                 ConfigHarry.class.getName(),
-                ConfigAdditionalHarry.class.getName()
-            ));
+                ConfigAdditionalHarry.class.getName()));
 
-         assertThat(configs.stream().map(c -> c.getClass().getName()).collect(toList()),
-            not(contains(
-                ConfigDick.class.getName()
-            )));
+        assertThat(
+            configs.stream().map(c -> c.getClass().getName()).collect(toList()),
+            not(contains(ConfigDick.class.getName())));
     }
-    
+
     @Test
     public void testReplacement()
     {
@@ -186,8 +177,7 @@ public class ConfigurationsTest
             ConfigHarry.class.getName(),
             ConfigAdditionalHarry.class.getName(),
             ConfigFoo.class.getName(),
-            ReplacementDick.class.getName()
-        );
+            ReplacementDick.class.getName());
 
         Configurations configs = new Configurations(
             ConfigBar.class.getName(),
@@ -198,14 +188,14 @@ public class ConfigurationsTest
             ReplacementDick.class.getName(),
             ConfigHarry.class.getName(),
             ConfigAdditionalHarry.class.getName(),
-            ConfigFoo.class.getName()
-        );
+            ConfigFoo.class.getName());
 
-        //ReplacementDick is already in the list and thus ConfigDick should not be added
+        // ReplacementDick is already in the list and thus ConfigDick should not be added
         configs.add(ConfigDick.class.getName());
         configs.sort();
 
-        assertThat(configs.stream().map(c -> c.getClass().getName()).collect(toList()),
+        assertThat(
+            configs.stream().map(c -> c.getClass().getName()).collect(toList()),
             contains(
                 ConfigFoo.class.getName(),
                 ConfigBar.class.getName(),
@@ -215,13 +205,11 @@ public class ConfigurationsTest
                 ConfigTom.class.getName(),
                 ReplacementDick.class.getName(),
                 ConfigHarry.class.getName(),
-                ConfigAdditionalHarry.class.getName()
-            ));
+                ConfigAdditionalHarry.class.getName()));
 
-        assertThat(configs.stream().map(c -> c.getClass().getName()).collect(toList()),
-            not(contains(
-                ConfigDick.class.getName()
-            )));
+        assertThat(
+            configs.stream().map(c -> c.getClass().getName()).collect(toList()),
+            not(contains(ConfigDick.class.getName())));
     }
 
     @Test
@@ -238,8 +226,7 @@ public class ConfigurationsTest
             ConfigAdditionalHarry.class.getName(),
             ConfigFoo.class.getName(),
             ReplacementDick.class.getName(),
-            AnotherReplacementDick.class.getName()
-        );
+            AnotherReplacementDick.class.getName());
 
         Configurations configs = new Configurations(
             ConfigBar.class.getName(),
@@ -251,13 +238,13 @@ public class ConfigurationsTest
             ConfigDick.class.getName(),
             ConfigHarry.class.getName(),
             ConfigAdditionalHarry.class.getName(),
-            ConfigFoo.class.getName()
-        );
+            ConfigFoo.class.getName());
 
         configs.add(ReplacementDick.class.getName());
         configs.sort();
 
-        assertThat(configs.stream().map(c -> c.getClass().getName()).collect(toList()),
+        assertThat(
+            configs.stream().map(c -> c.getClass().getName()).collect(toList()),
             contains(
                 ConfigFoo.class.getName(),
                 ConfigBar.class.getName(),
@@ -267,14 +254,11 @@ public class ConfigurationsTest
                 ConfigTom.class.getName(),
                 AnotherReplacementDick.class.getName(),
                 ConfigHarry.class.getName(),
-                ConfigAdditionalHarry.class.getName()
-            ));
+                ConfigAdditionalHarry.class.getName()));
 
-        assertThat(configs.stream().map(c -> c.getClass().getName()).collect(toList()),
-            not(contains(
-                ReplacementDick.class.getName(),
-                ConfigDick.class.getName()
-            )));
+        assertThat(
+            configs.stream().map(c -> c.getClass().getName()).collect(toList()),
+            not(contains(ReplacementDick.class.getName(), ConfigDick.class.getName())));
     }
 
     public static class ConfigFoo extends AbstractConfiguration
@@ -305,9 +289,7 @@ public class ConfigurationsTest
     {
         public ConfigY()
         {
-            super(new Builder()
-                .addDependencies(ConfigX.class)
-                .addDependents(ConfigZ.class));
+            super(new Builder().addDependencies(ConfigX.class).addDependents(ConfigZ.class));
         }
     }
 

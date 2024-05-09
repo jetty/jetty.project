@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.CharsetStringBuilder;
 
 /**

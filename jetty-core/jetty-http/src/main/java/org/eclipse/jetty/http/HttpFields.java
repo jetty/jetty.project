@@ -56,7 +56,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      * <p>A constant {@link HttpField} for the HTTP header:</p>
      * <p>{@code Connection: keep-alive}</p>
      */
-    HttpField CONNECTION_KEEPALIVE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+    HttpField CONNECTION_KEEPALIVE =
+        new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
     /**
      * <p>A constant {@link HttpField} for the HTTP header:</p>
      * <p>{@code Content-Length: 0}</p>
@@ -627,9 +628,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 
     private <T> List<HttpField> getFields(T header, BiPredicate<HttpField, T> predicate)
     {
-        return stream()
-            .filter(f -> predicate.test(f, header))
-            .collect(Collectors.toList());
+        return stream().filter(f -> predicate.test(f, header)).collect(Collectors.toList());
     }
 
     /**
@@ -1384,7 +1383,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         default Mutable computeField(HttpHeader header, BiFunction<HttpHeader, List<HttpField>, HttpField> computeFn)
         {
             Objects.requireNonNull(header);
-            HttpField result = computeFn.apply(header, stream().filter(f -> f.getHeader() == header).toList());
+            HttpField result = computeFn.apply(
+                header, stream().filter(f -> f.getHeader() == header).toList());
             return result != null ? put(result) : remove(header);
         }
 
@@ -1399,7 +1399,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         default Mutable computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
         {
             Objects.requireNonNull(name);
-            HttpField result = computeFn.apply(name, stream().filter(f -> f.is(name)).toList());
+            HttpField result =
+                computeFn.apply(name, stream().filter(f -> f.is(name)).toList());
             return result != null ? put(result) : remove(name);
         }
 
@@ -1450,7 +1451,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         default Mutable remove(String name)
         {
             Objects.requireNonNull(name);
-            for (ListIterator<HttpField> i = listIterator(); i.hasNext(); )
+            for (ListIterator<HttpField> i = listIterator(); i.hasNext();)
             {
                 HttpField f = i.next();
                 if (f.is(name))
@@ -1467,7 +1468,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             {
                 add = false;
 
-                for (int i = values.length; i-- > 0; )
+                for (int i = values.length; i-- > 0;)
                 {
                     String unquoted = QuotedCSV.unquote(values[i]);
                     if (existing.getValues().contains(unquoted))
@@ -1508,9 +1509,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             {
                 // If the existing field contains the ensure value, return it, else append values.
                 HttpField f = fields.get(0);
-                return f.contains(ensureValue)
-                    ? f
-                    : new HttpField(ensure.getHeader(), ensure.getName(), f.getValue() + ", " + ensureValue);
+                return f.contains(ensureValue) ? f : new HttpField(ensure.getHeader(), ensure.getName(), f.getValue() + ", " + ensureValue);
             }
 
             // Handle multiple existing fields
@@ -1560,8 +1559,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                     return f;
                 // else if no ensured values contained append the entire ensured valued
                 if (ensured == values.length)
-                    return new HttpField(ensure.getHeader(), ensure.getName(),
-                        f.getValue() + ", " + ensure.getValue());
+                    return new HttpField(ensure.getHeader(), ensure.getName(), f.getValue() + ", " + ensure.getValue());
                 // else append just the ensured values that are not contained
                 StringBuilder v = new StringBuilder(f.getValue());
                 for (String value : values)
@@ -1596,7 +1594,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             // if no ensured values exist append them all
             if (ensured == values.length)
                 v.append(", ").append(ensure.getValue());
-                // else if some ensured values are missing, append them
+            // else if some ensured values are missing, append them
             else if (ensured > 0)
             {
                 for (String value : values)

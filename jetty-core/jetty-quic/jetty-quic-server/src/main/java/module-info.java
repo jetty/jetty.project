@@ -17,7 +17,6 @@ module org.eclipse.jetty.quic.server
     requires org.eclipse.jetty.quic.quiche;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.quic.common;
     requires transitive org.eclipse.jetty.server;
 

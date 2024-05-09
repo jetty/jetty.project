@@ -44,7 +44,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,11 +56,9 @@ public class IO
 {
     private static final Logger LOG = LoggerFactory.getLogger(IO.class);
 
-    public static final String
-        CRLF = "\r\n";
+    public static final String CRLF = "\r\n";
 
-    public static final byte[]
-        CRLF_BYTES = {(byte)'\r', (byte)'\n'};
+    public static final byte[] CRLF_BYTES = {(byte)'\r', (byte)'\n'};
 
     public static final int bufferSize = 64 * 1024;
 
@@ -72,8 +69,7 @@ public class IO
      * @param out the output stream to write to
      * @throws IOException if unable to copy streams
      */
-    public static void copy(InputStream in, OutputStream out)
-        throws IOException
+    public static void copy(InputStream in, OutputStream out) throws IOException
     {
         copy(in, out, -1);
     }
@@ -85,8 +81,7 @@ public class IO
      * @param out the writer to write to
      * @throws IOException if unable to copy the streams
      */
-    public static void copy(Reader in, Writer out)
-        throws IOException
+    public static void copy(Reader in, Writer out) throws IOException
     {
         copy(in, out, -1);
     }
@@ -99,10 +94,7 @@ public class IO
      * @param byteCount the number of bytes to copy
      * @throws IOException if unable to copy the streams
      */
-    public static void copy(InputStream in,
-                            OutputStream out,
-                            long byteCount)
-        throws IOException
+    public static void copy(InputStream in, OutputStream out, long byteCount) throws IOException
     {
         byte[] buffer = new byte[bufferSize];
         int len;
@@ -141,10 +133,7 @@ public class IO
      * @param byteCount the number of bytes to copy
      * @throws IOException if unable to copy streams
      */
-    public static void copy(Reader in,
-                            Writer out,
-                            long byteCount)
-        throws IOException
+    public static void copy(Reader in, Writer out, long byteCount) throws IOException
     {
         char[] buffer = new char[bufferSize];
         int len;
@@ -252,9 +241,7 @@ public class IO
 
         try (Stream<Path> sourceStream = Files.walk(srcDir))
         {
-            Iterator<Path> iterFiles = sourceStream
-                .filter(Files::isRegularFile)
-                .iterator();
+            Iterator<Path> iterFiles = sourceStream.filter(Files::isRegularFile).iterator();
             while (iterFiles.hasNext())
             {
                 Path sourceFile = iterFiles.next();
@@ -292,9 +279,7 @@ public class IO
 
         try (Stream<Path> sourceStream = Files.walk(srcDir))
         {
-            Iterator<Path> iterFiles = sourceStream
-                .filter(Files::isRegularFile)
-                .iterator();
+            Iterator<Path> iterFiles = sourceStream.filter(Files::isRegularFile).iterator();
             while (iterFiles.hasNext())
             {
                 Path sourceFile = iterFiles.next();
@@ -398,8 +383,8 @@ public class IO
             throw new IllegalArgumentException("Source is not a file: " + srcFile);
         Objects.requireNonNull(destFile);
 
-        try (OutputStream out = Files.newOutputStream(destFile,
-            StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING))
+        try (OutputStream out = Files.newOutputStream(
+            destFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING))
         {
             Files.copy(srcFile, out);
         }
@@ -451,8 +436,7 @@ public class IO
      * @return the String parsed from path (default Charset)
      * @throws IOException if unable to read the path (or handle the charset)
      */
-    public static String toString(Path path, Charset charset)
-        throws IOException
+    public static String toString(Path path, Charset charset) throws IOException
     {
         byte[] buf = Files.readAllBytes(path);
         return new String(buf, charset);
@@ -465,8 +449,7 @@ public class IO
      * @return the String parsed from stream (default Charset)
      * @throws IOException if unable to read the stream (or handle the charset)
      */
-    public static String toString(InputStream in)
-        throws IOException
+    public static String toString(InputStream in) throws IOException
     {
         return toString(in, (Charset)null);
     }
@@ -479,8 +462,7 @@ public class IO
      * @return the String parsed from the stream
      * @throws IOException if unable to read the stream (or handle the charset)
      */
-    public static String toString(InputStream in, String encoding)
-        throws IOException
+    public static String toString(InputStream in, String encoding) throws IOException
     {
         return toString(in, encoding == null ? null : Charset.forName(encoding));
     }
@@ -493,8 +475,7 @@ public class IO
      * @return the String parsed from the stream
      * @throws IOException if unable to read the stream (or handle the charset)
      */
-    public static String toString(InputStream in, Charset encoding)
-        throws IOException
+    public static String toString(InputStream in, Charset encoding) throws IOException
     {
         StringWriter writer = new StringWriter();
         InputStreamReader reader = encoding == null ? new InputStreamReader(in) : new InputStreamReader(in, encoding);
@@ -510,8 +491,7 @@ public class IO
      * @return the String parsed from the reader
      * @throws IOException if unable to read the stream (or handle the charset)
      */
-    public static String toString(Reader in)
-        throws IOException
+    public static String toString(Reader in) throws IOException
     {
         StringWriter writer = new StringWriter();
         copy(in, writer);
@@ -670,8 +650,7 @@ public class IO
         close((AutoCloseable)writer);
     }
 
-    public static byte[] readBytes(InputStream in)
-        throws IOException
+    public static byte[] readBytes(InputStream in) throws IOException
     {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         copy(in, bout);
@@ -692,7 +671,8 @@ public class IO
      * @return The total bytes written
      * @throws IOException if unable write to the GatheringByteChannel
      */
-    public static long write(GatheringByteChannel out, ByteBuffer[] buffers, int offset, int length) throws IOException
+    public static long write(GatheringByteChannel out, ByteBuffer[] buffers, int offset, int length)
+        throws IOException
     {
         long total = 0;
         write:
@@ -749,12 +729,3 @@ public class IO
         // prevent instantiation
     }
 }
-
-
-
-
-
-
-
-
-

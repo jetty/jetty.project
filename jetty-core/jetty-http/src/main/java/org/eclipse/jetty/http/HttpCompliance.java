@@ -13,23 +13,22 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.noneOf;
 import static java.util.EnumSet.of;
+
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.jetty.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HTTP compliance modes for Jetty HTTP parsing and handling.
@@ -90,14 +89,16 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * a request is invalid if it contains both a {@code Transfer-Encoding} field and  {@code Content-Length} field.
          * A deployment may include this violation to allow both fields to be in a received request.
          */
-        TRANSFER_ENCODING_WITH_CONTENT_LENGTH("https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
+        TRANSFER_ENCODING_WITH_CONTENT_LENGTH(
+            "https://tools.ietf.org/html/rfc7230#section-3.3.1", "Transfer-Encoding and Content-Length"),
 
         /**
          * Since <a href="https://tools.ietf.org/html/rfc7230#section-3.2.4">RFC 7230</a>, the HTTP protocol has required that
          * a request header field has no white space after the field name and before the ':'.
          * A deployment may include this violation to allow such fields to be in a received request.
          */
-        WHITESPACE_AFTER_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2.4", "Whitespace not allowed after field name"),
+        WHITESPACE_AFTER_FIELD_NAME(
+            "https://tools.ietf.org/html/rfc7230#section-3.2.4", "Whitespace not allowed after field name"),
 
         /**
          * Prior to <a href="https://tools.ietf.org/html/rfc7230#section-3.2">RFC 7230</a>, the HTTP protocol allowed a header
@@ -176,22 +177,21 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc2616">RFC 7230</a>
      * with only the violations that differ from {@link #RFC7230}.
      */
-    public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(
-        Violation.HTTP_0_9,
-        Violation.MULTILINE_FIELD_VALUE,
-        Violation.MISMATCHED_AUTHORITY
-    ));
+    public static final HttpCompliance RFC2616 = new HttpCompliance(
+        "RFC2616", of(Violation.HTTP_0_9, Violation.MULTILINE_FIELD_VALUE, Violation.MISMATCHED_AUTHORITY));
 
     /**
      * A legacy HttpCompliance mode that allows all violations except case-insensitive methods.
      */
-    public static final HttpCompliance LEGACY = new HttpCompliance("LEGACY", complementOf(of(Violation.CASE_INSENSITIVE_METHOD)));
+    public static final HttpCompliance LEGACY =
+        new HttpCompliance("LEGACY", complementOf(of(Violation.CASE_INSENSITIVE_METHOD)));
 
     /**
      * A legacy HttpCompliance mode that supports {@link #RFC2616}, but that also allows: case-insensitive methods;
      * colons after field names; {@code Transfer-Encoding} with {@code Content-Length} fields; and multiple {@code Content-Length} values.
      */
-    public static final HttpCompliance RFC2616_LEGACY = RFC2616.with("RFC2616_LEGACY",
+    public static final HttpCompliance RFC2616_LEGACY = RFC2616.with(
+        "RFC2616_LEGACY",
         Violation.CASE_INSENSITIVE_METHOD,
         Violation.NO_COLON_AFTER_FIELD_NAME,
         Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH,
@@ -200,9 +200,11 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     /**
      * A legacy HttpCompliance mode that supports {@link #RFC7230}, but with case-insensitive methods allowed.
      */
-    public static final HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
+    public static final HttpCompliance RFC7230_LEGACY =
+        RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
 
-    private static final List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
+    private static final List<HttpCompliance> KNOWN_MODES =
+        Arrays.asList(RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();
 
     /**
@@ -249,7 +251,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         if (compliance == null)
         {
             String[] elements = spec.split("\\s*,\\s*");
-            Set<Violation> sections = switch (elements[0])
+            Set<Violation> sections =
+                switch (elements[0])
                 {
                     case "0" -> noneOf(Violation.class);
                     case "*" -> allOf(Violation.class);
@@ -360,15 +363,15 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         return EnumSet.copyOf(violations);
     }
 
-    public static void checkHttpCompliance(MetaData.Request request, HttpCompliance mode,
-                             ComplianceViolation.Listener listener)
+    public static void checkHttpCompliance(
+                                           MetaData.Request request, HttpCompliance mode, ComplianceViolation.Listener listener)
     {
         boolean seenContentLength = false;
         boolean seenTransferEncoding = false;
         boolean seenHostHeader = false;
 
         HttpFields fields = request.getHttpFields();
-        for (HttpField httpField: fields)
+        for (HttpField httpField : fields)
         {
             if (httpField.getHeader() == null)
                 continue;
@@ -399,7 +402,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
                     String[] hostValues = httpField.getValues();
                     if (hostValues.length > 1)
                         assertAllowed(Violation.DUPLICATE_HOST_HEADERS, mode, listener);
-                    for (String hostValue: hostValues)
+                    for (String hostValue : hostValues)
                         if (StringUtil.isBlank(hostValue))
                             assertAllowed(Violation.UNSAFE_HOST_HEADER, mode, listener);
                     String authority = request.getHttpURI().getHost();
@@ -414,9 +417,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     private static void assertAllowed(Violation violation, HttpCompliance mode, ComplianceViolation.Listener listener)
     {
         if (mode.allows(violation))
-            listener.onComplianceViolation(new ComplianceViolation.Event(
-                mode, violation, violation.getDescription()
-            ));
+            listener.onComplianceViolation(new ComplianceViolation.Event(mode, violation, violation.getDescription()));
         else
             throw new BadMessageException(violation.getDescription());
     }

@@ -421,7 +421,8 @@ public interface Index<V>
         @Override
         public String toString()
         {
-            return String.format("%s{c=%d,cs=%b}", super.toString(), contents == null ? 0 : contents.size(), caseSensitive);
+            return String.format(
+                "%s{c=%d,cs=%b}", super.toString(), contents == null ? 0 : contents.size(), caseSensitive);
         }
     }
 }

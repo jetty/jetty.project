@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.StatusCode;
@@ -31,11 +35,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LargeDeflateTest
 {
@@ -80,7 +79,9 @@ public class LargeDeflateTest
         upgradeRequest.addExtensions("permessage-deflate");
 
         EventSocket clientSocket = new EventSocket();
-        Session session = _client.connect(clientSocket, URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"), upgradeRequest).get();
+        Session session = _client.connect(
+            clientSocket, URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"), upgradeRequest)
+            .get();
         ByteBuffer sentMessage = largePayloads();
         session.getRemote().sendBytes(sentMessage);
         session.close(StatusCode.NORMAL, "close from test");
@@ -101,7 +102,9 @@ public class LargeDeflateTest
 
         EventSocket clientSocket = new EventSocket();
         ByteBuffer message = largePayloads();
-        Session session = _client.connect(clientSocket, URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"), upgradeRequest).get();
+        Session session = _client.connect(
+            clientSocket, URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"), upgradeRequest)
+            .get();
 
         // Set the maxBinaryMessageSize on the server to be lower than the size of the message.
         assertTrue(_serverSocket.openLatch.await(5, TimeUnit.SECONDS));

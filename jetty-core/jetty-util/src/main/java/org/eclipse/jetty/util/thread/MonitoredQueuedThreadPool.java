@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.BlockingQueue;
-
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;

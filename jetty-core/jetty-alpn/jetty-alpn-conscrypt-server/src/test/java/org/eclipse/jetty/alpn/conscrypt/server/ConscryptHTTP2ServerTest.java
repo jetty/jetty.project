@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.alpn.conscrypt.server;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Security;
-
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.ContentResponse;
@@ -42,8 +43,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test server that verifies that the Conscrypt ALPN mechanism works for both server and client side

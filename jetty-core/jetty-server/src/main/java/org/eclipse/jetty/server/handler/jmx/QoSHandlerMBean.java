@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler.jmx;
 
 import java.time.Duration;
-
 import org.eclipse.jetty.server.handler.QoSHandler;
 import org.eclipse.jetty.server.jmx.Handler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;

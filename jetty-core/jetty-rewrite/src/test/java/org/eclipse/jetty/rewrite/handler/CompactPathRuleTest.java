@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.util.stream.Stream;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
@@ -27,8 +28,6 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CompactPathRuleTest extends AbstractRuleTest
 {
@@ -43,13 +42,14 @@ public class CompactPathRuleTest extends AbstractRuleTest
             // with simple query
             Arguments.of("//foo//bar", "a=b", "/foo/bar", "a=b", "/foo/bar?a=b"),
             // with query that has double slashes (should preserve slashes in query)
-            Arguments.of("//foo//bar", "a=b//c", "/foo/bar", "a=b//c", "/foo/bar?a=b//c")
-        );
+            Arguments.of("//foo//bar", "a=b//c", "/foo/bar", "a=b//c", "/foo/bar?a=b//c"));
     }
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testCompactPathRule(String inputPath, String inputQuery, String expectedPath, String expectedQuery, String expectedPathQuery) throws Exception
+    public void testCompactPathRule(
+                                    String inputPath, String inputQuery, String expectedPath, String expectedQuery, String expectedPathQuery)
+        throws Exception
     {
         _httpConfig.setUriCompliance(UriCompliance.UNSAFE);
         CompactPathRule rule = new CompactPathRule();
@@ -64,12 +64,12 @@ public class CompactPathRuleTest extends AbstractRuleTest
             }
         });
 
-
         String request = """
             GET %s HTTP/1.1
             Host: localhost
-                        
-            """.formatted(HttpURI.build().path(inputPath).query(inputQuery));
+
+            """
+            .formatted(HttpURI.build().path(inputPath).query(inputQuery));
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         System.err.println(response.getReason());

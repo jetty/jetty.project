@@ -13,12 +13,8 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.EventListener;
-import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -34,6 +30,12 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.EventListener;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
@@ -45,9 +47,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class ComponentWrapTest
 {
@@ -101,7 +100,8 @@ public class ComponentWrapTest
             }
 
             @Override
-            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                throws IOException, ServletException
             {
                 chain.doFilter(request, response);
             }
@@ -173,10 +173,8 @@ public class ComponentWrapTest
         }
     }
 
-    public static class WrapHandler implements
-        FilterHolder.WrapFunction,
-        ServletHolder.WrapFunction,
-        ListenerHolder.WrapFunction
+    public static class WrapHandler
+        implements FilterHolder.WrapFunction, ServletHolder.WrapFunction, ListenerHolder.WrapFunction
     {
         private EventQueue events;
 
@@ -226,7 +224,8 @@ public class ComponentWrapTest
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             events.addEvent("TestWrapFilter.doFilter()");
             super.doFilter(request, response, chain);

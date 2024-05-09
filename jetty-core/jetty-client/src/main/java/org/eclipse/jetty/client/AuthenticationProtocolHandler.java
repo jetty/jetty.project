@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.client.Authentication.HeaderInfo;
 import org.eclipse.jetty.client.internal.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpConversation;
@@ -41,7 +40,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16 * 1024;
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationProtocolHandler.class);
-    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
+    private static final Pattern CHALLENGE_PATTERN = Pattern.compile(
+        "(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
 
     private final HttpClient client;
     private final int maxContentLength;
@@ -96,7 +96,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 if (headerInfos.isEmpty())
                     throw new IllegalArgumentException("Parameters without auth-scheme");
 
-                Map<String, String> authParams = headerInfos.get(headerInfos.size() - 1).getParameters();
+                Map<String, String> authParams =
+                    headerInfos.get(headerInfos.size() - 1).getParameters();
                 if (m.group("paramName") != null)
                 {
                     String paramVal = QuotedCSV.unquote(m.group("paramValue"));
@@ -127,14 +128,16 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             // The request may still be sending content, stop it.
             Request request = response.getRequest();
-            request.abort(new HttpRequestException("Aborting request after receiving a %d response".formatted(response.getStatus()), request));
+            request.abort(new HttpRequestException(
+                "Aborting request after receiving a %d response".formatted(response.getStatus()), request));
         }
 
         @Override
         public void onComplete(Result result)
         {
             HttpRequest request = (HttpRequest)result.getRequest();
-            ContentResponse response = new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding());
+            ContentResponse response =
+                new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding());
             if (result.getResponseFailure() != null)
             {
                 if (LOG.isDebugEnabled())
@@ -160,7 +163,13 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Authentication challenge without {} header", header);
-                forwardFailureComplete(request, result.getRequestFailure(), response, new HttpResponseException("HTTP protocol violation: Authentication challenge without " + header + " header", response));
+                forwardFailureComplete(
+                    request,
+                    result.getRequestFailure(),
+                    response,
+                    new HttpResponseException(
+                        "HTTP protocol violation: Authentication challenge without " + header + " header",
+                        response));
                 return;
             }
 
@@ -169,7 +178,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             URI authURI = resolveURI(request, getAuthenticationURI(request));
             for (HeaderInfo element : headerInfos)
             {
-                authentication = client.getAuthenticationStore().findAuthentication(element.getType(), authURI, element.getRealm());
+                authentication = client.getAuthenticationStore()
+                    .findAuthentication(element.getType(), authURI, element.getRealm());
                 if (authentication != null)
                 {
                     headerInfo = element;
@@ -195,7 +205,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
             try
             {
-                Authentication.Result authnResult = authentication.authenticate(request, response, headerInfo, conversation);
+                Authentication.Result authnResult =
+                    authentication.authenticate(request, response, headerInfo, conversation);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Authentication result {}", authnResult);
                 if (authnResult == null)
@@ -222,7 +233,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     }
                     else
                     {
-                        TimeoutException failure = new TimeoutException("Total timeout " + request.getConversation().getTimeout() + " ms elapsed");
+                        TimeoutException failure = new TimeoutException(
+                            "Total timeout " + request.getConversation().getTimeout() + " ms elapsed");
                         forwardFailureComplete(request, failure, response, failure);
                         return;
                     }
@@ -274,7 +286,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             responseListeners.emitSuccessComplete(new Result(request, response));
         }
 
-        private void forwardFailureComplete(HttpRequest request, Throwable requestFailure, Response response, Throwable responseFailure)
+        private void forwardFailureComplete(
+                                            HttpRequest request, Throwable requestFailure, Response response, Throwable responseFailure)
         {
             HttpConversation conversation = request.getConversation();
             conversation.updateResponseListeners(null);

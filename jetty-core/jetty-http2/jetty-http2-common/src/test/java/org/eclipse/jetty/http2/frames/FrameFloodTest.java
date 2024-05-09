@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
+
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.Flags;
@@ -26,9 +28,6 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
 
 public class FrameFloodTest
 {
@@ -122,9 +121,17 @@ public class FrameFloodTest
     {
         int streamId = 13;
         byte[] headersPayload = new byte[0];
-        byte[] headersBytes = frameFrom(headersPayload.length, FrameType.HEADERS.getType(), 0, streamId, headersPayload);
+        byte[] headersBytes =
+            frameFrom(headersPayload.length, FrameType.HEADERS.getType(), 0, streamId, headersPayload);
         byte[] continuationPayload = new byte[0];
-        testFrameFlood(headersBytes, frameFrom(continuationPayload.length, FrameType.CONTINUATION.getType(), 0, streamId, continuationPayload));
+        testFrameFlood(
+            headersBytes,
+            frameFrom(
+                continuationPayload.length,
+                FrameType.CONTINUATION.getType(),
+                0,
+                streamId,
+                continuationPayload));
     }
 
     @Test
@@ -132,9 +139,17 @@ public class FrameFloodTest
     {
         int streamId = 13;
         byte[] headersPayload = new byte[0];
-        byte[] headersBytes = frameFrom(headersPayload.length, FrameType.HEADERS.getType(), 0, streamId, headersPayload);
+        byte[] headersBytes =
+            frameFrom(headersPayload.length, FrameType.HEADERS.getType(), 0, streamId, headersPayload);
         byte[] continuationPayload = new byte[1];
-        testFrameFlood(headersBytes, frameFrom(continuationPayload.length, FrameType.CONTINUATION.getType(), 0, streamId, continuationPayload));
+        testFrameFlood(
+            headersBytes,
+            frameFrom(
+                continuationPayload.length,
+                FrameType.CONTINUATION.getType(),
+                0,
+                streamId,
+                continuationPayload));
     }
 
     @Test

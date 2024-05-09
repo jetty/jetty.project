@@ -18,7 +18,6 @@ module org.eclipse.jetty.ee10.plus
 {
     requires org.eclipse.jetty.plus;
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.ee10.webapp;
 
     // Only required if using Transaction.

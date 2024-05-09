@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.client;
 
 import java.util.Map;
-
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.internal.ClientHTTP3StreamConnection;
 import org.eclipse.jetty.http3.parser.MessageParser;
@@ -41,10 +40,13 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
     public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
     {
         HTTP3Client client = (HTTP3Client)context.get(HTTP3Client.CLIENT_CONTEXT_KEY);
-        Session.Client.Listener listener = (Session.Client.Listener)context.get(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY);
+        Session.Client.Listener listener =
+            (Session.Client.Listener)context.get(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
-        Promise<Session.Client> promise = (Promise<Session.Client>)context.get(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY);
-        ClientHTTP3Session session = new ClientHTTP3Session(client.getHTTP3Configuration(), (ClientQuicSession)quicSession, listener, promise);
+        Promise<Session.Client> promise =
+            (Promise<Session.Client>)context.get(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY);
+        ClientHTTP3Session session = new ClientHTTP3Session(
+            client.getHTTP3Configuration(), (ClientQuicSession)quicSession, listener, promise);
         if (LOG.isDebugEnabled())
             LOG.debug("created protocol-specific {}", session);
         return session;
@@ -55,8 +57,13 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
     {
         QuicStreamEndPoint streamEndPoint = (QuicStreamEndPoint)endPoint;
         long streamId = streamEndPoint.getStreamId();
-        ClientHTTP3Session http3Session = (ClientHTTP3Session)streamEndPoint.getQuicSession().getProtocolSession();
-        MessageParser parser = new MessageParser(http3Session.getSessionClient(), http3Session.getQpackDecoder(), streamId, streamEndPoint::isStreamFinished);
+        ClientHTTP3Session http3Session =
+            (ClientHTTP3Session)streamEndPoint.getQuicSession().getProtocolSession();
+        MessageParser parser = new MessageParser(
+            http3Session.getSessionClient(),
+            http3Session.getQpackDecoder(),
+            streamId,
+            streamEndPoint::isStreamFinished);
         ClientHTTP3StreamConnection connection = new ClientHTTP3StreamConnection(streamEndPoint, http3Session, parser);
         return customize(connection, context);
     }

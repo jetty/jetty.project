@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.ee9.demos;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.io.BufferedWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -30,15 +33,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 @ExtendWith(WorkDirExtension.class)
 public class FileServerXmlTest extends AbstractEmbeddedTest
 {
-    private static final String TEXT_CONTENT = "I am an old man and I have known a great " +
-        "many troubles, but most of them never happened. - Mark Twain";
+    private static final String TEXT_CONTENT = "I am an old man and I have known a great " + "many troubles, but most of them never happened. - Mark Twain";
     private Server server;
 
     @BeforeEach
@@ -65,9 +63,7 @@ public class FileServerXmlTest extends AbstractEmbeddedTest
     public void testGetSimpleText() throws Exception
     {
         URI uri = server.getURI().resolve("/simple.txt");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
@@ -75,8 +71,7 @@ public class FileServerXmlTest extends AbstractEmbeddedTest
         HttpFields responseHeaders = response.getHeaders();
 
         assertThat("Content-Type", responseHeaders.get("Content-Type"), is("text/plain"));
-        assertThat("Content-Length", responseHeaders.getLongField("Content-Length"),
-            is((long)TEXT_CONTENT.length()));
+        assertThat("Content-Length", responseHeaders.getLongField("Content-Length"), is((long)TEXT_CONTENT.length()));
 
         // test response content
         String responseBody = response.getContentAsString();

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util;
 
 import java.util.concurrent.TimeUnit;
-
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -33,9 +32,11 @@ public class StringIsEmptyBenchmark
 
     private static final String SHORT = "beer.com/foo";
 
-    private static final String MEDIUM = "beer.com/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde";
+    private static final String MEDIUM =
+        "beer.com/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde";
 
-    private static final String LONG = "beer.com/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde";
+    private static final String LONG =
+        "beer.com/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde/foobarbeeerbe/bebbebbebebbe/bebbeghdegde";
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)

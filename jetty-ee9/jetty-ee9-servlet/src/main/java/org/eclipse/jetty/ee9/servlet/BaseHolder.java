@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.util.function.BiFunction;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
+import java.io.IOException;
+import java.util.function.BiFunction;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
 import org.eclipse.jetty.util.Loader;
@@ -73,8 +72,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
      *
      * @throws Exception if unable to initialize
      */
-    public void initialize()
-        throws Exception
+    public void initialize() throws Exception
     {
         if (!isStarted())
             throw new IllegalStateException("Not started: " + this);
@@ -82,14 +80,13 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
     @SuppressWarnings("unchecked")
     @Override
-    public void doStart()
-        throws Exception
+    public void doStart() throws Exception
     {
-        //if no class already loaded and no classname, make permanently unavailable
+        // if no class already loaded and no classname, make permanently unavailable
         if (_class == null && (_className == null || _className.isEmpty()))
             throw new UnavailableException("No class in holder " + toString());
 
-        //try to load class
+        // try to load class
         if (_class == null)
         {
             try
@@ -107,8 +104,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     }
 
     @Override
-    public void doStop()
-        throws Exception
+    public void doStop() throws Exception
     {
         if (_instance == null)
             _class = null;
@@ -211,14 +207,14 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     {
         ServletContext scontext = null;
 
-        //try the ServletHandler first
+        // try the ServletHandler first
         if (getServletHandler() != null)
             scontext = getServletHandler().getServletContext();
 
         if (scontext != null)
             return scontext;
 
-        //try the ContextHandler next
+        // try the ContextHandler next
         APIContext ctx = ContextHandler.getCurrentContext();
         if (ctx != null)
         {

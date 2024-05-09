@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.tests.multipart.MultiPartExpectations;
@@ -39,7 +38,9 @@ public class MultiPartCaptureTest
 {
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultipartCapture(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultipartCapture(
+                                     MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations)
+        throws Exception
     {
         String boundary = MultiPart.extractBoundary(formExpectations.getContentType());
         TestPartsListener listener = new TestPartsListener();
@@ -51,7 +52,9 @@ public class MultiPartCaptureTest
 
     @ParameterizedTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
-    public void testMultiPartFormDataParse(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
+    public void testMultiPartFormDataParse(
+                                           MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations)
+        throws Exception
     {
         String boundary = MultiPart.extractBoundary(formExpectations.getContentType());
         Path tempDir = MavenPaths.targetTestDir(MultiPartCaptureTest.class.getSimpleName() + "-temp");
@@ -181,13 +184,14 @@ public class MultiPartCaptureTest
         public void onPart(String name, String fileName, HttpFields headers)
         {
             List<ByteBuffer> copyOfByteBuffers = new ArrayList<>();
-            for (ByteBuffer capture: partByteBuffers)
+            for (ByteBuffer capture : partByteBuffers)
             {
                 copyOfByteBuffers.add(BufferUtil.copy(capture));
             }
             MultiPart.Part newPart = new MultiPart.ByteBufferPart(name, fileName, headers, copyOfByteBuffers);
             partByteBuffers.clear();
-            parts.compute(newPart.getName(), (k, v) -> v == null ? new ArrayList<>() : v).add(newPart);
+            parts.compute(newPart.getName(), (k, v) -> v == null ? new ArrayList<>() : v)
+                .add(newPart);
         }
     }
 }

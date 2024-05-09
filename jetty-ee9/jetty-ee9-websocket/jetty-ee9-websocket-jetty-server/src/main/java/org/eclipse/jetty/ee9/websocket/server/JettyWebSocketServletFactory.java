@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.websocket.server;
 
 import java.util.Set;
-
 import org.eclipse.jetty.ee9.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketPolicy;
 

@@ -13,20 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.eclipse.jetty.io.content.AsyncContent;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Test;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -36,6 +22,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Test;
 
 public class AsyncContentTest
 {
@@ -104,7 +103,10 @@ public class AsyncContentTest
 
             // Offering more should fail.
             CountDownLatch failLatch = new CountDownLatch(1);
-            async.write(false, BufferUtil.EMPTY_BUFFER, Callback.from(Callback.NOOP::succeeded, x -> failLatch.countDown()));
+            async.write(
+                false,
+                BufferUtil.EMPTY_BUFFER,
+                Callback.from(Callback.NOOP::succeeded, x -> failLatch.countDown()));
             assertTrue(failLatch.await(5, TimeUnit.SECONDS));
         }
     }
@@ -117,7 +119,10 @@ public class AsyncContentTest
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(false, ByteBuffer.wrap(new byte[1]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.write(
+                false,
+                ByteBuffer.wrap(new byte[1]),
+                Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
             assertThat(successCounter.get(), is(0));
@@ -138,7 +143,10 @@ public class AsyncContentTest
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(false, ByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.write(
+                false,
+                ByteBuffer.wrap(new byte[0]),
+                Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
             assertThat(successCounter.get(), is(1));
@@ -158,7 +166,10 @@ public class AsyncContentTest
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(true, ByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.write(
+                true,
+                ByteBuffer.wrap(new byte[0]),
+                Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
             assertThat(successCounter.get(), is(1));

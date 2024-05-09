@@ -25,7 +25,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -51,7 +50,11 @@ import org.slf4j.LoggerFactory;
 public class DigestAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = LoggerFactory.getLogger(DigestAuthenticator.class);
-    private static final QuotedStringTokenizer TOKENIZER = QuotedStringTokenizer.builder().delimiters("=, ").returnDelimiters().allowEmbeddedQuotes().build();
+    private static final QuotedStringTokenizer TOKENIZER = QuotedStringTokenizer.builder()
+        .delimiters("=, ")
+        .returnDelimiters()
+        .allowEmbeddedQuotes()
+        .build();
 
     private final SecureRandom _random = new SecureRandom();
     private final Queue<Nonce> _nonceQueue = new ConcurrentLinkedQueue<>();
@@ -99,7 +102,8 @@ public class DigestAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request req, Response res, Callback callback)
+        throws ServerAuthException
     {
         String credentials = req.getHeaders().get(HttpHeader.AUTHORIZATION);
 
@@ -158,7 +162,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
             if (n > 0)
             {
-                //UserIdentity user = _loginService.login(digest.username,digest);
+                // UserIdentity user = _loginService.login(digest.username,digest);
                 UserIdentity user = login(digest.username, digest, req, res);
                 if (user != null)
                 {
@@ -174,12 +178,10 @@ public class DigestAuthenticator extends LoginAuthenticator
             String domain = req.getContext().getContextPath();
             if (domain == null)
                 domain = "/";
-            res.getHeaders().put(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
-                    "\", domain=\"" + domain +
-                    "\", nonce=\"" + newNonce(req) +
-                    "\", algorithm=MD5" +
-                    ", qop=\"auth\"" +
-                    ", stale=" + stale);
+            res.getHeaders()
+                .put(
+                    HttpHeader.WWW_AUTHENTICATE.asString(),
+                    "Digest realm=\"" + _loginService.getName() + "\", domain=\"" + domain + "\", nonce=\"" + newNonce(req) + "\", algorithm=MD5" + ", qop=\"auth\"" + ", stale=" + stale);
             Response.writeError(req, res, callback, HttpStatus.UNAUTHORIZED_401);
 
             return AuthenticationState.CHALLENGE;
@@ -206,7 +208,8 @@ public class DigestAuthenticator extends LoginAuthenticator
             byte[] nounce = new byte[24];
             _random.nextBytes(nounce);
 
-            nonce = new Nonce(Base64.getEncoder().encodeToString(nounce), Request.getTimeStamp(request), getMaxNonceCount());
+            nonce = new Nonce(
+                Base64.getEncoder().encodeToString(nounce), Request.getTimeStamp(request), getMaxNonceCount());
         }
         while (_nonceMap.putIfAbsent(nonce._nonce, nonce) != null);
         _nonceQueue.add(nonce);
@@ -285,6 +288,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     {
         @Serial
         private static final long serialVersionUID = -2484639019549527724L;
+
         final String method;
         String username = "";
         String realm = "";
@@ -357,7 +361,8 @@ public class DigestAuthenticator extends LoginAuthenticator
                 byte[] digest = md.digest();
 
                 // check digest
-                return stringEquals(TypeUtil.toString(digest, 16).toLowerCase(), response == null ? null : response.toLowerCase());
+                return stringEquals(
+                    TypeUtil.toString(digest, 16).toLowerCase(), response == null ? null : response.toLowerCase());
             }
             catch (Exception e)
             {

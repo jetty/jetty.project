@@ -13,19 +13,6 @@
 
 package org.eclipse.jetty.ee10.plus.jndi;
 
-import java.util.List;
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.Name;
-import javax.naming.NameNotFoundException;
-import javax.naming.NamingException;
-
-import org.eclipse.jetty.ee10.webapp.WebAppContext;
-import org.eclipse.jetty.plus.jndi.NamingEntry;
-import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Isolated;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -35,13 +22,24 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.List;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.Name;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingException;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.plus.jndi.NamingEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
+
 @Isolated("jndi entries")
 public class TestNamingEntryUtil
 {
     public class MyNamingEntry extends NamingEntry
     {
-        public MyNamingEntry(Object scope, String name, Object value)
-            throws NamingException
+        public MyNamingEntry(Object scope, String name, Object value) throws NamingException
         {
             super(scope, name, value);
         }
@@ -76,7 +74,7 @@ public class TestNamingEntryUtil
         }
         catch (NameNotFoundException e)
         {
-            //expected
+            // expected
         }
 
         InitialContext ic = new InitialContext();
@@ -97,7 +95,7 @@ public class TestNamingEntryUtil
     @Test
     public void testDestroySubcontext() throws Exception
     {
-        //create some NamingEntry in scope of a webapp
+        // create some NamingEntry in scope of a webapp
         WebAppContext wac = new WebAppContext();
         MyNamingEntry namingEntry1 = new MyNamingEntry(wac, "xxx", "111");
         MyNamingEntry namingEntry2 = new MyNamingEntry(wac, "yyy", "222");

@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -90,7 +89,7 @@ public interface Context extends Attributes, Decorator, Executor
      * @see #run(Runnable, Request)
      */
     void run(Runnable task);
-    
+
     /**
      * <p>Runs the given task in the current thread scoped to this Context and the given Request.</p>
      *

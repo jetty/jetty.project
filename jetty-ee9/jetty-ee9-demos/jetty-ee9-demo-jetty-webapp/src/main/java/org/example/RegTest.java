@@ -13,15 +13,14 @@
 
 package org.example;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -44,7 +43,8 @@ public class RegTest extends HttpServlet
     }
 
     @Override
-    public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+    public void doGet(final HttpServletRequest request, final HttpServletResponse response)
+        throws ServletException, IOException
     {
         request.setCharacterEncoding("UTF-8");
         PrintWriter pout = null;

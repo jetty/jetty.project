@@ -13,18 +13,6 @@
 
 package org.eclipse.jetty.ee10.demos;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -38,6 +26,17 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -63,8 +62,7 @@ public class Http2Server
         int securePort = ExampleUtil.getPort(args, "jetty.https.port", 8443);
         Server server = new Server();
 
-        MBeanContainer mbContainer = new MBeanContainer(
-            ManagementFactory.getPlatformMBeanServer());
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
 
         server.addBean(LoggerFactory.getILoggerFactory());
@@ -88,7 +86,8 @@ public class Http2Server
         httpConfig.setSendServerVersion(true);
 
         // HTTP Connector
-        ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(httpConfig), new HTTP2CServerConnectionFactory(httpConfig));
+        ServerConnector http = new ServerConnector(
+            server, new HttpConnectionFactory(httpConfig), new HTTP2CServerConnectionFactory(httpConfig));
         http.setPort(port);
         server.addConnector(http);
 
@@ -133,18 +132,19 @@ public class Http2Server
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             /* TODO
             Request baseRequest = Request.getBaseRequest(request);
-
+            
             if (baseRequest.isPush() && baseRequest.getRequestURI().contains("tiles"))
             {
                 String uri = baseRequest.getRequestURI().replace("tiles", "pushed").substring(baseRequest.getContextPath().length());
                 request.getRequestDispatcher(uri).forward(request, response);
                 return;
             }
-
+            
              */
 
             chain.doFilter(request, response);
@@ -169,7 +169,8 @@ public class Http2Server
 
             HttpSession session = request.getSession(true);
             if (session.isNew())
-                response.addCookie(new Cookie("bigcookie",
+                response.addCookie(new Cookie(
+                    "bigcookie",
                     "This is a test cookies that was created on " + new Date() + " and is used by the jetty http/2 test servlet."));
             response.setHeader("Custom", "Value");
             response.setContentType("text/plain");
@@ -178,8 +179,7 @@ public class Http2Server
             content += "session=" + session.getId() + (session.isNew() ? "(New)\n" : "\n");
             content += "date=" + new Date() + "\n";
 
-            content += Optional.ofNullable(request.getCookies())
-                .stream()
+            content += Optional.ofNullable(request.getCookies()).stream()
                 .flatMap(Arrays::stream)
                 .map(cookie -> String.format("cookie %s=%s", cookie.getName(), cookie.getValue()))
                 .collect(Collectors.joining(System.lineSeparator()));

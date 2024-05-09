@@ -37,9 +37,11 @@ public class CdiConfiguration extends AbstractConfiguration
 
     private static String[] getCdiHiddenClasses()
     {
-        //Only hide the cdi api classes if there is not also an impl on the
-        //environment classpath - vital for embedded uses.
-        if (CdiConfiguration.class.getClassLoader().getResource("META-INF/services/jakarta.enterprise.inject.spi.CDIProvider") == null)
+        // Only hide the cdi api classes if there is not also an impl on the
+        // environment classpath - vital for embedded uses.
+        if (CdiConfiguration.class
+            .getClassLoader()
+            .getResource("META-INF/services/jakarta.enterprise.inject.spi.CDIProvider") == null)
             return new String[]{"jakarta.enterprise.", "jakarta.decorator."};
         return new String[0];
     }

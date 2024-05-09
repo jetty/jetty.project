@@ -24,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.Request;
@@ -63,7 +62,8 @@ import org.slf4j.LoggerFactory;
 public abstract class CoreClientUpgradeRequest implements Response.CompleteListener, HttpUpgrader.Factory
 {
 
-    public static CoreClientUpgradeRequest from(WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
+    public static CoreClientUpgradeRequest from(
+                                                WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
     {
         return new CoreClientUpgradeRequest(webSocketClient, requestURI)
         {
@@ -100,7 +100,8 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
 
         String scheme = requestURI.getScheme();
         if (!HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
-            throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
+            throw new IllegalArgumentException(
+                "WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
 
         if (requestURI.getHost() == null)
             throw new IllegalArgumentException("Invalid WebSocket URI: host not present");
@@ -273,7 +274,8 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         if (!upgraded)
         {
             // We have failed to upgrade but have received a response, so notify the listener.
-            Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
+            Throwable listenerError =
+                notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
             if (listenerError != null)
             {
                 if (LOG.isDebugEnabled())
@@ -284,7 +286,9 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         if (status != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(new UpgradeException(requestURI, status,
+            handleException(new UpgradeException(
+                requestURI,
+                status,
                 "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
@@ -345,12 +349,14 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         }
 
         // Check if extensions were set in the headers from the upgrade listener.
-        String extsAfterListener = String.join(",", request.getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true));
+        String extsAfterListener =
+            String.join(",", request.getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true));
         if (!extensionString.equals(extsAfterListener))
         {
             // If extensions were set in both the ClientUpgradeRequest and UpgradeListener throw ISE.
             if (!requestedExtensions.isEmpty())
-                request.abort(new IllegalStateException("Extensions set in both the ClientUpgradeRequest and UpgradeListener"));
+                request.abort(new IllegalStateException(
+                    "Extensions set in both the ClientUpgradeRequest and UpgradeListener"));
 
             // Otherwise reparse the new set of requested extensions.
             requestedExtensions = ExtensionConfig.parseList(extsAfterListener);
@@ -407,7 +413,9 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
                 continue;
 
             // If it was not negotiated by the server remove.
-            long negExtsCount = negotiatedExtensions.stream().filter(ec -> extConfig.getName().equals(ec.getName())).count();
+            long negExtsCount = negotiatedExtensions.stream()
+                .filter(ec -> extConfig.getName().equals(ec.getName()))
+                .count();
             if (negExtsCount < 1)
             {
                 iterator.remove();
@@ -415,7 +423,9 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             }
 
             // Remove if we have duplicates.
-            long duplicateCount = negotiatedWithInternal.stream().filter(ec -> extConfig.getName().equals(ec.getName())).count();
+            long duplicateCount = negotiatedWithInternal.stream()
+                .filter(ec -> extConfig.getName().equals(ec.getName()))
+                .count();
             if (duplicateCount > 1)
                 iterator.remove();
         }
@@ -441,11 +451,15 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
                 }
             }
             if (!wasRequested)
-                throw new WebSocketException("Upgrade failed: Sec-WebSocket-Extensions contained extension not requested");
+                throw new WebSocketException(
+                    "Upgrade failed: Sec-WebSocket-Extensions contained extension not requested");
 
-            long numExtsWithSameName = negotiatedExtensions.stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            long numExtsWithSameName = negotiatedExtensions.stream()
+                .filter(c -> config.getName().equalsIgnoreCase(c.getName()))
+                .count();
             if (numExtsWithSameName > 1)
-                throw new WebSocketException("Upgrade failed: Sec-WebSocket-Extensions contained more than one extension of the same name");
+                throw new WebSocketException(
+                    "Upgrade failed: Sec-WebSocket-Extensions contained more than one extension of the same name");
         }
 
         // Negotiate the extension stack
@@ -461,7 +475,8 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             if (values != null)
             {
                 if (values.length > 1)
-                    throw new WebSocketException("Upgrade failed: Too many WebSocket subprotocol's in response: " + Arrays.toString(values));
+                    throw new WebSocketException(
+                        "Upgrade failed: Too many WebSocket subprotocol's in response: " + Arrays.toString(values));
                 else if (values.length == 1)
                     negotiatedSubProtocol = values[0];
             }
@@ -483,13 +498,15 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents());
+        WebSocketCoreSession coreSession =
+            new WebSocketCoreSession(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents());
         coreSession.setClassLoader(wsClient.getClassLoader());
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();
         ByteBufferPool bufferPool = wsClient.getWebSocketComponents().getByteBufferPool();
-        WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
+        WebSocketConnection wsConnection = new WebSocketConnection(
+            endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
         coreSession.setWebSocketConnection(wsConnection);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));

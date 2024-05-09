@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -153,10 +152,8 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
         @Override
         public String toString()
         {
-            return String.format("%s[validationLeft=%dms]",
-                connection,
-                timeout - NanoTime.millisSince(creationNanoTime)
-            );
+            return String.format(
+                "%s[validationLeft=%dms]", connection, timeout - NanoTime.millisSince(creationNanoTime));
         }
     }
 }

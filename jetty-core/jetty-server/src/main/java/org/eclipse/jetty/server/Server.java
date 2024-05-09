@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -139,7 +138,10 @@ public class Server extends Handler.Wrapper implements Attributes
         this(pool, null, null);
     }
 
-    public Server(@Name("threadPool") ThreadPool threadPool, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") ByteBufferPool bufferPool)
+    public Server(
+                  @Name("threadPool") ThreadPool threadPool,
+                  @Name("scheduler") Scheduler scheduler,
+                  @Name("bufferPool") ByteBufferPool bufferPool)
     {
         _threadPool = threadPool != null ? threadPool : new QueuedThreadPool();
         installBean(_threadPool);
@@ -337,13 +339,13 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     public void setStopAtShutdown(boolean stop)
     {
-        //if we now want to stop
+        // if we now want to stop
         if (stop)
         {
-            //and we weren't stopping before
+            // and we weren't stopping before
             if (!_stopAtShutdown)
             {
-                //only register to stop if we're already started (otherwise we'll do it in doStart())
+                // only register to stop if we're already started (otherwise we'll do it in doStart())
                 if (isStarted())
                     ShutdownThread.register(this);
             }
@@ -367,8 +369,7 @@ public class Server extends Handler.Wrapper implements Attributes
     public void addConnector(Connector connector)
     {
         if (connector.getServer() != this)
-            throw new IllegalArgumentException("Connector " + connector +
-                " cannot be shared among server " + connector.getServer() + " and server " + this);
+            throw new IllegalArgumentException("Connector " + connector + " cannot be shared among server " + connector.getServer() + " and server " + this);
         _connectors.add(connector);
         addBean(connector);
     }
@@ -398,8 +399,7 @@ public class Server extends Handler.Wrapper implements Attributes
             for (Connector connector : connectors)
             {
                 if (connector.getServer() != this)
-                    throw new IllegalArgumentException("Connector " + connector +
-                        " cannot be shared among server " + connector.getServer() + " and server " + this);
+                    throw new IllegalArgumentException("Connector " + connector + " cannot be shared among server " + connector.getServer() + " and server " + this);
             }
         }
 
@@ -499,7 +499,8 @@ public class Server extends Handler.Wrapper implements Attributes
                 df = _dateField;
                 if (df == null || df._seconds != seconds)
                 {
-                    HttpField field = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(now));
+                    HttpField field = new ResponseHttpFields.PersistentPreEncodedHttpField(
+                        HttpHeader.DATE, DateGenerator.formatDate(now));
                     _dateField = new DateField(seconds, field);
                     return field;
                 }
@@ -513,16 +514,16 @@ public class Server extends Handler.Wrapper implements Attributes
     {
         try
         {
-            //If the Server should be stopped when the jvm exits, register
-            //with the shutdown handler thread.
+            // If the Server should be stopped when the jvm exits, register
+            // with the shutdown handler thread.
             if (getStopAtShutdown())
                 ShutdownThread.register(this);
 
-            //Register the Server with the handler thread for receiving
-            //remote stop commands
+            // Register the Server with the handler thread for receiving
+            // remote stop commands
             ShutdownMonitor.register(this);
 
-            //Start a thread waiting to receive "stop" commands.
+            // Start a thread waiting to receive "stop" commands.
             ShutdownMonitor.getInstance().start(); // initialize
 
             if (_errorHandler == null)
@@ -531,7 +532,12 @@ public class Server extends Handler.Wrapper implements Attributes
             String gitHash = Jetty.GIT_HASH;
             String timestamp = Jetty.BUILD_TIMESTAMP;
 
-            LOG.info("jetty-{}; built: {}; git: {}; jvm {}", getVersion(), timestamp, gitHash, System.getProperty("java.runtime.version", System.getProperty("java.version")));
+            LOG.info(
+                "jetty-{}; built: {}; git: {}; jvm {}",
+                getVersion(),
+                timestamp,
+                gitHash,
+                System.getProperty("java.runtime.version", System.getProperty("java.version")));
             if (!Jetty.STABLE)
             {
                 LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
@@ -543,17 +549,20 @@ public class Server extends Handler.Wrapper implements Attributes
             // Open network connector to ensure ports are available
             if (!_dryRun)
             {
-                _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(connector ->
-                {
-                    try
+                _connectors.stream()
+                    .filter(NetworkConnector.class::isInstance)
+                    .map(NetworkConnector.class::cast)
+                    .forEach(connector ->
                     {
-                        connector.open();
-                    }
-                    catch (Throwable th)
-                    {
-                        multiException.add(th);
-                    }
-                });
+                        try
+                        {
+                            connector.open();
+                        }
+                        catch (Throwable th)
+                        {
+                            multiException.add(th);
+                        }
+                    });
                 // Throw now if verified start sequence and there was an open exception
                 multiException.ifExceptionThrow();
             }
@@ -583,7 +592,10 @@ public class Server extends Handler.Wrapper implements Attributes
                 {
                     multiException.add(e);
                     // stop any started connectors
-                    _connectors.stream().filter(LifeCycle::isRunning).map(Object.class::cast).forEach(LifeCycle::stop);
+                    _connectors.stream()
+                        .filter(LifeCycle::isRunning)
+                        .map(Object.class::cast)
+                        .forEach(LifeCycle::stop);
                 }
             }
 
@@ -593,18 +605,21 @@ public class Server extends Handler.Wrapper implements Attributes
         catch (Throwable th)
         {
             // Close any connectors that were opened
-            _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(nc ->
-            {
-                try
+            _connectors.stream()
+                .filter(NetworkConnector.class::isInstance)
+                .map(NetworkConnector.class::cast)
+                .forEach(nc ->
                 {
-                    nc.close();
-                }
-                catch (Throwable th2)
-                {
-                    if (th != th2)
-                        th.addSuppressed(th2);
-                }
-            });
+                    try
+                    {
+                        nc.close();
+                    }
+                    catch (Throwable th2)
+                    {
+                        if (th != th2)
+                            th.addSuppressed(th2);
+                    }
+                });
             throw th;
         }
         finally
@@ -679,8 +694,8 @@ public class Server extends Handler.Wrapper implements Attributes
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
 
-        //Unregister the Server with the handler thread for receiving
-        //remote stop commands as we are stopped already
+        // Unregister the Server with the handler thread for receiving
+        // remote stop commands as we are stopped already
         ShutdownMonitor.deregister(this);
 
         ExceptionUtil.ifExceptionThrow(multiException);
@@ -827,7 +842,9 @@ public class Server extends Handler.Wrapper implements Attributes
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent,
+        dumpObjects(
+            out,
+            indent,
             new ClassLoaderDump(this.getClass().getClassLoader()),
             new DumpableCollection("environments", Environment.getAll()),
             new DumpableAttributes("attributes", _attributes),
@@ -852,7 +869,9 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
-    private static class DynamicErrorHandler extends ErrorHandler {}
+    private static class DynamicErrorHandler extends ErrorHandler
+    {
+    }
 
     class ServerContext extends Attributes.Wrapper implements Context
     {

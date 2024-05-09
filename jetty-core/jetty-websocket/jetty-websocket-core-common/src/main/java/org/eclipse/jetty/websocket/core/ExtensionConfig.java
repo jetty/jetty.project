@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -36,7 +35,9 @@ public class ExtensionConfig
         .caseSensitive(false)
         .with("identity", new ExtensionConfig("identity"))
         .with("permessage-deflate", new ExtensionConfig("permessage-deflate"))
-        .with("permessage-deflate; client_max_window_bits", new ExtensionConfig("permessage-deflate; client_max_window_bits"))
+        .with(
+            "permessage-deflate; client_max_window_bits",
+            new ExtensionConfig("permessage-deflate; client_max_window_bits"))
         .build();
 
     /**
@@ -167,7 +168,9 @@ public class ExtensionConfig
 
     public List<Map.Entry<String, String>> getInternalParameters()
     {
-        return parameters.entrySet().stream().filter(entry -> entry.getKey().startsWith("@")).collect(Collectors.toList());
+        return parameters.entrySet().stream()
+            .filter(entry -> entry.getKey().startsWith("@"))
+            .collect(Collectors.toList());
     }
 
     public void removeInternalParameters()
@@ -350,7 +353,8 @@ public class ExtensionConfig
         {
             String extName = buffer.toString();
             if (name != null)
-                throw new IllegalArgumentException("parameterizedName contains multiple ExtensionConfigs: " + parameterizedName);
+                throw new IllegalArgumentException(
+                    "parameterizedName contains multiple ExtensionConfigs: " + parameterizedName);
             name = extName;
             super.parsedValue(buffer);
         }
@@ -359,7 +363,8 @@ public class ExtensionConfig
         {
             addValue(parameterizedName);
             if (StringUtil.isEmpty(name))
-                throw new IllegalArgumentException("parameterizedName contains no ExtensionConfigs: " + parameterizedName);
+                throw new IllegalArgumentException(
+                    "parameterizedName contains no ExtensionConfigs: " + parameterizedName);
         }
     }
 }

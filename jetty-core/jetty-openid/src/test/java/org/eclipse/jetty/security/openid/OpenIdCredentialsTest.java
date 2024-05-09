@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.security.openid;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import java.util.HashMap;
 import java.util.Map;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class OpenIdCredentialsTest
 {

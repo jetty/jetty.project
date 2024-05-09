@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketConnectionListener;
@@ -98,7 +97,7 @@ public class WebSocketProxy
                 upgradeRequest.setExtensions(session.getUpgradeRequest().getExtensions());
                 connect = client.connect(proxyToServer, serverUri, upgradeRequest);
 
-                //This is blocking as we really want the client to be connected before receiving any messages.
+                // This is blocking as we really want the client to be connected before receiving any messages.
                 connect.get();
             }
             catch (Exception e)
@@ -113,7 +112,11 @@ public class WebSocketProxy
         public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketPartialBinary({}, {})", getClass().getSimpleName(), BufferUtil.toDetailString(payload), fin);
+                LOG.debug(
+                    "{} onWebSocketPartialBinary({}, {})",
+                    getClass().getSimpleName(),
+                    BufferUtil.toDetailString(payload),
+                    fin);
 
             try
             {
@@ -129,7 +132,11 @@ public class WebSocketProxy
         public void onWebSocketPartialText(String payload, boolean fin)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketPartialText({}, {})", getClass().getSimpleName(), StringUtil.truncate(payload, 100), fin);
+                LOG.debug(
+                    "{} onWebSocketPartialText({}, {})",
+                    getClass().getSimpleName(),
+                    StringUtil.truncate(payload, 100),
+                    fin);
 
             try
             {
@@ -208,7 +215,8 @@ public class WebSocketProxy
 
         public void fail(Throwable failure)
         {
-            // Only ProxyToServer can be failed before it is opened (if ClientToProxy fails before the connect completes).
+            // Only ProxyToServer can be failed before it is opened (if ClientToProxy fails before the connect
+            // completes).
             Session session = this.session;
             if (session != null)
                 session.close(StatusCode.SERVER_ERROR, failure.getMessage());
@@ -227,7 +235,11 @@ public class WebSocketProxy
         public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketPartialBinary({}, {})", getClass().getSimpleName(), BufferUtil.toDetailString(payload), fin);
+                LOG.debug(
+                    "{} onWebSocketPartialBinary({}, {})",
+                    getClass().getSimpleName(),
+                    BufferUtil.toDetailString(payload),
+                    fin);
 
             try
             {
@@ -243,7 +255,11 @@ public class WebSocketProxy
         public void onWebSocketPartialText(String payload, boolean fin)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketPartialText({}, {})", getClass().getSimpleName(), StringUtil.truncate(payload, 100), fin);
+                LOG.debug(
+                    "{} onWebSocketPartialText({}, {})",
+                    getClass().getSimpleName(),
+                    StringUtil.truncate(payload, 100),
+                    fin);
 
             try
             {

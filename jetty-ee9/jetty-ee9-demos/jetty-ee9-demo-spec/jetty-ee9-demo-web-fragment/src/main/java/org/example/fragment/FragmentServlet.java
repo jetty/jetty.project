@@ -13,21 +13,19 @@
 
 package org.example.fragment;
 
-import java.io.IOException;
-
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * FragmentServlet
  *
  * A web fragment jar.
  */
-
 public class FragmentServlet extends HttpServlet
 {
     private ServletConfig config;

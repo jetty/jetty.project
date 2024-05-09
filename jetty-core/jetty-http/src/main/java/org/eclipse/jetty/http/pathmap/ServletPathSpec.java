@@ -75,8 +75,7 @@ public class ServletPathSpec extends AbstractPathSpec
                 return true;
         }
         else if (c == '*')
-            return path.regionMatches(path.length() - pathSpec.length() + 1,
-                pathSpec, 1, pathSpec.length() - 1);
+            return path.regionMatches(path.length() - pathSpec.length() + 1, pathSpec, 1, pathSpec.length() - 1);
         return false;
     }
 
@@ -116,8 +115,7 @@ public class ServletPathSpec extends AbstractPathSpec
         }
         else if (c == '*')
         {
-            if (path.regionMatches(path.length() - (pathSpec.length() - 1),
-                pathSpec, 1, pathSpec.length() - 1))
+            if (path.regionMatches(path.length() - (pathSpec.length() - 1), pathSpec, 1, pathSpec.length() - 1))
                 return path;
         }
         return null;
@@ -133,7 +131,7 @@ public class ServletPathSpec extends AbstractPathSpec
     public static String pathInfo(String pathSpec, String path)
     {
         if ("".equals(pathSpec))
-            return path; //servlet 3 spec sec 12.2 will be '/'
+            return path; // servlet 3 spec sec 12.2 will be '/'
 
         char c = pathSpec.charAt(0);
 
@@ -166,9 +164,7 @@ public class ServletPathSpec extends AbstractPathSpec
      * @param path the additional path
      * @return base plus path with pathspec removed
      */
-    public static String relativePath(String base,
-                                      String pathSpec,
-                                      String path)
+    public static String relativePath(String base, String pathSpec, String path)
     {
         String info = pathInfo(pathSpec, path);
         if (info == null)
@@ -253,7 +249,8 @@ public class ServletPathSpec extends AbstractPathSpec
             suffix = null;
             if (servletPathSpec.endsWith("*"))
             {
-                LOG.warn("Suspicious URL pattern: '{}'; see sections 12.1 and 12.2 of the Servlet specification",
+                LOG.warn(
+                    "Suspicious URL pattern: '{}'; see sections 12.1 and 12.2 of the Servlet specification",
                     servletPathSpec);
             }
             preMatchedPath = MatchedPath.from(servletPathSpec, null);
@@ -281,9 +278,13 @@ public class ServletPathSpec extends AbstractPathSpec
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Creating {}[{}] (group: {}, prefix: \"{}\", suffix: \"{}\")",
+            LOG.debug(
+                "Creating {}[{}] (group: {}, prefix: \"{}\", suffix: \"{}\")",
                 getClass().getSimpleName(),
-                _declaration, _group, _prefix, _suffix);
+                _declaration,
+                _group,
+                _prefix,
+                _suffix);
         }
     }
 
@@ -311,7 +312,8 @@ public class ServletPathSpec extends AbstractPathSpec
             // only allowed to have '*' at the end of the path spec
             if (idx != (len - 1))
             {
-                throw new IllegalArgumentException("Servlet Spec 12.2 violation: glob '*' can only exist at end of prefix based matches: bad spec \"" + servletPathSpec + "\"");
+                throw new IllegalArgumentException(
+                    "Servlet Spec 12.2 violation: glob '*' can only exist at end of prefix based matches: bad spec \"" + servletPathSpec + "\"");
             }
         }
         else if (servletPathSpec.startsWith("*."))
@@ -320,16 +322,19 @@ public class ServletPathSpec extends AbstractPathSpec
             int idx = servletPathSpec.indexOf('/');
             // cannot have path separator
             if (idx >= 0)
-                throw new IllegalArgumentException("Servlet Spec 12.2 violation: suffix based path spec cannot have path separators: bad spec \"" + servletPathSpec + "\"");
+                throw new IllegalArgumentException(
+                    "Servlet Spec 12.2 violation: suffix based path spec cannot have path separators: bad spec \"" + servletPathSpec + "\"");
 
             idx = servletPathSpec.indexOf('*', 2);
             // only allowed to have 1 glob '*', at the start of the path spec
             if (idx >= 1)
-                throw new IllegalArgumentException("Servlet Spec 12.2 violation: suffix based path spec cannot have multiple glob '*': bad spec \"" + servletPathSpec + "\"");
+                throw new IllegalArgumentException(
+                    "Servlet Spec 12.2 violation: suffix based path spec cannot have multiple glob '*': bad spec \"" + servletPathSpec + "\"");
         }
         else
         {
-            throw new IllegalArgumentException("Servlet Spec 12.2 violation: path spec must start with \"/\" or \"*.\": bad spec \"" + servletPathSpec + "\"");
+            throw new IllegalArgumentException(
+                "Servlet Spec 12.2 violation: path spec must start with \"/\" or \"*.\": bad spec \"" + servletPathSpec + "\"");
         }
     }
 

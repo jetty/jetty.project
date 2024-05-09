@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.util.security;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.eclipse.jetty.util.security.Credential.Crypt;
 import org.eclipse.jetty.util.security.Credential.MD5;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * CredentialTest
@@ -103,7 +103,8 @@ public class CredentialTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
+    @ValueSource(strings =
+    {
         "OBF:1v2j1uum1xtv1zej1zer1xtn1uvk1v1v",
         "MD5:5f4dcc3b5aa765d61d8327deb882cf99",
         "CRYPT:usjRS48E8ZADM"

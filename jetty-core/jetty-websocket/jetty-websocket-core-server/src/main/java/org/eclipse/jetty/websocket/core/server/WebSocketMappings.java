@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.server;
 
 import java.io.IOException;
 import java.util.function.BiConsumer;
-
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -171,7 +170,7 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
     {
         WebSocketNegotiator negotiator = getWebSocketNegotiator(pathSpec);
         if (negotiator instanceof CreatorNegotiator)
-            return  ((CreatorNegotiator)negotiator).getWebSocketCreator();
+            return ((CreatorNegotiator)negotiator).getWebSocketCreator();
         return null;
     }
 
@@ -188,7 +187,12 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
      * @param factory the factory to use to create a FrameHandler for the websocket.
      * @param customizer the customizer to use to customize the WebSocket session.
      */
-    public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer) throws WebSocketException
+    public void addMapping(
+                           PathSpec pathSpec,
+                           WebSocketCreator creator,
+                           FrameHandlerFactory factory,
+                           Configuration.Customizer customizer)
+        throws WebSocketException
     {
         mappings.put(pathSpec, WebSocketNegotiator.from(creator, factory, customizer));
     }
@@ -258,7 +262,9 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
      * @return true if the WebSocket upgrade was accepted
      * @throws WebSocketException there is an error during the upgrade
      */
-    public boolean upgrade(Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws WebSocketException
+    public boolean upgrade(
+                           Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer)
+        throws WebSocketException
     {
         WebSocketNegotiator negotiator = getMatchedNegotiator(request, WebSocketMappings::storePathSpec);
         return upgrade(negotiator, request, response, callback, defaultCustomizer);
@@ -287,7 +293,13 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
      * @return true if the WebSocket upgrade was accepted
      * @throws WebSocketException there is an error during the upgrade
      */
-    public boolean upgrade(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws WebSocketException
+    public boolean upgrade(
+                           WebSocketNegotiator negotiator,
+                           Request request,
+                           Response response,
+                           Callback callback,
+                           Configuration.Customizer defaultCustomizer)
+        throws WebSocketException
     {
         if (negotiator == null)
             return false;

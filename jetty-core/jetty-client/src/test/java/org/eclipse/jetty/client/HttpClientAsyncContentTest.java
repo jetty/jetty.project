@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -20,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -28,9 +30,6 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
 {
@@ -100,7 +99,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
     }
 
     // TODO
-/*
+    /*
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testConcurrentAsyncContent(Scenario scenario) throws Exception
@@ -144,7 +143,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
                                         {
                                             boolean result = super.content(buffer);
                                             // The content has been notified, but the listener has not demanded.
-
+    
                                             // Simulate an asynchronous demand from otherThread.
                                             // There is no further content, so otherThread will fill 0,
                                             // set the fill interest, and release the network buffer.
@@ -157,7 +156,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
                                             otherThread.start();
                                             // Wait for otherThread to finish, then let this thread continue.
                                             assertTrue(latch.await(5, TimeUnit.SECONDS));
-
+    
                                             return result;
                                         }
                                         catch (InterruptedException x)
@@ -172,7 +171,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
                 }, context);
             }
         }, null);
-
+    
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -186,16 +185,16 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
                 if (result.isSucceeded())
                     latch.countDown();
             });
-
+    
         // Wait for the threads to finish their processing.
         Thread.sleep(1000);
-
+    
         // Complete the response.
         asyncContextRef.get().complete();
-
+    
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
-*/
+    */
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAsyncContentAbort(Scenario scenario) throws Exception
@@ -244,17 +243,18 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         CountDownLatch successLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContentSource((response, contentSource) -> response.abort(new Throwable()).whenComplete((failed, x) ->
-            {
-                Content.Chunk chunk = contentSource.read();
-                assertTrue(Content.Chunk.isFailure(chunk, true));
-                contentSource.demand(() ->
+            .onResponseContentSource((response, contentSource) -> response.abort(new Throwable())
+                .whenComplete((failed, x) ->
                 {
-                    Content.Chunk c = contentSource.read();
-                    assertTrue(Content.Chunk.isFailure(c, true));
-                    errorContentLatch.countDown();
-                });
-            }))
+                    Content.Chunk chunk = contentSource.read();
+                    assertTrue(Content.Chunk.isFailure(chunk, true));
+                    contentSource.demand(() ->
+                    {
+                        Content.Chunk c = contentSource.read();
+                        assertTrue(Content.Chunk.isFailure(c, true));
+                        errorContentLatch.countDown();
+                    });
+                }))
             .send(result ->
             {
                 if (result.isFailed())
@@ -310,7 +310,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
     }
 
     // TODO
-/*
+    /*
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAsyncGzipContentAbortWhileDecodingWithDelayedDemand(Scenario scenario) throws Exception
@@ -326,7 +326,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         int half = gzipBytes.length / 2;
         byte[] gzip1 = Arrays.copyOfRange(gzipBytes, 0, half);
         byte[] gzip2 = Arrays.copyOfRange(gzipBytes, half, gzipBytes.length);
-
+    
         AtomicReference<AsyncContext> asyncContextRef = new AtomicReference<>();
         start(scenario, new EmptyServerHandler()
         {
@@ -336,14 +336,14 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);
                 asyncContextRef.set(asyncContext);
-
+    
                 response.getHeaders().put("Content-Encoding", "gzip");
                 ServletOutputStream output = response.getOutputStream();
                 output.write(gzip1);
                 output.flush();
             }
         });
-
+    
         AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
         CountDownLatch firstChunkLatch = new CountDownLatch(1);
         CountDownLatch secondChunkLatch = new CountDownLatch(1);
@@ -381,18 +381,18 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
                 if (result.isFailed())
                     resultLatch.countDown();
             });
-
+    
         assertTrue(firstChunkLatch.await(5, TimeUnit.SECONDS));
         // Wait to make sure the demand is really delayed.
         Thread.sleep(500);
         demandRef.get().accept(1);
-
+    
         assertTrue(secondChunkLatch.await(5, TimeUnit.SECONDS));
         // Wait to make sure the demand is really delayed.
         Thread.sleep(500);
         demandRef.get().accept(1);
-
+    
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
-*/
+    */
 }

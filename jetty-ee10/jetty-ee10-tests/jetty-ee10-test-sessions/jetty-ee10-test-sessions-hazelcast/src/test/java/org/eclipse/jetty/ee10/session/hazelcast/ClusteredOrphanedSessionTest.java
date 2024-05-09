@@ -22,8 +22,7 @@ import org.junit.jupiter.api.AfterEach;
  * ClusteredOrphanedSessionTest
  *
  */
-public class ClusteredOrphanedSessionTest
-    extends AbstractClusteredOrphanedSessionTest
+public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
     HazelcastTestHelper _testHelper = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
 

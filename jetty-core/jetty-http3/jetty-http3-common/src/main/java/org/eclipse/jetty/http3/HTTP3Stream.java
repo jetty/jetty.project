@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
@@ -125,14 +124,18 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     {
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout {} ms expired on {}", getIdleTimeout(), this);
-        notifyIdleTimeout(timeout, Promise.from(timedOut ->
-        {
-            if (timedOut)
-                endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
-            else
-                notIdle();
-            promise.succeeded(timedOut);
-        }, promise::failed));
+        notifyIdleTimeout(
+            timeout,
+            Promise.from(
+                timedOut ->
+                {
+                    if (timedOut)
+                        endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
+                    else
+                        notIdle();
+                    promise.succeeded(timedOut);
+                },
+                promise::failed));
     }
 
     @Override
@@ -146,14 +149,13 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} on {}", frame, this);
 
-        return writeFrame(frame)
-            .whenComplete((s, x) ->
-            {
-                if (x == null)
-                    updateClose(Frame.isLast(frame), true);
-                else
-                    session.removeStream(this, x);
-            });
+        return writeFrame(frame).whenComplete((s, x) ->
+        {
+            if (x == null)
+                updateClose(Frame.isLast(frame), true);
+            else
+                session.removeStream(this, x);
+        });
     }
 
     @Override
@@ -392,7 +394,10 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
             if (frameState == FrameState.FAILED)
                 return false;
             frameState = FrameState.FAILED;
-            session.onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
+            session.onSessionFailure(
+                HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(),
+                "invalid_frame_sequence",
+                new IllegalStateException("invalid frame sequence"));
             return false;
         }
     }
@@ -400,8 +405,10 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     public Promise.Completable<Stream> writeFrame(Frame frame)
     {
         notIdle();
-        return Promise.Completable.with(p ->
-            session.writeMessageFrame(endPoint.getStreamId(), frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> p.succeeded(this), p::failed)));
+        return Promise.Completable.with(p -> session.writeMessageFrame(
+            endPoint.getStreamId(),
+            frame,
+            Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> p.succeeded(this), p::failed)));
     }
 
     public boolean isClosed()
@@ -436,8 +443,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
                     }
                 }
                 case CLOSED ->
-                {
-                }
+                    {
+                    }
                 default -> throw new IllegalStateException();
             }
         }
@@ -456,7 +463,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d[demand=%b,stalled=%b,last=%b,idle=%d,session=%s]",
+        return String.format(
+            "%s@%x#%d[demand=%b,stalled=%b,last=%b,idle=%d,session=%s]",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
@@ -464,8 +472,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
             isStalled(),
             isLast(),
             NanoTime.millisSince(expireNanoTime),
-            getSession()
-        );
+            getSession());
     }
 
     /**
@@ -508,6 +515,9 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     private enum CloseState
     {
-        NOT_CLOSED, LOCALLY_CLOSED, REMOTELY_CLOSED, CLOSED
+        NOT_CLOSED,
+        LOCALLY_CLOSED,
+        REMOTELY_CLOSED,
+        CLOSED
     }
 }

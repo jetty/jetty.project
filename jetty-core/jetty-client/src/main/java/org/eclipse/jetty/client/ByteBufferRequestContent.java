@@ -16,7 +16,6 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
-
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 
 /**

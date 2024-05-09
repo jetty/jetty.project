@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.docs.programming;
 
+import static java.lang.System.Logger.Level.INFO;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.websocket.api.Callback;
@@ -29,8 +30,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
-import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
 public class WebSocketDocs
@@ -167,7 +166,9 @@ public class WebSocketDocs
             if (message.startsWith("echo:"))
             {
                 // Only demand for more events when sendText() is completed successfully.
-                session.sendText(message.substring("echo:".length()), Callback.from(session::demand, Throwable::printStackTrace));
+                session.sendText(
+                    message.substring("echo:".length()),
+                    Callback.from(session::demand, Throwable::printStackTrace));
             }
             else
             {
@@ -296,7 +297,9 @@ public class WebSocketDocs
             if (message.startsWith("echo:"))
             {
                 // Only demand for more events when sendText() is completed successfully.
-                session.sendText(message.substring("echo:".length()), Callback.from(session::demand, Throwable::printStackTrace));
+                session.sendText(
+                    message.substring("echo:".length()),
+                    Callback.from(session::demand, Throwable::printStackTrace));
             }
             else
             {
@@ -440,36 +443,42 @@ public class WebSocketDocs
         public void onText(Session session, String text)
         {
             // Send textual data to the remote peer.
-            session.sendText("data", new Callback() // <1>
-            {
-                @Override
-                public void succeed()
+            session.sendText(
+                "data",
+                new Callback() // <1>
                 {
-                    // Send binary data to the remote peer.
-                    ByteBuffer bytes = readImageFromFile();
-                    session.sendBinary(bytes, new Callback() // <2>
+                    @Override
+                    public void succeed()
                     {
-                        @Override
-                        public void succeed()
-                        {
-                            // Both sends succeeded.
-                        }
+                        // Send binary data to the remote peer.
+                        ByteBuffer bytes = readImageFromFile();
+                        session.sendBinary(
+                            bytes,
+                            new Callback() // <2>
+                            {
+                                @Override
+                                public void succeed()
+                                {
+                                    // Both sends succeeded.
+                                }
 
-                        @Override
-                        public void fail(Throwable x)
-                        {
-                            System.getLogger("websocket").log(System.Logger.Level.WARNING, "could not send binary data", x);
-                        }
-                    });
-                }
+                                @Override
+                                public void fail(Throwable x)
+                                {
+                                    System.getLogger("websocket")
+                                        .log(System.Logger.Level.WARNING, "could not send binary data", x);
+                                }
+                            });
+                    }
 
-                @Override
-                public void fail(Throwable x)
-                {
-                    // No need to rethrow or close the session.
-                    System.getLogger("websocket").log(System.Logger.Level.WARNING, "could not send textual data", x);
-                }
-            });
+                    @Override
+                    public void fail(Throwable x)
+                    {
+                        // No need to rethrow or close the session.
+                        System.getLogger("websocket")
+                            .log(System.Logger.Level.WARNING, "could not send textual data", x);
+                    }
+                });
 
             // remote.sendString("wrong", Callback.NOOP); // May throw WritePendingException! <3>
         }

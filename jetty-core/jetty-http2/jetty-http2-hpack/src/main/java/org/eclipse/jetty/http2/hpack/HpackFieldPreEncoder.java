@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpFieldPreEncoder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;

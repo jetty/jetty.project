@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.ee10.test.websocket;
 
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JakartaWebSocketTest
 {

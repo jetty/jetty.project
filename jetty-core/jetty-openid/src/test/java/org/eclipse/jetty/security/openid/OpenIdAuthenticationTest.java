@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.security.openid;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+
 import java.io.File;
 import java.io.PrintStream;
 import java.security.Principal;
@@ -20,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpHeader;
@@ -50,13 +56,6 @@ import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-
 @SuppressWarnings("unchecked")
 public class OpenIdAuthenticationTest
 {
@@ -83,7 +82,8 @@ public class OpenIdAuthenticationTest
         openIdProvider = new OpenIdProvider(CLIENT_ID, CLIENT_SECRET);
         openIdProvider.start();
 
-        OpenIdConfiguration openIdConfiguration = new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET);
+        OpenIdConfiguration openIdConfiguration =
+            new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET);
         if (configure != null)
             configure.accept(openIdConfiguration);
         server.addBean(openIdConfiguration);
@@ -264,7 +264,8 @@ public class OpenIdAuthenticationTest
         String location = response.getHeaders().get(HttpHeader.LOCATION);
         assertThat(location, containsString(openIdProvider.getProvider() + "/auth"));
 
-        // Note that we couldn't follow "OpenID Connect RP-Initiated Logout 1.0" because we redirect straight to auth endpoint.
+        // Note that we couldn't follow "OpenID Connect RP-Initiated Logout 1.0" because we redirect straight to auth
+        // endpoint.
         assertThat(openIdProvider.getLoggedInUsers().getCurrent(), equalTo(1L));
         assertThat(openIdProvider.getLoggedInUsers().getMax(), equalTo(1L));
         assertThat(openIdProvider.getLoggedInUsers().getTotal(), equalTo(1L));
@@ -346,7 +347,8 @@ public class OpenIdAuthenticationTest
         assertThat(content, containsString("name: Alice"));
         assertThat(content, containsString("email: Alice@example.com"));
 
-        // After waiting past ID_Token expiry time we are still authenticated because logoutWhenIdTokenIsExpired is false by default.
+        // After waiting past ID_Token expiry time we are still authenticated because logoutWhenIdTokenIsExpired is
+        // false by default.
         Thread.sleep(idTokenExpiryTime * 2);
         response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -412,7 +414,8 @@ public class OpenIdAuthenticationTest
             response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/html");
             try (PrintStream output = new PrintStream(Content.Sink.asOutputStream(response)))
             {
-                Map<String, Object> userInfo = (Map<String, Object>)request.getSession(false).getAttribute(OpenIdAuthenticator.CLAIMS);
+                Map<String, Object> userInfo =
+                    (Map<String, Object>)request.getSession(false).getAttribute(OpenIdAuthenticator.CLAIMS);
                 output.println(userInfo.get("sub") + ": success");
                 output.close();
                 callback.succeeded();
@@ -443,7 +446,8 @@ public class OpenIdAuthenticationTest
                 Principal userPrincipal = AuthenticationState.getUserPrincipal(request);
                 if (userPrincipal != null)
                 {
-                    Map<String, Object> userInfo = (Map<String, Object>)request.getSession(false).getAttribute(OpenIdAuthenticator.CLAIMS);
+                    Map<String, Object> userInfo =
+                        (Map<String, Object>)request.getSession(false).getAttribute(OpenIdAuthenticator.CLAIMS);
                     output.println("userId: " + userInfo.get("sub") + "<br>");
                     output.println("name: " + userInfo.get("name") + "<br>");
                     output.println("email: " + userInfo.get("email") + "<br>");

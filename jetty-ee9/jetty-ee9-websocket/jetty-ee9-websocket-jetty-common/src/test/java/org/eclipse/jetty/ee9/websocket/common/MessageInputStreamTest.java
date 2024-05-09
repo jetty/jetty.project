@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -20,7 +26,6 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -30,12 +35,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.messages.MessageInputStream;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class MessageInputStreamTest
 {
@@ -110,18 +109,31 @@ public class MessageInputStreamTest
                     {
                         startLatch.countDown();
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(new Frame(OpCode.BINARY).setPayload("Saved").setFin(false), Callback.NOOP);
+                        stream.accept(
+                            new Frame(OpCode.BINARY)
+                                .setPayload("Saved")
+                                .setFin(false),
+                            Callback.NOOP);
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(new Frame(OpCode.CONTINUATION).setPayload(" by ").setFin(false), Callback.NOOP);
+                        stream.accept(
+                            new Frame(OpCode.CONTINUATION)
+                                .setPayload(" by ")
+                                .setFin(false),
+                            Callback.NOOP);
                         TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(new Frame(OpCode.CONTINUATION).setPayload("Zero").setFin(true), Callback.NOOP);
+                        stream.accept(
+                            new Frame(OpCode.CONTINUATION)
+                                .setPayload("Zero")
+                                .setFin(true),
+                            Callback.NOOP);
                     }
                     catch (InterruptedException e)
                     {
                         hadError.set(true);
                         e.printStackTrace(System.err);
                     }
-                }).start();
+                })
+                    .start();
 
                 // wait for thread to start
                 startLatch.await();
@@ -152,14 +164,19 @@ public class MessageInputStreamTest
                     {
                         // wait for a little bit before populating buffers
                         TimeUnit.MILLISECONDS.sleep(400);
-                        stream.accept(new Frame(OpCode.BINARY).setPayload("I will conquer").setFin(true), Callback.NOOP);
+                        stream.accept(
+                            new Frame(OpCode.BINARY)
+                                .setPayload("I will conquer")
+                                .setFin(true),
+                            Callback.NOOP);
                     }
                     catch (InterruptedException e)
                     {
                         hadError.set(true);
                         e.printStackTrace(System.err);
                     }
-                }).start();
+                })
+                    .start();
 
                 // Read byte from stream.
                 int b = stream.read();
@@ -194,7 +211,8 @@ public class MessageInputStreamTest
                         hadError.set(true);
                         t.printStackTrace(System.err);
                     }
-                }).start();
+                })
+                    .start();
 
                 // Read byte from stream.
                 int b = stream.read();
@@ -228,7 +246,8 @@ public class MessageInputStreamTest
                 // Append parts of message
                 Frame msg1 = new Frame(OpCode.BINARY).setPayload("Hello ").setFin(false);
                 // what is being tested (an empty payload)
-                Frame msg2 = new Frame(OpCode.CONTINUATION).setPayload(new byte[0]).setFin(false);
+                Frame msg2 =
+                    new Frame(OpCode.CONTINUATION).setPayload(new byte[0]).setFin(false);
                 Frame msg3 = new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true);
 
                 stream.accept(msg1, Callback.NOOP);
@@ -256,7 +275,8 @@ public class MessageInputStreamTest
                 Frame msg1 = new Frame(OpCode.BINARY).setPayload("Hello ").setFin(false);
                 // what is being tested (a null payload)
                 ByteBuffer nilPayload = null;
-                Frame msg2 = new Frame(OpCode.CONTINUATION).setPayload(nilPayload).setFin(false);
+                Frame msg2 =
+                    new Frame(OpCode.CONTINUATION).setPayload(nilPayload).setFin(false);
                 Frame msg3 = new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true);
 
                 stream.accept(msg1, Callback.NOOP);

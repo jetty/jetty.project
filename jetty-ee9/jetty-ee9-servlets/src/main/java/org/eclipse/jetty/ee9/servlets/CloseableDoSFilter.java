@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.io.IOException;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +23,6 @@ import org.slf4j.LoggerFactory;
  * This is an extension to {@link DoSFilter} that uses Jetty APIs to
  * abruptly close the connection when the request times out.
  */
-
 public class CloseableDoSFilter extends DoSFilter
 {
     private static final Logger LOG = LoggerFactory.getLogger(CloseableDoSFilter.class);

@@ -15,4 +15,3 @@
  * Jetty Jaas : Support for Jaas
  */
 package org.eclipse.jetty.security.jaas;
-

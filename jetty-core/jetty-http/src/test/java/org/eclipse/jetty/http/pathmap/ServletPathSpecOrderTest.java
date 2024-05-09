@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.util.ArrayList;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Tests of {@link PathMappings#getMatched(String)}, with a focus on correct mapping selection order
@@ -88,6 +87,7 @@ public class ServletPathSpecOrderTest
     @MethodSource("data")
     public void testMatch(String inputPath, String expectedResource)
     {
-        assertThat("Match on [" + inputPath + "]", mappings.getMatched(inputPath).getResource(), is(expectedResource));
+        assertThat(
+            "Match on [" + inputPath + "]", mappings.getMatched(inputPath).getResource(), is(expectedResource));
     }
 }

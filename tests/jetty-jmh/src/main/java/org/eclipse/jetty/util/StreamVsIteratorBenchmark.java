@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
@@ -92,14 +91,18 @@ public class StreamVsIteratorBenchmark
     @Benchmark
     public long testStream()
     {
-        return _streamSupplier.get().mapToLong(Objects::hashCode).filter(h -> h % 2 != 0).sum();
+        return _streamSupplier
+            .get()
+            .mapToLong(Objects::hashCode)
+            .filter(h -> h % 2 != 0)
+            .sum();
     }
 
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
             .include(StreamVsIteratorBenchmark.class.getSimpleName())
-//            .addProfiler(GCProfiler.class)
+            //            .addProfiler(GCProfiler.class)
             .forks(1)
             .build();
 

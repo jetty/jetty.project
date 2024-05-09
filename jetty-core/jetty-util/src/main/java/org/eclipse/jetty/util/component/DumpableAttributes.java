@@ -15,7 +15,6 @@ package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.eclipse.jetty.util.Attributes;
 
 public class DumpableAttributes implements Dumpable
@@ -34,7 +33,8 @@ public class DumpableAttributes implements Dumpable
     {
         Object[] array = _attributes.asAttributeMap().entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
-            .map(e -> Dumpable.named(e.getKey(), e.getValue())).toArray(Object[]::new);
+            .map(e -> Dumpable.named(e.getKey(), e.getValue()))
+            .toArray(Object[]::new);
         Dumpable.dumpObjects(out, indent, _name + " size=" + array.length, array);
     }
 }

@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
-import java.util.List;
-
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.Extension;
+import java.util.List;
 
 public class ClientEndpointConfigWrapper extends EndpointConfigWrapper implements ClientEndpointConfig
 {

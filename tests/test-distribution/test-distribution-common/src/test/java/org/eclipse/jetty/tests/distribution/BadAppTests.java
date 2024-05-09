@@ -13,18 +13,6 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.net.URI;
-import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.testers.JettyHomeTester;
-import org.eclipse.jetty.tests.testers.Tester;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -32,6 +20,17 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Tests where the server is started with a Bad App that will fail in its init phase.
@@ -46,25 +45,26 @@ public class BadAppTests extends AbstractJettyHomeTest
      * It is expected that the server does not start and exits with an error code
      */
     @ParameterizedTest
-    @CsvSource({"ee9", "ee10"})
+    @CsvSource(
+    {"ee9", "ee10"})
     public void testXmlThrowOnUnavailableTrue(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .build();
+        JettyHomeTester distribution =
+            JettyHomeTester.Builder.newInstance().jettyVersion(jettyVersion).build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertThat(run1.getExitValue(), is(0));
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact(
+                "org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
             distribution.installWar(war, "badapp");
-            
+
             // Setup webapps directory
-            distribution.installBaseResource("badapp-" + env + "/badapp_throwonunavailable_true.xml",
-                "webapps/badapp.xml");
+            distribution.installBaseResource(
+                "badapp-" + env + "/badapp_throwonunavailable_true.xml", "webapps/badapp.xml");
 
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
@@ -83,26 +83,26 @@ public class BadAppTests extends AbstractJettyHomeTest
      * It is expected that the server does start and attempts to access the /badapp/ report
      * that it is unavailable.
      */
-    
     @ParameterizedTest
-    @CsvSource({"ee9", "ee10"})
+    @CsvSource(
+    {"ee9", "ee10"})
     public void testXmlThrowOnUnavailableFalse(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .build();
+        JettyHomeTester distribution =
+            JettyHomeTester.Builder.newInstance().jettyVersion(jettyVersion).build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertThat(run1.getExitValue(), is(0));
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact(
+                "org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
             distribution.installWar(war, "badapp");
 
-            distribution.installBaseResource("badapp-" + env + "/badapp_throwonunavailable_false.xml",
-                "webapps/badapp.xml");
+            distribution.installBaseResource(
+                "badapp-" + env + "/badapp_throwonunavailable_false.xml", "webapps/badapp.xml");
 
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
@@ -112,7 +112,8 @@ public class BadAppTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/badapp/");
                 assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("<h2>HTTP ERROR 503 Service Unavailable</h2>"));
+                assertThat(
+                    response.getContentAsString(), containsString("<h2>HTTP ERROR 503 Service Unavailable</h2>"));
             }
         }
     }
@@ -125,58 +126,51 @@ public class BadAppTests extends AbstractJettyHomeTest
      * It is expected that the server does start and attempts to access the /badapp/ report
      * that it is unavailable.
      */
-
     @ParameterizedTest
-    @CsvSource({"ee9", "ee10"})
+    @CsvSource(
+    {"ee9", "ee10"})
     public void testNoXmlThrowOnUnavailableDefault(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .build();
+        JettyHomeTester distribution =
+            JettyHomeTester.Builder.newInstance().jettyVersion(jettyVersion).build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertThat(run1.getExitValue(), is(0));
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact(
+                "org.eclipse.jetty." + env + ":jetty-" + env + "-test-badinit-webapp:war:" + jettyVersion);
             distribution.installWar(war, "badapp");
 
             int port = Tester.freePort();
-            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
+            try (JettyHomeTester.Run run2 =
+                distribution.start("jetty.http.port=" + port, "jetty.server.dumpAfterStart=true"))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
-                //ContentResponse response = client.GET("http://localhost:" + port + "/badapp/bad/x");
+                // ContentResponse response = client.GET("http://localhost:" + port + "/badapp/bad/x");
                 ContentResponse response = client.GET("http://localhost:" + port + "/badapp/");
                 assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("<h2>HTTP ERROR 503 Service Unavailable</h2>"));
+                assertThat(
+                    response.getContentAsString(), containsString("<h2>HTTP ERROR 503 Service Unavailable</h2>"));
             }
         }
     }
 
     @ParameterizedTest
-    @CsvSource({"ee9", "ee10"})
+    @CsvSource(
+    {"ee9", "ee10"})
     public void testBadWebSocketWebapp(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .build();
-        String mods = "resources,server,http," + 
-            toEnvironment("webapp", env) + "," +
-            toEnvironment("deploy", env) + "," +
-            toEnvironment("jsp", env) + "," + 
-            "jmx," +
-            toEnvironment("servlet", env) + "," +
-            toEnvironment("websocket-jakarta", env);
-        //servlets,
-        String[] args1 = {
-            "--approve-all-licenses",
-            "--add-modules=" + mods
-        };
+        JettyHomeTester distribution =
+            JettyHomeTester.Builder.newInstance().jettyVersion(jettyVersion).build();
+        String mods = "resources,server,http," + toEnvironment("webapp", env) + "," + toEnvironment("deploy", env) + "," + toEnvironment("jsp", env) + "," + "jmx," + toEnvironment("servlet", env) + "," + toEnvironment("websocket-jakarta", env);
+        // servlets,
+        String[] args1 = {"--approve-all-licenses", "--add-modules=" + mods};
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {

@@ -13,23 +13,21 @@
 
 package org.example.test;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-
 import jakarta.servlet.annotation.HttpConstraint;
 import jakarta.servlet.annotation.ServletSecurity;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 @WebServlet(urlPatterns = "/sec/*")
 @ServletSecurity(@HttpConstraint(rolesAllowed = "admin"))
 public class SecuredServlet extends HttpServlet
 {
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-        throws IOException
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
     {
         PrintWriter writer = resp.getWriter();
         writer.println("<html>");

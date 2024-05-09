@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -164,7 +163,8 @@ public class JettyHomeTester
      * @param options optional CopyOption
      * @throws IOException if the installation fails
      */
-    public void installBaseResource(String testResourcePath, String baseResourcePath, CopyOption... options) throws IOException
+    public void installBaseResource(String testResourcePath, String baseResourcePath, CopyOption... options)
+        throws IOException
     {
         Path srcFile = MavenTestingUtils.getTestResourcePath(testResourcePath);
         Path destFile = config.jettyBase.resolve(baseResourcePath);
@@ -185,7 +185,7 @@ public class JettyHomeTester
      */
     public Path installWar(Path warPath, String context) throws IOException
     {
-        //webapps
+        // webapps
         Path webapps = config.jettyBase.resolve("webapps").resolve(context);
         if (!Files.exists(webapps))
             Files.createDirectories(webapps);
@@ -239,9 +239,7 @@ public class JettyHomeTester
             try (Stream<Path> entriesStream = Files.walk(root))
             {
                 // ensure proper unpack order (eg: directories before files)
-                List<Path> sorted = entriesStream
-                    .sorted()
-                    .toList();
+                List<Path> sorted = entriesStream.sorted().toList();
 
                 for (Path path : sorted)
                 {
@@ -272,7 +270,8 @@ public class JettyHomeTester
         Path artifactFile = mavenHelper.resolveArtifact("org.eclipse.jetty:jetty-home:zip:" + version);
         Path homes = MavenTestingUtils.getTargetTestingPath("homes");
         FS.ensureDirExists(homes);
-        Path tmp = Files.createDirectories(homes.resolve(Long.toString(artifactFile.toFile().lastModified())));
+        Path tmp = Files.createDirectories(
+            homes.resolve(Long.toString(artifactFile.toFile().lastModified())));
         Path home = tmp.resolve("jetty-home-" + version);
         if (!Files.exists(home))
             unzip(artifactFile, tmp);
@@ -284,7 +283,8 @@ public class JettyHomeTester
         private Path jettyBase;
         private Path jettyHome;
         private String jettyVersion;
-        private String mavenLocalRepository = System.getProperty("mavenRepoPath", System.getProperty("user.home") + "/.m2/repository");
+        private String mavenLocalRepository =
+            System.getProperty("mavenRepoPath", System.getProperty("user.home") + "/.m2/repository");
         private List<String> jvmArgs = new ArrayList<>();
         private Map<String, String> env = new HashMap<>();
 
@@ -321,13 +321,9 @@ public class JettyHomeTester
         @Override
         public String toString()
         {
-            return String.format("%s@%x{jettyBase=%s, jettyHome=%s, jettyVersion=%s, mavenLocalRepository=%s}",
-                getClass().getSimpleName(),
-                hashCode(),
-                jettyBase,
-                jettyHome,
-                jettyVersion,
-                mavenLocalRepository);
+            return String.format(
+                "%s@%x{jettyBase=%s, jettyHome=%s, jettyVersion=%s, mavenLocalRepository=%s}",
+                getClass().getSimpleName(), hashCode(), jettyBase, jettyHome, jettyVersion, mavenLocalRepository);
         }
     }
 

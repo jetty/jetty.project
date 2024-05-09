@@ -24,7 +24,6 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -136,7 +135,8 @@ public interface Transport
      * @param selectionKey the {@link SelectionKey}
      * @return a new {@link EndPoint}
      */
-    default EndPoint newEndPoint(Scheduler scheduler, ManagedSelector selector, SelectableChannel selectable, SelectionKey selectionKey)
+    default EndPoint newEndPoint(
+                                 Scheduler scheduler, ManagedSelector selector, SelectableChannel selectable, SelectionKey selectionKey)
     {
         return null;
     }
@@ -155,7 +155,8 @@ public interface Transport
      */
     default Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        ClientConnectionFactory factory = (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
+        ClientConnectionFactory factory =
+            (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
         return factory.newConnection(endPoint, context);
     }
 
@@ -211,7 +212,11 @@ public interface Transport
         }
 
         @Override
-        public EndPoint newEndPoint(Scheduler scheduler, ManagedSelector selector, SelectableChannel selectable, SelectionKey selectionKey)
+        public EndPoint newEndPoint(
+                                    Scheduler scheduler,
+                                    ManagedSelector selector,
+                                    SelectableChannel selectable,
+                                    SelectionKey selectionKey)
         {
             return new SocketChannelEndPoint((SocketChannel)selectable, selector, selectionKey, scheduler);
         }
@@ -234,7 +239,11 @@ public interface Transport
         }
 
         @Override
-        public EndPoint newEndPoint(Scheduler scheduler, ManagedSelector selector, SelectableChannel selectable, SelectionKey selectionKey)
+        public EndPoint newEndPoint(
+                                    Scheduler scheduler,
+                                    ManagedSelector selector,
+                                    SelectableChannel selectable,
+                                    SelectionKey selectionKey)
         {
             return new DatagramChannelEndPoint((DatagramChannel)selectable, selector, selectionKey, scheduler);
         }
@@ -298,7 +307,11 @@ public interface Transport
         }
 
         @Override
-        public EndPoint newEndPoint(Scheduler scheduler, ManagedSelector selector, SelectableChannel selectable, SelectionKey selectionKey)
+        public EndPoint newEndPoint(
+                                    Scheduler scheduler,
+                                    ManagedSelector selector,
+                                    SelectableChannel selectable,
+                                    SelectionKey selectionKey)
         {
             return new SocketChannelEndPoint((SocketChannel)selectable, selector, selectionKey, scheduler);
         }
@@ -321,7 +334,11 @@ public interface Transport
         }
 
         @Override
-        public EndPoint newEndPoint(Scheduler scheduler, ManagedSelector selector, SelectableChannel selectable, SelectionKey selectionKey)
+        public EndPoint newEndPoint(
+                                    Scheduler scheduler,
+                                    ManagedSelector selector,
+                                    SelectableChannel selectable,
+                                    SelectionKey selectionKey)
         {
             return new DatagramChannelEndPoint((DatagramChannel)selectable, selector, selectionKey, scheduler);
         }
@@ -388,7 +405,11 @@ public interface Transport
         }
 
         @Override
-        public EndPoint newEndPoint(Scheduler scheduler, ManagedSelector selector, SelectableChannel selectable, SelectionKey selectionKey)
+        public EndPoint newEndPoint(
+                                    Scheduler scheduler,
+                                    ManagedSelector selector,
+                                    SelectableChannel selectable,
+                                    SelectionKey selectionKey)
         {
             return wrapped.newEndPoint(scheduler, selector, selectable, selectionKey);
         }

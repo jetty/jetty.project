@@ -13,13 +13,15 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -29,10 +31,6 @@ import org.eclipse.jetty.session.NullSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * ReentrantRequestSessionTest
@@ -66,14 +64,15 @@ public class ReentrantRequestSessionTest
             client.start();
             try
             {
-                //create the session
-                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                // create the session
+                ContentResponse response =
+                    client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
 
-                //make a request that will make a simultaneous request for the same session
+                // make a request that will make a simultaneous request for the same session
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
@@ -94,13 +93,15 @@ public class ReentrantRequestSessionTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             doPost(request, response);
         }
 
         @Override
-        protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
             if ("create".equals(action))
@@ -126,7 +127,8 @@ public class ReentrantRequestSessionTest
                     client.start();
                     try
                     {
-                        ContentResponse resp = client.GET("http://localhost:" + port + path + ";jsessionid=" + session.getId() + "?action=none");
+                        ContentResponse resp = client.GET(
+                            "http://localhost:" + port + path + ";jsessionid=" + session.getId() + "?action=none");
                         assertEquals(HttpServletResponse.SC_OK, resp.getStatus());
                         assertEquals("true", session.getAttribute("reentrant"));
                     }

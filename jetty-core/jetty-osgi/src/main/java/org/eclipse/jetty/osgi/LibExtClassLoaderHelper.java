@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import org.eclipse.jetty.util.FileID;
 
 /**
@@ -62,7 +61,8 @@ public class LibExtClassLoaderHelper
         void processFilesInResourcesFolder(File jettyHome, Map<String, File> filesInResourcesFolder);
     }
 
-    public static final Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors = new HashSet<>();
+    public static final Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors =
+        new HashSet<>();
 
     /**
      * @param jettyHome the jetty home
@@ -72,7 +72,8 @@ public class LibExtClassLoaderHelper
      * is the JettyBootStrapper (an osgi classloader.
      * @throws MalformedURLException if the jetty home reference is invalid
      */
-    public static ClassLoader createLibEtcClassLoader(File jettyHome, ClassLoader parentClassLoader) throws MalformedURLException
+    public static ClassLoader createLibEtcClassLoader(File jettyHome, ClassLoader parentClassLoader)
+        throws MalformedURLException
     {
         if (jettyHome == null)
         {
@@ -133,7 +134,8 @@ public class LibExtClassLoaderHelper
      * extra jars to insert, then just return the parentClassLoader.
      * @throws MalformedURLException if there is a bad jar file reference
      */
-    public static ClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars, List<URL> otherJarsOrFolder, ClassLoader parentClassLoader)
+    public static ClassLoader createLibExtClassLoader(
+                                                      List<File> jarsContainerOrJars, List<URL> otherJarsOrFolder, ClassLoader parentClassLoader)
         throws MalformedURLException
     {
         if (jarsContainerOrJars == null && otherJarsOrFolder == null)

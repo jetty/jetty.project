@@ -13,22 +13,21 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.stream.Stream;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.stream.Stream;
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class HttpGeneratorServerHTTPTest
 {
@@ -59,16 +58,25 @@ public class HttpGeneratorServerHTTPTest
 
         // TODO: Break down rationale more clearly, these should be separate checks and/or assertions
         if (run.httpVersion == 10)
-            assertTrue(gen.isPersistent() || run.result._contentLength >= 0 || EnumSet.of(ConnectionType.CLOSE, ConnectionType.KEEP_ALIVE, ConnectionType.NONE).contains(run.connection), msg);
+            assertTrue(
+                gen.isPersistent() || run.result._contentLength >= 0 || EnumSet.of(ConnectionType.CLOSE, ConnectionType.KEEP_ALIVE, ConnectionType.NONE)
+                    .contains(run.connection),
+                msg);
         else
-            assertTrue(gen.isPersistent() || EnumSet.of(ConnectionType.CLOSE, ConnectionType.TE_CLOSE).contains(run.connection), msg);
+            assertTrue(
+                gen.isPersistent() || EnumSet.of(ConnectionType.CLOSE, ConnectionType.TE_CLOSE)
+                    .contains(run.connection),
+                msg);
 
         assertEquals("OK??Test", _reason);
 
         if (_content == null)
             assertNull(run.result._body, msg);
         else
-            assertThat(msg, run.result._contentLength, either(equalTo(_content.length())).or(equalTo(-1)));
+            assertThat(
+                msg,
+                run.result._contentLength,
+                either(equalTo(_content.length())).or(equalTo(-1)));
     }
 
     private static class Result
@@ -93,7 +101,8 @@ public class HttpGeneratorServerHTTPTest
             _head = head;
         }
 
-        private String build(int version, HttpGenerator gen, String reason, String connection, String te, int nchunks) throws Exception
+        private String build(int version, HttpGenerator gen, String reason, String connection, String te, int nchunks)
+            throws Exception
         {
             String response = "";
             _connection = connection;
@@ -144,7 +153,8 @@ public class HttpGeneratorServerHTTPTest
                 switch (result)
                 {
                     case NEED_INFO:
-                        info = new MetaData.Response(_code, reason, HttpVersion.fromVersion(version), _fields, _contentLength);
+                        info = new MetaData.Response(
+                            _code, reason, HttpVersion.fromVersion(version), _fields, _contentLength);
                         continue;
 
                     case NEED_HEADER:
@@ -262,7 +272,8 @@ public class HttpGeneratorServerHTTPTest
         }
     }
 
-    public static final String CONTENT = "The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";
+    public static final String CONTENT =
+        "The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";
 
     private static class Run
     {
@@ -282,7 +293,8 @@ public class HttpGeneratorServerHTTPTest
         @Override
         public String toString()
         {
-            return String.format("result=%s,version=%d,chunks=%d,connection=%s", result, httpVersion, chunks, connection.name());
+            return String.format(
+                "result=%s,version=%d,chunks=%d,connection=%s", result, httpVersion, chunks, connection.name());
         }
     }
 

@@ -13,6 +13,32 @@
 
 package org.eclipse.jetty.ee9.test.client.transport;
 
+import static java.nio.ByteBuffer.wrap;
+import static org.awaitility.Awaitility.await;
+import static org.eclipse.jetty.util.BufferUtil.toArray;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,16 +59,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.ReadListener;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.WriteListener;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
@@ -77,23 +93,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static java.nio.ByteBuffer.wrap;
-import static org.awaitility.Awaitility.await;
-import static org.eclipse.jetty.util.BufferUtil.toArray;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class AsyncIOServletTest extends AbstractTest
 {
     private static final ThreadLocal<RuntimeException> scope = new ThreadLocal<>();
@@ -106,7 +105,8 @@ public class AsyncIOServletTest extends AbstractTest
         servletContextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
             @Override
-            public void enterScope(ContextHandler.APIContext context, org.eclipse.jetty.ee9.nested.Request request, Object reason)
+            public void enterScope(
+                                   ContextHandler.APIContext context, org.eclipse.jetty.ee9.nested.Request request, Object reason)
             {
                 checkScope();
                 scope.set(new RuntimeException());
@@ -540,7 +540,8 @@ public class AsyncIOServletTest extends AbstractTest
                                         {
                                             // no op
                                         }
-                                    }).start();
+                                    })
+                                        .start();
                                     return;
 
                                 case 1:
@@ -639,7 +640,8 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        output.write(String.format("i=%d eof=%b finished=%b", _i, _minusOne, _finished).getBytes(StandardCharsets.UTF_8));
+                        output.write(String.format("i=%d eof=%b finished=%b", _i, _minusOne, _finished)
+                            .getBytes(StandardCharsets.UTF_8));
                         async.complete();
                     }
 
@@ -1321,13 +1323,7 @@ public class AsyncIOServletTest extends AbstractTest
         AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch clientLatch = new CountDownLatch(1);
 
-        String expected =
-            "S1" +
-            "S2" +
-            "S3S3" +
-            "S4" +
-            "S5" +
-            "S6";
+        String expected = "S1" + "S2" + "S3S3" + "S4" + "S5" + "S6";
 
         client.newRequest(newURI(transport))
             .method(HttpMethod.POST)
@@ -1441,7 +1437,7 @@ public class AsyncIOServletTest extends AbstractTest
         assertThat(resultRef.get().getResponse().getStatus(), Matchers.equalTo(HttpStatus.OK_200));
     }
 
-/*
+    /*
     // TODO: there is no GzipHttpInputInterceptor anymore, use something else.
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
@@ -1454,7 +1450,7 @@ public class AsyncIOServletTest extends AbstractTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 System.err.println("Service " + request);
-
+    
                 HttpInput httpInput = ((org.eclipse.jetty.ee9.nested.Request)request).getHttpInput();
                 httpInput.addInterceptor(new GzipHttpInputInterceptor(new InflaterPool(-1, true), ((org.eclipse.jetty.ee9.nested.Request)request).getHttpChannel().getByteBufferPool(), 1024));
                 httpInput.addInterceptor(chunk ->
@@ -1467,11 +1463,11 @@ public class AsyncIOServletTest extends AbstractTest
                     bytes[0] = byteBuffer.get();
                     return Content.Chunk.from(wrap(bytes), false);
                 });
-
+    
                 AsyncContext asyncContext = request.startAsync();
                 ServletInputStream input = request.getInputStream();
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
-
+    
                 input.setReadListener(new ReadListener()
                 {
                     @Override
@@ -1489,14 +1485,14 @@ public class AsyncIOServletTest extends AbstractTest
                                 return;
                         }
                     }
-
+    
                     @Override
                     public void onAllDataRead() throws IOException
                     {
                         response.getOutputStream().write(out.toByteArray());
                         asyncContext.complete();
                     }
-
+    
                     @Override
                     public void onError(Throwable x)
                     {
@@ -1504,10 +1500,10 @@ public class AsyncIOServletTest extends AbstractTest
                 });
             }
         });
-
+    
         AsyncRequestContent contentProvider = new AsyncRequestContent();
         CountDownLatch clientLatch = new CountDownLatch(1);
-
+    
         String expected =
             "0S" +
             "1S" +
@@ -1516,7 +1512,7 @@ public class AsyncIOServletTest extends AbstractTest
             "4S" +
             "5S" +
             "6S";
-
+    
         client.newRequest(newURI(transport))
             .method(HttpMethod.POST)
             .path(scenario.servletPath)
@@ -1535,17 +1531,17 @@ public class AsyncIOServletTest extends AbstractTest
                     }
                 }
             });
-
+    
         for (int i = 0; i < 7; i++)
         {
             contentProvider.write(gzipToBuffer("S" + i), Callback.NOOP);
             contentProvider.flush();
         }
         contentProvider.close();
-
+    
         assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
     }
-*/
+    */
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
@@ -1570,7 +1566,8 @@ public class AsyncIOServletTest extends AbstractTest
                     duplicate.get();
                     byte integer = duplicate.get();
                     int idx = Character.getNumericValue(integer);
-                    HttpInput.Content chunkCopy = new HttpInput.Content(chunk.getByteBuffer().duplicate());
+                    HttpInput.Content chunkCopy =
+                        new HttpInput.Content(chunk.getByteBuffer().duplicate());
                     chunk.skip(chunk.remaining());
                     chunk.succeeded();
                     if (idx % 2 == 0)
@@ -1630,11 +1627,7 @@ public class AsyncIOServletTest extends AbstractTest
         AsyncRequestContent contentProvider = new AsyncRequestContent();
         CountDownLatch clientLatch = new CountDownLatch(1);
 
-        String expected =
-            "0S" +
-            "2S" +
-            "4S" +
-            "6S";
+        String expected = "0S" + "2S" + "4S" + "6S";
 
         client.newRequest(newURI(transport))
             .method(HttpMethod.POST)
@@ -1854,8 +1847,7 @@ public class AsyncIOServletTest extends AbstractTest
 
         assertThrows(TimeoutException.class, () -> client.newRequest(newURI(transport))
             .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
-            .send()
-        );
+            .send());
 
         assertNull(errorRef.get());
         assertEquals(1, allDataReadCount.get());

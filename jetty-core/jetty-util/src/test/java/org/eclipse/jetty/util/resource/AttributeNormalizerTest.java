@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.util.resource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -24,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
@@ -36,12 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AttributeNormalizerTest
 {
@@ -117,8 +116,7 @@ public class AttributeNormalizerTest
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
         resourceFactory = ResourceFactory.closeable();
-        System.getProperties().stringPropertyNames()
-            .forEach((name) -> originalEnv.put(name, System.getProperty(name)));
+        System.getProperties().stringPropertyNames().forEach((name) -> originalEnv.put(name, System.getProperty(name)));
     }
 
     @AfterAll
@@ -149,8 +147,10 @@ public class AttributeNormalizerTest
     private void assertNormalize(final Scenario scenario, Object o, String expected)
     {
         String result = scenario.normalizer.normalize(o);
-        assertThat("normalize((" + o.getClass().getSimpleName() + ") " + Objects.toString(o, "<null>") + ")",
-            result, is(expected));
+        assertThat(
+            "normalize((" + o.getClass().getSimpleName() + ") " + Objects.toString(o, "<null>") + ")",
+            result,
+            is(expected));
     }
 
     private void assertExpandPath(final Scenario scenario, String line, String expected)
@@ -342,7 +342,9 @@ public class AttributeNormalizerTest
 
         // If file cannot be found it just uses the first resource.
         assertThat(normalizer.expand("${WAR.uri}/file4"), containsString("/dir1/file4"));
-        assertThat(normalizer.expand("${WAR.path}/file4"), containsString(File.separator + "dir1" + File.separator +  "file4"));
+        assertThat(
+            normalizer.expand("${WAR.path}/file4"),
+            containsString(File.separator + "dir1" + File.separator + "file4"));
     }
 
     public static class Scenario
@@ -419,4 +421,3 @@ public class AttributeNormalizerTest
         }
     }
 }
-

@@ -36,12 +36,15 @@ public class BasicEchoEndpointContextListener implements ServletContextListener
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
+        ServerContainer container =
+            (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
 
         try
         {
-            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class, "/ping").build());
-            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class, "/pong").build());
+            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class, "/ping")
+                .build());
+            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class, "/pong")
+                .build());
         }
         catch (DeploymentException e)
         {

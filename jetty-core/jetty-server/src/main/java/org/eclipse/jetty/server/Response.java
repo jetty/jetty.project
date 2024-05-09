@@ -19,7 +19,6 @@ import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.http.ComplianceViolationException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -260,11 +259,10 @@ public interface Response extends Content.Sink
      * @param consumeAvailable whether to consumer the available request content
      * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
      */
-    static void sendRedirect(Request request, Response response, Callback callback, String location, boolean consumeAvailable)
+    static void sendRedirect(
+                             Request request, Response response, Callback callback, String location, boolean consumeAvailable)
     {
-        int code = HttpMethod.GET.is(request.getMethod()) || request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-            ? HttpStatus.MOVED_TEMPORARILY_302
-            : HttpStatus.SEE_OTHER_303;
+        int code = HttpMethod.GET.is(request.getMethod()) || request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303;
         sendRedirect(request, response, callback, code, location, consumeAvailable);
     }
 
@@ -281,7 +279,13 @@ public interface Response extends Content.Sink
      * @throws IllegalArgumentException if the status code is not a redirect, or the location is {@code null}
      * @throws IllegalStateException if the response is already {@link #isCommitted() committed}
      */
-    static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable)
+    static void sendRedirect(
+                             Request request,
+                             Response response,
+                             Callback callback,
+                             int code,
+                             String location,
+                             boolean consumeAvailable)
     {
         if (!HttpStatus.isRedirection(code))
         {
@@ -356,7 +360,12 @@ public interface Response extends Content.Sink
             if (!request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
             {
                 // make the location an absolute URI
-                location = URIUtil.newURI(uri.getScheme(), Request.getServerName(request), Request.getServerPort(request), location, null);
+                location = URIUtil.newURI(
+                    uri.getScheme(),
+                    Request.getServerName(request),
+                    Request.getServerPort(request),
+                    location,
+                    null);
             }
         }
         return location;
@@ -375,10 +384,13 @@ public interface Response extends Content.Sink
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
-        CookieCompliance compliance = request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance();
+        CookieCompliance compliance =
+            request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance();
         try
         {
-            response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
+            response.getHeaders()
+                .add(new HttpCookieUtils.SetCookieHttpField(
+                    HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
         }
         catch (ComplianceViolationException e)
         {
@@ -412,7 +424,8 @@ public interface Response extends Content.Sink
         HttpField setCookie;
         try
         {
-            setCookie = new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance);
+            setCookie = new HttpCookieUtils.SetCookieHttpField(
+                HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance);
         }
         catch (ComplianceViolationException e)
         {
@@ -422,7 +435,7 @@ public interface Response extends Content.Sink
 
         boolean expires = false;
 
-        for (ListIterator<HttpField> i = response.getHeaders().listIterator(); i.hasNext(); )
+        for (ListIterator<HttpField> i = response.getHeaders().listIterator(); i.hasNext();)
         {
             HttpField field = i.next();
             HttpHeader header = field.getHeader();
@@ -435,12 +448,17 @@ public interface Response extends Content.Sink
                 {
                     if (field instanceof HttpCookieUtils.SetCookieHttpField setCookieHttpField)
                     {
-                        if (!HttpCookieUtils.match(setCookieHttpField.getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                        if (!HttpCookieUtils.match(
+                            setCookieHttpField.getHttpCookie(),
+                            cookie.getName(),
+                            cookie.getDomain(),
+                            cookie.getPath()))
                             continue;
                     }
                     else
                     {
-                        if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                        if (!HttpCookieUtils.match(
+                            field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
                             continue;
                     }
 
@@ -548,7 +566,8 @@ public interface Response extends Content.Sink
      * @param message the error message to write in the response content
      * @param cause the cause of the error
      */
-    static void writeError(Request request, Response response, Callback callback, int status, String message, Throwable cause)
+    static void writeError(
+                           Request request, Response response, Callback callback, int status, String message, Throwable cause)
     {
         // Retrieve the Logger instance here, rather than having a
         // public field that will force a transitive dependency on SLF4J.
@@ -558,7 +577,8 @@ public interface Response extends Content.Sink
         if (logger.isDebugEnabled())
             logger.debug("writeError: status={}, message={}, response={}", status, message, response, cause);
         else if (cause instanceof QuietException || cause instanceof TimeoutException)
-            logger.debug("writeError: status={}, message={}, response={} {}", status, message, response, cause.toString());
+            logger.debug(
+                "writeError: status={}, message={}, response={} {}", status, message, response, cause.toString());
         else if (cause != null)
             logger.warn("writeError: status={}, message={}, response={}", status, message, response, cause);
 
@@ -660,7 +680,8 @@ public interface Response extends Content.Sink
         int bufferSize = httpConfiguration.getOutputBufferSize();
         boolean useOutputDirectByteBuffers = httpConfiguration.isUseOutputDirectByteBuffers();
         int outputAggregationSize = httpConfiguration.getOutputAggregationSize();
-        return Content.Sink.asBuffered(response, bufferPool, useOutputDirectByteBuffers, outputAggregationSize, bufferSize);
+        return Content.Sink.asBuffered(
+            response, bufferPool, useOutputDirectByteBuffers, outputAggregationSize, bufferSize);
     }
 
     class Wrapper implements Response

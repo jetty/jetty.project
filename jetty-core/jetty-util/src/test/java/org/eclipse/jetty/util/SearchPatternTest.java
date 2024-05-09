@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SearchPatternTest
 {
@@ -86,7 +85,9 @@ public class SearchPatternTest
 
         SearchPattern sp = SearchPattern.compile("The End!");
 
-        assertEquals(preamble.length() + random.length, sp.match(data.array(), data.arrayOffset() + data.position(), data.remaining()));
+        assertEquals(
+            preamble.length() + random.length,
+            sp.match(data.array(), data.arrayOffset() + data.position(), data.remaining()));
     }
 
     @Test
@@ -152,13 +153,13 @@ public class SearchPatternTest
         assertEquals(26, sp.match(d, 1, d.length - 1));
         assertEquals(26, sp.endsWith(d, 0, d.length));
 
-        //test no match
+        // test no match
         p = "hello world".getBytes(StandardCharsets.US_ASCII);
         d = "there is definitely no match in here".getBytes(StandardCharsets.US_ASCII);
         sp = SearchPattern.compile(p);
         assertEquals(0, sp.endsWith(d, 0, d.length));
 
-        //Test with range on array.
+        // Test with range on array.
         p = "abcde".getBytes(StandardCharsets.US_ASCII);
         d = "?abc00000".getBytes(StandardCharsets.US_ASCII);
         sp = SearchPattern.compile(p);
@@ -196,19 +197,19 @@ public class SearchPatternTest
         sp = SearchPattern.compile(p);
         assertEquals(26, sp.startsWith(d, offset.length(), d.length - offset.length(), 0));
 
-        //test no match
+        // test no match
         p = "hello world".getBytes(StandardCharsets.US_ASCII);
         d = (offset + "there is definitely no match in here").getBytes(StandardCharsets.US_ASCII);
         sp = SearchPattern.compile(p);
         assertEquals(0, sp.startsWith(d, offset.length(), d.length - offset.length(), 0));
 
-        //test large pattern small buffer
+        // test large pattern small buffer
         p = "abcdefghijklmnopqrstuvwxyz".getBytes(StandardCharsets.US_ASCII);
         d = (offset + "mnopqrs").getBytes(StandardCharsets.US_ASCII);
         sp = SearchPattern.compile(p);
         assertEquals(19, sp.startsWith(d, offset.length(), d.length - offset.length(), 12));
 
-        //partial pattern
+        // partial pattern
         p = "abcdef".getBytes(StandardCharsets.US_ASCII);
         d = (offset + "cde").getBytes(StandardCharsets.US_ASCII);
         sp = SearchPattern.compile(p);
@@ -218,13 +219,11 @@ public class SearchPatternTest
     @Test
     public void testExampleFrom4673()
     {
-        SearchPattern pattern = SearchPattern.compile("\r\n------WebKitFormBoundaryhXfFAMfUnUKhmqT8".getBytes(StandardCharsets.US_ASCII));
+        SearchPattern pattern = SearchPattern.compile(
+            "\r\n------WebKitFormBoundaryhXfFAMfUnUKhmqT8".getBytes(StandardCharsets.US_ASCII));
         byte[] data = new byte[]{
-            118, 97, 108, 117, 101, 49,
-            '\r', '\n', '-', '-', '-', '-',
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            118, 97, 108, 117, 101, 49, '\r', '\n', '-', '-', '-', '-', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         };
         int length = 12;
 

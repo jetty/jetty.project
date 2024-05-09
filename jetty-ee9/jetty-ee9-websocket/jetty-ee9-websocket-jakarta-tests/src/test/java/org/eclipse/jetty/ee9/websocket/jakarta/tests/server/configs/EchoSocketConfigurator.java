@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.configs;
 
-import java.util.Collections;
-
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.util.Collections;
 
 public class EchoSocketConfigurator extends ServerEndpointConfig.Configurator
 {

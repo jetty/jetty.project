@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
-import jakarta.websocket.DecodeException;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.FloatDecoder;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.websocket.DecodeException;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.FloatDecoder;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for class {@link FloatDecoder}.

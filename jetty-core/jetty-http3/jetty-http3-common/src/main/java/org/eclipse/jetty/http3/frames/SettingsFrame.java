@@ -23,9 +23,7 @@ public class SettingsFrame extends Frame
 
     public static boolean isReserved(long key)
     {
-        if (key == MAX_TABLE_CAPACITY ||
-            key == MAX_FIELD_SECTION_SIZE ||
-            key == MAX_BLOCKED_STREAMS)
+        if (key == MAX_TABLE_CAPACITY || key == MAX_FIELD_SECTION_SIZE || key == MAX_BLOCKED_STREAMS)
             return false;
         // Other HTTP/2 settings are reserved and must not be sent/received.
         return key >= 0x00 && key <= 0x05;

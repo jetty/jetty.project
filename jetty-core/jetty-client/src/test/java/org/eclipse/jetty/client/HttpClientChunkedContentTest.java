@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,13 +27,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientChunkedContentTest
 {
@@ -76,18 +75,13 @@ public class HttpClientChunkedContentTest
                 consumeRequestHeaders(socket);
 
                 OutputStream output = socket.getOutputStream();
-                String headers =
-                    "HTTP/1.1 200 OK\r\n" +
-                        "Transfer-Encoding: chunked\r\n" +
-                        "\r\n";
+                String headers = "HTTP/1.1 200 OK\r\n" + "Transfer-Encoding: chunked\r\n" + "\r\n";
                 output.write(headers.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 Thread.sleep(1000);
 
-                String terminal =
-                    "0\r\n" +
-                        "\r\n";
+                String terminal = "0\r\n" + "\r\n";
                 output.write(terminal.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -133,14 +127,7 @@ public class HttpClientChunkedContentTest
                 consumeRequestHeaders(socket);
 
                 OutputStream output = socket.getOutputStream();
-                String response =
-                    "HTTP/1.1 200 OK\r\n" +
-                        "Transfer-Encoding: chunked\r\n" +
-                        "\r\n" +
-                        "8\r\n" +
-                        "01234567\r\n" +
-                        "0\r\n" +
-                        "\r\n";
+                String response = "HTTP/1.1 200 OK\r\n" + "Transfer-Encoding: chunked\r\n" + "\r\n" + "8\r\n" + "01234567\r\n" + "0\r\n" + "\r\n";
                 output.write(response.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -158,8 +145,8 @@ public class HttpClientChunkedContentTest
                 assertEquals(200, result.getResponse().getStatus());
 
                 // Issue another request to be sure the connection is sane.
-                Request request = client.newRequest("localhost", server.getLocalPort())
-                    .timeout(5, TimeUnit.SECONDS);
+                Request request =
+                    client.newRequest("localhost", server.getLocalPort()).timeout(5, TimeUnit.SECONDS);
                 CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
                 consumeRequestHeaders(socket);

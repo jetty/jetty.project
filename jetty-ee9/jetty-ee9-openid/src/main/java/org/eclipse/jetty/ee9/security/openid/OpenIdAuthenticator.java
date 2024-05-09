@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee9.security.openid;
 
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -21,12 +26,6 @@ import java.security.SecureRandom;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.Response;
@@ -110,8 +109,9 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     {
         this(configuration, redirectPath, errorPage, null);
     }
-    
-    public OpenIdAuthenticator(OpenIdConfiguration configuration, String redirectPath, String errorPage, String logoutRedirectPath)
+
+    public OpenIdAuthenticator(
+                               OpenIdConfiguration configuration, String redirectPath, String errorPage, String logoutRedirectPath)
     {
         _openIdConfiguration = configuration;
         setRedirectPath(redirectPath);
@@ -139,7 +139,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         String error = authConfig.getInitParameter(ERROR_PAGE);
         if (error != null)
             setErrorPage(error);
-        
+
         String logout = authConfig.getInitParameter(LOGOUT_REDIRECT_PATH);
         if (logout != null)
             setLogoutRedirectPath(logout);
@@ -292,7 +292,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String redirectUri = null;
             if (_logoutRedirectPath != null)
             {
-                StringBuilder sb = URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
+                StringBuilder sb =
+                    URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
                 sb.append(baseRequest.getContextPath());
                 sb.append(_logoutRedirectPath);
                 redirectUri = sb.toString();
@@ -316,9 +317,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
             @SuppressWarnings("rawtypes")
             String idToken = (String)((Map)openIdResponse).get("id_token");
-            baseResponse.sendRedirect(endSessionEndpoint +
-                    "?id_token_hint=" + UrlEncoded.encodeString(idToken, StandardCharsets.UTF_8) +
-                    ((redirectUri == null) ? "" : "&post_logout_redirect_uri=" + UrlEncoded.encodeString(redirectUri, StandardCharsets.UTF_8)),
+            baseResponse.sendRedirect(
+                endSessionEndpoint + "?id_token_hint=" + UrlEncoded.encodeString(idToken, StandardCharsets.UTF_8) + ((redirectUri == null) ? "" : "&post_logout_redirect_uri=" + UrlEncoded.encodeString(redirectUri, StandardCharsets.UTF_8)),
                 true);
         }
         catch (Throwable t)
@@ -330,32 +330,32 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     @Override
     public void prepareRequest(ServletRequest request)
     {
-        //if this is a request resulting from a redirect after auth is complete
-        //(ie its from a redirect to the original request uri) then due to
-        //browser handling of 302 redirects, the method may not be the same as
-        //that of the original request. Replace the method and original post
-        //params (if it was a post).
+        // if this is a request resulting from a redirect after auth is complete
+        // (ie its from a redirect to the original request uri) then due to
+        // browser handling of 302 redirects, the method may not be the same as
+        // that of the original request. Replace the method and original post
+        // params (if it was a post).
         //
-        //See Servlet Spec 3.1 sec 13.6.3
+        // See Servlet Spec 3.1 sec 13.6.3
         HttpServletRequest httpRequest = (HttpServletRequest)request;
         HttpSession session = httpRequest.getSession(false);
         if (session == null)
-            return; //not authenticated yet
+            return; // not authenticated yet
 
         String juri;
         String method;
         synchronized (session)
         {
             if (session.getAttribute(SessionAuthentication.__J_AUTHENTICATED) == null)
-                return; //not authenticated yet
+                return; // not authenticated yet
 
             juri = (String)session.getAttribute(J_URI);
             if (juri == null || juri.length() == 0)
-                return; //no original uri saved
+                return; // no original uri saved
 
             method = (String)session.getAttribute(J_METHOD);
             if (method == null || method.length() == 0)
-                return; //didn't save original request method
+                return; // didn't save original request method
         }
 
         StringBuffer buf = httpRequest.getRequestURL();
@@ -363,7 +363,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             buf.append("?").append(httpRequest.getQueryString());
 
         if (!juri.equals(buf.toString()))
-            return; //this request is not for the same url as the original
+            return; // this request is not for the same url as the original
 
         // Restore the original request's method on this request.
         if (LOG.isDebugEnabled())
@@ -384,7 +384,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory)
+        throws ServerAuthException
     {
         final HttpServletRequest request = (HttpServletRequest)req;
         final HttpServletResponse response = (HttpServletResponse)res;
@@ -484,12 +485,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             }
 
             // Look for cached authentication in the Session.
-            Authentication authentication = (Authentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
+            Authentication authentication =
+                (Authentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
             if (authentication != null)
             {
                 // Has authentication been revoked?
-                if (authentication instanceof Authentication.User && _loginService != null &&
-                    !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
+                if (authentication instanceof Authentication.User && _loginService != null && !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("auth revoked {}", authentication);
@@ -502,7 +503,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                         String jUri = (String)session.getAttribute(J_URI);
                         if (jUri != null)
                         {
-                            // Check if the request is for the same url as the original and restore params if it was a post.
+                            // Check if the request is for the same url as the original and restore params if it was a
+                            // post.
                             if (LOG.isDebugEnabled())
                                 LOG.debug("auth retry {}->{}", authentication, jUri);
                             StringBuffer buf = request.getRequestURL();
@@ -562,7 +564,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
      * @param message the reason for the error or null.
      * @throws IOException if sending the error fails for any reason.
      */
-    private void sendError(HttpServletRequest request, HttpServletResponse response, String message) throws IOException
+    private void sendError(HttpServletRequest request, HttpServletResponse response, String message)
+        throws IOException
     {
         final Request baseRequest = Request.getBaseRequest(request);
         final Response baseResponse = Objects.requireNonNull(baseRequest).getResponse();
@@ -585,7 +588,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String redirectUri = URIUtil.addPaths(request.getContextPath(), _errorPage);
             if (message != null)
             {
-                String query = URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
+                String query =
+                    URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
                 redirectUri = URIUtil.addPathQuery(URIUtil.addPaths(request.getContextPath(), _errorPath), query);
             }
 
@@ -613,8 +617,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     private String getRedirectUri(HttpServletRequest request)
     {
-        final StringBuilder redirectUri = URIUtil.newURIBuilder(request.getScheme(),
-            request.getServerName(), request.getServerPort());
+        final StringBuilder redirectUri =
+            URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
         redirectUri.append(request.getContextPath());
         redirectUri.append(_redirectPath);
         return redirectUri.toString();
@@ -638,16 +642,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             scopes.append(" ").append(s);
         }
 
-        return _openIdConfiguration.getAuthEndpoint() +
-            "?client_id=" + UrlEncoded.encodeString(_openIdConfiguration.getClientId(), StandardCharsets.UTF_8) +
-            "&redirect_uri=" + UrlEncoded.encodeString(getRedirectUri(request), StandardCharsets.UTF_8) +
-            "&scope=openid" + UrlEncoded.encodeString(scopes.toString(), StandardCharsets.UTF_8) +
-            "&state=" + antiForgeryToken +
-            "&response_type=code";
+        return _openIdConfiguration.getAuthEndpoint() + "?client_id=" + UrlEncoded.encodeString(_openIdConfiguration.getClientId(), StandardCharsets.UTF_8) + "&redirect_uri=" + UrlEncoded.encodeString(getRedirectUri(request), StandardCharsets.UTF_8) + "&scope=openid" + UrlEncoded.encodeString(scopes.toString(), StandardCharsets.UTF_8) + "&state=" + antiForgeryToken + "&response_type=code";
     }
 
     @Override
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication.User validatedUser)
+    public boolean secureResponse(
+                                  ServletRequest req, ServletResponse res, boolean mandatory, Authentication.User validatedUser)
     {
         return req.isSecure();
     }

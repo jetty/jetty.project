@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.osgi.boot;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
-
 import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.util.BundleClassLoaderHelperFactory;
@@ -45,12 +44,12 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * @param contributor The bundle that defines this web-application.
      * @throws IOException if unable to cerate the OSGiWebappClassLoader
      */
-    public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor)
-        throws IOException
+    public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor) throws IOException
     {
         super(parent, context);
         _contributor = contributor;
-        _osgiBundleClassLoader = BundleClassLoaderHelperFactory.getFactory().getHelper().getBundleClassLoader(contributor);
+        _osgiBundleClassLoader =
+            BundleClassLoaderHelperFactory.getFactory().getHelper().getBundleClassLoader(contributor);
     }
 
     @Override
@@ -92,7 +91,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         Enumeration<URL> osgiUrls = _osgiBundleClassLoader.getResources(name);
         if (osgiUrls != null && osgiUrls.hasMoreElements())
             return osgiUrls;
-        
+
         Enumeration<URL> urls = super.getResources(name);
         return urls;
     }

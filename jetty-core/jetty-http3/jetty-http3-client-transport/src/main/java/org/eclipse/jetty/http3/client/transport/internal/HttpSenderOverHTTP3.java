@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.client.transport.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
@@ -50,7 +49,8 @@ public class HttpSenderOverHTTP3 extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendHeaders(
+                               HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         HttpRequest request = exchange.getRequest();
         boolean isTunnel = HttpMethod.CONNECT.is(request.getMethod());
@@ -60,13 +60,15 @@ public class HttpSenderOverHTTP3 extends HttpSender
             String upgradeProtocol = (String)request.getAttributes().get(HttpUpgrader.PROTOCOL_ATTRIBUTE);
             if (upgradeProtocol == null)
             {
-                metaData = new MetaData.ConnectRequest((String)null, new HostPortHttpField(request.getPath()), null, request.getHeaders(), null);
+                metaData = new MetaData.ConnectRequest(
+                    (String)null, new HostPortHttpField(request.getPath()), null, request.getHeaders(), null);
             }
             else
             {
                 HostPortHttpField authority = new HostPortHttpField(request.getHost(), request.getPort());
                 String pathQuery = URIUtil.addPathQuery(request.getPath(), request.getQuery());
-                metaData = new MetaData.ConnectRequest(request.getScheme(), authority, pathQuery, request.getHeaders(), upgradeProtocol);
+                metaData = new MetaData.ConnectRequest(
+                    request.getScheme(), authority, pathQuery, request.getHeaders(), upgradeProtocol);
             }
         }
         else
@@ -78,7 +80,13 @@ public class HttpSenderOverHTTP3 extends HttpSender
                 .port(request.getPort())
                 .path(path)
                 .query(request.getQuery());
-            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_3, request.getHeaders(), -1, request.getTrailersSupplier());
+            metaData = new MetaData.Request(
+                request.getMethod(),
+                uri,
+                HttpVersion.HTTP_3,
+                request.getHeaders(),
+                -1,
+                request.getTrailersSupplier());
         }
 
         HeadersFrame headersFrame;
@@ -130,7 +138,8 @@ public class HttpSenderOverHTTP3 extends HttpSender
         HeadersFrame tf = trailerFrame;
 
         HTTP3SessionClient session = getHttpChannel().getSession();
-        CompletableFuture<Stream> completable = session.newRequest(hf, getHttpChannel().getStreamListener())
+        CompletableFuture<Stream> completable = session.newRequest(
+            hf, getHttpChannel().getStreamListener())
             .thenApply(stream -> onNewStream(stream, request));
         if (df != null)
             completable = completable.thenCompose(stream -> stream.data(df));
@@ -155,7 +164,8 @@ public class HttpSenderOverHTTP3 extends HttpSender
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendContent(
+                               HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Stream stream = getHttpChannel().getStream();
         boolean hasContent = contentBuffer.hasRemaining();

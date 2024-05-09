@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.test.openid;
 
-import java.io.IOException;
-import java.security.Principal;
-import java.util.Map;
-
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.security.Principal;
+import java.util.Map;
 
 public class HomePage extends HttpServlet
 {
@@ -31,7 +30,8 @@ public class HomePage extends HttpServlet
         if (userPrincipal != null)
         {
             @SuppressWarnings("unchecked")
-            Map<String, Object> userInfo = (Map<String, Object>)request.getSession().getAttribute("org.eclipse.jetty.security.openid.claims");
+            Map<String, Object> userInfo =
+                (Map<String, Object>)request.getSession().getAttribute("org.eclipse.jetty.security.openid.claims");
             response.getWriter().println("userId: " + userInfo.get("sub") + "<br>");
             response.getWriter().println("name: " + userInfo.get("name") + "<br>");
             response.getWriter().println("email: " + userInfo.get("email") + "<br>");

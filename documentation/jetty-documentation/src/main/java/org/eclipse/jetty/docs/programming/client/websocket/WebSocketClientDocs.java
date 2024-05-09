@@ -16,7 +16,6 @@ package org.eclipse.jetty.docs.programming.client.websocket;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Request;
@@ -127,7 +126,8 @@ public class WebSocketClientDocs
         // Use the dynamic HTTP/2 transport for HttpClient.
         ClientConnector clientConnector = new ClientConnector();
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client)));
+        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(
+            clientConnector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client)));
 
         // Create and start WebSocketClient.
         WebSocketClient webSocketClient = new WebSocketClient(httpClient);
@@ -160,7 +160,8 @@ public class WebSocketClientDocs
         customRequest.setSubProtocols("chat");
 
         // Connect the client EndPoint to the server with a custom HTTP request.
-        CompletableFuture<Session> clientSessionPromise = webSocketClient.connect(clientEndPoint, serverURI, customRequest);
+        CompletableFuture<Session> clientSessionPromise =
+            webSocketClient.connect(clientEndPoint, serverURI, customRequest);
         // end::customHTTPRequest[]
     }
 
@@ -184,7 +185,8 @@ public class WebSocketClientDocs
         };
 
         // Connect the client EndPoint to the server with a custom HTTP request.
-        CompletableFuture<Session> clientSessionPromise = webSocketClient.connect(clientEndPoint, serverURI, null, listener);
+        CompletableFuture<Session> clientSessionPromise =
+            webSocketClient.connect(clientEndPoint, serverURI, null, listener);
         // end::inspectHTTPResponse[]
     }
 

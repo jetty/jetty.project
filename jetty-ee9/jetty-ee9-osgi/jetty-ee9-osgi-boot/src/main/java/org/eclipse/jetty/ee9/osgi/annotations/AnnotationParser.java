@@ -14,23 +14,14 @@
 package org.eclipse.jetty.ee9.osgi.annotations;
 
 import java.io.File;
-import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
-import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +31,7 @@ import org.slf4j.LoggerFactory;
 public class AnnotationParser extends org.eclipse.jetty.ee9.annotations.AnnotationParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationParser.class);
-    
+
     private Set<URI> _parsed = ConcurrentHashMap.newKeySet();
 
     private ConcurrentHashMap<URI, Bundle> _uriToBundle = new ConcurrentHashMap<>();
@@ -63,7 +54,8 @@ public class AnnotationParser extends org.eclipse.jetty.ee9.annotations.Annotati
      */
     public Resource indexBundle(ResourceFactory resourceFactory, Bundle bundle) throws Exception
     {
-        File bundleFile = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
+        File bundleFile =
+            BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         Resource resource = resourceFactory.newResource(bundleFile.toURI());
         URI uri = resource.getURI();
         _uriToBundle.putIfAbsent(uri, bundle);
@@ -88,8 +80,7 @@ public class AnnotationParser extends org.eclipse.jetty.ee9.annotations.Annotati
         return _resourceToBundle.get(resource);
     }
 
-    public void parse(Set<? extends Handler> handlers, Bundle bundle)
-        throws Exception
+    public void parse(Set<? extends Handler> handlers, Bundle bundle) throws Exception
     {
 
         Resource bundleResource = _bundleToResource.get(bundle);
@@ -99,10 +90,9 @@ public class AnnotationParser extends org.eclipse.jetty.ee9.annotations.Annotati
         if (!_parsed.add(_bundleToUri.get(bundle)))
             return;
 
-
         parse(handlers, bundleResource);
     }
-    
+
     @Override
     public void parse(final Set<? extends Handler> handlers, Resource r) throws Exception
     {
@@ -125,9 +115,9 @@ public class AnnotationParser extends org.eclipse.jetty.ee9.annotations.Annotati
         {
             parseClass(handlers, null, r.getPath());
         }
-        
-        //Not already parsed, it could be a file that actually is compressed but does not have
-        //.jar/.zip etc extension, such as equinox urls, so try to parse it
+
+        // Not already parsed, it could be a file that actually is compressed but does not have
+        // .jar/.zip etc extension, such as equinox urls, so try to parse it
         try
         {
             parseJar(handlers, r);

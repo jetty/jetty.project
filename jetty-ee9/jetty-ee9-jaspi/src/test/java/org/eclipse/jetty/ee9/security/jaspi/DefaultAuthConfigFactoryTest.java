@@ -13,14 +13,6 @@
 
 package org.eclipse.jetty.ee9.security.jaspi;
 
-import java.util.Map;
-
-import jakarta.security.auth.message.config.AuthConfigFactory;
-import jakarta.security.auth.message.config.AuthConfigProvider;
-import jakarta.security.auth.message.config.RegistrationListener;
-import org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.equalTo;
@@ -28,26 +20,39 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
+import jakarta.security.auth.message.config.AuthConfigFactory;
+import jakarta.security.auth.message.config.AuthConfigProvider;
+import jakarta.security.auth.message.config.RegistrationListener;
+import java.util.Map;
+import org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider;
+import org.junit.jupiter.api.Test;
+
 public class DefaultAuthConfigFactoryTest
 {
 
     private static final String MESSAGE_LAYER = "HttpServlet";
 
-    private final String jettyAuthConfigProvider = "org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider";
+    private final String jettyAuthConfigProvider =
+        "org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider";
     private final String appContext = "server /test";
 
-    private final Map<String, String> serverAuthModuleProperties = Map.of("ServerAuthModule",
-            "org.eclipse.jetty.ee9.security.jaspi.modules.BasicAuthenticationAuthModule", "AppContextID", appContext,
-            "org.eclipse.jetty.ee9.security.jaspi.modules.RealmName", "TestRealm");
+    private final Map<String, String> serverAuthModuleProperties = Map.of(
+        "ServerAuthModule",
+        "org.eclipse.jetty.ee9.security.jaspi.modules.BasicAuthenticationAuthModule",
+        "AppContextID",
+        appContext,
+        "org.eclipse.jetty.ee9.security.jaspi.modules.RealmName",
+        "TestRealm");
 
-    private final String serverAuthModuleClassName = "org.eclipse.jetty.ee9.security.jaspi.modules.BasicAuthenticationAuthModule";
-    
+    private final String serverAuthModuleClassName =
+        "org.eclipse.jetty.ee9.security.jaspi.modules.BasicAuthenticationAuthModule";
+
     @Test
     public void testRegisterConfigProviderByClassName() throws Exception
     {
         AuthConfigFactory factory = new DefaultAuthConfigFactory();
-        String registrationId = factory.registerConfigProvider(jettyAuthConfigProvider,
-                serverAuthModuleProperties, MESSAGE_LAYER, appContext, "a test provider");
+        String registrationId = factory.registerConfigProvider(
+            jettyAuthConfigProvider, serverAuthModuleProperties, MESSAGE_LAYER, appContext, "a test provider");
         AuthConfigProvider registeredProvider = factory.getConfigProvider(MESSAGE_LAYER, appContext, null);
         assertThat(registeredProvider, instanceOf(JaspiAuthConfigProvider.class));
         assertThat(registeredProvider.getServerAuthConfig(MESSAGE_LAYER, appContext, null), notNullValue());
@@ -59,9 +64,8 @@ public class DefaultAuthConfigFactoryTest
     @Test
     public void testRegisterAuthConfigProviderDirect() throws Exception
     {
-        AuthConfigProvider provider = new JaspiAuthConfigProvider(
-                serverAuthModuleClassName,
-                serverAuthModuleProperties);
+        AuthConfigProvider provider =
+            new JaspiAuthConfigProvider(serverAuthModuleClassName, serverAuthModuleProperties);
 
         AuthConfigFactory factory = new DefaultAuthConfigFactory();
         String registrationId = factory.registerConfigProvider(provider, MESSAGE_LAYER, appContext, "a test provider");
@@ -78,33 +82,31 @@ public class DefaultAuthConfigFactoryTest
     public void testRemoveRegistration() throws Exception
     {
         // Arrange
-        AuthConfigProvider provider = new JaspiAuthConfigProvider(
-                serverAuthModuleClassName,
-                serverAuthModuleProperties);
+        AuthConfigProvider provider =
+            new JaspiAuthConfigProvider(serverAuthModuleClassName, serverAuthModuleProperties);
 
         AuthConfigFactory factory = new DefaultAuthConfigFactory();
         String registrationId = factory.registerConfigProvider(provider, MESSAGE_LAYER, appContext, "a test provider");
-        
+
         DummyRegistrationListener dummyListener = new DummyRegistrationListener();
         assertThat(factory.getConfigProvider(MESSAGE_LAYER, appContext, dummyListener), notNullValue());
-        
+
         // Act
         factory.removeRegistration(registrationId);
-        
+
         // Assert config provider removed
         assertThat(factory.getConfigProvider(MESSAGE_LAYER, appContext, null), nullValue());
-        
+
         // Assert listeners invoked
         assertThat(dummyListener.appContext, equalTo(appContext));
         assertThat(dummyListener.layer, equalTo(MESSAGE_LAYER));
-
     }
-    
-    static class DummyRegistrationListener implements RegistrationListener 
+
+    static class DummyRegistrationListener implements RegistrationListener
     {
         String layer;
         String appContext;
-        
+
         @Override
         public void notify(String layer, String appContext)
         {

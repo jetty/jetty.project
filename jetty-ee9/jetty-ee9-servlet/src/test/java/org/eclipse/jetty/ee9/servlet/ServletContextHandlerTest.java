@@ -13,20 +13,20 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.EventListener;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -59,6 +59,20 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.EventListener;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Handler;
 import org.eclipse.jetty.ee9.nested.HandlerWrapper;
@@ -85,21 +99,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class ServletContextHandlerTest
 {
     private Server _server;
@@ -121,8 +120,8 @@ public class ServletContextHandlerTest
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
-            ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
         }
 
@@ -195,13 +194,13 @@ public class ServletContextHandlerTest
         @Override
         public void onStartup(Set<Class<?>> c, ServletContext ctx)
         {
-            //add a programmatic listener
+            // add a programmatic listener
             if (ctx.getAttribute("MySCI.startup") != null)
                 throw new IllegalStateException("MySCI already called");
             ctx.setAttribute("MySCI.startup", Boolean.TRUE);
             ctx.addListener(new MyContextListener(callSessionTimeouts, timeout));
 
-            //test that SCI can call the sessionmodes methods
+            // test that SCI can call the sessionmodes methods
             try
             {
                 ctx.getDefaultSessionTrackingModes();
@@ -247,7 +246,8 @@ public class ServletContextHandlerTest
         }
     }
 
-    public static class MySCIStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
+    public static class MySCIStarter extends AbstractLifeCycle
+        implements ServletContextHandler.ServletContainerInitializerCaller
     {
         ServletContainerInitializer _sci;
         ContextHandler.APIContext _ctx;
@@ -262,7 +262,7 @@ public class ServletContextHandlerTest
         protected void doStart() throws Exception
         {
             super.doStart();
-            //call the SCI
+            // call the SCI
             _ctx.setExtendedListenerTypes(true);
             _sci.onStartup(Collections.emptySet(), _ctx);
         }
@@ -298,7 +298,7 @@ public class ServletContextHandlerTest
             }
             catch (UnsupportedOperationException e)
             {
-                //Should NOT be able to call getDefaultSessionTrackingModes from programmatic SCL
+                // Should NOT be able to call getDefaultSessionTrackingModes from programmatic SCL
                 sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.TRUE);
             }
 
@@ -310,7 +310,7 @@ public class ServletContextHandlerTest
             }
             catch (UnsupportedOperationException e)
             {
-                //Should NOT be able to call getEffectiveSessionTrackingModes from programmatic SCL
+                // Should NOT be able to call getEffectiveSessionTrackingModes from programmatic SCL
                 sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.TRUE);
             }
 
@@ -322,7 +322,7 @@ public class ServletContextHandlerTest
             }
             catch (UnsupportedOperationException e)
             {
-                //Should NOT be able to call setSessionTrackingModes from programmatic SCL
+                // Should NOT be able to call setSessionTrackingModes from programmatic SCL
                 sce.getServletContext().setAttribute("MyContextListener.setSessionTrackingModes", Boolean.TRUE);
             }
 
@@ -335,7 +335,7 @@ public class ServletContextHandlerTest
                 }
                 catch (UnsupportedOperationException e)
                 {
-                    //Should NOT be able to call setSessionTimeout from this SCL
+                    // Should NOT be able to call setSessionTimeout from this SCL
                     sce.getServletContext().setAttribute("MyContextListener.setSessionTimeout", Boolean.TRUE);
                 }
 
@@ -346,7 +346,7 @@ public class ServletContextHandlerTest
                 }
                 catch (UnsupportedOperationException e)
                 {
-                    //Should NOT be able to call getSessionTimeout from this SCL
+                    // Should NOT be able to call getSessionTimeout from this SCL
                     sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.TRUE);
                 }
             }
@@ -599,7 +599,7 @@ public class ServletContextHandlerTest
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
-            //Add all of the sorts of listeners that are allowed
+            // Add all of the sorts of listeners that are allowed
             try
             {
                 MySCAListener mySCAListener = sce.getServletContext().createListener(MySCAListener.class);
@@ -629,11 +629,14 @@ public class ServletContextHandlerTest
             try
             {
                 MyContextListener contextListener = sce.getServletContext().createListener(MyContextListener.class);
-                assertThrows(IllegalArgumentException.class, () -> sce.getServletContext().addListener(contextListener), "Adding SCI from an SCI!");
+                assertThrows(
+                    IllegalArgumentException.class,
+                    () -> sce.getServletContext().addListener(contextListener),
+                    "Adding SCI from an SCI!");
             }
             catch (IllegalArgumentException e)
             {
-                //expected
+                // expected
             }
             catch (ServletException x)
             {
@@ -646,7 +649,6 @@ public class ServletContextHandlerTest
         @Override
         public void contextDestroyed(ServletContextEvent sce)
         {
-
         }
     }
 
@@ -670,7 +672,7 @@ public class ServletContextHandlerTest
     @Test
     public void testInitParams() throws Exception
     {
-        //Test get/setInitParam with null throws NPE
+        // Test get/setInitParam with null throws NPE
         ServletContextHandler root = new ServletContextHandler(_server, "/", ServletContextHandler.SESSIONS);
         _server.setHandler(root);
         ListenerHolder initialListener = new ListenerHolder();
@@ -680,12 +682,10 @@ public class ServletContextHandlerTest
             {
                 sce.getServletContext().setInitParameter("foo", "bar");
                 assertEquals("bar", sce.getServletContext().getInitParameter("foo"));
-                assertThrows(NullPointerException.class,
-                    () ->  sce.getServletContext().setInitParameter(null, "bad")
-                );
-                assertThrows(NullPointerException.class,
-                    () -> sce.getServletContext().getInitParameter(null)
-                );
+                assertThrows(NullPointerException.class, () -> sce.getServletContext()
+                    .setInitParameter(null, "bad"));
+                assertThrows(NullPointerException.class, () -> sce.getServletContext()
+                    .getInitParameter(null));
             }
         });
 
@@ -694,21 +694,24 @@ public class ServletContextHandlerTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/", ""})
+    @ValueSource(strings =
+    {"/", ""})
     public void testGetContextPathRoot(String inputContextPath) throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath(inputContextPath);
-        contextHandler.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        contextHandler.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                resp.setContentType("text/plain");
-                resp.setCharacterEncoding("utf-8");
-                resp.getWriter().printf("getContextPath()=[%s]", req.getContextPath());
-            }
-        }), "/dump");
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+                {
+                    resp.setContentType("text/plain");
+                    resp.setCharacterEncoding("utf-8");
+                    resp.getWriter().printf("getContextPath()=[%s]", req.getContextPath());
+                }
+            }),
+            "/dump");
         _server.setHandler(contextHandler);
         _server.start();
 
@@ -727,21 +730,24 @@ public class ServletContextHandlerTest
      * Address spec "3.5. Request Path Elements" with respect to Servlet Path.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"/*", ""})
+    @ValueSource(strings =
+    {"/*", ""})
     public void testGetServletPathEmpty(String pathSpec) throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("");
-        contextHandler.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+        contextHandler.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                resp.setContentType("text/plain");
-                resp.setCharacterEncoding("utf-8");
-                resp.getWriter().printf("getServletPath()=[%s]", req.getServletPath());
-            }
-        }), pathSpec);
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+                {
+                    resp.setContentType("text/plain");
+                    resp.setCharacterEncoding("utf-8");
+                    resp.getWriter().printf("getServletPath()=[%s]", req.getServletPath());
+                }
+            }),
+            pathSpec);
         _server.setHandler(contextHandler);
         _server.start();
 
@@ -770,19 +776,19 @@ public class ServletContextHandlerTest
         root.addBean(new MySCIStarter(root.getServletContext(), new MySCI(true, timeout.intValue())), true);
         _server.start();
 
-        //test starting value of setSessionTimeout
+        // test starting value of setSessionTimeout
         assertEquals(startMin, (Integer)root.getServletContext().getAttribute("MYSCI.startSessionTimeout"));
-        //test can set session timeout from ServletContainerInitializer
+        // test can set session timeout from ServletContainerInitializer
         assertTrue((Boolean)root.getServletContext().getAttribute("MYSCI.setSessionTimeout"));
-        //test can get session timeout from ServletContainerInitializer
+        // test can get session timeout from ServletContainerInitializer
         assertEquals(timeout, (Integer)root.getServletContext().getAttribute("MYSCI.getSessionTimeout"));
         assertNull(root.getAttribute("MYSCI.sessionTimeoutFailure"));
-        //test can't get session timeout from ContextListener that is not from annotation or web.xml
+        // test can't get session timeout from ContextListener that is not from annotation or web.xml
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.getSessionTimeout"));
-        //test can't set session timeout from ContextListener that is not from annotation or web.xml
+        // test can't set session timeout from ContextListener that is not from annotation or web.xml
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTimeout"));
 
-        //test accessing timeout from a servlet
+        // test accessing timeout from a servlet
         StringBuilder rawRequest = new StringBuilder();
         rawRequest.append("GET / HTTP/1.1\r\n");
         rawRequest.append("Host: local\r\n");
@@ -816,13 +822,13 @@ public class ServletContextHandlerTest
         _server.start();
         _server.stop();
 
-        assertEquals(0, stopTestListener._initIndex); //listeners contextInitialized called first
-        assertEquals(1, stopTestFilter._initIndex); //filters init
-        assertEquals(2, stopTestServlet._initIndex); //servlets init
+        assertEquals(0, stopTestListener._initIndex); // listeners contextInitialized called first
+        assertEquals(1, stopTestFilter._initIndex); // filters init
+        assertEquals(2, stopTestServlet._initIndex); // servlets init
 
-        assertEquals(0, stopTestFilter._destroyIndex); //filters destroyed first
-        assertEquals(1, stopTestServlet._destroyIndex); //servlets destroyed next
-        assertEquals(2, stopTestListener._destroyIndex); //listener contextDestroyed last
+        assertEquals(0, stopTestFilter._destroyIndex); // filters destroyed first
+        assertEquals(1, stopTestServlet._destroyIndex); // servlets destroyed next
+        assertEquals(2, stopTestListener._destroyIndex); // listener contextDestroyed last
     }
 
     @Test
@@ -917,7 +923,7 @@ public class ServletContextHandlerTest
         {
             assertTrue(l.isStarted());
             assertNotNull(l.getListener());
-            //all listeners except the first should be programmatic
+            // all listeners except the first should be programmatic
             if (!"org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$InitialListener".equals(l.getClassName()))
             {
                 assertFalse(root.isDurableListener(l.getListener()));
@@ -931,21 +937,23 @@ public class ServletContextHandlerTest
             listenerClassNames.add(l.getClass().getName());
         }
 
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MySCAListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MyRequestListener"));
+        assertTrue(
+            listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MySCAListener"));
+        assertTrue(listenerClassNames.contains(
+            "org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MyRequestListener"));
         assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MyRAListener"));
         assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MySListener"));
         assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MySAListener"));
         assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee9.servlet.ServletContextHandlerTest$MySIListener"));
 
-        //test ServletRequestAttributeListener
+        // test ServletRequestAttributeListener
         String response = _connector.getResponse("GET /test?req=all HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals(1, MyRAListener.adds);
         assertEquals(1, MyRAListener.replaces);
         assertEquals(1, MyRAListener.removes);
 
-        //test HttpSessionAttributeListener
+        // test HttpSessionAttributeListener
         response = _connector.getResponse("GET /test?session=create HTTP/1.0\r\n\r\n");
         String sessionid = response.substring(response.indexOf("JSESSIONID"), response.indexOf(";"));
         assertThat(response, Matchers.containsString("200 OK"));
@@ -976,7 +984,7 @@ public class ServletContextHandlerTest
         assertEquals(1, MySAListener.replaces);
         assertEquals(1, MySAListener.removes);
 
-        //test HttpSessionIdListener.sessionIdChanged
+        // test HttpSessionIdListener.sessionIdChanged
         request = new StringBuffer();
         request.append("GET /test?session=change HTTP/1.0\n");
         request.append("Host: localhost\n");
@@ -987,7 +995,7 @@ public class ServletContextHandlerTest
         assertEquals(1, MySIListener.changes);
         sessionid = response.substring(response.indexOf("JSESSIONID"), response.indexOf(";"));
 
-        //test HttpServletListener.sessionDestroyed
+        // test HttpServletListener.sessionDestroyed
         request = new StringBuffer();
         request.append("GET /test?session=delete HTTP/1.0\n");
         request.append("Host: localhost\n");
@@ -997,8 +1005,8 @@ public class ServletContextHandlerTest
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals(1, MySListener.destroys);
 
-        //test ServletContextAttributeListener
-        //attribute was set when context listener registered
+        // test ServletContextAttributeListener
+        // attribute was set when context listener registered
         assertEquals(1, MySCAListener.adds);
         response = _connector.getResponse("GET /test?ctx=all HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("200 OK"));
@@ -1053,7 +1061,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddServletFromServlet()
     {
-        //A servlet cannot be added by another servlet
+        // A servlet cannot be added by another servlet
         Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
 
         try (StacklessLogging ignored = new StacklessLogging(logger))
@@ -1066,14 +1074,17 @@ public class ServletContextHandlerTest
             context.setContextPath("/");
             _server.setHandler(context);
             ServletException se = assertThrows(ServletException.class, _server::start);
-            assertThat("Servlet can only be added from SCI or SCL", se.getCause(), instanceOf(IllegalStateException.class));
+            assertThat(
+                "Servlet can only be added from SCI or SCL",
+                se.getCause(),
+                instanceOf(IllegalStateException.class));
         }
     }
 
     @Test
     public void testCreateMethodsFromSCI() throws Exception
     {
-        //A filter can be created by an SCI
+        // A filter can be created by an SCI
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
@@ -1119,7 +1130,7 @@ public class ServletContextHandlerTest
     @Test
     public void testCreateMethodsFromSCL() throws Exception
     {
-      //A filter can be created by an SCI
+        // A filter can be created by an SCI
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
@@ -1143,7 +1154,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddFilterFromServlet()
     {
-        //A filter cannot be added from a servlet
+        // A filter cannot be added from a servlet
         Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
 
         try (StacklessLogging ignored = new StacklessLogging(logger))
@@ -1156,14 +1167,15 @@ public class ServletContextHandlerTest
             context.setContextPath("/");
             _server.setHandler(context);
             ServletException se = assertThrows(ServletException.class, _server::start);
-            assertThat("Filter can only be added from SCI or SCL", se.getCause(), instanceOf(IllegalStateException.class));
+            assertThat(
+                "Filter can only be added from SCI or SCL", se.getCause(), instanceOf(IllegalStateException.class));
         }
     }
 
     @Test
     public void testAddServletByClassFromFilter()
     {
-        //A servlet cannot be added from a Filter
+        // A servlet cannot be added from a Filter
         Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
 
         try (StacklessLogging ignored = new StacklessLogging(logger))
@@ -1200,7 +1212,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddServletByInstanceFromFilter()
     {
-        //A servlet cannot be added from a Filter
+        // A servlet cannot be added from a Filter
         Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
 
         try (StacklessLogging ignored = new StacklessLogging(logger))
@@ -1237,7 +1249,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddServletByClassNameFromFilter()
     {
-        //A servlet cannot be added from a Filter
+        // A servlet cannot be added from a Filter
         Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
 
         try (StacklessLogging ignored = new StacklessLogging(logger))
@@ -1249,7 +1261,8 @@ public class ServletContextHandlerTest
                 @Override
                 public void init(FilterConfig filterConfig)
                 {
-                    ServletRegistration rego = filterConfig.getServletContext().addServlet("hello", HelloServlet.class.getName());
+                    ServletRegistration rego =
+                        filterConfig.getServletContext().addServlet("hello", HelloServlet.class.getName());
                     rego.addMapping("/hello/*");
                 }
 
@@ -1274,7 +1287,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddFilterServletFromSCL() throws Exception
     {
-        //A servlet can be added from a ServletContextListener
+        // A servlet can be added from a ServletContextListener
         ServletContextHandler context = new ServletContextHandler();
         context.getServletHandler().setStartWithUnavailable(false);
         context.setContextPath("/");
@@ -1283,7 +1296,8 @@ public class ServletContextHandlerTest
             @Override
             public void contextInitialized(ServletContextEvent sce)
             {
-                sce.getServletContext().addFilter("filter", new MyFilter())
+                sce.getServletContext()
+                    .addFilter("filter", new MyFilter())
                     .addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
                 ServletRegistration rego = sce.getServletContext().addServlet("hello", HelloServlet.class);
                 rego.addMapping("/hello/*");
@@ -1311,7 +1325,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddFilterServletFromSCI() throws Exception
     {
-        //A servlet can be added from a ServletContainerInitializer
+        // A servlet can be added from a ServletContainerInitializer
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
@@ -1370,8 +1384,10 @@ public class ServletContextHandlerTest
             }
         }
 
-        assertThrows(IllegalArgumentException.class, () ->  root.getServletContext().addJspFile(null, "/path/to/some.jsp"));
-        assertThrows(IllegalArgumentException.class, () ->  root.getServletContext().addJspFile("", "/path/to/some.jsp"));
+        assertThrows(
+            IllegalArgumentException.class, () -> root.getServletContext().addJspFile(null, "/path/to/some.jsp"));
+        assertThrows(
+            IllegalArgumentException.class, () -> root.getServletContext().addJspFile("", "/path/to/some.jsp"));
 
         root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
         _server.start();
@@ -1391,7 +1407,7 @@ public class ServletContextHandlerTest
         jspServlet.setName("jsp");
         jspServlet.setHeldClass(FakeJspServlet.class);
         root.addServlet(jspServlet, "*.jsp");
-        //add a full registration so that the addJspFile will fail
+        // add a full registration so that the addJspFile will fail
         ServletHolder barServlet = new ServletHolder();
         barServlet.setName("some.jsp");
         barServlet.setHeldClass(HelloServlet.class);
@@ -1428,7 +1444,7 @@ public class ServletContextHandlerTest
         jspServlet.setName("jsp");
         jspServlet.setHeldClass(FakeJspServlet.class);
         root.addServlet(jspServlet, "*.jsp");
-        //add a preliminary registration so that the addJspFile will complete it
+        // add a preliminary registration so that the addJspFile will complete it
         ServletHolder barServlet = new ServletHolder();
         barServlet.setName("some.jsp");
         root.addServlet(barServlet, "/bar/*");
@@ -1533,7 +1549,7 @@ public class ServletContextHandlerTest
         partial.setName("test");
         context.addServlet(partial, "/test");
 
-        //complete partial servlet registration by providing name of the servlet class
+        // complete partial servlet registration by providing name of the servlet class
         ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class.getName());
         assertNotNull(reg);
         assertEquals(TestServlet.class.getName(), partial.getClassName());
@@ -1559,7 +1575,7 @@ public class ServletContextHandlerTest
         partial.setName("test");
         context.addServlet(partial, "/test");
 
-        //complete partial servlet registration by providing the servlet class
+        // complete partial servlet registration by providing the servlet class
         ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
         assertNotNull(reg);
         assertEquals(TestServlet.class.getName(), partial.getClassName());
@@ -1587,7 +1603,7 @@ public class ServletContextHandlerTest
         full.setHeldClass(TestServlet.class);
         context.addServlet(full, "/test");
 
-        //Must return null if the servlet has been fully defined previously
+        // Must return null if the servlet has been fully defined previously
         ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
         assertNull(reg);
 
@@ -1602,7 +1618,7 @@ public class ServletContextHandlerTest
         String response = _connector.getResponse(request.toString());
         assertThat("Response", response, containsString("Test"));
     }
-    
+
     @Test
     public void testAddServletContainerInitializer() throws Exception
     {
@@ -1610,45 +1626,52 @@ public class ServletContextHandlerTest
         context.setContextPath("/");
         final AtomicBoolean called = new AtomicBoolean();
         context.addServletContainerInitializer(new ServletContainerInitializer()
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
             {
-                @Override
-                public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
-                {
-                    called.set(true);
-                }
-            });
-        
+                called.set(true);
+            }
+        });
+
         _server.setHandler(context);
         _server.start();
-        ServletContextHandler.ServletContainerInitializerStarter starter = context.getBean(ServletContextHandler.ServletContainerInitializerStarter.class);
+        ServletContextHandler.ServletContainerInitializerStarter starter =
+            context.getBean(ServletContextHandler.ServletContainerInitializerStarter.class);
         assertNotNull(starter);
-        Collection<ServletContainerInitializerHolder> holders = starter.getContainedBeans(ServletContainerInitializerHolder.class);
+        Collection<ServletContainerInitializerHolder> holders =
+            starter.getContainedBeans(ServletContainerInitializerHolder.class);
         assertEquals(1, holders.size());
         assertTrue(called.get());
     }
-    
+
     @Test
     public void testAddServletContainerInitializerWithArgs() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        
+
         final Set<Class<?>> onStartupClasses = new HashSet<>();
-        context.addServletContainerInitializer(new ServletContainerInitializer()
+        context.addServletContainerInitializer(
+            new ServletContainerInitializer()
             {
                 @Override
                 public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
                 {
                     onStartupClasses.addAll(c);
                 }
-            }, HelloServlet.class, TestServlet.class);
+            },
+            HelloServlet.class,
+            TestServlet.class);
 
         _server.setHandler(context);
         _server.start();
-        
-        ServletContextHandler.ServletContainerInitializerStarter starter = context.getBean(ServletContextHandler.ServletContainerInitializerStarter.class);
+
+        ServletContextHandler.ServletContainerInitializerStarter starter =
+            context.getBean(ServletContextHandler.ServletContainerInitializerStarter.class);
         assertNotNull(starter);
-        Collection<ServletContainerInitializerHolder> holders = starter.getContainedBeans(ServletContainerInitializerHolder.class);
+        Collection<ServletContainerInitializerHolder> holders =
+            starter.getContainedBeans(ServletContainerInitializerHolder.class);
         assertEquals(1, holders.size());
         assertThat(onStartupClasses, Matchers.containsInAnyOrder(HelloServlet.class, TestServlet.class));
     }
@@ -1658,9 +1681,10 @@ public class ServletContextHandlerTest
     {
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        
+
         final Set<Class<?>> onStartupClasses = new HashSet<>();
-        ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(Source.EMBEDDED,
+        ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(
+            Source.EMBEDDED,
             new ServletContainerInitializer()
             {
                 @Override
@@ -1668,14 +1692,18 @@ public class ServletContextHandlerTest
                 {
                     onStartupClasses.addAll(c);
                 }
-            }, HelloServlet.class, TestServlet.class);
-        
+            },
+            HelloServlet.class,
+            TestServlet.class);
+
         context.addServletContainerInitializer(holder);
         _server.setHandler(context);
         _server.start();
-        ServletContextHandler.ServletContainerInitializerStarter starter = context.getBean(ServletContextHandler.ServletContainerInitializerStarter.class);
+        ServletContextHandler.ServletContainerInitializerStarter starter =
+            context.getBean(ServletContextHandler.ServletContainerInitializerStarter.class);
         assertNotNull(starter);
-        Collection<ServletContainerInitializerHolder> holders = starter.getContainedBeans(ServletContainerInitializerHolder.class);
+        Collection<ServletContainerInitializerHolder> holders =
+            starter.getContainedBeans(ServletContainerInitializerHolder.class);
         assertEquals(1, holders.size());
         assertThat(onStartupClasses, Matchers.containsInAnyOrder(HelloServlet.class, TestServlet.class));
     }
@@ -1740,20 +1768,21 @@ public class ServletContextHandlerTest
     @Test
     public void testSetSecurityHandler()
     {
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
+        ServletContextHandler context =
+            new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
         assertNotNull(context.getSessionHandler());
         SessionHandler sessionHandler = context.getSessionHandler();
         assertNotNull(context.getSecurityHandler());
         SecurityHandler securityHandler = context.getSecurityHandler();
 
-        //check the handler linking order
+        // check the handler linking order
         HandlerWrapper h = (HandlerWrapper)context.getHandler();
         assertSame(h, sessionHandler);
 
         h = (HandlerWrapper)h.getHandler();
         assertSame(h, securityHandler);
 
-        //replace the security handler
+        // replace the security handler
         SecurityHandler myHandler = new SecurityHandler()
         {
             @Override
@@ -1763,8 +1792,8 @@ public class ServletContextHandlerTest
             }
 
             @Override
-            protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response,
-                                                       RoleInfo constraintInfo)
+            protected boolean checkUserDataPermissions(
+                                                       String pathInContext, Request request, Response response, RoleInfo constraintInfo)
             {
                 return false;
             }
@@ -1776,14 +1805,18 @@ public class ServletContextHandlerTest
             }
 
             @Override
-            protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response,
-                                                          Object constraintInfo, UserIdentity userIdentity)
+            protected boolean checkWebResourcePermissions(
+                                                          String pathInContext,
+                                                          Request request,
+                                                          Response response,
+                                                          Object constraintInfo,
+                                                          UserIdentity userIdentity)
             {
                 return false;
             }
         };
 
-        //check the linking order
+        // check the linking order
         context.setSecurityHandler(myHandler);
         assertSame(myHandler, context.getSecurityHandler());
 
@@ -1830,7 +1863,8 @@ public class ServletContextHandlerTest
     @Test
     public void testInsertHandler() throws Exception
     {
-        ServletContextHandler servletContextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
+        ServletContextHandler servletContextHandler =
+            new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
         servletContextHandler.setBaseResourceAsString(".");
         ServletHolder sh = new ServletHolder(new TestServlet());
         servletContextHandler.addServlet(sh, "/foo");
@@ -1854,7 +1888,8 @@ public class ServletContextHandlerTest
             }
         });
 
-        org.eclipse.jetty.server.handler.ResourceHandler coreResourceHandler = new org.eclipse.jetty.server.handler.ResourceHandler();
+        org.eclipse.jetty.server.handler.ResourceHandler coreResourceHandler =
+            new org.eclipse.jetty.server.handler.ResourceHandler();
         HandlerWrapper nestedHandler = new HandlerWrapper();
         Handler last = new HandlerWrapper();
 
@@ -1896,7 +1931,8 @@ public class ServletContextHandlerTest
         String response = _connector.getResponse("GET /objfactory/ HTTP/1.0\r\n\r\n");
         assertThat("Response status code", response, containsString("200 OK"));
 
-        String expected = String.format("Attribute[%s] = %s", DecoratedObjectFactory.ATTR, DecoratedObjectFactory.class.getName());
+        String expected = String.format(
+            "Attribute[%s] = %s", DecoratedObjectFactory.ATTR, DecoratedObjectFactory.class.getName());
         assertThat("Has context attribute", response, containsString(expected));
 
         assertThat("Decorators size", response, containsString("Decorators.size = [2]"));
@@ -1910,8 +1946,7 @@ public class ServletContextHandlerTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             resp.setStatus(HttpServletResponse.SC_OK);
             PrintWriter writer = resp.getWriter();
@@ -1927,8 +1962,8 @@ public class ServletContextHandlerTest
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
-            ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             ((HttpServletResponse)response).addHeader("filter", "filter");
             request.getServletContext().setAttribute("filter", "filter");
@@ -1968,7 +2003,9 @@ public class ServletContextHandlerTest
             PrintWriter out = resp.getWriter();
 
             Object obj = req.getServletContext().getAttribute(DecoratedObjectFactory.ATTR);
-            out.printf("Attribute[%s] = %s%n", DecoratedObjectFactory.ATTR, obj.getClass().getName());
+            out.printf(
+                "Attribute[%s] = %s%n",
+                DecoratedObjectFactory.ATTR, obj.getClass().getName());
 
             if (obj instanceof DecoratedObjectFactory)
             {
@@ -1990,7 +2027,6 @@ public class ServletContextHandlerTest
 
     public static class FakeJspServlet extends HttpServlet
     {
-
     }
 
     public static class ServletAddingServlet extends HttpServlet
@@ -2041,8 +2077,7 @@ public class ServletContextHandlerTest
     {
         private static final long serialVersionUID = 1L;
 
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             int t = req.getServletContext().getSessionTimeout();
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -2070,8 +2105,7 @@ public class ServletContextHandlerTest
         }
 
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             resp.setStatus(HttpServletResponse.SC_OK);
             PrintWriter writer = resp.getWriter();
@@ -2082,7 +2116,7 @@ public class ServletContextHandlerTest
             {
                 if ("create".equalsIgnoreCase(action))
                 {
-                    //Make a session
+                    // Make a session
                     HttpSession session = req.getSession(true);
                     session.setAttribute("some", "thing");
                 }
@@ -2115,7 +2149,7 @@ public class ServletContextHandlerTest
             action = req.getParameter("req");
             if (!Objects.isNull(action))
             {
-                //test all attribute ops
+                // test all attribute ops
                 req.setAttribute("some", "value");
                 req.setAttribute("some", "other");
                 req.removeAttribute("some");
@@ -2126,14 +2160,14 @@ public class ServletContextHandlerTest
             action = req.getParameter("ctx");
             if (!Objects.isNull(action))
             {
-                //change and remove context attribute
+                // change and remove context attribute
                 req.getServletContext().setAttribute("foo", "foo");
                 req.getServletContext().removeAttribute("foo");
             }
         }
     }
 
-    public static class TestPListener implements  ServletRequestListener
+    public static class TestPListener implements ServletRequestListener
     {
         @Override
         public void requestInitialized(ServletRequestEvent sre)
@@ -2158,37 +2192,38 @@ public class ServletContextHandlerTest
         context.setHandler(handler);
 
         // Add a servlet to report number of listeners
-        handler.addServletWithMapping(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        handler.addServletWithMapping(
+            new ServletHolder(new HttpServlet()
             {
-                resp.getOutputStream().print("Listeners=" + req.getAttribute("testRequestListener"));
-            }
-        }), "/");
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws ServletException, IOException
+                {
+                    resp.getOutputStream().print("Listeners=" + req.getAttribute("testRequestListener"));
+                }
+            }),
+            "/");
 
         // Add a listener in STOPPED, STARTING and STARTED states
         handler.addListener(new ListenerHolder(TestPListener.class));
-        handler.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            public void init() throws ServletException
+        handler.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                handler.addListener(new ListenerHolder(TestPListener.class));
-            }
-        })
-        {
+                @Override
+                public void init() throws ServletException
+                {
+                    handler.addListener(new ListenerHolder(TestPListener.class));
+                }
+            })
             {
-                setInitOrder(1);
-            }
-        });
+                {
+                    setInitOrder(1);
+                }
+            });
         _server.start();
         handler.addListener(new ListenerHolder(TestPListener.class));
 
-        String request =
-            "GET /test HTTP/1.0\n" +
-                "Host: localhost\n" +
-                "\n";
+        String request = "GET /test HTTP/1.0\n" + "Host: localhost\n" + "\n";
         String response = _connector.getResponse(request);
         assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("Listeners=3"));
@@ -2202,7 +2237,8 @@ public class ServletContextHandlerTest
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             Integer count = (Integer)request.getAttribute("testFilter");
             request.setAttribute("testFilter", count == null ? 1 : count + 1);
@@ -2224,37 +2260,39 @@ public class ServletContextHandlerTest
         context.setHandler(handler);
 
         // Add a servlet to report number of filters
-        handler.addServletWithMapping(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        handler.addServletWithMapping(
+            new ServletHolder(new HttpServlet()
             {
-                resp.getOutputStream().print("Filters=" + req.getAttribute("testFilter"));
-            }
-        }), "/");
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws ServletException, IOException
+                {
+                    resp.getOutputStream().print("Filters=" + req.getAttribute("testFilter"));
+                }
+            }),
+            "/");
 
         // Add a filter in STOPPED, STARTING and STARTED states
         handler.addFilterWithMapping(new FilterHolder(TestPFilter.class), "/*", EnumSet.of(DispatcherType.REQUEST));
-        handler.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            public void init() throws ServletException
+        handler.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                handler.addFilterWithMapping(new FilterHolder(TestPFilter.class), "/*", EnumSet.of(DispatcherType.REQUEST));
-            }
-        })
-        {
+                @Override
+                public void init() throws ServletException
+                {
+                    handler.addFilterWithMapping(
+                        new FilterHolder(TestPFilter.class), "/*", EnumSet.of(DispatcherType.REQUEST));
+                }
+            })
             {
-                setInitOrder(1);
-            }
-        });
+                {
+                    setInitOrder(1);
+                }
+            });
         _server.start();
         handler.addFilterWithMapping(new FilterHolder(TestPFilter.class), "/*", EnumSet.of(DispatcherType.REQUEST));
 
-        String request =
-            "GET /test HTTP/1.0\n" +
-                "Host: localhost\n" +
-                "\n";
+        String request = "GET /test HTTP/1.0\n" + "Host: localhost\n" + "\n";
         String response = _connector.getResponse(request);
         assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("Filters=3"));
@@ -2279,19 +2317,20 @@ public class ServletContextHandlerTest
 
         // Add a filter in STOPPED, STARTING and STARTED states
         handler.addServletWithMapping(new ServletHolder(TestPServlet.class), "/one");
-        handler.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            public void init() throws ServletException
+        handler.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                handler.addServletWithMapping(new ServletHolder(TestPServlet.class), "/two");
-            }
-        })
-        {
+                @Override
+                public void init() throws ServletException
+                {
+                    handler.addServletWithMapping(new ServletHolder(TestPServlet.class), "/two");
+                }
+            })
             {
-                setInitOrder(1);
-            }
-        });
+                {
+                    setInitOrder(1);
+                }
+            });
         _server.start();
         handler.addServletWithMapping(new ServletHolder(TestPServlet.class), "/three");
 
@@ -2314,26 +2353,30 @@ public class ServletContextHandlerTest
     {
         ServletContextHandler context = new ServletContextHandler(null, "/c1", ServletContextHandler.NO_SESSIONS);
         context.setAllowNullPathInfo(true);
-        context.addServlet(new ServletHolder("default-servlet", new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        context.addServlet(
+            new ServletHolder("default-servlet", new HttpServlet()
             {
-                resp.setContentType("text/plain");
-                resp.setCharacterEncoding("UTF-8");
-                resp.getWriter().write("OK2\n");
-                resp.getWriter().close();
-            }
-        }), "/");
+                @Override
+                protected void service(HttpServletRequest req, HttpServletResponse resp)
+                    throws ServletException, IOException
+                {
+                    resp.setContentType("text/plain");
+                    resp.setCharacterEncoding("UTF-8");
+                    resp.getWriter().write("OK2\n");
+                    resp.getWriter().close();
+                }
+            }),
+            "/");
 
         _server.setHandler(context);
         _server.start();
-        String rawRequest = """
-            GET /c1 HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """;
+        String rawRequest =
+            """
+                GET /c1 HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
 
         String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.internal.NonRetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 

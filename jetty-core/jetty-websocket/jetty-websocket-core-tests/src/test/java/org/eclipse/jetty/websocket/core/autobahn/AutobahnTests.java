@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.websocket.core.autobahn;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.exception.NotFoundException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,9 +28,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.exception.NotFoundException;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -48,8 +49,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.DockerStatus;
 import org.testcontainers.utility.MountableFile;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled("Disable this test so it doesn't run locally as it takes 1h+ to run.")
 @Testcontainers
@@ -79,7 +78,8 @@ public class AutobahnTests
     @Test
     public void testClient() throws Exception
     {
-        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
+        try (GenericContainer<?> container = new GenericContainer<>(
+            DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
             .withCommand("/bin/bash", "-c", "wstest -m fuzzingserver -s /config/fuzzingserver.json")
             .withExposedPorts(9001)
             .withCopyFileToContainer(MountableFile.forHostPath(fuzzingServer), "/config/fuzzingserver.json")
@@ -95,7 +95,9 @@ public class AutobahnTests
             copyFromContainer(dockerClient, containerId, reportDir, Paths.get("/target/reports/clients"));
         }
 
-        LOG.info("Test Result Overview {}", reportDir.resolve("clients/index.html").toUri());
+        LOG.info(
+            "Test Result Overview {}",
+            reportDir.resolve("clients/index.html").toUri());
 
         List<AutobahnCaseResult> results = parseResults(Paths.get("target/reports/clients/index.json"));
         String className = getClass().getName();
@@ -112,8 +114,12 @@ public class AutobahnTests
         Server server = CoreAutobahnServer.startAutobahnServer(port);
 
         FileSignalWaitStrategy strategy = new FileSignalWaitStrategy(reportDir, Paths.get("/target/reports/servers"));
-        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
-            .withCommand("/bin/bash", "-c", "wstest -m fuzzingclient -s /config/fuzzingclient.json" + FileSignalWaitStrategy.END_COMMAND)
+        try (GenericContainer<?> container = new GenericContainer<>(
+            DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
+            .withCommand(
+                "/bin/bash",
+                "-c",
+                "wstest -m fuzzingclient -s /config/fuzzingclient.json" + FileSignalWaitStrategy.END_COMMAND)
             .withLogConsumer(new Slf4jLogConsumer(LOG))
             .withCopyFileToContainer(MountableFile.forHostPath(fuzzingClient), "/config/fuzzingclient.json")
             .withStartupCheckStrategy(strategy)
@@ -126,7 +132,9 @@ public class AutobahnTests
             server.stop();
         }
 
-        LOG.info("Test Result Overview {}", reportDir.resolve("servers/index.html").toUri());
+        LOG.info(
+            "Test Result Overview {}",
+            reportDir.resolve("servers/index.html").toUri());
 
         List<AutobahnCaseResult> results = parseResults(Paths.get("target/reports/servers/index.json"));
         String className = getClass().getName();
@@ -171,7 +179,10 @@ public class AutobahnTests
 
             try
             {
-                dockerClient.copyArchiveFromContainerCmd(containerId, SIGNAL_FILE).exec().close();
+                dockerClient
+                    .copyArchiveFromContainerCmd(containerId, SIGNAL_FILE)
+                    .exec()
+                    .close();
             }
             catch (FileNotFoundException | NotFoundException e)
             {
@@ -196,7 +207,8 @@ public class AutobahnTests
         }
     }
 
-    private static void copyFromContainer(DockerClient dockerClient, String containerId, Path target, Path source) throws Exception
+    private static void copyFromContainer(DockerClient dockerClient, String containerId, Path target, Path source)
+        throws Exception
     {
         try (TarArchiveInputStream tarArchiveInputStream = new TarArchiveInputStream(dockerClient
             .copyArchiveFromContainerCmd(containerId, source.toString())
@@ -228,7 +240,7 @@ public class AutobahnTests
         root.setAttribute("errors", Integer.toString(0));
         root.setAttribute("skipped", Integer.toString(0));
 
-        for (AutobahnCaseResult r: results)
+        for (AutobahnCaseResult r : results)
         {
             Xpp3Dom testcase = new Xpp3Dom("testcase");
             testcase.setAttribute("classname", testName);
@@ -259,8 +271,7 @@ public class AutobahnTests
         }
     }
 
-    private void addFailure(Xpp3Dom testCase, AutobahnCaseResult result) throws IOException,
-        ParseException
+    private void addFailure(Xpp3Dom testCase, AutobahnCaseResult result) throws IOException, ParseException
     {
 
         JSONParser parser = new JSONParser();
@@ -314,10 +325,12 @@ public class AutobahnTests
 
                 Long code = (remoteCloseCode == null) ? null : remoteCloseCode.longValue();
                 String reportfile = (String)c.get("reportfile");
-                AutobahnCaseResult result = new AutobahnCaseResult(cases.toString(),
+                AutobahnCaseResult result = new AutobahnCaseResult(
+                    cases.toString(),
                     AutobahnCaseResult.Behavior.parse(behavior),
                     AutobahnCaseResult.Behavior.parse(behaviorClose),
-                    duration.longValue(), code,
+                    duration.longValue(),
+                    code,
                     jsonPath.toFile().getParent() + File.separator + reportfile);
 
                 results.add(result);
@@ -366,7 +379,13 @@ public class AutobahnTests
         private final Long remoteCloseCode;
         private final String reportFile;
 
-        AutobahnCaseResult(String caseName, Behavior behavior, Behavior behaviorClose, long duration, Long remoteCloseCode, String reportFile)
+        AutobahnCaseResult(
+                           String caseName,
+                           Behavior behavior,
+                           Behavior behaviorClose,
+                           long duration,
+                           Long remoteCloseCode,
+                           String reportFile)
         {
             this.caseName = caseName;
             this.behavior = behavior;
@@ -424,8 +443,7 @@ public class AutobahnTests
         @Override
         public String toString()
         {
-            return "[" + caseName + "] behavior: " + behavior.name() + ", behaviorClose: " + behaviorClose.name() +
-                ", duration: " + duration + "ms, remoteCloseCode: " + remoteCloseCode + ", reportFile: " + reportFile;
+            return "[" + caseName + "] behavior: " + behavior.name() + ", behaviorClose: " + behaviorClose.name() + ", duration: " + duration + "ms, remoteCloseCode: " + remoteCloseCode + ", reportFile: " + reportFile;
         }
     }
 }

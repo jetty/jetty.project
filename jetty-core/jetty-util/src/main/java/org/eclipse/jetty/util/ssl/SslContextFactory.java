@@ -75,7 +75,6 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -100,7 +99,9 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public abstract class SslContextFactory extends ContainerLifeCycle implements Dumpable
 {
-    public static final TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{new X509ExtendedTrustManagerWrapper(null)};
+    public static final TrustManager[] TRUST_ALL_CERTS =
+        new X509TrustManager[]
+        {new X509ExtendedTrustManagerWrapper(null)};
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM = KeyManagerFactory.getDefaultAlgorithm();
     public static final String DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM = TrustManagerFactory.getDefaultAlgorithm();
     /**
@@ -136,6 +137,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         "^.*_NULL_.*$",
         "^.*_anon_.*$"
     };
+
     private static final String X_509 = "X.509";
 
     private final AutoLock _lock = new AutoLock();
@@ -375,8 +377,14 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         _factory = new Factory(keyStore, trustStore, context);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Selected Protocols {} of {}", Arrays.asList(_selectedProtocols), Arrays.asList(supported.getProtocols()));
-            LOG.debug("Selected Ciphers   {} of {}", Arrays.asList(_selectedCipherSuites), Arrays.asList(supported.getCipherSuites()));
+            LOG.debug(
+                "Selected Protocols {} of {}",
+                Arrays.asList(_selectedProtocols),
+                Arrays.asList(supported.getProtocols()));
+            LOG.debug(
+                "Selected Ciphers   {} of {}",
+                Arrays.asList(_selectedCipherSuites),
+                Arrays.asList(supported.getCipherSuites()));
         }
     }
 
@@ -392,13 +400,19 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         try
         {
             SSLEngine sslEngine = SSLContext.getDefault().createSSLEngine();
-            Dumpable.dumpObjects(out, indent, this, "trustAll=" + _trustAll,
-                new SslSelectionDump("Protocol",
+            Dumpable.dumpObjects(
+                out,
+                indent,
+                this,
+                "trustAll=" + _trustAll,
+                new SslSelectionDump(
+                    "Protocol",
                     sslEngine.getSupportedProtocols(),
                     sslEngine.getEnabledProtocols(),
                     getExcludeProtocols(),
                     getIncludeProtocols()),
-                new SslSelectionDump("Cipher Suite",
+                new SslSelectionDump(
+                    "Cipher Suite",
                     sslEngine.getSupportedCipherSuites(),
                     sslEngine.getEnabledCipherSuites(),
                     getExcludeCipherSuites(),
@@ -421,14 +435,16 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         List<SslSelectionDump> selections = new ArrayList<>();
 
         // protocols
-        selections.add(new SslSelectionDump("Protocol",
+        selections.add(new SslSelectionDump(
+            "Protocol",
             sslEngine.getSupportedProtocols(),
             sslEngine.getEnabledProtocols(),
             getExcludeProtocols(),
             getIncludeProtocols()));
 
         // ciphers
-        selections.add(new SslSelectionDump("Cipher Suite",
+        selections.add(new SslSelectionDump(
+            "Cipher Suite",
             sslEngine.getSupportedCipherSuites(),
             sslEngine.getEnabledCipherSuites(),
             getExcludeCipherSuites(),
@@ -1180,7 +1196,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         if (keyStore != null)
         {
             KeyManagerFactory keyManagerFactory = getKeyManagerFactoryInstance();
-            keyManagerFactory.init(keyStore, _keyManagerPassword == null ? (_keyStorePassword == null ? null : _keyStorePassword.toString().toCharArray()) : _keyManagerPassword.toString().toCharArray());
+            keyManagerFactory.init(
+                keyStore,
+                _keyManagerPassword == null ? (_keyStorePassword == null ? null : _keyStorePassword.toString().toCharArray()) : _keyManagerPassword.toString().toCharArray());
             managers = keyManagerFactory.getKeyManagers();
 
             if (managers != null)
@@ -1191,7 +1209,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                     for (int idx = 0; idx < managers.length; idx++)
                     {
                         if (managers[idx] instanceof X509ExtendedKeyManager)
-                            managers[idx] = new AliasedX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx], alias);
+                            managers[idx] =
+                                new AliasedX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx], alias);
                     }
                 }
             }
@@ -1231,7 +1250,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     // @checkstyle-disable-check : AbbreviationAsWordInNameCheck
-    protected PKIXBuilderParameters newPKIXBuilderParameters(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
+    protected PKIXBuilderParameters newPKIXBuilderParameters(KeyStore trustStore, Collection<? extends CRL> crls)
+        throws Exception
     // @checkstyle-enable-check : AbbreviationAsWordInNameCheck
     {
         PKIXBuilderParameters pbParams = new PKIXBuilderParameters(trustStore, new X509CertSelector());
@@ -1281,7 +1301,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      */
     public void selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
     {
-        List<String> selectedProtocols = processIncludeExcludePatterns("Protocols", enabledProtocols, supportedProtocols, _includeProtocols, _excludeProtocols);
+        List<String> selectedProtocols = processIncludeExcludePatterns(
+            "Protocols", enabledProtocols, supportedProtocols, _includeProtocols, _excludeProtocols);
 
         if (selectedProtocols.isEmpty())
             LOG.warn("No selected Protocols from {}", Arrays.asList(supportedProtocols));
@@ -1299,7 +1320,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      */
     protected void selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
     {
-        List<String> selectedCiphers = processIncludeExcludePatterns("Cipher Suite", enabledCipherSuites, supportedCipherSuites, _includeCipherSuites, _excludeCipherSuites);
+        List<String> selectedCiphers = processIncludeExcludePatterns(
+            "Cipher Suite", enabledCipherSuites, supportedCipherSuites, _includeCipherSuites, _excludeCipherSuites);
 
         if (selectedCiphers.isEmpty())
             LOG.warn("No supported Cipher Suite from {}", Arrays.asList(supportedCipherSuites));
@@ -1315,7 +1337,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         _selectedCipherSuites = selectedCiphers.toArray(new String[0]);
     }
 
-    private List<String> processIncludeExcludePatterns(String type, String[] enabled, String[] supported, Set<String> included, Set<String> excluded)
+    private List<String> processIncludeExcludePatterns(
+                                                       String type, String[] enabled, String[] supported, Set<String> included, Set<String> excluded)
     {
         List<String> selected = new ArrayList<>();
         // Set the starting list - either from the included or enabled list
@@ -1639,10 +1662,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
 
         SSLContext context = getSslContext();
         SSLServerSocketFactory factory = context.getServerSocketFactory();
-        SSLServerSocket socket =
-            (SSLServerSocket)(host == null
-                ? factory.createServerSocket(port, backlog)
-                : factory.createServerSocket(port, backlog, InetAddress.getByName(host)));
+        SSLServerSocket socket = (SSLServerSocket)(host == null ? factory.createServerSocket(port, backlog) : factory.createServerSocket(port, backlog, InetAddress.getByName(host)));
         socket.setSSLParameters(customize(socket.getSSLParameters()));
 
         return socket;
@@ -1673,7 +1693,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
         catch (Throwable cause)
         {
-            String msg = String.format("Unable to get CertificateFactory instance for type [%s] on provider [%s], using default", type, provider);
+            String msg = String.format(
+                "Unable to get CertificateFactory instance for type [%s] on provider [%s], using default",
+                type, provider);
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, cause);
             else
@@ -1683,7 +1705,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         return CertificateFactory.getInstance(type);
     }
 
-    protected CertStore getCertStoreInstance(Collection<? extends CRL> crls) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException
+    protected CertStore getCertStoreInstance(Collection<? extends CRL> crls)
+        throws InvalidAlgorithmParameterException, NoSuchAlgorithmException
     {
         String type = "Collection";
         String provider = getProvider();
@@ -1697,7 +1720,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
         catch (Throwable cause)
         {
-            String msg = String.format("Unable to get CertStore instance for type [%s] on provider [%s], using default", type, provider);
+            String msg = String.format(
+                "Unable to get CertStore instance for type [%s] on provider [%s], using default", type, provider);
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, cause);
             else
@@ -1722,7 +1746,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         catch (Throwable cause)
         {
             // fall back to non-provider option
-            String msg = String.format("Unable to get KeyManagerFactory instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
+            String msg = String.format(
+                "Unable to get KeyManagerFactory instance for algorithm [%s] on provider [%s], using default",
+                algorithm, provider);
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, cause);
             else
@@ -1749,7 +1775,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
             }
             catch (Throwable cause)
             {
-                String msg = String.format("Unable to get SecureRandom instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
+                String msg = String.format(
+                    "Unable to get SecureRandom instance for algorithm [%s] on provider [%s], using default",
+                    algorithm, provider);
                 if (LOG.isDebugEnabled())
                     LOG.debug(msg, cause);
                 else
@@ -1776,7 +1804,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
         catch (Throwable cause)
         {
-            String msg = String.format("Unable to get SSLContext instance for protocol [%s] on provider [%s], using default", protocol, provider);
+            String msg = String.format(
+                "Unable to get SSLContext instance for protocol [%s] on provider [%s], using default",
+                protocol, provider);
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, cause);
             else
@@ -1799,7 +1829,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
         catch (Throwable cause)
         {
-            String msg = String.format("Unable to get TrustManagerFactory instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
+            String msg = String.format(
+                "Unable to get TrustManagerFactory instance for algorithm [%s] on provider [%s], using default",
+                algorithm, provider);
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, cause);
             else
@@ -1842,9 +1874,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         checkIsStarted();
 
         SSLContext context = getSslContext();
-        SSLEngine sslEngine = isSessionCachingEnabled()
-            ? context.createSSLEngine(host, port)
-            : context.createSSLEngine();
+        SSLEngine sslEngine =
+            isSessionCachingEnabled() ? context.createSSLEngine(host, port) : context.createSSLEngine();
         customize(sslEngine);
 
         return sslEngine;
@@ -2044,12 +2075,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     @Override
     public String toString()
     {
-        return String.format("%s@%x[provider=%s,keyStore=%s,trustStore=%s]",
-            getClass().getSimpleName(),
-            hashCode(),
-            _sslProvider,
-            _keyStoreResource,
-            _trustStoreResource);
+        return String.format(
+            "%s@%x[provider=%s,keyStore=%s,trustStore=%s]",
+            getClass().getSimpleName(), hashCode(), _sslProvider, _keyStoreResource, _trustStoreResource);
     }
 
     private static class Factory
@@ -2344,12 +2372,22 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
 
         @Override
-        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates)
+        public String sniSelect(
+                                String keyType,
+                                Principal[] issuers,
+                                SSLSession session,
+                                String sniHost,
+                                Collection<X509> certificates)
         {
             boolean sniRequired = isSniRequired();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Selecting alias: keyType={}, sni={}, sniRequired={}, certs={}", keyType, String.valueOf(sniHost), sniRequired, certificates);
+                LOG.debug(
+                    "Selecting alias: keyType={}, sni={}, sniRequired={}, certs={}",
+                    keyType,
+                    String.valueOf(sniHost),
+                    sniRequired,
+                    certificates);
 
             String alias;
             if (sniHost == null)
@@ -2369,8 +2407,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                     // There is no match for this SNI among the certificates valid for
                     // this keyType; check if there is any certificate that matches this
                     // SNI, as we will likely be called again with a different keyType.
-                    boolean anyMatching = aliasCerts().values().stream()
-                        .anyMatch(x509 -> x509.matches(sniHost));
+                    boolean anyMatching = aliasCerts().values().stream().anyMatch(x509 -> x509.matches(sniHost));
                     alias = sniRequired || anyMatching ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
                 }
                 else
@@ -2380,7 +2417,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                     {
                         // Prefer strict matches over wildcard matches.
                         alias = matching.stream()
-                            .min(Comparator.comparingInt(cert -> cert.getWilds().size()))
+                            .min(Comparator.comparingInt(
+                                cert -> cert.getWilds().size()))
                             .map(X509::getAlias)
                             .orElse(alias);
                     }
@@ -2486,14 +2524,16 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
 
         @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException
+        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
+            throws CertificateException
         {
             if (trustManager != null)
                 trustManager.checkClientTrusted(chain, authType, socket);
         }
 
         @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException
+        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+            throws CertificateException
         {
             if (trustManager != null)
                 trustManager.checkClientTrusted(chain, authType, engine);
@@ -2507,14 +2547,16 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
 
         @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException
+        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket)
+            throws CertificateException
         {
             if (trustManager != null)
                 trustManager.checkServerTrusted(chain, authType, socket);
         }
 
         @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException
+        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+            throws CertificateException
         {
             if (trustManager != null)
                 trustManager.checkServerTrusted(chain, authType, engine);

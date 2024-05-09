@@ -13,12 +13,18 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -34,13 +40,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketExtensionConfigTest
 {
@@ -59,22 +58,40 @@ public class JettyWebSocketExtensionConfigTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServletContainerInitializer.configure(contextHandler,
+        JettyWebSocketServletContainerInitializer.configure(
+            contextHandler,
             (context, container) -> container.addMapping("/", (req, resp) ->
             {
-                assertEquals(req.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
-                assertEquals(resp.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
+                assertEquals(
+                    req.getExtensions().stream()
+                        .filter(e -> e.getName().equals("permessage-deflate"))
+                        .count(),
+                    1);
+                assertEquals(
+                    resp.getExtensions().stream()
+                        .filter(e -> e.getName().equals("permessage-deflate"))
+                        .count(),
+                    1);
 
                 ExtensionConfig nonRequestedExtension = ExtensionConfig.parse("identity");
                 assertNotNull(nonRequestedExtension);
 
-                assertThrows(IllegalArgumentException.class,
+                assertThrows(
+                    IllegalArgumentException.class,
                     () -> resp.setExtensions(List.of(nonRequestedExtension)),
                     "should not allow extensions not requested");
 
                 // Check identity extension was not added because it was not requested
-                assertEquals(resp.getExtensions().stream().filter(config -> config.getName().equals("identity")).count(), 0);
-                assertEquals(resp.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
+                assertEquals(
+                    resp.getExtensions().stream()
+                        .filter(config -> config.getName().equals("identity"))
+                        .count(),
+                    0);
+                assertEquals(
+                    resp.getExtensions().stream()
+                        .filter(e -> e.getName().equals("permessage-deflate"))
+                        .count(),
+                    1);
 
                 return new EchoSocket();
             }));

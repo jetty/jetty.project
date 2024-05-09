@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -20,13 +24,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class BarebonesAddToStartdTest extends AbstractUseCase
 {
@@ -35,18 +34,10 @@ public class BarebonesAddToStartdTest extends AbstractUseCase
     {
         setupStandardHomeDir();
 
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
-            "--testing-mode",
-            "--create-startd",
-            "--add-modules=optional"
-        );
+        List<String> prepareArgs = Arrays.asList("--testing-mode", "--create-startd", "--add-modules=optional");
         exec(prepareArgs, true);
 
         // === Execute Main
@@ -55,10 +46,7 @@ public class BarebonesAddToStartdTest extends AbstractUseCase
 
         // === Validate Resulting XMLs
         List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/optional.xml",
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml"
-        );
+            "${jetty.home}/etc/optional.xml", "${jetty.home}/etc/base.xml", "${jetty.home}/etc/main.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
@@ -67,8 +55,7 @@ public class BarebonesAddToStartdTest extends AbstractUseCase
             "${jetty.home}/lib/base.jar",
             "${jetty.home}/lib/main.jar",
             "${jetty.home}/lib/other.jar",
-            "${jetty.home}/lib/optional.jar"
-        );
+            "${jetty.home}/lib/optional.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 
@@ -82,6 +69,7 @@ public class BarebonesAddToStartdTest extends AbstractUseCase
         // === Validate Specific Jetty Base Files/Dirs Exist
         PathAssert.assertDirExists("Required Directory: maindir/", results.baseHome.getPath("maindir/"));
         PathAssert.assertFileExists("Required File: start.d/start.ini", results.baseHome.getPath("start.d/start.ini"));
-        PathAssert.assertFileExists("Required File: start.d/optional.ini", results.baseHome.getPath("start.d/optional.ini"));
+        PathAssert.assertFileExists(
+            "Required File: start.d/optional.ini", results.baseHome.getPath("start.d/optional.ini"));
     }
 }

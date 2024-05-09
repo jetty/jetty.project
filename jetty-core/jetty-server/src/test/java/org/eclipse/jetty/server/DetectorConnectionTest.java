@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.server;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLSocketFactory;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -44,12 +49,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DetectorConnectionTest
 {
@@ -85,7 +84,8 @@ public class DetectorConnectionTest
 
     private String getResponse(byte[]... requests) throws Exception
     {
-        try (Socket socket = new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
+        try (Socket socket =
+            new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
         {
             for (byte[] request : requests)
             {
@@ -104,7 +104,8 @@ public class DetectorConnectionTest
         sslContextFactory.start();
 
         SSLSocketFactory socketFactory = sslContextFactory.getSslContext().getSocketFactory();
-        try (Socket socket = socketFactory.createSocket(_server.getURI().getHost(), _server.getURI().getPort()))
+        try (Socket socket = socketFactory.createSocket(
+            _server.getURI().getHost(), _server.getURI().getPort()))
         {
             socket.getOutputStream().write(request.getBytes(StandardCharsets.US_ASCII));
             return inputStreamToString(socket.getInputStream());
@@ -147,10 +148,7 @@ public class DetectorConnectionTest
     public void destroy() throws Exception
     {
         // Wait a bit for the server to release the buffers.
-        await()
-            .pollDelay(5, TimeUnit.MILLISECONDS)
-            .atMost(5, TimeUnit.SECONDS)
-            .until(() -> _bufferLeaks.get() == 0);
+        await().pollDelay(5, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() -> _bufferLeaks.get() == 0);
         if (_server != null)
             _server.stop();
         if (_stacklessLogging != null)
@@ -166,7 +164,8 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        try (Socket socket = new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
+        try (Socket socket =
+            new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
         {
             socket.getOutputStream().write("PR".getBytes(StandardCharsets.US_ASCII));
             Thread.sleep(100); // make sure the onFillable callback gets called
@@ -187,7 +186,8 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        try (Socket socket = new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
+        try (Socket socket =
+            new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
         {
             socket.getOutputStream().write("PROXY".getBytes(StandardCharsets.US_ASCII));
             Thread.sleep(100); // make sure the onFillable callback gets called
@@ -208,7 +208,8 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        try (Socket socket = new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
+        try (Socket socket =
+            new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
         {
             socket.getOutputStream().write(StringUtil.fromHexString("0D0A0D0A000D0A515549540A")); // proxy V2 Preamble
             Thread.sleep(100); // make sure the onFillable callback gets called
@@ -229,24 +230,26 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        try (Socket socket = new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
+        try (Socket socket =
+            new Socket(_server.getURI().getHost(), _server.getURI().getPort()))
         {
-            socket.getOutputStream().write(StringUtil.fromHexString(
-                // proxy V2 Preamble
-                "0D0A0D0A000D0A515549540A" +
-                    // V2, PROXY
-                    "21" +
-                    // 0x1 : AF_INET    0x1 : STREAM.
-                    "11" +
-                    // Address length is 2*4 + 2*2 = 12 bytes.
-                    // length of remaining header (4+4+2+2 = 12)
-                    "000C"
-            ));
+            socket.getOutputStream()
+                .write(StringUtil.fromHexString(
+                    // proxy V2 Preamble
+                    "0D0A0D0A000D0A515549540A" +
+                        // V2, PROXY
+                        "21" +
+                        // 0x1 : AF_INET    0x1 : STREAM.
+                        "11" +
+                        // Address length is 2*4 + 2*2 = 12 bytes.
+                        // length of remaining header (4+4+2+2 = 12)
+                        "000C"));
             Thread.sleep(100); // make sure the onFillable callback gets called
-            socket.getOutputStream().write(StringUtil.fromHexString(
-                // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
-                "C0A80001" // 8080
-            ));
+            socket.getOutputStream()
+                .write(StringUtil.fromHexString(
+                    // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
+                    "C0A80001" // 8080
+                ));
             socket.getOutputStream().close();
 
             //noinspection ResultOfMethodCallIgnored
@@ -269,13 +272,14 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = """
-            PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String response = getResponse(request);
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
@@ -300,12 +304,13 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = """
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String response = getResponseOverSsl(request);
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
@@ -326,13 +331,14 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = """
-            PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String response = getResponseOverSsl(request);
 
         // SSL matched, so the upgrade was made to HTTP which does not understand the proxy request
@@ -354,12 +360,13 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = """
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String response = getResponse(request);
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
@@ -381,13 +388,14 @@ public class DetectorConnectionTest
 
         start(sslDetector, proxyDetector, http);
 
-        String request = """
-            PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String response = getResponseOverSsl(request);
 
         // SSL matched, so the upgrade was made to proxy which itself upgraded to HTTP
@@ -409,7 +417,8 @@ public class DetectorConnectionTest
             {
                 if (!detectionSuccessful.compareAndSet(true, false))
                     throw new AssertionError("DetectionUnsuccessful callback should only have been called once");
-                Callback.Completable.with(c -> endPoint.write(c, ByteBuffer.wrap("No upgrade for you".getBytes(StandardCharsets.US_ASCII))))
+                Callback.Completable.with(c -> endPoint.write(
+                    c, ByteBuffer.wrap("No upgrade for you".getBytes(StandardCharsets.US_ASCII))))
                     .whenComplete((r, x) -> endPoint.close());
             }
         };
@@ -417,12 +426,13 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = """
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String response = getResponse(request);
 
         assertEquals("No upgrade for you", response);
@@ -444,13 +454,14 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = """
-            PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                PROXY TCP 1.2.3.4 5.6.7.8 111 222\r
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String response = getResponse(request);
 
         // ProxyConnectionFactory has no next protocol -> it cannot upgrade
@@ -471,12 +482,13 @@ public class DetectorConnectionTest
 
         start(detector, http);
 
-        String request = """
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String clearTextResponse = getResponse(request);
         String sslResponse = getResponseOverSsl(request);
 
@@ -498,12 +510,13 @@ public class DetectorConnectionTest
 
         start(detector);
 
-        String request = """
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String response = getResponse(request);
 
         assertThat(response, Matchers.nullValue());
@@ -534,12 +547,13 @@ public class DetectorConnectionTest
                 "3039" + // 12345
                 "1F90"; // 8080
 
-        String httpReq = """
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String httpReq =
+            """
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
 
         String response = getResponse(StringUtil.fromHexString(proxyReq), httpReq.getBytes(StandardCharsets.US_ASCII));
         assertThat(response, Matchers.nullValue());
@@ -602,12 +616,13 @@ public class DetectorConnectionTest
                 "3039" + // 12345
                 "1F90"; // 8080
 
-        String httpReq = """
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String httpReq =
+            """
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String response = getResponse(StringUtil.fromHexString(proxyReq), httpReq.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.nullValue());
@@ -649,12 +664,13 @@ public class DetectorConnectionTest
 
         start(detector, noUpgradeTo);
 
-        String request = """
-            GET /path HTTP/1.1\r
-            Host: server:80\r
-            Connection: close\r
-            \r
-            """;
+        String request =
+            """
+                GET /path HTTP/1.1\r
+                Host: server:80\r
+                Connection: close\r
+                \r
+                """;
         String response = getResponse(request);
 
         assertThat(response, Matchers.nullValue());
@@ -738,7 +754,8 @@ public class DetectorConnectionTest
             }
         };
 
-        DetectorConnectionFactory detector = new DetectorConnectionFactory(detectingNeverRecognizes, detectingAlwaysNeedMoreBytes);
+        DetectorConnectionFactory detector =
+            new DetectorConnectionFactory(detectingNeverRecognizes, detectingAlwaysNeedMoreBytes);
         HttpConnectionFactory http = new HttpConnectionFactory();
 
         start(detector, http);

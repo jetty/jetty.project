@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -167,7 +166,8 @@ public class InvokerUtils
      * @param callingArgs the calling arguments.  This is the array of arguments that will always be passed into the returned MethodHandle.
      * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
      */
-    public static MethodHandle mutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, Method method, Arg... callingArgs)
+    public static MethodHandle mutatedInvoker(
+                                              MethodHandles.Lookup lookup, Class<?> targetClass, Method method, Arg... callingArgs)
     {
         return mutatedInvoker(lookup, targetClass, true, method, PARAM_IDENTITY, null, callingArgs);
     }
@@ -202,14 +202,25 @@ public class InvokerUtils
      * @return the MethodHandle for this set of CallingArgs
      * @throws RuntimeException when unable to fit Calling Args to Parameter Types
      */
-    public static MethodHandle mutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String[] namedVariables, Arg... callingArgs)
+    public static MethodHandle mutatedInvoker(
+                                              MethodHandles.Lookup lookup,
+                                              Class<?> targetClass,
+                                              Method method,
+                                              ParamIdentifier paramIdentifier,
+                                              String[] namedVariables,
+                                              Arg... callingArgs)
     {
         return mutatedInvoker(lookup, targetClass, true, method, paramIdentifier, namedVariables, callingArgs);
     }
 
-    private static MethodHandle mutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, boolean throwOnFailure,
-                                               Method method, ParamIdentifier paramIdentifier,
-                                               String[] namedVariables, Arg... rawCallingArgs)
+    private static MethodHandle mutatedInvoker(
+                                               MethodHandles.Lookup lookup,
+                                               Class<?> targetClass,
+                                               boolean throwOnFailure,
+                                               Method method,
+                                               ParamIdentifier paramIdentifier,
+                                               String[] namedVariables,
+                                               Arg... rawCallingArgs)
     {
         Class<?>[] parameterTypes = method.getParameterTypes();
 
@@ -436,13 +447,19 @@ public class InvokerUtils
      * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
      * @return the MethodHandle for this set of CallingArgs, or null if not possible to create MethodHandle with CallingArgs to provided method
      */
-    public static MethodHandle optionalMutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, Method method, ParamIdentifier paramIdentifier,
-                                                      String[] namedVariables, Arg... callingArgs)
+    public static MethodHandle optionalMutatedInvoker(
+                                                      MethodHandles.Lookup lookup,
+                                                      Class<?> targetClass,
+                                                      Method method,
+                                                      ParamIdentifier paramIdentifier,
+                                                      String[] namedVariables,
+                                                      Arg... callingArgs)
     {
         return mutatedInvoker(lookup, targetClass, false, method, paramIdentifier, namedVariables, callingArgs);
     }
 
-    public static MethodHandle optionalMutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, Method method, Arg... callingArgs)
+    public static MethodHandle optionalMutatedInvoker(
+                                                      MethodHandles.Lookup lookup, Class<?> targetClass, Method method, Arg... callingArgs)
     {
         return mutatedInvoker(lookup, targetClass, false, method, PARAM_IDENTITY, null, callingArgs);
     }

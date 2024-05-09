@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.security;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
-
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
@@ -47,14 +54,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class PropertyUserStoreTest
@@ -124,8 +123,7 @@ public class PropertyUserStoreTest
         return users;
     }
 
-    private URI initUsersPackedFileText()
-        throws Exception
+    private URI initUsersPackedFileText() throws Exception
     {
         Path users = testdir.resolve("users.txt");
         writeUser(users);
@@ -193,9 +191,18 @@ public class PropertyUserStoreTest
 
         store.start();
 
-        assertThat("Failed to retrieve user directly from PropertyUserStore", store.getUserPrincipal("tom"), notNullValue());
-        assertThat("Failed to retrieve user directly from PropertyUserStore", store.getUserPrincipal("dick"), notNullValue());
-        assertThat("Failed to retrieve user directly from PropertyUserStore", store.getUserPrincipal("harry"), notNullValue());
+        assertThat(
+            "Failed to retrieve user directly from PropertyUserStore",
+            store.getUserPrincipal("tom"),
+            notNullValue());
+        assertThat(
+            "Failed to retrieve user directly from PropertyUserStore",
+            store.getUserPrincipal("dick"),
+            notNullValue());
+        assertThat(
+            "Failed to retrieve user directly from PropertyUserStore",
+            store.getUserPrincipal("harry"),
+            notNullValue());
         userCount.assertThatCount(is(3));
         userCount.awaitCount(3);
     }
@@ -228,12 +235,18 @@ public class PropertyUserStoreTest
 
             store.start();
 
-            assertThat("Failed to retrieve user directly from PropertyUserStore", //
-                store.getUserPrincipal("tom"), notNullValue());
-            assertThat("Failed to retrieve user directly from PropertyUserStore", //
-                store.getUserPrincipal("dick"), notNullValue());
-            assertThat("Failed to retrieve user directly from PropertyUserStore", //
-                store.getUserPrincipal("harry"), notNullValue());
+            assertThat(
+                "Failed to retrieve user directly from PropertyUserStore", //
+                store.getUserPrincipal("tom"),
+                notNullValue());
+            assertThat(
+                "Failed to retrieve user directly from PropertyUserStore", //
+                store.getUserPrincipal("dick"),
+                notNullValue());
+            assertThat(
+                "Failed to retrieve user directly from PropertyUserStore", //
+                store.getUserPrincipal("harry"),
+                notNullValue());
             userCount.assertThatCount(is(3));
             userCount.awaitCount(3);
         }
@@ -271,7 +284,8 @@ public class PropertyUserStoreTest
         userCount.assertThatUsers(hasItem("skip"));
 
         if (OS.LINUX.isCurrentOs())
-            Files.createFile(testdir.toRealPath().resolve("unrelated.txt"),
+            Files.createFile(
+                testdir.toRealPath().resolve("unrelated.txt"),
                 PosixFilePermissions.asFileAttribute(EnumSet.noneOf(PosixFilePermission.class)));
         else
             Files.createFile(testdir.toRealPath().resolve("unrelated.txt"));

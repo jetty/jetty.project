@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.util;
 
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 public class IndexTest
 {
@@ -28,13 +28,31 @@ public class IndexTest
         assertThat(new Index.Builder<String>().build(), instanceOf(EmptyTrie.class));
 
         // index of ascii characters
-        assertThat(new Index.Builder<String>().caseSensitive(false).with("name", "value").build(), instanceOf(ArrayTrie.class));
-        assertThat(new Index.Builder<String>().caseSensitive(true).with("name", "value").build(), instanceOf(ArrayTrie.class));
+        assertThat(
+            new Index.Builder<String>()
+                .caseSensitive(false)
+                .with("name", "value")
+                .build(),
+            instanceOf(ArrayTrie.class));
+        assertThat(
+            new Index.Builder<String>()
+                .caseSensitive(true)
+                .with("name", "value")
+                .build(),
+            instanceOf(ArrayTrie.class));
 
         // large index
         String hugekey = "x".repeat(Character.MAX_VALUE + 1);
-        assertTrue(new Index.Builder<String>().caseSensitive(false).with(hugekey, "value").build() instanceof TreeTrie);
-        assertTrue(new Index.Builder<String>().caseSensitive(true).with(hugekey, "value").build() instanceof TreeTrie);
+        assertTrue(
+            new Index.Builder<String>()
+                .caseSensitive(false)
+                .with(hugekey, "value")
+                .build() instanceof TreeTrie);
+        assertTrue(
+            new Index.Builder<String>()
+                .caseSensitive(true)
+                .with(hugekey, "value")
+                .build() instanceof TreeTrie);
     }
 
     @Test
@@ -47,6 +65,11 @@ public class IndexTest
     public void testLimitedMutableTrieSelection()
     {
         assertThat(new Index.Builder<String>().mutable().maxCapacity(500).build(), instanceOf(ArrayTrie.class));
-        assertThat(new Index.Builder<String>().mutable().maxCapacity(Character.MAX_VALUE + 1).build(), instanceOf(TreeTrie.class));
+        assertThat(
+            new Index.Builder<String>()
+                .mutable()
+                .maxCapacity(Character.MAX_VALUE + 1)
+                .build(),
+            instanceOf(TreeTrie.class));
     }
 }

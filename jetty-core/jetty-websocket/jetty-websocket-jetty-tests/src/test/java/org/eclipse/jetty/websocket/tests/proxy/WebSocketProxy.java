@@ -19,7 +19,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.Callback;
@@ -108,7 +107,11 @@ public class WebSocketProxy
         public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketPartialBinary({}, {})", getClass().getSimpleName(), BufferUtil.toDetailString(payload), fin);
+                LOG.debug(
+                    "{} onWebSocketPartialBinary({}, {})",
+                    getClass().getSimpleName(),
+                    BufferUtil.toDetailString(payload),
+                    fin);
 
             Callback.Completable.with(c -> proxyToServer.getSession().sendPartialBinary(payload, fin, c))
                 .thenRun(callback::succeed)
@@ -125,7 +128,11 @@ public class WebSocketProxy
         public void onWebSocketPartialText(String payload, boolean fin)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketPartialText({}, {})", getClass().getSimpleName(), StringUtil.truncate(payload, 100), fin);
+                LOG.debug(
+                    "{} onWebSocketPartialText({}, {})",
+                    getClass().getSimpleName(),
+                    StringUtil.truncate(payload, 100),
+                    fin);
 
             proxyToServer.getSession().sendPartialText(payload, fin, Callback.from(session::demand, this::fail));
         }
@@ -183,7 +190,8 @@ public class WebSocketProxy
 
         public void fail(Throwable failure)
         {
-            // Only ProxyToServer can be failed before it is opened (if ClientToProxy fails before the connect completes).
+            // Only ProxyToServer can be failed before it is opened (if ClientToProxy fails before the connect
+            // completes).
             Session session = this.session;
             if (session != null)
                 session.close(StatusCode.SERVER_ERROR, failure.getMessage(), Callback.NOOP);
@@ -203,7 +211,11 @@ public class WebSocketProxy
         public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketPartialBinary({}, {})", getClass().getSimpleName(), BufferUtil.toDetailString(payload), fin);
+                LOG.debug(
+                    "{} onWebSocketPartialBinary({}, {})",
+                    getClass().getSimpleName(),
+                    BufferUtil.toDetailString(payload),
+                    fin);
 
             Callback.Completable.with(c -> clientToProxy.getSession().sendPartialBinary(payload, fin, c))
                 .thenRun(callback::succeed)
@@ -220,7 +232,11 @@ public class WebSocketProxy
         public void onWebSocketPartialText(String payload, boolean fin)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketPartialText({}, {})", getClass().getSimpleName(), StringUtil.truncate(payload, 100), fin);
+                LOG.debug(
+                    "{} onWebSocketPartialText({}, {})",
+                    getClass().getSimpleName(),
+                    StringUtil.truncate(payload, 100),
+                    fin);
 
             clientToProxy.getSession().sendPartialText(payload, fin, Callback.from(session::demand, this::fail));
         }

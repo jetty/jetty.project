@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -30,10 +33,6 @@ import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 /**
  * This Regression Test Exists because of Server side Idle timeout, Write, and Generator bugs.
@@ -61,8 +60,8 @@ public class SlowServerTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
-            container.addMapping("/ws", (rq, rs, cb) -> new SlowServerEndpoint()));
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(
+            server, context, container -> container.addMapping("/ws", (rq, rs, cb) -> new SlowServerEndpoint()));
         context.setHandler(wsHandler);
 
         server.setHandler(context);

@@ -13,17 +13,23 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.eclipse.jetty.server.ResourceService.WelcomeMode.REDIRECT;
+import static org.eclipse.jetty.server.ResourceService.WelcomeMode.REHANDLE;
+import static org.eclipse.jetty.server.ResourceService.WelcomeMode.SERVE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -40,13 +46,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.eclipse.jetty.server.ResourceService.WelcomeMode.REDIRECT;
-import static org.eclipse.jetty.server.ResourceService.WelcomeMode.REHANDLE;
-import static org.eclipse.jetty.server.ResourceService.WelcomeMode.SERVE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletCombinationsTest
@@ -97,7 +96,8 @@ public class DefaultServletCombinationsTest
 
         Path staticSubdirWelcomePath = staticPath.resolve("subdirWelcome");
         FS.ensureDirExists(staticSubdirWelcomePath);
-        Files.writeString(staticSubdirWelcomePath.resolve("foo.welcome"), "Static foo.welcome at static subdirWelcome", UTF_8);
+        Files.writeString(
+            staticSubdirWelcomePath.resolve("foo.welcome"), "Static foo.welcome at static subdirWelcome", UTF_8);
 
         Path subdirEmptyPath = staticPath.resolve("empty");
         FS.ensureDirExists(subdirEmptyPath);
@@ -105,7 +105,10 @@ public class DefaultServletCombinationsTest
         server = new Server();
 
         connector = new LocalConnector(server);
-        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendServerVersion(false);
 
         context = new ServletContextHandler();
         context.setBaseResourceAsPath(docRoot);
@@ -122,7 +125,7 @@ public class DefaultServletCombinationsTest
         if (pathInfoOnly)
         {
             defaultHolder = context.addServlet(DefaultServlet.class, "/static/*");
-            context.addServlet(TeapotServlet.class,  "/");
+            context.addServlet(TeapotServlet.class, "/");
         }
         else
         {
@@ -164,15 +167,25 @@ public class DefaultServletCombinationsTest
         }
     }
 
-    record Data(boolean pathInfoOnly, ResourceService.WelcomeMode welcomeMode, String requestPath, int expectedStatus, String expected)
-    {
+    record Data(
+        boolean pathInfoOnly,
+        ResourceService.WelcomeMode welcomeMode,
+        String requestPath,
+        int expectedStatus,
+        String expected) {
     }
 
     public static Stream<Data> data()
     {
         List<Data> datas = new ArrayList<>();
-        for (String requestPath : List.of("/", "/foo.welcome", "/subdirHtml/",
-            "/subdirWelcome/", "/empty/", "/nothing/index.welcome", "/nothing/"))
+        for (String requestPath : List.of(
+            "/",
+            "/foo.welcome",
+            "/subdirHtml/",
+            "/subdirWelcome/",
+            "/empty/",
+            "/nothing/index.welcome",
+            "/nothing/"))
         {
             for (ResourceService.WelcomeMode welcomeMode : List.of(SERVE, REDIRECT, REHANDLE))
             {
@@ -199,7 +212,8 @@ public class DefaultServletCombinationsTest
                                 }
                                 case REHANDLE ->
                                 {
-                                    expectedStatus = pathInfoOnly ? HttpStatus.IM_A_TEAPOT_418 : HttpStatus.NOT_FOUND_404;
+                                    expectedStatus =
+                                        pathInfoOnly ? HttpStatus.IM_A_TEAPOT_418 : HttpStatus.NOT_FOUND_404;
                                     expected = null;
                                 }
                                 default -> throw new AssertionError();
@@ -226,7 +240,8 @@ public class DefaultServletCombinationsTest
                                 }
                                 case REHANDLE ->
                                 {
-                                    expectedStatus = pathInfoOnly ? HttpStatus.IM_A_TEAPOT_418 : HttpStatus.NOT_FOUND_404;
+                                    expectedStatus =
+                                        pathInfoOnly ? HttpStatus.IM_A_TEAPOT_418 : HttpStatus.NOT_FOUND_404;
                                     expected = null;
                                 }
                                 default -> throw new AssertionError();
@@ -268,12 +283,14 @@ public class DefaultServletCombinationsTest
     {
         startServer(data.pathInfoOnly(), data.welcomeMode());
         String requestPath = context.getContextPath() + (data.pathInfoOnly() ? "/static" : "") + data.requestPath();
-        String rawResponse = connector.getResponse(String.format("""
-            GET %s HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """, requestPath));
+        String rawResponse = connector.getResponse(String.format(
+            """
+                GET %s HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            requestPath));
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         int status = response.getStatus();
         assertThat(response.toString(), status, is(data.expectedStatus()));

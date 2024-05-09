@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -24,7 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -38,8 +39,6 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.Generator;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseable
 {
@@ -80,7 +79,8 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         this.generator = new UnitGenerator(Behavior.CLIENT);
 
         CompletableFuture<CoreSession> futureHandler = this.client.connect(upgradeRequest);
-        CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(upgradeRequest.getFuture(), (session, capture) -> capture);
+        CompletableFuture<FrameCapture> futureCapture =
+            futureHandler.thenCombine(upgradeRequest.getFuture(), (session, capture) -> capture);
         this.frameCapture = futureCapture.get(10, TimeUnit.SECONDS);
     }
 
@@ -88,7 +88,9 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     @Override
     public ByteBuffer asNetworkBuffer(List<Frame> frames)
     {
-        int bufferLength = frames.stream().mapToInt((f) -> f.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
+        int bufferLength = frames.stream()
+            .mapToInt((f) -> f.getPayloadLength() + Generator.MAX_HEADER_LENGTH)
+            .sum();
         ByteBuffer buffer = BufferUtil.allocate(bufferLength);
         for (Frame f : frames)
         {

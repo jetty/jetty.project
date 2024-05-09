@@ -17,7 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.Set;
-
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.quiche.PemExporter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -62,7 +61,8 @@ public class ServerQuicConfiguration extends QuicConfiguration
         Path pemWorkDirectory = getPemWorkDirectory();
         Set<String> aliases = sslContextFactory.getAliases();
         if (aliases.isEmpty())
-            throw new IllegalStateException("Missing or invalid KeyStore: a SslContextFactory configured with a valid, non-empty KeyStore is required");
+            throw new IllegalStateException(
+                "Missing or invalid KeyStore: a SslContextFactory configured with a valid, non-empty KeyStore is required");
         String alias = sslContextFactory.getCertAlias();
         if (alias == null)
             alias = aliases.stream().findFirst().orElseThrow();
@@ -87,7 +87,8 @@ public class ServerQuicConfiguration extends QuicConfiguration
     {
         super.doStop();
 
-        Path trustedCertificatesPemPath = (Path)getImplementationConfiguration().remove(TRUSTED_CERTIFICATES_PEM_PATH_KEY);
+        Path trustedCertificatesPemPath =
+            (Path)getImplementationConfiguration().remove(TRUSTED_CERTIFICATES_PEM_PATH_KEY);
         deleteFile(trustedCertificatesPemPath);
         Path certificateChainPemPath = (Path)getImplementationConfiguration().remove(CERTIFICATE_CHAIN_PEM_PATH_KEY);
         deleteFile(certificateChainPemPath);

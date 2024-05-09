@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 public class Utf8LineParserTest
 {
@@ -85,7 +84,8 @@ public class Utf8LineParserTest
         // Request URI -> https://eclipse.dev/jetty/
         List<String> expected = new ArrayList<>();
         expected.add("HEAD /jetty/ HTTP/1.0");
-        expected.add("User-Agent: \"Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.6) Gecko/20060601 Firefox/2.0.0.6 (Ubuntu-feisty)\"");
+        expected.add(
+            "User-Agent: \"Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.6) Gecko/20060601 Firefox/2.0.0.6 (Ubuntu-feisty)\"");
         expected.add("Accept: */*");
         expected.add("Host: www.eclipse.org");
         expected.add("Connection: Keep-Alive");

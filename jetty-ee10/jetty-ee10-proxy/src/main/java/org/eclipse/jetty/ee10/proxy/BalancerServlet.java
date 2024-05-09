@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee10.proxy;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,11 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.UnavailableException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -78,7 +77,8 @@ public class BalancerServlet extends ProxyServlet
         {
             if (FORBIDDEN_CONFIG_PARAMETERS.contains(initParameterName))
             {
-                throw new UnavailableException(initParameterName + " not supported in " + getClass().getName());
+                throw new UnavailableException(
+                    initParameterName + " not supported in " + getClass().getName());
             }
         }
     }
@@ -117,7 +117,8 @@ public class BalancerServlet extends ProxyServlet
 
             int endOfNameIndex = initParameterName.lastIndexOf(".");
             if (endOfNameIndex <= BALANCER_MEMBER_PREFIX.length())
-                throw new UnavailableException(initParameterName + " parameter does not provide a balancer member name");
+                throw new UnavailableException(
+                    initParameterName + " parameter does not provide a balancer member name");
 
             names.add(initParameterName.substring(BALANCER_MEMBER_PREFIX.length(), endOfNameIndex));
         }
@@ -193,7 +194,8 @@ public class BalancerServlet extends ProxyServlet
         {
             String requestURISuffix = requestURI.substring(idx + 1);
             if (requestURISuffix.startsWith(JSESSIONID_URL_PREFIX))
-                return extractBalancerMemberNameFromSessionId(requestURISuffix.substring(JSESSIONID_URL_PREFIX.length()));
+                return extractBalancerMemberNameFromSessionId(
+                    requestURISuffix.substring(JSESSIONID_URL_PREFIX.length()));
         }
         return null;
     }
@@ -210,14 +212,16 @@ public class BalancerServlet extends ProxyServlet
     }
 
     @Override
-    protected String filterServerResponseHeader(HttpServletRequest request, Response serverResponse, String headerName, String headerValue)
+    protected String filterServerResponseHeader(
+                                                HttpServletRequest request, Response serverResponse, String headerName, String headerValue)
     {
         if (_proxyPassReverse && REVERSE_PROXY_HEADERS.contains(headerName))
         {
             URI locationURI = URI.create(headerValue).normalize();
             if (locationURI.isAbsolute() && isBackendLocation(locationURI))
             {
-                StringBuilder newURI = URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
+                StringBuilder newURI =
+                    URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
                 String component = locationURI.getRawPath();
                 if (component != null)
                     newURI.append(component);
@@ -238,9 +242,7 @@ public class BalancerServlet extends ProxyServlet
         for (BalancerMember balancerMember : _balancerMembers)
         {
             URI backendURI = balancerMember.getBackendURI();
-            if (backendURI.getHost().equals(locationURI.getHost()) &&
-                backendURI.getScheme().equals(locationURI.getScheme()) &&
-                backendURI.getPort() == locationURI.getPort())
+            if (backendURI.getHost().equals(locationURI.getHost()) && backendURI.getScheme().equals(locationURI.getScheme()) && backendURI.getPort() == locationURI.getPort())
             {
                 return true;
             }

@@ -13,6 +13,29 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -37,13 +60,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -88,23 +104,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class ResponseTest
 {
@@ -122,7 +121,8 @@ public class ResponseTest
         _context = new ContextHandler(_server);
         Scheduler scheduler = new TimerScheduler();
         HttpConfiguration config = new HttpConfiguration();
-        LocalConnector connector = new LocalConnector(_server, null, scheduler, null, 1, new HttpConnectionFactory(config));
+        LocalConnector connector =
+            new LocalConnector(_server, null, scheduler, null, 1, new HttpConnectionFactory(config));
         _server.addConnector(connector);
         _context.setHandler(new DumpHandler());
         _server.start();
@@ -405,46 +405,46 @@ public class ResponseTest
     @Disabled // TODO
     public void testResponseCharacterEncoding() throws Exception
     {
-        //test setting the default response character encoding
+        // test setting the default response character encoding
         Response response = getResponse();
         assertThat("utf-16", Matchers.equalTo(response.getCharacterEncoding()));
 
         response = getResponse();
 
-        //test that explicit overrides default
+        // test that explicit overrides default
         response = getResponse();
         response.setCharacterEncoding("ascii");
         assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
-        //getWriter should not change explicit character encoding
+        // getWriter should not change explicit character encoding
         response.getWriter();
         assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
 
         response = getResponse();
 
-        //test that assumed overrides default
+        // test that assumed overrides default
         response = getResponse();
         response.setContentType("application/json");
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
         response.getWriter();
-        //getWriter should not have modified character encoding
+        // getWriter should not have modified character encoding
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
 
         response = getResponse();
 
-        //test that inferred overrides default
+        // test that inferred overrides default
         response = getResponse();
         response.setContentType("application/xhtml+xml");
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
-        //getWriter should not have modified character encoding
+        // getWriter should not have modified character encoding
         response.getWriter();
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
 
         response = getResponse();
 
-        //test that without a default or any content type, use iso-8859-1
+        // test that without a default or any content type, use iso-8859-1
         response = getResponse();
         assertThat("iso-8859-1", Matchers.equalTo(response.getCharacterEncoding()));
-        //getWriter should not have modified character encoding
+        // getWriter should not have modified character encoding
         response.getWriter();
         assertThat("iso-8859-1", Matchers.equalTo(response.getCharacterEncoding()));
     }
@@ -693,270 +693,183 @@ public class ResponseTest
         List<Arguments> cases = new ArrayList<>();
 
         // Normal (non CRLF) Cases for ServletOutputStream
-        cases.add(Arguments.of(
-            "print(boolean)",
-            (ServletOutputStreamCase)out ->
-            {
-                out.print(true);
-                out.print("/");
-                out.print(false);
+        cases.add(Arguments.of("print(boolean)", (ServletOutputStreamCase)out ->
+        {
+            out.print(true);
+            out.print("/");
+            out.print(false);
 
-                return "true/false";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(char)",
-            (ServletOutputStreamCase)out ->
-            {
-                out.print('a');
-                out.print('b');
-                out.print('c');
+            return "true/false";
+        }));
+        cases.add(Arguments.of("print(char)", (ServletOutputStreamCase)out ->
+        {
+            out.print('a');
+            out.print('b');
+            out.print('c');
 
-                return "abc";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(double)",
-            (ServletOutputStreamCase)out ->
-            {
-                double d1 = 3.14;
-                out.print(d1);
-                return "3.14";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(double) - NaN",
-            (ServletOutputStreamCase)out ->
-            {
-                double d1 = Double.NaN;
-                out.print(d1);
-                return "NaN";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(double) - Negative Infinity",
-            (ServletOutputStreamCase)out ->
-            {
-                double d1 = Double.NEGATIVE_INFINITY;
-                out.print(d1);
-                return "-Infinity";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(float)",
-            (ServletOutputStreamCase)out ->
-            {
-                float f1 = 3.14159f;
-                out.print(f1);
-                return "3.14159";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(float) - NaN",
-            (ServletOutputStreamCase)out ->
-            {
-                float f1 = Float.NaN;
-                out.print(f1);
-                return "NaN";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(float) - Negative Infinity",
-            (ServletOutputStreamCase)out ->
-            {
-                float f1 = Float.NEGATIVE_INFINITY;
-                out.print(f1);
-                return "-Infinity";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(int) - positive",
-            (ServletOutputStreamCase)out ->
-            {
-                int i = 123456789;
-                out.print(i);
-                return "123456789";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(int) - negative",
-            (ServletOutputStreamCase)out ->
-            {
-                int i = -987654321;
-                out.print(i);
-                return "-987654321";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(int) - zero",
-            (ServletOutputStreamCase)out ->
-            {
-                int i = 0;
-                out.print(i);
-                return "0";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(long)",
-            (ServletOutputStreamCase)out ->
-            {
-                long l = 111222333444555666L;
-                out.print(l);
-                return "111222333444555666";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(long) - max_long",
-            (ServletOutputStreamCase)out ->
-            {
-                long l = Long.MAX_VALUE;
-                out.print(l);
-                return "9223372036854775807";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(String)",
-            (ServletOutputStreamCase)out ->
-            {
-                out.print("ABC");
-                return "ABC";
-            })
-        );
+            return "abc";
+        }));
+        cases.add(Arguments.of("print(double)", (ServletOutputStreamCase)out ->
+        {
+            double d1 = 3.14;
+            out.print(d1);
+            return "3.14";
+        }));
+        cases.add(Arguments.of("print(double) - NaN", (ServletOutputStreamCase)out ->
+        {
+            double d1 = Double.NaN;
+            out.print(d1);
+            return "NaN";
+        }));
+        cases.add(Arguments.of("print(double) - Negative Infinity", (ServletOutputStreamCase)out ->
+        {
+            double d1 = Double.NEGATIVE_INFINITY;
+            out.print(d1);
+            return "-Infinity";
+        }));
+        cases.add(Arguments.of("print(float)", (ServletOutputStreamCase)out ->
+        {
+            float f1 = 3.14159f;
+            out.print(f1);
+            return "3.14159";
+        }));
+        cases.add(Arguments.of("print(float) - NaN", (ServletOutputStreamCase)out ->
+        {
+            float f1 = Float.NaN;
+            out.print(f1);
+            return "NaN";
+        }));
+        cases.add(Arguments.of("print(float) - Negative Infinity", (ServletOutputStreamCase)out ->
+        {
+            float f1 = Float.NEGATIVE_INFINITY;
+            out.print(f1);
+            return "-Infinity";
+        }));
+        cases.add(Arguments.of("print(int) - positive", (ServletOutputStreamCase)out ->
+        {
+            int i = 123456789;
+            out.print(i);
+            return "123456789";
+        }));
+        cases.add(Arguments.of("print(int) - negative", (ServletOutputStreamCase)out ->
+        {
+            int i = -987654321;
+            out.print(i);
+            return "-987654321";
+        }));
+        cases.add(Arguments.of("print(int) - zero", (ServletOutputStreamCase)out ->
+        {
+            int i = 0;
+            out.print(i);
+            return "0";
+        }));
+        cases.add(Arguments.of("print(long)", (ServletOutputStreamCase)out ->
+        {
+            long l = 111222333444555666L;
+            out.print(l);
+            return "111222333444555666";
+        }));
+        cases.add(Arguments.of("print(long) - max_long", (ServletOutputStreamCase)out ->
+        {
+            long l = Long.MAX_VALUE;
+            out.print(l);
+            return "9223372036854775807";
+        }));
+        cases.add(Arguments.of("print(String)", (ServletOutputStreamCase)out ->
+        {
+            out.print("ABC");
+            return "ABC";
+        }));
 
         // Normal (CRLF) Cases for ServletOutputStream
-        cases.add(Arguments.of(
-            "println()",
-            (ServletOutputStreamCase)out ->
-            {
-                out.println();
-                return "\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(boolean)",
-            (ServletOutputStreamCase)out ->
-            {
-                out.println(false);
+        cases.add(Arguments.of("println()", (ServletOutputStreamCase)out ->
+        {
+            out.println();
+            return "\r\n";
+        }));
+        cases.add(Arguments.of("println(boolean)", (ServletOutputStreamCase)out ->
+        {
+            out.println(false);
 
-                return "false\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(char)",
-            (ServletOutputStreamCase)out ->
-            {
-                out.println('a');
+            return "false\r\n";
+        }));
+        cases.add(Arguments.of("println(char)", (ServletOutputStreamCase)out ->
+        {
+            out.println('a');
 
-                return "a\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(double)",
-            (ServletOutputStreamCase)out ->
-            {
-                double d1 = 3.14;
-                out.println(d1);
-                return "3.14\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(double) - NaN",
-            (ServletOutputStreamCase)out ->
-            {
-                double d1 = Double.NaN;
-                out.println(d1);
-                return "NaN\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(double) - Negative Infinity",
-            (ServletOutputStreamCase)out ->
-            {
-                double d1 = Double.NEGATIVE_INFINITY;
-                out.println(d1);
-                return "-Infinity\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(float)",
-            (ServletOutputStreamCase)out ->
-            {
-                float f1 = 3.14159f;
-                out.println(f1);
-                return "3.14159\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(float) - NaN",
-            (ServletOutputStreamCase)out ->
-            {
-                float f1 = Float.NaN;
-                out.println(f1);
-                return "NaN\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(float) - Negative Infinity",
-            (ServletOutputStreamCase)out ->
-            {
-                float f1 = Float.NEGATIVE_INFINITY;
-                out.println(f1);
-                return "-Infinity\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(int) - positive",
-            (ServletOutputStreamCase)out ->
-            {
-                int i = 123456789;
-                out.println(i);
-                return "123456789\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(int) - negative",
-            (ServletOutputStreamCase)out ->
-            {
-                int i = -987654321;
-                out.println(i);
-                return "-987654321\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(int) - zero",
-            (ServletOutputStreamCase)out ->
-            {
-                int i = 0;
-                out.println(i);
-                return "0\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(long)",
-            (ServletOutputStreamCase)out ->
-            {
-                long l = 111222333444555666L;
-                out.println(l);
-                return "111222333444555666\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(long) - max_long",
-            (ServletOutputStreamCase)out ->
-            {
-                long l = Long.MAX_VALUE;
-                out.println(l);
-                return "9223372036854775807\r\n";
-            })
-        );
-        cases.add(Arguments.of(
-            "println(String)",
-            (ServletOutputStreamCase)out ->
-            {
-                out.println("ABC");
-                return "ABC\r\n";
-            })
-        );
+            return "a\r\n";
+        }));
+        cases.add(Arguments.of("println(double)", (ServletOutputStreamCase)out ->
+        {
+            double d1 = 3.14;
+            out.println(d1);
+            return "3.14\r\n";
+        }));
+        cases.add(Arguments.of("println(double) - NaN", (ServletOutputStreamCase)out ->
+        {
+            double d1 = Double.NaN;
+            out.println(d1);
+            return "NaN\r\n";
+        }));
+        cases.add(Arguments.of("println(double) - Negative Infinity", (ServletOutputStreamCase)out ->
+        {
+            double d1 = Double.NEGATIVE_INFINITY;
+            out.println(d1);
+            return "-Infinity\r\n";
+        }));
+        cases.add(Arguments.of("println(float)", (ServletOutputStreamCase)out ->
+        {
+            float f1 = 3.14159f;
+            out.println(f1);
+            return "3.14159\r\n";
+        }));
+        cases.add(Arguments.of("println(float) - NaN", (ServletOutputStreamCase)out ->
+        {
+            float f1 = Float.NaN;
+            out.println(f1);
+            return "NaN\r\n";
+        }));
+        cases.add(Arguments.of("println(float) - Negative Infinity", (ServletOutputStreamCase)out ->
+        {
+            float f1 = Float.NEGATIVE_INFINITY;
+            out.println(f1);
+            return "-Infinity\r\n";
+        }));
+        cases.add(Arguments.of("println(int) - positive", (ServletOutputStreamCase)out ->
+        {
+            int i = 123456789;
+            out.println(i);
+            return "123456789\r\n";
+        }));
+        cases.add(Arguments.of("println(int) - negative", (ServletOutputStreamCase)out ->
+        {
+            int i = -987654321;
+            out.println(i);
+            return "-987654321\r\n";
+        }));
+        cases.add(Arguments.of("println(int) - zero", (ServletOutputStreamCase)out ->
+        {
+            int i = 0;
+            out.println(i);
+            return "0\r\n";
+        }));
+        cases.add(Arguments.of("println(long)", (ServletOutputStreamCase)out ->
+        {
+            long l = 111222333444555666L;
+            out.println(l);
+            return "111222333444555666\r\n";
+        }));
+        cases.add(Arguments.of("println(long) - max_long", (ServletOutputStreamCase)out ->
+        {
+            long l = Long.MAX_VALUE;
+            out.println(l);
+            return "9223372036854775807\r\n";
+        }));
+        cases.add(Arguments.of("println(String)", (ServletOutputStreamCase)out ->
+        {
+            out.println("ABC");
+            return "ABC\r\n";
+        }));
 
         // Special Cases for ServletOutputStream
         cases.add(Arguments.of(
@@ -966,8 +879,7 @@ public class ResponseTest
                 out.print("ABC");
                 out.print(""); // should not result in "null"
                 return "ABC";
-            })
-        );
+            }));
         cases.add(Arguments.of(
             "print(String) - with empty and CRLF", // from Issue #3545
             (ServletOutputStreamCase)out ->
@@ -976,8 +888,7 @@ public class ResponseTest
                 out.print("");
                 out.println();
                 return "ABC\r\n";
-            })
-        );
+            }));
         cases.add(Arguments.of(
             "print(String) - unicode", // from issue #3207
             (ServletOutputStreamCase)out ->
@@ -991,16 +902,16 @@ public class ResponseTest
                 out.println(s);
                 expected += s + "\r\n";
                 return expected;
-            })
-        );
+            }));
 
         return cases.stream();
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("outputStreamCases")
-    public void testServletOutputStream(@SuppressWarnings("unused") String description,
-                                        ServletOutputStreamCase outputStreamConsumer) throws IOException
+    public void testServletOutputStream(
+                                        @SuppressWarnings("unused") String description, ServletOutputStreamCase outputStreamConsumer)
+        throws IOException
     {
         Response response = getResponse();
         response.setCharacterEncoding(UTF_8.name());
@@ -1033,244 +944,175 @@ public class ResponseTest
         List<Arguments> cases = new ArrayList<>();
 
         // Normal (append) Cases for Servlet PrintWriter
-        cases.add(Arguments.of(
-            "append(char)",
-            (ServletPrintWriterCase)writer ->
-            {
-                writer.append('a');
-                writer.append('b').append('c');
-                return "abc";
-            })
-        );
-        cases.add(Arguments.of(
-            "append(CharSequence)",
-            (ServletPrintWriterCase)writer ->
-            {
-                CharSequence charSequence = "xyz";
-                writer.append(charSequence);
-                return "xyz";
-            })
-        );
-        cases.add(Arguments.of(
-            "append(CharSequence, int, int)",
-            (ServletPrintWriterCase)writer ->
-            {
-                CharSequence charSequence = "Not written in Javascript";
-                writer.append(charSequence, 4, 19);
-                return "written in Java";
-            })
-        );
+        cases.add(Arguments.of("append(char)", (ServletPrintWriterCase)writer ->
+        {
+            writer.append('a');
+            writer.append('b').append('c');
+            return "abc";
+        }));
+        cases.add(Arguments.of("append(CharSequence)", (ServletPrintWriterCase)writer ->
+        {
+            CharSequence charSequence = "xyz";
+            writer.append(charSequence);
+            return "xyz";
+        }));
+        cases.add(Arguments.of("append(CharSequence, int, int)", (ServletPrintWriterCase)writer ->
+        {
+            CharSequence charSequence = "Not written in Javascript";
+            writer.append(charSequence, 4, 19);
+            return "written in Java";
+        }));
 
         // Normal (Format) Cases for Servlet PrintWriter
-        cases.add(Arguments.of(
-            "format(Locale, String, Object[])",
-            (ServletPrintWriterCase)writer ->
-            {
-                // Dec 07, 2020
-                LocalDate jetty10ReleaseDate = LocalDate.of(2020, 12, 7);
+        cases.add(Arguments.of("format(Locale, String, Object[])", (ServletPrintWriterCase)writer ->
+        {
+            // Dec 07, 2020
+            LocalDate jetty10ReleaseDate = LocalDate.of(2020, 12, 7);
 
-                String format = "Jetty 10 was released on %1$tB %1$te,%1$tY";
-                Locale locale = Locale.ITALY;
-                writer.format(locale, format, jetty10ReleaseDate);
-                return String.format(locale, format, jetty10ReleaseDate);
-            })
-        );
+            String format = "Jetty 10 was released on %1$tB %1$te,%1$tY";
+            Locale locale = Locale.ITALY;
+            writer.format(locale, format, jetty10ReleaseDate);
+            return String.format(locale, format, jetty10ReleaseDate);
+        }));
 
-        cases.add(Arguments.of(
-            "format(String, Object[])",
-            (ServletPrintWriterCase)writer ->
-            {
-                // Dec 07, 2020
-                LocalDate jetty10ReleaseDate = LocalDate.of(2020, 12, 7);
-                String format = "Jetty 10 was released on %1$tB %1$te,%1$tY";
-                writer.format(format, jetty10ReleaseDate);
-                return String.format(Locale.getDefault(), format, jetty10ReleaseDate);
-            })
-        );
+        cases.add(Arguments.of("format(String, Object[])", (ServletPrintWriterCase)writer ->
+        {
+            // Dec 07, 2020
+            LocalDate jetty10ReleaseDate = LocalDate.of(2020, 12, 7);
+            String format = "Jetty 10 was released on %1$tB %1$te,%1$tY";
+            writer.format(format, jetty10ReleaseDate);
+            return String.format(Locale.getDefault(), format, jetty10ReleaseDate);
+        }));
 
         // Normal (non CRLF) Cases for Servlet PrintWriter
-        cases.add(Arguments.of(
-            "print(boolean)",
-            (ServletPrintWriterCase)writer ->
-            {
-                writer.print(true);
-                writer.print("/");
-                writer.print(false);
+        cases.add(Arguments.of("print(boolean)", (ServletPrintWriterCase)writer ->
+        {
+            writer.print(true);
+            writer.print("/");
+            writer.print(false);
 
-                return "true/false";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(char)",
-            (ServletPrintWriterCase)writer ->
-            {
-                writer.print('a');
-                writer.print('b');
-                writer.print('c');
+            return "true/false";
+        }));
+        cases.add(Arguments.of("print(char)", (ServletPrintWriterCase)writer ->
+        {
+            writer.print('a');
+            writer.print('b');
+            writer.print('c');
 
-                return "abc";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(char[])",
-            (ServletPrintWriterCase)writer ->
+            return "abc";
+        }));
+        cases.add(Arguments.of("print(char[])", (ServletPrintWriterCase)writer ->
+        {
+            char[] charArray = new char[]{'a', 'b', 'c'};
+            writer.print(charArray);
+            return "abc";
+        }));
+        cases.add(Arguments.of("print(double)", (ServletPrintWriterCase)writer ->
+        {
+            double d1 = 3.14;
+            writer.print(d1);
+            return "3.14";
+        }));
+        cases.add(Arguments.of("print(double) - NaN", (ServletPrintWriterCase)writer ->
+        {
+            double d1 = Double.NaN;
+            writer.print(d1);
+            return "NaN";
+        }));
+        cases.add(Arguments.of("print(double) - Negative Infinity", (ServletPrintWriterCase)writer ->
+        {
+            double d1 = Double.NEGATIVE_INFINITY;
+            writer.print(d1);
+            return "-Infinity";
+        }));
+        cases.add(Arguments.of("print(float)", (ServletPrintWriterCase)writer ->
+        {
+            float f1 = 3.14159f;
+            writer.print(f1);
+            return "3.14159";
+        }));
+        cases.add(Arguments.of("print(float) - NaN", (ServletPrintWriterCase)writer ->
+        {
+            float f1 = Float.NaN;
+            writer.print(f1);
+            return "NaN";
+        }));
+        cases.add(Arguments.of("print(float) - Negative Infinity", (ServletPrintWriterCase)writer ->
+        {
+            float f1 = Float.NEGATIVE_INFINITY;
+            writer.print(f1);
+            return "-Infinity";
+        }));
+        cases.add(Arguments.of("print(int) - positive", (ServletPrintWriterCase)writer ->
+        {
+            int i = 123456789;
+            writer.print(i);
+            return "123456789";
+        }));
+        cases.add(Arguments.of("print(int) - negative", (ServletPrintWriterCase)writer ->
+        {
+            int i = -987654321;
+            writer.print(i);
+            return "-987654321";
+        }));
+        cases.add(Arguments.of("print(int) - zero", (ServletPrintWriterCase)writer ->
+        {
+            int i = 0;
+            writer.print(i);
+            return "0";
+        }));
+        cases.add(Arguments.of("print(long)", (ServletPrintWriterCase)writer ->
+        {
+            long l = 111222333444555666L;
+            writer.print(l);
+            return "111222333444555666";
+        }));
+        cases.add(Arguments.of("print(long) - max_long", (ServletPrintWriterCase)writer ->
+        {
+            long l = Long.MAX_VALUE;
+            writer.print(l);
+            return "9223372036854775807";
+        }));
+        cases.add(Arguments.of("print(Object) - foo", (ServletPrintWriterCase)writer ->
+        {
+            Object bar = new Object()
             {
-                char[] charArray = new char[]{'a', 'b', 'c'};
-                writer.print(charArray);
-                return "abc";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(double)",
-            (ServletPrintWriterCase)writer ->
-            {
-                double d1 = 3.14;
-                writer.print(d1);
-                return "3.14";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(double) - NaN",
-            (ServletPrintWriterCase)writer ->
-            {
-                double d1 = Double.NaN;
-                writer.print(d1);
-                return "NaN";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(double) - Negative Infinity",
-            (ServletPrintWriterCase)writer ->
-            {
-                double d1 = Double.NEGATIVE_INFINITY;
-                writer.print(d1);
-                return "-Infinity";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(float)",
-            (ServletPrintWriterCase)writer ->
-            {
-                float f1 = 3.14159f;
-                writer.print(f1);
-                return "3.14159";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(float) - NaN",
-            (ServletPrintWriterCase)writer ->
-            {
-                float f1 = Float.NaN;
-                writer.print(f1);
-                return "NaN";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(float) - Negative Infinity",
-            (ServletPrintWriterCase)writer ->
-            {
-                float f1 = Float.NEGATIVE_INFINITY;
-                writer.print(f1);
-                return "-Infinity";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(int) - positive",
-            (ServletPrintWriterCase)writer ->
-            {
-                int i = 123456789;
-                writer.print(i);
-                return "123456789";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(int) - negative",
-            (ServletPrintWriterCase)writer ->
-            {
-                int i = -987654321;
-                writer.print(i);
-                return "-987654321";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(int) - zero",
-            (ServletPrintWriterCase)writer ->
-            {
-                int i = 0;
-                writer.print(i);
-                return "0";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(long)",
-            (ServletPrintWriterCase)writer ->
-            {
-                long l = 111222333444555666L;
-                writer.print(l);
-                return "111222333444555666";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(long) - max_long",
-            (ServletPrintWriterCase)writer ->
-            {
-                long l = Long.MAX_VALUE;
-                writer.print(l);
-                return "9223372036854775807";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(Object) - foo",
-            (ServletPrintWriterCase)writer ->
-            {
-                Object bar = new Object()
+                @Override
+                public String toString()
                 {
-                    @Override
-                    public String toString()
-                    {
-                        return "((Bar))";
-                    }
-                };
+                    return "((Bar))";
+                }
+            };
 
-                writer.print(bar);
-                return "((Bar))";
-            })
-        );
-        cases.add(Arguments.of(
-            "print(String)",
-            (ServletPrintWriterCase)writer ->
-            {
-                writer.print("ABC");
-                return "ABC";
-            })
-        );
+            writer.print(bar);
+            return "((Bar))";
+        }));
+        cases.add(Arguments.of("print(String)", (ServletPrintWriterCase)writer ->
+        {
+            writer.print("ABC");
+            return "ABC";
+        }));
 
         // Normal (Format / Convenience) Cases for Servlet PrintWriter
-        cases.add(Arguments.of(
-            "printf(Locale, String, Object[])",
-            (ServletPrintWriterCase)writer ->
-            {
-                // Dec 07, 2020
-                LocalDate jetty10ReleaseDate = LocalDate.of(2020, 12, 7);
+        cases.add(Arguments.of("printf(Locale, String, Object[])", (ServletPrintWriterCase)writer ->
+        {
+            // Dec 07, 2020
+            LocalDate jetty10ReleaseDate = LocalDate.of(2020, 12, 7);
 
-                String format = "Jetty 10 was released on %1$tB %1$te,%1$tY";
-                Locale locale = Locale.ITALY;
-                writer.printf(locale, format, jetty10ReleaseDate);
-                return String.format(locale, format, jetty10ReleaseDate);
-            })
-        );
+            String format = "Jetty 10 was released on %1$tB %1$te,%1$tY";
+            Locale locale = Locale.ITALY;
+            writer.printf(locale, format, jetty10ReleaseDate);
+            return String.format(locale, format, jetty10ReleaseDate);
+        }));
 
-        cases.add(Arguments.of(
-            "printf(String, Object[])",
-            (ServletPrintWriterCase)writer ->
-            {
-                // Dec 07, 2020
-                LocalDate jetty10ReleaseDate = LocalDate.of(2020, 12, 7);
-                String format = "Jetty 10 was released on %1$tB %1$te,%1$tY";
-                writer.printf(format, jetty10ReleaseDate);
-                return String.format(Locale.getDefault(), format, jetty10ReleaseDate);
-            })
-        );
+        cases.add(Arguments.of("printf(String, Object[])", (ServletPrintWriterCase)writer ->
+        {
+            // Dec 07, 2020
+            LocalDate jetty10ReleaseDate = LocalDate.of(2020, 12, 7);
+            String format = "Jetty 10 was released on %1$tB %1$te,%1$tY";
+            writer.printf(format, jetty10ReleaseDate);
+            return String.format(Locale.getDefault(), format, jetty10ReleaseDate);
+        }));
 
         // Using Servlet PrintWriter.print() methods results in the system specific line separator.
         // Eg: just "\n" for Linux, but "\r\n" for Windows.
@@ -1278,155 +1120,107 @@ public class ResponseTest
         String lineSep = System.lineSeparator();
 
         // Normal (CRLF) Cases for Servlet PrintWriter
-        cases.add(Arguments.of(
-            "println()",
-            (ServletPrintWriterCase)writer ->
-            {
-                writer.println();
-                return lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(boolean)",
-            (ServletPrintWriterCase)writer ->
-            {
-                writer.println(false);
+        cases.add(Arguments.of("println()", (ServletPrintWriterCase)writer ->
+        {
+            writer.println();
+            return lineSep;
+        }));
+        cases.add(Arguments.of("println(boolean)", (ServletPrintWriterCase)writer ->
+        {
+            writer.println(false);
 
-                return "false" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(char)",
-            (ServletPrintWriterCase)writer ->
+            return "false" + lineSep;
+        }));
+        cases.add(Arguments.of("println(char)", (ServletPrintWriterCase)writer ->
+        {
+            writer.println('a');
+            return "a" + lineSep;
+        }));
+        cases.add(Arguments.of("println(double)", (ServletPrintWriterCase)writer ->
+        {
+            double d1 = 3.14;
+            writer.println(d1);
+            return "3.14" + lineSep;
+        }));
+        cases.add(Arguments.of("println(double) - NaN", (ServletPrintWriterCase)writer ->
+        {
+            double d1 = Double.NaN;
+            writer.println(d1);
+            return "NaN" + lineSep;
+        }));
+        cases.add(Arguments.of("println(double) - Negative Infinity", (ServletPrintWriterCase)writer ->
+        {
+            double d1 = Double.NEGATIVE_INFINITY;
+            writer.println(d1);
+            return "-Infinity" + lineSep;
+        }));
+        cases.add(Arguments.of("println(float)", (ServletPrintWriterCase)writer ->
+        {
+            float f1 = 3.14159f;
+            writer.println(f1);
+            return "3.14159" + lineSep;
+        }));
+        cases.add(Arguments.of("println(float) - NaN", (ServletPrintWriterCase)writer ->
+        {
+            float f1 = Float.NaN;
+            writer.println(f1);
+            return "NaN" + lineSep;
+        }));
+        cases.add(Arguments.of("println(float) - Negative Infinity", (ServletPrintWriterCase)writer ->
+        {
+            float f1 = Float.NEGATIVE_INFINITY;
+            writer.println(f1);
+            return "-Infinity" + lineSep;
+        }));
+        cases.add(Arguments.of("println(int) - positive", (ServletPrintWriterCase)writer ->
+        {
+            int i = 123456789;
+            writer.println(i);
+            return "123456789" + lineSep;
+        }));
+        cases.add(Arguments.of("println(int) - negative", (ServletPrintWriterCase)writer ->
+        {
+            int i = -987654321;
+            writer.println(i);
+            return "-987654321" + lineSep;
+        }));
+        cases.add(Arguments.of("println(int) - zero", (ServletPrintWriterCase)writer ->
+        {
+            int i = 0;
+            writer.println(i);
+            return "0" + lineSep;
+        }));
+        cases.add(Arguments.of("println(long)", (ServletPrintWriterCase)writer ->
+        {
+            long l = 111222333444555666L;
+            writer.println(l);
+            return "111222333444555666" + lineSep;
+        }));
+        cases.add(Arguments.of("println(long) - max_long", (ServletPrintWriterCase)writer ->
+        {
+            long l = Long.MAX_VALUE;
+            writer.println(l);
+            return "9223372036854775807" + lineSep;
+        }));
+        cases.add(Arguments.of("println(Object) - foo", (ServletPrintWriterCase)writer ->
+        {
+            Object zed = new Object()
             {
-                writer.println('a');
-                return "a" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(double)",
-            (ServletPrintWriterCase)writer ->
-            {
-                double d1 = 3.14;
-                writer.println(d1);
-                return "3.14" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(double) - NaN",
-            (ServletPrintWriterCase)writer ->
-            {
-                double d1 = Double.NaN;
-                writer.println(d1);
-                return "NaN" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(double) - Negative Infinity",
-            (ServletPrintWriterCase)writer ->
-            {
-                double d1 = Double.NEGATIVE_INFINITY;
-                writer.println(d1);
-                return "-Infinity" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(float)",
-            (ServletPrintWriterCase)writer ->
-            {
-                float f1 = 3.14159f;
-                writer.println(f1);
-                return "3.14159" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(float) - NaN",
-            (ServletPrintWriterCase)writer ->
-            {
-                float f1 = Float.NaN;
-                writer.println(f1);
-                return "NaN" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(float) - Negative Infinity",
-            (ServletPrintWriterCase)writer ->
-            {
-                float f1 = Float.NEGATIVE_INFINITY;
-                writer.println(f1);
-                return "-Infinity" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(int) - positive",
-            (ServletPrintWriterCase)writer ->
-            {
-                int i = 123456789;
-                writer.println(i);
-                return "123456789" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(int) - negative",
-            (ServletPrintWriterCase)writer ->
-            {
-                int i = -987654321;
-                writer.println(i);
-                return "-987654321" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(int) - zero",
-            (ServletPrintWriterCase)writer ->
-            {
-                int i = 0;
-                writer.println(i);
-                return "0" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(long)",
-            (ServletPrintWriterCase)writer ->
-            {
-                long l = 111222333444555666L;
-                writer.println(l);
-                return "111222333444555666" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(long) - max_long",
-            (ServletPrintWriterCase)writer ->
-            {
-                long l = Long.MAX_VALUE;
-                writer.println(l);
-                return "9223372036854775807" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(Object) - foo",
-            (ServletPrintWriterCase)writer ->
-            {
-                Object zed = new Object()
+                @Override
+                public String toString()
                 {
-                    @Override
-                    public String toString()
-                    {
-                        return "((Zed))";
-                    }
-                };
+                    return "((Zed))";
+                }
+            };
 
-                writer.println(zed);
-                return "((Zed))" + lineSep;
-            })
-        );
-        cases.add(Arguments.of(
-            "println(String)",
-            (ServletPrintWriterCase)writer ->
-            {
-                writer.println("ABC");
-                return "ABC"  + lineSep;
-            })
-        );
+            writer.println(zed);
+            return "((Zed))" + lineSep;
+        }));
+        cases.add(Arguments.of("println(String)", (ServletPrintWriterCase)writer ->
+        {
+            writer.println("ABC");
+            return "ABC" + lineSep;
+        }));
 
         // Special Cases for Servlet PrintWriter
         cases.add(Arguments.of(
@@ -1436,8 +1230,7 @@ public class ResponseTest
                 writer.print("ABC");
                 writer.print(""); // should not result in "null"
                 return "ABC";
-            })
-        );
+            }));
         cases.add(Arguments.of(
             "print(String) - with empty and CRLF", // from Issue #3545
             (ServletPrintWriterCase)writer ->
@@ -1446,8 +1239,7 @@ public class ResponseTest
                 writer.print("");
                 writer.println();
                 return "ABC" + lineSep;
-            })
-        );
+            }));
         cases.add(Arguments.of(
             "print(String) - unicode", // from issue #3207
             (ServletPrintWriterCase)writer ->
@@ -1461,16 +1253,15 @@ public class ResponseTest
                 writer.println(s);
                 expected += s + lineSep;
                 return expected;
-            })
-        );
+            }));
 
         return cases.stream();
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("writerCases")
-    public void testServletPrintWriter(@SuppressWarnings("unused") String description,
-                                        ServletPrintWriterCase writerConsumer) throws IOException
+    public void testServletPrintWriter(
+                                       @SuppressWarnings("unused") String description, ServletPrintWriterCase writerConsumer) throws IOException
     {
         Response response = getResponse();
         response.setCharacterEncoding(UTF_8.name());
@@ -1566,7 +1357,8 @@ public class ResponseTest
         response.setHeader("Should-Be-Ignored", "value");
         assertFalse(response.getHttpFields().contains("Should-Be-Ignored"));
 
-        assertEquals(expectedMessage, response.getHttpChannel().getRequest().getAttribute(RequestDispatcher.ERROR_MESSAGE));
+        assertEquals(
+            expectedMessage, response.getHttpChannel().getRequest().getAttribute(RequestDispatcher.ERROR_MESSAGE));
         assertThat(response.getHttpChannel().getState().unhandle(), is(HttpChannelState.Action.SEND_ERROR));
         assertThat(response.getHttpChannel().getState().unhandle(), is(HttpChannelState.Action.COMPLETE));
     }
@@ -1609,33 +1401,55 @@ public class ResponseTest
         request.setHttpURI(HttpURI.build(request.getHttpURI()).host("myhost").port(8888));
         request.setContext(_context._apiContext, "/path/info");
 
-        assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
+        assertEquals(
+            "http://myhost:8888/path/info;param?query=0&more=1#target",
+            response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
 
-        ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
+        ContextHandler.CoreContextRequest coreRequest =
+            response.getHttpChannel().getCoreRequest();
         coreRequest.setSessionManager(sessionHandler.getSessionManager());
         coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(null, "12345", false));
         assertNotNull(request.getSession(true));
         assertThat(request.getSession(false).getId(), is("12345"));
 
-        assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
-        assertEquals("http://other:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
-        assertEquals("http://myhost/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
-        assertEquals("http://myhost:8888/other/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
+        assertEquals(
+            "http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target",
+            response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
+        assertEquals(
+            "http://other:8888/path/info;param;jsessionid=12345?query=0&more=1#target",
+            response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        assertEquals(
+            "http://myhost/path/info;param;jsessionid=12345?query=0&more=1#target",
+            response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
+        assertEquals(
+            "http://myhost:8888/other/info;param;jsessionid=12345?query=0&more=1#target",
+            response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
 
         sessionHandler.setCheckingRemoteSessionIdEncoding(true);
-        assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
-        assertEquals("http://other:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
-        assertEquals("http://myhost/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
+        assertEquals(
+            "http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target",
+            response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
+        assertEquals(
+            "http://other:8888/path/info;param?query=0&more=1#target",
+            response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        assertEquals(
+            "http://myhost/path/info;param?query=0&more=1#target",
+            response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
 
-        // TODO assertEquals("http://myhost:8888/other/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
+        // TODO assertEquals("http://myhost:8888/other/info;param?query=0&more=1#target",
+        // response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
 
         assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888"));
         assertEquals("https://myhost:8888/;jsessionid=12345", response.encodeURL("https://myhost:8888"));
         assertEquals("mailto:/foo", response.encodeURL("mailto:/foo"));
         assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/"));
         assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/;jsessionid=7777"));
-        assertEquals("http://myhost:8888/;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/;param?query=0&more=1#target"));
-        assertEquals("http://other:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        assertEquals(
+            "http://myhost:8888/;param;jsessionid=12345?query=0&more=1#target",
+            response.encodeURL("http://myhost:8888/;param?query=0&more=1#target"));
+        assertEquals(
+            "http://other:8888/path/info;param?query=0&more=1#target",
+            response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
         sessionHandler.setCheckingRemoteSessionIdEncoding(false);
         assertEquals("/foo;jsessionid=12345", response.encodeURL("/foo"));
         assertEquals("/;jsessionid=12345", response.encodeURL("/"));
@@ -1673,9 +1487,18 @@ public class ResponseTest
     {
         return Stream.of(
             // No cookie
-            Arguments.of("http://myhost:8888/other/location;jsessionid=12345?name=value", "http://myhost:8888/other/location;jsessionid=12345?name=value", false),
-            Arguments.of("/other/location;jsessionid=12345?name=value", "http://@HOST@@PORT@/other/location;jsessionid=12345?name=value", false),
-            Arguments.of("./location;jsessionid=12345?name=value", "http://@HOST@@PORT@/path/location;jsessionid=12345?name=value", false),
+            Arguments.of(
+                "http://myhost:8888/other/location;jsessionid=12345?name=value",
+                "http://myhost:8888/other/location;jsessionid=12345?name=value",
+                false),
+            Arguments.of(
+                "/other/location;jsessionid=12345?name=value",
+                "http://@HOST@@PORT@/other/location;jsessionid=12345?name=value",
+                false),
+            Arguments.of(
+                "./location;jsessionid=12345?name=value",
+                "http://@HOST@@PORT@/path/location;jsessionid=12345?name=value",
+                false),
 
             // From cookie
             Arguments.of("/other/location", "http://@HOST@@PORT@/other/location", true),
@@ -1689,15 +1512,13 @@ public class ResponseTest
             Arguments.of("../l%20cation", "http://@HOST@@PORT@/l%20cation", true),
             Arguments.of("../locati%C3%abn", "http://@HOST@@PORT@/locati%C3%abn", true),
             Arguments.of("../other%2fplace", "http://@HOST@@PORT@/other%2fplace", true),
-            Arguments.of("http://somehost.com/other/location", "http://somehost.com/other/location", true)
-        );
+            Arguments.of("http://somehost.com/other/location", "http://somehost.com/other/location", true));
     }
 
     @ParameterizedTest
     @MethodSource("redirects")
     @Disabled // TODO
-    public void testSendRedirect(String destination, String expected, boolean cookie)
-        throws Exception
+    public void testSendRedirect(String destination, String expected, boolean cookie) throws Exception
     {
         SessionHandler sessionHandler = addSessionHandler();
         _server.stop();
@@ -1713,15 +1534,16 @@ public class ResponseTest
                 Response response = getResponse();
                 Request request = response.getHttpChannel().getRequest();
 
-                HttpURI.Mutable uri = HttpURI.build(request.getHttpURI(),
-                    "/path/info;param;jsessionid=12345?query=0&more=1#target");
+                HttpURI.Mutable uri =
+                    HttpURI.build(request.getHttpURI(), "/path/info;param;jsessionid=12345?query=0&more=1#target");
                 uri.scheme("http");
                 if (host != null)
                     uri.host(host).port(port);
                 request.setHttpURI(uri);
                 request.setContext(_context._apiContext, "/path/info");
 
-                ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
+                ContextHandler.CoreContextRequest coreRequest =
+                    response.getHttpChannel().getCoreRequest();
                 coreRequest.setSessionManager(sessionHandler.getSessionManager());
                 ManagedSession session = sessionHandler.getSessionManager().getManagedSession("12345");
                 coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(session, "12345", cookie));
@@ -1734,8 +1556,7 @@ public class ResponseTest
 
                 String location = response.getHeader("Location");
 
-                expected = expected
-                    .replace("@HOST@", host == null ? request.getLocalAddr() : host)
+                expected = expected.replace("@HOST@", host == null ? request.getLocalAddr() : host)
                     .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
                 assertThat(host + ":" + port, location, equalTo(expected));
             }
@@ -1743,8 +1564,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testSendRedirectRelative()
-        throws Exception
+    public void testSendRedirectRelative() throws Exception
     {
         String[][] tests = {
             // No cookie
@@ -1792,7 +1612,8 @@ public class ResponseTest
                     request.setHttpURI(uri);
                     request.setContext(_context._apiContext, "/info");
 
-                    ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
+                    ContextHandler.CoreContextRequest coreRequest =
+                        response.getHttpChannel().getCoreRequest();
                     coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(null, "12345", i > 2));
                     SessionHandler handler = new SessionHandler();
 
@@ -1860,7 +1681,9 @@ public class ResponseTest
             contextHandler.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+                public void handle(
+                                   String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                    throws IOException
                 {
                     response.setStatus(200);
                     response.setContentType("text/plain");
@@ -1875,11 +1698,13 @@ public class ResponseTest
             });
             server.start();
 
-            try (Socket socket = new Socket("localhost", ((NetworkConnector)server.getConnectors()[0]).getLocalPort()))
+            try (Socket socket =
+                new Socket("localhost", ((NetworkConnector)server.getConnectors()[0]).getLocalPort()))
             {
                 socket.setSoTimeout(500000);
                 socket.getOutputStream().write("HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes());
-                socket.getOutputStream().write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes());
+                socket.getOutputStream()
+                    .write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes());
                 socket.getOutputStream().flush();
 
                 LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
@@ -1980,11 +1805,10 @@ public class ResponseTest
 
         response.getHttpFields().remove("Set-Cookie");
 
-        //test bad default samesite value
+        // test bad default samesite value
         _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
 
-        assertThrows(IllegalStateException.class,
-            () -> response.addCookie(cookie));
+        assertThrows(IllegalStateException.class, () -> response.addCookie(cookie));
     }
 
     @Test
@@ -2082,12 +1906,13 @@ public class ResponseTest
 
         assertNotNull(set);
         ArrayList<String> list = Collections.list(set);
-        assertThat(list, containsInAnyOrder(
-            "name=value; Path=/path; Domain=domain; Secure; HttpOnly",
-            "name2=value2; Path=/path; Domain=domain"
-        ));
+        assertThat(
+            list,
+            containsInAnyOrder(
+                "name=value; Path=/path; Domain=domain; Secure; HttpOnly",
+                "name2=value2; Path=/path; Domain=domain"));
 
-        //get rid of the cookies
+        // get rid of the cookies
         response.reset();
 
         set = response.getHttpFields().getValues("Set-Cookie");
@@ -2100,8 +1925,10 @@ public class ResponseTest
         Response response = getResponse();
 
         response.replaceCookie(HttpCookie.from("Foo", "123456"));
-        response.replaceCookie(HttpCookie.from("Foo", "123456", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "A", HttpCookie.PATH_ATTRIBUTE, "/path")));
-        response.replaceCookie(HttpCookie.from("Foo", "123456", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "B", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from(
+            "Foo", "123456", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "A", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from(
+            "Foo", "123456", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "B", HttpCookie.PATH_ATTRIBUTE, "/path")));
 
         response.replaceCookie(HttpCookie.from("Bar", "123456"));
         response.replaceCookie(HttpCookie.from("Bar", "123456", Map.of(HttpCookie.PATH_ATTRIBUTE, "/left")));
@@ -2111,8 +1938,10 @@ public class ResponseTest
         response.replaceCookie(HttpCookie.from("Bar", "value", Map.of(HttpCookie.PATH_ATTRIBUTE, "/left")));
         response.replaceCookie(HttpCookie.from("Bar", "value"));
 
-        response.replaceCookie(HttpCookie.from("Foo", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "B", HttpCookie.PATH_ATTRIBUTE, "/path")));
-        response.replaceCookie(HttpCookie.from("Foo", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "A", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from(
+            "Foo", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "B", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from(
+            "Foo", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "A", HttpCookie.PATH_ATTRIBUTE, "/path")));
         response.replaceCookie(HttpCookie.from("Foo", "value"));
 
         String[] expected = new String[]{
@@ -2133,11 +1962,11 @@ public class ResponseTest
     {
         Response response = getResponse();
         _context.setAttribute(HttpCookieUtils.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
-        //replace with no prior does an add
+        // replace with no prior does an add
         response.replaceCookie(HttpCookie.from("Foo", "123456"));
         String set = response.getHttpFields().get("Set-Cookie");
         assertEquals("Foo=123456; SameSite=Lax", set);
-        //check replacement
+        // check replacement
         response.replaceCookie(HttpCookie.from("Foo", "other"));
         set = response.getHttpFields().get("Set-Cookie");
         assertEquals("Foo=other; SameSite=Lax", set);
@@ -2158,12 +1987,16 @@ public class ResponseTest
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=123456; domain=Bah; Path=/path", "Foo=other"));
 
-        response.replaceCookie(HttpCookie.from("Foo", "replaced", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "Bah", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.replaceCookie(HttpCookie.from(
+            "Foo", "replaced", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "Bah", HttpCookie.PATH_ATTRIBUTE, "/path")));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=replaced; Path=/path; Domain=Bah", "Foo=other"));
 
-        response.setHeader(HttpHeader.SET_COOKIE, "Foo=123456; domain=Bah; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; Path=/path");
-        response.replaceCookie(HttpCookie.from("Foo", "replaced", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "Bah", HttpCookie.PATH_ATTRIBUTE, "/path")));
+        response.setHeader(
+            HttpHeader.SET_COOKIE,
+            "Foo=123456; domain=Bah; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; Path=/path");
+        response.replaceCookie(HttpCookie.from(
+            "Foo", "replaced", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "Bah", HttpCookie.PATH_ATTRIBUTE, "/path")));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems("Foo=replaced; Path=/path; Domain=Bah"));
     }
@@ -2264,13 +2097,19 @@ public class ResponseTest
     {
         _channel.recycle();
 
-        MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("http://myhost:8888/path/info"), version, HttpFields.EMPTY);
+        MetaData.Request reqMeta =
+            new MetaData.Request("GET", HttpURI.from("http://myhost:8888/path/info"), version, HttpFields.EMPTY);
 
-        org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, _context.getServletContext().getCoreContext());
+        org.eclipse.jetty.server.Request coreRequest =
+            new MockRequest(reqMeta, _context.getServletContext().getCoreContext());
         org.eclipse.jetty.server.Response coreResponse = new MockResponse(coreRequest);
 
-        _channel.onRequest(new ContextHandler.CoreContextRequest(coreRequest, _context.getCoreContextHandler().getContext(), _channel));
-        _channel.getRequest().setContext(_context._apiContext, URIUtil.decodePath(org.eclipse.jetty.server.Request.getPathInContext(coreRequest)));
+        _channel.onRequest(new ContextHandler.CoreContextRequest(
+            coreRequest, _context.getCoreContextHandler().getContext(), _channel));
+        _channel.getRequest()
+            .setContext(
+                _context._apiContext,
+                URIUtil.decodePath(org.eclipse.jetty.server.Request.getPathInContext(coreRequest)));
         _channel.onProcess(coreResponse, Callback.NOOP);
 
         BufferUtil.clear(_content);
@@ -2502,7 +2341,7 @@ public class ResponseTest
         @Override
         public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
         {
-                return null;
+            return null;
         }
     }
 }

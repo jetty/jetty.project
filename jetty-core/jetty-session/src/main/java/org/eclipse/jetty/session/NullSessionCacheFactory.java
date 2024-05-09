@@ -24,11 +24,11 @@ import org.slf4j.LoggerFactory;
 public class NullSessionCacheFactory extends AbstractSessionCacheFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(NullSessionCacheFactory.class);
-    
+
     @Override
     public int getEvictionPolicy()
     {
-        return SessionCache.EVICT_ON_SESSION_EXIT; //never actually stored
+        return SessionCache.EVICT_ON_SESSION_EXIT; // never actually stored
     }
 
     @Override
@@ -41,7 +41,7 @@ public class NullSessionCacheFactory extends AbstractSessionCacheFactory
     @Override
     public boolean isSaveOnInactiveEviction()
     {
-        return false; //never kept in cache
+        return false; // never kept in cache
     }
 
     @Override
@@ -50,11 +50,11 @@ public class NullSessionCacheFactory extends AbstractSessionCacheFactory
         if (LOG.isDebugEnabled())
             LOG.debug("Ignoring eviction policy setting for NullSessionCaches");
     }
-    
+
     @Override
     public boolean isInvalidateOnShutdown()
     {
-        return false; //meaningless for NullSessionCache
+        return false; // meaningless for NullSessionCache
     }
 
     @Override

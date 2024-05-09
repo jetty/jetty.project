@@ -29,7 +29,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
-
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -48,7 +47,6 @@ import org.slf4j.LoggerFactory;
  * <p>{@link SelectorManager} subclasses implement methods to return protocol-specific
  * {@link EndPoint}s and {@link Connection}s.</p>
  */
-
 @ManagedObject("Manager of the NIO Selectors")
 public abstract class SelectorManager extends ContainerLifeCycle implements Dumpable
 {
@@ -393,7 +391,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * @throws IOException if the endPoint cannot be created
      * @see #newConnection(SelectableChannel, EndPoint, Object)
      */
-    protected abstract EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException;
+    protected abstract EndPoint newEndPoint(
+                                            SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException;
 
     /**
      * <p>Factory method to create {@link Connection}.</p>
@@ -404,7 +403,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * @return a new connection
      * @throws IOException if unable to create new connection
      */
-    public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
+    public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
+        throws IOException;
 
     /**
      * @param listener An EventListener

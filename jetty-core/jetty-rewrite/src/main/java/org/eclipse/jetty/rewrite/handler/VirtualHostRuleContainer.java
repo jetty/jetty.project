@@ -16,7 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.server.Request;
 
 /**
@@ -68,8 +67,8 @@ public class VirtualHostRuleContainer extends RuleContainer
                 return super.matchAndApply(input);
 
             // Handle case-insensitive wildcard host names.
-            if (virtualHost.startsWith("*.") &&
-                virtualHost.regionMatches(true, 2, serverName, serverName.indexOf(".") + 1, virtualHost.length() - 2))
+            if (virtualHost.startsWith("*.") && virtualHost.regionMatches(
+                true, 2, serverName, serverName.indexOf(".") + 1, virtualHost.length() - 2))
                 return super.matchAndApply(input);
         }
 

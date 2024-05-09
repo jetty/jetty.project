@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -25,6 +26,9 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.nested.QuietServletException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -37,11 +41,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AsyncListenerTest
 {
@@ -72,10 +71,7 @@ public class AsyncListenerTest
     {
         testStartAsyncThrowOnError(event -> event.getAsyncContext().dispatch("/dispatch"));
         String httpResponse = connector.getResponse(
-            "GET /ctx/path HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+            "GET /ctx/path HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 200 "));
     }
 
@@ -84,7 +80,8 @@ public class AsyncListenerTest
     {
         testStartAsyncThrowOnError(event ->
         {
-            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            HttpServletResponse response =
+                (HttpServletResponse)event.getAsyncContext().getResponse();
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
             ServletOutputStream output = response.getOutputStream();
             output.println(event.getThrowable().getClass().getName());
@@ -94,10 +91,7 @@ public class AsyncListenerTest
             event.getAsyncContext().complete();
         });
         String httpResponse = connector.getResponse(
-            "GET /ctx/path HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+            "GET /ctx/path HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
         assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
         assertThat(httpResponse, containsString("COMPLETE"));
@@ -111,10 +105,7 @@ public class AsyncListenerTest
             throw new IOException();
         });
         String httpResponse = connector.getResponse(
-            "GET /ctx/path HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+            "GET /ctx/path HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
         assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
     }
@@ -126,10 +117,7 @@ public class AsyncListenerTest
         {
         });
         String httpResponse = connector.getResponse(
-            "GET /ctx/path HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+            "GET /ctx/path HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
         assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
     }
@@ -139,14 +127,12 @@ public class AsyncListenerTest
     {
         testStartAsyncThrowOnError(event ->
         {
-            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            HttpServletResponse response =
+                (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502, "Message!!!");
         });
         String httpResponse = connector.getResponse(
-            "GET /ctx/path HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+            "GET /ctx/path HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
         assertThat(httpResponse, containsString("Message!!!"));
         assertThat(httpResponse, not(containsString(TestRuntimeException.class.getName())));
@@ -158,7 +144,8 @@ public class AsyncListenerTest
     {
         testStartAsyncThrowOnError(event ->
         {
-            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            HttpServletResponse response =
+                (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502);
         });
 
@@ -166,7 +153,13 @@ public class AsyncListenerTest
         ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
-            protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+            protected void writeErrorPlain(
+                                           Request request,
+                                           PrintWriter writer,
+                                           int code,
+                                           String message,
+                                           Throwable cause,
+                                           boolean showStacks)
             {
                 writer.write("CUSTOM\n");
                 super.writeErrorPlain(request, writer, code, message, cause, showStacks);
@@ -175,10 +168,9 @@ public class AsyncListenerTest
         server.setErrorHandler(errorHandler);
 
         String httpResponse = connector.getResponse(
-            "GET /ctx/path HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n", 10, TimeUnit.MINUTES);
+            "GET /ctx/path HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n",
+            10,
+            TimeUnit.MINUTES);
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
         assertThat(httpResponse, containsString("CUSTOM"));
     }
@@ -187,40 +179,48 @@ public class AsyncListenerTest
     {
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/ctx");
-        context.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException
+        context.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(10000);
-                asyncContext.addListener(new AsyncListenerAdapter()
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response)
+                    throws ServletException
                 {
-                    @Override
-                    public void onError(AsyncEvent event) throws IOException
+                    AsyncContext asyncContext = request.startAsync();
+                    asyncContext.setTimeout(10000);
+                    asyncContext.addListener(new AsyncListenerAdapter()
                     {
-                        consumer.accept(event);
-                    }
-                });
-                throw new QuietServletException(new TestRuntimeException());
-            }
-        }), "/path/*");
-        context.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+                        @Override
+                        public void onError(AsyncEvent event) throws IOException
+                        {
+                            consumer.accept(event);
+                        }
+                    });
+                    throw new QuietServletException(new TestRuntimeException());
+                }
+            }),
+            "/path/*");
+        context.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                response.setStatus(HttpStatus.OK_200);
-            }
-        }), "/dispatch/*");
-        context.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response)
+                {
+                    response.setStatus(HttpStatus.OK_200);
+                }
+            }),
+            "/dispatch/*");
+        context.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                response.getOutputStream().print("CUSTOM");
-            }
-        }), "/error/*");
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response)
+                    throws IOException
+                {
+                    response.getOutputStream().print("CUSTOM");
+                }
+            }),
+            "/error/*");
 
         startServer(context);
     }
@@ -229,11 +229,8 @@ public class AsyncListenerTest
     public void testStartAsyncOnTimeoutDispatch() throws Exception
     {
         testStartAsyncOnTimeout(500, event -> event.getAsyncContext().dispatch("/dispatch"));
-        String httpResponse = connector.getResponse(
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+        String httpResponse =
+            connector.getResponse("GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 200 "));
     }
 
@@ -242,17 +239,15 @@ public class AsyncListenerTest
     {
         testStartAsyncOnTimeout(500, event ->
         {
-            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            HttpServletResponse response =
+                (HttpServletResponse)event.getAsyncContext().getResponse();
             response.setStatus(HttpStatus.OK_200);
             ServletOutputStream output = response.getOutputStream();
             output.println("COMPLETE");
             event.getAsyncContext().complete();
         });
-        String httpResponse = connector.getResponse(
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+        String httpResponse =
+            connector.getResponse("GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 200 "));
         assertThat(httpResponse, containsString("COMPLETE"));
     }
@@ -264,11 +259,8 @@ public class AsyncListenerTest
         {
             throw new TestRuntimeException();
         });
-        String httpResponse = connector.getResponse(
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+        String httpResponse =
+            connector.getResponse("GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
         assertThat(httpResponse, containsString("AsyncContext timeout"));
         assertThat(httpResponse, not(containsString(TestRuntimeException.class.getName())));
@@ -280,11 +272,8 @@ public class AsyncListenerTest
         testStartAsyncOnTimeout(500, event ->
         {
         });
-        String httpResponse = connector.getResponse(
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+        String httpResponse =
+            connector.getResponse("GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
     }
 
@@ -293,15 +282,13 @@ public class AsyncListenerTest
     {
         testStartAsyncOnTimeout(500, event ->
         {
-            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            HttpServletResponse response =
+                (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502);
             event.getAsyncContext().complete();
         });
-        String httpResponse = connector.getResponse(
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+        String httpResponse =
+            connector.getResponse("GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
     }
 
@@ -321,18 +308,21 @@ public class AsyncListenerTest
         ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
-            protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+            protected void writeErrorPlain(
+                                           Request request,
+                                           PrintWriter writer,
+                                           int code,
+                                           String message,
+                                           Throwable cause,
+                                           boolean showStacks)
             {
                 writer.write("CUSTOM\n");
             }
         };
         server.setErrorHandler(errorHandler);
 
-        String httpResponse = connector.getResponse(
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+        String httpResponse =
+            connector.getResponse("GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
         assertThat(httpResponse, containsString("CUSTOM"));
     }
@@ -340,39 +330,46 @@ public class AsyncListenerTest
     private void testStartAsyncOnTimeout(long timeout, IOConsumer<AsyncEvent> consumer) throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
-        context.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+        context.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(timeout);
-                asyncContext.addListener(new AsyncListenerAdapter()
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response)
                 {
-                    @Override
-                    public void onTimeout(AsyncEvent event) throws IOException
+                    AsyncContext asyncContext = request.startAsync();
+                    asyncContext.setTimeout(timeout);
+                    asyncContext.addListener(new AsyncListenerAdapter()
                     {
-                        consumer.accept(event);
-                    }
-                });
-            }
-        }), "/*");
-        context.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+                        @Override
+                        public void onTimeout(AsyncEvent event) throws IOException
+                        {
+                            consumer.accept(event);
+                        }
+                    });
+                }
+            }),
+            "/*");
+        context.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                response.setStatus(HttpStatus.OK_200);
-            }
-        }), "/dispatch/*");
-        context.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response)
+                {
+                    response.setStatus(HttpStatus.OK_200);
+                }
+            }),
+            "/dispatch/*");
+        context.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                response.getOutputStream().print("CUSTOM");
-            }
-        }), "/error/*");
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response)
+                    throws IOException
+                {
+                    response.getOutputStream().print("CUSTOM");
+                }
+            }),
+            "/error/*");
 
         startServer(context);
     }
@@ -381,33 +378,33 @@ public class AsyncListenerTest
     public void testStartAsyncOnCompleteThrow() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
-        context.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+        context.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(10000);
-                asyncContext.addListener(new AsyncListenerAdapter()
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response)
+                    throws IOException
                 {
-                    @Override
-                    public void onComplete(AsyncEvent event)
+                    AsyncContext asyncContext = request.startAsync();
+                    asyncContext.setTimeout(10000);
+                    asyncContext.addListener(new AsyncListenerAdapter()
                     {
-                        throw new TestRuntimeException();
-                    }
-                });
-                response.getOutputStream().print("DATA");
-                asyncContext.complete();
-            }
-        }), "/*");
+                        @Override
+                        public void onComplete(AsyncEvent event)
+                        {
+                            throw new TestRuntimeException();
+                        }
+                    });
+                    response.getOutputStream().print("DATA");
+                    asyncContext.complete();
+                }
+            }),
+            "/*");
 
         startServer(context);
 
-        String httpResponse = connector.getResponse(
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+        String httpResponse =
+            connector.getResponse("GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 200 "));
         assertThat(httpResponse, containsString("DATA"));
     }
@@ -419,33 +416,33 @@ public class AsyncListenerTest
         threadPool = new QueuedThreadPool();
         threadPool.setName(threadNamePrefix);
         ServletContextHandler context = new ServletContextHandler();
-        context.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+        context.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(1000);
-                asyncContext.addListener(new AsyncListenerAdapter()
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response)
                 {
-                    @Override
-                    public void onTimeout(AsyncEvent event)
+                    AsyncContext asyncContext = request.startAsync();
+                    asyncContext.setTimeout(1000);
+                    asyncContext.addListener(new AsyncListenerAdapter()
                     {
-                        if (Thread.currentThread().getName().startsWith(threadNamePrefix))
-                            response.setStatus(HttpStatus.OK_200);
-                        else
-                            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                        asyncContext.complete();
-                    }
-                });
-            }
-        }), "/*");
+                        @Override
+                        public void onTimeout(AsyncEvent event)
+                        {
+                            if (Thread.currentThread().getName().startsWith(threadNamePrefix))
+                                response.setStatus(HttpStatus.OK_200);
+                            else
+                                response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                            asyncContext.complete();
+                        }
+                    });
+                }
+            }),
+            "/*");
         startServer(context);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n"));
+        HttpTester.Response response =
+            HttpTester.parseResponse(connector.getResponse("GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n"));
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 

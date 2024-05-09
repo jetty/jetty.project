@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.servlets;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
@@ -28,7 +30,6 @@ import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -38,8 +39,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 @ExtendWith(WorkDirExtension.class)
 public abstract class AbstractGzipTest
 {
@@ -47,11 +46,14 @@ public abstract class AbstractGzipTest
 
     protected WorkDir workDir;
 
-    protected FilterInputStream newContentEncodingFilterInputStream(String contentEncoding, InputStream inputStream) throws IOException
+    protected FilterInputStream newContentEncodingFilterInputStream(String contentEncoding, InputStream inputStream)
+        throws IOException
     {
         if (contentEncoding == null)
         {
-            return new FilterInputStream(inputStream) {};
+            return new FilterInputStream(inputStream)
+            {
+            };
         }
         else if (contentEncoding.contains(GzipHandler.GZIP))
         {
@@ -64,7 +66,8 @@ public abstract class AbstractGzipTest
         throw new RuntimeException("Unexpected response content-encoding: " + contentEncoding);
     }
 
-    protected UncompressedMetadata parseResponseContent(HttpTester.Response response) throws NoSuchAlgorithmException, IOException
+    protected UncompressedMetadata parseResponseContent(HttpTester.Response response)
+        throws NoSuchAlgorithmException, IOException
     {
         UncompressedMetadata metadata = new UncompressedMetadata();
         metadata.contentLength = response.getContentBytes().length;
@@ -121,7 +124,8 @@ public abstract class AbstractGzipTest
             builder.append("Cras a orci turpis. Donec suscipit vulputate cursus. Mauris nunc tellus, fermentum\n");
             builder.append("eu auctor ut, mollis at diam. Quisque porttitor ultrices metus, vitae tincidunt massa\n");
             builder.append("sollicitudin a. Vivamus porttitor libero eget purus hendrerit cursus. Integer aliquam\n");
-            builder.append("consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque.\n");
+            builder.append(
+                "consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque.\n");
             builder.append("Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse\n");
             builder.append("et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.\n");
         }

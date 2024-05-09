@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.compression;
 
 import java.io.Closeable;
-
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Pool;
@@ -109,9 +108,7 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
         if (_pool != null)
         {
             removeBean(_pool);
-            _pool.terminate().stream()
-                .map(Pool.Entry::getPooled)
-                .forEach(IO::close);
+            _pool.terminate().stream().map(Pool.Entry::getPooled).forEach(IO::close);
         }
     }
 
@@ -166,11 +163,8 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,size=%d,capacity=%s}",
-            getClass().getSimpleName(),
-            hashCode(),
-            getState(),
-            (_pool == null) ? -1 : _pool.size(),
-            _capacity);
+        return String.format(
+            "%s@%x{%s,size=%d,capacity=%s}",
+            getClass().getSimpleName(), hashCode(), getState(), (_pool == null) ? -1 : _pool.size(), _capacity);
     }
 }

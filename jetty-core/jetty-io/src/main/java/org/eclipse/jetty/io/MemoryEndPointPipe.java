@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -62,7 +61,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
     {
         return remoteEndPoint;
     }
-    
+
     private class MemoryEndPoint extends AbstractEndPoint
     {
         private static final ByteBuffer EOF = ByteBuffer.allocate(0);
@@ -282,8 +281,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         }
     }
 
-    private record FillableTask(FillInterest fillInterest) implements Invocable.Task
-    {
+    private record FillableTask(FillInterest fillInterest) implements Invocable.Task {
         @Override
         public void run()
         {
@@ -297,8 +295,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         }
     }
 
-    private record CompleteWriteTask(WriteFlusher writeFlusher) implements Invocable.Task
-    {
+    private record CompleteWriteTask(WriteFlusher writeFlusher) implements Invocable.Task {
         @Override
         public void run()
         {
@@ -317,7 +314,9 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         private static final AtomicLong ID = new AtomicLong();
 
         private final long id = ID.incrementAndGet();
-        private final String address = "[memory:/%s]".formatted(HexFormat.of().formatHex(ByteBuffer.allocate(8).putLong(id).array()));
+        private final String address = "[memory:/%s]"
+            .formatted(HexFormat.of()
+                .formatHex(ByteBuffer.allocate(8).putLong(id).array()));
 
         @Override
         public boolean equals(Object obj)

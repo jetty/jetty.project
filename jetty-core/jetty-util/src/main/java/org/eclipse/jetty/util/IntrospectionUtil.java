@@ -43,7 +43,8 @@ public class IntrospectionUtil
         return true;
     }
 
-    public static Method findMethod(Class<?> clazz, String methodName, Class<?>[] args, boolean checkInheritance, boolean strictArgs)
+    public static Method findMethod(
+                                    Class<?> clazz, String methodName, Class<?>[] args, boolean checkInheritance, boolean strictArgs)
         throws NoSuchMethodException
     {
         if (clazz == null)
@@ -55,7 +56,8 @@ public class IntrospectionUtil
         Method[] methods = clazz.getDeclaredMethods();
         for (int i = 0; i < methods.length && method == null; i++)
         {
-            if (methods[i].getName().equals(methodName) && checkParams(methods[i].getParameterTypes(), (args == null ? new Class[]{} : args), strictArgs))
+            if (methods[i].getName().equals(methodName) && checkParams(
+                methods[i].getParameterTypes(), (args == null ? new Class[]{} : args), strictArgs))
             {
                 method = methods[i];
             }
@@ -70,7 +72,8 @@ public class IntrospectionUtil
             throw new NoSuchMethodException("No such method " + methodName + " on class " + clazz.getName());
     }
 
-    public static Field findField(Class<?> clazz, String targetName, Class<?> targetType, boolean checkInheritance, boolean strictType)
+    public static Field findField(
+                                  Class<?> clazz, String targetName, Class<?> targetType, boolean checkInheritance, boolean strictType)
         throws NoSuchFieldException
     {
         if (clazz == null)
@@ -93,10 +96,12 @@ public class IntrospectionUtil
             }
             if (checkInheritance)
             {
-                return findInheritedField(clazz.getPackage(), clazz.getSuperclass(), targetName, targetType, strictType);
+                return findInheritedField(
+                    clazz.getPackage(), clazz.getSuperclass(), targetName, targetType, strictType);
             }
             else
-                throw new NoSuchFieldException("No field with name " + targetName + " in class " + clazz.getName() + " of type " + targetType);
+                throw new NoSuchFieldException(
+                    "No field with name " + targetName + " in class " + clazz.getName() + " of type " + targetType);
         }
         catch (NoSuchFieldException e)
         {
@@ -169,8 +174,7 @@ public class IntrospectionUtil
         List<Class<?>> parameterTypesA = Arrays.asList(methodA.getParameterTypes());
         List<Class<?>> parameterTypesB = Arrays.asList(methodB.getParameterTypes());
 
-        if (methodA.getName().equals(methodB.getName()) &&
-            parameterTypesA.containsAll(parameterTypesB))
+        if (methodA.getName().equals(methodB.getName()) && parameterTypesA.containsAll(parameterTypesB))
             return true;
 
         return false;
@@ -225,7 +229,8 @@ public class IntrospectionUtil
         return sameName;
     }
 
-    protected static Method findInheritedMethod(Package pack, Class<?> clazz, String methodName, Class<?>[] args, boolean strictArgs)
+    protected static Method findInheritedMethod(
+                                                Package pack, Class<?> clazz, String methodName, Class<?>[] args, boolean strictArgs)
         throws NoSuchMethodException
     {
         if (clazz == null)
@@ -237,9 +242,7 @@ public class IntrospectionUtil
         Method[] methods = clazz.getDeclaredMethods();
         for (int i = 0; i < methods.length && method == null; i++)
         {
-            if (methods[i].getName().equals(methodName) &&
-                isInheritable(pack, methods[i]) &&
-                checkParams(methods[i].getParameterTypes(), args, strictArgs))
+            if (methods[i].getName().equals(methodName) && isInheritable(pack, methods[i]) && checkParams(methods[i].getParameterTypes(), args, strictArgs))
                 method = methods[i];
         }
         if (method != null)
@@ -250,7 +253,8 @@ public class IntrospectionUtil
             return findInheritedMethod(clazz.getPackage(), clazz.getSuperclass(), methodName, args, strictArgs);
     }
 
-    protected static Field findInheritedField(Package pack, Class<?> clazz, String fieldName, Class<?> fieldType, boolean strictType)
+    protected static Field findInheritedField(
+                                              Package pack, Class<?> clazz, String fieldName, Class<?> fieldType, boolean strictType)
         throws NoSuchFieldException
     {
         if (clazz == null)

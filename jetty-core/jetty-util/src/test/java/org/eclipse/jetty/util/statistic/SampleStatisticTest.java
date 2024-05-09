@@ -13,37 +13,36 @@
 
 package org.eclipse.jetty.util.statistic;
 
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+
 public class SampleStatisticTest
 {
-    private static long[][] data =
+    private static long[][] data = {
+        {100, 100, 100, 100, 100, 100, 100, 100, 100, 100},
+        {100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 90, 110},
+        {100, 100, 100, 100, 100, 100, 100, 100, 90, 110, 95, 105, 97, 103},
         {
-            {100, 100, 100, 100, 100, 100, 100, 100, 100, 100},
-            {100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 90, 110},
-            {100, 100, 100, 100, 100, 100, 100, 100, 90, 110, 95, 105, 97, 103},
-            {
-                100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 90, 110, 95, 105, 97,
-                103
-            },
-        };
+            100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 90, 110, 95, 105,
+            97, 103
+        },
+    };
 
     private static double[][] results =
         /* {mean,stddev}*/
-        {{100.0, 0.0},
-        {100.0, Math.sqrt((10 * 10 + 10 * 10) / 12.0)},
-        {100.0, Math.sqrt((10 * 10 + 10 * 10 + 5 * 5 + 5 * 5 + 3 * 3 + 3 * 3) / 14.0)},
-        {100.0, Math.sqrt((10 * 10 + 10 * 10 + 5 * 5 + 5 * 5 + 3 * 3 + 3 * 3) / 24.0)},
-        {100.0, Math.sqrt((10 * 10 + 10 * 10 + 5 * 5 + 5 * 5 + 3 * 3 + 3 * 3) / 104.0)}
+        {
+            {100.0, 0.0},
+            {100.0, Math.sqrt((10 * 10 + 10 * 10) / 12.0)},
+            {100.0, Math.sqrt((10 * 10 + 10 * 10 + 5 * 5 + 5 * 5 + 3 * 3 + 3 * 3) / 14.0)},
+            {100.0, Math.sqrt((10 * 10 + 10 * 10 + 5 * 5 + 5 * 5 + 3 * 3 + 3 * 3) / 24.0)},
+            {100.0, Math.sqrt((10 * 10 + 10 * 10 + 5 * 5 + 5 * 5 + 3 * 3 + 3 * 3) / 104.0)}
         };
 
     @Test
-    public void testData()
-        throws Exception
+    public void testData() throws Exception
     {
         SampleStatistic stats = new SampleStatistic();
         for (int d = 0; d < data.length; d++)

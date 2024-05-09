@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.util.Iterator;
 import java.util.List;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayUtil;
@@ -78,7 +77,7 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     protected static String findNextProtocol(Connector connector, String currentProtocol)
     {
         String nextProtocol = null;
-        for (Iterator<String> it = connector.getProtocols().iterator(); it.hasNext(); )
+        for (Iterator<String> it = connector.getProtocols().iterator(); it.hasNext();)
         {
             String protocol = it.next();
             if (currentProtocol.equalsIgnoreCase(protocol))
@@ -109,7 +108,8 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
         return String.format("%s@%x%s", this.getClass().getSimpleName(), hashCode(), getProtocols());
     }
 
-    public static ConnectionFactory[] getFactories(SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    public static ConnectionFactory[] getFactories(
+                                                   SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
         factories = ArrayUtil.removeNulls(factories);
 
@@ -125,6 +125,9 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
                     config.addCustomizer(new SecureRequestCustomizer());
             }
         }
-        return ArrayUtil.prependToArray(new SslConnectionFactory(sslContextFactory, factories[0].getProtocol()), factories, ConnectionFactory.class);
+        return ArrayUtil.prependToArray(
+            new SslConnectionFactory(sslContextFactory, factories[0].getProtocol()),
+            factories,
+            ConnectionFactory.class);
     }
 }

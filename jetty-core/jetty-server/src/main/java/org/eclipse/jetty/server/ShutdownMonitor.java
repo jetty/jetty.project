@@ -28,7 +28,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -104,7 +103,7 @@ public class ShutdownMonitor
         this.host = System.getProperty("STOP.HOST", "127.0.0.1");
         this.port = Integer.getInteger("STOP.PORT", -1);
         this.key = System.getProperty("STOP.KEY", null);
-        //only change the default exitVm setting if STOP.EXIT is explicitly set
+        // only change the default exitVm setting if STOP.EXIT is explicitly set
         this.exitVm = Boolean.valueOf(System.getProperty("STOP.EXIT", "true"));
     }
 
@@ -289,7 +288,8 @@ public class ShutdownMonitor
 
             if (key == null)
             {
-                key = Long.toString((long)(Long.MAX_VALUE * Math.random() + this.hashCode() + System.currentTimeMillis()), 36);
+                key = Long.toString(
+                    (long)(Long.MAX_VALUE * Math.random() + this.hashCode() + System.currentTimeMillis()), 36);
                 System.out.printf("STOP.KEY=%s%n", key);
                 setKey(key);
             }
@@ -307,7 +307,7 @@ public class ShutdownMonitor
             // establish the port and key that are in use
             debug("STOP.PORT=%d", port);
             debug("STOP.KEY=%s", key);
-            //also show if we're exiting the jvm or not
+            // also show if we're exiting the jvm or not
             debug("STOP.EXIT=%b", exitVm);
         }
     }
@@ -356,9 +356,10 @@ public class ShutdownMonitor
                         OutputStream out = socket.getOutputStream();
                         boolean exitVm = isExitVm();
 
-                        if ("stop".equalsIgnoreCase(cmd)) //historic, for backward compatibility
+                        if ("stop".equalsIgnoreCase(cmd)) // historic, for backward compatibility
                         {
-                            //Stop the lifecycles, only if they are registered with the ShutdownThread, only destroying if vm is exiting
+                            // Stop the lifecycles, only if they are registered with the ShutdownThread, only destroying
+                            // if vm is exiting
                             debug("Performing stop command");
                             stopLifeCycles(ShutdownThread::isRegistered, exitVm);
 
@@ -413,7 +414,8 @@ public class ShutdownMonitor
                         }
                         else if ("pid".equalsIgnoreCase(cmd))
                         {
-                            informClient(out, Long.toString(ProcessHandle.current().pid()));
+                            informClient(
+                                out, Long.toString(ProcessHandle.current().pid()));
                         }
                     }
                     catch (Throwable x)

@@ -36,8 +36,7 @@ public class ProxyServer
         server.setHandler(proxy);
 
         // Setup proxy servlet
-        ServletContextHandler context = new ServletContextHandler("/",
-            ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
         proxy.setHandler(context);
         ServletHolder proxyServlet = new ServletHolder(ProxyServlet.class);
         proxyServlet.setInitParameter("blackList", "www.eclipse.org");

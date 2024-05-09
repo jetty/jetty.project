@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -21,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -40,12 +45,6 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class StreamCloseTest extends AbstractTest
 {
     @Test
@@ -63,7 +62,9 @@ public class StreamCloseTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, null);
@@ -97,7 +98,9 @@ public class StreamCloseTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener()
@@ -153,7 +156,9 @@ public class StreamCloseTest extends AbstractTest
         });
 
         CountDownLatch completeLatch = new CountDownLatch(1);
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener()
@@ -186,7 +191,8 @@ public class StreamCloseTest extends AbstractTest
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(stream.isClosed());
-        await().atMost(Duration.ofSeconds(5)).until(() -> stream.getSession().getStreams().size(), equalTo(0));
+        await().atMost(Duration.ofSeconds(5))
+            .until(() -> stream.getSession().getStreams().size(), equalTo(0));
     }
 
     @Test
@@ -199,32 +205,43 @@ public class StreamCloseTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), newRequest("GET", HttpFields.EMPTY));
-                stream.push(pushFrame, new Promise.Adapter<>()
-                {
-                    @Override
-                    public void succeeded(Stream pushedStream)
+                stream.push(
+                    pushFrame,
+                    new Promise.Adapter<>()
                     {
-                        // When created, pushed stream must be implicitly remotely closed.
-                        assertTrue(pushedStream.isRemotelyClosed());
-                        // Send some data with endStream = true.
-                        pushedStream.data(new DataFrame(pushedStream.getId(), ByteBuffer.allocate(16), true), new Callback()
+                        @Override
+                        public void succeeded(Stream pushedStream)
                         {
-                            @Override
-                            public void succeeded()
-                            {
-                                assertTrue(pushedStream.isClosed());
-                                serverLatch.countDown();
-                            }
-                        });
-                    }
-                }, null);
-                HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY), null, true);
+                            // When created, pushed stream must be implicitly remotely closed.
+                            assertTrue(pushedStream.isRemotelyClosed());
+                            // Send some data with endStream = true.
+                            pushedStream.data(
+                                new DataFrame(pushedStream.getId(), ByteBuffer.allocate(16), true),
+                                new Callback()
+                                {
+                                    @Override
+                                    public void succeeded()
+                                    {
+                                        assertTrue(pushedStream.isClosed());
+                                        serverLatch.countDown();
+                                    }
+                                });
+                        }
+                    },
+                    null);
+                HeadersFrame response = new HeadersFrame(
+                    stream.getId(),
+                    new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY),
+                    null,
+                    true);
                 stream.headers(response, Callback.NOOP);
                 return null;
             }
         });
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         CountDownLatch clientLatch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
@@ -261,7 +278,8 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", HttpFields.EMPTY));
+                PushPromiseFrame pushFrame =
+                    new PushPromiseFrame(stream.getId(), 0, newRequest("GET", HttpFields.EMPTY));
                 stream.push(pushFrame, new Promise.Adapter<>(), new Stream.Listener()
                 {
                     @Override
@@ -269,7 +287,11 @@ public class StreamCloseTest extends AbstractTest
                     {
                         assertTrue(pushedStream.isReset());
                         assertTrue(pushedStream.isClosed());
-                        HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY), null, true);
+                        HeadersFrame response = new HeadersFrame(
+                            stream.getId(),
+                            new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY),
+                            null,
+                            true);
                         stream.headers(response, Callback.NOOP);
                         serverLatch.countDown();
                         callback.succeeded();
@@ -279,7 +301,9 @@ public class StreamCloseTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         CountDownLatch clientLatch = new CountDownLatch(2);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
@@ -287,16 +311,17 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public Stream.Listener onPush(Stream pushedStream, PushPromiseFrame frame)
             {
-                pushedStream.reset(new ResetFrame(pushedStream.getId(), ErrorCode.REFUSED_STREAM_ERROR.code), new Callback()
-                {
-                    @Override
-                    public void succeeded()
+                pushedStream.reset(
+                    new ResetFrame(pushedStream.getId(), ErrorCode.REFUSED_STREAM_ERROR.code), new Callback()
                     {
-                        assertTrue(pushedStream.isReset());
-                        assertTrue(pushedStream.isClosed());
-                        clientLatch.countDown();
-                    }
-                });
+                        @Override
+                        public void succeeded()
+                        {
+                            assertTrue(pushedStream.isReset());
+                            assertTrue(pushedStream.isClosed());
+                            clientLatch.countDown();
+                        }
+                    });
                 return null;
             }
 
@@ -344,7 +369,9 @@ public class StreamCloseTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
 
         // First stream will be idle on server.
         HeadersFrame request1 = new HeadersFrame(newRequest("HEAD", HttpFields.EMPTY), null, true);

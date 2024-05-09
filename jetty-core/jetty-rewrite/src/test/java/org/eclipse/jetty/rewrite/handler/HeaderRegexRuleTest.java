@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.List;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class HeaderRegexRuleTest extends AbstractRuleTest
 {
@@ -52,7 +51,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTest
         String request = """
             GET / HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -74,7 +73,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTest
             String request = """
                 GET / HTTP/1.1
                 Host: localhost
-                            
+
                 """;
 
             HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -97,8 +96,9 @@ public class HeaderRegexRuleTest extends AbstractRuleTest
         String request = """
             GET /my/dir/$V HTTP/1.1
             Host: localhost
-                        
-            """.replace("$V", value);
+
+            """
+            .replace("$V", value);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(200, response.getStatus());
@@ -116,7 +116,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTest
         String request = """
             GET /my/no/match HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));

@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -20,7 +25,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
@@ -35,11 +39,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HandlerClientServerTest extends AbstractClientServerTest
 {
@@ -58,20 +57,22 @@ public class HandlerClientServerTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest("/"), true);
         session.newRequest(frame, new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
-                {
-                    MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
-                    clientResponseLatch.countDown();
-                }
-            })
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                clientResponseLatch.countDown();
+            }
+        })
             .get(5, TimeUnit.SECONDS);
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
@@ -94,54 +95,57 @@ public class HandlerClientServerTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+        });
 
         List<ByteBuffer> clientReceivedBuffers = new ArrayList<>();
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest(HttpMethod.POST, "/"), false);
         Stream stream = session.newRequest(frame, new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                stream.demand();
+            }
+
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                Stream.Data data = stream.readData();
+                if (data == null)
                 {
-                    MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
                     stream.demand();
+                    return;
                 }
 
-                @Override
-                public void onDataAvailable(Stream.Client stream)
+                ByteBuffer byteBuffer = data.getByteBuffer();
+                ByteBuffer copy = ByteBuffer.allocate(byteBuffer.remaining());
+                copy.put(byteBuffer);
+                copy.flip();
+                clientReceivedBuffers.add(copy);
+                data.release();
+
+                if (data.isLast())
                 {
-                    Stream.Data data = stream.readData();
-                    if (data == null)
-                    {
-                        stream.demand();
-                        return;
-                    }
-
-                    ByteBuffer byteBuffer = data.getByteBuffer();
-                    ByteBuffer copy = ByteBuffer.allocate(byteBuffer.remaining());
-                    copy.put(byteBuffer);
-                    copy.flip();
-                    clientReceivedBuffers.add(copy);
-                    data.release();
-
-                    if (data.isLast())
-                    {
-                        clientResponseLatch.countDown();
-                        return;
-                    }
-
-                    stream.demand();
+                    clientResponseLatch.countDown();
+                    return;
                 }
-            })
+
+                stream.demand();
+            }
+        })
             .get(5, TimeUnit.SECONDS);
 
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
         stream.data(new DataFrame(ByteBuffer.wrap(bytes, 0, bytes.length / 2), false))
-            .thenCompose(s -> s.data(new DataFrame(ByteBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true)))
+            .thenCompose(
+                s -> s.data(new DataFrame(ByteBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true)))
             .get(5, TimeUnit.SECONDS);
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));

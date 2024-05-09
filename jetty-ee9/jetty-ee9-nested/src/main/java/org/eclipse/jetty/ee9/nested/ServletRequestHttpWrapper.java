@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.security.Principal;
-import java.util.Collection;
-import java.util.Enumeration;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestWrapper;
@@ -27,6 +22,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
+import java.io.IOException;
+import java.security.Principal;
+import java.util.Collection;
+import java.util.Enumeration;
 
 /**
  * ServletRequestHttpWrapper

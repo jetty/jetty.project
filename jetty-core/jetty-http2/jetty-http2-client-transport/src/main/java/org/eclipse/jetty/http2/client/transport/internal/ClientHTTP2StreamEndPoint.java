@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Stream;

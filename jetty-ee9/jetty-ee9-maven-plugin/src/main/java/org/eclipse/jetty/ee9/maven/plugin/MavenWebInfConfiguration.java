@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.net.URI;
-
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
@@ -34,10 +33,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
 
     public MavenWebInfConfiguration()
     {
-        hide("org.apache.maven.",
-            "org.codehaus.plexus.",
-            "jakarta.enterprise.",
-            "javax.decorator.");
+        hide("org.apache.maven.", "org.codehaus.plexus.", "jakarta.enterprise.", "javax.decorator.");
     }
 
     @Override

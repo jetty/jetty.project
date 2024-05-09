@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.annotations.resources;
 
-import java.io.IOException;
-
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import java.io.IOException;
 
 /**
  * ResourceA
@@ -30,17 +29,17 @@ public class ResourceA implements jakarta.servlet.Servlet
     private Integer h;
     private Integer k;
 
-    @Resource(name = "myf", mappedName = "resB") //test giving both a name and mapped name from the environment
-    private Integer f; //test a non inherited field that needs injection
+    @Resource(name = "myf", mappedName = "resB") // test giving both a name and mapped name from the environment
+    private Integer f; // test a non inherited field that needs injection
 
-    @Resource(mappedName = "resA") //test the default naming scheme but using a mapped name from the environment
+    @Resource(mappedName = "resA") // test the default naming scheme but using a mapped name from the environment
     private Integer g;
 
-    @Resource(name = "resA") //test using the given name as the name from the environment
+    @Resource(name = "resA") // test using the given name as the name from the environment
     private Integer j;
 
-    @Resource(mappedName = "resB") //test using the default name on an inherited field
-    protected Integer n; //TODO - if it's inherited, is it supposed to use the classname of the class it is inherited by?
+    @Resource(mappedName = "resB") // test using the default name on an inherited field
+    protected Integer n; // TODO - if it's inherited, is it supposed to use the classname of the class it is inherited by?
 
     @Resource(name = "mye", mappedName = "resA", type = Integer.class)
     public void setE(Integer e)
@@ -108,8 +107,7 @@ public class ResourceA implements jakarta.servlet.Servlet
     }
 
     @Override
-    public void service(ServletRequest arg0, ServletResponse arg1)
-        throws ServletException, IOException
+    public void service(ServletRequest arg0, ServletResponse arg1) throws ServletException, IOException
     {
     }
 }

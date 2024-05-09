@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 
@@ -97,6 +96,8 @@ public class ResetBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, ERROR, ERROR_BYTES
+        PREPARE,
+        ERROR,
+        ERROR_BYTES
     }
 }

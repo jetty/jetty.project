@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.eclipse.jetty.util.Callback.NOOP;
+
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
@@ -25,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -39,8 +40,6 @@ import org.eclipse.jetty.websocket.core.util.FragmentingFlusher;
 import org.eclipse.jetty.websocket.core.util.FrameValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.util.Callback.NOOP;
 
 /**
  * The Core WebSocket Session.
@@ -72,7 +71,8 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
     private ClassLoader classLoader;
 
-    public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components)
+    public WebSocketCoreSession(
+                                FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components)
     {
         this.classLoader = Thread.currentThread().getContextClassLoader();
         this.components = components;
@@ -381,18 +381,19 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("ConnectionState: Transition to CONNECTED");
 
-        Callback openCallback = Callback.from(() ->
-        {
-            sessionState.onOpen();
-            if (LOG.isDebugEnabled())
-                LOG.debug("ConnectionState: Transition to OPEN");
-        },
-        x ->
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Error during OPEN", x);
-            processHandlerError(new CloseException(CloseStatus.SERVER_ERROR, x), NOOP);
-        });
+        Callback openCallback = Callback.from(
+            () ->
+            {
+                sessionState.onOpen();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ConnectionState: Transition to OPEN");
+            },
+            x ->
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error during OPEN", x);
+                processHandlerError(new CloseException(CloseStatus.SERVER_ERROR, x), NOOP);
+            });
 
         try
         {
@@ -637,7 +638,12 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("receiveFrame({}, {}) - connectionState={}, handler={}", frame, callback, sessionState, handler);
+                    LOG.debug(
+                        "receiveFrame({}, {}) - connectionState={}, handler={}",
+                        frame,
+                        callback,
+                        sessionState,
+                        handler);
 
                 boolean closeConnection = sessionState.onIncomingFrame(frame);
 
@@ -660,21 +666,22 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                 }
                 else
                 {
-                    closeCallback = Callback.from(() ->
-                    {
-                        if (sessionState.isOutputOpen())
+                    closeCallback = Callback.from(
+                        () ->
                         {
-                            CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("ConnectionState: sending close response {}", closeStatus);
-                            close(closeStatus == null ? CloseStatus.NO_CODE_STATUS : closeStatus, callback);
-                        }
-                        else
-                        {
-                            callback.succeeded();
-                        }
-                    },
-                    x -> processHandlerError(x, callback));
+                            if (sessionState.isOutputOpen())
+                            {
+                                CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("ConnectionState: sending close response {}", closeStatus);
+                                close(closeStatus == null ? CloseStatus.NO_CODE_STATUS : closeStatus, callback);
+                            }
+                            else
+                            {
+                                callback.succeeded();
+                            }
+                        },
+                        x -> processHandlerError(x, callback));
                 }
 
                 handler.onFrame(frame, closeCallback);
@@ -714,10 +721,8 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this,
-            "subprotocol=" + negotiated.getSubProtocol(),
-            negotiated.getExtensions(),
-            handler);
+        Dumpable.dumpObjects(
+            out, indent, this, "subprotocol=" + negotiated.getSubProtocol(), negotiated.getExtensions(), handler);
     }
 
     @Override
@@ -765,7 +770,8 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     @Override
     public String toString()
     {
-        return String.format("WebSocketCoreSession@%x{%s,%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
+        return String.format(
+            "WebSocketCoreSession@%x{%s,%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
             hashCode(),
             behavior,
             sessionState,

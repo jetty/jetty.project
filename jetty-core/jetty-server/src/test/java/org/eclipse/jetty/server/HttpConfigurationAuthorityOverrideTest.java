@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -21,7 +27,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -33,12 +38,6 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 public class HttpConfigurationAuthorityOverrideTest
 {
     @Test
@@ -48,21 +47,22 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(null, localAddress))
         {
-            String rawRequest = "GET /dump HTTP/1.0\r\n" +
-                "\r\n";
+            String rawRequest = "GET /dump HTTP/1.0\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[foo.local.name]"),
-                containsString("ServerPort=[80]"),
-                containsString("LocalAddr=[foo.local.name]"),
-                containsString("LocalName=[foo.local.name]"),
-                containsString("LocalPort=[80]"),
-                containsString("HttpURI=[http://foo.local.name/dump]")
-            ));
+            assertThat(
+                "response content",
+                responseContent,
+                allOf(
+                    containsString("ServerName=[foo.local.name]"),
+                    containsString("ServerPort=[80]"),
+                    containsString("LocalAddr=[foo.local.name]"),
+                    containsString("LocalName=[foo.local.name]"),
+                    containsString("LocalPort=[80]"),
+                    containsString("HttpURI=[http://foo.local.name/dump]")));
         }
     }
 
@@ -73,8 +73,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(null, localAddress))
         {
-            String rawRequest = "GET /redirect HTTP/1.0\r\n" +
-                "\r\n";
+            String rawRequest = "GET /redirect HTTP/1.0\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -91,8 +90,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(null, localAddress))
         {
-            String rawRequest = "GET /bogus HTTP/1.0\r\n" +
-                "\r\n";
+            String rawRequest = "GET /bogus HTTP/1.0\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -110,10 +108,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(null, localAddress))
         {
-            String rawRequest = "GET /dump HTTP/1.1\r\n" +
-                "Host: \r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /dump HTTP/1.1\r\n" + "Host: \r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -130,10 +125,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(null, localAddress))
         {
-            String rawRequest = "GET /redirect HTTP/1.1\r\n" +
-                "Host: \r\n" +
-                "Connect: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /redirect HTTP/1.1\r\n" + "Host: \r\n" + "Connect: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -152,23 +144,22 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(null, localAddress))
         {
-            String rawRequest = "GET mobile:///dump HTTP/1.1\r\n" +
-                "Host: \r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET mobile:///dump HTTP/1.1\r\n" + "Host: \r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[null]"),
-                containsString("ServerPort=[9999]"),
-                containsString("LocalAddr=[bar.local.name]"),
-                containsString("LocalName=[bar.local.name]"),
-                containsString("LocalPort=[9999]"),
-                containsString("HttpURI=[mobile:///dump]")
-            ));
+            assertThat(
+                "response content",
+                responseContent,
+                allOf(
+                    containsString("ServerName=[null]"),
+                    containsString("ServerPort=[9999]"),
+                    containsString("LocalAddr=[bar.local.name]"),
+                    containsString("LocalName=[bar.local.name]"),
+                    containsString("LocalPort=[9999]"),
+                    containsString("HttpURI=[mobile:///dump]")));
         }
     }
 
@@ -179,23 +170,23 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(null, localAddress))
         {
-            String rawRequest = "GET /dump HTTP/1.1\r\n" +
-                "Host: jetty.eclipse.org:8888\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest =
+                "GET /dump HTTP/1.1\r\n" + "Host: jetty.eclipse.org:8888\r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[jetty.eclipse.org]"),
-                containsString("ServerPort=[8888]"),
-                containsString("LocalAddr=[zed.local.name]"),
-                containsString("LocalName=[zed.local.name]"),
-                containsString("LocalPort=[9999]"),
-                containsString("HttpURI=[http://jetty.eclipse.org:8888/dump]")
-            ));
+            assertThat(
+                "response content",
+                responseContent,
+                allOf(
+                    containsString("ServerName=[jetty.eclipse.org]"),
+                    containsString("ServerPort=[8888]"),
+                    containsString("LocalAddr=[zed.local.name]"),
+                    containsString("LocalName=[zed.local.name]"),
+                    containsString("LocalPort=[9999]"),
+                    containsString("HttpURI=[http://jetty.eclipse.org:8888/dump]")));
         }
     }
 
@@ -206,10 +197,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(null, localAddress))
         {
-            String rawRequest = "GET /redirect HTTP/1.1\r\n" +
-                "Host: jetty.eclipse.org:8888\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /redirect HTTP/1.1\r\n" + "Host: jetty.eclipse.org:8888\r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -226,10 +214,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /dump HTTP/1.1\r\n" +
-                "Host: \r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /dump HTTP/1.1\r\n" + "Host: \r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
             assertThat("response.status", response.getStatus(), is(302));
@@ -245,10 +230,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /redirect HTTP/1.1\r\n" +
-                "Host: \r\n" +
-                "Connect: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /redirect HTTP/1.1\r\n" + "Host: \r\n" + "Connect: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -267,10 +249,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /dump HTTP/1.1\r\n" +
-                "Host: \r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /dump HTTP/1.1\r\n" + "Host: \r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -287,10 +266,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /redirect HTTP/1.1\r\n" +
-                "Host: \r\n" +
-                "Connect: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /redirect HTTP/1.1\r\n" + "Host: \r\n" + "Connect: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -309,22 +285,23 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /dump HTTP/1.0\r\n" +
-                "\r\n";
+            String rawRequest = "GET /dump HTTP/1.0\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[foo.server.authority]"),
-                containsString("ServerPort=[80]"),
-                // expect default locals
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
-                containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
-                containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("HttpURI=[http://foo.server.authority/dump]")
-            ));
+            assertThat(
+                "response content",
+                responseContent,
+                allOf(
+                    containsString("ServerName=[foo.server.authority]"),
+                    containsString("ServerPort=[80]"),
+                    // expect default locals
+                    containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
+                    containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
+                    containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
+                    containsString("HttpURI=[http://foo.server.authority/dump]")));
         }
     }
 
@@ -335,8 +312,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /redirect HTTP/1.0\r\n" +
-                "\r\n";
+            String rawRequest = "GET /redirect HTTP/1.0\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -353,8 +329,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(severUriAuthority, null))
         {
-            String rawRequest = "GET /bogus HTTP/1.0\r\n" +
-                "\r\n";
+            String rawRequest = "GET /bogus HTTP/1.0\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -372,8 +347,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(severUriAuthority, null))
         {
-            String rawRequest = "GET /%00 HTTP/1.0\r\n" +
-                "\r\n";
+            String rawRequest = "GET /%00 HTTP/1.0\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -390,24 +364,24 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /dump HTTP/1.1\r\n" +
-                "Host: jetty.eclipse.org:8888\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest =
+                "GET /dump HTTP/1.1\r\n" + "Host: jetty.eclipse.org:8888\r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[jetty.eclipse.org]"),
-                containsString("ServerPort=[8888]"),
-                // expect default locals
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
-                containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
-                containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("HttpURI=[http://jetty.eclipse.org:8888/dump]")
-            ));
+            assertThat(
+                "response content",
+                responseContent,
+                allOf(
+                    containsString("ServerName=[jetty.eclipse.org]"),
+                    containsString("ServerPort=[8888]"),
+                    // expect default locals
+                    containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
+                    containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
+                    containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
+                    containsString("HttpURI=[http://jetty.eclipse.org:8888/dump]")));
         }
     }
 
@@ -418,10 +392,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /redirect HTTP/1.1\r\n" +
-                "Host: jetty.eclipse.org:8888\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /redirect HTTP/1.1\r\n" + "Host: jetty.eclipse.org:8888\r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -438,22 +409,23 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /dump HTTP/1.0\r\n" +
-                "\r\n";
+            String rawRequest = "GET /dump HTTP/1.0\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[bar.server.authority]"),
-                containsString("ServerPort=[9999]"),
-                // expect default locals
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
-                containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
-                containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("HttpURI=[http://bar.server.authority:9999/dump]")
-            ));
+            assertThat(
+                "response content",
+                responseContent,
+                allOf(
+                    containsString("ServerName=[bar.server.authority]"),
+                    containsString("ServerPort=[9999]"),
+                    // expect default locals
+                    containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
+                    containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
+                    containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
+                    containsString("HttpURI=[http://bar.server.authority:9999/dump]")));
         }
     }
 
@@ -464,8 +436,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(severUriAuthority, null))
         {
-            String rawRequest = "GET /redirect HTTP/1.0\r\n" +
-                "\r\n";
+            String rawRequest = "GET /redirect HTTP/1.0\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -482,8 +453,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(severUriAuthority, null))
         {
-            String rawRequest = "GET /bogus HTTP/1.0\r\n" +
-                "\r\n";
+            String rawRequest = "GET /bogus HTTP/1.0\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -501,24 +471,24 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /dump HTTP/1.1\r\n" +
-                "Host: jetty.eclipse.org:8888\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest =
+                "GET /dump HTTP/1.1\r\n" + "Host: jetty.eclipse.org:8888\r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[jetty.eclipse.org]"),
-                containsString("ServerPort=[8888]"),
-                // expect default locals
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
-                containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
-                containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("HttpURI=[http://jetty.eclipse.org:8888/dump]")
-            ));
+            assertThat(
+                "response content",
+                responseContent,
+                allOf(
+                    containsString("ServerName=[jetty.eclipse.org]"),
+                    containsString("ServerPort=[8888]"),
+                    // expect default locals
+                    containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
+                    containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
+                    containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
+                    containsString("HttpURI=[http://jetty.eclipse.org:8888/dump]")));
         }
     }
 
@@ -529,24 +499,23 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET mobile:///dump HTTP/1.1\r\n" +
-                "Host: \r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET mobile:///dump HTTP/1.1\r\n" + "Host: \r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[null]"),
-                containsString("ServerPort=[7777]"),
-                // expect default locals
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
-                containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
-                containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("HttpURI=[mobile:///dump]")
-            ));
+            assertThat(
+                "response content",
+                responseContent,
+                allOf(
+                    containsString("ServerName=[null]"),
+                    containsString("ServerPort=[7777]"),
+                    // expect default locals
+                    containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
+                    containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
+                    containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
+                    containsString("HttpURI=[mobile:///dump]")));
         }
     }
 
@@ -557,10 +526,7 @@ public class HttpConfigurationAuthorityOverrideTest
 
         try (CloseableServer server = startServer(serverUriAuthority, null))
         {
-            String rawRequest = "GET /redirect HTTP/1.1\r\n" +
-                "Host: jetty.eclipse.org:8888\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /redirect HTTP/1.1\r\n" + "Host: jetty.eclipse.org:8888\r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -575,10 +541,7 @@ public class HttpConfigurationAuthorityOverrideTest
     {
         try (CloseableServer server = startServer(null, null))
         {
-            String rawRequest = "GET /dump HTTP/1.1\r\n" +
-                "Host: \r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /dump HTTP/1.1\r\n" + "Host: \r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
@@ -593,16 +556,15 @@ public class HttpConfigurationAuthorityOverrideTest
     {
         try (CloseableServer server = startServer(null, null))
         {
-            String rawRequest = "GET /redirect HTTP/1.1\r\n" +
-                "Host: \r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String rawRequest = "GET /redirect HTTP/1.1\r\n" + "Host: \r\n" + "Connection: close\r\n" + "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
             assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
             String location = response.get(HttpHeader.LOCATION);
-            assertThat(location, is("http://" + server.getConnectorLocalName() + ":" + server.getConnectorLocalPort() + "/error"));
+            assertThat(
+                location,
+                is("http://" + server.getConnectorLocalName() + ":" + server.getConnectorLocalPort() + "/error"));
             assertThat(response.get("X-Error-Status"), is("400"));
             assertThat(response.get("X-Error-Message"), is("Blank Host"));
         }
@@ -681,7 +643,10 @@ public class HttpConfigurationAuthorityOverrideTest
                 return false;
 
             response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-            response.getHeaders().put(HttpHeader.LOCATION, HttpURI.build(request.getHttpURI(), "/dump").toString());
+            response.getHeaders()
+                .put(
+                    HttpHeader.LOCATION,
+                    HttpURI.build(request.getHttpURI(), "/dump").toString());
             callback.succeeded();
             return true;
         }
@@ -707,12 +672,17 @@ public class HttpConfigurationAuthorityOverrideTest
         public boolean handle(Request request, Response response, Callback callback)
         {
             response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
-            response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
+            response.getHeaders()
+                .put("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
             response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
             String scheme = request.getHttpURI().getScheme();
             if (scheme == null)
                 scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
-            response.getHeaders().put(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
+            response.getHeaders()
+                .put(
+                    HttpHeader.LOCATION,
+                    HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error")
+                        .toString());
             response.write(true, null, callback);
             return true;
         }

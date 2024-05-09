@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.core.Is.is;
 
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.ContainerProvider;
@@ -26,15 +26,14 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEndpointTracker;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.core.Is.is;
 
 /**
  * Tests of {@link jakarta.websocket.ClientEndpointConfig.Configurator}
@@ -115,12 +114,12 @@ public class ConfiguratorTest
 
         // Build Config
         TrackingConfigurator configurator = new TrackingConfigurator();
-        ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-            .configurator(configurator)
-            .build();
+        ClientEndpointConfig config =
+            ClientEndpointConfig.Builder.create().configurator(configurator).build();
 
         // Connect
-        Session session = container.connectToServer(clientSocket, config, server.getWsUri().resolve("/echo"));
+        Session session = container.connectToServer(
+            clientSocket, config, server.getWsUri().resolve("/echo"));
 
         // Send Simple Message
         session.getBasicRemote().sendText("Echo");

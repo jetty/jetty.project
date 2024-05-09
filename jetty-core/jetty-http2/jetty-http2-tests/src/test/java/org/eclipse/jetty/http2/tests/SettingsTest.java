@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -254,7 +253,8 @@ public class SettingsTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true))
                     .thenAccept(s ->
                     {
@@ -324,7 +324,10 @@ public class SettingsTest extends AbstractTest
                     MetaData.Request push = newRequest("GET", "/push", HttpFields.EMPTY);
                     PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 2, push);
                     session.getGenerator().control(accumulator, pushFrame);
-                    session.getEndPoint().write(Callback.from(accumulator::release), accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
+                    session.getEndPoint()
+                        .write(
+                            Callback.from(accumulator::release),
+                            accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
                     return null;
                 }
                 catch (HpackException x)

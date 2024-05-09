@@ -58,6 +58,8 @@ public class PriorityFrame extends StreamFrame
     @Override
     public String toString()
     {
-        return String.format("%s#%d/#%d{weight=%d,exclusive=%b}", super.toString(), getStreamId(), parentStreamId, weight, exclusive);
+        return String.format(
+            "%s#%d/#%d{weight=%d,exclusive=%b}",
+            super.toString(), getStreamId(), parentStreamId, weight, exclusive);
     }
 }

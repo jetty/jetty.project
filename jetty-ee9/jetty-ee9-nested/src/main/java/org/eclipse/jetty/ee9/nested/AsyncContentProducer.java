@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.HttpStream;
@@ -34,7 +33,8 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
-    private static final HttpInput.ErrorContent RECYCLED_ERROR_CONTENT = new HttpInput.ErrorContent(new StaticException("ContentProducer has been recycled"));
+    private static final HttpInput.ErrorContent RECYCLED_ERROR_CONTENT =
+        new HttpInput.ErrorContent(new StaticException("ContentProducer has been recycled"));
 
     private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
@@ -149,12 +149,14 @@ class AsyncContentProducer implements ContentProducer
             long period = NanoTime.since(_firstByteNanoTime);
             if (period > 0)
             {
-                long minimumData = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
+                long minimumData =
+                    minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
                 if (getRawContentArrived() < minimumData)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("checkMinDataRate check failed {}", this);
-                    BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
+                    BadMessageException bad = new BadMessageException(
+                        HttpStatus.REQUEST_TIMEOUT_408,
                         String.format("Request content data rate < %d B/s", minRequestDataRate));
                     if (_httpChannel.getState().isResponseCommitted())
                     {
@@ -371,7 +373,9 @@ class AsyncContentProducer implements ContentProducer
             if (_transformedContent != null && _transformedContent.isSpecial() && _transformedContent != _rawContent)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("interceptor generated a special content, _rawContent must become that special content {}", this);
+                    LOG.debug(
+                        "interceptor generated a special content, _rawContent must become that special content {}",
+                        this);
                 _rawContent.succeeded();
                 _rawContent = _transformedContent;
                 return;
@@ -464,7 +468,11 @@ class AsyncContentProducer implements ContentProducer
             if (_firstByteNanoTime == Long.MIN_VALUE)
                 _firstByteNanoTime = NanoTime.now();
             if (LOG.isDebugEnabled())
-                LOG.debug("produceRawContent updated rawContentArrived to {} and firstByteTimeStamp to {} {}", _rawContentArrived, _firstByteNanoTime, this);
+                LOG.debug(
+                    "produceRawContent updated rawContentArrived to {} and firstByteTimeStamp to {} {}",
+                    _rawContentArrived,
+                    _firstByteNanoTime,
+                    this);
         }
         if (LOG.isDebugEnabled())
             LOG.debug("produceRawContent produced {} {}", content, this);
@@ -480,15 +488,15 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public String toString()
     {
-        return String.format("%s@%x[r=%s,t=%s,i=%s,error=%b,c=%s]",
+        return String.format(
+            "%s@%x[r=%s,t=%s,i=%s,error=%b,c=%s]",
             getClass().getSimpleName(),
             hashCode(),
             _rawContent,
             _transformedContent,
             _interceptor,
             _error,
-            _httpChannel
-        );
+            _httpChannel);
     }
 
     LockedSemaphore newLockedSemaphore()

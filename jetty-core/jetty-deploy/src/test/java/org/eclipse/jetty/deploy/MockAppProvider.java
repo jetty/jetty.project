@@ -14,7 +14,6 @@
 package org.eclipse.jetty.deploy;
 
 import java.nio.file.Path;
-
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.FileID;
@@ -57,7 +56,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
         ContextHandler contextHandler = new ContextHandler();
 
         String name = app.getPath().toString();
-        name = name.substring(name.lastIndexOf("-")  + 1);
+        name = name.substring(name.lastIndexOf("-") + 1);
         Path war = webappsDir.resolve(name);
 
         String path = war.toString();

@@ -17,7 +17,6 @@ import java.lang.reflect.Method;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +53,9 @@ public class VirtualThreads
 
     private static void warn()
     {
-        LOG.warn("Virtual thread support is not available (or not enabled via --enable-preview) in the current Java runtime ({})", System.getProperty("java.version"));
+        LOG.warn(
+            "Virtual thread support is not available (or not enabled via --enable-preview) in the current Java runtime ({})",
+            System.getProperty("java.version"));
     }
 
     /**
@@ -120,9 +121,13 @@ public class VirtualThreads
             Class<?> builderClass = Class.forName("java.lang.Thread$Builder");
             Object threadBuilder = Thread.class.getMethod("ofVirtual").invoke(null);
             if (StringUtil.isNotBlank(namePrefix))
-                threadBuilder = builderClass.getMethod("name", String.class, long.class).invoke(threadBuilder, namePrefix, 0L);
-            ThreadFactory factory = (ThreadFactory)builderClass.getMethod("factory").invoke(threadBuilder);
-            return (Executor)Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
+                threadBuilder =
+                    builderClass.getMethod("name", String.class, long.class).invoke(threadBuilder, namePrefix, 0L);
+            ThreadFactory factory =
+                (ThreadFactory)builderClass.getMethod("factory").invoke(threadBuilder);
+            return (Executor)Executors.class
+                .getMethod("newThreadPerTaskExecutor", ThreadFactory.class)
+                .invoke(null, factory);
         }
         catch (Throwable x)
         {

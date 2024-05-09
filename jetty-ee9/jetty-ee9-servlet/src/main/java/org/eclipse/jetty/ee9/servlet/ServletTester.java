@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.Servlet;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.Servlet;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
@@ -128,7 +127,8 @@ public class ServletTester extends ContainerLifeCycle
         _context.addFilter(holder, pathSpec, dispatches);
     }
 
-    public FilterHolder addFilter(Class<? extends Filter> filterClass, String pathSpec, EnumSet<DispatcherType> dispatches)
+    public FilterHolder addFilter(
+                                  Class<? extends Filter> filterClass, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
         return _context.addFilter(filterClass, pathSpec, dispatches);
     }
@@ -292,9 +292,7 @@ public class ServletTester extends ContainerLifeCycle
         else
             connector.open();
 
-        return "http://" + (localhost ? "127.0.0.1"
-                : InetAddress.getLocalHost().getHostAddress()) +
-                ":" + connector.getLocalPort();
+        return "http://" + (localhost ? "127.0.0.1" : InetAddress.getLocalHost().getHostAddress()) + ":" + connector.getLocalPort();
     }
 
     public LocalConnector createLocalConnector()

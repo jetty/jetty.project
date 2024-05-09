@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.io.IOException;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
@@ -22,6 +20,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 @SuppressWarnings("serial")
 public class AsyncTimeoutDispatchWrite extends AbstractFileContentServlet implements AsyncListener
@@ -50,7 +49,8 @@ public class AsyncTimeoutDispatchWrite extends AbstractFileContentServlet implem
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         AsyncContext ctx = (AsyncContext)request.getAttribute(AsyncContext.class.getName());
         if (ctx == null)

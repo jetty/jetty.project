@@ -15,7 +15,6 @@ package examples;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
 

@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.tests.client;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.tests.util.FutureCallback;
 import org.slf4j.Logger;

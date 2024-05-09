@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee9.osgi.test;
 
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+
+import aQute.bnd.osgi.Constants;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -22,8 +26,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
-
-import aQute.bnd.osgi.Constants;
 import org.eclipse.jetty.ee9.annotations.ClassInheritanceHandler;
 import org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -38,14 +40,10 @@ import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-
 /**
  * TestJettyOSGiAnnotationParser
  *
  */
-
 @RunWith(PaxExam.class)
 public class TestJettyOSGiAnnotationParser
 {
@@ -60,20 +58,28 @@ public class TestJettyOSGiAnnotationParser
         options.add(CoreOptions.junitBundles());
         TestOSGiUtil.coreJettyDependencies(options);
         TestOSGiUtil.coreJspDependencies(options);
-        //The jetty-alpn-client jars aren't used by this test, but as
-        //TestOSGiUtil.coreJettyDependencies deploys the jetty-client,
-        //we need them deployed to satisfy the dependency.
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
+        // The jetty-alpn-client jars aren't used by this test, but as
+        // TestOSGiUtil.coreJettyDependencies deploys the jetty-client,
+        // we need them deployed to satisfy the dependency.
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-java-client")
+            .versionAsInProject()
+            .start());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-client")
+            .versionAsInProject()
+            .start());
 
-        //get a reference to a pre-prepared module-info
+        // get a reference to a pre-prepared module-info
         Path path = Paths.get("target", "test-classes", "module-info.clazz");
         File moduleInfo = path.toFile();
         assertTrue(moduleInfo.exists());
-        
+
         TinyBundle bundle = TinyBundles.bundle();
         bundle.set(Constants.BUNDLE_SYMBOLICNAME, "bundle.with.module.info");
-        bundle.add("module-info.class", new FileInputStream(moduleInfo)); //copy it into the fake bundle
+        bundle.add("module-info.class", new FileInputStream(moduleInfo)); // copy it into the fake bundle
         options.add(CoreOptions.streamBundle(bundle.build()).startLevel(1));
         return options.toArray(new Option[options.size()]);
     }
@@ -83,14 +89,13 @@ public class TestJettyOSGiAnnotationParser
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
-        
-        //test the osgi annotation parser ignore the module-info.class file in the fake bundle
-        //Get a reference to the deployed fake bundle
+
+        // test the osgi annotation parser ignore the module-info.class file in the fake bundle
+        // Get a reference to the deployed fake bundle
         Bundle b = TestOSGiUtil.getBundle(bundleContext, "bundle.with.module.info");
         AnnotationParser parser = new AnnotationParser();
         parser.indexBundle(ResourceFactory.root(), b);
         ClassInheritanceHandler handler = new ClassInheritanceHandler(new ConcurrentHashMap<>());
         parser.parse(Collections.singleton(handler), b);
-
     }
 }

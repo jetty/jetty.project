@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -22,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
@@ -37,12 +42,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class TLSHandshakeFailureTest extends AbstractTest
 {
@@ -90,21 +89,31 @@ public class TLSHandshakeFailureTest extends AbstractTest
         client = new HttpClient(client.getTransport())
         {
             @Override
-            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(
+                                                                         SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
-                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                return new SslClientConnectionFactory(
+                    sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(
+                            getByteBufferPool(),
+                            getExecutor(),
+                            getSslContextFactory(),
+                            endPoint,
+                            engine,
+                            isDirectBuffersForEncryption(),
+                            isDirectBuffersForDecryption())
                         {
                             private final AtomicInteger wraps = new AtomicInteger();
 
                             @Override
-                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output)
+                                throws SSLException
                             {
                                 if (wraps.incrementAndGet() == wrapCount)
                                     action.accept(sslEngine);
@@ -125,8 +134,7 @@ public class TLSHandshakeFailureTest extends AbstractTest
         {
             assertThrows(ExecutionException.class, () -> client.newRequest(newURI(transport))
                 .timeout(5, TimeUnit.SECONDS)
-                .send()
-            );
+                .send());
         }
 
         // There should be a task scheduled by HttpDestination
@@ -159,28 +167,39 @@ public class TLSHandshakeFailureTest extends AbstractTest
         testTLSUnwrapFailure(transport, action, 2);
     }
 
-    private void testTLSUnwrapFailure(Transport transport, TLSHandshakeAction action, int unwrapCount) throws Exception
+    private void testTLSUnwrapFailure(Transport transport, TLSHandshakeAction action, int unwrapCount)
+        throws Exception
     {
         start(transport, new EmptyServerHandler());
         client.stop();
         client = new HttpClient(client.getTransport())
         {
             @Override
-            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(
+                                                                         SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
-                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                return new SslClientConnectionFactory(
+                    sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(
+                            getByteBufferPool(),
+                            getExecutor(),
+                            getSslContextFactory(),
+                            endPoint,
+                            engine,
+                            isDirectBuffersForEncryption(),
+                            isDirectBuffersForDecryption())
                         {
                             private final AtomicInteger unwraps = new AtomicInteger();
 
                             @Override
-                            protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                            protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output)
+                                throws SSLException
                             {
                                 if (unwraps.incrementAndGet() == unwrapCount)
                                     action.accept(sslEngine);
@@ -201,8 +220,7 @@ public class TLSHandshakeFailureTest extends AbstractTest
         {
             assertThrows(ExecutionException.class, () -> client.newRequest(newURI(transport))
                 .timeout(5, TimeUnit.SECONDS)
-                .send()
-            );
+                .send());
         }
 
         // There should be a task scheduled by HttpDestination

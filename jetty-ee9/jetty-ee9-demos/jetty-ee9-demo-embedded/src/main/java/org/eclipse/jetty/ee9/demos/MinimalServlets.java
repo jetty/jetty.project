@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.demos;
 
-import java.io.IOException;
-
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 
@@ -65,8 +64,7 @@ public class MinimalServlets
     public static class HelloServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request,
-                             HttpServletResponse response) throws IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("text/html");

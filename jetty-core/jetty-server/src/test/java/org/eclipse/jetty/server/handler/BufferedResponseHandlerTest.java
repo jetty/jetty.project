@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+
 import java.io.OutputStream;
 import java.util.Arrays;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -29,10 +32,6 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 
 public class BufferedResponseHandlerTest
 {
@@ -55,7 +54,6 @@ public class BufferedResponseHandlerTest
         bufferedHandler.excludePath("*.exclude");
         bufferedHandler.excludeMimeType("text/excluded");
         bufferedHandler.setHandler(_test = new TestHandler());
-
 
         ContextHandler contextHandler = new ContextHandler("/ctx");
         contextHandler.setHandler(bufferedHandler);

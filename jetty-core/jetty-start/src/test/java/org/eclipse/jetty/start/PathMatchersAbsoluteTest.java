@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class PathMatchersAbsoluteTest
 {
@@ -38,16 +37,17 @@ public class PathMatchersAbsoluteTest
             arguments.add(Arguments.of("/opt/florb", true));
             arguments.add(Arguments.of("/home/user/benfranklin", true));
             arguments.add(Arguments.of("glob:/home/user/benfranklin/*.jar", true));
-            //@checkstyle-disable-check : LegacyMethodSeparators
+            // @checkstyle-disable-check : LegacyMethodSeparators
             arguments.add(Arguments.of("glob:/**/*.jar", true));
-            //@checkstyle-enable-check : LegacyMethodSeparators
+            // @checkstyle-enable-check : LegacyMethodSeparators
             arguments.add(Arguments.of("regex:/*-[^dev].ini", true));
         }
 
         if (OS.WINDOWS.isCurrentOs())
         {
             // normal declaration
-            arguments.add(Arguments.of("D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs\\example.jar", true));
+            arguments.add(
+                Arguments.of("D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs\\example.jar", true));
             // escaped declaration
             arguments.add(Arguments.of("C:\\\\System32", true));
             arguments.add(Arguments.of("C:\\\\Program Files", true));

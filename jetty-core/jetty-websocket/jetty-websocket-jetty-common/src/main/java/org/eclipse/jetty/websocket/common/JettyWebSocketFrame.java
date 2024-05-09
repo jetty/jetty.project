@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.websocket.core.Frame;
 
 public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.Frame

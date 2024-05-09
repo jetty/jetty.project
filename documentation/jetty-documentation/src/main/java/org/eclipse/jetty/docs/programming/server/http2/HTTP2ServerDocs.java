@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.docs.programming.server.http2;
 
+import static java.lang.System.Logger.Level.INFO;
+
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -40,8 +41,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
-import static java.lang.System.Logger.Level.INFO;
-
 @SuppressWarnings("unused")
 public class HTTP2ServerDocs
 {
@@ -51,7 +50,9 @@ public class HTTP2ServerDocs
         // Create a Server instance.
         Server server = new Server();
 
-        ServerSessionListener sessionListener = new ServerSessionListener() {};
+        ServerSessionListener sessionListener = new ServerSessionListener()
+        {
+        };
 
         // Create a ServerConnector with RawHTTP2ServerConnectionFactory.
         RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(sessionListener);
@@ -230,7 +231,8 @@ public class HTTP2ServerDocs
                 // Prepare the response HEADERS frame.
 
                 // The response HTTP status and HTTP headers.
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
 
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
@@ -301,7 +303,8 @@ public class HTTP2ServerDocs
     {
         // tag::push[]
         // The favicon bytes.
-        ByteBuffer faviconBuffer = BufferUtil.toBuffer(ResourceFactory.root().newResource("/path/to/favicon.ico"), true);
+        ByteBuffer faviconBuffer =
+            BufferUtil.toBuffer(ResourceFactory.root().newResource("/path/to/favicon.ico"), true);
 
         ServerSessionListener sessionListener = new ServerSessionListener()
         {
@@ -326,16 +329,18 @@ public class HTTP2ServerDocs
                 {
                     // Push the favicon.
                     HttpURI pushedURI = HttpURI.build(request.getHttpURI()).path("/favicon.ico");
-                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    MetaData.Request pushedRequest =
+                        new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     PushPromiseFrame promiseFrame = new PushPromiseFrame(stream.getId(), 0, pushedRequest);
-                    stream.push(promiseFrame, null)
-                        .thenCompose(pushedStream ->
-                        {
-                            // Send the favicon "response".
-                            MetaData.Response pushedResponse = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            return pushedStream.headers(new HeadersFrame(pushedStream.getId(), pushedResponse, null, false))
-                                .thenCompose(pushed -> pushed.data(new DataFrame(pushed.getId(), faviconBuffer.slice(), true)));
-                        });
+                    stream.push(promiseFrame, null).thenCompose(pushedStream ->
+                    {
+                        // Send the favicon "response".
+                        MetaData.Response pushedResponse =
+                            new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                        return pushedStream
+                            .headers(new HeadersFrame(pushedStream.getId(), pushedResponse, null, false))
+                            .thenCompose(pushed -> pushed.data(new DataFrame(pushed.getId(), faviconBuffer.slice(), true)));
+                    });
                 }
                 // Return a Stream.Listener to handle the request events.
                 return new Stream.Listener()

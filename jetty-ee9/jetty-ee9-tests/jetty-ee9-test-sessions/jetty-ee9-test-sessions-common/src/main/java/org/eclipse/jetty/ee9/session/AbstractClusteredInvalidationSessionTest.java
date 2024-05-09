@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.ee9.session;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -31,10 +34,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.AbstractSessionTestBase;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * AbstractClusteredInvalidationSessionTest
@@ -56,11 +55,12 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractS
         int scavengeInterval = 1;
         DefaultSessionCacheFactory cacheFactory1 = new DefaultSessionCacheFactory();
         cacheFactory1.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
-        cacheFactory1.setFlushOnResponseCommit(true); //ensure session is saved before response comes back
+        cacheFactory1.setFlushOnResponseCommit(true); // ensure session is saved before response comes back
         SessionDataStoreFactory storeFactory1 = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(scavengeInterval);
 
-        SessionTestSupport server1 = new SessionTestSupport(0, maxInactiveInterval, scavengeInterval, cacheFactory1, storeFactory1);
+        SessionTestSupport server1 =
+            new SessionTestSupport(0, maxInactiveInterval, scavengeInterval, cacheFactory1, storeFactory1);
         ServletContextHandler context = server1.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
 
@@ -73,7 +73,8 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractS
             cacheFactory2.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
             SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
             ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(scavengeInterval);
-            SessionTestSupport server2 = new SessionTestSupport(0, maxInactiveInterval, scavengeInterval, cacheFactory2, storeFactory2);
+            SessionTestSupport server2 =
+                new SessionTestSupport(0, maxInactiveInterval, scavengeInterval, cacheFactory2, storeFactory2);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
             try
@@ -134,7 +135,8 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractS
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
             if ("init".equals(action))
@@ -160,7 +162,7 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractS
                 }
                 catch (IllegalStateException e)
                 {
-                    //expected
+                    // expected
                 }
             }
             else if ("test".equals(action))

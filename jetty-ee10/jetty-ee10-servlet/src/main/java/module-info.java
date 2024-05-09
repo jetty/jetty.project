@@ -16,7 +16,6 @@ import org.eclipse.jetty.security.Authenticator;
 module org.eclipse.jetty.ee10.servlet
 {
     requires org.slf4j;
-
     requires transitive jakarta.servlet;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.security;
@@ -39,10 +38,8 @@ module org.eclipse.jetty.ee10.servlet
     exports org.eclipse.jetty.ee10.servlet.security;
     exports org.eclipse.jetty.ee10.servlet.security.authentication;
     exports org.eclipse.jetty.ee10.servlet.util;
-
-
     exports org.eclipse.jetty.ee10.servlet.jmx to
-         org.eclipse.jetty.jmx;
+        org.eclipse.jetty.jmx;
 
     uses Authenticator.Factory;
 }

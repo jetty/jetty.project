@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -126,8 +125,7 @@ public class Flusher
         }
     }
 
-    private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback) implements Callback
-    {
+    private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback) implements Callback {
         @Override
         public void succeeded()
         {

@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.server.Handler;
@@ -401,9 +400,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
         protected Iterator<Entry> iterator()
         {
             // Use Java streams as this is called infrequently.
-            return queues.values().stream()
-                .flatMap(Queue::stream)
-                .iterator();
+            return queues.values().stream().flatMap(Queue::stream).iterator();
         }
 
         @Override

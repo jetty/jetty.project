@@ -13,16 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Enumeration;
-import java.util.EventListener;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Function;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -40,6 +30,15 @@ import jakarta.servlet.http.HttpSessionContext;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Enumeration;
+import java.util.EventListener;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
@@ -56,7 +55,8 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
 {
     static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
 
-    public static final EnumSet<SessionTrackingMode> DEFAULT_SESSION_TRACKING_MODES = EnumSet.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
+    public static final EnumSet<SessionTrackingMode> DEFAULT_SESSION_TRACKING_MODES =
+        EnumSet.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
 
     private final CoreSessionManager _sessionManager = new CoreSessionManager();
     private final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<>();
@@ -123,32 +123,32 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         if (_contextHandler == null)
             return;
 
-        //configure the name of the session cookie set by an init param
+        // configure the name of the session cookie set by an init param
         String tmp = _contextHandler.getInitParameter(SessionConfig.__SessionCookieProperty);
         if (tmp != null)
             setSessionCookie(tmp);
 
-        //configure the name of the session id path param set by an init param
+        // configure the name of the session id path param set by an init param
         tmp = _contextHandler.getInitParameter(SessionConfig.__SessionIdPathParameterNameProperty);
         if (tmp != null)
             setSessionIdPathParameterName(tmp);
 
-        //configure checkRemoteSessionEncoding set by an init param
+        // configure checkRemoteSessionEncoding set by an init param
         tmp = _contextHandler.getInitParameter(SessionConfig.__CheckRemoteSessionEncodingProperty);
         if (tmp != null)
             setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(tmp));
 
-        //configure the domain of the session cookie set by an init param
+        // configure the domain of the session cookie set by an init param
         tmp = _contextHandler.getInitParameter(SessionConfig.__SessionDomainProperty);
         if (tmp != null)
             setSessionDomain(tmp);
 
-        //configure the path of the session cookie set by an init param
+        // configure the path of the session cookie set by an init param
         tmp = _contextHandler.getInitParameter(SessionConfig.__SessionPathProperty);
         if (tmp != null)
             setSessionPath(tmp);
 
-        //configure the max age of the session cookie set by an init param
+        // configure the max age of the session cookie set by an init param
         tmp = _contextHandler.getInitParameter(SessionConfig.__MaxAgeProperty);
         if (tmp != null)
             setMaxCookieAge(Integer.parseInt(tmp.trim()));
@@ -234,14 +234,14 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
 
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
     {
-        if (sessionTrackingModes != null &&
-            sessionTrackingModes.size() > 1 &&
-            sessionTrackingModes.contains(SessionTrackingMode.SSL))
+        if (sessionTrackingModes != null && sessionTrackingModes.size() > 1 && sessionTrackingModes.contains(SessionTrackingMode.SSL))
         {
             throw new IllegalArgumentException("sessionTrackingModes.SSL is not supported");
         }
-        _sessionManager.setUsingCookies(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.COOKIE));
-        _sessionManager.setUsingUriParameters(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
+        _sessionManager.setUsingCookies(
+            sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.COOKIE));
+        _sessionManager.setUsingUriParameters(
+            sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
     }
 
     @Override
@@ -443,22 +443,27 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
     }
 
     @Override
-    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         if (baseRequest.getDispatcherType() == DispatcherType.REQUEST)
         {
-            ContextHandler.CoreContextRequest coreRequest = baseRequest.getHttpChannel().getCoreRequest();
+            ContextHandler.CoreContextRequest coreRequest =
+                baseRequest.getHttpChannel().getCoreRequest();
 
             // TODO should we use the Stream wrapper? Could use the HttpChannel#onCompleted mechanism instead.
             _sessionManager.addSessionStreamWrapper(coreRequest);
 
             // find and set the session if one exists
-            AbstractSessionManager.RequestedSession requestedSession = _sessionManager.resolveRequestedSessionId(coreRequest);
+            AbstractSessionManager.RequestedSession requestedSession =
+                _sessionManager.resolveRequestedSessionId(coreRequest);
 
             coreRequest.setSessionManager(_sessionManager);
             coreRequest.setRequestedSession(requestedSession);
 
-            HttpCookie cookie = _sessionManager.access(requestedSession.session(), coreRequest.getConnectionMetaData().isSecure());
+            HttpCookie cookie = _sessionManager.access(
+                requestedSession.session(),
+                coreRequest.getConnectionMetaData().isSecure());
 
             // Handle changed ID or max-age refresh, but only if this is not a redispatched request
             if (cookie != null)
@@ -471,7 +476,8 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         nextHandle(target, baseRequest, request, response);
     }
@@ -601,8 +607,12 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         @Override
         public ManagedSession getManagedSession(org.eclipse.jetty.server.Request request)
         {
-            return org.eclipse.jetty.server.Request.get(request, ContextHandler.CoreContextRequest.class, ContextHandler.CoreContextRequest::getHttpChannel)
-                .getCoreRequest().getManagedSession();
+            return org.eclipse.jetty.server.Request.get(
+                request,
+                ContextHandler.CoreContextRequest.class,
+                ContextHandler.CoreContextRequest::getHttpChannel)
+                .getCoreRequest()
+                .getManagedSession();
         }
 
         @Override
@@ -627,7 +637,8 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
 
             if (!_sessionAttributeListeners.isEmpty())
             {
-                HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
+                HttpSessionBindingEvent event =
+                    new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
 
                 for (HttpSessionAttributeListener l : _sessionAttributeListeners)
                 {
@@ -654,7 +665,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
                 return;
             super.onSessionCreated(session);
             HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-            for (HttpSessionListener  l : _sessionListeners)
+            for (HttpSessionListener l : _sessionListeners)
                 l.sessionCreated(event);
         }
 
@@ -672,9 +683,9 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
 
             super.onSessionDestroyed(session);
 
-            //We annoint the calling thread with
-            //the webapp's classloader because the calling thread may
-            //come from the scavenger, rather than a request thread
+            // We annoint the calling thread with
+            // the webapp's classloader because the calling thread may
+            // come from the scavenger, rather than a request thread
             Runnable r = () ->
             {
                 HttpSessionEvent event = new HttpSessionEvent(session.getApi());
@@ -689,7 +700,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         @Override
         public void onSessionIdChanged(Session session, String oldId)
         {
-            //inform the listeners
+            // inform the listeners
             super.onSessionIdChanged(session, oldId);
             if (!_sessionIdListeners.isEmpty())
             {

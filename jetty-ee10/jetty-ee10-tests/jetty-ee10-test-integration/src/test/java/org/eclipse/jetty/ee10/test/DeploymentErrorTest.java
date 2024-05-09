@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee10.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -23,7 +29,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.deploy.App;
@@ -58,12 +63,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentErrorTest
 {
@@ -75,7 +74,8 @@ public class DeploymentErrorTest
 
     public Path startServer(Consumer<Path> docrootSetupConsumer) throws Exception
     {
-        stacklessLogging = new StacklessLogging(WebAppContext.class, DeploymentManager.class, NoClassDefFoundError.class);
+        stacklessLogging =
+            new StacklessLogging(WebAppContext.class, DeploymentManager.class, NoClassDefFoundError.class);
 
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -87,7 +87,7 @@ public class DeploymentErrorTest
         // Empty contexts collections
         ContextHandlerCollection contexts = new ContextHandlerCollection();
 
-        //Environment
+        // Environment
         Environment ee10 = Environment.ensure("ee10");
         ee10.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee10.webapp.WebAppContext");
 
@@ -120,11 +120,11 @@ public class DeploymentErrorTest
 
         // Setup Configurations
         Configurations.setServerDefault(server)
-                .add("org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration",
-                        "org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration",
-                        "org.eclipse.jetty.ee10.annotations.AnnotationConfiguration",
-                        TrackedConfiguration.class.getName()
-                );
+            .add(
+                "org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration",
+                "org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration",
+                "org.eclipse.jetty.ee10.annotations.AnnotationConfiguration",
+                TrackedConfiguration.class.getName());
 
         server.start();
         return docroots;
@@ -198,7 +198,10 @@ public class DeploymentErrorTest
         assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));
         assertThat("trackedConfig.configureCount", trackedConfiguration.configureCounts.get(contextPath), is(1));
         // NOTE: Failure occurs during configure, so postConfigure never runs.
-        assertThat("trackedConfig.postConfigureCount", trackedConfiguration.postConfigureCounts.get(contextPath), nullValue());
+        assertThat(
+            "trackedConfig.postConfigureCount",
+            trackedConfiguration.postConfigureCounts.get(contextPath),
+            nullValue());
 
         assertHttpState(contextPath, HttpStatus.SERVICE_UNAVAILABLE_503);
     }
@@ -223,7 +226,8 @@ public class DeploymentErrorTest
         copyBadApp("badapp.xml", docroots);
 
         // Wait for deployment manager to do its thing
-        assertThat("AppLifeCycle.FAILED event occurred", startTracking.failedLatch.await(3, TimeUnit.SECONDS), is(true));
+        assertThat(
+            "AppLifeCycle.FAILED event occurred", startTracking.failedLatch.await(3, TimeUnit.SECONDS), is(true));
 
         List<App> apps = new ArrayList<>(deploymentManager.getApps());
         assertThat("Apps tracked", apps.size(), is(1));
@@ -243,7 +247,10 @@ public class DeploymentErrorTest
         assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));
         assertThat("trackedConfig.configureCount", trackedConfiguration.configureCounts.get(contextPath), is(1));
         // NOTE: Failure occurs during configure, so postConfigure never runs.
-        assertThat("trackedConfig.postConfigureCount", trackedConfiguration.postConfigureCounts.get(contextPath), nullValue());
+        assertThat(
+            "trackedConfig.postConfigureCount",
+            trackedConfiguration.postConfigureCounts.get(contextPath),
+            nullValue());
 
         assertHttpState(contextPath, HttpStatus.NOT_FOUND_404);
     }
@@ -288,7 +295,10 @@ public class DeploymentErrorTest
         assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));
         assertThat("trackedConfig.configureCount", trackedConfiguration.configureCounts.get(contextPath), is(1));
         // NOTE: Failure occurs during configure, so postConfigure never runs.
-        assertThat("trackedConfig.postConfigureCount", trackedConfiguration.postConfigureCounts.get(contextPath), nullValue());
+        assertThat(
+            "trackedConfig.postConfigureCount",
+            trackedConfiguration.postConfigureCounts.get(contextPath),
+            nullValue());
 
         assertHttpState(contextPath, HttpStatus.SERVICE_UNAVAILABLE_503);
     }
@@ -300,7 +310,8 @@ public class DeploymentErrorTest
         try
         {
             client.start();
-            ContentResponse response = client.newRequest(destURI).method(HttpMethod.GET).send();
+            ContentResponse response =
+                client.newRequest(destURI).method(HttpMethod.GET).send();
             assertThat("GET Response: " + destURI, response.getStatus(), is(expectedStatusCode));
         }
         finally

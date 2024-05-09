@@ -13,12 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
@@ -26,6 +20,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -71,8 +70,10 @@ public class Invoker extends HttpServlet
     public void init()
     {
         ServletContext servletContext = getServletContext();
-        ServletContextHandler.ServletContextApi servletContextApi = (ServletContextHandler.ServletContextApi)servletContext;
-        _servletHandler = servletContextApi.getContext().getServletContextHandler().getServletHandler();
+        ServletContextHandler.ServletContextApi servletContextApi =
+            (ServletContextHandler.ServletContextApi)servletContext;
+        _servletHandler =
+            servletContextApi.getContext().getServletContextHandler().getServletHandler();
         _contextHandler = servletContextApi.getContextHandler();
 
         Enumeration<String> e = getInitParameterNames();
@@ -134,11 +135,15 @@ public class Invoker extends HttpServlet
             // Found a named servlet (from a user's web.xml file) so
             // now we add a mapping for it
             if (LOG.isDebugEnabled())
-                LOG.debug("Adding servlet mapping for named servlet: {}:{}/*", servlet, URIUtil.addPaths(servletPath, servlet));
+                LOG.debug(
+                    "Adding servlet mapping for named servlet: {}:{}/*",
+                    servlet,
+                    URIUtil.addPaths(servletPath, servlet));
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet);
             mapping.setPathSpec(URIUtil.addPaths(servletPath, servlet) + "/*");
-            _servletHandler.setServletMappings(ArrayUtil.addToArray(_servletHandler.getServletMappings(), mapping, ServletMapping.class));
+            _servletHandler.setServletMappings(
+                ArrayUtil.addToArray(_servletHandler.getServletMappings(), mapping, ServletMapping.class));
         }
         else
         {
@@ -190,8 +195,7 @@ public class Invoker extends HttpServlet
                     {
                         Object s = holder.getServlet();
 
-                        if (_contextHandler.getClassLoader() !=
-                            s.getClass().getClassLoader())
+                        if (_contextHandler.getClassLoader() != s.getClass().getClassLoader())
                         {
                             try
                             {
@@ -231,11 +235,7 @@ public class Invoker extends HttpServlet
         String _pathInfo;
         boolean _included;
 
-        InvokedRequest(HttpServletRequest request,
-                       boolean included,
-                       String name,
-                       String servletPath,
-                       String pathInfo)
+        InvokedRequest(HttpServletRequest request, boolean included, String name, String servletPath, String pathInfo)
         {
             super(request);
             _included = included;

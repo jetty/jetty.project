@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -41,11 +45,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class MultiPartFormDataHandlerTest
@@ -78,35 +77,36 @@ public class MultiPartFormDataHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new MultiPartFormData.Parser(boundary)
-                    .parse(request)
-                    .whenComplete((parts, failure) ->
-                    {
-                        if (parts != null)
-                            Content.copy(parts.get(0).getContentSource(), response, callback);
-                        else
-                            Response.writeError(request, response, callback, failure);
-                    });
+                new MultiPartFormData.Parser(boundary).parse(request).whenComplete((parts, failure) ->
+                {
+                    if (parts != null)
+                        Content.copy(parts.get(0).getContentSource(), response, callback);
+                    else
+                        Response.writeError(request, response, callback, failure);
+                });
                 return true;
             }
         });
 
         try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            String content = """
-                --A1B2C3
-                Content-Disposition: form-data; name="part"
-                
-                0123456789ABCDEF
-                --A1B2C3--
-                """;
-            String header = """
-                POST / HTTP/1.1
-                Host: localhost
-                Content-Type: multipart/form-data; boundary=A1B2C3
-                Content-Length: $L
-                
-                """.replace("$L", String.valueOf(content.length()));
+            String content =
+                """
+                    --A1B2C3
+                    Content-Disposition: form-data; name="part"
+
+                    0123456789ABCDEF
+                    --A1B2C3--
+                    """;
+            String header =
+                """
+                    POST / HTTP/1.1
+                    Host: localhost
+                    Content-Type: multipart/form-data; boundary=A1B2C3
+                    Content-Length: $L
+
+                    """
+                    .replace("$L", String.valueOf(content.length()));
 
             client.write(UTF_8.encode(header));
             client.write(UTF_8.encode(content));
@@ -128,50 +128,54 @@ public class MultiPartFormDataHandlerTest
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
 
-                new MultiPartFormData.Parser(boundary)
-                    .parse(request)
-                    .whenComplete((parts, failure) ->
+                new MultiPartFormData.Parser(boundary).parse(request).whenComplete((parts, failure) ->
+                {
+                    if (parts != null)
                     {
-                        if (parts != null)
-                        {
-                            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(boundary));
-                            MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(boundary);
-                            source.setPartHeadersMaxLength(1024);
-                            parts.forEach(source::addPart);
-                            source.close();
-                            Content.copy(source, response, callback);
-                        }
-                        else
-                        {
-                            Response.writeError(request, response, callback, failure);
-                        }
-                    });
+                        response.getHeaders()
+                            .put(
+                                HttpHeader.CONTENT_TYPE,
+                                "multipart/form-data; boundary=\"%s\"".formatted(boundary));
+                        MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(boundary);
+                        source.setPartHeadersMaxLength(1024);
+                        parts.forEach(source::addPart);
+                        source.close();
+                        Content.copy(source, response, callback);
+                    }
+                    else
+                    {
+                        Response.writeError(request, response, callback, failure);
+                    }
+                });
                 return true;
             }
         });
 
         try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            String requestContent = """
-                --A1B2C3\r
-                Content-Disposition: form-data; name="part1"\r
-                Content-Type: text/plain; charset=UTF-8\r
-                \r
-                0123456789ABCDEF\r
-                --A1B2C3\r
-                Content-Disposition: form-data; name="part2"\r
-                Content-Type: text/plain; charset=UTF-8\r
-                \r
-                FEDCBA9876543210\r
-                --A1B2C3--\r
-                """;
-            String requestHeader = """
-                POST / HTTP/1.1
-                Host: localhost
-                Content-Type: multipart/form-data; boundary=A1B2C3
-                Content-Length: $L
-                
-                """.replace("$L", String.valueOf(requestContent.length()));
+            String requestContent =
+                """
+                    --A1B2C3\r
+                    Content-Disposition: form-data; name="part1"\r
+                    Content-Type: text/plain; charset=UTF-8\r
+                    \r
+                    0123456789ABCDEF\r
+                    --A1B2C3\r
+                    Content-Disposition: form-data; name="part2"\r
+                    Content-Type: text/plain; charset=UTF-8\r
+                    \r
+                    FEDCBA9876543210\r
+                    --A1B2C3--\r
+                    """;
+            String requestHeader =
+                """
+                    POST / HTTP/1.1
+                    Host: localhost
+                    Content-Type: multipart/form-data; boundary=A1B2C3
+                    Content-Length: $L
+
+                    """
+                    .replace("$L", String.valueOf(requestContent.length()));
 
             client.write(UTF_8.encode(requestHeader));
             client.write(UTF_8.encode(requestContent));
@@ -194,11 +198,13 @@ public class MultiPartFormDataHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = "A1B2C3";
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(boundary));
+                response.getHeaders()
+                    .put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(boundary));
 
                 MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(boundary);
                 HttpFields.Mutable headers1 = HttpFields.build().put(HttpHeader.CONTENT_TYPE, "text/plain");
-                assertTrue(source.addPart(new MultiPart.ByteBufferPart("part1", null, headers1, UTF_8.encode("hello"))));
+                assertTrue(
+                    source.addPart(new MultiPart.ByteBufferPart("part1", null, headers1, UTF_8.encode("hello"))));
 
                 Content.copy(source, response, callback);
 
@@ -210,9 +216,11 @@ public class MultiPartFormDataHandlerTest
                         Thread.sleep(1000);
 
                         // Add another part and close the multipart content.
-                        HttpFields.Mutable headers2 = HttpFields.build().put(HttpHeader.CONTENT_TYPE, "application/octet-stream");
+                        HttpFields.Mutable headers2 =
+                            HttpFields.build().put(HttpHeader.CONTENT_TYPE, "application/octet-stream");
                         ByteBufferContentSource content2 = new ByteBufferContentSource(ByteBuffer.allocate(32));
-                        source.addPart(new MultiPart.ContentSourcePart("part2", "file2.bin", headers2, content2));
+                        source.addPart(
+                            new MultiPart.ContentSourcePart("part2", "file2.bin", headers2, content2));
                     }
                     catch (InterruptedException x)
                     {
@@ -222,7 +230,8 @@ public class MultiPartFormDataHandlerTest
                     {
                         source.close();
                     }
-                }).start();
+                })
+                    .start();
                 return true;
             }
         });
@@ -232,7 +241,7 @@ public class MultiPartFormDataHandlerTest
             String request = """
                 GET / HTTP/1.1
                 Host: localhost
-                
+
                 """;
             client.write(UTF_8.encode(request));
 
@@ -246,10 +255,12 @@ public class MultiPartFormDataHandlerTest
             String boundary = MultiPart.extractBoundary(value);
             assertNotNull(boundary);
 
-            ByteBufferContentSource byteBufferContentSource = new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes()));
+            ByteBufferContentSource byteBufferContentSource =
+                new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes()));
             MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
             formData.setFilesDirectory(tempDir);
-            try (MultiPartFormData.Parts parts = formData.parse(byteBufferContentSource).join())
+            try (MultiPartFormData.Parts parts =
+                formData.parse(byteBufferContentSource).join())
             {
                 assertEquals(2, parts.size());
                 MultiPart.Part part1 = parts.get(0);
@@ -292,35 +303,36 @@ public class MultiPartFormDataHandlerTest
 
         try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            String request = """
-                POST / HTTP/1.1\r
-                Host: localhost\r
-                Content-Type: multipart/form-data; boundary=908d442b-2c7d-401a-ab46-7c6ec6f89fe6\r
-                Transfer-Encoding: chunked\r
-                \r
-                90\r
-                --908d442b-2c7d-401a-ab46-7c6ec6f89fe6\r
-                Content-Disposition: form-data; name="az"\r
-                Content-Type: text/plain; charset=ISO-8859-1\r
-                \r
-                upload_file\r
-                \r
-                94\r
-                --908d442b-2c7d-401a-ab46-7c6ec6f89fe6\r
-                Content-Disposition: form-data; name="file_upload"; filename="testUpload.test"\r
-                Content-Type: text/plain\r
-                \r
-                \r
-                5\r
-                abcde\r
-                2\r
-                \r
-                \r
-                28\r
-                --908d442b-2c7d-401a-ab46-7c6ec6f89fe6--\r
-                0\r
-                \r
-                """;
+            String request =
+                """
+                    POST / HTTP/1.1\r
+                    Host: localhost\r
+                    Content-Type: multipart/form-data; boundary=908d442b-2c7d-401a-ab46-7c6ec6f89fe6\r
+                    Transfer-Encoding: chunked\r
+                    \r
+                    90\r
+                    --908d442b-2c7d-401a-ab46-7c6ec6f89fe6\r
+                    Content-Disposition: form-data; name="az"\r
+                    Content-Type: text/plain; charset=ISO-8859-1\r
+                    \r
+                    upload_file\r
+                    \r
+                    94\r
+                    --908d442b-2c7d-401a-ab46-7c6ec6f89fe6\r
+                    Content-Disposition: form-data; name="file_upload"; filename="testUpload.test"\r
+                    Content-Type: text/plain\r
+                    \r
+                    \r
+                    5\r
+                    abcde\r
+                    2\r
+                    \r
+                    \r
+                    28\r
+                    --908d442b-2c7d-401a-ab46-7c6ec6f89fe6--\r
+                    0\r
+                    \r
+                    """;
 
             client.write(UTF_8.encode(request));
 
@@ -357,33 +369,34 @@ public class MultiPartFormDataHandlerTest
 
         try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            String request = """
-                POST / HTTP/1.1\r
-                Host: localhost\r
-                Content-Type: multipart/form-data; boundary=A1B2C3\r
-                Transfer-Encoding: chunked\r
-                \r
-                6A\r
-                --A1B2C3\r
-                Content-Disposition: form-data; name="one"\r
-                Content-Type: text/plain; charset=UTF-8\r
-                \r
-                text_one\r\r
-                61\r
-                \r
-                --A1B2C3\r
-                Content-Disposition: form-data; name="two"\r
-                Content-Type: text/plain; charset=UTF-8\r
-                \r
-                C\r
-                \r
-                text_two\r
-                \r
-                A\r
-                --A1B2C3--\r
-                0\r
-                \r
-                """;
+            String request =
+                """
+                    POST / HTTP/1.1\r
+                    Host: localhost\r
+                    Content-Type: multipart/form-data; boundary=A1B2C3\r
+                    Transfer-Encoding: chunked\r
+                    \r
+                    6A\r
+                    --A1B2C3\r
+                    Content-Disposition: form-data; name="one"\r
+                    Content-Type: text/plain; charset=UTF-8\r
+                    \r
+                    text_one\r\r
+                    61\r
+                    \r
+                    --A1B2C3\r
+                    Content-Disposition: form-data; name="two"\r
+                    Content-Type: text/plain; charset=UTF-8\r
+                    \r
+                    C\r
+                    \r
+                    text_two\r
+                    \r
+                    A\r
+                    --A1B2C3--\r
+                    0\r
+                    \r
+                    """;
 
             client.write(UTF_8.encode(request));
 
@@ -420,28 +433,29 @@ public class MultiPartFormDataHandlerTest
 
         try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            String request = """
-                POST / HTTP/1.1\r
-                Host: localhost\r
-                Content-Type: multipart/form-data; boundary=A1B2C3\r
-                Transfer-Encoding: chunked\r
-                \r
-                6A\r
-                --A1B2C3\r
-                Content-Disposition: form-data; name="one"\r
-                Content-Type: text/plain; charset=UTF-8\r
-                \r
-                text_one\r\r
-                76\r
-                \n--A1B2C3\r
-                Content-Disposition: form-data; name="two"\r
-                Content-Type: text/plain; charset=UTF-8\r
-                \r
-                text_two\r
-                --A1B2C3--\r
-                0\r
-                \r
-                """;
+            String request =
+                """
+                    POST / HTTP/1.1\r
+                    Host: localhost\r
+                    Content-Type: multipart/form-data; boundary=A1B2C3\r
+                    Transfer-Encoding: chunked\r
+                    \r
+                    6A\r
+                    --A1B2C3\r
+                    Content-Disposition: form-data; name="one"\r
+                    Content-Type: text/plain; charset=UTF-8\r
+                    \r
+                    text_one\r\r
+                    76\r
+                    \n--A1B2C3\r
+                    Content-Disposition: form-data; name="two"\r
+                    Content-Type: text/plain; charset=UTF-8\r
+                    \r
+                    text_two\r
+                    --A1B2C3--\r
+                    0\r
+                    \r
+                    """;
 
             client.write(UTF_8.encode(request));
 

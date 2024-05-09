@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.ee9.loginservice;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpFilter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -25,14 +32,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
-
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpFilter;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
@@ -57,7 +56,7 @@ public class DatabaseLoginServiceTestServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(DatabaseLoginServiceTestServer.class);
     private static final Logger MARIADB_LOG = LoggerFactory.getLogger("org.eclipse.jetty.security.MariaDbLogs");
-    
+
     static MariaDBContainer MARIA_DB;
 
     protected static final String MARIA_DB_USER = "beer";
@@ -65,7 +64,7 @@ public class DatabaseLoginServiceTestServer
     public static String MARIA_DB_DRIVER_CLASS;
     public static String MARIA_DB_URL;
     public static String MARIA_DB_FULL_URL;
-    
+
     protected Server _server;
     protected static String _protocol;
     protected static URI _baseUri;
@@ -77,8 +76,7 @@ public class DatabaseLoginServiceTestServer
 
     public static void beforeAll() throws Exception
     {
-        MARIA_DB =
-            new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
+        MARIA_DB = new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
             .withUsername(MARIA_DB_USER)
             .withPassword(MARIA_DB_PASSWORD);
         MARIA_DB = (MariaDBContainer)MARIA_DB.withInitScript("createdb.sql");
@@ -99,26 +97,28 @@ public class DatabaseLoginServiceTestServer
     {
         private final Path _resourcePath;
         private String _requestContent;
-        
+
         public TestFilter(Path resourcePath)
         {
             _resourcePath = resourcePath;
         }
-        
+
         public String getRequestContent()
         {
             return _requestContent;
         }
-        
+
         @Override
-        protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException
+        protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+            throws IOException, ServletException
         {
             OutputStream out = null;
             if (req.getMethod().equals("PUT"))
             {
-                //remove leading slash from pathinfo
-                Path p = _resourcePath.resolve(URLDecoder.decode(req.getPathInfo().substring(1), "utf-8"));
-                
+                // remove leading slash from pathinfo
+                Path p = _resourcePath.resolve(
+                    URLDecoder.decode(req.getPathInfo().substring(1), "utf-8"));
+
                 File file = p.toFile();
                 FS.ensureDirExists(p.getParent());
 
@@ -150,7 +150,7 @@ public class DatabaseLoginServiceTestServer
                 super.doFilter(req, res, chain);
         }
     }
-    
+
     public static class ExtendedDefaultServlet extends DefaultServlet
     {
         @Override
@@ -158,7 +158,7 @@ public class DatabaseLoginServiceTestServer
         {
             if (resp.getStatus() == HttpServletResponse.SC_OK)
                 return;
-            
+
             super.doPost(req, resp);
         }
 
@@ -190,7 +190,7 @@ public class DatabaseLoginServiceTestServer
     {
         configureServer();
         _server.start();
-        //_server.dumpStdErr();
+        // _server.dumpStdErr();
         _baseUri = _server.getURI();
     }
 
@@ -203,7 +203,7 @@ public class DatabaseLoginServiceTestServer
     {
         return _baseUri;
     }
-    
+
     public TestFilter getTestFilter()
     {
         return _filter;
@@ -249,6 +249,6 @@ public class DatabaseLoginServiceTestServer
         _filter = new TestFilter(_resourceBase);
         FilterHolder filterHolder = new FilterHolder(_filter);
         root.addFilter(filterHolder, "/*", EnumSet.allOf(DispatcherType.class));
-        _server.setHandler(root);        
+        _server.setHandler(root);
     }
 }

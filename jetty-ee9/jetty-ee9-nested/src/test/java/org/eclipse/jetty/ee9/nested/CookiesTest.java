@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import jakarta.servlet.http.Cookie;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class CookiesTest
 {
@@ -152,13 +152,12 @@ public class CookiesTest
     public void testSet()
     {
         Cookies cutter = new Cookies();
-        cutter.setCookies(new Cookie[]
-            {
-                new Cookie("nameA0", "A0"),
-                new Cookie("nameA1", "A1"),
-                new Cookie("nameB0", "B0"),
-                new Cookie("nameB1", "B1")
-            });
+        cutter.setCookies(new Cookie[]{
+            new Cookie("nameA0", "A0"),
+            new Cookie("nameA1", "A1"),
+            new Cookie("nameB0", "B0"),
+            new Cookie("nameB1", "B1")
+        });
 
         Cookie[] cookiesX = cutter.getCookies();
         assertThat(cookiesX.length, is(4));

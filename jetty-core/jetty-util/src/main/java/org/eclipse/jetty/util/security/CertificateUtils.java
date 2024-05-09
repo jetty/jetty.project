@@ -14,20 +14,19 @@
 package org.eclipse.jetty.util.security;
 
 import java.io.InputStream;
-import java.net.URI;
 import java.security.KeyStore;
 import java.security.cert.CRL;
 import java.security.cert.CertificateFactory;
 import java.util.Collection;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 public class CertificateUtils
 {
 
-    public static KeyStore getKeyStore(Resource store, String storeType, String storeProvider, String storePassword) throws Exception
+    public static KeyStore getKeyStore(Resource store, String storeType, String storeProvider, String storePassword)
+        throws Exception
     {
         KeyStore keystore = null;
 

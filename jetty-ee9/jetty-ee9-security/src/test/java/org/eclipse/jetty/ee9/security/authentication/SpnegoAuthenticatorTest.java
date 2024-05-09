@@ -17,13 +17,13 @@ public class SpnegoAuthenticatorTest
 {
     /* TODO
     private ConfigurableSpnegoAuthenticator _authenticator;
-
+    
     @BeforeEach
     public void setup()
     {
         _authenticator = new ConfigurableSpnegoAuthenticator();
     }
-
+    
     @Test
     public void testChallengeSentWithNoAuthorization() throws Exception
     {
@@ -34,37 +34,37 @@ public class SpnegoAuthenticatorTest
             {
                 return null;
             }
-
+    
             @Override
             public boolean failed(Throwable x)
             {
                 return false;
             }
-
+    
             @Override
             protected boolean eof()
             {
                 return false;
             }
-
+    
             @Override
             public boolean needContent()
             {
                 return false;
             }
-
+    
             @Override
             public HttpInput.Content produceContent()
             {
                 return null;
             }
-
+    
             @Override
             public boolean failAllContent(Throwable failure)
             {
                 return false;
             }
-
+    
             @Override
             protected HttpOutput newHttpOutput()
             {
@@ -72,7 +72,7 @@ public class SpnegoAuthenticatorTest
                 {
                     @Override
                     public void close() {}
-
+    
                     @Override
                     public void flush() throws IOException {}
                 };
@@ -82,13 +82,13 @@ public class SpnegoAuthenticatorTest
         Response res = channel.getResponse();
         MetaData.Request metadata = new MetaData.Request("GET", HttpURI.build("http://localhost"), null, HttpFields.EMPTY);
         req.setMetaData(metadata);
-
+    
         assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
     }
-
+    
     @Test
     public void testChallengeSentWithUnhandledAuthorization() throws Exception
     {
@@ -99,37 +99,37 @@ public class SpnegoAuthenticatorTest
             {
                 return null;
             }
-
+    
             @Override
             public boolean failed(Throwable x)
             {
                 return false;
             }
-
+    
             @Override
             protected boolean eof()
             {
                 return false;
             }
-
+    
             @Override
             public boolean needContent()
             {
                 return false;
             }
-
+    
             @Override
             public HttpInput.Content produceContent()
             {
                 return null;
             }
-
+    
             @Override
             public boolean failAllContent(Throwable failure)
             {
                 return false;
             }
-
+    
             @Override
             protected HttpOutput newHttpOutput()
             {
@@ -137,7 +137,7 @@ public class SpnegoAuthenticatorTest
                 {
                     @Override
                     public void close() {}
-
+    
                     @Override
                     public void flush() throws IOException {}
                 };
@@ -145,44 +145,43 @@ public class SpnegoAuthenticatorTest
         };
         Request req = channel.getRequest();
         Response res = channel.getResponse();
-
+    
         // Create a bogus Authorization header. We don't care about the actual credentials.
-
+    
         MetaData.Request metadata = new MetaData.Request("GET", HttpURI.build("http://localhost"), null,
             HttpFields.build().add(HttpHeader.AUTHORIZATION, "Basic asdf"));
         req.setMetaData(metadata);
-
+    
         assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
     }
-
+    
     class MockConnector extends AbstractConnector
     {
         public MockConnector()
         {
             super(new Server(), null, null, null, 0);
         }
-
+    
         @Override
         protected void accept(int acceptorID) throws IOException, InterruptedException
         {
         }
-
+    
         @Override
         public Object getTransport()
         {
             return null;
         }
-
+    
         @Override
         public String dumpSelf()
         {
             return null;
         }
     }
-
+    
      */
 }
-

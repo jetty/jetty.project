@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.util.HashSet;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
 
 public class FieldsTest
 {

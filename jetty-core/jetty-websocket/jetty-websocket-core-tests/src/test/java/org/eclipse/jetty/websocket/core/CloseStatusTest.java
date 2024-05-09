@@ -13,15 +13,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -29,6 +20,14 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 
 public class CloseStatusTest
 {
@@ -162,8 +161,7 @@ public class CloseStatusTest
     public void testLongCloseReason()
     {
         int code = CloseStatus.NORMAL;
-        String reason = "___The WebSocket Connection Close Reason_ is defined as" +
-            "   the UTF-8-encoded data following the status code (Section 7.4)";
+        String reason = "___The WebSocket Connection Close Reason_ is defined as" + "   the UTF-8-encoded data following the status code (Section 7.4)";
 
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         String utf4Bytes = "\uD801\uDC00";
@@ -185,7 +183,7 @@ public class CloseStatusTest
 
         String utf4Bytes = "\uD801\uDC00";
         String reason = utf4Bytes;
-        for (int i = 5; i-- > 0; )
+        for (int i = 5; i-- > 0;)
         {
             reason = reason + reason;
         }

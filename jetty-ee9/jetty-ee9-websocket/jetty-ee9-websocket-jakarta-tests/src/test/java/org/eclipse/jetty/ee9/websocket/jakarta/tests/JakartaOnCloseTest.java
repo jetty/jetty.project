@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
@@ -26,6 +26,12 @@ import jakarta.websocket.CloseReason.CloseCodes;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
@@ -36,13 +42,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JakartaOnCloseTest
 {
@@ -115,8 +114,8 @@ public class JakartaOnCloseTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        JakartaWebSocketServletContainerInitializer.configure(contextHandler, ((servletContext, container) ->
-            container.addEndpoint(OnCloseEndpoint.class)));
+        JakartaWebSocketServletContainerInitializer.configure(
+            contextHandler, ((servletContext, container) -> container.addEndpoint(OnCloseEndpoint.class)));
 
         client.start();
         server.start();
@@ -137,8 +136,8 @@ public class JakartaOnCloseTest
         client.connectToServer(clientEndpoint, uri);
 
         OnCloseEndpoint serverEndpoint = Objects.requireNonNull(serverEndpoints.poll(5, TimeUnit.SECONDS));
-        serverEndpoint.setOnClose((session) -> assertDoesNotThrow(() ->
-            session.close(new CloseReason(CloseCodes.SERVICE_RESTART, "custom close reason"))));
+        serverEndpoint.setOnClose((session) -> assertDoesNotThrow(
+            () -> session.close(new CloseReason(CloseCodes.SERVICE_RESTART, "custom close reason"))));
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
 
         clientEndpoint.session.close();
@@ -175,7 +174,8 @@ public class JakartaOnCloseTest
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
         serverEndpoint.setOnClose((session) ->
         {
-            assertDoesNotThrow(() -> session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "abnormal close 2")));
+            assertDoesNotThrow(
+                () -> session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "abnormal close 2")));
             clientEndpoint.unBlockClose();
         });
 

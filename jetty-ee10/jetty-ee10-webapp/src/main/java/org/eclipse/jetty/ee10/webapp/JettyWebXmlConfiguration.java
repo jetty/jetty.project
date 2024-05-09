@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -72,7 +71,8 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
                 Object xmlAttr = context.getAttribute(XML_CONFIGURATION);
                 context.removeAttribute(XML_CONFIGURATION);
-                final XmlConfiguration jetty_config = xmlAttr instanceof XmlConfiguration ? (XmlConfiguration)xmlAttr : new XmlConfiguration(jetty);
+                final XmlConfiguration jetty_config =
+                    xmlAttr instanceof XmlConfiguration ? (XmlConfiguration)xmlAttr : new XmlConfiguration(jetty);
 
                 setupXmlConfiguration(context, jetty_config, webInf);
 
@@ -100,11 +100,14 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      * @param jettyConfig The configuration object.
      * @param webInf the WEB-INF location
      */
-    private void setupXmlConfiguration(WebAppContext context, XmlConfiguration jettyConfig, Resource webInf) throws IOException
+    private void setupXmlConfiguration(WebAppContext context, XmlConfiguration jettyConfig, Resource webInf)
+        throws IOException
     {
         jettyConfig.setJettyStandardIdsAndProperties(context.getServer(), null);
         Map<String, String> props = jettyConfig.getProperties();
-        props.put(PROPERTY_WEB_INF_URI, XmlConfiguration.normalizeURI(webInf.getURI().toString()));
+        props.put(
+            PROPERTY_WEB_INF_URI,
+            XmlConfiguration.normalizeURI(webInf.getURI().toString()));
         props.put(PROPERTY_WEB_INF, webInf.toString());
     }
 }

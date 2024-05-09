@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.internal;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.RequestListeners;
 

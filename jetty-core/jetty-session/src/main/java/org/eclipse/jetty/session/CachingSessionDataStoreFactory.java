@@ -56,6 +56,7 @@ public class CachingSessionDataStoreFactory extends AbstractSessionDataStoreFact
     @Override
     public SessionDataStore getSessionDataStore(SessionManager manager) throws Exception
     {
-        return new CachingSessionDataStore(_mapFactory.getSessionDataMap(), _sessionStoreFactory.getSessionDataStore(manager));
+        return new CachingSessionDataStore(
+            _mapFactory.getSessionDataMap(), _sessionStoreFactory.getSessionDataStore(manager));
     }
 }

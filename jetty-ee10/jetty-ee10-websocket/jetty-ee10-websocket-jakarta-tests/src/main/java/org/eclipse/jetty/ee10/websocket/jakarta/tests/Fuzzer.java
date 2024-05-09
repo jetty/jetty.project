@@ -13,22 +13,21 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public interface Fuzzer extends AutoCloseable
 {
@@ -55,7 +54,8 @@ public interface Fuzzer extends AutoCloseable
      * @param expectedDataOp the expected message data type ({@link OpCode#BINARY} or {@link OpCode#TEXT})
      * @param expectedMessage the expected message
      */
-    void expectMessage(BlockingQueue<Frame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException;
+    void expectMessage(BlockingQueue<Frame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage)
+        throws InterruptedException;
 
     BlockingQueue<Frame> getOutputFrames();
 
@@ -118,7 +118,8 @@ public interface Fuzzer extends AutoCloseable
             logger = LoggerFactory.getLogger(this.getClass());
         }
 
-        public void expectMessage(BlockingQueue<Frame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage) throws InterruptedException
+        public void expectMessage(BlockingQueue<Frame> framesQueue, byte expectedDataOp, ByteBuffer expectedMessage)
+            throws InterruptedException
         {
             ByteBuffer actualPayload = ByteBuffer.allocate(expectedMessage.remaining());
 

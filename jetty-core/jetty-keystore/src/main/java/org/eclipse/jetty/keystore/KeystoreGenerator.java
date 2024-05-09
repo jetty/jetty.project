@@ -26,7 +26,6 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
-
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -58,15 +57,20 @@ public class KeystoreGenerator
         Date notAfter = Date.from(start.plus(Duration.ofDays(365)));
         BigInteger serial = BigInteger.valueOf(new SecureRandom().nextLong());
         X500Name x500Name = new X500Name("C=US,ST=NE,L=Omaha,O=Webtide,OU=Jetty,CN=localhost");
-        X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(x500Name, serial, notBefore, notAfter, x500Name, keyPair.getPublic());
+        X509v3CertificateBuilder certBuilder =
+            new JcaX509v3CertificateBuilder(x500Name, serial, notBefore, notAfter, x500Name, keyPair.getPublic());
         ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256withRSA").build(keyPair.getPrivate());
-        X509Certificate certificate = new JcaX509CertificateConverter().setProvider(new BouncyCastleProvider()).getCertificate(certBuilder.build(contentSigner));
+        X509Certificate certificate = new JcaX509CertificateConverter()
+            .setProvider(new BouncyCastleProvider())
+            .getCertificate(certBuilder.build(contentSigner));
 
         // Create a keystore using the self-signed certificate.
         KeyStore keystore = KeyStore.getInstance("PKCS12");
         char[] pwdCharArray = new Password(password).toString().toCharArray();
         keystore.load(null, pwdCharArray);
-        keystore.setKeyEntry("jetty-test-keystore", keyPair.getPrivate(), pwdCharArray, new Certificate[]{certificate});
+        keystore.setKeyEntry(
+            "jetty-test-keystore", keyPair.getPrivate(), pwdCharArray, new Certificate[]
+            {certificate});
 
         // Write keystore out to a file.
         File keystoreFile = new File(location);

@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.StandardCopyOption;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
@@ -127,7 +126,8 @@ public class RebuildTestResources
         FS.ensureDirExists(libsDir);
 
         PathMatcher matcher = getPathMatcher("glob:**.jar");
-        Renamer renamer = new RegexRenamer("-9\\.[0-9.]*(v[0-9-]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?", "-" + JETTY_VERSION);
+        Renamer renamer =
+            new RegexRenamer("-9\\.[0-9.]*(v[0-9-]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?", "-" + JETTY_VERSION);
         FileCopier copier = new TouchFileCopier();
         copyDir(srcDir.resolve("lib"), libsDir, matcher, renamer, copier);
     }
@@ -169,7 +169,8 @@ public class RebuildTestResources
         return FileSystems.getDefault().getPathMatcher(pattern);
     }
 
-    private void copyDir(Path from, Path to, PathMatcher fileMatcher, Renamer renamer, FileCopier copier) throws IOException
+    private void copyDir(Path from, Path to, PathMatcher fileMatcher, Renamer renamer, FileCopier copier)
+        throws IOException
     {
         Files.createDirectories(to);
 

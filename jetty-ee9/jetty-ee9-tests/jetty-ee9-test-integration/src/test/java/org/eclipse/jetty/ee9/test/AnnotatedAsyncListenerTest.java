@@ -13,11 +13,7 @@
 
 package org.eclipse.jetty.ee9.test;
 
-import java.io.BufferedWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.AsyncContext;
@@ -27,6 +23,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.BufferedWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
@@ -49,8 +50,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class AnnotatedAsyncListenerTest
 {
     private Server server;
@@ -65,31 +64,28 @@ public class AnnotatedAsyncListenerTest
         connector = new ServerConnector(server, 1, 1);
         server.addConnector(connector);
 
-        Path webAppDir = MavenTestingUtils.getTargetTestingPath(AnnotatedAsyncListenerTest.class.getName() + "@" + servlet.hashCode());
+        Path webAppDir = MavenTestingUtils.getTargetTestingPath(
+            AnnotatedAsyncListenerTest.class.getName() + "@" + servlet.hashCode());
         Path webInf = webAppDir.resolve("WEB-INF");
         Files.createDirectories(webInf);
 
-        try (BufferedWriter writer = Files.newBufferedWriter(webInf.resolve("web.xml"), StandardCharsets.UTF_8, StandardOpenOption.CREATE))
+        try (BufferedWriter writer =
+            Files.newBufferedWriter(webInf.resolve("web.xml"), StandardCharsets.UTF_8, StandardOpenOption.CREATE))
         {
-            writer.write("<web-app xmlns=\"http://xmlns.jcp.org/xml/ns/javaee\" " +
-                "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
-                "xsi:schemaLocation=\"http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd\" " +
-                "version=\"3.1\">" +
-                "</web-app>");
+            writer.write("<web-app xmlns=\"http://xmlns.jcp.org/xml/ns/javaee\" " + "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " + "xsi:schemaLocation=\"http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd\" " + "version=\"3.1\">" + "</web-app>");
         }
 
         WebAppContext context = new WebAppContext(webAppDir.toString(), "/");
-        context.setConfigurations(new Configuration[]
-            {
-                new AnnotationConfiguration(),
-                new WebXmlConfiguration(),
-                new WebInfConfiguration(),
-                new MetaInfConfiguration(),
-                new FragmentConfiguration(),
-                new EnvConfiguration(),
-                new PlusConfiguration(),
-                new WebAppConfiguration()
-            });
+        context.setConfigurations(new Configuration[]{
+            new AnnotationConfiguration(),
+            new WebXmlConfiguration(),
+            new WebInfConfiguration(),
+            new MetaInfConfiguration(),
+            new FragmentConfiguration(),
+            new EnvConfiguration(),
+            new PlusConfiguration(),
+            new WebAppConfiguration()
+        });
         context.addServlet(new ServletHolder(servlet), "/*");
         new EnvEntry(context, "value", 1307D, false);
         server.setHandler(context);

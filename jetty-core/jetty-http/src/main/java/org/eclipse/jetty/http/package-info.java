@@ -15,4 +15,3 @@
  * Jetty Http : Tools for Http processing
  */
 package org.eclipse.jetty.http;
-

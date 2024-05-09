@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.http.compression;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.http.HttpTokens;
-
 import static org.eclipse.jetty.http.compression.Huffman.CODES;
 import static org.eclipse.jetty.http.compression.Huffman.LCCODES;
+
+import java.nio.ByteBuffer;
+import org.eclipse.jetty.http.HttpTokens;
 
 /**
  * <p>Used to encode strings Huffman encoding.</p>
@@ -112,7 +111,7 @@ public class HuffmanEncoder
         {
             char c = s.charAt(i);
             if (HttpTokens.isIllegalFieldVchar(c))
-                 throw new IllegalArgumentException();
+                throw new IllegalArgumentException();
             int code = table[c][0];
             int bits = table[c][1];
 

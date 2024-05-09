@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.CustomRequestLog;
@@ -76,14 +75,16 @@ public class ManyHandlers
             Fields formFields = FormFields.from(request).get();
 
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_JSON.asString());
-            response.write(true,
-                ByteBuffer.wrap(new JSON().toJSON(List.of(queryFields, formFields)).getBytes(StandardCharsets.UTF_8)),
+            response.write(
+                true,
+                ByteBuffer.wrap(
+                    new JSON().toJSON(List.of(queryFields, formFields)).getBytes(StandardCharsets.UTF_8)),
                 callback);
 
             return true;
         }
     }
-    
+
     /**
      * Add a request attribute, but produce no output.
      */
@@ -96,7 +97,7 @@ public class ManyHandlers
             return super.handle(request, response, callback);
         }
     }
-          
+
     public static Server createServer(int port) throws IOException
     {
         Server server = new Server(port);
@@ -123,9 +124,9 @@ public class ManyHandlers
 
         ContextHandler paramContext = new ContextHandler("/params");
         paramContext.setHandler(param);
-          
+
         ContextHandlerCollection contexts = new ContextHandlerCollection(helloContext, paramContext);
-          
+
         // Wrap Contexts with GZIP
         gzipHandler.setHandler(contexts);
 

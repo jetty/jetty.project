@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
-
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
@@ -63,8 +62,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
         }
 
         @Override
-        public List<String> doFetchRoles()
-            throws Exception
+        public List<String> doFetchRoles() throws Exception
         {
             return getRoles(getUserName());
         }
@@ -77,13 +75,12 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
      * @throws Exception if unable to get the user info
      */
     @Override
-    public JAASUser getUser(String userName)
-        throws Exception
+    public JAASUser getUser(String userName) throws Exception
     {
         try (Connection connection = getConnection())
         {
 
-            //query for credential
+            // query for credential
             String dbCredential = null;
             try (PreparedStatement statement = connection.prepareStatement(userQuery))
             {
@@ -104,14 +101,13 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
         }
     }
 
-    public List<String> getRoles(String userName)
-        throws Exception
+    public List<String> getRoles(String userName) throws Exception
     {
         List<String> roles = new ArrayList<String>();
 
         try (Connection connection = getConnection())
         {
-            //query for role names
+            // query for role names
 
             try (PreparedStatement statement = connection.prepareStatement(rolesQuery))
             {
@@ -131,21 +127,19 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
     }
 
     @Override
-    public void initialize(Subject subject,
-                           CallbackHandler callbackHandler,
-                           Map<String, ?> sharedState,
-                           Map<String, ?> options)
+    public void initialize(
+                           Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
     {
         super.initialize(subject, callbackHandler, sharedState, options);
 
-        //get the user credential query out of the options
+        // get the user credential query out of the options
         dbUserTable = (String)options.get("userTable");
         dbUserTableUserField = (String)options.get("userField");
         dbUserTableCredentialField = (String)options.get("credentialField");
 
         userQuery = "select " + dbUserTableCredentialField + " from " + dbUserTable + " where " + dbUserTableUserField + "=?";
 
-        //get the user roles query out of the options
+        // get the user roles query out of the options
         dbUserRoleTable = (String)options.get("userRoleTable");
         dbUserRoleTableUserField = (String)options.get("userRoleUserField");
         dbUserRoleTableRoleField = (String)options.get("userRoleRoleField");

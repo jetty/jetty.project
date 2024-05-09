@@ -16,7 +16,6 @@ package org.eclipse.jetty.session.infinispan;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.session.SessionData;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
@@ -42,14 +41,13 @@ public class InfinispanSessionLegacyConverter
     RemoteCache<String, SessionData> _legacyCache;
     boolean _verbose = false;
 
-    public InfinispanSessionLegacyConverter(String cacheName)
-        throws Exception
+    public InfinispanSessionLegacyConverter(String cacheName) throws Exception
     {
-        //legacy serialization
+        // legacy serialization
         _legacyManager = new RemoteCacheManager();
         _legacyCache = _legacyManager.getCache(cacheName);
 
-        //new protobuf based
+        // new protobuf based
         String host = System.getProperty("host", "127.0.0.1");
         _verbose = Boolean.getBoolean("verbose");
 
@@ -74,14 +72,15 @@ public class InfinispanSessionLegacyConverter
         long conversions = 0;
         List<String> keys = null;
 
-        //Get all sessions stored in the legacy format
+        // Get all sessions stored in the legacy format
         try
         {
             keys = _legacyCache.keySet().stream().collect(Collectors.toList());
         }
         catch (Exception e)
         {
-            System.err.println("Error listing legacy sessions, assuming previously converted. Run again using 'check' argument to verify conversion");
+            System.err.println(
+                "Error listing legacy sessions, assuming previously converted. Run again using 'check' argument to verify conversion");
             if (_verbose)
                 e.printStackTrace();
             System.exit(1);
@@ -96,7 +95,8 @@ public class InfinispanSessionLegacyConverter
             }
             catch (Exception e)
             {
-                System.err.println("Read of session " + s + " failed. Assuming session already converted and skipping.");
+                System.err.println(
+                    "Read of session " + s + " failed. Assuming session already converted and skipping.");
                 if (_verbose)
                     e.printStackTrace();
                 continue;
@@ -118,8 +118,14 @@ public class InfinispanSessionLegacyConverter
 
                 try
                 {
-                    InfinispanSessionData isd = new InfinispanSessionData(data.getId(), data.getContextPath(), data.getVhost(), data.getCreated(),
-                        data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs());
+                    InfinispanSessionData isd = new InfinispanSessionData(
+                        data.getId(),
+                        data.getContextPath(),
+                        data.getVhost(),
+                        data.getCreated(),
+                        data.getAccessed(),
+                        data.getLastAccessed(),
+                        data.getMaxInactiveMs());
                     isd.putAllAttributes(data.getAllAttributes());
                     isd.setExpiry(data.getExpiry());
                     isd.setCookieSet(data.getCookieSet());
@@ -167,7 +173,8 @@ public class InfinispanSessionLegacyConverter
         }
         catch (Exception e)
         {
-            System.err.println("Unable to read converted sessions, assuming still in legacy format. Run again without 'check' option to convert.");
+            System.err.println(
+                "Unable to read converted sessions, assuming still in legacy format. Run again without 'check' option to convert.");
             e.printStackTrace();
             System.exit(1);
         }
@@ -189,7 +196,8 @@ public class InfinispanSessionLegacyConverter
 
     public static final void usage()
     {
-        System.err.println("Usage:  InfinispanSessionLegacyConverter [-Dhost=127.0.0.1] [-Dverbose=true] <cache-name> [check]");
+        System.err.println(
+            "Usage:  InfinispanSessionLegacyConverter [-Dhost=127.0.0.1] [-Dverbose=true] <cache-name> [check]");
     }
 
     public static final void main(String... args)

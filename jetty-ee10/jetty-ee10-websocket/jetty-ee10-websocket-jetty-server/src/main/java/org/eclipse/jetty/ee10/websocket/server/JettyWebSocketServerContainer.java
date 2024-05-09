@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee10.websocket.server;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -20,10 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
@@ -54,7 +53,8 @@ import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JettyWebSocketServerContainer extends ContainerLifeCycle implements WebSocketContainer, Configurable, LifeCycle.Listener
+public class JettyWebSocketServerContainer extends ContainerLifeCycle
+    implements WebSocketContainer, Configurable, LifeCycle.Listener
 {
     public static final String JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE = WebSocketContainer.class.getName();
 
@@ -65,7 +65,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     public static JettyWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
-        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Jakarta Websocket");
+        ServletContextHandler contextHandler =
+            ServletContextHandler.getServletContextHandler(servletContext, "Jakarta Websocket");
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
@@ -82,7 +83,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         // Create the Jetty ServerContainer implementation.
         WebSocketMappings mappings = WebSocketMappings.ensureMappings(contextHandler);
         WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(contextHandler);
-        JettyWebSocketServerContainer container = new JettyWebSocketServerContainer(contextHandler, mappings, components, executor);
+        JettyWebSocketServerContainer container =
+            new JettyWebSocketServerContainer(contextHandler, mappings, components, executor);
 
         // Manage the lifecycle of the Container.
         contextHandler.addManaged(container);
@@ -127,7 +129,11 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
      * @param webSocketMappings the {@link WebSocketMappings} that this container belongs to
      * @param executor the {@link Executor} to use
      */
-    JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMappings webSocketMappings, WebSocketComponents components, Executor executor)
+    JettyWebSocketServerContainer(
+                                  ServletContextHandler contextHandler,
+                                  WebSocketMappings webSocketMappings,
+                                  WebSocketComponents components,
+                                  Executor executor)
     {
         this.contextHandler = contextHandler;
         this.webSocketMappings = webSocketMappings;
@@ -151,7 +157,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         {
             try
             {
-                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+                Object webSocket = creator.createWebSocket(
+                    new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
                 if (webSocket == null)
                     cb.succeeded();
                 return webSocket;
@@ -168,7 +175,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     public void addMapping(String pathSpec, final Class<?> endpointClass)
     {
         if (!ReflectUtils.isDefaultConstructable(endpointClass))
-            throw new IllegalArgumentException("Cannot access default constructor for the class: " + endpointClass.getName());
+            throw new IllegalArgumentException(
+                "Cannot access default constructor for the class: " + endpointClass.getName());
 
         addMapping(pathSpec, (req, resp) ->
         {
@@ -178,7 +186,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             }
             catch (Exception e)
             {
-                throw new org.eclipse.jetty.websocket.api.exceptions.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
+                throw new org.eclipse.jetty.websocket.api.exceptions.WebSocketException(
+                    "Unable to create instance of " + endpointClass.getName(), e);
             }
         });
     }
@@ -196,13 +205,15 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
      * @return true if the connection could be upgraded or an error was sent.
      * @throws IOException if an I/O error occurs.
      */
-    public boolean upgrade(JettyWebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public boolean upgrade(JettyWebSocketCreator creator, HttpServletRequest request, HttpServletResponse response)
+        throws IOException
     {
         WebSocketCreator coreCreator = (req, resp, cb) ->
         {
             try
             {
-                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+                Object webSocket = creator.createWebSocket(
+                    new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
                 cb.succeeded();
                 return webSocket;
             }
@@ -225,7 +236,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
         try (Blocker.Callback callback = Blocker.callback())
         {
-            boolean upgraded = webSocketMappings.upgrade(negotiator, servletContextRequest, servletContextResponse, callback, customizer);
+            boolean upgraded = webSocketMappings.upgrade(
+                negotiator, servletContextRequest, servletContextResponse, callback, customizer);
             if (upgraded)
                 callback.block();
             return upgraded;

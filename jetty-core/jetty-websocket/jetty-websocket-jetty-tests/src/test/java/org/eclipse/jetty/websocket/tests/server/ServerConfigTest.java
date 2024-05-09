@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -21,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Server;
@@ -46,12 +51,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerConfigTest
 {
@@ -116,8 +115,8 @@ public class ServerConfigTest
     {
         public static WebSocketUpgradeHandler from(Server server, ContextHandler context, Object wsEndPoint)
         {
-            return WebSocketUpgradeHandler.from(server, context, container ->
-                container.addMapping("/", (rq, rs, cb) -> wsEndPoint));
+            return WebSocketUpgradeHandler.from(
+                server, context, container -> container.addMapping("/", (rq, rs, cb) -> wsEndPoint));
         }
     }
 
@@ -159,8 +158,12 @@ public class ServerConfigTest
 
         PathMappingsHandler pathsHandler = new PathMappingsHandler();
         context.setHandler(pathsHandler);
-        pathsHandler.addMapping(new ServletPathSpec("/servletConfig"), ConfigWebSocketUpgradeHandler.from(server, context, standardEndpoint));
-        pathsHandler.addMapping(new ServletPathSpec("/sessionConfig"), SessionConfigWebSocketUpgradeHandler.from(server, context, sessionConfigEndpoint));
+        pathsHandler.addMapping(
+            new ServletPathSpec("/servletConfig"),
+            ConfigWebSocketUpgradeHandler.from(server, context, standardEndpoint));
+        pathsHandler.addMapping(
+            new ServletPathSpec("/sessionConfig"),
+            SessionConfigWebSocketUpgradeHandler.from(server, context, sessionConfigEndpoint));
         pathsHandler.addMapping(new ServletPathSpec("/"), WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
@@ -196,7 +199,8 @@ public class ServerConfigTest
         connect.get(5, TimeUnit.SECONDS);
 
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
-        WebSocketCoreSession coreSession = (WebSocketCoreSession)((WebSocketSession)serverEndpoint.session).getCoreSession();
+        WebSocketCoreSession coreSession =
+            (WebSocketCoreSession)((WebSocketSession)serverEndpoint.session).getCoreSession();
         WebSocketConnection connection = coreSession.getConnection();
 
         assertThat(connection.getInputBufferSize(), is(INPUT_BUFFER_SIZE));

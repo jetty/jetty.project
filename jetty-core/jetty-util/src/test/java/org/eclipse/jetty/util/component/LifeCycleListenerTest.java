@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.util.component;
 
-import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.util.NanoTime;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.util.NanoTime;
+import org.junit.jupiter.api.Test;
 
 public class LifeCycleListenerTest
 {
@@ -56,7 +56,9 @@ public class LifeCycleListenerTest
         assertTrue(listener.started, "The started event didn't occur");
 
         // check that the starting event occurs before the started event
-        assertTrue(NanoTime.isBeforeOrSame(listener.startingNanoTime, listener.startedNanoTime), "The starting event must occur before the started event");
+        assertTrue(
+            NanoTime.isBeforeOrSame(listener.startingNanoTime, listener.startedNanoTime),
+            "The starting event must occur before the started event");
 
         // check that the lifecycle's state is started
         assertTrue(lifecycle.isStarted(), "The lifecycle state is not started");
@@ -98,7 +100,9 @@ public class LifeCycleListenerTest
         assertTrue(listener.stopped, "The stopped event didn't occur");
 
         // check that the stopping event occurs before the stopped event
-        assertTrue(NanoTime.isBeforeOrSame(listener.stoppingNanoTime, listener.stoppedNanoTime), "The stopping event must occur before the stopped event");
+        assertTrue(
+            NanoTime.isBeforeOrSame(listener.stoppingNanoTime, listener.stoppedNanoTime),
+            "The stopping event must occur before the stopped event");
         // System.out.println("STOPING TIME : " + listener.stoppingTime + " : " + listener.stoppedTime);
 
         // check that the lifecycle's state is stopped
@@ -106,8 +110,7 @@ public class LifeCycleListenerTest
     }
 
     @Test
-    public void testRemoveLifecycleListener()
-        throws Exception
+    public void testRemoveLifecycleListener() throws Exception
     {
         TestLifeCycle lifecycle = new TestLifeCycle();
         TestListener listener = new TestListener();
@@ -154,6 +157,7 @@ public class LifeCycleListenerTest
     {
         @SuppressWarnings("unused")
         private boolean failure = false;
+
         private boolean started = false;
         private boolean starting = false;
         private boolean stopped = false;
@@ -254,7 +258,8 @@ public class LifeCycleListenerTest
     @Test
     public void testInstallBean()
     {
-        assertEquals("test",
+        assertEquals(
+            "test",
             new ContainerLifeCycle()
             {
                 {
@@ -268,13 +273,11 @@ public class LifeCycleListenerTest
         @Override
         public void beanAdded(Container parent, Object child)
         {
-
         }
 
         @Override
         public void beanRemoved(Container parent, Object child)
         {
-
         }
     }
 }

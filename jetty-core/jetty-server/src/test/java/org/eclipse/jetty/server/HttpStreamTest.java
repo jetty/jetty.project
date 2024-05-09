@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Queue;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
 
 public class HttpStreamTest
 {
@@ -47,10 +46,12 @@ public class HttpStreamTest
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setMaxUnconsumedRequestContentReads(2);
         TestHttpStream httpStream = new TestHttpStream(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {1}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {2}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {3}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {3}), true));
         Throwable throwable = HttpStream.consumeAvailable(httpStream, httpConfig);
         assertThat(throwable, notNullValue());
     }
@@ -61,10 +62,12 @@ public class HttpStreamTest
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setMaxUnconsumedRequestContentReads(5);
         TestHttpStream httpStream = new TestHttpStream(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {1}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {2}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {3}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {3}), true));
         Throwable throwable = HttpStream.consumeAvailable(httpStream, httpConfig);
         assertThat(throwable, nullValue());
     }
@@ -76,9 +79,8 @@ public class HttpStreamTest
         httpConfig.setMaxUnconsumedRequestContentReads(5);
         NumberFormatException failure = new NumberFormatException();
         TestHttpStream httpStream = new TestHttpStream(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {1}), false),
-            Content.Chunk.from(failure, true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false), Content.Chunk.from(failure, true));
         Throwable throwable = HttpStream.consumeAvailable(httpStream, httpConfig);
         assertThat(throwable, sameInstance(failure));
     }
@@ -90,10 +92,11 @@ public class HttpStreamTest
         httpConfig.setMaxUnconsumedRequestContentReads(5);
         NumberFormatException failure = new NumberFormatException();
         TestHttpStream httpStream = new TestHttpStream(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
             Content.Chunk.from(failure, false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {2}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), true));
         Throwable throwable = HttpStream.consumeAvailable(httpStream, httpConfig);
         assertThat(throwable, sameInstance(failure));
     }
@@ -132,7 +135,12 @@ public class HttpStreamTest
         }
 
         @Override
-        public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+        public void send(
+                         MetaData.Request request,
+                         MetaData.Response response,
+                         boolean last,
+                         ByteBuffer content,
+                         Callback callback)
         {
             throw new UnsupportedOperationException();
         }

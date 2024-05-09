@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
-
 import org.eclipse.jetty.util.ajax.JSON;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,8 +59,8 @@ public class JwtDecoder
             LOG.debug("JWT Header: {}", jwtHeader);
 
         /* If the ID Token is received via direct communication between the Client
-         and the Token Endpoint (which it is in this flow), the TLS server validation
-          MAY be used to validate the issuer in place of checking the token signature. */
+        and the Token Endpoint (which it is in this flow), the TLS server validation
+         MAY be used to validate the issuer in place of checking the token signature. */
         if (LOG.isDebugEnabled())
             LOG.debug("JWT signature not validated {}", jwtSignature);
 

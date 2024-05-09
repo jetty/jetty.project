@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
-import java.io.IOException;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
@@ -31,10 +29,9 @@ import jakarta.servlet.annotation.WebInitParam;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 
-@WebFilter(filterName = "CFilter", dispatcherTypes = {DispatcherType.REQUEST}, urlPatterns = {"/*"}, initParams = {
-    @WebInitParam(name = "a", value = "99")
-    }, asyncSupported = false)
+@WebFilter(filterName = "CFilter", dispatcherTypes = {DispatcherType.REQUEST}, urlPatterns = {"/*"}, initParams = {@WebInitParam(name = "a", value = "99")}, asyncSupported = false)
 @RunAs("admin")
 public class FilterC implements Filter
 {
@@ -44,13 +41,11 @@ public class FilterC implements Filter
     @PreDestroy
     public void pre()
     {
-
     }
 
     @PostConstruct
     public void post()
     {
-
     }
 
     @Override

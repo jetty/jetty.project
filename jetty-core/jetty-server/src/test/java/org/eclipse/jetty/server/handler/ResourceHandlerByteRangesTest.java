@@ -13,12 +13,17 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -50,12 +55,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ResourceHandlerByteRangesTest
 {
@@ -101,7 +100,8 @@ public class ResourceHandlerByteRangesTest
     {
         changeHandler(new ResourceHandler()
         {
-            final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
+            final Resource memResource =
+                ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
             protected HttpContent.Factory newHttpContentFactory()
@@ -112,13 +112,15 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(BufferUtil.toBuffer("""
-                GET / HTTP/1.1\r
-                Host: local\r
-                Range: bytes=234-258\r
-                Connection: close\r
-                \r
-                """));
+            socket.write(
+                BufferUtil.toBuffer(
+                    """
+                        GET / HTTP/1.1\r
+                        Host: local\r
+                        Range: bytes=234-258\r
+                        Connection: close\r
+                        \r
+                        """));
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
@@ -133,7 +135,8 @@ public class ResourceHandlerByteRangesTest
     {
         changeHandler(new ResourceHandler()
         {
-            final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
+            final Resource memResource =
+                ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
             protected HttpContent.Factory newHttpContentFactory()
@@ -144,21 +147,28 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(BufferUtil.toBuffer("""
-                GET / HTTP/1.1\r
-                Host: local\r
-                Range: bytes=234-258, 494-519\r
-                Connection: close\r
-                \r
-                """));
+            socket.write(
+                BufferUtil.toBuffer(
+                    """
+                        GET / HTTP/1.1\r
+                        Host: local\r
+                        Range: bytes=234-258, 494-519\r
+                        Connection: close\r
+                        \r
+                        """));
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
             assertEquals(HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
-            assertThat(response.getContent(), Matchers.stringContainsInOrder(
-                "Content-Type: text/plain", "Content-Range: bytes 234-258/10400", "    10\tThis is a big file",
-                "Content-Type: text/plain", "Content-Range: bytes 494-519/10400", "    20\tThis is a big file")
-            );
+            assertThat(
+                response.getContent(),
+                Matchers.stringContainsInOrder(
+                    "Content-Type: text/plain",
+                    "Content-Range: bytes 234-258/10400",
+                    "    10\tThis is a big file",
+                    "Content-Type: text/plain",
+                    "Content-Range: bytes 494-519/10400",
+                    "    20\tThis is a big file"));
         }
     }
 
@@ -167,14 +177,17 @@ public class ResourceHandlerByteRangesTest
     {
         changeHandler(new ResourceHandler()
         {
-            final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
+            final Resource memResource =
+                ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
                 return path -> new ResourceHttpContent(memResource, "text/plain")
                 {
-                    final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
+                    final ByteBuffer buffer = IOResources.toRetainableByteBuffer(
+                        getResource(), ByteBufferPool.NON_POOLING, false)
+                        .getByteBuffer();
 
                     @Override
                     public ByteBuffer getByteBuffer()
@@ -187,13 +200,15 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(BufferUtil.toBuffer("""
-                GET / HTTP/1.1\r
-                Host: local\r
-                Range: bytes=234-258\r
-                Connection: close\r
-                \r
-                """));
+            socket.write(
+                BufferUtil.toBuffer(
+                    """
+                        GET / HTTP/1.1\r
+                        Host: local\r
+                        Range: bytes=234-258\r
+                        Connection: close\r
+                        \r
+                        """));
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
@@ -208,14 +223,17 @@ public class ResourceHandlerByteRangesTest
     {
         changeHandler(new ResourceHandler()
         {
-            final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
+            final Resource memResource =
+                ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
                 return path -> new ResourceHttpContent(memResource, "text/plain")
                 {
-                    final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
+                    final ByteBuffer buffer = IOResources.toRetainableByteBuffer(
+                        getResource(), ByteBufferPool.NON_POOLING, false)
+                        .getByteBuffer();
 
                     @Override
                     public ByteBuffer getByteBuffer()
@@ -228,21 +246,28 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(BufferUtil.toBuffer("""
-                GET / HTTP/1.1\r
-                Host: local\r
-                Range: bytes=234-258, 494-519\r
-                Connection: close\r
-                \r
-                """));
+            socket.write(
+                BufferUtil.toBuffer(
+                    """
+                        GET / HTTP/1.1\r
+                        Host: local\r
+                        Range: bytes=234-258, 494-519\r
+                        Connection: close\r
+                        \r
+                        """));
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
             assertEquals(HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
-            assertThat(response.getContent(), Matchers.stringContainsInOrder(
-                "Content-Type: text/plain", "Content-Range: bytes 234-258/10400", "    10\tThis is a big file",
-                "Content-Type: text/plain", "Content-Range: bytes 494-519/10400", "    20\tThis is a big file")
-            );
+            assertThat(
+                response.getContent(),
+                Matchers.stringContainsInOrder(
+                    "Content-Type: text/plain",
+                    "Content-Range: bytes 234-258/10400",
+                    "    10\tThis is a big file",
+                    "Content-Type: text/plain",
+                    "Content-Range: bytes 494-519/10400",
+                    "    20\tThis is a big file"));
         }
     }
 
@@ -251,7 +276,8 @@ public class ResourceHandlerByteRangesTest
     {
         changeHandler(new ResourceHandler()
         {
-            final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
+            final Resource memResource =
+                ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
             protected HttpContent.Factory newHttpContentFactory()
@@ -270,13 +296,15 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(BufferUtil.toBuffer("""
-                GET / HTTP/1.1\r
-                Host: local\r
-                Range: bytes=234-258\r
-                Connection: close\r
-                \r
-                """));
+            socket.write(
+                BufferUtil.toBuffer(
+                    """
+                        GET / HTTP/1.1\r
+                        Host: local\r
+                        Range: bytes=234-258\r
+                        Connection: close\r
+                        \r
+                        """));
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
@@ -287,7 +315,8 @@ public class ResourceHandlerByteRangesTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"bad-unit=0-0", "bytes=not-integer", "bytes=0", "bytes=-", "bytes=2-1", "bytes=100-200"})
+    @ValueSource(strings =
+    {"bad-unit=0-0", "bytes=not-integer", "bytes=0", "bytes=-", "bytes=2-1", "bytes=100-200"})
     public void testBadRange(String rangeValue) throws Exception
     {
         HttpTester.Request request = HttpTester.newRequest();

@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.ee9.security.authentication;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.Writer;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Locale;
-
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Locale;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.security.LoggedOutAuthentication;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
@@ -317,7 +316,6 @@ public class DeferredAuthentication implements Authentication.Deferred
         @Override
         public void setContentLengthLong(long len)
         {
-
         }
 
         @Override
@@ -375,7 +373,6 @@ public class DeferredAuthentication implements Authentication.Deferred
         @Override
         public void setWriteListener(WriteListener writeListener)
         {
-
         }
 
         @Override

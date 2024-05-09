@@ -28,13 +28,11 @@ public class StringSequenceDecoder implements Decoder.Text<StringSequence>
     @Override
     public void init(EndpointConfig config)
     {
-
     }
 
     @Override
     public void destroy()
     {
-
     }
 
     @Override

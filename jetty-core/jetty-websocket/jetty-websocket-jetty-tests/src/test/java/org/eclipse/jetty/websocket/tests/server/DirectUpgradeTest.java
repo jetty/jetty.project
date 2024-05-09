@@ -13,12 +13,17 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -41,12 +46,6 @@ import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DirectUpgradeTest
 {
@@ -104,8 +103,11 @@ public class DirectUpgradeTest
                     ServerWebSocketContainer container = ServerWebSocketContainer.get(request.getContext());
                     assertNotNull(container);
                     // Direct upgrade.
-                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) ->
-                        supplier.get(), request, response, callback);
+                    return container.upgrade(
+                        (upgradeRequest, upgradeResponse, upgradeCallback) -> supplier.get(),
+                        request,
+                        response,
+                        callback);
                 }
             });
             return context;
@@ -151,8 +153,11 @@ public class DirectUpgradeTest
                 public boolean handle(Request request, Response response, Callback callback)
                 {
                     // Direct upgrade.
-                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) ->
-                        new EchoSocket(), request, response, callback);
+                    return container.upgrade(
+                        (upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(),
+                        request,
+                        response,
+                        callback);
                 }
             });
             return context;
@@ -172,7 +177,8 @@ public class DirectUpgradeTest
     }
 
     @Test
-    public void testDirectWebSocketUpgradeInChildHandlerWithoutWebSocketUpgradeHandlerWithoutContextHandler() throws Exception
+    public void testDirectWebSocketUpgradeInChildHandlerWithoutWebSocketUpgradeHandlerWithoutContextHandler()
+        throws Exception
     {
         start(server ->
         {
@@ -191,9 +197,13 @@ public class DirectUpgradeTest
                 public boolean handle(Request request, Response response, Callback callback)
                 {
                     // Direct upgrade.
-                    ServerWebSocketContainer container = ServerWebSocketContainer.get(getServer().getContext());
-                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) ->
-                        new EchoSocket(), request, response, callback);
+                    ServerWebSocketContainer container =
+                        ServerWebSocketContainer.get(getServer().getContext());
+                    return container.upgrade(
+                        (upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(),
+                        request,
+                        response,
+                        callback);
                 }
             };
         });
@@ -222,10 +232,15 @@ public class DirectUpgradeTest
             WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container)
             {
                 @Override
-                protected boolean handle(ServerWebSocketContainer container, Request request, Response response, Callback callback)
+                protected boolean handle(
+                                         ServerWebSocketContainer container, Request request, Response response, Callback callback)
                 {
                     // Modify the behavior to do a direct upgrade instead of mappings upgrade.
-                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(), request, response, callback);
+                    return container.upgrade(
+                        (upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(),
+                        request,
+                        response,
+                        callback);
                 }
             };
             context.setHandler(wsHandler);
@@ -247,9 +262,8 @@ public class DirectUpgradeTest
         // Send a request that is not a WebSocket upgrade.
         // The upgrade will not happen and the child Handler will be called.
         URI uri = server.getURI().resolve("/ctx/ws");
-        ContentResponse response = httpClient.newRequest(uri)
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        ContentResponse response =
+            httpClient.newRequest(uri).timeout(5, TimeUnit.SECONDS).send();
         assertEquals("HELLO", response.getContentAsString());
     }
 
@@ -275,7 +289,9 @@ public class DirectUpgradeTest
         @Override
         public void onWebSocketText(String message)
         {
-            session.sendText(message, org.eclipse.jetty.websocket.api.Callback.from(session::demand, Throwable::printStackTrace));
+            session.sendText(
+                message,
+                org.eclipse.jetty.websocket.api.Callback.from(session::demand, Throwable::printStackTrace));
         }
     }
 }

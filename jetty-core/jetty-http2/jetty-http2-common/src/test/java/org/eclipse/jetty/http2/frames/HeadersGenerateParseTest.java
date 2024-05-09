@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -31,10 +34,6 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HeadersGenerateParseTest
 {
     private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
@@ -45,10 +44,15 @@ public class HeadersGenerateParseTest
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         int streamId = 13;
-        HttpFields fields = HttpFields.build()
-            .put("Accept", "text/html")
-            .put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
+        HttpFields fields = HttpFields.build().put("Accept", "text/html").put("User-Agent", "Jetty");
+        MetaData.Request metaData = new MetaData.Request(
+            "GET",
+            HttpScheme.HTTP.asString(),
+            new HostPortHttpField("localhost:8080"),
+            "/path",
+            HttpVersion.HTTP_2,
+            fields,
+            -1);
 
         final List<HeadersFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, 8192);
@@ -118,10 +122,16 @@ public class HeadersGenerateParseTest
         for (int i = 0; i < 2; ++i)
         {
             int streamId = 13;
-            HttpFields.Mutable fields = HttpFields.build()
-                .put("Accept", "text/html")
-                .put("User-Agent", "Jetty");
-            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
+            HttpFields.Mutable fields =
+                HttpFields.build().put("Accept", "text/html").put("User-Agent", "Jetty");
+            MetaData.Request metaData = new MetaData.Request(
+                "GET",
+                HttpScheme.HTTP.asString(),
+                new HostPortHttpField("localhost:8080"),
+                "/path",
+                HttpVersion.HTTP_2,
+                fields,
+                -1);
 
             ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);

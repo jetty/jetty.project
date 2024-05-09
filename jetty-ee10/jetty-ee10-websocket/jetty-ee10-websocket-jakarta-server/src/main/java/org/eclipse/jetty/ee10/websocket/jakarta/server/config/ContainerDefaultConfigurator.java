@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.server.config;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ServiceLoader;
-
 import jakarta.websocket.Extension;
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerEndpointConfig;
 import jakarta.websocket.server.ServerEndpointConfig.Configurator;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ServiceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +80,9 @@ public final class ContainerDefaultConfigurator extends Configurator
         for (Extension ext : requested)
         {
             // Only choose the first extension if multiple with the same name.
-            long matches = negotiatedExtensions.stream().filter(e -> e.getName().equals(ext.getName())).count();
+            long matches = negotiatedExtensions.stream()
+                .filter(e -> e.getName().equals(ext.getName()))
+                .count();
             if (matches == 0)
                 negotiatedExtensions.add(ext);
         }
@@ -121,7 +122,8 @@ public final class ContainerDefaultConfigurator extends Configurator
             }
         }
 
-        LOG.warn("Client requested subprotocols {} do not match any endpoint supported subprotocols {}",
+        LOG.warn(
+            "Client requested subprotocols {} do not match any endpoint supported subprotocols {}",
             String.join(",", requested),
             String.join(",", supported));
         return NO_SUBPROTOCOL;

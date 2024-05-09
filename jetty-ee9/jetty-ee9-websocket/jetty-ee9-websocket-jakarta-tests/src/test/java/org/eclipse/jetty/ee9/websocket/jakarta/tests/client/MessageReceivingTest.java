@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.Session;
+import jakarta.websocket.WebSocketContainer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,14 +34,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.CloseReason;
-import jakarta.websocket.ContainerProvider;
-import jakarta.websocket.Endpoint;
-import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.Session;
-import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.DataUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -50,11 +54,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 
 /**
  * This class tests receiving of messages by different types of {@link jakarta.websocket.MessageHandler}
@@ -244,7 +243,13 @@ public class MessageReceivingTest
             for (int i = 0; i < parts.length; i++)
             {
                 if (i > 0)
-                    getCoreSession().sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, true);
+                    getCoreSession()
+                        .sendFrame(
+                            new Frame(OpCode.CONTINUATION)
+                                .setPayload(" ")
+                                .setFin(false),
+                            Callback.NOOP,
+                            true);
                 boolean last = (i >= (parts.length - 1));
                 Frame frame = new Frame((i == 0) ? OpCode.TEXT : OpCode.CONTINUATION);
                 frame.setPayload(BufferUtil.toBuffer(parts[i], UTF_8));
@@ -312,7 +317,10 @@ public class MessageReceivingTest
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("{}.onWholeBinary({})", EchoWholeMessageFrameHandler.class.getSimpleName(), BufferUtil.toDetailString(wholeMessage));
+                LOG.debug(
+                    "{}.onWholeBinary({})",
+                    EchoWholeMessageFrameHandler.class.getSimpleName(),
+                    BufferUtil.toDetailString(wholeMessage));
             }
 
             sendBinary(wholeMessage, callback, false);
@@ -323,7 +331,10 @@ public class MessageReceivingTest
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("{}.onWholeText({})", EchoWholeMessageFrameHandler.class.getSimpleName(), TextUtils.hint(wholeMessage));
+                LOG.debug(
+                    "{}.onWholeText({})",
+                    EchoWholeMessageFrameHandler.class.getSimpleName(),
+                    TextUtils.hint(wholeMessage));
             }
 
             sendText(wholeMessage, callback, false);
@@ -416,8 +427,8 @@ public class MessageReceivingTest
     /**
      * Partial message handler for receiving binary messages.
      */
-    public static class PartialByteBufferCaptureHandler extends AbstractHandler implements
-        jakarta.websocket.MessageHandler.Partial<ByteBuffer>
+    public static class PartialByteBufferCaptureHandler extends AbstractHandler
+        implements jakarta.websocket.MessageHandler.Partial<ByteBuffer>
     {
         /**
          * Parts of the current message. This list is appended with every non-last part and is
@@ -430,7 +441,10 @@ public class MessageReceivingTest
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("PartialByteBufferCaptureHandler.onMessage({}, {})", BufferUtil.toDetailString(messagePart), last);
+                LOG.debug(
+                    "PartialByteBufferCaptureHandler.onMessage({}, {})",
+                    BufferUtil.toDetailString(messagePart),
+                    last);
             }
 
             final ByteBuffer bufferCopy = DataUtils.copyOf(messagePart);
@@ -458,8 +472,8 @@ public class MessageReceivingTest
     /**
      * Whole message handler for receiving binary messages.
      */
-    public static class WholeByteBufferCaptureHandler extends AbstractHandler implements
-        jakarta.websocket.MessageHandler.Whole<ByteBuffer>
+    public static class WholeByteBufferCaptureHandler extends AbstractHandler
+        implements jakarta.websocket.MessageHandler.Whole<ByteBuffer>
     {
         @Override
         public void onMessage(ByteBuffer message)
@@ -472,8 +486,8 @@ public class MessageReceivingTest
     /**
      * Partial message handler for receiving text messages.
      */
-    public static class PartialStringCaptureHandler extends AbstractHandler implements
-        jakarta.websocket.MessageHandler.Partial<String>
+    public static class PartialStringCaptureHandler extends AbstractHandler
+        implements jakarta.websocket.MessageHandler.Partial<String>
     {
         /**
          * Parts of the current message. This list is appended with every non-last part and is
@@ -496,8 +510,8 @@ public class MessageReceivingTest
     /**
      * Whole message handler for receiving text messages.
      */
-    public static class WholeStringCaptureHandler extends AbstractHandler implements
-        jakarta.websocket.MessageHandler.Whole<String>
+    public static class WholeStringCaptureHandler extends AbstractHandler
+        implements jakarta.websocket.MessageHandler.Whole<String>
     {
         @Override
         public void onMessage(String message)

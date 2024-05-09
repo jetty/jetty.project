@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -77,6 +76,7 @@ public class Frame
      * </pre>
      */
     protected byte finRsvOp;
+
     protected byte[] mask;
 
     /**

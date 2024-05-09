@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.quic.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
@@ -48,10 +51,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @ExtendWith(WorkDirExtension.class)
 public class End2EndClientWithClientCertAuthTest
 {
@@ -60,12 +59,13 @@ public class End2EndClientWithClientCertAuthTest
     private Server server;
     private QuicServerConnector connector;
     private HttpClient client;
-    private final String responseContent = """
-        <html>
-        \t<body>
-        \t\tRequest served
-        \t</body>
-        </html>""";
+    private final String responseContent =
+        """
+            <html>
+            \t<body>
+            \t\tRequest served
+            \t</body>
+            </html>""";
     private SslContextFactory.Server serverSslContextFactory;
 
     @BeforeEach
@@ -123,7 +123,8 @@ public class End2EndClientWithClientCertAuthTest
         clientSslContextFactory.setTrustStore(keyStore);
         clientConnector.setSslContextFactory(clientSslContextFactory);
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
-        ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2Info =
+            new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));
         HttpClientTransportDynamic transport = new HttpClientTransportDynamic(clientConnector, http1Info, http2Info);
         client = new HttpClient(transport);
         client.start();

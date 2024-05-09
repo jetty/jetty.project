@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -310,8 +309,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     }
 
     @Override
-    protected void doStart()
-        throws Exception
+    protected void doStart() throws Exception
     {
         // complicated resolution of login and identity service to handle
         // many different ways these can be constructed and injected.
@@ -352,11 +350,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
         if (_authenticator == null)
         {
-            // If someone has set an authenticator factory only use that, otherwise try the list of discovered factories.
+            // If someone has set an authenticator factory only use that, otherwise try the list of discovered
+            // factories.
             if (_authenticatorFactory != null)
             {
-                Authenticator authenticator = _authenticatorFactory.getAuthenticator(getServer(), context,
-                    this);
+                Authenticator authenticator = _authenticatorFactory.getAuthenticator(getServer(), context, this);
 
                 if (authenticator != null)
                 {
@@ -370,8 +368,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             {
                 for (Authenticator.Factory factory : getKnownAuthenticatorFactories())
                 {
-                    Authenticator authenticator = factory.getAuthenticator(getServer(), context,
-                        this);
+                    Authenticator authenticator = factory.getAuthenticator(getServer(), context, this);
 
                     if (authenticator != null)
                     {
@@ -407,7 +404,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     @Override
     protected void doStop() throws Exception
     {
-        //if we discovered the services (rather than had them explicitly configured), remove them.
+        // if we discovered the services (rather than had them explicitly configured), remove them.
         if (!isManaged(_identityService))
         {
             removeBean(_identityService);
@@ -501,7 +498,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
         // Determine Constraint.Authentication
         Authorization constraintAuthorization = constraint.getAuthorization();
-        constraintAuthorization = _authenticator.getConstraintAuthentication(pathInContext, constraintAuthorization, request::getSession);
+        constraintAuthorization =
+            _authenticator.getConstraintAuthentication(pathInContext, constraintAuthorization, request::getSession);
         if (constraintAuthorization == Authorization.INHERIT)
             constraintAuthorization = Authorization.ALLOWED;
         if (LOG.isDebugEnabled())
@@ -510,7 +508,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
         try
         {
-            AuthenticationState authenticationState = mustValidate ? _authenticator.validateRequest(request, response, callback) : null;
+            AuthenticationState authenticationState =
+                mustValidate ? _authenticator.validateRequest(request, response, callback) : null;
 
             if (LOG.isDebugEnabled())
                 LOG.debug("AuthenticationState {}", authenticationState);
@@ -566,12 +565,11 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
             AuthenticationState.setAuthenticationState(request, authenticationState);
             IdentityService.Association association =
-                (authenticationState instanceof AuthenticationState.Succeeded user)
-                ? _identityService.associate(user.getUserIdentity(), null) : null;
+                (authenticationState instanceof AuthenticationState.Succeeded user) ? _identityService.associate(user.getUserIdentity(), null) : null;
 
             try
             {
-                //process the request by other handlers
+                // process the request by other handlers
                 return next.handle(_authenticator.prepareRequest(request, authenticationState), response, callback);
             }
             finally
@@ -604,11 +602,16 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
         if (httpConfig.getSecurePort() > 0)
         {
-            //Redirect to secure port
+            // Redirect to secure port
             String scheme = httpConfig.getSecureScheme();
             int port = httpConfig.getSecurePort();
 
-            String url = URIUtil.newURI(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
+            String url = URIUtil.newURI(
+                scheme,
+                Request.getServerName(request),
+                port,
+                request.getHttpURI().getPath(),
+                request.getHttpURI().getQuery());
             response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
 
             Response.sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, url, true);
@@ -621,7 +624,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
     protected boolean isAuthorized(Constraint constraint, AuthenticationState authenticationState)
     {
-        UserIdentity userIdentity = authenticationState instanceof AuthenticationState.Succeeded user ? user.getUserIdentity() : null;
+        UserIdentity userIdentity =
+            authenticationState instanceof AuthenticationState.Succeeded user ? user.getUserIdentity() : null;
         return switch (constraint.getAuthorization())
         {
             case FORBIDDEN, ALLOWED, INHERIT -> true;
@@ -750,7 +754,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
                 Set<String> roles = c.getRoles();
                 if (roles != null)
                     _knownRoles.addAll(roles);
-
             });
             return removed;
         }

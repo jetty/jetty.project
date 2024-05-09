@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.ee10.proxy;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.WritePendingException;
-
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -25,6 +21,9 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -45,20 +44,32 @@ public class AsyncProxyServlet extends ProxyServlet
     private static final String WRITE_LISTENER_ATTRIBUTE = AsyncProxyServlet.class.getName() + ".writeListener";
 
     @Override
-    protected Request.Content proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
+    protected Request.Content proxyRequestContent(
+                                                  HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
     {
         AsyncRequestContent content = new AsyncRequestContent();
         request.getInputStream().setReadListener(newReadListener(request, response, proxyRequest, content));
         return content;
     }
 
-    protected ReadListener newReadListener(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, AsyncRequestContent content)
+    protected ReadListener newReadListener(
+                                           HttpServletRequest request,
+                                           HttpServletResponse response,
+                                           Request proxyRequest,
+                                           AsyncRequestContent content)
     {
         return new StreamReader(request, response, proxyRequest, content);
     }
 
     @Override
-    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length, Callback callback)
+    protected void onResponseContent(
+                                     HttpServletRequest request,
+                                     HttpServletResponse response,
+                                     Response proxyResponse,
+                                     byte[] buffer,
+                                     int offset,
+                                     int length,
+                                     Callback callback)
     {
         try
         {
@@ -127,7 +138,11 @@ public class AsyncProxyServlet extends ProxyServlet
         private final Request proxyRequest;
         private final AsyncRequestContent content;
 
-        protected StreamReader(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, AsyncRequestContent content)
+        protected StreamReader(
+                               HttpServletRequest request,
+                               HttpServletResponse response,
+                               Request proxyRequest,
+                               AsyncRequestContent content)
         {
             this.request = request;
             this.response = response;
@@ -186,7 +201,14 @@ public class AsyncProxyServlet extends ProxyServlet
             return Action.IDLE;
         }
 
-        protected void onRequestContent(HttpServletRequest request, Request proxyRequest, AsyncRequestContent content, byte[] buffer, int offset, int length, Callback callback)
+        protected void onRequestContent(
+                                        HttpServletRequest request,
+                                        Request proxyRequest,
+                                        AsyncRequestContent content,
+                                        byte[] buffer,
+                                        int offset,
+                                        int length,
+                                        Callback callback)
         {
             content.write(ByteBuffer.wrap(buffer, offset, length), callback);
         }
@@ -287,6 +309,8 @@ public class AsyncProxyServlet extends ProxyServlet
 
     private enum WriteState
     {
-        READY, PENDING, IDLE
+        READY,
+        PENDING,
+        IDLE
     }
 }

@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.security.jaspi;
 
+import jakarta.security.auth.message.MessageInfo;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import jakarta.security.auth.message.MessageInfo;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 
 /**
  * Almost an implementation of jaspi MessageInfo.
@@ -37,7 +36,7 @@ public class JaspiMessageInfo implements MessageInfo
     {
         this.request = request;
         this.response = response;
-        //JASPI 3.8.1
+        // JASPI 3.8.1
         map = new MIMap(isAuthMandatory);
     }
 
@@ -81,7 +80,7 @@ public class JaspiMessageInfo implements MessageInfo
         return map.isAuthMandatory();
     }
 
-    //TODO this has bugs in the view implementations.  Changing them will not affect the hardcoded values.
+    // TODO this has bugs in the view implementations.  Changing them will not affect the hardcoded values.
     private static class MIMap implements Map
     {
         private final boolean isMandatory;
@@ -96,9 +95,7 @@ public class JaspiMessageInfo implements MessageInfo
         @Override
         public int size()
         {
-            return (isMandatory ? 1 : 0) +
-                (authMethod == null ? 0 : 1) +
-                (delegate == null ? 0 : delegate.size());
+            return (isMandatory ? 1 : 0) + (authMethod == null ? 0 : 1) + (delegate == null ? 0 : delegate.size());
         }
 
         @Override

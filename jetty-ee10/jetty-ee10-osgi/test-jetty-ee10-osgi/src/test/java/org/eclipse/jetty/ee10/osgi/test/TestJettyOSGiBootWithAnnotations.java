@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.ee10.osgi.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.MultiPartRequestContent;
@@ -32,10 +35,6 @@ import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleContext;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 /**
  * Pax-Exam to make sure the jetty-ee10-osgi-boot can be started along with the
@@ -58,28 +57,55 @@ public class TestJettyOSGiBootWithAnnotations
         options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-annotations.xml"));
-        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
-            "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-            "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+        options.add(CoreOptions.bootDelegationPackages(
+            "org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*"));
+        options.add(CoreOptions.systemPackages(
+            "com.sun.org.apache.xalan.internal.res",
+            "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xpath.internal",
+            "com.sun.org.apache.xpath.internal.jaxp",
+            "com.sun.org.apache.xpath.internal.objects"));
 
         TestOSGiUtil.coreJettyDependencies(options);
         TestOSGiUtil.coreJspDependencies(options);
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-java-client")
+            .versionAsInProject()
+            .start());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-client")
+            .versionAsInProject()
+            .start());
 
         options.addAll(annotationDependencies());
-        options.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("test-jetty-ee10-osgi-fragment").versionAsInProject().noStart());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty.ee10.osgi")
+            .artifactId("test-jetty-ee10-osgi-fragment")
+            .versionAsInProject()
+            .noStart());
         return options.toArray(new Option[0]);
     }
 
     public static List<Option> annotationDependencies()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-container-initializer").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-mock-resources").versionAsInProject());
-        //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.demos").artifactId("jetty-ee10-demo-spec-webapp").classifier("webbundle").versionAsInProject());
+        res.add(mavenBundle()
+            .groupId("org.eclipse.jetty.ee10.demos")
+            .artifactId("jetty-ee10-demo-container-initializer")
+            .versionAsInProject());
+        res.add(mavenBundle()
+            .groupId("org.eclipse.jetty.ee10.demos")
+            .artifactId("jetty-ee10-demo-mock-resources")
+            .versionAsInProject());
+        // test webapp bundle
+        res.add(mavenBundle()
+            .groupId("org.eclipse.jetty.ee10.demos")
+            .artifactId("jetty-ee10-demo-spec-webapp")
+            .classifier("webbundle")
+            .versionAsInProject());
         return res;
     }
 
@@ -106,19 +132,22 @@ public class TestJettyOSGiBootWithAnnotations
             response = req.send();
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
-            TestOSGiUtil.assertContains("Response contents", content,
-                "<p><b>Result: <span class=\"pass\">PASS</span></p>");
+            TestOSGiUtil.assertContains(
+                "Response contents", content, "<p><b>Result: <span class=\"pass\">PASS</span></p>");
 
             response = client.GET("http://127.0.0.1:" + port + "/ee10-demo-spec/frag.html");
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content, "<h1>FRAGMENT</h1>");
             MultiPartRequestContent multiPart = new MultiPartRequestContent();
-            multiPart.addPart(new MultiPart.ContentSourcePart("field", null, HttpFields.EMPTY, new StringRequestContent("foo")));
+            multiPart.addPart(
+                new MultiPart.ContentSourcePart("field", null, HttpFields.EMPTY, new StringRequestContent("foo")));
             multiPart.close();
 
-            response = client.newRequest("http://127.0.0.1:" + port + "/ee10-demo-spec/multi").method("POST")
-                .body(multiPart).send();
+            response = client.newRequest("http://127.0.0.1:" + port + "/ee10-demo-spec/multi")
+                .method("POST")
+                .body(multiPart)
+                .send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
         finally

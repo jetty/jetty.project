@@ -25,6 +25,12 @@ public class RandomConnectionPool extends MultiplexConnectionPool
 {
     public RandomConnectionPool(Destination destination, int maxConnections, int initialMaxMultiplex)
     {
-        super(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.RANDOM, maxConnections, MultiplexConnectionPool.newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex);
+        super(
+            destination,
+            () -> new ConcurrentPool<>(
+                ConcurrentPool.StrategyType.RANDOM,
+                maxConnections,
+                MultiplexConnectionPool.newMaxMultiplexer(initialMaxMultiplex)),
+            initialMaxMultiplex);
     }
 }

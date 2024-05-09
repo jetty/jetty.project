@@ -61,8 +61,7 @@ public final class URLStreamHandlerUtil
     private static Field getURLStreamHandlerFactoryField()
     {
         Optional<Field> optFactoryField = Arrays.stream(URL.class.getDeclaredFields())
-            .filter((f) -> Modifier.isStatic(f.getModifiers()) &&
-                f.getType().equals(URLStreamHandlerFactory.class))
+            .filter((f) -> Modifier.isStatic(f.getModifiers()) && f.getType().equals(URLStreamHandlerFactory.class))
             .findFirst();
 
         if (optFactoryField.isPresent())

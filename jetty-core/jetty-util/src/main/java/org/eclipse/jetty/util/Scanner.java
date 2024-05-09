@@ -37,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -60,6 +59,7 @@ public class Scanner extends ContainerLifeCycle
      * directory itself (as a file).
      */
     public static final int DEFAULT_SCAN_DEPTH = 1;
+
     public static final int MAX_SCAN_DEPTH = Integer.MAX_VALUE;
     private static final Logger LOG = LoggerFactory.getLogger(Scanner.class);
     private static final AtomicInteger SCANNER_IDS = new AtomicInteger();
@@ -81,12 +81,17 @@ public class Scanner extends ContainerLifeCycle
 
     private enum Status
     {
-        ADDED, CHANGED, REMOVED, STABLE
+        ADDED,
+        CHANGED,
+        REMOVED,
+        STABLE
     }
 
     enum Notification
     {
-        ADDED, CHANGED, REMOVED
+        ADDED,
+        CHANGED,
+        REMOVED
     }
 
     /**
@@ -161,7 +166,8 @@ public class Scanner extends ContainerLifeCycle
         IncludeExcludeSet<PathMatcher, Path> rootIncludesExcludes;
         Path root;
 
-        private Visitor(Path root, IncludeExcludeSet<PathMatcher, Path> rootIncludesExcludes, Map<Path, MetaData> scanInfoMap)
+        private Visitor(
+                        Path root, IncludeExcludeSet<PathMatcher, Path> rootIncludesExcludes, Map<Path, MetaData> scanInfoMap)
         {
             this.root = root;
             this.rootIncludesExcludes = rootIncludesExcludes;
@@ -177,13 +183,14 @@ public class Scanner extends ContainerLifeCycle
             dir = dir.toRealPath(_linkOptions);
             File f = dir.toFile();
 
-            //if we want to report directories and we haven't already seen it
+            // if we want to report directories and we haven't already seen it
             if (_reportDirs && !scanInfoMap.containsKey(dir))
             {
                 boolean accepted = false;
                 if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
                 {
-                    //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
+                    // accepted if not explicitly excluded and either is explicitly included or there are no explicit
+                    // inclusions
                     accepted = rootIncludesExcludes.test(dir);
                 }
                 else
@@ -195,7 +202,8 @@ public class Scanner extends ContainerLifeCycle
                 if (accepted)
                 {
                     scanInfoMap.put(dir, new MetaData(f.lastModified(), f.isDirectory() ? 0 : f.length()));
-                    if (LOG.isDebugEnabled()) LOG.debug("scan accepted dir {} mod={}", f, f.lastModified());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("scan accepted dir {} mod={}", f, f.lastModified());
                 }
             }
 
@@ -217,7 +225,8 @@ public class Scanner extends ContainerLifeCycle
             {
                 if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
                 {
-                    //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
+                    // accepted if not explicitly excluded and either is explicitly included or there are no explicit
+                    // inclusions
                     accepted = rootIncludesExcludes.test(path);
                 }
                 else if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
@@ -227,7 +236,8 @@ public class Scanner extends ContainerLifeCycle
             if (accepted)
             {
                 scanInfoMap.put(path, new MetaData(f.lastModified(), f.isDirectory() ? 0 : f.length()));
-                if (LOG.isDebugEnabled()) LOG.debug("scan accepted {} mod={}", f, f.lastModified());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("scan accepted {} mod={}", f, f.lastModified());
             }
 
             return FileVisitResult.CONTINUE;
@@ -352,12 +362,12 @@ public class Scanner extends ContainerLifeCycle
         {
         }
     }
-    
+
     public Scanner()
     {
         this(null);
     }
-    
+
     public Scanner(Scheduler scheduler)
     {
         this(scheduler, true);
@@ -369,10 +379,10 @@ public class Scanner extends ContainerLifeCycle
      */
     public Scanner(Scheduler scheduler, boolean reportRealPaths)
     {
-        //Create the scheduler and start it
+        // Create the scheduler and start it
         _scheduler = scheduler == null ? new ScheduledExecutorScheduler("Scanner-" + SCANNER_IDS.getAndIncrement(), true, 1) : scheduler;
         installBean(_scheduler);
-        _linkOptions = reportRealPaths ? new LinkOption[0] : new LinkOption[] {LinkOption.NOFOLLOW_LINKS};
+        _linkOptions = reportRealPaths ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     }
 
     /**
@@ -406,7 +416,7 @@ public class Scanner extends ContainerLifeCycle
         _scannables.clear();
         if (dirs == null)
             return;
-        for (Path p :dirs)
+        for (Path p : dirs)
         {
             if (Files.isDirectory(p))
                 addDirectory(p);
@@ -475,7 +485,6 @@ public class Scanner extends ContainerLifeCycle
             throw new IllegalStateException(e);
         }
     }
-
 
     /**
      * Apply a filter to files found in the scan directory.
@@ -625,8 +634,15 @@ public class Scanner extends ContainerLifeCycle
     public void doStart() throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Scanner start: autoStartScanning={}, reportExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
-                isAutoStartScanning(), _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
+            LOG.debug(
+                "Scanner start: autoStartScanning={}, reportExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
+                isAutoStartScanning(),
+                _reportExisting,
+                _scanDepth,
+                _reportDirs,
+                _scanInterval,
+                _filter,
+                _scannables);
 
         // Start the scanner and managed beans (eg: the scheduler)
         super.doStart();
@@ -665,7 +681,7 @@ public class Scanner extends ContainerLifeCycle
         }
         else
         {
-            //just register the list of existing files and only report changes
+            // just register the list of existing files and only report changes
             _prevScan = scanFiles();
         }
 
@@ -701,10 +717,10 @@ public class Scanner extends ContainerLifeCycle
         if (!isStopped())
             throw new IllegalStateException("Not stopped");
 
-        //clear the scannables
+        // clear the scannables
         _scannables.clear();
 
-        //clear the previous scans
+        // clear the previous scans
         _prevScan = null;
     }
 
@@ -750,18 +766,21 @@ public class Scanner extends ContainerLifeCycle
             return;
         }
 
-        scheduler.schedule(() ->
-        {
-            try
+        scheduler.schedule(
+            () ->
             {
-                scan();
-                complete.succeeded();
-            }
-            catch (Throwable t)
-            {
-                complete.failed(t);
-            }
-        }, 0, TimeUnit.MILLISECONDS);
+                try
+                {
+                    scan();
+                    complete.succeeded();
+                }
+                catch (Throwable t)
+                {
+                    complete.failed(t);
+                }
+            },
+            0,
+            TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -772,7 +791,8 @@ public class Scanner extends ContainerLifeCycle
         int cycle = _scanCount.incrementAndGet();
         reportScanStart(cycle);
         Map<Path, MetaData> currentScan = scanFiles();
-        reportDifferences(currentScan, _prevScan == null ? Collections.emptyMap() : Collections.unmodifiableMap(_prevScan));
+        reportDifferences(
+            currentScan, _prevScan == null ? Collections.emptyMap() : Collections.unmodifiableMap(_prevScan));
         _prevScan = currentScan;
         reportScanEnd(cycle);
     }
@@ -787,8 +807,11 @@ public class Scanner extends ContainerLifeCycle
         {
             try
             {
-                Files.walkFileTree(entry.getKey(), EnumSet.allOf(FileVisitOption.class), _scanDepth,
-                                   new Visitor(entry.getKey(), entry.getValue(), currentScan));
+                Files.walkFileTree(
+                    entry.getKey(),
+                    EnumSet.allOf(FileVisitOption.class),
+                    _scanDepth,
+                    new Visitor(entry.getKey(), entry.getValue(), currentScan));
             }
             catch (IOException e)
             {
@@ -810,7 +833,7 @@ public class Scanner extends ContainerLifeCycle
     {
         Map<Path, Notification> changes = new HashMap<>();
 
-        //Handle deleted files
+        // Handle deleted files
         Set<Path> oldScanKeys = new HashSet<>(oldScan.keySet());
         oldScanKeys.removeAll(currentScan.keySet());
         for (Path path : oldScanKeys)
@@ -826,18 +849,18 @@ public class Scanner extends ContainerLifeCycle
 
             if (previous == null)
             {
-                //New file - don't immediately
-                //notify this, wait until the size has
-                //settled down then notify the add.
+                // New file - don't immediately
+                // notify this, wait until the size has
+                // settled down then notify the add.
                 current._status = Status.ADDED;
             }
             else if (current.isModified(previous))
             {
-                //Changed file - handle case where file
-                //that was added on previous scan has since
-                //been modified. We need to retain status
-                //as added, so we send the ADDED event once
-                //the file has settled down.
+                // Changed file - handle case where file
+                // that was added on previous scan has since
+                // been modified. We need to retain status
+                // as added, so we send the ADDED event once
+                // the file has settled down.
                 if (previous._status == Status.ADDED)
                     current._status = Status.ADDED;
                 else
@@ -845,10 +868,10 @@ public class Scanner extends ContainerLifeCycle
             }
             else
             {
-                //Unchanged file: if it was previously
-                //ADDED, we can now send the ADDED event.
+                // Unchanged file: if it was previously
+                // ADDED, we can now send the ADDED event.
                 if (previous._status == Status.ADDED)
-                    changes.put(entry.getKey(),  Notification.ADDED);
+                    changes.put(entry.getKey(), Notification.ADDED);
                 else if (previous._status == Status.CHANGED)
                     changes.put(entry.getKey(), Notification.CHANGED);
 
@@ -859,7 +882,7 @@ public class Scanner extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("scanned {}", _scannables.keySet());
 
-        //Call the DiscreteListeners
+        // Call the DiscreteListeners
         for (Map.Entry<Path, Notification> entry : changes.entrySet())
         {
             switch (entry.getValue())
@@ -878,7 +901,7 @@ public class Scanner extends ContainerLifeCycle
                     break;
             }
         }
-        //Call the BulkListeners
+        // Call the BulkListeners
         reportBulkChanges(changes.keySet());
     }
 

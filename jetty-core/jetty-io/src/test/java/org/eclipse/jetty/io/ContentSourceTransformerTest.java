@@ -13,24 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.List;
-import java.util.Locale;
-import java.util.Queue;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.io.content.AsyncContent;
-import org.eclipse.jetty.io.content.ContentSourceTransformer;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -41,6 +23,23 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.List;
+import java.util.Locale;
+import java.util.Queue;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.ContentSourceTransformer;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ContentSourceTransformerTest
 {
@@ -68,7 +67,8 @@ public class ContentSourceTransformerTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @ValueSource(booleans =
+    {false, true})
     public void testTwoChunksAndEOF(boolean last)
     {
         AsyncContent source = new AsyncContent();
@@ -138,7 +138,8 @@ public class ContentSourceTransformerTest
 
                 Content.Chunk chunk = transformer.read();
                 assertNotNull(chunk);
-                assertEquals(expected.poll(), UTF_8.decode(chunk.getByteBuffer()).toString());
+                assertEquals(
+                    expected.poll(), UTF_8.decode(chunk.getByteBuffer()).toString());
                 chunk.release();
 
                 if (!chunk.isLast())
@@ -172,7 +173,8 @@ public class ContentSourceTransformerTest
                 Content.Chunk chunk = transformer.read();
                 if (chunk != null)
                 {
-                    assertEquals(expected.poll(), UTF_8.decode(chunk.getByteBuffer()).toString());
+                    assertEquals(
+                        expected.poll(), UTF_8.decode(chunk.getByteBuffer()).toString());
                     chunk.release();
                 }
 
@@ -322,12 +324,14 @@ public class ContentSourceTransformerTest
         TimeoutException originalFailure1 = new TimeoutException("timeout 1");
         TimeoutException originalFailure2 = new TimeoutException("timeout 2");
         TestSource originalSource = new TestSource(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'A'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'A'}), false),
             Content.Chunk.from(originalFailure1, false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'B'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'B'}), false),
             Content.Chunk.from(originalFailure2, false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'C'}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'C'}), true));
 
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(originalSource);
 
@@ -355,12 +359,16 @@ public class ContentSourceTransformerTest
         TimeoutException originalFailure1 = new TimeoutException("timeout 1");
         TimeoutException originalFailure2 = new TimeoutException("timeout 2");
         TestSource originalSource = new TestSource(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'A'}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'B'}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'C'}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'D'}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'E'}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'A'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'B'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'C'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'D'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'E'}), true));
 
         ContentSourceTransformer transformer = new ContentSourceTransformer(originalSource)
         {
@@ -369,7 +377,8 @@ public class ContentSourceTransformerTest
             {
                 if (rawChunk == null)
                     return null;
-                String decoded = UTF_8.decode(rawChunk.getByteBuffer().duplicate()).toString();
+                String decoded =
+                    UTF_8.decode(rawChunk.getByteBuffer().duplicate()).toString();
                 return switch (decoded)
                 {
                     case "B" -> Content.Chunk.from(originalFailure1, false);

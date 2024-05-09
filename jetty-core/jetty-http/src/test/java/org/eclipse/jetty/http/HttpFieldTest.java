@@ -13,13 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.api.Test;
 
 public class HttpFieldTest
 {

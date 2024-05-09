@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.security.jaspi;
 
+import jakarta.security.auth.message.MessageInfo;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import jakarta.security.auth.message.MessageInfo;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.server.Request;
@@ -43,10 +42,10 @@ public class JaspiMessageInfo implements MessageInfo
         _request = request;
         _response = response;
         _callback = callback;
-        //JASPI 3.8.1
+        // JASPI 3.8.1
         _map = new MIMap();
     }
-    
+
     public Callback getCallback()
     {
         return _callback;
@@ -62,12 +61,12 @@ public class JaspiMessageInfo implements MessageInfo
     {
         return _request;
     }
-    
+
     public Response getBaseResponse()
     {
         return _response;
     }
-    
+
     @Override
     public Object getRequestMessage()
     {
@@ -100,7 +99,7 @@ public class JaspiMessageInfo implements MessageInfo
         _response = ServletContextResponse.getServletContextResponse((ServletResponse)response);
     }
 
-    //TODO this has bugs in the view implementations.  Changing them will not affect the hardcoded values.
+    // TODO this has bugs in the view implementations.  Changing them will not affect the hardcoded values.
     private static class MIMap implements Map
     {
         private String authenticationType;

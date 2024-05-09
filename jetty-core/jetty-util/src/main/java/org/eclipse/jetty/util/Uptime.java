@@ -57,13 +57,13 @@ public class Uptime
                     throw new UnsupportedOperationException("method getUptime() not found");
                 }
             }
-            catch (ClassNotFoundException |
-                NoClassDefFoundError |
-                NoSuchMethodException |
-                SecurityException |
-                IllegalAccessException |
-                IllegalArgumentException |
-                InvocationTargetException e)
+            catch (ClassNotFoundException
+                | NoClassDefFoundError
+                | NoSuchMethodException
+                | SecurityException
+                | IllegalAccessException
+                | IllegalArgumentException
+                | InvocationTargetException e)
             {
                 throw new UnsupportedOperationException("Implementation not available in this environment", e);
             }
@@ -100,7 +100,8 @@ public class Uptime
         }
         catch (UnsupportedOperationException e)
         {
-            System.err.printf("Defaulting Uptime to NOIMPL due to (%s) %s%n", e.getClass().getName(), e.getMessage());
+            System.err.printf(
+                "Defaulting Uptime to NOIMPL due to (%s) %s%n", e.getClass().getName(), e.getMessage());
             impl = null;
         }
     }

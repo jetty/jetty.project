@@ -16,7 +16,6 @@ package org.eclipse.jetty.http.content;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -115,7 +114,8 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             try
             {
-                ByteBuffer byteBuffer = BufferUtil.toMappedBuffer(_content.getResource().getPath());
+                ByteBuffer byteBuffer =
+                    BufferUtil.toMappedBuffer(_content.getResource().getPath());
                 return (byteBuffer == null) ? SENTINEL_BUFFER : byteBuffer;
             }
             catch (Throwable t)

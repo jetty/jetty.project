@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -38,7 +37,8 @@ public class HeaderBlockParser
     private final BodyParser notifier;
     private RetainableByteBuffer blockBuffer;
 
-    public HeaderBlockParser(HeaderParser headerParser, ByteBufferPool bufferPool, HpackDecoder hpackDecoder, BodyParser notifier)
+    public HeaderBlockParser(
+                             HeaderParser headerParser, ByteBufferPool bufferPool, HpackDecoder hpackDecoder, BodyParser notifier)
     {
         this.headerParser = headerParser;
         this.bufferPool = bufferPool;
@@ -106,7 +106,8 @@ public class HeaderBlockParser
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Stream error, stream={}", headerParser.getStreamId(), x);
-                notifier.streamFailure(headerParser.getStreamId(), ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
+                notifier.streamFailure(
+                    headerParser.getStreamId(), ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
                 return STREAM_FAILURE;
             }
             catch (HpackException.CompressionException x)

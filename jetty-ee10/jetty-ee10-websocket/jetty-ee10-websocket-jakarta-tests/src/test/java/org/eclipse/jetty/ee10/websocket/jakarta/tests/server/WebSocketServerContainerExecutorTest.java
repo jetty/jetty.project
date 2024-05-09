@@ -13,14 +13,11 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Executor;
+import static org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -35,6 +32,14 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executor;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.JakartaWebSocketServerContainer;
@@ -44,12 +49,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
-
-import static org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.Matchers.startsWith;
 
 public class WebSocketServerContainerExecutorTest
 {
@@ -117,9 +116,7 @@ public class WebSocketServerContainerExecutorTest
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             // Server specific technique
-            jakarta.websocket.server.ServerContainer container =
-                (jakarta.websocket.server.ServerContainer)
-                    req.getServletContext().getAttribute("jakarta.websocket.server.ServerContainer");
+            jakarta.websocket.server.ServerContainer container = (jakarta.websocket.server.ServerContainer)req.getServletContext().getAttribute("jakarta.websocket.server.ServerContainer");
             try
             {
                 URI wsURI = WSURI.toWebsocket(req.getRequestURL()).resolve("/echo");
@@ -139,8 +136,8 @@ public class WebSocketServerContainerExecutorTest
 
     private Executor getJakartaServerContainerExecutor(ServletContextHandler servletContextHandler)
     {
-        JakartaWebSocketServerContainer serverContainer = JakartaWebSocketServerContainer.getContainer(
-            servletContextHandler.getServletContext());
+        JakartaWebSocketServerContainer serverContainer =
+            JakartaWebSocketServerContainer.getContainer(servletContextHandler.getServletContext());
         return serverContainer.getExecutor();
     }
 
@@ -151,10 +148,10 @@ public class WebSocketServerContainerExecutorTest
         ServletContextHandler contextHandler = new ServletContextHandler();
         server.setHandler(contextHandler);
 
-        //Executor to use
+        // Executor to use
         Executor executor = new QueuedThreadPool();
 
-        //set httpClient on server
+        // set httpClient on server
         HttpClient httpClient = new HttpClient();
         httpClient.setName("Jakarta-WebSocketServer@" + Integer.toHexString(httpClient.hashCode()));
         httpClient.setExecutor(executor);
@@ -163,8 +160,8 @@ public class WebSocketServerContainerExecutorTest
 
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
-        JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addEndpoint(EchoSocket.class));
+        JakartaWebSocketServletContainerInitializer.configure(
+            contextHandler, (context, container) -> container.addEndpoint(EchoSocket.class));
 
         try
         {
@@ -188,13 +185,13 @@ public class WebSocketServerContainerExecutorTest
         ServletContextHandler contextHandler = new ServletContextHandler();
         server.setHandler(contextHandler);
 
-        //Executor to use
+        // Executor to use
         Executor executor = server.getThreadPool();
 
         // Using JSR356 Server Techniques to connectToServer()
         contextHandler.addServlet(ServerConnectServlet.class, "/connect");
-        JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addEndpoint(EchoSocket.class));
+        JakartaWebSocketServletContainerInitializer.configure(
+            contextHandler, (context, container) -> container.addEndpoint(EchoSocket.class));
         try
         {
             server.start();

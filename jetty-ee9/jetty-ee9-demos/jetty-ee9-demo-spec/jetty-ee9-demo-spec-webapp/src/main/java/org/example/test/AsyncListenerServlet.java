@@ -13,9 +13,6 @@
 
 package org.example.test;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import jakarta.servlet.AsyncContext;
@@ -26,6 +23,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 @WebServlet(urlPatterns = "/asy/*", asyncSupported = true)
 public class AsyncListenerServlet extends HttpServlet
@@ -77,8 +76,7 @@ public class AsyncListenerServlet extends HttpServlet
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
         AsyncContext asyncContext = req.startAsync();
         MyAsyncListener listener = asyncContext.createListener(MyAsyncListener.class);

@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
@@ -102,7 +101,8 @@ public class HttpRequest implements Request
         // URIs built from strings that have an internationalized domain name (IDN)
         // are parsed without errors, but uri.getHost() returns null.
         if (uri.getHost() == null)
-            throw new IllegalArgumentException(String.format("Invalid URI host: null (authority: %s)", uri.getRawAuthority()));
+            throw new IllegalArgumentException(
+                String.format("Invalid URI host: null (authority: %s)", uri.getRawAuthority()));
         this.client = client;
         this.conversation = conversation;
         scheme = uri.getScheme();
@@ -129,23 +129,23 @@ public class HttpRequest implements Request
         }
 
         HttpRequest newRequest = copyInstance(newURI);
-        newRequest.method(getMethod())
+        newRequest
+            .method(getMethod())
             .version(getVersion())
             .body(getBody())
             .idleTimeout(getIdleTimeout(), TimeUnit.MILLISECONDS)
             .timeout(getTimeout(), TimeUnit.MILLISECONDS)
             .followRedirects(isFollowRedirects())
             .tag(getTag())
-            .headers(h -> h.clear().add(getHeaders())
+            .headers(h -> h.clear()
+                .add(getHeaders())
                 // Remove the headers that depend on the URI.
                 .remove(EnumSet.of(
                     HttpHeader.HOST,
                     HttpHeader.EXPECT,
                     HttpHeader.COOKIE,
                     HttpHeader.AUTHORIZATION,
-                    HttpHeader.PROXY_AUTHORIZATION
-                ))
-            );
+                    HttpHeader.PROXY_AUTHORIZATION)));
 
         return newRequest;
     }
@@ -824,7 +824,7 @@ public class HttpRequest implements Request
     private String buildQuery()
     {
         StringBuilder result = new StringBuilder();
-        for (Iterator<Fields.Field> iterator = params.iterator(); iterator.hasNext(); )
+        for (Iterator<Fields.Field> iterator = params.iterator(); iterator.hasNext();)
         {
             Fields.Field field = iterator.next();
             List<String> values = field.getValues();
@@ -907,6 +907,7 @@ public class HttpRequest implements Request
     @Override
     public String toString()
     {
-        return String.format("%s[%s %s %s]@%x", getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
+        return String.format(
+            "%s[%s %s %s]@%x", getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
     }
 }

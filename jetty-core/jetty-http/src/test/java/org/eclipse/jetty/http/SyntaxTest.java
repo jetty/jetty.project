@@ -13,30 +13,20 @@
 
 package org.eclipse.jetty.http;
 
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import org.junit.jupiter.api.Test;
+
 public class SyntaxTest
 {
     @Test
     public void testRequireValidRFC2616TokenGood()
     {
-        String[] tokens = {
-            "name",
-            "",
-            null,
-            "n.a.m.e",
-            "na-me",
-            "+name",
-            "na*me",
-            "na$me",
-            "#name"
-        };
+        String[] tokens = {"name", "", null, "n.a.m.e", "na-me", "+name", "na*me", "na$me", "#name"};
 
         for (String token : tokens)
         {
@@ -48,41 +38,23 @@ public class SyntaxTest
     @Test
     public void testRequireValidRFC2616TokenBad()
     {
-        String[] tokens = {
-            "\"name\"",
-            "name\t",
-            "na me",
-            "name\u0082",
-            "na\tme",
-            "na;me",
-            "{name}",
-            "[name]",
-            "\""
-        };
+        String[] tokens = {"\"name\"", "name\t", "na me", "name\u0082", "na\tme", "na;me", "{name}", "[name]", "\""};
 
         for (String token : tokens)
         {
-            Throwable e = assertThrows(IllegalArgumentException.class,
-                    () -> Syntax.requireValidRFC2616Token(token, "Test Based"));
-            assertThat("Testing Bad RFC2616 Token [" + token + "]", e.getMessage(),
-                    allOf(containsString("Test Based"),
-                            containsString("RFC2616")));
+            Throwable e = assertThrows(
+                IllegalArgumentException.class, () -> Syntax.requireValidRFC2616Token(token, "Test Based"));
+            assertThat(
+                "Testing Bad RFC2616 Token [" + token + "]",
+                e.getMessage(),
+                allOf(containsString("Test Based"), containsString("RFC2616")));
         }
     }
 
     @Test
     public void testRequireValidRFC6265CookieValueGood()
     {
-        String[] values = {
-            "value",
-            "",
-            null,
-            "val=ue",
-            "val-ue",
-            "\"value\"",
-            "val/ue",
-            "v.a.l.u.e"
-        };
+        String[] values = {"value", "", null, "val=ue", "val-ue", "\"value\"", "val/ue", "v.a.l.u.e"};
 
         for (String value : values)
         {
@@ -117,7 +89,8 @@ public class SyntaxTest
             }
             catch (IllegalArgumentException e)
             {
-                assertThat("Testing Bad RFC6265 Cookie Value [" + value + "]", e.getMessage(), containsString("RFC6265"));
+                assertThat(
+                    "Testing Bad RFC6265 Cookie Value [" + value + "]", e.getMessage(), containsString("RFC6265"));
             }
         }
     }

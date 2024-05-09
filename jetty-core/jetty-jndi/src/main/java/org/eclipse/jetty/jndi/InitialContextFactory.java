@@ -20,7 +20,6 @@ import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NameParser;
 import javax.naming.NamingException;
-
 import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,14 +48,11 @@ public class InitialContextFactory implements javax.naming.spi.InitialContextFac
         }
 
         @Override
-        public Name parse(String name)
-            throws NamingException
+        public Name parse(String name) throws NamingException
         {
             return new CompoundName(name, syntax);
         }
-    }
-
-    ;
+    };
 
     /**
      * Get Context that has access to default Namespace.

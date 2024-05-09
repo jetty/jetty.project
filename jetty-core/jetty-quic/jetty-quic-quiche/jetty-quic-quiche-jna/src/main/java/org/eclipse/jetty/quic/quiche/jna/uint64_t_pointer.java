@@ -21,6 +21,7 @@ public class uint64_t_pointer extends ByReference
     {
         this(0);
     }
+
     public uint64_t_pointer(long v)
     {
         super(8);

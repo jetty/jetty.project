@@ -15,4 +15,3 @@
  * Jetty Deploy : Webapp Deploy Management
  */
 package org.eclipse.jetty.deploy;
-

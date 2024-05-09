@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session.infinispan;
 
 import java.io.IOException;
-
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
 import org.infinispan.protostream.ProtobufUtil;
@@ -36,7 +35,7 @@ public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessio
     private static final int VERSION = 0;
 
     private static SerializationContext serializationContext;
-    
+
     private static synchronized void initSerializationContext() throws IOException
     {
         if (serializationContext != null)
@@ -81,8 +80,8 @@ public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessio
         final long expiry = in.readLong("expiry");
         final long maxInactiveMs = in.readLong("maxInactiveMs");
 
-        InfinispanSessionData sd = new InfinispanSessionData(id, cpath, vhost, created, accessed, lastAccessed,
-                maxInactiveMs);
+        InfinispanSessionData sd =
+            new InfinispanSessionData(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
         sd.setCookieSet(cookieSet);
         sd.setLastNode(lastNode);
         sd.setExpiry(expiry);
@@ -90,9 +89,9 @@ public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessio
         if (version == 0)
         {
             byte[] attributeArray = in.readBytes("attributes");
-            //only save the serialized bytes here, do NOT deserialize because
-            //infinispan has called this method with their own thread without
-            //the appropriate classloader being set
+            // only save the serialized bytes here, do NOT deserialize because
+            // infinispan has called this method with their own thread without
+            // the appropriate classloader being set
             sd.setSerializedAttributes(attributeArray);
             return sd;
         }
@@ -118,10 +117,9 @@ public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessio
         out.writeLong("expiry", sdata.getExpiry());
         out.writeLong("maxInactiveMs", sdata.getMaxInactiveMs());
 
-        //the session data attributes MUST be previously serialized
-        //because this method is called from an infinispan thread that cannot
-        //have the appropriate classloader set on it
+        // the session data attributes MUST be previously serialized
+        // because this method is called from an infinispan thread that cannot
+        // have the appropriate classloader set on it
         out.writeBytes("attributes", sdata.getSerializedAttributes());
     }
-
 }

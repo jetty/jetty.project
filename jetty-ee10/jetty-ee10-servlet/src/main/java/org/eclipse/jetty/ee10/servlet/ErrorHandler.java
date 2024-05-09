@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -26,11 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -91,7 +90,8 @@ public class ErrorHandler implements Request.Handler
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
         HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
-        ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
+        ServletContextHandler contextHandler =
+            servletContextRequest.getServletContext().getServletContextHandler();
         String cacheControl = getCacheControl();
         if (cacheControl != null)
             response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
@@ -99,10 +99,10 @@ public class ErrorHandler implements Request.Handler
         // Look for an error page dispatcher
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
         // and implement ErrorPageMapper directly, so we do this here in the base class.
-        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(httpServletRequest) : null;
+        String errorPage =
+            (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(httpServletRequest) : null;
         ServletContextHandler.ServletScopedContext context = servletContextRequest.getErrorContext();
-        Dispatcher errorDispatcher = (errorPage != null && context != null)
-            ? (Dispatcher)context.getServletContext().getRequestDispatcher(errorPage) : null;
+        Dispatcher errorDispatcher = (errorPage != null && context != null) ? (Dispatcher)context.getServletContext().getRequestDispatcher(errorPage) : null;
 
         if (errorDispatcher != null)
         {
@@ -135,7 +135,8 @@ public class ErrorHandler implements Request.Handler
         String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
         if (message == null)
             message = HttpStatus.getMessage(response.getStatus());
-        generateAcceptableResponse(servletContextRequest, httpServletRequest, httpServletResponse, response.getStatus(), message);
+        generateAcceptableResponse(
+            servletContextRequest, httpServletRequest, httpServletResponse, response.getStatus(), message);
         callback.succeeded();
         return true;
     }
@@ -155,13 +156,21 @@ public class ErrorHandler implements Request.Handler
      * @param message the http error message
      * @throws IOException if the response cannot be generated
      */
-    protected void generateAcceptableResponse(ServletContextRequest baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message) throws IOException
+    protected void generateAcceptableResponse(
+                                              ServletContextRequest baseRequest,
+                                              HttpServletRequest request,
+                                              HttpServletResponse response,
+                                              int code,
+                                              String message)
+        throws IOException
     {
-        List<String> acceptable = baseRequest.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
+        List<String> acceptable =
+            baseRequest.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
 
         if (acceptable.isEmpty() && !baseRequest.getHeaders().contains(HttpHeader.ACCEPT))
         {
-            generateAcceptableResponse(baseRequest, request, response, code, message, MimeTypes.Type.TEXT_HTML.asString());
+            generateAcceptableResponse(
+                baseRequest, request, response, code, message, MimeTypes.Type.TEXT_HTML.asString());
         }
         else
         {
@@ -193,7 +202,8 @@ public class ErrorHandler implements Request.Handler
      * @throws IOException if a Writer cannot be returned
      */
     @Deprecated
-    protected Writer getAcceptableWriter(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+    protected Writer getAcceptableWriter(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException
     {
         List<String> acceptable = baseRequest.getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
         if (acceptable.isEmpty())
@@ -238,7 +248,14 @@ public class ErrorHandler implements Request.Handler
      * @param contentType The mimetype to generate (may be *&#47;*or other wildcard)
      * @throws IOException if a response cannot be generated
      */
-    protected void generateAcceptableResponse(ServletContextRequest baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String contentType) throws IOException
+    protected void generateAcceptableResponse(
+                                              ServletContextRequest baseRequest,
+                                              HttpServletRequest request,
+                                              HttpServletResponse response,
+                                              int code,
+                                              String message,
+                                              String contentType)
+        throws IOException
     {
         // We can generate an acceptable contentType, but can we generate an acceptable charset?
         // TODO refactor this in jetty-10 to be done in the other calling loop
@@ -304,7 +321,8 @@ public class ErrorHandler implements Request.Handler
                 // TODO error page may cause a BufferOverflow.  In which case we try
                 // TODO again with stacks disabled. If it still overflows, it is
                 // TODO written without a body.
-                ByteBuffer buffer = baseRequest.getServletContextResponse().getHttpOutput().getByteBuffer();
+                ByteBuffer buffer =
+                    baseRequest.getServletContextResponse().getHttpOutput().getByteBuffer();
                 ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
 
@@ -353,12 +371,15 @@ public class ErrorHandler implements Request.Handler
         baseRequest.getServletChannel().sendErrorResponseAndComplete();
     }
 
-    protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message) throws IOException
+    protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)
+        throws IOException
     {
         writeErrorPage(request, writer, code, message, _showStacks);
     }
 
-    protected void writeErrorPage(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks) throws IOException
+    protected void writeErrorPage(
+                                  HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
+        throws IOException
     {
         if (message == null)
             message = HttpStatus.getMessage(code);
@@ -370,7 +391,8 @@ public class ErrorHandler implements Request.Handler
         writer.write("\n</body>\n</html>\n");
     }
 
-    protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message) throws IOException
+    protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message)
+        throws IOException
     {
         Charset charset = (Charset)request.getAttribute(ERROR_CHARSET);
         if (charset != null)
@@ -391,7 +413,9 @@ public class ErrorHandler implements Request.Handler
         writer.write("</title>\n");
     }
 
-    protected void writeErrorPageBody(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks) throws IOException
+    protected void writeErrorPageBody(
+                                      HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
+        throws IOException
     {
         String uri = request.getRequestURI();
 
@@ -399,11 +423,15 @@ public class ErrorHandler implements Request.Handler
         if (showStacks && !_disableStacks)
             writeErrorPageStacks(request, writer);
 
-        ((ServletApiRequest)request).getServletRequestInfo().getServletChannel().getHttpConfiguration()
+        ((ServletApiRequest)request)
+            .getServletRequestInfo()
+            .getServletChannel()
+            .getHttpConfiguration()
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 
-    protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
+    protected void writeErrorPageMessage(
+                                         HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
     {
         writer.write("<h2>HTTP ERROR ");
         String status = Integer.toString(code);

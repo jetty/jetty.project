@@ -40,30 +40,268 @@ import java.util.Set;
  */
 class TreeTrie<V> extends AbstractTrie<V>
 {
-    private static final int[] LOOKUP_INSENSITIVE =
-        {
-            //    0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-            /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
-            /*3*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 28, 29, -1, -1, -1, -1,
-            /*4*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-            /*5*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-            /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-            /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1
-        };
-    private static final int[] LOOKUP_SENSITIVE =
-        {
-            //    0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-            /*0*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            /*1*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            /*2*/31, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, -1, 27, 30, -1,
-            /*3*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 28, 29, -1, -1, -1, -1,
-            /*4*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            /*5*/-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            /*6*/-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-            /*7*/15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1
-        };
+    private static final int[] LOOKUP_INSENSITIVE = {
+        //    0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+        /*0*/ -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        /*1*/ -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        /*2*/ 31,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        26,
+        -1,
+        27,
+        30,
+        -1,
+        /*3*/ -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        28,
+        29,
+        -1,
+        -1,
+        -1,
+        -1,
+        /*4*/ -1,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        /*5*/ 15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        /*6*/ -1,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        /*7*/ 15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+    };
+    private static final int[] LOOKUP_SENSITIVE = {
+        //    0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+        /*0*/ -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        /*1*/ -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        /*2*/ 31,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        26,
+        -1,
+        27,
+        30,
+        -1,
+        /*3*/ -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        28,
+        29,
+        -1,
+        -1,
+        -1,
+        -1,
+        /*4*/ -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        /*5*/ -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        /*6*/ -1,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        /*7*/ 15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+    };
     private static final int INDEX = 32;
 
     /** Create a trie from capacity and content
@@ -141,7 +379,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             else
             {
                 Node<V> n = null;
-                for (int i = t._nextOther.size(); i-- > 0; )
+                for (int i = t._nextOther.size(); i-- > 0;)
                 {
                     n = t._nextOther.get(i);
                     if (n._c == c)
@@ -178,7 +416,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             else
             {
                 Node<V> n = null;
-                for (int j = t._nextOther.size(); j-- > 0; )
+                for (int j = t._nextOther.size(); j-- > 0;)
                 {
                     n = t._nextOther.get(j);
                     if (n._c == c)
@@ -210,7 +448,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             else
             {
                 Node<V> n = null;
-                for (int j = t._nextOther.size(); j-- > 0; )
+                for (int j = t._nextOther.size(); j-- > 0;)
                 {
                     n = t._nextOther.get(j);
                     if (n._c == c)
@@ -247,7 +485,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             else
             {
                 Node<V> n = null;
-                for (int j = node._nextOther.size(); j-- > 0; )
+                for (int j = node._nextOther.size(); j-- > 0;)
                 {
                     n = node._nextOther.get(j);
                     if (n._c == c)
@@ -294,7 +532,7 @@ class TreeTrie<V> extends AbstractTrie<V>
                         return false;
                 }
             }
-            for (int i = t._nextOther.size(); i-- > 0; )
+            for (int i = t._nextOther.size(); i-- > 0;)
             {
                 if (!isEmpty(t._nextOther.get(i)))
                     return false;
@@ -331,7 +569,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             else
             {
                 Node<V> n = null;
-                for (int j = node._nextOther.size(); j-- > 0; )
+                for (int j = node._nextOther.size(); j-- > 0;)
                 {
                     n = node._nextOther.get(j);
                     if (n._c == c)
@@ -383,7 +621,7 @@ class TreeTrie<V> extends AbstractTrie<V>
             else
             {
                 Node<V> n = null;
-                for (int j = node._nextOther.size(); j-- > 0; )
+                for (int j = node._nextOther.size(); j-- > 0;)
                 {
                     n = node._nextOther.get(j);
                     if (n._c == c)
@@ -422,7 +660,8 @@ class TreeTrie<V> extends AbstractTrie<V>
 
     private static <V> void toString(Appendable out, Node<V> t, String separator)
     {
-        loop: while (true)
+        loop:
+        while (true)
         {
             if (t != null)
             {
@@ -457,7 +696,7 @@ class TreeTrie<V> extends AbstractTrie<V>
                         toString(out, n, separator);
                     }
                 }
-                for (int i = t._nextOther.size(); i-- > 0; )
+                for (int i = t._nextOther.size(); i-- > 0;)
                 {
                     // can we avoid tail recurse?
                     if (i == 0)
@@ -493,7 +732,7 @@ class TreeTrie<V> extends AbstractTrie<V>
                 if (t._nextIndex[i] != null)
                     keySet(set, t._nextIndex[i]);
             }
-            for (int i = t._nextOther.size(); i-- > 0; )
+            for (int i = t._nextOther.size(); i-- > 0;)
             {
                 keySet(set, t._nextOther.get(i));
             }

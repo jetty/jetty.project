@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,16 +152,12 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             if (buffer.charAt(buffer.length() - 1) == ';')
                 buffer.setLength(buffer.length() - 1);
         }
-        else if (paramValue >= 0 &&
-            buffer.charAt(paramName) == 'q' && paramValue > paramName &&
-            buffer.length() >= paramName && buffer.charAt(paramName + 1) == '=')
+        else if (paramValue >= 0 && buffer.charAt(paramName) == 'q' && paramValue > paramName && buffer.length() >= paramName && buffer.charAt(paramName + 1) == '=')
         {
             double q;
             try
             {
-                q = (_keepQuotes && buffer.charAt(paramValue) == '"')
-                    ? Double.valueOf(buffer.substring(paramValue + 1, buffer.length() - 1))
-                    : Double.valueOf(buffer.substring(paramValue));
+                q = (_keepQuotes && buffer.charAt(paramValue) == '"') ? Double.valueOf(buffer.substring(paramValue + 1, buffer.length() - 1)) : Double.valueOf(buffer.substring(paramValue));
             }
             catch (Exception e)
             {
@@ -247,7 +242,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             if (compare == 0)
             {
                 // then sort secondary order highest first
-                compare = Integer.compare(_secondaryOrdering.applyAsInt(o._value), _secondaryOrdering.applyAsInt(_value));
+                compare =
+                    Integer.compare(_secondaryOrdering.applyAsInt(o._value), _secondaryOrdering.applyAsInt(_value));
                 if (compare == 0)
                     // then sort index lowest first
                     compare = -Integer.compare(o._index, _index);
@@ -258,12 +254,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s,q=%f,i=%d]",
-                getClass().getSimpleName(),
-                hashCode(),
-                _value,
-                _quality,
-                _index);
+            return String.format(
+                "%s@%x[%s,q=%f,i=%d]", getClass().getSimpleName(), hashCode(), _value, _quality, _index);
         }
     }
 }

@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.ee9.demos;
 
-import java.net.URI;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
+import java.net.URI;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -24,10 +27,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class OneWebAppTest extends AbstractEmbeddedTest
 {
@@ -52,9 +51,7 @@ public class OneWebAppTest extends AbstractEmbeddedTest
     {
         // The async rest webapp forwards the call to ebay.com.
         URI uri = server.getURI().resolve("/testAsync?items=mouse,beer,gnome");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);

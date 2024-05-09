@@ -14,7 +14,6 @@
 package org.eclipse.jetty.tests.distribution.jettysh;
 
 import java.util.function.Consumer;
-
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.dockerfile.DockerfileBuilder;
 

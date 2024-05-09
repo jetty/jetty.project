@@ -13,13 +13,6 @@
 
 package org.example;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicReference;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
@@ -27,6 +20,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
 
 // Simple asynchronous Chat room.
 // This does not handle duplicate usernames or multiple frames/tabs from the same browser
@@ -91,7 +90,8 @@ public class ChatServlet extends HttpServlet
 
     // Handle Ajax calls from browser
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         // Ajax calls are form encoded
         boolean join = Boolean.parseBoolean(request.getParameter("join"));
@@ -193,7 +193,7 @@ public class ChatServlet extends HttpServlet
             synchronized (m)
             {
                 m._queue.add(username); // from
-                m._queue.add(message);  // chat
+                m._queue.add(message); // chat
 
                 // wakeup member if polling
                 AsyncContext async = m._async.get();
@@ -208,7 +208,8 @@ public class ChatServlet extends HttpServlet
     // Serve the HTML with embedded CSS and Javascript.
     // This should be static content and should use real JS libraries.
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         if (request.getParameter("action") != null)
             doPost(request, response);

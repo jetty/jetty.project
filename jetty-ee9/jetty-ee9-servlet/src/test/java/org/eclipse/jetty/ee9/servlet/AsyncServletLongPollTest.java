@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -22,12 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
@@ -35,10 +38,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncServletLongPollTest
 {
@@ -76,7 +75,8 @@ public class AsyncServletLongPollTest
             private volatile AsyncContext asyncContext;
 
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 int suspend = 0;
                 String param = request.getParameter("suspend");
@@ -91,7 +91,8 @@ public class AsyncServletLongPollTest
             }
 
             @Override
-            protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doDelete(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 int error = 0;
                 String param = request.getParameter("error");
@@ -115,9 +116,7 @@ public class AsyncServletLongPollTest
         try (Socket socket1 = new Socket("localhost", connector.getLocalPort()))
         {
             int wait = 1000;
-            String request1 = "GET " + uri + "?suspend=" + wait + " HTTP/1.1\r\n" +
-                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                "\r\n";
+            String request1 = "GET " + uri + "?suspend=" + wait + " HTTP/1.1\r\n" + "Host: localhost:" + connector.getLocalPort() + "\r\n" + "\r\n";
             OutputStream output1 = socket1.getOutputStream();
             output1.write(request1.getBytes(StandardCharsets.UTF_8));
             output1.flush();
@@ -127,9 +126,7 @@ public class AsyncServletLongPollTest
             int error = 408;
             try (Socket socket2 = new Socket("localhost", connector.getLocalPort()))
             {
-                String request2 = "DELETE " + uri + "?error=" + error + " HTTP/1.1\r\n" +
-                    "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                    "\r\n";
+                String request2 = "DELETE " + uri + "?error=" + error + " HTTP/1.1\r\n" + "Host: localhost:" + connector.getLocalPort() + "\r\n" + "\r\n";
                 OutputStream output2 = socket2.getOutputStream();
                 output2.write(request2.getBytes(StandardCharsets.UTF_8));
                 output2.flush();
@@ -147,9 +144,8 @@ public class AsyncServletLongPollTest
 
             // Now try to make another request on the first connection
             // to verify that we set correctly the read interest (#409842)
-            String request3 = "GET " + uri + " HTTP/1.1\r\n" +
-                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                "\r\n";
+            String request3 =
+                "GET " + uri + " HTTP/1.1\r\n" + "Host: localhost:" + connector.getLocalPort() + "\r\n" + "\r\n";
             output1.write(request3.getBytes(StandardCharsets.UTF_8));
             output1.flush();
 

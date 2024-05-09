@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.security.jaspi;
 
-import java.util.Map;
-import javax.security.auth.Subject;
-
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.security.auth.message.config.ServerAuthContext;
+import java.util.Map;
+import javax.security.auth.Subject;
 import org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider;
 
 /**

@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import org.junit.jupiter.api.Test;
 
 public class ChunkAccumulatorTest
 {
@@ -33,12 +32,13 @@ public class ChunkAccumulatorTest
         TimeoutException originalFailure = new TimeoutException("timeout 1");
         TestSource originalSource = new TestSource(
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
             null,
             Content.Chunk.from(originalFailure, false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), true));
 
         ChunkAccumulator chunkAccumulator = new ChunkAccumulator();
         CompletableFuture<byte[]> completableFuture = chunkAccumulator.readAll(originalSource);

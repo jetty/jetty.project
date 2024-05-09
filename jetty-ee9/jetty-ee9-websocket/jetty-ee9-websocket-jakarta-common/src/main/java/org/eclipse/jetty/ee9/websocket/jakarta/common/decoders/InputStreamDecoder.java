@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.decoders;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class InputStreamDecoder implements Decoder.BinaryStream<InputStream>
 {

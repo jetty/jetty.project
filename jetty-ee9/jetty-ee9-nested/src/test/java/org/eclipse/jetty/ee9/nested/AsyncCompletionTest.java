@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,13 +42,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.WriteListener;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
@@ -56,10 +59,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Extended Server Tester.
@@ -116,7 +115,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         org.eclipse.jetty.server.Handler.Singleton terminateHandler = new org.eclipse.jetty.server.Handler.Wrapper()
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+                throws Exception
             {
                 org.eclipse.jetty.server.Request.addCompletionListener(request, x -> __transportComplete.set(true));
                 return super.handle(request, response, callback);
@@ -132,25 +132,28 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     {
         __transportComplete.set(false);
 
-        initServer(new ServerConnector(_server, new HttpConnectionFactory()
-        {
+        initServer(
+            new ServerConnector(_server, new HttpConnectionFactory()
             {
-                getHttpConfiguration().setOutputBufferSize(BUFFER_SIZE);
-                getHttpConfiguration().setOutputAggregationSize(BUFFER_SIZE);
-            }
-        })
-        {
-            @Override
-            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+                {
+                    getHttpConfiguration().setOutputBufferSize(BUFFER_SIZE);
+                    getHttpConfiguration().setOutputAggregationSize(BUFFER_SIZE);
+                }
+            })
             {
-                return new ExtendedEndPoint(channel, selectSet, key, getScheduler());
-            }
-        });
+                @Override
+                protected SocketChannelEndPoint newEndPoint(
+                                                            SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+                {
+                    return new ExtendedEndPoint(channel, selectSet, key, getScheduler());
+                }
+            });
     }
 
     private static class ExtendedEndPoint extends SocketChannelEndPoint
     {
-        public ExtendedEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
+        public ExtendedEndPoint(
+                                SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
         {
             super(channel, selector, key, scheduler);
         }
@@ -166,7 +169,11 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
     enum WriteStyle
     {
-        ARRAY, BUFFER, BYTE, BYTE_THEN_ARRAY, PRINT
+        ARRAY,
+        BUFFER,
+        BYTE,
+        BYTE_THEN_ARRAY,
+        PRINT
     }
 
     public static Stream<Arguments> asyncIOWriteTests()
@@ -184,7 +191,9 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                         {
                             for (String data : new String[]{SMALL, LARGE})
                             {
-                                tests.add(new Object[]{new AsyncIOWriteHandler(w, contentLength, isReady, flush, close, data)});
+                                tests.add(new Object[]{
+                                    new AsyncIOWriteHandler(w, contentLength, isReady, flush, close, data)
+                                });
                             }
                         }
                     }
@@ -225,7 +234,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                     continue;
                 }
 
-                // OWP has exited, but we have a delay, so let's wait for thread to return to the pool to ensure we are async.
+                // OWP has exited, but we have a delay, so let's wait for thread to return to the pool to ensure we are
+                // async.
                 long start = NanoTime.now();
                 while (delay != null && _threadPool.getBusyThreads() > base)
                 {
@@ -280,7 +290,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         boolean _flushed;
         boolean _closed;
 
-        AsyncIOWriteHandler(WriteStyle write, boolean contentLength, boolean isReady, boolean flush, boolean close, String data)
+        AsyncIOWriteHandler(
+                            WriteStyle write, boolean contentLength, boolean isReady, boolean flush, boolean close, String data)
         {
             _write = write;
             _contentLength = contentLength;
@@ -325,7 +336,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             AsyncContext context = request.startAsync();
@@ -428,7 +440,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                     }
                     catch (InterruptedException e)
                     {
-                        // TODO this is flaky sometimes. It may be that the test is stopped before the exchange is complete
+                        // TODO this is flaky sometimes. It may be that the test is stopped before the exchange is
+                        // complete
                         throw new RuntimeException(e);
                     }
                 }
@@ -444,7 +457,9 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         @Override
         public String toString()
         {
-            return String.format("AWCH{w=%s,cl=%b,ir=%b,f=%b,c=%b,d=%d}", _write, _contentLength, _isReady, _flush, _close, _data.length());
+            return String.format(
+                "AWCH{w=%s,cl=%b,ir=%b,f=%b,c=%b,d=%d}",
+                _write, _contentLength, _isReady, _flush, _close, _data.length());
         }
     }
 
@@ -552,7 +567,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             AsyncContext context = request.startAsync();
@@ -614,7 +630,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         @Override
         public String toString()
         {
-            return String.format("BWCH{w=%s,cl=%b,f=%b,c=%b,d=%d}", _write, _contentLength, _flush, _close, _data.length());
+            return String.format(
+                "BWCH{w=%s,cl=%b,f=%b,c=%b,d=%d}", _write, _contentLength, _flush, _close, _data.length());
         }
     }
 
@@ -689,7 +706,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
     enum ContentStyle
     {
-        BUFFER, STREAM
+        BUFFER,
+        STREAM
         // TODO more types needed here
     }
 
@@ -723,7 +741,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             AsyncContext context = request.startAsync();

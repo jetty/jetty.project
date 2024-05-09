@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.http3.internal;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.UnaryOperator;
-
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.generator.MessageGenerator;
 import org.eclipse.jetty.http3.parser.MessageParser;
@@ -28,10 +31,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class DataGenerateParseTest
 {
@@ -60,16 +59,22 @@ public class DataGenerateParseTest
         new MessageGenerator(bufferPool, null, true).generate(accumulator, 0, input, null);
 
         List<DataFrame> frames = new ArrayList<>();
-        QpackDecoder decoder = new QpackDecoder(instructions -> {});
-        decoder.setBeginNanoTimeSupplier(NanoTime::now);
-        MessageParser parser = new MessageParser(new ParserListener()
+        QpackDecoder decoder = new QpackDecoder(instructions ->
         {
-            @Override
-            public void onData(long streamId, DataFrame frame)
+        });
+        decoder.setBeginNanoTimeSupplier(NanoTime::now);
+        MessageParser parser = new MessageParser(
+            new ParserListener()
             {
-                frames.add(frame);
-            }
-        }, decoder, 13, () -> true);
+                @Override
+                public void onData(long streamId, DataFrame frame)
+                {
+                    frames.add(frame);
+                }
+            },
+            decoder,
+            13,
+            () -> true);
         parser.init(UnaryOperator.identity());
         for (ByteBuffer buffer : accumulator.getByteBuffers())
         {

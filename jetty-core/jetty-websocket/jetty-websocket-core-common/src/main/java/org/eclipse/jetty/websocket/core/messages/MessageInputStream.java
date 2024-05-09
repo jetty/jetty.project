@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -273,7 +272,6 @@ public class MessageInputStream extends InputStream implements MessageSink
         }
     }
 
-    private record Entry(Frame frame, Callback callback)
-    {
+    private record Entry(Frame frame, Callback callback) {
     }
 }

@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.function.BiConsumer;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.ServerEndpoint;
+import java.net.URI;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketSession;
@@ -164,8 +163,9 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         servletContextHandler = new ServletContextHandler("/", true, false);
         server.setHandler(servletContextHandler);
         servletContextHandler.setContextPath("/");
-        JakartaWebSocketServletContainerInitializer.configure(servletContextHandler, (context, container) ->
-            ((JakartaWebSocketServerContainer)container).addSessionListener(trackingListener));
+        JakartaWebSocketServletContainerInitializer.configure(
+            servletContextHandler, (context, container) -> ((JakartaWebSocketServerContainer)container)
+                .addSessionListener(trackingListener));
         configureServletContextHandler(servletContextHandler);
         return servletContextHandler;
     }
@@ -191,10 +191,17 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             httpConfig.setSendDateHeader(false);
 
             sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourcePath("keystore.p12").toAbsolutePath().toString());
+            sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourcePath("keystore.p12")
+                .toAbsolutePath()
+                .toString());
             sslContextFactory.setKeyStorePassword("storepwd");
-            sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA", "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                "SSL_RSA_EXPORT_WITH_RC4_40_MD5", "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA", "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+            sslContextFactory.setExcludeCipherSuites(
+                "SSL_RSA_WITH_DES_CBC_SHA",
+                "SSL_DHE_RSA_WITH_DES_CBC_SHA",
+                "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+                "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
+                "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
 
             // SSL HTTP Configuration
@@ -202,7 +209,9 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
             httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
             // SSL Connector
-            connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            connector = new ServerConnector(
+                server,
+                new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
                 new HttpConnectionFactory(httpsConfig));
         }
         else
@@ -243,7 +252,8 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         }
     }
 
-    public void registerHttpService(String urlPattern, BiConsumer<HttpServletRequest, HttpServletResponse> serviceConsumer)
+    public void registerHttpService(
+                                    String urlPattern, BiConsumer<HttpServletRequest, HttpServletResponse> serviceConsumer)
     {
         ServletHolder holder = new ServletHolder(new BiConsumerServiceServlet(serviceConsumer));
         servletContextHandler.addServlet(holder, urlPattern);

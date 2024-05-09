@@ -26,10 +26,7 @@ public class LegacyQuotedStringTokenizer implements QuotedStringTokenizer
     private final boolean _returnDelimiters;
     private final boolean _singleQuotes;
 
-    LegacyQuotedStringTokenizer(String delim,
-                                boolean returnDelimiters,
-                                boolean returnQuotes,
-                                boolean singleQuotes)
+    LegacyQuotedStringTokenizer(String delim, boolean returnDelimiters, boolean returnQuotes, boolean singleQuotes)
     {
         _delim = delim == null ? "\t\n\r" : delim;
         _returnDelimiters = returnDelimiters;
@@ -99,8 +96,7 @@ public class LegacyQuotedStringTokenizer implements QuotedStringTokenizer
             super("");
             _string = str;
 
-            if (_delim.indexOf('\'') >= 0 ||
-                _delim.indexOf('"') >= 0)
+            if (_delim.indexOf('\'') >= 0 || _delim.indexOf('"') >= 0)
                 throw new Error("Can't use quotes as delimiters: " + _delim);
 
             _token = new StringBuffer(_string.length() > 1024 ? 512 : _string.length() / 2);
@@ -235,8 +231,7 @@ public class LegacyQuotedStringTokenizer implements QuotedStringTokenizer
         }
 
         @Override
-        public String nextToken()
-            throws NoSuchElementException
+        public String nextToken() throws NoSuchElementException
         {
             if (!hasMoreTokens() || _token == null)
                 throw new NoSuchElementException();
@@ -247,8 +242,7 @@ public class LegacyQuotedStringTokenizer implements QuotedStringTokenizer
         }
 
         @Override
-        public String nextToken(String delim)
-            throws NoSuchElementException
+        public String nextToken(String delim) throws NoSuchElementException
         {
             throw new UnsupportedOperationException();
         }
@@ -474,13 +468,7 @@ public class LegacyQuotedStringTokenizer implements QuotedStringTokenizer
                             b.append('"');
                             break;
                         case 'u':
-                            b.append((char)(
-                                    (TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 24) +
-                                        (TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 16) +
-                                        (TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 8) +
-                                        (TypeUtil.convertHexDigit((byte)s.charAt(i++)))
-                                )
-                            );
+                            b.append((char)((TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 24) + (TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 16) + (TypeUtil.convertHexDigit((byte)s.charAt(i++)) << 8) + (TypeUtil.convertHexDigit((byte)s.charAt(i++)))));
                             break;
                         default:
                             if (lenient && !isValidEscaping(c))
@@ -509,9 +497,7 @@ public class LegacyQuotedStringTokenizer implements QuotedStringTokenizer
          */
         private static boolean isValidEscaping(char c)
         {
-            return ((c == 'n') || (c == 'r') || (c == 't') ||
-                (c == 'f') || (c == 'b') || (c == '\\') ||
-                (c == '/') || (c == '"') || (c == 'u'));
+            return ((c == 'n') || (c == 'r') || (c == 't') || (c == 'f') || (c == 'b') || (c == '\\') || (c == '/') || (c == '"') || (c == 'u'));
         }
     }
 }

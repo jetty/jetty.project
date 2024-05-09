@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.api;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
@@ -270,7 +269,9 @@ public interface Stream
          * {@link Session.Listener#onNewStream(Stream, HeadersFrame)}
          * and {@link Listener#onPush(Stream, PushPromiseFrame)}.</p>
          */
-        public static Listener AUTO_DISCARD = new Listener() {};
+        public static Listener AUTO_DISCARD = new Listener()
+        {
+        };
 
         /**
          * <p>Callback method invoked when a stream is created locally by

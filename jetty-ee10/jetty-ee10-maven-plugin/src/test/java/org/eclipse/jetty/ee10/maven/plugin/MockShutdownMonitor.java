@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.net.ServerSocket;
-
 import org.eclipse.jetty.toolchain.test.IO;
 
 /**
@@ -30,16 +29,14 @@ public class MockShutdownMonitor
     MockShutdownMonitorRunnable testerRunnable;
     ServerSocket serverSocket;
 
-    public MockShutdownMonitor(String key, MockShutdownMonitorRunnable testerRunnable)
-        throws Exception
+    public MockShutdownMonitor(String key, MockShutdownMonitorRunnable testerRunnable) throws Exception
     {
         this.key = key;
         this.testerRunnable = testerRunnable;
         listen();
     }
 
-    private ServerSocket listen()
-        throws Exception
+    private ServerSocket listen() throws Exception
     {
         serverSocket = new ServerSocket(0);
         try
@@ -53,7 +50,7 @@ public class MockShutdownMonitor
             throw e;
         }
     }
-    
+
     public int getPort()
     {
         if (serverSocket == null)
@@ -61,8 +58,7 @@ public class MockShutdownMonitor
         return serverSocket.getLocalPort();
     }
 
-    public void start()
-        throws Exception
+    public void start() throws Exception
     {
         testerRunnable.setServerSocket(serverSocket);
         testerRunnable.setKey(key);

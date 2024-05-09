@@ -26,7 +26,6 @@ import java.security.cert.CertificateEncodingException;
 import java.util.Base64;
 import java.util.Enumeration;
 import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,8 @@ public class PemExporter
     private static final byte[] END_KEY = "-----END PRIVATE KEY-----".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] BEGIN_CERT = "-----BEGIN CERTIFICATE-----".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] END_CERT = "-----END CERTIFICATE-----".getBytes(StandardCharsets.US_ASCII);
-    private static final byte[] LINE_SEPARATOR = System.getProperty("line.separator").getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] LINE_SEPARATOR =
+        System.getProperty("line.separator").getBytes(StandardCharsets.US_ASCII);
     private static final Base64.Encoder ENCODER = Base64.getMimeEncoder(64, LINE_SEPARATOR);
 
     private PemExporter()
@@ -70,7 +70,8 @@ public class PemExporter
     /**
      * @return [0] is the key file, [1] is the cert file.
      */
-    public static Path[] exportKeyPair(KeyStore keyStore, String alias, char[] keyPassword, Path targetFolder) throws Exception
+    public static Path[] exportKeyPair(KeyStore keyStore, String alias, char[] keyPassword, Path targetFolder)
+        throws Exception
     {
         if (!Files.isDirectory(targetFolder))
             throw new IllegalArgumentException("Target folder is not a directory: " + targetFolder);
@@ -82,7 +83,8 @@ public class PemExporter
             Certificate[] certChain = keyStore.getCertificateChain(alias);
             for (Certificate cert : certChain)
                 writeAsPEM(os, cert);
-            Files.setPosixFilePermissions(paths[1], Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
+            Files.setPosixFilePermissions(
+                paths[1], Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
         }
         catch (UnsupportedOperationException e)
         {
@@ -95,7 +97,8 @@ public class PemExporter
         {
             Key key = keyStore.getKey(alias, keyPassword);
             writeAsPEM(os, key);
-            Files.setPosixFilePermissions(paths[0], Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
+            Files.setPosixFilePermissions(
+                paths[0], Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
         }
         catch (UnsupportedOperationException e)
         {
@@ -117,7 +120,8 @@ public class PemExporter
         outputStream.write(LINE_SEPARATOR);
     }
 
-    private static void writeAsPEM(OutputStream outputStream, Certificate certificate) throws CertificateEncodingException, IOException
+    private static void writeAsPEM(OutputStream outputStream, Certificate certificate)
+        throws CertificateEncodingException, IOException
     {
         byte[] encoded = ENCODER.encode(certificate.getEncoded());
         outputStream.write(BEGIN_CERT);

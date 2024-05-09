@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
@@ -127,7 +126,8 @@ public abstract class ConditionalHandler extends Handler.Wrapper
 
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _pathSpecs = new IncludeExclude<>(PathSpecSet.class);
-    private final IncludeExcludeSet<Predicate<Request>, Request> _predicates = new IncludeExcludeSet<>(PredicateSet.class);
+    private final IncludeExcludeSet<Predicate<Request>, Request> _predicates =
+        new IncludeExcludeSet<>(PredicateSet.class);
     private Predicate<Request> _handlePredicate;
 
     private ConditionalHandler()
@@ -404,7 +404,8 @@ public abstract class ConditionalHandler extends Handler.Wrapper
      * @throws Exception If there is a problem handling
      * @see Handler#handle(Request, Response, Callback)
      */
-    protected abstract boolean onConditionsNotMet(Request request, Response response, Callback callback) throws Exception;
+    protected abstract boolean onConditionsNotMet(Request request, Response response, Callback callback)
+        throws Exception;
 
     /**
      * Handle a request by invoking the {@link #handle(Request, Response, Callback)} method of the
@@ -424,14 +425,15 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent,
+        dumpObjects(
+            out,
+            indent,
             new DumpableCollection("included methods", _methods.getIncluded()),
             new DumpableCollection("included paths", _pathSpecs.getIncluded()),
             new DumpableCollection("included predicates", _predicates.getIncluded()),
             new DumpableCollection("excluded methods", _methods.getExcluded()),
             new DumpableCollection("excluded paths", _pathSpecs.getExcluded()),
-            new DumpableCollection("excluded predicates", _predicates.getExcluded())
-        );
+            new DumpableCollection("excluded predicates", _predicates.getExcluded()));
     }
 
     /**
@@ -447,9 +449,14 @@ public abstract class ConditionalHandler extends Handler.Wrapper
      * @param pathSpec A {@link PathSpec} string or {@code null}
      * @return the combined {@link Predicate} over {@link Request}
      */
-    public static Predicate<Request> from(String connectorName, String inetAddressPattern, String method, String pathSpec)
+    public static Predicate<Request> from(
+                                          String connectorName, String inetAddressPattern, String method, String pathSpec)
     {
-        return from(connectorName, InetAddressPattern.from(inetAddressPattern), method, pathSpec == null ? null : PathSpec.from(pathSpec));
+        return from(
+            connectorName,
+            InetAddressPattern.from(inetAddressPattern),
+            method,
+            pathSpec == null ? null : PathSpec.from(pathSpec));
     }
 
     /**
@@ -466,7 +473,8 @@ public abstract class ConditionalHandler extends Handler.Wrapper
      * @param pathSpec A {@link PathSpec} or {@code null}
      * @return the combined {@link Predicate} over {@link Request}
      */
-    public static Predicate<Request> from(String connectorName, InetAddressPattern inetAddressPattern, String method, PathSpec pathSpec)
+    public static Predicate<Request> from(
+                                          String connectorName, InetAddressPattern inetAddressPattern, String method, PathSpec pathSpec)
     {
         Predicate<Request> predicate = TypeUtil.truePredicate();
 
@@ -481,14 +489,15 @@ public abstract class ConditionalHandler extends Handler.Wrapper
 
         if (pathSpec != null)
             predicate = predicate.and(new PathSpecPredicate(pathSpec));
-        
+
         return predicate;
     }
 
     /**
      * A Set of {@link Predicate} over {@link Request} optimized for use by {@link IncludeExclude}.
      */
-    public static class PredicateSet extends AbstractSet<Predicate<Request>> implements Set<Predicate<Request>>, Predicate<Request>
+    public static class PredicateSet extends AbstractSet<Predicate<Request>>
+        implements Set<Predicate<Request>>, Predicate<Request>
     {
         private final ArrayList<Predicate<Request>> _predicates = new ArrayList<>();
 
@@ -549,7 +558,8 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         @Override
         public boolean test(Request request)
         {
-            return _connector.equals(request.getConnectionMetaData().getConnector().getName());
+            return _connector.equals(
+                request.getConnectionMetaData().getConnector().getName());
         }
 
         @Override

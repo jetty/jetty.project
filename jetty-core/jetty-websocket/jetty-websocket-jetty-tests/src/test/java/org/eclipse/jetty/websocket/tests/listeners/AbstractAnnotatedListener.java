@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.tests.listeners;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;

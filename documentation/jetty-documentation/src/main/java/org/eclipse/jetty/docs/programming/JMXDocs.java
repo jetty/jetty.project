@@ -23,7 +23,6 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.ConnectorServer;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -130,7 +129,8 @@ public class JMXDocs
 
         // Setup ConnectorServer with SslContextFactory.
         JMXServiceURL jmxURL = new JMXServiceURL("rmi", null, 1099, "/jndi/rmi:///jmxrmi");
-        ConnectorServer jmxServer = new ConnectorServer(jmxURL, null, "org.eclipse.jetty.jmx:name=rmiconnectorserver", sslContextFactory);
+        ConnectorServer jmxServer =
+            new ConnectorServer(jmxURL, null, "org.eclipse.jetty.jmx:name=rmiconnectorserver", sslContextFactory);
         server.addBean(jmxServer);
 
         server.start();
@@ -203,13 +203,13 @@ public class JMXDocs
     public void jmxCustomMBean()
     {
         // tag::jmxCustomMBean[]
-        //package com.acme;
+        // package com.acme;
         @ManagedObject
         class Service
         {
         }
 
-        //package com.acme.jmx;
+        // package com.acme.jmx;
         class ServiceMBean extends ObjectMBean
         {
             ServiceMBean(Object service)
@@ -223,7 +223,7 @@ public class JMXDocs
     public void jmxCustomMBeanOverride()
     {
         // tag::jmxCustomMBeanOverride[]
-        //package com.acme;
+        // package com.acme;
         // No Jetty JMX annotations.
         class CountService
         {
@@ -240,7 +240,7 @@ public class JMXDocs
             }
         }
 
-        //package com.acme.jmx;
+        // package com.acme.jmx;
         @ManagedObject("the count service")
         class CountServiceMBean extends ObjectMBean
         {

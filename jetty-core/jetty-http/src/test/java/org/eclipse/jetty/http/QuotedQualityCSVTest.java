@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 
 public class QuotedQualityCSVTest
 {
@@ -67,13 +66,7 @@ public class QuotedQualityCSVTest
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("text/*;q=0.3, text/html;q=0.7, text/html;level=1,");
         values.addValue("text/html;level=2;q=0.4, */*;q=0.5");
-        assertThat(values, Matchers.contains(
-            "text/html;level=1",
-            "text/html",
-            "*/*",
-            "text/html;level=2",
-            "text/*"
-        ));
+        assertThat(values, Matchers.contains("text/html;level=1", "text/html", "*/*", "text/html;level=2", "text/*"));
     }
 
     @Test
@@ -86,15 +79,7 @@ public class QuotedQualityCSVTest
         values.addValue("compress;q=0.5, gzip;q=1.0");
         values.addValue("gzip;q=1.0, identity; q=0.5, *;q=0");
 
-        assertThat(values, Matchers.contains(
-            "compress",
-            "gzip",
-            "*",
-            "gzip",
-            "gzip",
-            "compress",
-            "identity"
-        ));
+        assertThat(values, Matchers.contains("compress", "gzip", "*", "gzip", "gzip", "compress", "identity"));
     }
 
     @Test
@@ -102,9 +87,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("  value 0.5  ;  p = v  ;  q =0.5  ,  value 1.0 ");
-        assertThat(values, Matchers.contains(
-            "value 1.0",
-            "value 0.5;p=v"));
+        assertThat(values, Matchers.contains("value 1.0", "value 0.5;p=v"));
     }
 
     @Test
@@ -112,10 +95,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue(",aaaa,  , bbbb ,,cccc,");
-        assertThat(values, Matchers.contains(
-            "aaaa",
-            "bbbb",
-            "cccc"));
+        assertThat(values, Matchers.contains("aaaa", "bbbb", "cccc"));
     }
 
     @Test
@@ -123,8 +103,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("  value 0.5  ;  p = \"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \"  ");
-        assertThat(values, Matchers.contains(
-            "value 0.5;p=\"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \""));
+        assertThat(values, Matchers.contains("value 0.5;p=\"v  ;  q = \\\"0.5\\\"  ,  value 1.0 \""));
     }
 
     @Test
@@ -132,8 +111,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("value;p=\"v");
-        assertThat(values, Matchers.contains(
-            "value;p=\"v"));
+        assertThat(values, Matchers.contains("value;p=\"v"));
     }
 
     @Test
@@ -141,9 +119,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("  value 0.5  ;  p = v  ;  q = \"0.5\"  ,  value 1.0 ");
-        assertThat(values, Matchers.contains(
-            "value 1.0",
-            "value 0.5;p=v"));
+        assertThat(values, Matchers.contains("value 1.0", "value 0.5;p=v"));
     }
 
     @Test
@@ -151,9 +127,7 @@ public class QuotedQualityCSVTest
     {
         QuotedQualityCSV values = new QuotedQualityCSV();
         values.addValue("value0.5;p=v;q=0.5,value1.0,valueBad;q=X");
-        assertThat(values, Matchers.contains(
-            "value1.0",
-            "value0.5;p=v"));
+        assertThat(values, Matchers.contains("value1.0", "value0.5;p=v"));
     }
 
     @Test
@@ -327,13 +301,14 @@ public class QuotedQualityCSVTest
             }
         };
 
-        // The provided string is not legal according to some RFCs ( not a token because of = and not a parameter because not preceded by ; )
+        // The provided string is not legal according to some RFCs ( not a token because of = and not a parameter
+        // because not preceded by ; )
         // The string is legal according to RFC7239 which allows for just parameters (called forwarded-pairs)
         values.addValue("p=0.5,q=0.5");
 
-        // The QuotedCSV implementation is lenient and adopts the later interpretation and thus sees q=0.5 and p=0.5 both as parameters
-        assertThat(results, contains("parsedValue: ", "parsedParam: p=0.5",
-            "parsedValue: ", "parsedParam: q=0.5"));
+        // The QuotedCSV implementation is lenient and adopts the later interpretation and thus sees q=0.5 and p=0.5
+        // both as parameters
+        assertThat(results, contains("parsedValue: ", "parsedParam: p=0.5", "parsedValue: ", "parsedParam: q=0.5"));
 
         // However the QuotedQualityCSV only handles the q parameter and that is consumed from the parameter string.
         assertThat(values, contains("p=0.5", ""));

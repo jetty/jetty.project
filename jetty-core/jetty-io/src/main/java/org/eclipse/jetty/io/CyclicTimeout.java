@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.io;
 
+import static java.lang.Long.MAX_VALUE;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.Long.MAX_VALUE;
 
 /**
  * <p>An abstract implementation of a timeout.</p>
@@ -112,7 +111,8 @@ public abstract class CyclicTimeout implements Destroyable
             {
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("Installed timeout in {} ms, {} wake up in {} ms",
+                    LOG.debug(
+                        "Installed timeout in {} ms, {} wake up in {} ms",
                         units.toMillis(delay),
                         newWakeup != null ? "new" : "existing",
                         NanoTime.millisElapsed(now, wakeup._at));
@@ -190,11 +190,8 @@ public abstract class CyclicTimeout implements Destroyable
         @Override
         public String toString()
         {
-            return String.format("%s@%x:%dms,%s",
-                getClass().getSimpleName(),
-                hashCode(),
-                NanoTime.millisUntil(_at),
-                _wakeup);
+            return String.format(
+                "%s@%x:%dms,%s", getClass().getSimpleName(), hashCode(), NanoTime.millisUntil(_at), _wakeup);
         }
     }
 
@@ -297,11 +294,9 @@ public abstract class CyclicTimeout implements Destroyable
         @Override
         public String toString()
         {
-            return String.format("%s@%x:%dms->%s",
-                getClass().getSimpleName(),
-                hashCode(),
-                _at == MAX_VALUE ? _at : NanoTime.millisUntil(_at),
-                _next);
+            return String.format(
+                "%s@%x:%dms->%s",
+                getClass().getSimpleName(), hashCode(), _at == MAX_VALUE ? _at : NanoTime.millisUntil(_at), _next);
         }
     }
 }

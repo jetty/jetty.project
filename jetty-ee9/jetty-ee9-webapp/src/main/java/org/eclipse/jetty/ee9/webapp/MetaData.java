@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import jakarta.servlet.ServletContext;
 import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.ArrayList;
@@ -21,8 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
@@ -57,13 +56,15 @@ public class MetaData
     protected final List<Resource> _webInfJars = new ArrayList<>();
     protected final List<Resource> _orderedContainerResources = new ArrayList<>();
     protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
-    protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
+    protected Ordering _ordering; // can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
 
     public enum Complete
     {
-        NotSet, True, False
+        NotSet,
+        True,
+        False
     }
 
     /**
@@ -190,8 +191,7 @@ public class MetaData
      *
      * @param descriptor the web-default.xml
      */
-    public void setDefaultsDescriptor(DefaultsDescriptor descriptor)
-        throws Exception
+    public void setDefaultsDescriptor(DefaultsDescriptor descriptor) throws Exception
     {
         _webDefaultsRoot = descriptor;
         _webDefaultsRoot.parse(WebDescriptor.getParser(isValidateXml()));
@@ -210,7 +210,7 @@ public class MetaData
                     ((AbsoluteOrdering)ordering).add(s);
             }
 
-            //(re)set the ordering to cause webinf jar order to be recalculated
+            // (re)set the ordering to cause webinf jar order to be recalculated
             setOrdering(ordering);
         }
     }
@@ -219,8 +219,7 @@ public class MetaData
      * Set the web.xml descriptor.
      * @param descriptor the web.xml descriptor
      */
-    public void setWebDescriptor(WebDescriptor descriptor)
-        throws Exception
+    public void setWebDescriptor(WebDescriptor descriptor) throws Exception
     {
         _webXmlRoot = descriptor;
         _webXmlRoot.parse(WebDescriptor.getParser(isValidateXml()));
@@ -241,7 +240,7 @@ public class MetaData
                     ((AbsoluteOrdering)ordering).add(s);
             }
 
-            //(re)set the ordering to cause webinf jar order to be recalculated
+            // (re)set the ordering to cause webinf jar order to be recalculated
             setOrdering(ordering);
         }
     }
@@ -251,8 +250,7 @@ public class MetaData
      *
      * @param descriptor the override-web.xml
      */
-    public void addOverrideDescriptor(OverrideDescriptor descriptor)
-        throws Exception
+    public void addOverrideDescriptor(OverrideDescriptor descriptor) throws Exception
     {
         descriptor.parse(WebDescriptor.getParser(isValidateXml()));
 
@@ -284,7 +282,7 @@ public class MetaData
                     ((AbsoluteOrdering)ordering).add(s);
             }
 
-            //set or reset the ordering to cause the webinf jar ordering to be recomputed
+            // set or reset the ordering to cause the webinf jar ordering to be recomputed
             setOrdering(ordering);
         }
         _webOverrideRoots.add(descriptor);
@@ -297,16 +295,15 @@ public class MetaData
      * @param descriptor web-fragment.xml
      * @throws Exception if unable to add fragment
      */
-    public void addFragmentDescriptor(Resource jarResource, FragmentDescriptor descriptor)
-        throws Exception
+    public void addFragmentDescriptor(Resource jarResource, FragmentDescriptor descriptor) throws Exception
     {
         if (_metaDataComplete)
-            return; //do not process anything else if web.xml/web-override.xml set metadata-complete
+            return; // do not process anything else if web.xml/web-override.xml set metadata-complete
 
         Objects.requireNonNull(jarResource);
         Objects.requireNonNull(descriptor);
 
-        //Metadata-complete is not set, or there is no web.xml
+        // Metadata-complete is not set, or there is no web.xml
         _webFragmentResourceMap.put(jarResource, descriptor);
         _webFragmentRoots.add(descriptor);
         descriptor.parse(WebDescriptor.getParser(isValidateXml()));
@@ -322,14 +319,14 @@ public class MetaData
                 _webFragmentNameMap.put(descriptor.getName(), descriptor);
         }
 
-        //only accept an ordering from the fragment if there is no ordering already established
+        // only accept an ordering from the fragment if there is no ordering already established
         if (_ordering == null && descriptor.isOrdered())
         {
             setOrdering(new RelativeOrdering(this));
             return;
         }
 
-        //recompute the ordering with the new fragment name
+        // recompute the ordering with the new fragment name
         orderFragments();
     }
 
@@ -366,24 +363,24 @@ public class MetaData
 
         try (AutoLock l = _lock.lock())
         {
-            //if no resource associated with an annotation map it to empty resource - these
-            //annotations will always be processed first
+            // if no resource associated with an annotation map it to empty resource - these
+            // annotations will always be processed first
             Resource enclosingResource = null;
             Resource resource = annotation.getResource();
             if (resource != null)
             {
-                //check if any of the web-inf classes dirs is a parent
+                // check if any of the web-inf classes dirs is a parent
                 enclosingResource = getEnclosingResource(_webInfClasses, resource);
 
-                //check if any of the web-inf jars is a parent
+                // check if any of the web-inf jars is a parent
                 if (enclosingResource == null)
                     enclosingResource = getEnclosingResource(_webInfJars, resource);
 
-                //check if any of the container resources is a parent
+                // check if any of the container resources is a parent
                 if (enclosingResource == null)
                     enclosingResource = getEnclosingResource(_orderedContainerResources, resource);
 
-                //Couldn't find a parent resource in any of the known resources, map it to null
+                // Couldn't find a parent resource in any of the known resources, map it to null
             }
 
             List<DiscoveredAnnotation> list = _annotations.computeIfAbsent(enclosingResource, k -> new ArrayList<>());
@@ -440,12 +437,11 @@ public class MetaData
      * @param context the context to resolve servlets / filters / listeners metadata from
      * @throws Exception if unable to resolve metadata
      */
-    public void resolve(WebAppContext context)
-        throws Exception
+    public void resolve(WebAppContext context) throws Exception
     {
         LOG.debug("metadata resolve {}", context);
 
-        //Ensure origins is fresh
+        // Ensure origins is fresh
         _origins.clear();
 
         // Set the ordered lib attribute
@@ -454,7 +450,7 @@ public class MetaData
         {
             orderedWebInfJars = getWebInfResources(true);
             List<String> orderedLibs = new ArrayList<>();
-            for (Resource jar: orderedWebInfJars)
+            for (Resource jar : orderedWebInfJars)
             {
                 URI uri = URIUtil.unwrapContainer(jar.getURI());
                 orderedLibs.add(uri.getPath());
@@ -469,7 +465,7 @@ public class MetaData
             context.getServletContext().setEffectiveMinorVersion(_webXmlRoot.getMinorVersion());
         }
 
-        //process web-defaults.xml, web.xml and override-web.xmls
+        // process web-defaults.xml, web.xml and override-web.xmls
         for (DescriptorProcessor p : _descriptorProcessors)
         {
             p.process(context, getDefaultsDescriptor());
@@ -482,16 +478,16 @@ public class MetaData
         }
 
         List<Resource> resources = new ArrayList<>();
-        resources.add(null); //always apply annotations with no resource first
-        resources.addAll(_orderedContainerResources); //next all annotations from container path
-        resources.addAll(_webInfClasses); //next everything from web-inf classes
-        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
+        resources.add(null); // always apply annotations with no resource first
+        resources.addAll(_orderedContainerResources); // next all annotations from container path
+        resources.addAll(_webInfClasses); // next everything from web-inf classes
+        resources.addAll(getWebInfResources(isOrdered())); // finally annotations (in order) from webinf path
 
         for (Resource r : resources)
         {
-            //Process the web-fragment.xml before applying annotations from a fragment.
-            //Note that some fragments, or resources that aren't fragments won't have
-            //a descriptor.
+            // Process the web-fragment.xml before applying annotations from a fragment.
+            // Note that some fragments, or resources that aren't fragments won't have
+            // a descriptor.
             FragmentDescriptor fd = _webFragmentResourceMap.get(r);
             if (fd != null)
             {
@@ -502,9 +498,9 @@ public class MetaData
                 }
             }
 
-            //Then apply the annotations - note that if metadata is complete
-            //either overall or for a fragment, those annotations won't have
-            //been discovered.
+            // Then apply the annotations - note that if metadata is complete
+            // either overall or for a fragment, those annotations won't have
+            // been discovered.
             List<DiscoveredAnnotation> annotations = _annotations.get(r);
             if (annotations != null)
             {
@@ -526,9 +522,7 @@ public class MetaData
      */
     public boolean isDistributable()
     {
-        boolean distributable = (
-            (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) ||
-                (_webXmlRoot != null && _webXmlRoot.isDistributable()));
+        boolean distributable = ((_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) || (_webXmlRoot != null && _webXmlRoot.isDistributable()));
 
         for (WebDescriptor d : _webOverrideRoots)
         {
@@ -594,7 +588,10 @@ public class MetaData
      */
     public FragmentDescriptor getFragmentDescriptor(Resource descriptorResource)
     {
-        return _webFragmentRoots.stream().filter(d -> d.getResource().equals(descriptorResource)).findFirst().orElse(null);
+        return _webFragmentRoots.stream()
+            .filter(d -> d.getResource().equals(descriptorResource))
+            .findFirst()
+            .orElse(null);
     }
 
     /**

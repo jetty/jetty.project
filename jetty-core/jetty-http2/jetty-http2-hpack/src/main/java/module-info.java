@@ -14,7 +14,6 @@
 module org.eclipse.jetty.http2.hpack
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.http;
 
     exports org.eclipse.jetty.http2.hpack;

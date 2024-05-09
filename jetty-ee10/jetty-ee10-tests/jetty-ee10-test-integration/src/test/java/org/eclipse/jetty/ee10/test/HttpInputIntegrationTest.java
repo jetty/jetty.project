@@ -13,6 +13,19 @@
 
 package org.eclipse.jetty.ee10.test;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Inet4Address;
@@ -27,13 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLSocket;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ReadListener;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
 import org.eclipse.jetty.ee10.servlet.ServletChannelState;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -64,18 +70,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class HttpInputIntegrationTest
 {
     enum Mode
     {
-        BLOCKING, ASYNC_DISPATCHED, ASYNC_OTHER_DISPATCHED, ASYNC_OTHER_WAIT
+        BLOCKING,
+        ASYNC_DISPATCHED,
+        ASYNC_OTHER_DISPATCHED,
+        ASYNC_OTHER_WAIT
     }
 
     private static Server __server;
@@ -94,7 +96,8 @@ public class HttpInputIntegrationTest
         local.setIdleTimeout(4000);
         __server.addConnector(local);
 
-        ServerConnector http = new ServerConnector(__server, new HttpConnectionFactory(__config), new HTTP2CServerConnectionFactory(__config));
+        ServerConnector http = new ServerConnector(
+            __server, new HttpConnectionFactory(__config), new HTTP2CServerConnectionFactory(__config));
         http.setIdleTimeout(5000);
         __server.addConnector(http);
 
@@ -120,7 +123,8 @@ public class HttpInputIntegrationTest
         */
 
         // SSL Connection Factory
-        SslConnectionFactory ssl = new SslConnectionFactory(__sslContextFactory, h1.getProtocol() /*TODO alpn.getProtocol()*/);
+        SslConnectionFactory ssl =
+            new SslConnectionFactory(__sslContextFactory, h1.getProtocol() /*TODO alpn.getProtocol()*/);
 
         // HTTP/2 Connector
         ServerConnector http2 = new ServerConnector(__server, ssl, /*TODO alpn,h2,*/ h1);
@@ -141,7 +145,10 @@ public class HttpInputIntegrationTest
     {
         try
         {
-            assertThat("Server leaks: " + __bufferPool.dumpLeaks(), __bufferPool.getLeaks().size(), Matchers.is(0));
+            assertThat(
+                "Server leaks: " + __bufferPool.dumpLeaks(),
+                __bufferPool.getLeaks().size(),
+                Matchers.is(0));
         }
         finally
         {
@@ -159,7 +166,8 @@ public class HttpInputIntegrationTest
          * @param content The content to send, with each string to be converted to a chunk or a frame
          * @return The response received in HTTP/1 format
          */
-        String send(String uri, int delayMs, Boolean delayInFrame, int contentLength, List<String> content) throws Exception;
+        String send(String uri, int delayMs, Boolean delayInFrame, int contentLength, List<String> content)
+            throws Exception;
     }
 
     public static Stream<Arguments> scenarios()
@@ -186,13 +194,13 @@ public class HttpInputIntegrationTest
                 //   + Delayed dispatch off
                 for (Boolean dispatch : new Boolean[]{false, true})
                 {
-                    // test send with 
+                    // test send with
                     //   + No delays between frames
                     //   + Delays between frames
                     //   + Delays within frames!
                     for (Boolean delayWithinFrame : new Boolean[]{null, false, true})
                     {
-                        // test content 
+                        // test content
                         // + unknown length + EOF
                         // + unknown length + content + EOF
                         // + unknown length + content + content + EOF
@@ -203,11 +211,13 @@ public class HttpInputIntegrationTest
 
                         tests.add(new Scenario(client, mode, dispatch, delayWithinFrame, 200, 0, -1));
                         tests.add(new Scenario(client, mode, dispatch, delayWithinFrame, 200, 8, -1, "content0"));
-                        tests.add(new Scenario(client, mode, dispatch, delayWithinFrame, 200, 16, -1, "content0", "CONTENT1"));
+                        tests.add(new Scenario(
+                            client, mode, dispatch, delayWithinFrame, 200, 16, -1, "content0", "CONTENT1"));
 
                         tests.add(new Scenario(client, mode, dispatch, delayWithinFrame, 200, 0, 0));
                         tests.add(new Scenario(client, mode, dispatch, delayWithinFrame, 200, 8, 8, "content0"));
-                        tests.add(new Scenario(client, mode, dispatch, delayWithinFrame, 200, 16, 16, "content0", "CONTENT1"));
+                        tests.add(new Scenario(
+                            client, mode, dispatch, delayWithinFrame, 200, 16, 16, "content0", "CONTENT1"));
                     }
                 }
             }
@@ -237,7 +247,8 @@ public class HttpInputIntegrationTest
                     {
                         latch.countDown();
                     }
-                }).start();
+                })
+                    .start();
                 // prevent caller returning until other thread complete
                 try
                 {
@@ -253,7 +264,8 @@ public class HttpInputIntegrationTest
             case ASYNC_OTHER_WAIT:
             {
                 CountDownLatch latch = new CountDownLatch(1);
-                ServletChannelState servletRequestState = request.getServletChannel().getServletRequestState();
+                ServletChannelState servletRequestState =
+                    request.getServletChannel().getServletRequestState();
                 ServletChannelState.State state = servletRequestState.getState();
                 new Thread(() ->
                 {
@@ -270,7 +282,8 @@ public class HttpInputIntegrationTest
                     {
                         e.printStackTrace();
                     }
-                }).start();
+                })
+                    .start();
                 // ensure other thread running before trying to return
                 latch.countDown();
                 break;
@@ -287,7 +300,8 @@ public class HttpInputIntegrationTest
     public void testOne(Scenario scenario) throws Exception
     {
         TestClient client = scenario._client.getDeclaredConstructor().newInstance();
-        String response = client.send("/ctx/test?mode=" + scenario._mode, 50, scenario._delay, scenario._length, scenario._send);
+        String response =
+            client.send("/ctx/test?mode=" + scenario._mode, 50, scenario._delay, scenario._length, scenario._send);
 
         int sum = 0;
         for (String s : scenario._send)
@@ -332,7 +346,8 @@ public class HttpInputIntegrationTest
                 TestClient client = scenario._client.getDeclaredConstructor().newInstance();
                 for (int j = 0; j < loops; j++)
                 {
-                    String response = client.send("/ctx/test?mode=" + scenario._mode, 10, scenario._delay, scenario._length, scenario._send);
+                    String response = client.send(
+                        "/ctx/test?mode=" + scenario._mode, 10, scenario._delay, scenario._length, scenario._send);
                     assertTrue(response.startsWith("HTTP"), response);
                     assertTrue(response.contains(" " + scenario._status + " "), response);
                     assertTrue(response.contains("read=" + scenario._read), response);
@@ -402,61 +417,65 @@ public class HttpInputIntegrationTest
                 AtomicInteger read = new AtomicInteger(0);
                 AtomicInteger sum = new AtomicInteger(0);
 
-                runMode(mode, request, () -> in.setReadListener(new ReadListener()
-                {
-                    @Override
-                    public void onError(Throwable t)
+                runMode(
+                    mode,
+                    request,
+                    () -> in.setReadListener(new ReadListener()
                     {
-                        t.printStackTrace();
-                        try
+                        @Override
+                        public void onError(Throwable t)
                         {
-                            resp.sendError(599);
-                        }
-                        catch (IOException e)
-                        {
-                            e.printStackTrace();
-                            throw new RuntimeException(e);
-                        }
-                        context.complete();
-                    }
-
-                    @Override
-                    public void onDataAvailable()
-                    {
-                        runMode(mode, request, () ->
-                        {
-                            while (in.isReady() && !in.isFinished())
+                            t.printStackTrace();
+                            try
                             {
-                                try
+                                resp.sendError(599);
+                            }
+                            catch (IOException e)
+                            {
+                                e.printStackTrace();
+                                throw new RuntimeException(e);
+                            }
+                            context.complete();
+                        }
+
+                        @Override
+                        public void onDataAvailable()
+                        {
+                            runMode(mode, request, () ->
+                            {
+                                while (in.isReady() && !in.isFinished())
                                 {
-                                    int b = in.read();
-                                    if (b < 0)
-                                        return;
-                                    sum.addAndGet(b);
-                                    int i = read.getAndIncrement();
-                                    if (b != expected.charAt(i))
+                                    try
                                     {
-                                        onError(new AssertionError("'%c'!='%c' at %d".formatted(expected.charAt(i), (char)b, i)));
+                                        int b = in.read();
+                                        if (b < 0)
+                                            return;
+                                        sum.addAndGet(b);
+                                        int i = read.getAndIncrement();
+                                        if (b != expected.charAt(i))
+                                        {
+                                            onError(new AssertionError(
+                                                "'%c'!='%c' at %d".formatted(expected.charAt(i), (char)b, i)));
+                                        }
+                                    }
+                                    catch (IOException e)
+                                    {
+                                        onError(e);
                                     }
                                 }
-                                catch (IOException e)
-                                {
-                                    onError(e);
-                                }
-                            }
-                        });
-                    }
+                            });
+                        }
 
-                    @Override
-                    public void onAllDataRead() throws IOException
-                    {
-                        resp.setStatus(200);
-                        resp.setContentType("text/plain");
-                        resp.getWriter().println("read=" + read.get());
-                        resp.getWriter().println("sum=" + sum.get());
-                        context.complete();
-                    }
-                }));
+                        @Override
+                        public void onAllDataRead() throws IOException
+                        {
+                            resp.setStatus(200);
+                            resp.setContentType("text/plain");
+                            resp.getWriter().println("read=" + read.get());
+                            resp.getWriter().println("sum=" + sum.get());
+                            context.complete();
+                        }
+                    }));
             }
         }
     }
@@ -466,7 +485,8 @@ public class HttpInputIntegrationTest
         StringBuilder flushed = new StringBuilder();
 
         @Override
-        public String send(String uri, int delayMs, Boolean delayInFrame, int contentLength, List<String> content) throws Exception
+        public String send(String uri, int delayMs, Boolean delayInFrame, int contentLength, List<String> content)
+            throws Exception
         {
             LocalConnector connector = __server.getBean(LocalConnector.class);
 
@@ -519,7 +539,9 @@ public class HttpInputIntegrationTest
             return local.takeOutputString();
         }
 
-        private void flush(LocalEndPoint local, StringBuilder buffer, int delayMs, Boolean delayInFrame, boolean inFrame) throws Exception
+        private void flush(
+                           LocalEndPoint local, StringBuilder buffer, int delayMs, Boolean delayInFrame, boolean inFrame)
+            throws Exception
         {
             // Flush now if we should delay
             if (delayInFrame != null && delayInFrame.equals(inFrame))
@@ -555,7 +577,8 @@ public class HttpInputIntegrationTest
         }
 
         @Override
-        public String send(String uri, int delayMs, Boolean delayInFrame, int contentLength, List<String> content) throws Exception
+        public String send(String uri, int delayMs, Boolean delayInFrame, int contentLength, List<String> content)
+            throws Exception
         {
             int port = _connector.getLocalPort();
 
@@ -613,7 +636,8 @@ public class HttpInputIntegrationTest
             }
         }
 
-        private void flush(OutputStream out, StringBuilder buffer, int delayMs, Boolean delayInFrame, boolean inFrame) throws Exception
+        private void flush(OutputStream out, StringBuilder buffer, int delayMs, Boolean delayInFrame, boolean inFrame)
+            throws Exception
         {
             // Flush now if we should delay
             if (delayInFrame != null && delayInFrame.equals(inFrame))
@@ -670,7 +694,15 @@ public class HttpInputIntegrationTest
         private final int _length;
         private final List<String> _send;
 
-        public Scenario(Class<? extends TestClient> client, Mode mode, boolean dispatch, Boolean delay, int status, int read, int length, String... send)
+        public Scenario(
+                        Class<? extends TestClient> client,
+                        Mode mode,
+                        boolean dispatch,
+                        Boolean delay,
+                        int status,
+                        int read,
+                        int length,
+                        String... send)
         {
             _client = client;
             _mode = mode;
@@ -685,8 +717,16 @@ public class HttpInputIntegrationTest
         @Override
         public String toString()
         {
-            return String.format("c=%s, m=%s, delayDispatch=%b delayInFrame=%s content-length:%d expect=%d read=%d content:%s%n",
-                _client.getSimpleName(), _mode, __config.isDelayDispatchUntilContent(), _delay, _length, _status, _read, _send);
+            return String.format(
+                "c=%s, m=%s, delayDispatch=%b delayInFrame=%s content-length:%d expect=%d read=%d content:%s%n",
+                _client.getSimpleName(),
+                _mode,
+                __config.isDelayDispatchUntilContent(),
+                _delay,
+                _length,
+                _status,
+                _read,
+                _send);
         }
     }
 }

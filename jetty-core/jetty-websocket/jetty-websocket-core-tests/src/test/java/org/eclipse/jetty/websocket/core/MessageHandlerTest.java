@@ -13,12 +13,19 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.eclipse.jetty.util.BufferUtil.toBuffer;
+import static org.eclipse.jetty.util.Callback.NOOP;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -29,14 +36,6 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.internal.MessageHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.eclipse.jetty.util.BufferUtil.toBuffer;
-import static org.eclipse.jetty.util.Callback.NOOP;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MessageHandlerTest
 {
@@ -245,7 +244,9 @@ public class MessageHandlerTest
         assertThat(callbacks.size(), is(0));
 
         callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(nonUtf8Bytes, 1, nonUtf8Bytes.length - 1)), callback);
+        handler.onFrame(
+            new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(nonUtf8Bytes, 1, nonUtf8Bytes.length - 1)),
+            callback);
         assertThat(callback.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));

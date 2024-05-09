@@ -22,7 +22,6 @@ import java.text.Collator;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.eclipse.jetty.util.IO;
 
 /**

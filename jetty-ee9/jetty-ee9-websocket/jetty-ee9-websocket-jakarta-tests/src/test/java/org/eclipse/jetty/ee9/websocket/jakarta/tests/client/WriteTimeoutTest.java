@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.EventSocket;
@@ -26,10 +29,6 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteTimeoutTest
 {
@@ -70,7 +69,8 @@ public class WriteTimeoutTest
     public void testTimeoutOnLargeMessage() throws Exception
     {
         EventSocket clientEndpoint = new EventSocket();
-        Session session = client.connectToServer(clientEndpoint, server.getWsUri().resolve("/logSocket"));
+        Session session =
+            client.connectToServer(clientEndpoint, server.getWsUri().resolve("/logSocket"));
 
         session.getAsyncRemote().setSendTimeout(5);
         session.setMaxTextMessageBufferSize(1024 * 1024 * 6);

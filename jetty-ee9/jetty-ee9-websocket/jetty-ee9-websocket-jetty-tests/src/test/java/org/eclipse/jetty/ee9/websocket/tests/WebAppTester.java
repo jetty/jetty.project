@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -21,7 +25,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
@@ -46,10 +49,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Utility to build out exploded directory WebApps.
@@ -155,8 +154,7 @@ public class WebAppTester extends ContainerLifeCycle
             _context.setContextPath(contextPath);
             _context.setBaseResource(_context.getResourceFactory().newResource(_contextDir));
 
-            _context.setConfigurations(new Configuration[]
-            {
+            _context.setConfigurations(new Configuration[]{
                 new JmxConfiguration(),
                 new WebInfConfiguration(),
                 new WebXmlConfiguration(),
@@ -193,14 +191,7 @@ public class WebAppTester extends ContainerLifeCycle
 
         public void createWebInf() throws IOException
         {
-            String emptyWebXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<web-app\n" +
-                "  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-                "  xmlns=\"http://java.sun.com/xml/ns/javaee\"\n" +
-                "  xsi:schemaLocation=\"http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd\"\n" +
-                "  metadata-complete=\"false\"\n" +
-                "  version=\"3.0\">\n" +
-                "</web-app>";
+            String emptyWebXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<web-app\n" + "  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + "  xmlns=\"http://java.sun.com/xml/ns/javaee\"\n" + "  xsi:schemaLocation=\"http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd\"\n" + "  metadata-complete=\"false\"\n" + "  version=\"3.0\">\n" + "</web-app>";
 
             File webXml = _webInf.resolve("web.xml").toFile();
             try (FileWriter out = new FileWriter(webXml))

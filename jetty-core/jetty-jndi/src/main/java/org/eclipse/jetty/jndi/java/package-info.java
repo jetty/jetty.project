@@ -15,4 +15,3 @@
  * Jetty Jndi : Mappings for java
  */
 package org.eclipse.jetty.jndi.java;
-

@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;

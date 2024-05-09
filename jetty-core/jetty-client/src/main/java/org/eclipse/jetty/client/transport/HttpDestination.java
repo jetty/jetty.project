@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
@@ -209,7 +208,8 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return new BlockingArrayQueue<>(maxCapacity);
     }
 
-    private ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+    private ClientConnectionFactory newSslClientConnectionFactory(
+                                                                  SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
     {
         return client.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
     }
@@ -332,7 +332,11 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Max queue size {} exceeded by {} for {}", client.getMaxRequestsQueuedPerDestination(), request, this);
+                    LOG.debug(
+                        "Max queue size {} exceeded by {} for {}",
+                        client.getMaxRequestsQueuedPerDestination(),
+                        request,
+                        this);
                 request.abort(new RejectedExecutionException("Max requests queued per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded for " + this));
             }
         }
@@ -559,7 +563,8 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     @Override
     public String toString()
     {
-        return String.format("%s[%s]@%x%s,state=%s,queue=%d,pool=%s,stale=%b,idle=%d",
+        return String.format(
+            "%s[%s]@%x%s,state=%s,queue=%d,pool=%s,stale=%b,idle=%d",
             HttpDestination.class.getSimpleName(),
             getOrigin(),
             hashCode(),
@@ -593,7 +598,8 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         protected boolean onExpired(HttpExchange exchange)
         {
             HttpRequest request = exchange.getRequest();
-            request.abort(new TimeoutException("Total timeout " + request.getConversation().getTimeout() + " ms elapsed"));
+            request.abort(new TimeoutException(
+                "Total timeout " + request.getConversation().getTimeout() + " ms elapsed"));
             // The implementation of the Iterator returned above does not support
             // removal, but the HttpExchange will be removed by request.abort().
             return false;

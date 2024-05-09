@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -24,6 +25,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
@@ -33,10 +36,6 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 
 public class ContextHandlerClassLoaderTest
 {
@@ -96,24 +95,28 @@ public class ContextHandlerClassLoaderTest
 
         _context = new ServletContextHandler();
         _context.setClassLoader(new MyCustomClassLoader(_context.getClassLoader()));
-        _context.addServlet(new ServletHolder(new HttpServlet()
-        {
-            @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        _context.addServlet(
+            new ServletHolder(new HttpServlet()
             {
-                if (req.getDispatcherType() == DispatcherType.REQUEST)
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws ServletException, IOException
                 {
-                    AsyncContext asyncContext = req.startAsync();
-                    asyncContext.addListener(new MyAsyncListener());
-                    asyncContext.start(asyncContext::dispatch);
-                    return;
-                }
+                    if (req.getDispatcherType() == DispatcherType.REQUEST)
+                    {
+                        AsyncContext asyncContext = req.startAsync();
+                        asyncContext.addListener(new MyAsyncListener());
+                        asyncContext.start(asyncContext::dispatch);
+                        return;
+                    }
 
-                resp.getWriter().print(req.getDispatcherType() + " " + Thread.currentThread().getContextClassLoader());
-                if (req.isAsyncStarted())
-                    req.getAsyncContext().complete();
-            }
-        }), "/");
+                    resp.getWriter()
+                        .print(req.getDispatcherType() + " " + Thread.currentThread().getContextClassLoader());
+                    if (req.isAsyncStarted())
+                        req.getAsyncContext().complete();
+                }
+            }),
+            "/");
 
         _client = new HttpClient();
         _client.start();

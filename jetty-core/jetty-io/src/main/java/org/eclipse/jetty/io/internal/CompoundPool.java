@@ -16,7 +16,6 @@ package org.eclipse.jetty.io.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.Pool;
 
 /**

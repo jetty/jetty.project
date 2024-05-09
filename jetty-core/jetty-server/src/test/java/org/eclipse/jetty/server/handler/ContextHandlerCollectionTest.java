@@ -13,12 +13,22 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
@@ -35,17 +45,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class ContextHandlerCollectionTest
 {
     public static Stream<Arguments> virtualHostCases()
@@ -59,26 +58,23 @@ public class ContextHandlerCollectionTest
             Arguments.of(1, "www.example.com.", "/ctx/info", "A", HttpStatus.OK_200),
             Arguments.of(1, "www.example.com", "/ctx/info", "A", HttpStatus.OK_200),
             Arguments.of(1, "alias.example.com", "/ctx/info", "A", HttpStatus.OK_200),
-
             Arguments.of(0, "simple.example.com", "/ctxsimple/info", "H", HttpStatus.OK_200),
             Arguments.of(1, "simple.example.com", "/ctxsimple/info", "G", HttpStatus.OK_200),
-
             Arguments.of(1, "www.other.com", "/ctx", "-", HttpStatus.MOVED_PERMANENTLY_301),
             Arguments.of(1, "www.other.com", "/ctx/", "B", HttpStatus.OK_200),
             Arguments.of(1, "www.other.com", "/ctx/info", "B", HttpStatus.OK_200),
             Arguments.of(0, "www.other.com", "/ctx/info", "C", HttpStatus.OK_200),
-
             Arguments.of(0, "www.example.com", "/ctxinfo", "D", HttpStatus.OK_200),
             Arguments.of(1, "unknown.com", "/unknown", "D", HttpStatus.OK_200),
-
             Arguments.of(0, "alias.example.com", "/ctx/foo/info", "E", HttpStatus.OK_200),
-            Arguments.of(0, "alias.example.com", "/ctxlong/info", "F", HttpStatus.OK_200)
-        );
+            Arguments.of(0, "alias.example.com", "/ctxlong/info", "F", HttpStatus.OK_200));
     }
 
     @ParameterizedTest
     @MethodSource("virtualHostCases")
-    public void testVirtualHosts(int useConnectorNum, String host, String uri, String handlerRef, int expectedStatus, TestInfo testInfo) throws Exception
+    public void testVirtualHosts(
+                                 int useConnectorNum, String host, String uri, String handlerRef, int expectedStatus, TestInfo testInfo)
+        throws Exception
     {
         Server server = new Server();
         LocalConnector connector0 = new LocalConnector(server);
@@ -134,19 +130,22 @@ public class ContextHandlerCollectionTest
         {
             server.start();
 
-            LocalConnector connector = switch (useConnectorNum)
+            LocalConnector connector =
+                switch (useConnectorNum)
                 {
                     case 0 -> connector0;
                     case 1 -> connector1;
                     default -> fail("Unsupported connector number: " + useConnectorNum);
                 };
 
-            String rawRequest = ("""
-                GET %s HTTP/1.1\r
-                Host: %s\r
-                Connection: close\r
-                \r
-                """).formatted(uri, host);
+            String rawRequest =
+                ("""
+                    GET %s HTTP/1.1\r
+                    Host: %s\r
+                    Connection: close\r
+                    \r
+                    """)
+                    .formatted(uri, host);
 
             String rawResponse = connector.getResponse(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -213,12 +212,14 @@ public class ContextHandlerCollectionTest
         {
             server.start();
 
-            String rawRequest = """
-                GET / HTTP/1.1\r
-                Host: %s\r
-                Connection:close\r
-                \r
-                """.formatted(requestHost);
+            String rawRequest =
+                """
+                    GET / HTTP/1.1\r
+                    Host: %s\r
+                    Connection:close\r
+                    \r
+                    """
+                    .formatted(requestHost);
 
             String rawResponse = connector.getResponse(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -287,17 +288,23 @@ public class ContextHandlerCollectionTest
         {
             server.start();
 
-            String rawRequest = """
-                GET / HTTP/1.1\r
-                Host: %s\r
-                Connection:close\r
-                \r
-                """.formatted(requestHost);
+            String rawRequest =
+                """
+                    GET / HTTP/1.1\r
+                    Host: %s\r
+                    Connection:close\r
+                    \r
+                    """
+                    .formatted(requestHost);
 
             String rawResponse = connector.getResponse(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-            assertThat("Response status for [GET " + requestHost + "]", response.getStatus(), is(HttpStatus.NOT_FOUND_404));
-            assertThat("Response body for [GET " + requestHost + "]", response.getContent(), containsString("Not Found"));
+            assertThat(
+                "Response status for [GET " + requestHost + "]",
+                response.getStatus(),
+                is(HttpStatus.NOT_FOUND_404));
+            assertThat(
+                "Response body for [GET " + requestHost + "]", response.getContent(), containsString("Not Found"));
             assertThat("Response Header for [GET " + requestHost + "]", response.get("X-IsHandled-Name"), nullValue());
 
             connector.getResponse(rawRequest);

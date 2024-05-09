@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
-import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
+import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.junit.jupiter.api.Test;
 
 public class ContentSourceCompletableFutureTest
 {
@@ -34,27 +33,29 @@ public class ContentSourceCompletableFutureTest
         TimeoutException originalFailure = new TimeoutException("timeout 1");
         TestSource originalSource = new TestSource(
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'1'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'1'}), false),
             null,
             Content.Chunk.from(originalFailure, false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'2'}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'2'}), true));
 
-        ContentSourceCompletableFuture<String> contentSourceCompletableFuture = new ContentSourceCompletableFuture<>(originalSource)
-        {
-            final Utf8StringBuilder builder = new Utf8StringBuilder();
-
-            @Override
-            protected String parse(Content.Chunk chunk)
+        ContentSourceCompletableFuture<String> contentSourceCompletableFuture =
+            new ContentSourceCompletableFuture<>(originalSource)
             {
-                if (chunk.hasRemaining())
-                    builder.append(chunk.getByteBuffer());
-                if (!chunk.isLast())
-                    return null;
-                return builder.takeCompleteString(IllegalStateException::new);
-            }
-        };
+                final Utf8StringBuilder builder = new Utf8StringBuilder();
+
+                @Override
+                protected String parse(Content.Chunk chunk)
+                {
+                    if (chunk.hasRemaining())
+                        builder.append(chunk.getByteBuffer());
+                    if (!chunk.isLast())
+                        return null;
+                    return builder.takeCompleteString(IllegalStateException::new);
+                }
+            };
 
         try
         {
@@ -79,37 +80,40 @@ public class ContentSourceCompletableFutureTest
     {
         TestSource originalSource = new TestSource(
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'1'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'1'}), false),
             null,
             Content.Chunk.from(new TimeoutException("timeout 1"), false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'2'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'2'}), false),
             null,
             Content.Chunk.from(new TimeoutException("timeout 2"), false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'3'}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'3'}), true));
 
-        ContentSourceCompletableFuture<String> contentSourceCompletableFuture = new ContentSourceCompletableFuture<>(originalSource)
-        {
-            final Utf8StringBuilder builder = new Utf8StringBuilder();
-
-            @Override
-            protected String parse(Content.Chunk chunk)
+        ContentSourceCompletableFuture<String> contentSourceCompletableFuture =
+            new ContentSourceCompletableFuture<>(originalSource)
             {
-                if (chunk.hasRemaining())
-                    builder.append(chunk.getByteBuffer());
-                if (!chunk.isLast())
-                    return null;
-                return builder.takeCompleteString(IllegalStateException::new);
-            }
+                final Utf8StringBuilder builder = new Utf8StringBuilder();
 
-            @Override
-            protected boolean onTransientFailure(Throwable cause)
-            {
-                return true;
-            }
-        };
+                @Override
+                protected String parse(Content.Chunk chunk)
+                {
+                    if (chunk.hasRemaining())
+                        builder.append(chunk.getByteBuffer());
+                    if (!chunk.isLast())
+                        return null;
+                    return builder.takeCompleteString(IllegalStateException::new);
+                }
+
+                @Override
+                protected boolean onTransientFailure(Throwable cause)
+                {
+                    return true;
+                }
+            };
 
         contentSourceCompletableFuture.parse();
         assertThat(contentSourceCompletableFuture.get(), is("123"));

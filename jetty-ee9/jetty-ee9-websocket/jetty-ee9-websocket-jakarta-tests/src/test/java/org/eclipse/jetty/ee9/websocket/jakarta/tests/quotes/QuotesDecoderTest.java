@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.quotes;
 
-import java.net.URI;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.ContainerProvider;
@@ -26,6 +26,9 @@ import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import java.net.URI;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEventTracker;
 import org.junit.jupiter.api.AfterEach;
@@ -34,10 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class QuotesDecoderTest
 {

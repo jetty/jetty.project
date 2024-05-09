@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.util.EventListener;
-
 import jakarta.servlet.ServletContext;
+import java.util.EventListener;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.util.thread.AutoLock;
 
@@ -85,7 +84,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
         _listener = getInstance();
         if (_listener == null)
         {
-            //create an instance of the listener and decorate it
+            // create an instance of the listener and decorate it
             _listener = createInstance();
             _listener = wrap(_listener, WrapFunction.class, WrapFunction::wrapEventListener);
         }

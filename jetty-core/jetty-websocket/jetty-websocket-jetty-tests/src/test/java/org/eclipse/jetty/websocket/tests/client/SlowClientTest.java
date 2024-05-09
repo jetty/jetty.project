@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.Future;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -31,10 +34,6 @@ import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 /**
  * This Regression Test Exists because of Client side Idle timeout, Read, and Parser bugs.
@@ -62,8 +61,10 @@ public class SlowClientTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
-            container.addMapping("/ws", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(
+            server,
+            context,
+            container -> container.addMapping("/ws", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
         context.setHandler(wsHandler);
 
         server.setHandler(context);

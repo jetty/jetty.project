@@ -13,11 +13,15 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -34,11 +38,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GracefulShutdownTest extends AbstractTest
 {
@@ -59,7 +58,8 @@ public class GracefulShutdownTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -125,7 +125,8 @@ public class GracefulShutdownTest extends AbstractTest
                         data.release();
                         if (data.frame().isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            MetaData.Response response = new MetaData.Response(
+                                HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         }
                         else
@@ -158,16 +159,18 @@ public class GracefulShutdownTest extends AbstractTest
             }
         });
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-        Stream stream = clientSession.newStream(new HeadersFrame(request, null, false), new Stream.Listener()
-        {
-            @Override
-            public void onHeaders(Stream stream, HeadersFrame frame)
+        Stream stream = clientSession
+            .newStream(new HeadersFrame(request, null, false), new Stream.Listener()
             {
-                MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                if (frame.isEndStream() && response.getStatus() == HttpStatus.OK_200)
-                    clientRequestLatch.countDown();
-            }
-        }).get(5, TimeUnit.SECONDS);
+                @Override
+                public void onHeaders(Stream stream, HeadersFrame frame)
+                {
+                    MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                    if (frame.isEndStream() && response.getStatus() == HttpStatus.OK_200)
+                        clientRequestLatch.countDown();
+                }
+            })
+            .get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(stream.getId(), BufferUtil.toBuffer("hello"), false));
         // Make sure the server has seen the stream.
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
@@ -198,7 +201,8 @@ public class GracefulShutdownTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -212,7 +216,9 @@ public class GracefulShutdownTest extends AbstractTest
         });
 
         CountDownLatch clientRequestLatch = new CountDownLatch(1);
-        Session clientSession = newClientSession(new Session.Listener() {});
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+        });
         MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         clientSession.newStream(new HeadersFrame(request, null, true), new Stream.Listener()
         {

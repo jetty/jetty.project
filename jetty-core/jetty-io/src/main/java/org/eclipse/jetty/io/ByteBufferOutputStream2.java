@@ -112,7 +112,7 @@ public class ByteBufferOutputStream2 extends OutputStream
     @Override
     public synchronized String toString()
     {
-        return String.format("%s@%x{size=%d, byteAccumulator=%s}", getClass().getSimpleName(),
-            hashCode(), _size, _accumulator);
+        return String.format(
+            "%s@%x{size=%d, byteAccumulator=%s}", getClass().getSimpleName(), hashCode(), _size, _accumulator);
     }
 }

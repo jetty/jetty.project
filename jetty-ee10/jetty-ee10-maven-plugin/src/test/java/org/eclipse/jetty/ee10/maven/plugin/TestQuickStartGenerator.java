@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.ee10.maven.plugin;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -24,12 +27,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
- * 
+ *
  *
  */
 @ExtendWith(WorkDirExtension.class)
@@ -48,7 +47,8 @@ public class TestQuickStartGenerator
 
         Path quickstartFile = tmpDir.resolve("quickstart-web.xml");
         QuickStartGenerator generator = new QuickStartGenerator(quickstartFile, webApp);
-        generator.setContextXml(MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml").getAbsolutePath());
+        generator.setContextXml(MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml")
+            .getAbsolutePath());
         generator.setServer(new Server());
 
         Path propsFile = tmpDir.resolve("webapp.props");

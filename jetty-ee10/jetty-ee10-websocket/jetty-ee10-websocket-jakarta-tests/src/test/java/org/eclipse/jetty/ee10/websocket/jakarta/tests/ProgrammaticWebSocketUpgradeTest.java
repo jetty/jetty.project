@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -30,6 +30,11 @@ import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.io.IOException;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
@@ -44,12 +49,6 @@ import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class ProgrammaticWebSocketUpgradeTest
 {
@@ -128,7 +127,8 @@ public class ProgrammaticWebSocketUpgradeTest
         }
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             try
             {
@@ -136,20 +136,23 @@ public class ProgrammaticWebSocketUpgradeTest
                 {
                     case "/echo":
                     {
-                        ServerEndpointConfig sec = ServerEndpointConfig.Builder.create(EchoSocket.class, "/").build();
+                        ServerEndpointConfig sec = ServerEndpointConfig.Builder.create(EchoSocket.class, "/")
+                            .build();
                         HashMap<String, String> pathParams = new HashMap<>();
                         container.upgradeHttpToWebSocket(request, response, sec, pathParams);
                         break;
                     }
                     case "/pathParams":
                     {
-                        ServerEndpointConfig sec = ServerEndpointConfig.Builder.create(PathParamsEndpoint.class, "/").build();
+                        ServerEndpointConfig sec = ServerEndpointConfig.Builder.create(PathParamsEndpoint.class, "/")
+                            .build();
                         container.upgradeHttpToWebSocket(request, response, sec, PATH_PARAMS);
                         break;
                     }
                     case "/brokenEndpoint":
                     {
-                        ServerEndpointConfig sec = ServerEndpointConfig.Builder.create(BrokenEndpoint.class, "/").build();
+                        ServerEndpointConfig sec = ServerEndpointConfig.Builder.create(BrokenEndpoint.class, "/")
+                            .build();
                         container.upgradeHttpToWebSocket(request, response, sec, PATH_PARAMS);
                         break;
                     }

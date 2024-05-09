@@ -13,17 +13,20 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -36,10 +39,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletInitTest
@@ -110,9 +109,8 @@ public class DefaultServletInitTest
         }
     }
 
-    public record Config(ContextInit contextInit,
-                         HolderInit holderInit)
-    {}
+    public record Config(ContextInit contextInit, HolderInit holderInit) {
+    }
 
     public static Stream<Config> welcomeServletsInitSource()
     {
@@ -133,7 +131,8 @@ public class DefaultServletInitTest
         HttpServlet testServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setCharacterEncoding("utf-8");
                 response.setContentType("text/plain");
@@ -164,12 +163,13 @@ public class DefaultServletInitTest
 
         startServer(contextHandler);
 
-        String rawRequest = """
-            GET / HTTP/1.1
-            Host: test
-            Connection: close
-                        
-            """;
+        String rawRequest =
+            """
+                GET / HTTP/1.1
+                Host: test
+                Connection: close
+
+                """;
 
         HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
         assertThat(response.getStatus(), is(200));

@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee10.demos;
 
-import java.io.IOException;
-
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 
@@ -30,7 +29,6 @@ public class MinimalServlets
         // will be assigned that you can either look in the logs for the port,
         // or programmatically obtain it for use in test cases.
         Server server = new Server(port);
-
 
         ServletContextHandler handler = new ServletContextHandler();
         server.setHandler(handler);
@@ -64,8 +62,7 @@ public class MinimalServlets
     public static class HelloServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request,
-                             HttpServletResponse response) throws IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("text/html");

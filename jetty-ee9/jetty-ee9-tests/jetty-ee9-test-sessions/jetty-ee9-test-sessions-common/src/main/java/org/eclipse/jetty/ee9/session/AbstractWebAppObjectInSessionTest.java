@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.ee9.session;
 
-import java.io.File;
-import java.io.FileWriter;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileWriter;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -31,9 +33,6 @@ import org.eclipse.jetty.session.test.AbstractSessionTestBase;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * AbstractWebAppObjectInSessionTest
@@ -61,13 +60,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
         // Write web.xml
         File webXml = new File(webInfDir, "web.xml");
         String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<web-app xmlns=\"http://java.sun.com/xml/ns/j2ee\"\n" +
-                "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-                "         xsi:schemaLocation=\"http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd\"\n" +
-                "         version=\"2.4\">\n" +
-                "\n" +
-                "</web-app>";
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<web-app xmlns=\"http://java.sun.com/xml/ns/j2ee\"\n" + "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + "         xsi:schemaLocation=\"http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd\"\n" + "         version=\"2.4\">\n" + "\n" + "</web-app>";
         FileWriter w = new FileWriter(webXml);
         w.write(xml);
         w.close();
@@ -82,27 +75,31 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
             String resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + ".class";
             Resource resource = resourceFactory.newResource(getClass().getResource(packageName + resourceName));
 
-            //File sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
+            // File sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
             File targetFile = new File(packageDirs, resourceName);
-            //copy(sourceFile, targetFile);
+            // copy(sourceFile, targetFile);
             resource.copyTo(targetFile.toPath());
 
             resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + "$" + WebAppObjectInSessionServlet.TestSharedStatic.class.getSimpleName() + ".class";
             resource = resourceFactory.newResource(getClass().getResource(packageName + resourceName));
-            //sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
+            // sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
             targetFile = new File(packageDirs, resourceName);
-            //copy(sourceFile, targetFile);
+            // copy(sourceFile, targetFile);
             resource.copyTo(targetFile.toPath());
         }
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        cacheFactory.setFlushOnResponseCommit(true); //ensure session is saved before response comes back
+        cacheFactory.setFlushOnResponseCommit(true); // ensure session is saved before response comes back
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        SessionTestSupport server1 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC,
-            cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(
+            0,
+            SessionTestSupport.DEFAULT_MAX_INACTIVE,
+            SessionTestSupport.DEFAULT_SCAVENGE_SEC,
+            cacheFactory,
+            storeFactory);
         WebAppContext wac1 = server1.addWebAppContext(warDir.getCanonicalPath(), contextPath);
         wac1.addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
@@ -111,9 +108,14 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
             server1.start();
             int port1 = server1.getPort();
 
-            SessionTestSupport server2 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC,
-                cacheFactory, storeFactory);
-            server2.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
+            SessionTestSupport server2 = new SessionTestSupport(
+                0,
+                SessionTestSupport.DEFAULT_MAX_INACTIVE,
+                SessionTestSupport.DEFAULT_SCAVENGE_SEC,
+                cacheFactory,
+                storeFactory);
+            server2.addWebAppContext(warDir.getCanonicalPath(), contextPath)
+                .addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
             try
             {
@@ -125,7 +127,8 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
                 try
                 {
                     // Perform one request to server1 to create a session
-                    Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=set");
+                    Request request = client.newRequest(
+                        "http://localhost:" + port1 + contextPath + servletMapping + "?action=set");
                     request.method(HttpMethod.GET);
                     ContentResponse response = request.send();
                     assertEquals(HttpServletResponse.SC_OK, response.getStatus());
@@ -133,9 +136,10 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionT
                     assertNotNull(sessionCookie);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)([Pp])ath=", "$1\\$Path=");
-                    
+
                     // Perform a request to server2 using the session cookie from the previous request
-                    Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
+                    Request request2 = client.newRequest(
+                        "http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
                     request2.method(HttpMethod.GET);
                     HttpField cookie = new HttpField("Cookie", sessionCookie);
                     request2.headers(headers -> headers.put(cookie));

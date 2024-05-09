@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.util.Locale;
-
 import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.Locale;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -59,7 +58,7 @@ public class JspPropertyGroupServlet extends GenericServlet
         {
             _starJspMapped = true;
 
-            //now find the jsp servlet, ignoring the mapping that is for ourself
+            // now find the jsp servlet, ignoring the mapping that is for ourself
             ServletMapping[] mappings = _servletHandler.getServletMappings();
             for (ServletMapping m : mappings)
             {

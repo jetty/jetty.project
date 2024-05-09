@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util;
 
 import java.net.InetAddress;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +30,7 @@ public class HostPort
      * Indicator that the provided port string was bad see unsafe mode at {@link #parsePort(String, boolean)}
      */
     private static final int BAD_PORT = -2;
+
     private final String _host;
     private final int _port;
 

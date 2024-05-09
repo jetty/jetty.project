@@ -21,6 +21,7 @@ public class uint8_t extends IntegerType
     {
         this((byte)0);
     }
+
     public uint8_t(byte v)
     {
         super(1, v, true);

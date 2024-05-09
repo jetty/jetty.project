@@ -14,7 +14,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import org.eclipse.jetty.http.HttpFields;
 
 public class ForceRequestHeaderValueRule extends Rule

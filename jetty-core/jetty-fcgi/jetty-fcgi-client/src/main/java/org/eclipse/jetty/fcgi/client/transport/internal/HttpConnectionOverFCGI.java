@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
@@ -305,11 +304,15 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private void failAndClose(Throwable failure)
     {
-        channel.responseFailure(failure, Promise.from(failed ->
-        {
-            if (failed)
-                close(failure);
-        }, x -> close(failure)));
+        channel.responseFailure(
+            failure,
+            Promise.from(
+                failed ->
+                {
+                    if (failed)
+                        close(failure);
+                },
+                x -> close(failure)));
     }
 
     private Runnable getAndSetAction(Runnable action)
@@ -327,7 +330,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     @Override
     public String toConnectionString()
     {
-        return String.format("%s@%x[l:%s<->r:%s]",
+        return String.format(
+            "%s@%x[l:%s<->r:%s]",
             getClass().getSimpleName(),
             hashCode(),
             getEndPoint().getLocalSocketAddress(),
@@ -427,7 +431,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onContent r={},t={},b={} {}", request, stream, BufferUtil.toDetailString(buffer), networkBuffer);
+                LOG.debug(
+                    "onContent r={},t={},b={} {}",
+                    request,
+                    stream,
+                    BufferUtil.toDetailString(buffer),
+                    networkBuffer);
             switch (stream)
             {
                 case STD_OUT ->

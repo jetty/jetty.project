@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import jakarta.websocket.Decoder;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public abstract class EndpointConfigWrapper implements EndpointConfig, PathParamProvider
 {

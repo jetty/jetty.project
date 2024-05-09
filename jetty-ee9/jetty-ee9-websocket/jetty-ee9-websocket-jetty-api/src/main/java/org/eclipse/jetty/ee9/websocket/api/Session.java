@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.websocket.api;
 import java.io.Closeable;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-
 import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
 
 /**

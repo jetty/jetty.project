@@ -13,12 +13,17 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -40,12 +45,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 
 public class ServerTest
 {
@@ -133,7 +132,8 @@ public class ServerTest
         });
         _server.start();
 
-        String request = """
+        String request =
+            """
                 GET /path HTTP/1.0\r
                 Host: hostname\r
                 \r
@@ -181,7 +181,8 @@ public class ServerTest
                     }
                 }
 
-                Runnable complete = succeeded ? callback::succeeded : () -> callback.failed(new QuietException.Exception("Test"));
+                Runnable complete =
+                    succeeded ? callback::succeeded : () -> callback.failed(new QuietException.Exception("Test"));
                 if (handling)
                     complete.run();
                 else
@@ -192,7 +193,8 @@ public class ServerTest
         });
         _server.start();
 
-        String request = """
+        String request =
+            """
                 GET /path HTTP/1.1\r
                 Host: hostname\r
                 \r

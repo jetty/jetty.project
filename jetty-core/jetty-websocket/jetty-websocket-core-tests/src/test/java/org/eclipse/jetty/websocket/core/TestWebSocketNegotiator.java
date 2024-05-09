@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.util.List;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;

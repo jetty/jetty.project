@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -28,6 +33,11 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -40,17 +50,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.AbstractSessionTestBase;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * SessionInvalidateCreateScavengeTest
@@ -81,8 +80,8 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
 
-        SessionTestSupport server = new SessionTestSupport(0, inactivePeriod, scavengePeriod,
-            cacheFactory, storeFactory);
+        SessionTestSupport server =
+            new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -115,11 +114,12 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
                 // Wait for the scavenger to run
                 Thread.sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + 2 * scavengePeriod));
 
-                //test that the session created in the last test is scavenged:
-                //the HttpSessionListener should have been called when session1 was invalidated and session2 was scavenged
+                // test that the session created in the last test is scavenged:
+                // the HttpSessionListener should have been called when session1 was invalidated and session2 was
+                // scavenged
                 assertEquals(2, listener.destroys.size());
-                assertNotSame(listener.destroys.get(0), listener.destroys.get(1)); //ensure 2 different objects
-                //session2's HttpSessionBindingListener should have been called when it was scavenged
+                assertNotSame(listener.destroys.get(0), listener.destroys.get(1)); // ensure 2 different objects
+                // session2's HttpSessionBindingListener should have been called when it was scavenged
                 assertTrue(servlet.listener.unbound);
             }
             finally
@@ -139,7 +139,6 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
 
         public void sessionCreated(HttpSessionEvent e)
         {
-
         }
 
         public void sessionDestroyed(HttpSessionEvent e)
@@ -162,7 +161,6 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
         @Override
         public void valueBound(HttpSessionBindingEvent event)
         {
-
         }
     }
 
@@ -172,14 +170,16 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
         public MySessionBindingListener listener = new MySessionBindingListener();
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
             if ("init".equals(action))
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("identity", "session1");
-                session.setMaxInactiveInterval(-1); //don't let this session expire, we want to explicitly invalidate it
+                session.setMaxInactiveInterval(
+                    -1); // don't let this session expire, we want to explicitly invalidate it
             }
             else if ("test".equals(action))
             {
@@ -188,17 +188,18 @@ public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
                 {
                     String oldId = session.getId();
 
-                    //invalidate existing session
+                    // invalidate existing session
                     session.invalidate();
 
-                    //now try to access the invalid session
+                    // now try to access the invalid session
                     HttpSession finalSession = session;
-                    IllegalStateException x = assertThrows(IllegalStateException.class,
+                    IllegalStateException x = assertThrows(
+                        IllegalStateException.class,
                         () -> finalSession.getAttribute("identity"),
                         "Session should be invalid");
                     assertThat(x.getMessage(), containsString("id"));
 
-                    //now make a new session
+                    // now make a new session
                     session = request.getSession(true);
                     String newId = session.getId();
                     assertNotEquals(newId, oldId);

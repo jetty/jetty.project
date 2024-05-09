@@ -13,33 +13,29 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
-
-import org.eclipse.jetty.logging.StacklessLogging;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+import org.eclipse.jetty.logging.StacklessLogging;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 public class SchedulerTest
 {
     public static Stream<Class<? extends Scheduler>> schedulerProvider()
     {
-        return Stream.of(
-            TimerScheduler.class,
-            ScheduledExecutorScheduler.class
-        );
+        return Stream.of(TimerScheduler.class, ScheduledExecutorScheduler.class);
     }
 
     private List<Scheduler> schedulers = new ArrayList<>();
@@ -77,14 +73,17 @@ public class SchedulerTest
         Scheduler scheduler = start(impl);
         final AtomicLong executed = new AtomicLong();
         long expected = System.currentTimeMillis() + 1000;
-        Scheduler.Task task = scheduler.schedule(new Runnable()
-        {
-            @Override
-            public void run()
+        Scheduler.Task task = scheduler.schedule(
+            new Runnable()
             {
-                executed.set(System.currentTimeMillis());
-            }
-        }, 1000, TimeUnit.MILLISECONDS);
+                @Override
+                public void run()
+                {
+                    executed.set(System.currentTimeMillis());
+                }
+            },
+            1000,
+            TimeUnit.MILLISECONDS);
 
         Thread.sleep(1500);
         assertFalse(task.cancel());
@@ -99,14 +98,17 @@ public class SchedulerTest
         Scheduler scheduler = start(impl);
         final AtomicLong executed = new AtomicLong();
         long expected = System.currentTimeMillis() + 1000;
-        Scheduler.Task task = scheduler.schedule(new Runnable()
-        {
-            @Override
-            public void run()
+        Scheduler.Task task = scheduler.schedule(
+            new Runnable()
             {
-                executed.set(System.currentTimeMillis());
-            }
-        }, 1000, TimeUnit.MILLISECONDS);
+                @Override
+                public void run()
+                {
+                    executed.set(System.currentTimeMillis());
+                }
+            },
+            1000,
+            TimeUnit.MILLISECONDS);
 
         Thread.sleep(1500);
         assertFalse(task.cancel());
@@ -115,14 +117,17 @@ public class SchedulerTest
 
         final AtomicLong executed1 = new AtomicLong();
         long expected1 = System.currentTimeMillis() + 1000;
-        Scheduler.Task task1 = scheduler.schedule(new Runnable()
-        {
-            @Override
-            public void run()
+        Scheduler.Task task1 = scheduler.schedule(
+            new Runnable()
             {
-                executed1.set(System.currentTimeMillis());
-            }
-        }, 1000, TimeUnit.MILLISECONDS);
+                @Override
+                public void run()
+                {
+                    executed1.set(System.currentTimeMillis());
+                }
+            },
+            1000,
+            TimeUnit.MILLISECONDS);
 
         Thread.sleep(1500);
         assertFalse(task1.cancel());
@@ -136,14 +141,17 @@ public class SchedulerTest
     {
         Scheduler scheduler = start(impl);
         final AtomicLong executed = new AtomicLong();
-        Scheduler.Task task = scheduler.schedule(new Runnable()
-        {
-            @Override
-            public void run()
+        Scheduler.Task task = scheduler.schedule(
+            new Runnable()
             {
-                executed.set(System.currentTimeMillis());
-            }
-        }, 2000, TimeUnit.MILLISECONDS);
+                @Override
+                public void run()
+                {
+                    executed.set(System.currentTimeMillis());
+                }
+            },
+            2000,
+            TimeUnit.MILLISECONDS);
 
         Thread.sleep(100);
         assertTrue(task.cancel());
@@ -157,14 +165,17 @@ public class SchedulerTest
     {
         Scheduler scheduler = start(impl);
         final AtomicLong executed = new AtomicLong();
-        Scheduler.Task task = scheduler.schedule(new Runnable()
-        {
-            @Override
-            public void run()
+        Scheduler.Task task = scheduler.schedule(
+            new Runnable()
             {
-                executed.set(System.currentTimeMillis());
-            }
-        }, 2000, TimeUnit.MILLISECONDS);
+                @Override
+                public void run()
+                {
+                    executed.set(System.currentTimeMillis());
+                }
+            },
+            2000,
+            TimeUnit.MILLISECONDS);
 
         Thread.sleep(100);
         assertTrue(task.cancel());
@@ -180,28 +191,34 @@ public class SchedulerTest
         try (StacklessLogging ignore = new StacklessLogging(TimerScheduler.class))
         {
             long delay = 500;
-            scheduler.schedule(new Runnable()
-            {
-                @Override
-                public void run()
+            scheduler.schedule(
+                new Runnable()
                 {
-                    throw new RuntimeException("Thrown by testTaskThrowsException");
-                }
-            }, delay, TimeUnit.MILLISECONDS);
+                    @Override
+                    public void run()
+                    {
+                        throw new RuntimeException("Thrown by testTaskThrowsException");
+                    }
+                },
+                delay,
+                TimeUnit.MILLISECONDS);
 
             TimeUnit.MILLISECONDS.sleep(2 * delay);
 
             // Check whether after a task throwing an exception, the scheduler is still working
 
             final CountDownLatch latch = new CountDownLatch(1);
-            scheduler.schedule(new Runnable()
-            {
-                @Override
-                public void run()
+            scheduler.schedule(
+                new Runnable()
                 {
-                    latch.countDown();
-                }
-            }, delay, TimeUnit.MILLISECONDS);
+                    @Override
+                    public void run()
+                    {
+                        latch.countDown();
+                    }
+                },
+                delay,
+                TimeUnit.MILLISECONDS);
 
             assertTrue(latch.await(2 * delay, TimeUnit.MILLISECONDS));
         }

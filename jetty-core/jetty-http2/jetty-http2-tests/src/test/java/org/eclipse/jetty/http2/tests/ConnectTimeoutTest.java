@@ -13,20 +13,19 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConnectTimeoutTest extends AbstractTest
 {
@@ -40,12 +39,16 @@ public class ConnectTimeoutTest extends AbstractTest
         int connectTimeout = 1000;
         assumeConnectTimeout(host, port, connectTimeout);
 
-        start(new ServerSessionListener() {});
+        start(new ServerSessionListener()
+        {
+        });
         http2Client.setConnectTimeout(connectTimeout);
 
         InetSocketAddress address = new InetSocketAddress(host, port);
         final CountDownLatch latch = new CountDownLatch(1);
-        http2Client.connect(address, new Session.Listener() {}, new Promise.Adapter<>()
+        http2Client.connect(address, new Session.Listener()
+        {
+        }, new Promise.Adapter<>()
         {
             @Override
             public void failed(Throwable x)

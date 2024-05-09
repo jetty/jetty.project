@@ -13,16 +13,19 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+
+import com.acme.websocket.PongContextListener;
+import com.acme.websocket.PongMessageEndpoint;
+import com.acme.websocket.PongSocket;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import com.acme.websocket.PongContextListener;
-import com.acme.websocket.PongMessageEndpoint;
-import com.acme.websocket.PongSocket;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.Timeouts;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
@@ -35,10 +38,6 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class PingPongTest
 {
@@ -74,7 +73,8 @@ public class PingPongTest
         server.stop();
     }
 
-    private void assertEcho(String endpointPath, Consumer<CoreSession> sendAction, String... expectedMsgs) throws Exception
+    private void assertEcho(String endpointPath, Consumer<CoreSession> sendAction, String... expectedMsgs)
+        throws Exception
     {
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         URI toUri = server.getWsUri().resolve(endpointPath);
@@ -105,10 +105,13 @@ public class PingPongTest
     {
         assertTimeout(Duration.ofMillis(6000), () ->
         {
-            assertEcho("/app/pong", (session) ->
-            {
-                session.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
-            }, "PongMessageEndpoint.onMessage(PongMessage):[/pong]:hello");
+            assertEcho(
+                "/app/pong",
+                (session) ->
+                {
+                    session.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
+                },
+                "PongMessageEndpoint.onMessage(PongMessage):[/pong]:hello");
         });
     }
 
@@ -117,10 +120,13 @@ public class PingPongTest
     {
         assertTimeout(Duration.ofMillis(6000), () ->
         {
-            assertEcho("/app/pong-socket", (session) ->
-            {
-                session.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
-            }, "PongSocket.onPong(PongMessage)[/pong-socket]:hello");
+            assertEcho(
+                "/app/pong-socket",
+                (session) ->
+                {
+                    session.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
+                },
+                "PongSocket.onPong(PongMessage)[/pong-socket]:hello");
         });
     }
 }

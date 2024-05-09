@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.client;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
@@ -21,7 +26,6 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -44,11 +48,6 @@ import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class NetworkTrafficListenerTest
 {
     private static final String END_OF_CONTENT = "~";
@@ -67,8 +66,14 @@ public class NetworkTrafficListenerTest
     {
         server = new Server();
         connector = new NetworkTrafficServerConnector(server);
-        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
-        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
+        connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendDateHeader(false);
+        connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendServerVersion(false);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
@@ -240,7 +245,8 @@ public class NetworkTrafficListenerTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort()).send();
+        ContentResponse response =
+            client.newRequest("localhost", connector.getLocalPort()).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(responseContent, response.getContentAsString());
 
@@ -312,7 +318,8 @@ public class NetworkTrafficListenerTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort()).send();
+        ContentResponse response =
+            client.newRequest("localhost", connector.getLocalPort()).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         assertTrue(clientOutgoingLatch.await(1, TimeUnit.SECONDS));
@@ -477,9 +484,16 @@ public class NetworkTrafficListenerTest
             super(new HttpClientTransportOverHTTP(new ClientConnector()
             {
                 @Override
-                protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
+                protected EndPoint newEndPoint(
+                                               SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
                 {
-                    return new NetworkTrafficSocketChannelEndPoint((SocketChannel)channel, selector, selectionKey, getScheduler(), getIdleTimeout().toMillis(), listener.get());
+                    return new NetworkTrafficSocketChannelEndPoint(
+                        (SocketChannel)channel,
+                        selector,
+                        selectionKey,
+                        getScheduler(),
+                        getIdleTimeout().toMillis(),
+                        listener.get());
                 }
             }));
             this.listener = listener;

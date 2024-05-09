@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -92,9 +91,16 @@ public class ProxyConfiguration
         private final Origin origin;
         private final SslContextFactory.Client sslContextFactory;
 
-        protected Proxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
+        protected Proxy(
+                        Origin.Address address,
+                        boolean secure,
+                        SslContextFactory.Client sslContextFactory,
+                        Origin.Protocol protocol)
         {
-            this(new Origin(secure ? HttpScheme.HTTPS.asString() : HttpScheme.HTTP.asString(), address, null, protocol), sslContextFactory);
+            this(
+                new Origin(
+                    secure ? HttpScheme.HTTPS.asString() : HttpScheme.HTTP.asString(), address, null, protocol),
+                sslContextFactory);
         }
 
         protected Proxy(Origin origin, SslContextFactory.Client sslContextFactory)

@@ -117,9 +117,7 @@ abstract class AbstractTrie<V> implements Index.Mutable<V>
      */
     protected static int requiredCapacity(Set<String> keys, boolean caseSensitive)
     {
-        List<String> list = caseSensitive
-            ? new ArrayList<>(keys)
-            : keys.stream().map(String::toLowerCase).collect(Collectors.toList());
+        List<String> list = caseSensitive ? new ArrayList<>(keys) : keys.stream().map(String::toLowerCase).collect(Collectors.toList());
         Collections.sort(list);
         return 1 + AbstractTrie.requiredCapacity(list, 0, list.size(), 0);
     }

@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -53,7 +52,9 @@ public class PathFinderTest
         expected.add("${jetty.home}/start.ini");
         FSTest.toFsSeparators(expected);
 
-        BaseHome hb = new BaseHome(new String[]{"jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString()});
+        BaseHome hb =
+            new BaseHome(new String[]
+            {"jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString()});
         BaseHomeTest.assertPathList(hb, "Files found", expected, finder);
     }
 
@@ -83,7 +84,9 @@ public class PathFinderTest
 
         Files.walkFileTree(modulesPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), 1, finder);
 
-        BaseHome hb = new BaseHome(new String[]{"jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString()});
+        BaseHome hb =
+            new BaseHome(new String[]
+            {"jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString()});
         BaseHomeTest.assertPathList(hb, "Files found", expected, finder);
     }
 }

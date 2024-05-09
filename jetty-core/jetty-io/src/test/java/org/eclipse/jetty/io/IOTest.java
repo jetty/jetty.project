@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -37,7 +46,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -50,16 +58,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
-@ExtendWith(WorkDirExtension.class) 
+@ExtendWith(WorkDirExtension.class)
 public class IOTest
 {
 
@@ -99,7 +98,8 @@ public class IOTest
             assertEquals(-1, server.getInputStream().read());
 
             // but cannot write
-            Assertions.assertThrows(SocketException.class, () -> client.getOutputStream().write(1));
+            Assertions.assertThrows(
+                SocketException.class, () -> client.getOutputStream().write(1));
 
             // but can still write in opposite direction.
             server.getOutputStream().write(1);
@@ -109,7 +109,8 @@ public class IOTest
             server.shutdownInput();
 
             // now we EOF instead of reading -1
-            Assertions.assertThrows(SocketException.class, () -> server.getInputStream().read());
+            Assertions.assertThrows(
+                SocketException.class, () -> server.getInputStream().read());
 
             // but can still write in opposite direction.
             server.getOutputStream().write(1);
@@ -119,7 +120,8 @@ public class IOTest
             client.shutdownInput();
 
             // now we EOF instead of reading -1
-            Assertions.assertThrows(SocketException.class, () -> client.getInputStream().read());
+            Assertions.assertThrows(
+                SocketException.class, () -> client.getInputStream().read());
 
             // But we can still write at the server (data which will never be read)
             server.getOutputStream().write(1);
@@ -131,7 +133,8 @@ public class IOTest
             server.shutdownOutput();
 
             // and now we can't write
-            Assertions.assertThrows(SocketException.class, () -> server.getOutputStream().write(1));
+            Assertions.assertThrows(
+                SocketException.class, () -> server.getOutputStream().write(1));
 
             // but the sockets are still open
             assertFalse(client.isClosed());
@@ -186,19 +189,19 @@ public class IOTest
                         // Client reads -1 and does ishut
                         assertEquals(-1, client.getInputStream().read());
                         assertFalse(client.isInputShutdown());
-                        //System.err.println("ISHUT "+client);
+                        // System.err.println("ISHUT "+client);
                         client.shutdownInput();
 
                         // Client ???
-                        //System.err.println("OSHUT "+client);
+                        // System.err.println("OSHUT "+client);
                         client.shutdownOutput();
-                        //System.err.println("CLOSE "+client);
+                        // System.err.println("CLOSE "+client);
                         client.close();
 
                         // Server reads -1, does ishut and then close
                         assertEquals(-1, server.getInputStream().read());
                         assertFalse(server.isInputShutdown());
-                        //System.err.println("ISHUT "+server);
+                        // System.err.println("ISHUT "+server);
 
                         server.shutdownInput();
                         server.close();
@@ -237,7 +240,7 @@ public class IOTest
 
                     // Write from server to client with oshut
                     server.getOutputStream().write(1);
-                    //System.err.println("OSHUT "+server);
+                    // System.err.println("OSHUT "+server);
                     server.shutdownOutput();
 
                     // Client reads response
@@ -408,7 +411,8 @@ public class IOTest
 
             try (AsynchronousSocketChannel client = AsynchronousSocketChannel.open())
             {
-                client.connect(new InetSocketAddress("127.0.0.1", addr.getPort())).get(5, TimeUnit.SECONDS);
+                client.connect(new InetSocketAddress("127.0.0.1", addr.getPort()))
+                    .get(5, TimeUnit.SECONDS);
 
                 AsynchronousSocketChannel server = acceptor.get(5, TimeUnit.SECONDS);
 
@@ -433,7 +437,8 @@ public class IOTest
     {
         Path tmpPath = workDir.getEmptyPathDir();
         Path file = Files.createTempFile(tmpPath, "test", ".txt");
-        FileChannel out = FileChannel.open(file,
+        FileChannel out = FileChannel.open(
+            file,
             StandardOpenOption.CREATE,
             StandardOpenOption.READ,
             StandardOpenOption.WRITE,
@@ -567,7 +572,8 @@ public class IOTest
                     {
                         e.printStackTrace();
                     }
-                }).start();
+                })
+                    .start();
                 assertThat(selector.select(), is(0));
             }
         }
@@ -643,5 +649,4 @@ public class IOTest
         assertFalse(Files.isSymbolicLink(realPath));
         assertFalse(Files.isSymbolicLink(linkPath));
     }
-
 }

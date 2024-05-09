@@ -24,7 +24,6 @@ import javax.naming.NameNotFoundException;
 import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,8 +44,7 @@ public class NamingEntryUtil
      * @return true if bind success, false if not bound
      * @throws NamingException if unable to bind
      */
-    public static boolean bindToENC(Object scope, String asName, String mappedName)
-        throws NamingException
+    public static boolean bindToENC(Object scope, String asName, String mappedName) throws NamingException
     {
         if (asName == null || asName.trim().isEmpty())
             throw new NamingException("No name for NamingEntry");
@@ -70,8 +68,7 @@ public class NamingEntryUtil
      * @return the naming entry for the given scope
      * @throws NamingException if unable to lookup naming entry
      */
-    public static NamingEntry lookupNamingEntry(Object scope, String jndiName)
-        throws NamingException
+    public static NamingEntry lookupNamingEntry(Object scope, String jndiName) throws NamingException
     {
         NamingEntry entry = null;
         try
@@ -108,8 +105,7 @@ public class NamingEntryUtil
      * @return all NameEntries of a certain type in the given naming environment scope (server-wide names or context-specific names)
      * @throws NamingException if unable to lookup the naming entries
      */
-    public static <T> List<? extends T> lookupNamingEntries(Object scope, Class<T> clazz)
-        throws NamingException
+    public static <T> List<? extends T> lookupNamingEntries(Object scope, Class<T> clazz) throws NamingException
     {
         try
         {
@@ -152,14 +148,12 @@ public class NamingEntryUtil
         return list;
     }
 
-    public static Name makeNamingEntryName(NameParser parser, NamingEntry namingEntry)
-        throws NamingException
+    public static Name makeNamingEntryName(NameParser parser, NamingEntry namingEntry) throws NamingException
     {
         return makeNamingEntryName(parser, (namingEntry == null ? null : namingEntry.getJndiName()));
     }
 
-    public static Name makeNamingEntryName(NameParser parser, String jndiName)
-        throws NamingException
+    public static Name makeNamingEntryName(NameParser parser, String jndiName) throws NamingException
     {
         if (jndiName == null)
             return null;
@@ -196,8 +190,7 @@ public class NamingEntryUtil
         }
     }
 
-    public static Context getContextForScope(Object scope)
-        throws NamingException
+    public static Context getContextForScope(Object scope) throws NamingException
     {
         InitialContext ic = new InitialContext();
         NameParser parser = ic.getNameParser("");
@@ -209,8 +202,7 @@ public class NamingEntryUtil
         return (Context)ic.lookup(name);
     }
 
-    public static void destroyContextForScope(Object scope)
-        throws NamingException
+    public static void destroyContextForScope(Object scope) throws NamingException
     {
         Name name = getNameForScope(scope);
         if (name != null)

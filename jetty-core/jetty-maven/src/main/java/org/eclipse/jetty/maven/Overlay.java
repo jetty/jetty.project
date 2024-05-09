@@ -18,12 +18,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * Overlay
- * 
+ *
  * An Overlay represents overlay information derived from the
  * maven-war-plugin.
  */
@@ -72,14 +71,14 @@ public class Overlay
         }
         return strbuff.toString();
     }
-    
+
     /**
      * Unpack the overlay into the given directory. Only
      * unpack if the directory does not exist, or the overlay
      * has been modified since the dir was created.
-     * 
+     *
      * @param dir the directory into which to unpack the overlay
-     * @throws IOException 
+     * @throws IOException
      */
     public void unpackTo(File dir) throws IOException // TODO: change to Path
     {

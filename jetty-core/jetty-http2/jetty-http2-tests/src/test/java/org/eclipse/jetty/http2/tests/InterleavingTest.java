@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -24,7 +30,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -43,12 +48,6 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class InterleavingTest extends AbstractTest
 {
@@ -110,7 +109,8 @@ public class InterleavingTest extends AbstractTest
 
         Stream serverStream1 = serverStreams.get(0);
         Stream serverStream2 = serverStreams.get(1);
-        MetaData.Response response1 = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+        MetaData.Response response1 =
+            new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
         serverStream1.headers(new HeadersFrame(serverStream1.getId(), response1, null, false), Callback.NOOP);
 
         Random random = new Random();
@@ -119,7 +119,8 @@ public class InterleavingTest extends AbstractTest
         byte[] content2 = new byte[2 * ((HTTP2Session)serverStream2.getSession()).updateSendWindow(0)];
         random.nextBytes(content2);
 
-        MetaData.Response response2 = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+        MetaData.Response response2 =
+            new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
         serverStream2.headers(new HeadersFrame(serverStream2.getId(), response2, null, false), new Callback()
         {
             @Override

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.RateControl;
@@ -76,18 +75,24 @@ public class Parser
             throw new IllegalStateException("Invalid parser initialization");
         this.listener = listener;
         unknownBodyParser = new UnknownBodyParser(headerParser, listener);
-        HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, bufferPool, hpackDecoder, unknownBodyParser);
-        HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments(bufferPool, hpackDecoder.getMaxHeaderListSize());
+        HeaderBlockParser headerBlockParser =
+            new HeaderBlockParser(headerParser, bufferPool, hpackDecoder, unknownBodyParser);
+        HeaderBlockFragments headerBlockFragments =
+            new HeaderBlockFragments(bufferPool, hpackDecoder.getMaxHeaderListSize());
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
-        bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
+        bodyParsers[FrameType.HEADERS.getType()] =
+            new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
         bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
-        bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener, getMaxSettingsKeys());
-        bodyParsers[FrameType.PUSH_PROMISE.getType()] = new PushPromiseBodyParser(headerParser, listener, headerBlockParser);
+        bodyParsers[FrameType.SETTINGS.getType()] =
+            new SettingsBodyParser(headerParser, listener, getMaxSettingsKeys());
+        bodyParsers[FrameType.PUSH_PROMISE.getType()] =
+            new PushPromiseBodyParser(headerParser, listener, headerBlockParser);
         bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener);
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
         bodyParsers[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateBodyParser(headerParser, listener);
-        bodyParsers[FrameType.CONTINUATION.getType()] = new ContinuationBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
+        bodyParsers[FrameType.CONTINUATION.getType()] =
+            new ContinuationBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
     }
 
     protected Listener getListener()
@@ -180,7 +185,8 @@ public class Parser
             return false;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsed {} frame header from {}@{}", headerParser, buffer, Integer.toHexString(buffer.hashCode()));
+            LOG.debug(
+                "Parsed {} frame header from {}@{}", headerParser, buffer, Integer.toHexString(buffer.hashCode()));
 
         if (headerParser.getLength() > getMaxFrameSize())
             return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR, "invalid_frame_length");
@@ -230,7 +236,11 @@ public class Parser
                 return false;
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsed {} frame body from {}@{}", FrameType.from(type), buffer, Integer.toHexString(buffer.hashCode()));
+            LOG.debug(
+                "Parsed {} frame body from {}@{}",
+                FrameType.from(type),
+                buffer,
+                Integer.toHexString(buffer.hashCode()));
         reset();
         return true;
     }
@@ -412,6 +422,7 @@ public class Parser
 
     private enum State
     {
-        HEADER, BODY
+        HEADER,
+        BODY
     }
 }

@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler.gzip;
 import java.util.ListIterator;
 import java.util.Set;
 import java.util.zip.Deflater;
-
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -80,9 +79,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         {
             if ("image/svg+xml".equals(type))
                 _paths.exclude("*.svgz");
-            else if (type.startsWith("image/") ||
-                type.startsWith("audio/") ||
-                type.startsWith("video/"))
+            else if (type.startsWith("image/") || type.startsWith("audio/") || type.startsWith("video/"))
                 _mimeTypes.exclude(type);
         }
         _mimeTypes.exclude("application/compress");
@@ -93,7 +90,8 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         _mimeTypes.exclude("application/x-xz");
         _mimeTypes.exclude("application/x-rar-compressed");
 
-        // It is possible to use SSE with GzipHandler but you will need to set _synFlush to true which will impact performance.
+        // It is possible to use SSE with GzipHandler but you will need to set _synFlush to true which will impact
+        // performance.
         _mimeTypes.exclude("text/event-stream");
 
         if (LOG.isDebugEnabled())
@@ -588,7 +586,8 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         // Wrap the response and callback IFF we can be deflated and will try to deflate
         if (deflatable && tryDeflate)
         {
-            GzipResponseAndCallback gzipResponseAndCallback = new GzipResponseAndCallback(this, request, response, callback);
+            GzipResponseAndCallback gzipResponseAndCallback =
+                new GzipResponseAndCallback(this, request, response, callback);
             response = gzipResponseAndCallback;
             callback = gzipResponseAndCallback;
         }
@@ -793,7 +792,10 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     public void setMinGzipSize(int minGzipSize)
     {
         if (minGzipSize < BREAK_EVEN_GZIP_SIZE)
-            LOG.warn("minGzipSize of {} is inefficient for short content, break even is size {}", minGzipSize, BREAK_EVEN_GZIP_SIZE);
+            LOG.warn(
+                "minGzipSize of {} is inefficient for short content, break even is size {}",
+                minGzipSize,
+                BREAK_EVEN_GZIP_SIZE);
         _minGzipSize = Math.max(0, minGzipSize);
     }
 
@@ -892,6 +894,8 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,min=%s,inflate=%s}", getClass().getSimpleName(), hashCode(), getState(), _minGzipSize, _inflateBufferSize);
+        return String.format(
+            "%s@%x{%s,min=%s,inflate=%s}",
+            getClass().getSimpleName(), hashCode(), getState(), _minGzipSize, _inflateBufferSize);
     }
 }

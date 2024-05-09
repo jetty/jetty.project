@@ -15,4 +15,3 @@
  * Jetty Util : Common Utility Classes
  */
 package org.eclipse.jetty.util;
-

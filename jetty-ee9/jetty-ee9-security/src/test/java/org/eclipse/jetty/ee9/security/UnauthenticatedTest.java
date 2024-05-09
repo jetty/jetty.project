@@ -13,14 +13,16 @@
 
 package org.eclipse.jetty.ee9.security;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
@@ -33,9 +35,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 public class UnauthenticatedTest
 {
@@ -67,7 +66,9 @@ public class UnauthenticatedTest
         securityHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
@@ -133,13 +134,16 @@ public class UnauthenticatedTest
         }
 
         @Override
-        public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
+        public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory)
+            throws ServerAuthException
         {
             return AUTHENTICATION.get();
         }
 
         @Override
-        public boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, Authentication.User validatedUser) throws ServerAuthException
+        public boolean secureResponse(
+                                      ServletRequest request, ServletResponse response, boolean mandatory, Authentication.User validatedUser)
+            throws ServerAuthException
         {
             return true;
         }

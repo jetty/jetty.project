@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -48,10 +47,18 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractHandshaker implements Handshaker
 {
     protected static final Logger LOG = LoggerFactory.getLogger(AbstractHandshaker.class);
-    private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
+    private static final HttpField SERVER_VERSION =
+        new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
     @Override
-    public boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws WebSocketException
+    public boolean upgradeRequest(
+                                  WebSocketNegotiator negotiator,
+                                  Request request,
+                                  Response response,
+                                  Callback callback,
+                                  WebSocketComponents components,
+                                  Configuration.Customizer defaultCustomizer)
+        throws WebSocketException
     {
         if (!isWebSocketUpgradeRequest(request))
             return false;
@@ -67,7 +74,8 @@ public abstract class AbstractHandshaker implements Handshaker
         // From this point on, we can only return true or throw.
 
         // Negotiate the FrameHandler
-        FrameHandler handler = negotiator.negotiate(negotiation.getRequest(), negotiation.getResponse(), negotiation.getCallback());
+        FrameHandler handler =
+            negotiator.negotiate(negotiation.getRequest(), negotiation.getResponse(), negotiation.getCallback());
         if (handler == null)
             return true;
 
@@ -86,11 +94,15 @@ public abstract class AbstractHandshaker implements Handshaker
             if (config.getName().startsWith("@"))
                 continue;
 
-            long matches = negotiation.getOfferedExtensions().stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            long matches = negotiation.getOfferedExtensions().stream()
+                .filter(c -> config.getName().equalsIgnoreCase(c.getName()))
+                .count();
             if (matches < 1)
                 throw new WebSocketException("Upgrade failed: negotiated extension not requested");
 
-            matches = negotiation.getNegotiatedExtensions().stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            matches = negotiation.getNegotiatedExtensions().stream()
+                .filter(c -> config.getName().equalsIgnoreCase(c.getName()))
+                .count();
             if (matches > 1)
                 throw new WebSocketException("Upgrade failed: multiple negotiated extensions of the same name");
         }
@@ -100,11 +112,19 @@ public abstract class AbstractHandshaker implements Handshaker
         extensionStack.negotiate(negotiation.getOfferedExtensions(), negotiation.getNegotiatedExtensions());
         negotiation.setNegotiatedExtensions(extensionStack.getNegotiatedExtensions());
         if (extensionStack.hasNegotiatedExtensions())
-            response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, ExtensionConfig.toHeaderValue(negotiation.getNegotiatedExtensions()));
+            response.getHeaders()
+                .put(
+                    HttpHeader.SEC_WEBSOCKET_EXTENSIONS,
+                    ExtensionConfig.toHeaderValue(negotiation.getNegotiatedExtensions()));
         else
             response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, (String)null);
 
-        Negotiated negotiated = new Negotiated(request.getHttpURI().toURI(), protocol, request.isSecure(), extensionStack, WebSocketConstants.SPEC_VERSION_STRING);
+        Negotiated negotiated = new Negotiated(
+            request.getHttpURI().toURI(),
+            protocol,
+            request.isSecure(),
+            extensionStack,
+            WebSocketConstants.SPEC_VERSION_STRING);
 
         // Create the Session
         WebSocketCoreSession coreSession = newWebSocketCoreSession(request, handler, negotiated, components);
@@ -140,7 +160,8 @@ public abstract class AbstractHandshaker implements Handshaker
         return true;
     }
 
-    protected abstract WebSocketNegotiation newNegotiation(Request request, Response response, Callback callback, WebSocketComponents webSocketComponents);
+    protected abstract WebSocketNegotiation newNegotiation(
+                                                           Request request, Response response, Callback callback, WebSocketComponents webSocketComponents);
 
     @Override
     public boolean isWebSocketUpgradeRequest(Request request)
@@ -168,7 +189,8 @@ public abstract class AbstractHandshaker implements Handshaker
         return true;
     }
 
-    protected WebSocketCoreSession newWebSocketCoreSession(Request request, FrameHandler handler, Negotiated negotiated, WebSocketComponents components)
+    protected WebSocketCoreSession newWebSocketCoreSession(
+                                                           Request request, FrameHandler handler, Negotiated negotiated, WebSocketComponents components)
     {
         Context context = request.getContext();
         return new WebSocketCoreSession(handler, Behavior.SERVER, negotiated, components)
@@ -181,11 +203,18 @@ public abstract class AbstractHandshaker implements Handshaker
         };
     }
 
-    protected abstract WebSocketConnection createWebSocketConnection(Request baseRequest, WebSocketCoreSession coreSession);
+    protected abstract WebSocketConnection createWebSocketConnection(
+                                                                     Request baseRequest, WebSocketCoreSession coreSession);
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
+    protected WebSocketConnection newWebSocketConnection(
+                                                         EndPoint endPoint,
+                                                         Executor executor,
+                                                         Scheduler scheduler,
+                                                         ByteBufferPool byteBufferPool,
+                                                         WebSocketCoreSession coreSession)
     {
-        WebSocketConnection connection = new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
+        WebSocketConnection connection =
+            new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
         coreSession.setWebSocketConnection(connection);
         return connection;
     }

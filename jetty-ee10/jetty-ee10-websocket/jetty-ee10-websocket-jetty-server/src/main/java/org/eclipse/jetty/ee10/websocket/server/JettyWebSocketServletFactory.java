@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.websocket.server;
 
 import java.util.Set;
-
 import org.eclipse.jetty.websocket.api.Configurable;
 
 public interface JettyWebSocketServletFactory extends Configurable

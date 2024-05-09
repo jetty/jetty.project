@@ -16,7 +16,6 @@ package org.eclipse.jetty.security.authentication;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -179,7 +178,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (session == null)
             return;
 
-        //clean up session
+        // clean up session
         session.removeAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE);
     }
 
@@ -247,7 +246,8 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Constraint.Authorization getConstraintAuthentication(String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
+    public Constraint.Authorization getConstraintAuthentication(
+                                                                String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
     {
         if (isJSecurityCheck(pathInContext))
             return Constraint.Authorization.ANY_USER;
@@ -257,7 +257,8 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request request, Response response, Callback callback)
+        throws ServerAuthException
     {
         String pathInContext = Request.getPathInContext(request);
         boolean jSecurityCheck = isJSecurityCheck(pathInContext);
@@ -277,9 +278,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 // Redirect to original request
                 Session session = request.getSession(false);
                 HttpURI savedURI = (HttpURI)session.getAttribute(__J_URI);
-                String originalURI = savedURI != null
-                    ? savedURI.getPathQuery()
-                    : Request.getContextPath(request);
+                String originalURI = savedURI != null ? savedURI.getPathQuery() : Request.getContextPath(request);
                 if (originalURI == null)
                     originalURI = "/";
                 UserAuthenticationSent formAuth = new UserAuthenticationSent(getAuthenticationType(), user);
@@ -378,7 +377,12 @@ public class FormAuthenticator extends LoginAuthenticator
         else if (_dispatch)
             return dispatch(_formErrorPage, request, response, callback);
         else
-            Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage), request), true);
+            Response.sendRedirect(
+                request,
+                response,
+                callback,
+                encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage), request),
+                true);
         return AuthenticationState.SEND_FAILURE;
     }
 
@@ -390,7 +394,12 @@ public class FormAuthenticator extends LoginAuthenticator
         }
         else
         {
-            Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage), request), true);
+            Response.sendRedirect(
+                request,
+                response,
+                callback,
+                encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage), request),
+                true);
             return AuthenticationState.SEND_FAILURE;
         }
     }

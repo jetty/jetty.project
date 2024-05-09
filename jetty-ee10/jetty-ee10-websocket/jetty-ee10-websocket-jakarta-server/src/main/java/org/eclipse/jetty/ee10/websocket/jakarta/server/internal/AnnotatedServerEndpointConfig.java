@@ -13,27 +13,33 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.server.internal;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import jakarta.websocket.Decoder;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.util.ArrayList;
+import java.util.List;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.ServerEndpointConfigWrapper;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 
 public class AnnotatedServerEndpointConfig extends ServerEndpointConfigWrapper
 {
-    public AnnotatedServerEndpointConfig(JakartaWebSocketContainer containerScope, Class<?> endpointClass, ServerEndpoint anno) throws DeploymentException
+    public AnnotatedServerEndpointConfig(
+                                         JakartaWebSocketContainer containerScope, Class<?> endpointClass, ServerEndpoint anno)
+        throws DeploymentException
     {
         this(containerScope, endpointClass, anno, null);
     }
 
-    public AnnotatedServerEndpointConfig(JakartaWebSocketContainer containerScope, Class<?> endpointClass, ServerEndpoint anno, EndpointConfig baseConfig) throws DeploymentException
+    public AnnotatedServerEndpointConfig(
+                                         JakartaWebSocketContainer containerScope,
+                                         Class<?> endpointClass,
+                                         ServerEndpoint anno,
+                                         EndpointConfig baseConfig)
+        throws DeploymentException
     {
         // Provided Base EndpointConfig.
         ServerEndpointConfig baseServerConfig = null;
@@ -88,7 +94,9 @@ public class AnnotatedServerEndpointConfig extends ServerEndpointConfigWrapper
         init(endpointConfig);
     }
 
-    private static Configurator getConfigurator(ServerEndpointConfig baseServerConfig, ServerEndpoint anno, JakartaWebSocketContainer containerScope) throws DeploymentException
+    private static Configurator getConfigurator(
+                                                ServerEndpointConfig baseServerConfig, ServerEndpoint anno, JakartaWebSocketContainer containerScope)
+        throws DeploymentException
     {
         Configurator ret = null;
 

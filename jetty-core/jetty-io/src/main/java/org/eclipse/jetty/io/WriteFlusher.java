@@ -24,7 +24,6 @@ import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -42,7 +41,8 @@ import org.slf4j.LoggerFactory;
 public abstract class WriteFlusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(WriteFlusher.class);
-    private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
+    private static final boolean DEBUG =
+        LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
     private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[]{BufferUtil.EMPTY_BUFFER};
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
     private static final State __IDLE = new IdleState();
@@ -225,9 +225,7 @@ public abstract class WriteFlusher
     public InvocationType getCallbackInvocationType()
     {
         State s = _state.get();
-        return (s instanceof PendingState)
-            ? ((PendingState)s).getCallbackInvocationType()
-            : Invocable.InvocationType.BLOCKING;
+        return (s instanceof PendingState) ? ((PendingState)s).getCallbackInvocationType() : Invocable.InvocationType.BLOCKING;
     }
 
     /**
@@ -575,7 +573,9 @@ public abstract class WriteFlusher
     public String toString()
     {
         State s = _state.get();
-        return String.format("WriteFlusher@%x{%s}->%s", hashCode(), s, s instanceof PendingState ? ((PendingState)s)._callback : null);
+        return String.format(
+            "WriteFlusher@%x{%s}->%s",
+            hashCode(), s, s instanceof PendingState ? ((PendingState)s)._callback : null);
     }
 
     /**

@@ -13,6 +13,19 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,20 +43,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRegistration;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.ServletSecurityElement;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.ScopedHandler;
@@ -93,8 +92,8 @@ public class ServletHandler extends ScopedHandler
     private ServletContext _servletContext;
     private final List<FilterHolder> _filters = new ArrayList<>();
     private final List<FilterMapping> _filterMappings = new ArrayList<>();
-    private int _matchBeforeIndex = -1; //index of last programmatic FilterMapping with isMatchAfter=false
-    private int _matchAfterIndex = -1;  //index of 1st programmatic FilterMapping with isMatchAfter=true
+    private int _matchBeforeIndex = -1; // index of last programmatic FilterMapping with isMatchAfter=false
+    private int _matchAfterIndex = -1; // index of 1st programmatic FilterMapping with isMatchAfter=true
     private boolean _filterChainsCached = true;
     private int _maxFilterChainsCacheSize = 1024;
     private boolean _startWithUnavailable = false;
@@ -147,7 +146,9 @@ public class ServletHandler extends ScopedHandler
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent,
+        dumpObjects(
+            out,
+            indent,
             DumpableCollection.from("listeners " + this, _listeners),
             DumpableCollection.from("filters " + this, _filters),
             DumpableCollection.from("filterMappings " + this, _filterMappings),
@@ -227,14 +228,14 @@ public class ServletHandler extends ScopedHandler
     @Override
     protected void start(LifeCycle l) throws Exception
     {
-        //Don't start the whole object tree (ie all the servlet and filter Holders) when
-        //this handler starts. They have a slightly special lifecycle, and should only be
-        //started AFTER the handlers have all started (and the ContextHandler has called
-        //the context listeners).
+        // Don't start the whole object tree (ie all the servlet and filter Holders) when
+        // this handler starts. They have a slightly special lifecycle, and should only be
+        // started AFTER the handlers have all started (and the ContextHandler has called
+        // the context listeners).
         if (!(l instanceof Holder))
             super.start(l);
     }
-    
+
     @Override
     protected void stop(LifeCycle l) throws Exception
     {
@@ -251,7 +252,7 @@ public class ServletHandler extends ScopedHandler
 
             // Stop filters
             List<FilterHolder> filterHolders = new ArrayList<>();
-            for (int i = _filters.size(); i-- > 0; )
+            for (int i = _filters.size(); i-- > 0;)
             {
                 FilterHolder filter = _filters.get(i);
                 try
@@ -264,18 +265,18 @@ public class ServletHandler extends ScopedHandler
                 }
                 if (_durable.contains(filter))
                 {
-                    filterHolders.add(filter); //only retain durable
+                    filterHolders.add(filter); // only retain durable
                 }
             }
 
-            //Retain only durable filters
+            // Retain only durable filters
             updateBeans(_filters, filterHolders);
             _filters.clear();
             _filters.addAll(filterHolders);
 
             // Stop servlets
-            List<ServletHolder> servletHolders = new ArrayList<>();  //will be remaining servlets
-            for (int i = _servlets.size(); i-- > 0; )
+            List<ServletHolder> servletHolders = new ArrayList<>(); // will be remaining servlets
+            for (int i = _servlets.size(); i-- > 0;)
             {
                 ServletHolder servlet = _servlets.get(i);
                 try
@@ -289,26 +290,34 @@ public class ServletHandler extends ScopedHandler
 
                 if (_durable.contains(servlet))
                 {
-                    servletHolders.add(servlet); //only retain embedded
+                    servletHolders.add(servlet); // only retain embedded
                 }
             }
 
-            //Retain only durable Servlets
+            // Retain only durable Servlets
             updateBeans(_servlets, servletHolders);
             _servlets.clear();
             _servlets.addAll(servletHolders);
 
             updateNameMappings();
-            updateAndSet(_servletMappings, _servletMappings.stream().filter(m -> _servletNameMap.containsKey(m.getServletName())).collect(Collectors.toList()));
-            updateAndSet(_filterMappings, _filterMappings.stream().filter(m -> _filterNameMap.containsKey(m.getFilterName())).collect(Collectors.toList()));
+            updateAndSet(
+                _servletMappings,
+                _servletMappings.stream()
+                    .filter(m -> _servletNameMap.containsKey(m.getServletName()))
+                    .collect(Collectors.toList()));
+            updateAndSet(
+                _filterMappings,
+                _filterMappings.stream()
+                    .filter(m -> _filterNameMap.containsKey(m.getFilterName()))
+                    .collect(Collectors.toList()));
             updateMappings();
 
             if (_contextHandler != null)
                 _contextHandler.contextDestroyed();
 
-            //Retain only Listeners added via jetty apis (is Source.EMBEDDED)
+            // Retain only Listeners added via jetty apis (is Source.EMBEDDED)
             List<ListenerHolder> listenerHolders = new ArrayList<>();
-            for (int i = _listeners.size(); i-- > 0; )
+            for (int i = _listeners.size(); i-- > 0;)
             {
                 ListenerHolder listener = _listeners.get(i);
                 try
@@ -432,8 +441,7 @@ public class ServletHandler extends ScopedHandler
         for (ServletHolder holder : _servlets)
         {
             Class<? extends Servlet> held = holder.getHeldClass();
-            if ((held == null && holder.getClassName() != null && holder.getClassName().equals(clazz.getName())) ||
-                (held != null && clazz.isAssignableFrom(holder.getHeldClass())))
+            if ((held == null && holder.getClassName() != null && holder.getClassName().equals(clazz.getName())) || (held != null && clazz.isAssignableFrom(holder.getHeldClass())))
             {
                 if (holders == null)
                     holders = new ArrayList<>();
@@ -452,7 +460,8 @@ public class ServletHandler extends ScopedHandler
     }
 
     @Override
-    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         // Get the base requests
         final ServletPathMapping old_servlet_path_mapping = baseRequest.getServletPathMapping();
@@ -465,14 +474,21 @@ public class ServletHandler extends ScopedHandler
         {
             MappedServlet mappedServlet = matched.getResource();
             servletHolder = mappedServlet.getServletHolder();
-            ServletPathMapping servletPathMapping = mappedServlet.getServletPathMapping(target, matched.getMatchedPath());
+            ServletPathMapping servletPathMapping =
+                mappedServlet.getServletPathMapping(target, matched.getMatchedPath());
 
             if (servletPathMapping != null)
                 baseRequest.setServletPathMapping(servletPathMapping);
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("servlet {}|{}|{}|{} -> {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), baseRequest.getHttpServletMapping(), servletHolder);
+            LOG.debug(
+                "servlet {}|{}|{}|{} -> {}",
+                baseRequest.getContextPath(),
+                baseRequest.getServletPath(),
+                baseRequest.getPathInfo(),
+                baseRequest.getHttpServletMapping(),
+                servletHolder);
 
         try
         {
@@ -593,7 +609,8 @@ public class ServletHandler extends ScopedHandler
         {
             if (_wildFilterNameMappings != null)
                 for (FilterMapping mapping : _wildFilterNameMappings)
-                    chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
+                    chain = newFilterChain(
+                        mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
 
             List<FilterMapping> nameMappings = _filterNameMappings.get(servletHolder.getName());
             if (nameMappings != null)
@@ -601,7 +618,8 @@ public class ServletHandler extends ScopedHandler
                 for (FilterMapping mapping : nameMappings)
                 {
                     if (mapping.appliesTo(dispatch))
-                        chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
+                        chain = newFilterChain(
+                            mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
                 }
             }
         }
@@ -611,7 +629,8 @@ public class ServletHandler extends ScopedHandler
             for (FilterMapping mapping : _filterPathMappings)
             {
                 if (mapping.appliesTo(pathInContext, dispatch))
-                    chain = newFilterChain(mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
+                    chain = newFilterChain(
+                        mapping.getFilterHolder(), chain == null ? new ChainEnd(servletHolder) : chain);
             }
         }
 
@@ -710,8 +729,7 @@ public class ServletHandler extends ScopedHandler
      *
      * @throws Exception if unable to initialize
      */
-    public void initialize()
-        throws Exception
+    public void initialize() throws Exception
     {
         ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 
@@ -734,26 +752,23 @@ public class ServletHandler extends ScopedHandler
                 multiException.add(e);
             }
         };
-        
-        //Start the listeners so we can call them
+
+        // Start the listeners so we can call them
         _listeners.forEach(c);
-        
-        //call listeners contextInitialized
+
+        // call listeners contextInitialized
         if (_contextHandler != null)
             _contextHandler.contextInitialized();
-        
-        //Only set initialized true AFTER the listeners have been called
+
+        // Only set initialized true AFTER the listeners have been called
         _initialized = true;
-            
-        //Start the filters then the servlets
-        Stream.concat(
-            _filters.stream(),
-            _servlets.stream().sorted())
-            .forEach(c);
+
+        // Start the filters then the servlets
+        Stream.concat(_filters.stream(), _servlets.stream().sorted()).forEach(c);
 
         multiException.ifExceptionThrow();
     }
-    
+
     /**
      * @return true if initialized has been called, false otherwise
      */
@@ -922,7 +937,8 @@ public class ServletHandler extends ScopedHandler
         setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
     }
 
-    public Set<String> setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement)
+    public Set<String> setServletSecurity(
+                                          ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement)
     {
         if (_contextHandler != null)
         {
@@ -949,7 +965,8 @@ public class ServletHandler extends ScopedHandler
      * @param dispatches see {@link FilterMapping#setDispatches(int)}
      * @return The filter holder.
      */
-    public FilterHolder addFilterWithMapping(Class<? extends Filter> filter, String pathSpec, EnumSet<DispatcherType> dispatches)
+    public FilterHolder addFilterWithMapping(
+                                             Class<? extends Filter> filter, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
         FilterHolder holder = newFilterHolder(Source.EMBEDDED);
         holder.setHeldClass(filter);
@@ -1153,9 +1170,11 @@ public class ServletHandler extends ScopedHandler
             }
             else
             {
-                //there are existing entries. If this is a programmatic filtermapping, it is added at the end of the list.
-                //If this is a normal filtermapping, it is inserted after all the other filtermappings (matchBefores and normals),
-                //but before the first matchAfter filtermapping.
+                // there are existing entries. If this is a programmatic filtermapping, it is added at the end of the
+                // list.
+                // If this is a normal filtermapping, it is inserted after all the other filtermappings (matchBefores
+                // and normals),
+                // but before the first matchAfter filtermapping.
                 if (Source.JAKARTA_API == source)
                 {
                     _filterMappings.add(mapping);
@@ -1164,7 +1183,7 @@ public class ServletHandler extends ScopedHandler
                 }
                 else
                 {
-                    //insert non-programmatic filter mappings before any matchAfters, if any
+                    // insert non-programmatic filter mappings before any matchAfters, if any
                     if (_matchAfterIndex < 0)
                         _filterMappings.add(mapping);
                     else
@@ -1201,13 +1220,13 @@ public class ServletHandler extends ScopedHandler
             {
                 if (Source.JAKARTA_API == source)
                 {
-                    //programmatically defined filter mappings are prepended to mapping list in the order
-                    //in which they were defined. In other words, insert this mapping at the tail of the 
-                    //programmatically prepended filter mappings, BEFORE the first web.xml defined filter mapping.
+                    // programmatically defined filter mappings are prepended to mapping list in the order
+                    // in which they were defined. In other words, insert this mapping at the tail of the
+                    // programmatically prepended filter mappings, BEFORE the first web.xml defined filter mapping.
 
                     if (_matchBeforeIndex < 0)
                     {
-                        //no programmatically defined prepended filter mappings yet, prepend this one
+                        // no programmatically defined prepended filter mappings yet, prepend this one
                         _matchBeforeIndex = 0;
                         _filterMappings.add(0, mapping);
                     }
@@ -1218,11 +1237,11 @@ public class ServletHandler extends ScopedHandler
                 }
                 else
                 {
-                    //non programmatically defined, just prepend to list
+                    // non programmatically defined, just prepend to list
                     _filterMappings.add(0, mapping);
                 }
 
-                //adjust matchAfterIndex ptr to take account of the mapping we just prepended
+                // adjust matchAfterIndex ptr to take account of the mapping we just prepended
                 if (_matchAfterIndex >= 0)
                     ++_matchAfterIndex;
             }
@@ -1240,9 +1259,8 @@ public class ServletHandler extends ScopedHandler
 
         try (AutoLock ignored = lock())
         {
-            FilterHolder[] holders = Arrays.stream(getFilters())
-                .filter(h -> h != holder)
-                .toArray(FilterHolder[]::new);
+            FilterHolder[] holders =
+                Arrays.stream(getFilters()).filter(h -> h != holder).toArray(FilterHolder[]::new);
             setFilters(holders);
         }
     }
@@ -1254,9 +1272,8 @@ public class ServletHandler extends ScopedHandler
 
         try (AutoLock ignored = lock())
         {
-            FilterMapping[] mappings = Arrays.stream(getFilterMappings())
-                .filter(m -> m != mapping)
-                .toArray(FilterMapping[]::new);
+            FilterMapping[] mappings =
+                Arrays.stream(getFilterMappings()).filter(m -> m != mapping).toArray(FilterMapping[]::new);
             setFilterMappings(mappings);
         }
     }
@@ -1327,7 +1344,7 @@ public class ServletHandler extends ScopedHandler
             // Map servlet paths to holders
             PathMappings<MappedServlet> pm = new PathMappings<>();
 
-            //create a map of paths to set of ServletMappings that define that mapping
+            // create a map of paths to set of ServletMappings that define that mapping
             HashMap<String, List<ServletMapping>> sms = new HashMap<>();
             for (ServletMapping servletMapping : _servletMappings)
             {
@@ -1342,48 +1359,51 @@ public class ServletHandler extends ScopedHandler
                 }
             }
 
-            //evaluate path to servlet map based on servlet mappings
+            // evaluate path to servlet map based on servlet mappings
             for (String pathSpec : sms.keySet())
             {
-                //for each path, look at the mappings where it is referenced
-                //if a mapping is for a servlet that is not enabled, skip it
+                // for each path, look at the mappings where it is referenced
+                // if a mapping is for a servlet that is not enabled, skip it
                 List<ServletMapping> mappings = sms.get(pathSpec);
 
                 ServletMapping finalMapping = null;
                 for (ServletMapping mapping : mappings)
                 {
-                    //Get servlet associated with the mapping and check it is enabled
+                    // Get servlet associated with the mapping and check it is enabled
                     ServletHolder servletHolder = getServlet(mapping.getServletName());
                     if (servletHolder == null)
                         throw new IllegalStateException("No such servlet: " + mapping.getServletName());
-                    //if the servlet related to the mapping is not enabled, skip it from consideration
+                    // if the servlet related to the mapping is not enabled, skip it from consideration
                     if (!servletHolder.isEnabled())
                         continue;
 
-                    //only accept a default mapping if we don't have any other
+                    // only accept a default mapping if we don't have any other
                     if (finalMapping == null)
                         finalMapping = mapping;
                     else
                     {
-                        //already have a candidate - only accept another one
-                        //if the candidate is a default, or we're allowing duplicate mappings
+                        // already have a candidate - only accept another one
+                        // if the candidate is a default, or we're allowing duplicate mappings
                         if (finalMapping.isFromDefaultDescriptor())
                             finalMapping = mapping;
                         else if (isAllowDuplicateMappings())
                         {
-                            LOG.warn("Multiple servlets map to path {}: {} and {}, choosing {}", pathSpec, finalMapping.getServletName(), mapping.getServletName(), mapping);
+                            LOG.warn(
+                                "Multiple servlets map to path {}: {} and {}, choosing {}",
+                                pathSpec,
+                                finalMapping.getServletName(),
+                                mapping.getServletName(),
+                                mapping);
                             finalMapping = mapping;
                         }
                         else
                         {
-                            //existing candidate isn't a default, if the one we're looking at isn't a default either, then its an error
+                            // existing candidate isn't a default, if the one we're looking at isn't a default either,
+                            // then its an error
                             if (!mapping.isFromDefaultDescriptor())
                             {
                                 ServletHolder finalMappedServlet = getServlet(finalMapping.getServletName());
-                                throw new IllegalStateException("Multiple servlets map to path " +
-                                    pathSpec + ": " +
-                                    finalMappedServlet.getName() + "[mapped:" + finalMapping.getSource() + "]," +
-                                    mapping.getServletName() + "[mapped:" + mapping.getSource() + "]");
+                                throw new IllegalStateException("Multiple servlets map to path " + pathSpec + ": " + finalMappedServlet.getName() + "[mapped:" + finalMapping.getSource() + "]," + mapping.getServletName() + "[mapped:" + mapping.getSource() + "]");
                             }
                         }
                     }
@@ -1392,21 +1412,23 @@ public class ServletHandler extends ScopedHandler
                     throw new IllegalStateException("No acceptable servlet mappings for " + pathSpec);
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Path={}[{}] mapped to servlet={}[{}]",
+                    LOG.debug(
+                        "Path={}[{}] mapped to servlet={}[{}]",
                         pathSpec,
                         finalMapping.getSource(),
                         finalMapping.getServletName(),
                         getServlet(finalMapping.getServletName()).getSource());
 
                 PathSpec servletPathSpec = asPathSpec(pathSpec);
-                MappedServlet mappedServlet = new MappedServlet(servletPathSpec, getServlet(finalMapping.getServletName()));
+                MappedServlet mappedServlet =
+                    new MappedServlet(servletPathSpec, getServlet(finalMapping.getServletName()));
                 pm.put(servletPathSpec, mappedServlet);
             }
 
             _servletPathMap = pm;
 
             // flush filter chain cache
-            for (int i = _chainCache.length; i-- > 0; )
+            for (int i = _chainCache.length; i-- > 0;)
             {
                 if (_chainCache[i] != null)
                     _chainCache[i].clear();
@@ -1414,13 +1436,19 @@ public class ServletHandler extends ScopedHandler
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("filterNameMap={} pathFilters={} servletFilterMap={} servletPathMap={} servletNameMap={}",
-                    _filterNameMap, _filterPathMappings, _filterNameMappings, _servletPathMap, _servletNameMap);
+                LOG.debug(
+                    "filterNameMap={} pathFilters={} servletFilterMap={} servletPathMap={} servletNameMap={}",
+                    _filterNameMap,
+                    _filterPathMappings,
+                    _filterNameMappings,
+                    _servletPathMap,
+                    _servletNameMap);
             }
         }
     }
 
-    protected void notFound(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    protected void notFound(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Not Found {}", request.getRequestURI());
@@ -1459,7 +1487,8 @@ public class ServletHandler extends ScopedHandler
     {
         try (AutoLock ignored = lock())
         {
-            List<FilterMapping> mappings = filterMappings == null ? Collections.emptyList() : Arrays.asList(filterMappings);
+            List<FilterMapping> mappings =
+                filterMappings == null ? Collections.emptyList() : Arrays.asList(filterMappings);
             updateAndSet(_filterMappings, mappings);
             if (isRunning())
                 updateMappings();
@@ -1484,7 +1513,8 @@ public class ServletHandler extends ScopedHandler
      */
     public void setServletMappings(ServletMapping[] servletMappings)
     {
-        List<ServletMapping> mappings = servletMappings == null ? Collections.emptyList() : Arrays.asList(servletMappings);
+        List<ServletMapping> mappings =
+            servletMappings == null ? Collections.emptyList() : Arrays.asList(servletMappings);
         updateAndSet(_servletMappings, mappings);
         if (isRunning())
             updateMappings();
@@ -1566,7 +1596,8 @@ public class ServletHandler extends ScopedHandler
                 switch (pathSpec.getGroup())
                 {
                     case EXACT:
-                        _servletPathMapping = new ServletPathMapping(_pathSpec, _servletHolder.getName(), _pathSpec.getDeclaration());
+                        _servletPathMapping =
+                            new ServletPathMapping(_pathSpec, _servletHolder.getName(), _pathSpec.getDeclaration());
                         break;
                     case ROOT:
                         _servletPathMapping = new ServletPathMapping(_pathSpec, _servletHolder.getName(), "/");
@@ -1604,18 +1635,17 @@ public class ServletHandler extends ScopedHandler
         @Override
         public String toString()
         {
-            return String.format("MappedServlet%x{%s->%s}",
+            return String.format(
+                "MappedServlet%x{%s->%s}",
                 hashCode(), _pathSpec == null ? null : _pathSpec.getDeclaration(), _servletHolder);
         }
-
     }
 
     @SuppressWarnings("serial")
     public static class Default404Servlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
         }

@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -21,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -32,9 +34,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.WRITE;
 
 public class FrameCaptureExtension extends AbstractExtension
 {
@@ -119,7 +118,9 @@ public class FrameCaptureExtension extends AbstractExtension
                 channel.write(frame.getPayload().slice());
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("Saved {} frame #{}", (outgoing) ? "outgoing" : "incoming",
+                LOG.debug(
+                    "Saved {} frame #{}",
+                    (outgoing) ? "outgoing" : "incoming",
                     (outgoing) ? outgoingCount.incrementAndGet() : incomingCount.incrementAndGet());
         }
         catch (IOException e)
@@ -147,7 +148,9 @@ public class FrameCaptureExtension extends AbstractExtension
             }
             else
             {
-                LOG.warn("Unable to configure {}: not a valid output directory", path.toAbsolutePath().toString());
+                LOG.warn(
+                    "Unable to configure {}: not a valid output directory",
+                    path.toAbsolutePath().toString());
             }
         }
 

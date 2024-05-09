@@ -25,7 +25,8 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
 {
     private static String DB_NAME = "DB" + ClusteredSessionScavengingTest.class.getSimpleName() + System.nanoTime();
 
-    private static String COLLECTION_NAME = "COLLECTION" + ClusteredSessionScavengingTest.class.getSimpleName() + System.nanoTime();
+    private static String COLLECTION_NAME =
+        "COLLECTION" + ClusteredSessionScavengingTest.class.getSimpleName() + System.nanoTime();
 
     @BeforeAll
     public static void beforeClass() throws Exception

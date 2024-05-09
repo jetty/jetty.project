@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MongoDBContainer;
@@ -25,21 +24,21 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- *  
+ *
  */
 public class MongodbSessionDistributionTests extends AbstractSessionDistributionTests
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongodbSessionDistributionTests.class);
 
-    private static final Logger MONGO_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.mongo");
+    private static final Logger MONGO_LOG =
+        LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.mongo");
 
     private static final int MONGO_PORT = 27017;
 
     final String imageName = "mongo:" + System.getProperty("mongo.docker.version", "3.2.20");
 
     final MongoDBContainer mongoDBContainer =
-            new MongoDBContainer(DockerImageName.parse(imageName))
-                    .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
+        new MongoDBContainer(DockerImageName.parse(imageName)).withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
 
     private String host;
     private int port;
@@ -63,7 +62,7 @@ public class MongodbSessionDistributionTests extends AbstractSessionDistribution
     {
         // no op
     }
-    
+
     @Override
     public List<String> getFirstStartExtraArgs()
     {
@@ -79,10 +78,6 @@ public class MongodbSessionDistributionTests extends AbstractSessionDistribution
     @Override
     public List<String> getSecondStartExtraArgs()
     {
-        return Arrays.asList(
-                "jetty.session.mongo.host=" + host,
-                "jetty.session.mongo.port=" + port
-            );
+        return Arrays.asList("jetty.session.mongo.host=" + host, "jetty.session.mongo.port=" + port);
     }
-
 }

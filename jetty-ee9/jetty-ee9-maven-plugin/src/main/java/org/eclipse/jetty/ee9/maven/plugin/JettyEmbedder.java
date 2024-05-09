@@ -13,31 +13,18 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.maven.AbstractJettyEmbedder;
-import org.eclipse.jetty.maven.MavenServerConnector;
 import org.eclipse.jetty.maven.ServerSupport;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ShutdownMonitor;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 /**
  * JettyEmbedder
- * Starts jetty within the current process. 
+ * Starts jetty within the current process.
  */
 public class JettyEmbedder extends AbstractJettyEmbedder
 {
@@ -52,13 +39,13 @@ public class JettyEmbedder extends AbstractJettyEmbedder
     {
         stopWebApp();
 
-        //clear the ServletHandler, which may have
-        //remembered "durable" Servlets, Filters, Listeners
-        //from the context xml file, but as we will re-apply
-        //the context xml, we should not retain them
+        // clear the ServletHandler, which may have
+        // remembered "durable" Servlets, Filters, Listeners
+        // from the context xml file, but as we will re-apply
+        // the context xml, we should not retain them
         webApp.setServletHandler(new ServletHandler());
 
-        //regenerate config properties
+        // regenerate config properties
         applyWebAppProperties();
 
         webApp.start();
@@ -77,7 +64,7 @@ public class JettyEmbedder extends AbstractJettyEmbedder
      */
     public void configureWebApp() throws Exception
     {
-        //Set up list of default Configurations to apply to a webapp
+        // Set up list of default Configurations to apply to a webapp
         Configurations.setServerDefault(server);
 
         /* Configure the webapp */
@@ -86,7 +73,7 @@ public class JettyEmbedder extends AbstractJettyEmbedder
 
         applyWebAppProperties();
 
-        //If there is a quickstart file, then quickstart the webapp.
+        // If there is a quickstart file, then quickstart the webapp.
         if (webApp.getTempDirectory() != null)
         {
             Path qs = webApp.getTempDirectory().toPath().resolve("quickstart-web.xml");
@@ -98,16 +85,16 @@ public class JettyEmbedder extends AbstractJettyEmbedder
             }
         }
     }
-    
+
     public void applyWebAppProperties() throws Exception
     {
         super.applyWebAppProperties();
-        WebAppPropertyConverter.fromProperties(webApp, webAppProperties, server, jettyProperties);    
+        WebAppPropertyConverter.fromProperties(webApp, webAppProperties, server, jettyProperties);
     }
 
     public void addWebAppToServer() throws Exception
     {
-        //add the webapp to the server
+        // add the webapp to the server
         ServerSupport.addWebApplication(server, webApp.getCoreContextHandler());
     }
 }

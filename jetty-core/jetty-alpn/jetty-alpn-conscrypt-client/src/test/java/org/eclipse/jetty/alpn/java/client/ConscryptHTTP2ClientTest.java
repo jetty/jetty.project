@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.alpn.java.client;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.Security;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.conscrypt.Conscrypt;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.http.HttpFields;
@@ -37,8 +38,6 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisabledOnOs(architectures = "aarch64", disabledReason = "Conscrypt does not provide aarch64 native libs as of version 2.5.2")
 public class ConscryptHTTP2ClientTest
@@ -64,11 +63,16 @@ public class ConscryptHTTP2ClientTest
             client.start();
 
             FuturePromise<Session> sessionPromise = new FuturePromise<>();
-            client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener() {}, sessionPromise);
+            client.connect(
+                sslContextFactory, new InetSocketAddress(host, port), new Session.Listener()
+                {
+                }, sessionPromise);
             Session session = sessionPromise.get(15, TimeUnit.SECONDS);
 
-            HttpFields requestFields = HttpFields.build().put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
-            MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
+            HttpFields requestFields =
+                HttpFields.build().put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
+            MetaData.Request metaData = new MetaData.Request(
+                "GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
             HeadersFrame headersFrame = new HeadersFrame(metaData, null, true);
             CountDownLatch latch = new CountDownLatch(1);
             session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener()

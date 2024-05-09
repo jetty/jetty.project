@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.WritePendingException;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -33,7 +32,8 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(DatagramChannelEndPoint.class);
 
-    public DatagramChannelEndPoint(DatagramChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
+    public DatagramChannelEndPoint(
+                                   DatagramChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
         super(scheduler, channel, selector, key);
     }

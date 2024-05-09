@@ -13,12 +13,22 @@
 
 package org.eclipse.jetty.ee9.plus.webapp;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
-
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Descriptor;
 import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
@@ -37,17 +47,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * PlusDescriptorProcessorTest
@@ -70,7 +69,7 @@ public class PlusDescriptorProcessorTest
         private String empty;
         private String vacuum;
         private String webXmlOnly;
-        
+
         public String getWebXmlOnly()
         {
             return webXmlOnly;
@@ -105,7 +104,7 @@ public class PlusDescriptorProcessorTest
         {
             foo = val;
         }
-        
+
         public String getFoo()
         {
             return foo;
@@ -121,7 +120,7 @@ public class PlusDescriptorProcessorTest
             bah = val;
         }
     }
-    
+
     @BeforeEach
     public void setUp() throws Exception
     {
@@ -129,7 +128,8 @@ public class PlusDescriptorProcessorTest
         context.setConfigurations(new Configuration[]{new PlusConfiguration(), new EnvConfiguration()});
         context.preConfigure();
         context.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), context));
-        context.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.plus.webapp."); //need visbility of the TestInjections class
+        context.getServerClassMatcher()
+            .exclude("org.eclipse.jetty.ee9.plus.webapp."); // need visbility of the TestInjections class
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         Context icontext = new InitialContext();
@@ -138,20 +138,20 @@ public class PlusDescriptorProcessorTest
 
         @SuppressWarnings("unused")
         Resource ds = new Resource(context, "jdbc/mydatasource", new Object());
-        
-        //An EnvEntry that should override any value supplied in a web.xml file
+
+        // An EnvEntry that should override any value supplied in a web.xml file
         EnvEntry fooStringEnvEntry = new EnvEntry("foo", "FOO", true);
         doEnvConfiguration(envCtx, fooStringEnvEntry);
-        
-        //An EnvEntry that should NOT override any value supplied in a web.xml file
+
+        // An EnvEntry that should NOT override any value supplied in a web.xml file
         EnvEntry bahStringEnvEntry = new EnvEntry("bah", "BAH", false);
         doEnvConfiguration(envCtx, bahStringEnvEntry);
-        
-        //An EnvEntry that will override an empty value in web.xml
+
+        // An EnvEntry that will override an empty value in web.xml
         EnvEntry emptyStringEnvEntry = new EnvEntry("empty", "EMPTY", true);
         doEnvConfiguration(envCtx, emptyStringEnvEntry);
-        
-        //An EnvEntry that will NOT override an empty value in web.xml
+
+        // An EnvEntry that will NOT override an empty value in web.xml
         EnvEntry vacuumStringEnvEntry = new EnvEntry("vacuum", "VACUUM", false);
         doEnvConfiguration(envCtx, vacuumStringEnvEntry);
 
@@ -173,10 +173,10 @@ public class PlusDescriptorProcessorTest
         fragDescriptor4.parse(WebDescriptor.getParser(false));
         Thread.currentThread().setContextClassLoader(oldLoader);
     }
-    
+
     /**
      * Do the kind of processing that EnvConfiguration would do.
-     * 
+     *
      * @param envCtx the java:comp/env context
      * @param envEntry the EnvEntry
      * @throws Exception if there is an unspecified problem
@@ -200,8 +200,7 @@ public class PlusDescriptorProcessorTest
     }
 
     @Test
-    public void testMissingResourceDeclaration()
-        throws Exception
+    public void testMissingResourceDeclaration() throws Exception
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
@@ -219,10 +218,9 @@ public class PlusDescriptorProcessorTest
     }
 
     @Test
-    public void testWebXmlResourceDeclarations()
-        throws Exception
+    public void testWebXmlResourceDeclarations() throws Exception
     {
-        //if declared in web.xml, fragment declarations ignored
+        // if declared in web.xml, fragment declarations ignored
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         try
@@ -241,7 +239,7 @@ public class PlusDescriptorProcessorTest
             Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
-    
+
     @Test
     public void testEnvEntries() throws Exception
     {
@@ -250,40 +248,51 @@ public class PlusDescriptorProcessorTest
         try
         {
             PlusDescriptorProcessor pdp = new PlusDescriptorProcessor();
-            //process web.xml
+            // process web.xml
             pdp.process(context, webDescriptor);
-            InjectionCollection injections = (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+            InjectionCollection injections =
+                (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
             assertNotNull(injections);
-            
-            //check that there is an injection for "foo" with the value from the overriding EnvEntry of "FOO"
-            Injection foo = injections.getInjection("foo", TestInjections.class, 
-                IntrospectionUtil.findMethod(TestInjections.class, "setFoo", STRING_ARG, false, true), 
+
+            // check that there is an injection for "foo" with the value from the overriding EnvEntry of "FOO"
+            Injection foo = injections.getInjection(
+                "foo",
+                TestInjections.class,
+                IntrospectionUtil.findMethod(TestInjections.class, "setFoo", STRING_ARG, false, true),
                 String.class);
             assertNotNull(foo);
             assertEquals("FOO", foo.lookupInjectedValue());
-            
-            //check that there is an injection for "bah" with the value from web.xml of "beer"
-            Injection bah = injections.getInjection("bah", TestInjections.class,
+
+            // check that there is an injection for "bah" with the value from web.xml of "beer"
+            Injection bah = injections.getInjection(
+                "bah",
+                TestInjections.class,
                 IntrospectionUtil.findMethod(TestInjections.class, "setBah", STRING_ARG, false, true),
                 String.class);
             assertNotNull(bah);
             assertEquals("beer", bah.lookupInjectedValue());
-            
-            //check that there is an injection for "empty" with the value from the overriding EnvEntry of "EMPTY"
-            Injection empty = injections.getInjection("empty", TestInjections.class,
+
+            // check that there is an injection for "empty" with the value from the overriding EnvEntry of "EMPTY"
+            Injection empty = injections.getInjection(
+                "empty",
+                TestInjections.class,
                 IntrospectionUtil.findMethod(TestInjections.class, "setEmpty", STRING_ARG, false, true),
                 String.class);
             assertNotNull(empty);
             assertEquals("EMPTY", empty.lookupInjectedValue());
-            
-            //check that there is NOT an injection for "vacuum"
-            Injection vacuum = injections.getInjection("vacuum", TestInjections.class,
+
+            // check that there is NOT an injection for "vacuum"
+            Injection vacuum = injections.getInjection(
+                "vacuum",
+                TestInjections.class,
                 IntrospectionUtil.findMethod(TestInjections.class, "setVacuum", STRING_ARG, false, true),
                 String.class);
-            assertNull(vacuum); 
-            
-            //check that there is an injection for "webxmlonly" with the value from web.xml of "WEBXMLONLY"
-            Injection webXmlOnly = injections.getInjection("webxmlonly", TestInjections.class,
+            assertNull(vacuum);
+
+            // check that there is an injection for "webxmlonly" with the value from web.xml of "WEBXMLONLY"
+            Injection webXmlOnly = injections.getInjection(
+                "webxmlonly",
+                TestInjections.class,
                 IntrospectionUtil.findMethod(TestInjections.class, "setWebXmlOnly", STRING_ARG, false, true),
                 String.class);
             assertNotNull(webXmlOnly);
@@ -296,10 +305,9 @@ public class PlusDescriptorProcessorTest
     }
 
     @Test
-    public void testMismatchedFragmentResourceDeclarations()
-        throws Exception
+    public void testMismatchedFragmentResourceDeclarations() throws Exception
     {
-        //if declared in more than 1 fragment, declarations must be the same
+        // if declared in more than 1 fragment, declarations must be the same
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         try
@@ -316,7 +324,7 @@ public class PlusDescriptorProcessorTest
         }
         catch (Exception e)
         {
-            //expected
+            // expected
         }
         finally
         {
@@ -325,10 +333,9 @@ public class PlusDescriptorProcessorTest
     }
 
     @Test
-    public void testMatchingFragmentResourceDeclarations()
-        throws Exception
+    public void testMatchingFragmentResourceDeclarations() throws Exception
     {
-        //if declared in more than 1 fragment, declarations must be the same
+        // if declared in more than 1 fragment, declarations must be the same
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         try
@@ -341,7 +348,6 @@ public class PlusDescriptorProcessorTest
             assertEquals(Origin.WebFragment, context.getMetaData().getOrigin("resource-ref.jdbc/mydatasource"));
             pdp.process(context, fragDescriptor3);
         }
-
         finally
         {
             Thread.currentThread().setContextClassLoader(oldLoader);

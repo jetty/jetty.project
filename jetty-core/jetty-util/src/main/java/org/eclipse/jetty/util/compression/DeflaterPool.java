@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.compression;
 
 import java.util.zip.Deflater;
-
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.thread.ThreadPool;
 

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
@@ -208,7 +207,7 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
         _firstLoad = false;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Loaded {} from {}", this,  config);
+            LOG.debug("Loaded {} from {}", this, config);
     }
 
     /**

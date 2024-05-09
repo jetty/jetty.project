@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.StringTokenizer;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.StringTokenizer;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ResourceService;
 import org.eclipse.jetty.ee9.nested.ResourceService.WelcomeFactory;
@@ -163,8 +162,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
     }
 
     @Override
-    public void init()
-        throws UnavailableException
+    public void init() throws UnavailableException
     {
         _servletContext = getServletContext();
         _contextHandler = initContextHandler(_servletContext);
@@ -179,7 +177,8 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
         _resourceService.setRedirectWelcome(getInitBoolean("redirectWelcome", _resourceService.isRedirectWelcome()));
-        _resourceService.setPrecompressedFormats(parsePrecompressedFormats(getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats()));
+        _resourceService.setPrecompressedFormats(parsePrecompressedFormats(
+            getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats()));
         _resourceService.setPathInfoOnly(getInitBoolean("pathInfoOnly", _resourceService.isPathInfoOnly()));
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
 
@@ -252,7 +251,8 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
         if (_resourceService.getHttpContentFactory() == null)
         {
             // Try to get factory from ServletContext attribute.
-            HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
+            HttpContent.Factory contentFactory =
+                (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
             if (contentFactory == null)
             {
                 contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes)
@@ -266,7 +266,8 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 if (_useFileMappedBuffer)
                     contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css");
-                contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+                contentFactory =
+                    new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
 
                 int maxCacheSize = getInitInt("maxCacheSize", -2);
                 int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
@@ -275,8 +276,10 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
                 {
                     ByteBufferPool bufferPool = getByteBufferPool(_contextHandler);
-                    _cachingContentFactory = new ValidatingCachingHttpContentFactory(contentFactory,
-                        (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
+                    _cachingContentFactory = new ValidatingCachingHttpContentFactory(
+                        contentFactory,
+                        (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(),
+                        bufferPool);
                     contentFactory = _cachingContentFactory;
                     if (maxCacheSize >= 0)
                         _cachingContentFactory.setMaxCacheSize(maxCacheSize);
@@ -294,7 +297,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
         String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
         if (otherGzipExtensions != null)
         {
-            //comma separated list
+            // comma separated list
             StringTokenizer tok = new StringTokenizer(otherGzipExtensions, ",", false);
             while (tok.hasMoreTokens())
             {
@@ -304,7 +307,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
         }
         else
         {
-            //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
+            // .svgz files are gzipped svg files and must be served with Content-Encoding:gzip
             gzipEquivalentFileExtensions.add(".svgz");
         }
         _resourceService.setGzipEquivalentFileExtensions(gzipEquivalentFileExtensions);
@@ -344,7 +347,8 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
         return null;
     }
 
-    private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, Boolean gzip, CompressedContentFormat[] dft)
+    private CompressedContentFormat[] parsePrecompressedFormats(
+                                                                String precompressed, Boolean gzip, CompressedContentFormat[] dft)
     {
         if (precompressed == null && gzip == null)
         {
@@ -396,8 +400,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
             if (servletContext instanceof ContextHandler.APIContext)
                 return ((ContextHandler.APIContext)servletContext).getContextHandler();
             else
-                throw new IllegalArgumentException("The servletContext " + servletContext + " " +
-                    servletContext.getClass().getName() + " is not " + ContextHandler.APIContext.class.getName());
+                throw new IllegalArgumentException("The servletContext " + servletContext + " " + servletContext.getClass().getName() + " is not " + ContextHandler.APIContext.class.getName());
         }
         else
             return ContextHandler.getCurrentContext().getContextHandler();
@@ -431,11 +434,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
         String value = getInitParameter(name);
         if (value == null || value.length() == 0)
             return null;
-        return (value.startsWith("t") ||
-            value.startsWith("T") ||
-            value.startsWith("y") ||
-            value.startsWith("Y") ||
-            value.startsWith("1"));
+        return (value.startsWith("t") || value.startsWith("T") || value.startsWith("y") || value.startsWith("Y") || value.startsWith("1"));
     }
 
     private boolean getInitBoolean(String name, boolean dft)
@@ -561,8 +560,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
             if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)
             {
                 ServletHandler.MappedServlet entry = _servletHandler.getMappedServlet(welcomeInContext);
-                if (entry != null && entry.getServletHolder().getServletInstance() != this &&
-                    (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
+                if (entry != null && entry.getServletHolder().getServletInstance() != this && (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
                     welcomeServlet = welcomeInContext;
             }
         }

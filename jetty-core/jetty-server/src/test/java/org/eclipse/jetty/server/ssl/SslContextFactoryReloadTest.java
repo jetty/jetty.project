@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -46,10 +49,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 public class SslContextFactoryReloadTest
 {
     public static final String KEYSTORE_1 = "src/test/resources/reload_keystore_1.p12";
@@ -71,7 +70,8 @@ public class SslContextFactoryReloadTest
         SecureRequestCustomizer customizer = new SecureRequestCustomizer();
         customizer.setSniHostCheck(false);
         httpsConfig.addCustomizer(customizer);
-        connector = new ServerConnector(server,
+        connector = new ServerConnector(
+            server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(httpsConfig));
         server.addConnector(connector);
@@ -101,10 +101,7 @@ public class SslContextFactoryReloadTest
             String serverDN1 = client1.getSession().getPeerPrincipal().getName();
             assertThat(serverDN1, Matchers.startsWith("CN=localhost1"));
 
-            String request =
-                "GET / HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
 
             OutputStream output1 = client1.getOutputStream();
             output1.write(request.getBytes(StandardCharsets.UTF_8));
@@ -163,36 +160,39 @@ public class SslContextFactoryReloadTest
             AtomicInteger reloads = new AtomicInteger(4);
             long reloadPeriod = 500;
             AtomicBoolean running = new AtomicBoolean(true);
-            scheduler.schedule(new Runnable()
-            {
-                @Override
-                public void run()
+            scheduler.schedule(
+                new Runnable()
                 {
-                    if (reloads.decrementAndGet() == 0)
+                    @Override
+                    public void run()
                     {
-                        running.set(false);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            sslContextFactory.reload(sslContextFactory ->
-                            {
-                                if (sslContextFactory.getKeyStorePath().endsWith(KEYSTORE_1))
-                                    sslContextFactory.setKeyStorePath(KEYSTORE_2);
-                                else
-                                    sslContextFactory.setKeyStorePath(KEYSTORE_1);
-                            });
-                            scheduler.schedule(this, reloadPeriod, TimeUnit.MILLISECONDS);
-                        }
-                        catch (Exception x)
+                        if (reloads.decrementAndGet() == 0)
                         {
                             running.set(false);
-                            reloads.set(-1);
+                        }
+                        else
+                        {
+                            try
+                            {
+                                sslContextFactory.reload(sslContextFactory ->
+                                {
+                                    if (sslContextFactory.getKeyStorePath().endsWith(KEYSTORE_1))
+                                        sslContextFactory.setKeyStorePath(KEYSTORE_2);
+                                    else
+                                        sslContextFactory.setKeyStorePath(KEYSTORE_1);
+                                });
+                                scheduler.schedule(this, reloadPeriod, TimeUnit.MILLISECONDS);
+                            }
+                            catch (Exception x)
+                            {
+                                running.set(false);
+                                reloads.set(-1);
+                            }
                         }
                     }
-                }
-            }, reloadPeriod, TimeUnit.MILLISECONDS);
+                },
+                reloadPeriod,
+                TimeUnit.MILLISECONDS);
 
             byte[] content = new byte[16 * 1024];
             while (running.get())
@@ -208,11 +208,7 @@ public class SslContextFactoryReloadTest
                     // use session resumption and fallback to the normal TLS handshake.
                     client.getSession().invalidate();
 
-                    String request1 =
-                        "POST / HTTP/1.1\r\n" +
-                            "Host: localhost\r\n" +
-                            "Content-Length: " + content.length + "\r\n" +
-                            "\r\n";
+                    String request1 = "POST / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Length: " + content.length + "\r\n" + "\r\n";
                     OutputStream outputStream = client.getOutputStream();
                     outputStream.write(request1.getBytes(StandardCharsets.UTF_8));
                     outputStream.write(content);
@@ -223,11 +219,7 @@ public class SslContextFactoryReloadTest
                     assertNotNull(response1);
                     assertThat(response1.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
 
-                    String request2 =
-                        "GET / HTTP/1.1\r\n" +
-                            "Host: localhost\r\n" +
-                            "Connection: close\r\n" +
-                            "\r\n";
+                    String request2 = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
                     outputStream.write(request2.getBytes(StandardCharsets.UTF_8));
                     outputStream.flush();
 

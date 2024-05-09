@@ -23,7 +23,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -149,14 +148,17 @@ public interface SocketAddressResolver
                 if (timeout > 0)
                 {
                     final Thread thread = Thread.currentThread();
-                    task = scheduler.schedule(() ->
-                    {
-                        if (complete.compareAndSet(false, true))
+                    task = scheduler.schedule(
+                        () ->
                         {
-                            promise.failed(new TimeoutException("DNS timeout " + getTimeout() + " ms"));
-                            thread.interrupt();
-                        }
-                    }, timeout, TimeUnit.MILLISECONDS);
+                            if (complete.compareAndSet(false, true))
+                            {
+                                promise.failed(new TimeoutException("DNS timeout " + getTimeout() + " ms"));
+                                thread.interrupt();
+                            }
+                        },
+                        timeout,
+                        TimeUnit.MILLISECONDS);
                 }
 
                 try

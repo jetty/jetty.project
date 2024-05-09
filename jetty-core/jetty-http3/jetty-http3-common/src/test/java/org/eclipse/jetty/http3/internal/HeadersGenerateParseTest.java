@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.http3.internal;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
@@ -33,38 +35,42 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 public class HeadersGenerateParseTest
 {
     @Test
     public void testGenerateParse()
     {
         HttpURI uri = HttpURI.from("http://host:1234/path?a=b");
-        HttpFields fields = HttpFields.build()
-            .put("User-Agent", "Jetty")
-            .put("Cookie", "c=d");
-        HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields), true);
+        HttpFields fields = HttpFields.build().put("User-Agent", "Jetty").put("Cookie", "c=d");
+        HeadersFrame input = new HeadersFrame(
+            new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields), true);
 
-        QpackEncoder encoder = new QpackEncoder(instructions -> {});
+        QpackEncoder encoder = new QpackEncoder(instructions ->
+        {
+        });
         encoder.setMaxHeadersSize(4 * 1024);
         ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         new MessageGenerator(bufferPool, encoder, true).generate(accumulator, 0, input, null);
 
-        QpackDecoder decoder = new QpackDecoder(instructions -> {});
+        QpackDecoder decoder = new QpackDecoder(instructions ->
+        {
+        });
         decoder.setMaxHeadersSize(4 * 1024);
         decoder.setBeginNanoTimeSupplier(NanoTime::now);
         List<HeadersFrame> frames = new ArrayList<>();
-        MessageParser parser = new MessageParser(new ParserListener()
-        {
-            @Override
-            public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
+        MessageParser parser = new MessageParser(
+            new ParserListener()
             {
-                frames.add(frame);
-            }
-        }, decoder, 13, () -> true);
+                @Override
+                public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
+                {
+                    frames.add(frame);
+                }
+            },
+            decoder,
+            13,
+            () -> true);
         parser.init(UnaryOperator.identity());
         for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
@@ -78,7 +84,9 @@ public class HeadersGenerateParseTest
         MetaData.Request inputMetaData = (MetaData.Request)input.getMetaData();
         MetaData.Request outputMetaData = (MetaData.Request)output.getMetaData();
         assertEquals(inputMetaData.getMethod(), outputMetaData.getMethod());
-        assertEquals(inputMetaData.getHttpURI().toString(), outputMetaData.getHttpURI().toString());
+        assertEquals(
+            inputMetaData.getHttpURI().toString(),
+            outputMetaData.getHttpURI().toString());
         assertEquals(inputMetaData.getHttpFields(), outputMetaData.getHttpFields());
     }
 }

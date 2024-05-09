@@ -28,7 +28,6 @@ import javax.xml.catalog.Catalog;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.eclipse.jetty.util.TypeUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -109,8 +108,10 @@ public class BaseClassCatalog implements Catalog, EntityResolver
                         URL url = baseClass.getResource(ref);
                         if (url == null)
                             throw new FileNotFoundException("Unable to find ref [%s/%s] in same archive as %s: %s"
-                                .formatted(baseClass.getPackageName().replace('.', '/'),
-                                    ref, baseClass.getName(),
+                                .formatted(
+                                    baseClass.getPackageName().replace('.', '/'),
+                                    ref,
+                                    baseClass.getName(),
                                     TypeUtil.getLocationOfClass(baseClass)));
                         mapping.put(id, url.toExternalForm());
                     }

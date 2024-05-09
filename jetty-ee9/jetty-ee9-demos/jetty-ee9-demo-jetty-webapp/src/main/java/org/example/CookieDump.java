@@ -13,16 +13,15 @@
 
 package org.example;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.concurrent.TimeUnit;
-
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test Servlet Cookies.
@@ -32,8 +31,7 @@ public class CookieDump extends HttpServlet
 {
     int redirectCount = 0;
 
-    protected void handleForm(HttpServletRequest request,
-                              HttpServletResponse response)
+    protected void handleForm(HttpServletRequest request, HttpServletResponse response)
     {
         String name = request.getParameter("Name");
         String value = request.getParameter("Value");
@@ -49,9 +47,7 @@ public class CookieDump extends HttpServlet
     }
 
     @Override
-    public void doPost(HttpServletRequest request,
-                       HttpServletResponse response)
-        throws ServletException, IOException
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         handleForm(request, response);
         String nextUrl = getURI(request) + "?R=" + redirectCount++;
@@ -60,9 +56,7 @@ public class CookieDump extends HttpServlet
     }
 
     @Override
-    public void doGet(HttpServletRequest request,
-                      HttpServletResponse response)
-        throws ServletException, IOException
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         handleForm(request, response);
 

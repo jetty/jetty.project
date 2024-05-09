@@ -118,13 +118,13 @@ public class FuturePromise<C> implements Future<C>, Promise<C>
             throw (CancellationException)new CancellationException().initCause(_cause);
         throw new ExecutionException(_cause);
     }
-    
+
     /**
      * Return the result if completed successfully
      * or in the case of failure, throw the
      * Exception/Error, or an ExecutionException wrapping
      * the cause if it is neither an Exception or Error.
-     * 
+     *
      * @return the computed result
      * @throws Exception if the cause is an Exception or Error,
      * otherwise an ExecutionException wrapping the cause
@@ -139,7 +139,7 @@ public class FuturePromise<C> implements Future<C>, Promise<C>
             throw (Exception)_cause;
         if (_cause instanceof Error)
             throw (Error)_cause;
-        
+
         throw new ExecutionException(_cause);
     }
 

@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.docs.programming.server.http3;
 
+import static java.lang.System.Logger.Level.INFO;
+
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -36,8 +37,6 @@ import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import static java.lang.System.Logger.Level.INFO;
-
 @SuppressWarnings("unused")
 public class HTTP3ServerDocs
 {
@@ -53,9 +52,12 @@ public class HTTP3ServerDocs
         sslContextFactory.setKeyStorePassword("secret");
 
         // The listener for session events.
-        Session.Server.Listener sessionListener = new Session.Server.Listener() {};
+        Session.Server.Listener sessionListener = new Session.Server.Listener()
+        {
+        };
 
-        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslContextFactory, Path.of("/path/to/pem/dir"));
+        ServerQuicConfiguration quicConfiguration =
+            new ServerQuicConfiguration(sslContextFactory, Path.of("/path/to/pem/dir"));
         // Configure the max number of requests per QUIC connection.
         quicConfiguration.setMaxBidirectionalRemoteStreams(1024);
 
@@ -119,7 +121,9 @@ public class HTTP3ServerDocs
 
                 // Return a Stream.Server.Listener to handle the request events,
                 // for example request content events or a request reset.
-                return new Stream.Server.Listener() {};
+                return new Stream.Server.Listener()
+                {
+                };
             }
         };
         // end::request[]
@@ -225,7 +229,8 @@ public class HTTP3ServerDocs
                 // Prepare the response HEADERS frame.
 
                 // The response HTTP status and HTTP headers.
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
 
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
@@ -275,7 +280,9 @@ public class HTTP3ServerDocs
                     // The request is accepted.
                     MetaData.Request request = (MetaData.Request)frame.getMetaData();
                     // Return a Stream.Listener to handle the request events.
-                    return new Stream.Server.Listener() {};
+                    return new Stream.Server.Listener()
+                    {
+                    };
                 }
             }
             // tag::exclude[]
@@ -290,18 +297,18 @@ public class HTTP3ServerDocs
     }
 
     // TODO: push not yet implemented in HTTP/3.
-/*
+    /*
     public void push() throws Exception
     {
         // tag::push[]
         // The favicon bytes.
         ByteBuffer faviconBuffer = BufferUtil.toBuffer(server.getDefaultFavicon(), true);
-
+    
         ServerSessionListener sessionListener = new ServerSessionListener()
         {
             // By default, push is enabled.
             private boolean pushEnabled = true;
-
+    
             @Override
             public void onSettings(Session session, SettingsFrame frame)
             {
@@ -311,7 +318,7 @@ public class HTTP3ServerDocs
                 if (enablePush != null)
                     pushEnabled = enablePush == 1;
             }
-
+    
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
@@ -337,5 +344,5 @@ public class HTTP3ServerDocs
         };
         // end::push[]
     }
- */
+     */
 }

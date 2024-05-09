@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -84,7 +83,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * completed successfully before creating this connection.
      * </p>
      */
-    public WebSocketConnection(EndPoint endp,
+    public WebSocketConnection(
+                               EndPoint endp,
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool byteBufferPool,
@@ -106,7 +106,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * @param coreSession The WC core session to which frames are delivered.
      * @param randomMask A Random used to mask frames. If null then SecureRandom will be created if needed.
      */
-    public WebSocketConnection(EndPoint endp,
+    public WebSocketConnection(
+                               EndPoint endp,
                                Executor executor,
                                Scheduler scheduler,
                                ByteBufferPool byteBufferPool,
@@ -227,7 +228,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             LOG.debug("onIdleExpired()");
 
         // treat as a handler error because socket is still open
-        coreSession.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout", timeoutException), Callback.NOOP);
+        coreSession.processHandlerError(
+            new WebSocketTimeoutException("Connection Idle Timeout", timeoutException), Callback.NOOP);
         return true;
     }
 
@@ -558,13 +560,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     @Override
     public String toConnectionString()
     {
-        return String.format("%s@%x[%s,p=%s,f=%s,g=%s]",
-            getClass().getSimpleName(),
-            hashCode(),
-            coreSession.getBehavior(),
-            parser,
-            flusher,
-            generator);
+        return String.format(
+            "%s@%x[%s,p=%s,f=%s,g=%s]",
+            getClass().getSimpleName(), hashCode(), coreSession.getBehavior(), parser, flusher, generator);
     }
 
     /**
@@ -642,4 +640,3 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
     }
 }
-

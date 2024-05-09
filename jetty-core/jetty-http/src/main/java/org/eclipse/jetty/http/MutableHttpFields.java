@@ -47,7 +47,7 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields()
     {
-        this(INITIAL_SIZE);  // Based on small sample of Chrome requests.
+        this(INITIAL_SIZE); // Based on small sample of Chrome requests.
     }
 
     /**
@@ -208,7 +208,7 @@ class MutableHttpFields implements HttpFields.Mutable
     public int hashCode()
     {
         int hash = 2099; // prime
-        for (int i = _size; i-- > 0; )
+        for (int i = _size; i-- > 0;)
         {
             HttpField field = _fields[i];
             if (field != null)
@@ -338,9 +338,7 @@ class MutableHttpFields implements HttpFields.Mutable
     @Override
     public Mutable put(String name, String value)
     {
-        return (value == null)
-            ? remove(name)
-            : put(new HttpField(name, value));
+        return (value == null) ? remove(name) : put(new HttpField(name, value));
     }
 
     @Override
@@ -352,9 +350,7 @@ class MutableHttpFields implements HttpFields.Mutable
     @Override
     public Mutable put(HttpHeader header, String value)
     {
-        return (value == null)
-            ? remove(header)
-            : put(new HttpField(header, value));
+        return (value == null) ? remove(header) : put(new HttpField(header, value));
     }
 
     @Override
@@ -369,7 +365,8 @@ class MutableHttpFields implements HttpFields.Mutable
         return computeField(name, computeFn, HttpField::is);
     }
 
-    public <T> Mutable computeField(T header, BiFunction<T, List<HttpField>, HttpField> computeFn, BiPredicate<HttpField, T> matcher)
+    public <T> Mutable computeField(
+                                    T header, BiFunction<T, List<HttpField>, HttpField> computeFn, BiPredicate<HttpField, T> matcher)
     {
         copyImmutable();
         // Look for first occurrence

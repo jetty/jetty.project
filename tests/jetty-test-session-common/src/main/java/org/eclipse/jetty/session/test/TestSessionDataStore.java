@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.session.AbstractSessionDataStore;
 import org.eclipse.jetty.session.SessionData;
 
@@ -63,7 +62,8 @@ public class TestSessionDataStore extends AbstractSessionDataStore
         SessionData sd = _map.get(id);
         if (sd == null)
             return null;
-        SessionData nsd = new SessionData(id, "", "", System.currentTimeMillis(), System.currentTimeMillis(), System.currentTimeMillis(), 0);
+        SessionData nsd = new SessionData(
+            id, "", "", System.currentTimeMillis(), System.currentTimeMillis(), System.currentTimeMillis(), 0);
         nsd.copy(sd);
         return nsd;
     }
@@ -98,9 +98,9 @@ public class TestSessionDataStore extends AbstractSessionDataStore
     @Override
     public Set<String> doGetExpired(long timeLimit)
     {
-        Set<String> set =  new HashSet<>();
-        
-        for (SessionData d:_map.values())
+        Set<String> set = new HashSet<>();
+
+        for (SessionData d : _map.values())
         {
             if (d.getExpiry() > 0 && d.getExpiry() <= timeLimit)
                 set.add(d.getId());
@@ -111,6 +111,6 @@ public class TestSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doCleanOrphans(long timeLimit)
     {
-        //noop
+        // noop
     }
 }

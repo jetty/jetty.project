@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +32,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
@@ -43,16 +52,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketNegotiationTest extends WebSocketTester
 {
@@ -77,7 +76,8 @@ public class WebSocketNegotiationTest extends WebSocketTester
         WebSocketNegotiator negotiator = new WebSocketNegotiator.AbstractNegotiator()
         {
             @Override
-            public FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
+            public FrameHandler negotiate(
+                                          ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
             {
                 if (request.getSubProtocols().isEmpty())
                 {
@@ -90,11 +90,13 @@ public class WebSocketNegotiationTest extends WebSocketTester
                 switch (subprotocol)
                 {
                     case "testExtensionSelection":
-                        response.setExtensions(List.of(ExtensionConfig.parse("permessage-deflate;client_no_context_takeover")));
+                        response.setExtensions(
+                            List.of(ExtensionConfig.parse("permessage-deflate;client_no_context_takeover")));
                         break;
 
                     case "testNotOfferedParameter":
-                        response.setExtensions(List.of(ExtensionConfig.parse("permessage-deflate;server_no_context_takeover")));
+                        response.setExtensions(
+                            List.of(ExtensionConfig.parse("permessage-deflate;server_no_context_takeover")));
                         break;
 
                     case "testNotAcceptingExtensions":
@@ -141,7 +143,8 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testExtensionSelection");
-        upgradeRequest.addExtensions("permessage-deflate;server_no_context_takeover", "permessage-deflate;client_no_context_takeover");
+        upgradeRequest.addExtensions(
+            "permessage-deflate;server_no_context_takeover", "permessage-deflate;client_no_context_takeover");
 
         CompletableFuture<String> extensionHeader = new CompletableFuture<>();
         upgradeRequest.addListener(new UpgradeListener()
@@ -218,7 +221,8 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testNotAcceptingExtensions");
-        upgradeRequest.addExtensions("permessage-deflate;server_no_context_takeover", "permessage-deflate;client_no_context_takeover");
+        upgradeRequest.addExtensions(
+            "permessage-deflate;server_no_context_takeover", "permessage-deflate;client_no_context_takeover");
 
         CompletableFuture<String> extensionHeader = new CompletableFuture<>();
         upgradeRequest.addListener(new UpgradeListener()
@@ -266,7 +270,8 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testAcceptTwoExtensionsOfSameName");
-        upgradeRequest.addExtensions("permessage-deflate;server_no_context_takeover", "permessage-deflate;client_no_context_takeover");
+        upgradeRequest.addExtensions(
+            "permessage-deflate;server_no_context_takeover", "permessage-deflate;client_no_context_takeover");
 
         CompletableFuture<String> extensionHeader = new CompletableFuture<>();
         upgradeRequest.addListener(new UpgradeListener()
@@ -415,8 +420,8 @@ public class WebSocketNegotiationTest extends WebSocketTester
             }
         });
 
-        ExecutionException error = assertThrows(ExecutionException.class,
-            () -> client.connect(upgradeRequest).get(5, TimeUnit.SECONDS));
+        ExecutionException error = assertThrows(
+            ExecutionException.class, () -> client.connect(upgradeRequest).get(5, TimeUnit.SECONDS));
 
         Throwable upgradeException = error.getCause();
         assertThat(upgradeException, instanceOf(UpgradeException.class));
@@ -441,8 +446,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
             Arguments.of("@int1, ext1, @int2, ext2, @int3", "@int1, ext1, @int2, ext2, @int3"),
             Arguments.of("ext1, ext1, ext1, @int1, ext2", "ext1, @int1, ext2"),
             Arguments.of("ext1, @int1, ext1, ext1, ext2", "@int1, ext1, ext2"),
-            Arguments.of("ext1, ext2, ext3, @int1", "ext1, ext2, ext3, @int1")
-        );
+            Arguments.of("ext1, ext2, ext3, @int1", "ext1, ext2, ext3, @int1"));
     }
 
     @ParameterizedTest
@@ -484,7 +488,9 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
         // The list of Extensions on the client contains the internal Extensions.
         StringBuilder negotiatedExtensions = new StringBuilder();
-        List<Extension> extensions = ((WebSocketCoreSession)clientHandler.getCoreSession()).getExtensionStack().getExtensions();
+        List<Extension> extensions = ((WebSocketCoreSession)clientHandler.getCoreSession())
+            .getExtensionStack()
+            .getExtensions();
         for (int i = 0; i < extensions.size(); i++)
         {
             negotiatedExtensions.append(extensions.get(i).getConfig().getParameterizedName());

@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.coders;
 
-import jakarta.websocket.DecodeException;
-import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.IntegerDecoder;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import jakarta.websocket.DecodeException;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.IntegerDecoder;
+import org.junit.jupiter.api.Test;
 
 public class IntegerDecoderTest
 {

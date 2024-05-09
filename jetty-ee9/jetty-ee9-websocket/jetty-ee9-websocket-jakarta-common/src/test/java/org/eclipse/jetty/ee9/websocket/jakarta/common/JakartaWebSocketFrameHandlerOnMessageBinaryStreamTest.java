@@ -13,14 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.OnMessage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
-import jakarta.websocket.ClientEndpoint;
-import jakarta.websocket.OnMessage;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.sockets.TrackingSocket;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -28,13 +30,11 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 public class JakartaWebSocketFrameHandlerOnMessageBinaryStreamTest extends AbstractJakartaWebSocketFrameHandlerTest
 {
     @SuppressWarnings("Duplicates")
-    private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<JakartaWebSocketFrameHandler, Void> func) throws Exception
+    private TrackingSocket performOnMessageInvocation(
+                                                      TrackingSocket socket, Function<JakartaWebSocketFrameHandler, Void> func) throws Exception
     {
         JakartaWebSocketFrameHandler localEndpoint = newJakartaFrameHandler(socket);
 
@@ -71,7 +71,8 @@ public class JakartaWebSocketFrameHandlerOnMessageBinaryStreamTest extends Abstr
         {
             try
             {
-                endpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(
+                    new Frame(OpCode.BINARY).setPayload("Hello World").setFin(true), Callback.NOOP);
             }
             catch (Exception e)
             {

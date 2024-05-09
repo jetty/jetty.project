@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -42,7 +41,8 @@ public class ResetGenerator extends FrameGenerator
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
-        RetainableByteBuffer header = generateHeader(FrameType.RST_STREAM, ResetFrame.RESET_LENGTH, Flags.NONE, streamId);
+        RetainableByteBuffer header =
+            generateHeader(FrameType.RST_STREAM, ResetFrame.RESET_LENGTH, Flags.NONE, streamId);
         ByteBuffer byteBuffer = header.getByteBuffer();
         byteBuffer.putInt(error);
         BufferUtil.flipToFlush(byteBuffer, 0);

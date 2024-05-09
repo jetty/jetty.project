@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.time.Duration;
-
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.SendHandler;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.Duration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;

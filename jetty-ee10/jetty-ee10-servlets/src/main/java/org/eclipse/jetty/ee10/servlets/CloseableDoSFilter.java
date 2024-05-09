@@ -21,15 +21,14 @@ import org.eclipse.jetty.http.HttpException;
  * This is an extension to {@link DoSFilter} that uses Jetty APIs to
  * abruptly close the connection when the request times out.
  */
-
 public class CloseableDoSFilter extends DoSFilter
 {
     @Override
     protected void onRequestTimeout(HttpServletRequest request, HttpServletResponse response, Thread handlingThread)
     {
         throw new HttpException.RuntimeException(503);
-        //TODO: need to change visibility of getServletChannel to make this work
-//        ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);
-//        baseRequest.getServletChannel().getEndPoint().close();
+        // TODO: need to change visibility of getServletChannel to make this work
+        //        ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);
+        //        baseRequest.getServletChannel().getEndPoint().close();
     }
 }

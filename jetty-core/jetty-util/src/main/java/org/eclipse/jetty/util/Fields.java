@@ -347,9 +347,7 @@ public class Fields implements Iterable<Fields.Field>
     @Override
     public String toString()
     {
-        return fields.values().stream()
-            .map(Field::toString)
-            .collect(Collectors.joining(",", "[", "]"));
+        return fields.values().stream().map(Field::toString).collect(Collectors.joining(",", "[", "]"));
     }
 
     /**
@@ -391,7 +389,8 @@ public class Fields implements Iterable<Fields.Field>
                 case 2 -> List.of(values.get(0), values.get(1), extraValue);
                 case 3 -> List.of(values.get(0), values.get(1), values.get(2), extraValue);
                 case 4 -> List.of(values.get(0), values.get(1), values.get(2), values.get(3), extraValue);
-                case 5 -> List.of(values.get(0), values.get(1), values.get(2), values.get(3), values.get(4), extraValue);
+                case 5 -> List.of(
+                    values.get(0), values.get(1), values.get(2), values.get(3), values.get(4), extraValue);
                 default ->
                 {
                     List<String> list = new ArrayList<>(values.size() + 1);
@@ -417,8 +416,15 @@ public class Fields implements Iterable<Fields.Field>
                 {
                     case 2 -> List.of(values.get(0), moreValues.get(0), moreValues.get(1));
                     case 3 -> List.of(values.get(0), moreValues.get(0), moreValues.get(1), moreValues.get(2));
-                    case 4 -> List.of(values.get(0), moreValues.get(0), moreValues.get(1), moreValues.get(2), moreValues.get(3));
-                    case 5 -> List.of(values.get(0), moreValues.get(0), moreValues.get(1), moreValues.get(2), moreValues.get(3), moreValues.get(4));
+                    case 4 -> List.of(
+                        values.get(0), moreValues.get(0), moreValues.get(1), moreValues.get(2), moreValues.get(3));
+                    case 5 -> List.of(
+                        values.get(0),
+                        moreValues.get(0),
+                        moreValues.get(1),
+                        moreValues.get(2),
+                        moreValues.get(3),
+                        moreValues.get(4));
                     default ->
                     {
                         List<String> list = new ArrayList<>(moreValues.size() + 1);

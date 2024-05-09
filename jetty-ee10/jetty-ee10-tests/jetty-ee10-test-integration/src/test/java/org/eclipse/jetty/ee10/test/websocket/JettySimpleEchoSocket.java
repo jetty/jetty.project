@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.test.websocket;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -34,6 +33,7 @@ public class JettySimpleEchoSocket
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettySimpleEchoSocket.class);
     private final CountDownLatch closeLatch;
+
     @SuppressWarnings("unused")
     private Session session;
 

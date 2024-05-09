@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.handlers;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.stream.Stream;
-
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.stream.Stream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.provider.Arguments;
@@ -41,8 +40,8 @@ public class BinaryHandlers
             AnnotatedByteArrayWholeHandler.class,
             AnnotatedByteArrayPartialHandler.class,
             AnnotatedInputStreamWholeHandler.class,
-            AnnotatedReverseArgumentPartialHandler.class
-        ).map(Arguments::of);
+            AnnotatedReverseArgumentPartialHandler.class)
+            .map(Arguments::of);
     }
 
     public static class ByteArrayWholeHandler extends AbstractHandler implements MessageHandler.Whole<byte[]>

@@ -15,4 +15,3 @@
  * Jetty Util : Common Utility Annotations
  */
 package org.eclipse.jetty.util.annotation;
-

@@ -23,11 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
-
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.IdentityService;
@@ -316,25 +314,20 @@ public class DataSourceLoginService extends AbstractLoginService
             }
             catch (NameNotFoundException e)
             {
-                //next try the jvm scope
+                // next try the jvm scope
             }
         }
 
-        //try finding the datasource in the jvm scope
+        // try finding the datasource in the jvm scope
         if (_datasource == null)
         {
             _datasource = (DataSource)NamingEntryUtil.lookup(null, _jndiName);
         }
 
         // set up the select statements based on the table and column names configured
-        _userSql = "select " + _userTableKey + "," + _userTablePasswordField +
-            " from " + _userTableName +
-            " where " + _userTableUserField + " = ?";
+        _userSql = "select " + _userTableKey + "," + _userTablePasswordField + " from " + _userTableName + " where " + _userTableUserField + " = ?";
 
-        _roleSql = "select r." + _roleTableRoleField +
-            " from " + _roleTableName + " r, " + _userRoleTableName +
-            " u where u." + _userRoleTableUserKey + " = ?" +
-            " and r." + _roleTableKey + " = u." + _userRoleTableRoleKey;
+        _roleSql = "select r." + _roleTableRoleField + " from " + _roleTableName + " r, " + _userRoleTableName + " u where u." + _userRoleTableUserKey + " = ?" + " and r." + _roleTableKey + " = u." + _userRoleTableRoleKey;
 
         prepareTables();
     }
@@ -342,8 +335,7 @@ public class DataSourceLoginService extends AbstractLoginService
     /**
      *
      */
-    private void prepareTables()
-        throws NamingException, SQLException
+    private void prepareTables() throws NamingException, SQLException
     {
         if (_createTables)
         {
@@ -355,21 +347,19 @@ public class DataSourceLoginService extends AbstractLoginService
                 connection.setAutoCommit(false);
                 DatabaseMetaData metaData = connection.getMetaData();
 
-                //check if tables exist
+                // check if tables exist
                 String tableName = (metaData.storesLowerCaseIdentifiers() ? _userTableName.toLowerCase(Locale.ENGLISH) : (metaData.storesUpperCaseIdentifiers() ? _userTableName.toUpperCase(Locale.ENGLISH) : _userTableName));
                 try (ResultSet result = metaData.getTables(null, null, tableName, null))
                 {
                     if (!result.next())
                     {
-                        //user table default
+                        // user table default
                         /*
                          * create table _userTableName (_userTableKey integer,
                          * _userTableUserField varchar(100) not null unique,
                          * _userTablePasswordField varchar(20) not null, primary key(_userTableKey));
                          */
-                        stmt.executeUpdate("create table " + _userTableName + "(" + _userTableKey + " integer," +
-                            _userTableUserField + " varchar(100) not null unique," +
-                            _userTablePasswordField + " varchar(20) not null, primary key(" + _userTableKey + "))");
+                        stmt.executeUpdate("create table " + _userTableName + "(" + _userTableKey + " integer," + _userTableUserField + " varchar(100) not null unique," + _userTablePasswordField + " varchar(20) not null, primary key(" + _userTableKey + "))");
                         if (LOG.isDebugEnabled())
                             LOG.debug("Created table {}", _userTableName);
                     }
@@ -380,13 +370,12 @@ public class DataSourceLoginService extends AbstractLoginService
                 {
                     if (!result.next())
                     {
-                        //role table default
+                        // role table default
                         /*
                          * create table _roleTableName (_roleTableKey integer,
                          * _roleTableRoleField varchar(100) not null unique, primary key(_roleTableKey));
                          */
-                        String str = "create table " + _roleTableName + " (" + _roleTableKey + " integer, " +
-                            _roleTableRoleField + " varchar(100) not null unique, primary key(" + _roleTableKey + "))";
+                        String str = "create table " + _roleTableName + " (" + _roleTableKey + " integer, " + _roleTableRoleField + " varchar(100) not null unique, primary key(" + _roleTableKey + "))";
                         stmt.executeUpdate(str);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Created table {}", _roleTableName);
@@ -398,7 +387,7 @@ public class DataSourceLoginService extends AbstractLoginService
                 {
                     if (!result.next())
                     {
-                        //user-role table
+                        // user-role table
                         /*
                          * create table _userRoleTableName (_userRoleTableUserKey integer,
                          * _userRoleTableRoleKey integer,
@@ -406,9 +395,7 @@ public class DataSourceLoginService extends AbstractLoginService
                          *
                          * create index idx_user_role on _userRoleTableName (_userRoleTableUserKey);
                          */
-                        stmt.executeUpdate("create table " + _userRoleTableName + " (" + _userRoleTableUserKey + " integer, " +
-                            _userRoleTableRoleKey + " integer, " +
-                            "primary key (" + _userRoleTableUserKey + ", " + _userRoleTableRoleKey + "))");
+                        stmt.executeUpdate("create table " + _userRoleTableName + " (" + _userRoleTableUserKey + " integer, " + _userRoleTableRoleKey + " integer, " + "primary key (" + _userRoleTableUserKey + ", " + _userRoleTableRoleKey + "))");
                         stmt.executeUpdate("create index indx_user_role on " + _userRoleTableName + "(" + _userRoleTableUserKey + ")");
                         if (LOG.isDebugEnabled())
                             LOG.debug("Created table {} and index", _userRoleTableName);
@@ -450,8 +437,7 @@ public class DataSourceLoginService extends AbstractLoginService
     /**
      *
      */
-    private Connection getConnection()
-        throws NamingException, SQLException
+    private Connection getConnection() throws NamingException, SQLException
     {
         initDb();
         return _datasource.getConnection();

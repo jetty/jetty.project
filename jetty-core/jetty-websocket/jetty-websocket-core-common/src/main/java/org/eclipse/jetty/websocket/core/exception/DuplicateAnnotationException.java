@@ -15,13 +15,13 @@ package org.eclipse.jetty.websocket.core.exception;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
 @SuppressWarnings("serial")
 public class DuplicateAnnotationException extends InvalidWebSocketException
 {
-    public static DuplicateAnnotationException build(Class<?> pojo, Class<? extends Annotation> annoClass, Method... methods)
+    public static DuplicateAnnotationException build(
+                                                     Class<?> pojo, Class<? extends Annotation> annoClass, Method... methods)
     {
         // Build big detailed exception to help the developer
         StringBuilder err = new StringBuilder();

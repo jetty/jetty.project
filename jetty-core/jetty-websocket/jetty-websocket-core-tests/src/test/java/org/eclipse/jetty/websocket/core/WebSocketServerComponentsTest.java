@@ -13,8 +13,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.util.zip.Deflater;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.zip.Deflater;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -24,12 +29,6 @@ import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketServerComponentsTest
 {
@@ -78,7 +77,8 @@ public class WebSocketServerComponentsTest
         contextHandler.stop();
         assertTrue(components.isStopped());
 
-        // By default the default CompressionPools from the server are used, these should not be stopped with the context.
+        // By default the default CompressionPools from the server are used, these should not be stopped with the
+        // context.
         assertTrue(inflaterPool.isStarted());
         assertTrue(deflaterPool.isStarted());
     }

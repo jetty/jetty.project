@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.jndi;
 
 import javax.naming.InitialContext;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 

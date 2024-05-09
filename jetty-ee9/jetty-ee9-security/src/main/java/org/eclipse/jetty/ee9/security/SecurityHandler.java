@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee9.security;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -23,10 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler.APIContext;
@@ -299,8 +298,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     @Override
-    protected void doStart()
-        throws Exception
+    protected void doStart() throws Exception
     {
         // copy security init parameters
         APIContext context = ContextHandler.getCurrentContext();
@@ -310,8 +308,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             while (names != null && names.hasMoreElements())
             {
                 String name = names.nextElement();
-                if (name.startsWith("org.eclipse.jetty.security.") &&
-                    getInitParameter(name) == null)
+                if (name.startsWith("org.eclipse.jetty.security.") && getInitParameter(name) == null)
                     setInitParameter(name, context.getInitParameter(name));
             }
         }
@@ -353,11 +350,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
         if (_authenticator == null)
         {
-            // If someone has set an authenticator factory only use that, otherwise try the list of discovered factories.
+            // If someone has set an authenticator factory only use that, otherwise try the list of discovered
+            // factories.
             if (_authenticatorFactory != null)
             {
-                Authenticator authenticator = _authenticatorFactory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(),
-                    this, _identityService, _loginService);
+                Authenticator authenticator = _authenticatorFactory.getAuthenticator(
+                    getServer(), ContextHandler.getCurrentContext(), this, _identityService, _loginService);
 
                 if (authenticator != null)
                 {
@@ -371,8 +369,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             {
                 for (Authenticator.Factory factory : getKnownAuthenticatorFactories())
                 {
-                    Authenticator authenticator = factory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(),
-                        this, _identityService, _loginService);
+                    Authenticator authenticator = factory.getAuthenticator(
+                        getServer(), ContextHandler.getCurrentContext(), this, _identityService, _loginService);
 
                     if (authenticator != null)
                     {
@@ -400,7 +398,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     @Override
     protected void doStop() throws Exception
     {
-        //if we discovered the services (rather than had them explicitly configured), remove them.
+        // if we discovered the services (rather than had them explicitly configured), remove them.
         if (!isManaged(_identityService))
         {
             removeBean(_identityService);
@@ -479,7 +477,9 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
      *      jakarta.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String pathInContext, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(
+                       String pathInContext, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         final Response base_response = baseRequest.getResponse();
         final Handler handler = getHandler();
@@ -491,7 +491,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
         if (checkSecurity(baseRequest))
         {
-            //See Servlet Spec 3.1 sec 13.6.3
+            // See Servlet Spec 3.1 sec 13.6.3
             if (authenticator != null)
                 authenticator.prepareRequest(baseRequest);
 
@@ -509,8 +509,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
 
             // is Auth mandatory?
-            boolean isAuthMandatory =
-                isAuthMandatory(baseRequest, base_response, roleInfo);
+            boolean isAuthMandatory = isAuthMandatory(baseRequest, base_response, roleInfo);
 
             if (isAuthMandatory && authenticator == null)
             {
@@ -553,7 +552,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
                     if (isAuthMandatory)
                     {
-                        boolean authorized = checkWebResourcePermissions(pathInContext, baseRequest, base_response, roleInfo, userAuth.getUserIdentity());
+                        boolean authorized = checkWebResourcePermissions(
+                            pathInContext, baseRequest, base_response, roleInfo, userAuth.getUserIdentity());
                         if (!authorized)
                         {
                             response.sendError(HttpServletResponse.SC_FORBIDDEN, "!role");
@@ -650,12 +650,14 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     protected abstract RoleInfo prepareConstraintInfo(String pathInContext, Request request);
 
-    protected abstract boolean checkUserDataPermissions(String pathInContext, Request request, Response response, RoleInfo constraintInfo) throws IOException;
+    protected abstract boolean checkUserDataPermissions(
+                                                        String pathInContext, Request request, Response response, RoleInfo constraintInfo) throws IOException;
 
     protected abstract boolean isAuthMandatory(Request baseRequest, Response baseResponse, Object constraintInfo);
 
-    protected abstract boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo,
-                                                           UserIdentity userIdentity) throws IOException;
+    protected abstract boolean checkWebResourcePermissions(
+                                                           String pathInContext, Request request, Response response, Object constraintInfo, UserIdentity userIdentity)
+        throws IOException;
 
     public class NotChecked implements Principal
     {

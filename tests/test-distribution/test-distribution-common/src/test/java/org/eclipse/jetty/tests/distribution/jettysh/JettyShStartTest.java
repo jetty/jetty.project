@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.tests.distribution.jettysh;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesRegex;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.net.URI;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Path;
@@ -22,7 +32,6 @@ import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
-
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
@@ -38,16 +47,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.ShellStrategy;
 import org.testcontainers.images.PullPolicy;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.matchesRegex;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test of jetty-home/bin/jetty.sh as generic start mechanism.
@@ -72,31 +71,30 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             for (ImageFromDSL userImage : userImages)
             {
                 // Basic JETTY_BASE
-                images.add(new ImageFromDSL(userImage, "base-basic", builder ->
-                    builder
-                        .from(userImage.getDockerImageName())
+                images.add(new ImageFromDSL(
+                    userImage, "base-basic", builder -> builder.from(userImage.getDockerImageName())
                         // Create a basic configuration of jetty-base
                         .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
                         .build()));
 
                 // Complex JETTY_BASE with spaces
                 Path basesWithSpaces = MavenPaths.findTestResourceDir("bases/spaces-with-conf");
-                ImageFromDSL baseComplexWithSpacesImage = new ImageFromDSL(userImage, "base-complex-with-spaces", builder ->
-                {
-                    builder
-                        .from(userImage.getDockerImageName())
-                        // Create a basic configuration of jetty-base
-                        .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
-                        .copy("/tests/bases-with-spaces/", "${JETTY_BASE}/");
-                    if (userImage instanceof ImageUserChange)
+                ImageFromDSL baseComplexWithSpacesImage =
+                    new ImageFromDSL(userImage, "base-complex-with-spaces", builder ->
                     {
-                        // Make sure we change the ownership of JETTY_BASE if we are testing a user change mode
-                        builder.user("root")
-                            .run("chown -R jetty:jetty $JETTY_BASE")
-                            .user("jetty");
-                    }
-                    builder.build();
-                });
+                        builder.from(userImage.getDockerImageName())
+                            // Create a basic configuration of jetty-base
+                            .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
+                            .copy("/tests/bases-with-spaces/", "${JETTY_BASE}/");
+                        if (userImage instanceof ImageUserChange)
+                        {
+                            // Make sure we change the ownership of JETTY_BASE if we are testing a user change mode
+                            builder.user("root")
+                                .run("chown -R jetty:jetty $JETTY_BASE")
+                                .user("jetty");
+                        }
+                        builder.build();
+                    });
                 baseComplexWithSpacesImage.withFileFromFile("/tests/bases-with-spaces/", basesWithSpaces.toFile());
                 images.add(baseComplexWithSpacesImage);
             }
@@ -116,7 +114,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             genericContainer.withImagePullPolicy(PullPolicy.defaultPolicy());
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
 
-            genericContainer.withExposedPorts(80, 8080) // jetty
+            genericContainer
+                .withExposedPorts(80, 8080) // jetty
                 .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
                 .withStartupAttempts(2)
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
@@ -125,7 +124,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             LOG.info("Started: " + jettyImage.getDockerImageName());
 
             System.err.println("== jetty.sh start ==");
-            Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
+            Container.ExecResult result =
+                genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
             assertThat(result.getExitCode(), is(0));
             /*
              * Example successful output
@@ -135,15 +135,14 @@ public class JettyShStartTest extends AbstractJettyHomeTest
              * OK Wed Oct 18 19:29:35 UTC 2023
              * ----
              */
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                allOf(
-                    containsString("Starting Jetty:"),
-                    containsString("\nOK ")
-                ));
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .until(result::getStdout, allOf(containsString("Starting Jetty:"), containsString("\nOK ")));
 
             startHttpClient();
 
-            URI containerUriRoot = URI.create("http://" + genericContainer.getHost() + ":" + genericContainer.getMappedPort(8080) + "/");
+            URI containerUriRoot = URI.create(
+                "http://" + genericContainer.getHost() + ":" + genericContainer.getMappedPort(8080) + "/");
             LOG.debug("Container URI Root: {}", containerUriRoot);
 
             System.err.println("== Attempt GET request to service ==");
@@ -154,8 +153,9 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             System.err.println("== jetty.sh status (should be running) ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
             assertThat(result.getExitCode(), is(0));
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                containsString("Jetty running pid"));
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .until(result::getStdout, containsString("Jetty running pid"));
 
             System.err.println("== jetty.sh stop ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "stop");
@@ -171,23 +171,24 @@ public class JettyShStartTest extends AbstractJettyHomeTest
              * OK\n
              * ----
              */
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                matchesRegex("Stopping Jetty: .*[\n]?OK[\n]"));
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .until(result::getStdout, matchesRegex("Stopping Jetty: .*[\n]?OK[\n]"));
 
             System.err.println("== jetty.sh status (should be stopped) ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
             assertThat(result.getExitCode(), is(1));
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                containsString("Jetty NOT running"));
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .until(result::getStdout, containsString("Jetty NOT running"));
 
             System.err.println("== Attempt GET request to non-existent service ==");
             client.setConnectTimeout(1000);
             Exception failedGetException = assertThrows(Exception.class, () -> client.GET(containerUriRoot));
             // GET failure can result in either exception below (which one is based on timing / race)
-            assertThat(failedGetException, anyOf(
-                instanceOf(ExecutionException.class),
-                instanceOf(AsynchronousCloseException.class))
-            );
+            assertThat(
+                failedGetException,
+                anyOf(instanceOf(ExecutionException.class), instanceOf(AsynchronousCloseException.class)));
         }
     }
 
@@ -202,7 +203,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             genericContainer.withImagePullPolicy(PullPolicy.defaultPolicy());
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
 
-            genericContainer.withExposedPorts(80, 8080) // jetty
+            genericContainer
+                .withExposedPorts(80, 8080) // jetty
                 .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
                 .withStartupAttempts(2)
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
@@ -211,7 +213,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             LOG.info("Started: " + jettyImage.getDockerImageName());
 
             System.err.println("== jetty.sh start ==");
-            Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
+            Container.ExecResult result =
+                genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
             assertThat(result.getExitCode(), is(0));
             /*
              * Example successful output
@@ -221,15 +224,14 @@ public class JettyShStartTest extends AbstractJettyHomeTest
              * OK Wed Oct 18 19:29:35 UTC 2023
              * ----
              */
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                allOf(
-                    containsString("Starting Jetty:"),
-                    containsString("\nOK ")
-                ));
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .until(result::getStdout, allOf(containsString("Starting Jetty:"), containsString("\nOK ")));
 
             startHttpClient();
 
-            URI containerUriRoot = URI.create("http://" + genericContainer.getHost() + ":" + genericContainer.getMappedPort(8080) + "/");
+            URI containerUriRoot = URI.create(
+                "http://" + genericContainer.getHost() + ":" + genericContainer.getMappedPort(8080) + "/");
             LOG.debug("Container URI Root: {}", containerUriRoot);
 
             System.err.println("== Attempt GET request to service ==");
@@ -240,17 +242,16 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             System.err.println("== jetty.sh status (should be running) ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
             assertThat(result.getExitCode(), is(0));
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                containsString("Jetty running pid"));
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .until(result::getStdout, containsString("Jetty running pid"));
 
             System.err.println("== jetty.sh restart ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "restart");
             assertThat(result.getExitCode(), is(0));
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                allOf(
-                    containsString("Starting Jetty:"),
-                    containsString("\nOK ")
-                ));
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .until(result::getStdout, allOf(containsString("Starting Jetty:"), containsString("\nOK ")));
 
             System.err.println("== Attempt GET request to service ==");
             response = client.GET(containerUriRoot);
@@ -260,8 +261,9 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             System.err.println("== jetty.sh status (should be running) ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
             assertThat(result.getExitCode(), is(0));
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                containsString("Jetty running pid"));
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .until(result::getStdout, containsString("Jetty running pid"));
 
             System.err.println("== jetty.sh stop ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "stop");
@@ -277,23 +279,24 @@ public class JettyShStartTest extends AbstractJettyHomeTest
              * OK\n
              * ----
              */
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                matchesRegex("Stopping Jetty: .*[\n]?OK[\n]"));
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .until(result::getStdout, matchesRegex("Stopping Jetty: .*[\n]?OK[\n]"));
 
             System.err.println("== jetty.sh status (should be stopped) ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
             assertThat(result.getExitCode(), is(1));
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                containsString("Jetty NOT running"));
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(5))
+                .until(result::getStdout, containsString("Jetty NOT running"));
 
             System.err.println("== Attempt GET request to non-existent service ==");
             client.setConnectTimeout(1000);
             Exception failedGetException = assertThrows(Exception.class, () -> client.GET(containerUriRoot));
             // GET failure can result in either exception below (which one is based on timing / race)
-            assertThat(failedGetException, anyOf(
-                instanceOf(ExecutionException.class),
-                instanceOf(AsynchronousCloseException.class))
-            );
+            assertThat(
+                failedGetException,
+                anyOf(instanceOf(ExecutionException.class), instanceOf(AsynchronousCloseException.class)));
         }
     }
 

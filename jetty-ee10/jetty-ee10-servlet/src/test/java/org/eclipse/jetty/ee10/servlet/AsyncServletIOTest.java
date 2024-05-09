@@ -13,19 +13,17 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -39,6 +37,19 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -51,18 +62,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // TODO need  these on HTTP2 as well!
 public class AsyncServletIOTest
@@ -161,7 +160,10 @@ public class AsyncServletIOTest
     @Test
     public void testBigWrites() throws Exception
     {
-        process(102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400);
+        process(
+            102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400,
+            102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400,
+            102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400, 102400);
         assertThat("On Write Possible", _owp.get(), greaterThanOrEqualTo(1));
     }
 
@@ -174,7 +176,8 @@ public class AsyncServletIOTest
     @Test
     public void testBigRead() throws Exception
     {
-        process("Now is the time for all good men to come to the aid of the party. How now Brown Cow. The quick brown fox jumped over the lazy dog. The moon is blue to a fish in love.\r\n");
+        process(
+            "Now is the time for all good men to come to the aid of the party. How now Brown Cow. The quick brown fox jumped over the lazy dog. The moon is blue to a fish in love.\r\n");
     }
 
     @Test
@@ -298,12 +301,12 @@ public class AsyncServletIOTest
         }
         LOG.debug("process {} {}", request.toString(), BufferUtil.toDetailString(BufferUtil.toBuffer(content)));
 
-        request.append(" HTTP/1.1\r\n")
-            .append("Host: localhost\r\n")
-            .append("Connection: close\r\n");
+        request.append(" HTTP/1.1\r\n").append("Host: localhost\r\n").append("Connection: close\r\n");
 
         if (content != null)
-            request.append("Content-Length: ").append(content.length).append("\r\n")
+            request.append("Content-Length: ")
+                .append(content.length)
+                .append("\r\n")
                 .append("Content-Type: text/plain\r\n");
 
         request.append("\r\n");
@@ -394,7 +397,8 @@ public class AsyncServletIOTest
         }
 
         @Override
-        public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+        public void doGet(final HttpServletRequest request, final HttpServletResponse response)
+            throws ServletException, IOException
         {
             final AsyncContext async = request.startAsync();
             final AtomicInteger complete = new AtomicInteger(2);
@@ -422,12 +426,12 @@ public class AsyncServletIOTest
                         if (!onDataAvailable.compareAndSet(false, true))
                             throw new IllegalStateException();
 
-                        //System.err.println("ODA");
+                        // System.err.println("ODA");
                         while (in.isReady() && !in.isFinished())
                         {
                             _oda.incrementAndGet();
                             int len = in.read(_buf);
-                            //System.err.println("read "+len);
+                            // System.err.println("read "+len);
                             if (len > 0)
                                 _read.addAndGet(len);
                         }
@@ -570,7 +574,6 @@ public class AsyncServletIOTest
             @Override
             public void onStartAsync(AsyncEvent event) throws IOException
             {
-
             }
         }
     }
@@ -665,7 +668,7 @@ public class AsyncServletIOTest
                 while (true)
                 {
                     last = line;
-                    //Thread.sleep(1000);
+                    // Thread.sleep(1000);
                     line = in.readLine();
                     LOG.debug("body: " + line);
                     if (line == null)
@@ -790,13 +793,14 @@ public class AsyncServletIOTest
     @Test
     public void testStolenAsyncRead() throws Exception
     {
-        String request = """
-            POST /ctx/stolen/info HTTP/1.1
-            Host: localhost
-            Content-Type: text/plain
-            Content-Length: 2
-            
-            1""";
+        String request =
+            """
+                POST /ctx/stolen/info HTTP/1.1
+                Host: localhost
+                Content-Type: text/plain
+                Content-Length: 2
+
+                1""";
 
         try (Socket socket = new Socket("localhost", _port))
         {

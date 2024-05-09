@@ -30,16 +30,16 @@ public class ProxyServer
 
         // Setup proxy handler to handle CONNECT methods
         ConnectHandler proxy = new ConnectHandler();
-//        proxy.setWhite(new String[]{"mail.google.com"});
-//        proxy.addWhitelistHost("www.google.com");
+        //        proxy.setWhite(new String[]{"mail.google.com"});
+        //        proxy.addWhitelistHost("www.google.com");
         server.setHandler(proxy);
 
         // Setup proxy servlet
         ServletContextHandler context = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
         proxy.setHandler(context);
         ServletHolder proxyServlet = new ServletHolder(ProxyServlet.class);
-//        proxyServlet.setInitParameter("whiteList", "google.com, www.eclipse.org, localhost");
-//        proxyServlet.setInitParameter("blackList", "google.com/calendar/*, www.eclipse.org/committers/");
+        //        proxyServlet.setInitParameter("whiteList", "google.com, www.eclipse.org, localhost");
+        //        proxyServlet.setInitParameter("blackList", "google.com/calendar/*, www.eclipse.org/committers/");
         context.addServlet(proxyServlet, "/*");
 
         server.start();

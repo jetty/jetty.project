@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-
-import org.eclipse.jetty.util.Callback;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import org.eclipse.jetty.util.Callback;
 
 public class IncomingFramesCapture implements IncomingFrames
 {

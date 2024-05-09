@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.start;
 
-import java.nio.file.Path;
-
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+
+import java.nio.file.Path;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.jupiter.api.Test;
 
 public class JarVersionTest
 {

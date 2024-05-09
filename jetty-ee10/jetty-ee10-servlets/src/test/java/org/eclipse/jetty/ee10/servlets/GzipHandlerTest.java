@@ -13,15 +13,19 @@
 
 package org.eclipse.jetty.ee10.servlets;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -33,11 +37,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 @Disabled // TODO move to core
 public class GzipHandlerTest extends AbstractGzipTest
@@ -93,21 +92,16 @@ public class GzipHandlerTest extends AbstractGzipTest
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
-        assertThat("Response[Content] raw length vs uncompressed length", metadata.contentLength, not(is(metadata.uncompressedSize)));
+        assertThat(
+            "Response[Content] raw length vs uncompressed length",
+            metadata.contentLength,
+            not(is(metadata.uncompressedSize)));
         assertThat("(Uncompressed) Content", metadata.getContentUTF8(), is(HttpContentTypeWithEncodingServlet.CONTENT));
     }
 
     public static class HttpContentTypeWithEncodingServlet extends HttpServlet
     {
-        public static final String CONTENT = "<html><head></head><body><h1>COMPRESSIBLE CONTENT</h1>" +
-            "<p>" +
-            "This content must be longer than the default min gzip length, which is " + GzipHandler.DEFAULT_MIN_GZIP_SIZE + " bytes. " +
-            "The moon is blue to a fish in love. <br/>" +
-            "How now brown cow. <br/>" +
-            "The quick brown fox jumped over the lazy dog. <br/>" +
-            "A woman needs a man like a fish needs a bicycle!" +
-            "</p>" +
-            "</body></html>";
+        public static final String CONTENT = "<html><head></head><body><h1>COMPRESSIBLE CONTENT</h1>" + "<p>" + "This content must be longer than the default min gzip length, which is " + GzipHandler.DEFAULT_MIN_GZIP_SIZE + " bytes. " + "The moon is blue to a fish in love. <br/>" + "How now brown cow. <br/>" + "The quick brown fox jumped over the lazy dog. <br/>" + "A woman needs a man like a fish needs a bicycle!" + "</p>" + "</body></html>";
 
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException

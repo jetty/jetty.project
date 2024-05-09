@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
+import java.util.ArrayList;
+import java.util.List;
 import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.ConstraintAware;
@@ -70,11 +69,12 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
         if (servletSecurity == null)
             return;
 
-        //If there are already constraints defined (ie from web.xml) that match any
-        //of the url patterns defined for this servlet, then skip the security annotation.
+        // If there are already constraints defined (ie from web.xml) that match any
+        // of the url patterns defined for this servlet, then skip the security annotation.
 
         List<ServletMapping> servletMappings = getServletMappings(clazz.getCanonicalName());
-        List<ConstraintMapping> constraintMappings = ((ConstraintAware)_context.getSecurityHandler()).getConstraintMappings();
+        List<ConstraintMapping> constraintMappings =
+            ((ConstraintAware)_context.getSecurityHandler()).getConstraintMappings();
 
         if (constraintsExist(servletMappings, constraintMappings))
         {
@@ -82,7 +82,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             return;
         }
 
-        //Make a fresh list
+        // Make a fresh list
         constraintMappings = new ArrayList<ConstraintMapping>();
 
         ServletSecurityElement securityElement = new ServletSecurityElement(servletSecurity);
@@ -91,11 +91,12 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             for (String url : sm.getPathSpecs())
             {
                 _context.getMetaData().setOrigin("constraint.url." + url, servletSecurity, clazz);
-                constraintMappings.addAll(ConstraintSecurityHandler.createConstraintsWithMappingsForPath(clazz.getName(), url, securityElement));
+                constraintMappings.addAll(ConstraintSecurityHandler.createConstraintsWithMappingsForPath(
+                    clazz.getName(), url, securityElement));
             }
         }
 
-        //set up the security constraints produced by the annotation
+        // set up the security constraints produced by the annotation
         ConstraintAware securityHandler = (ConstraintAware)_context.getSecurityHandler();
 
         for (ConstraintMapping m : constraintMappings)
@@ -103,7 +104,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             securityHandler.addConstraintMapping(m);
         }
 
-        //Servlet Spec 3.1 requires paths with uncovered http methods to be reported
+        // Servlet Spec 3.1 requires paths with uncovered http methods to be reported
         securityHandler.checkPathsWithUncoveredHttpMethods();
     }
 
@@ -117,7 +118,8 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      * @param transport the transport guarantee
      * @return the constraint
      */
-    protected ServletConstraint makeConstraint(Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
+    protected ServletConstraint makeConstraint(
+                                               Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
     {
         return ConstraintSecurityHandler.createConstraint(servlet.getName(), rolesAllowed, permitOrDeny, transport);
     }
@@ -134,7 +136,8 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
         ServletMapping[] mappings = _context.getServletHandler().getServletMappings();
         for (ServletMapping mapping : mappings)
         {
-            //Check the name of the servlet that this mapping applies to, and then find the ServletHolder for it to find it's class
+            // Check the name of the servlet that this mapping applies to, and then find the ServletHolder for it to
+            // find it's class
             ServletHolder holder = _context.getServletHandler().getServlet(mapping.getServletName());
             if (holder.getClassName() != null && holder.getClassName().equals(className))
                 results.add(mapping);
@@ -150,27 +153,28 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      * @param constraintMappings the constraint mappings
      * @return true if constraint exists
      */
-    protected boolean constraintsExist(List<ServletMapping> servletMappings, List<ConstraintMapping> constraintMappings)
+    protected boolean constraintsExist(
+                                       List<ServletMapping> servletMappings, List<ConstraintMapping> constraintMappings)
     {
         boolean exists = false;
 
-        //Check to see if the path spec on each constraint mapping matches a pathSpec in the servlet mappings.
-        //If it does, then we should ignore the security annotations.
+        // Check to see if the path spec on each constraint mapping matches a pathSpec in the servlet mappings.
+        // If it does, then we should ignore the security annotations.
         for (ServletMapping mapping : servletMappings)
         {
-            //Get its url mappings
+            // Get its url mappings
             String[] pathSpecs = mapping.getPathSpecs();
             if (pathSpecs == null)
                 continue;
 
-            //Check through the constraints to see if there are any whose pathSpecs (url mappings)
-            //match the servlet. If so, then we already have constraints defined for this servlet,
-            //and we will not be processing the annotation (ie web.xml or programmatic override).
+            // Check through the constraints to see if there are any whose pathSpecs (url mappings)
+            // match the servlet. If so, then we already have constraints defined for this servlet,
+            // and we will not be processing the annotation (ie web.xml or programmatic override).
             for (int i = 0; constraintMappings != null && i < constraintMappings.size() && !exists; i++)
             {
                 for (int j = 0; j < pathSpecs.length; j++)
                 {
-                    //TODO decide if we need to check the origin
+                    // TODO decide if we need to check the origin
                     if (pathSpecs[j].equals(constraintMappings.get(i).getPathSpec()))
                     {
                         exists = true;

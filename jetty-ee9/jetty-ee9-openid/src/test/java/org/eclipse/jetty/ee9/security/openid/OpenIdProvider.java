@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee9.security.openid;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Duration;
@@ -25,11 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.security.openid.OpenIdConfiguration;
@@ -182,7 +181,8 @@ public class OpenIdProvider extends ContainerLifeCycle
             }
 
             String scopeString = req.getParameter("scope");
-            List<String> scopes = (scopeString == null) ? Collections.emptyList() : Arrays.asList(scopeString.split(" "));
+            List<String> scopes =
+                (scopeString == null) ? Collections.emptyList() : Arrays.asList(scopeString.split(" "));
             if (!scopes.contains("openid"))
             {
                 resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no openid scope");
@@ -208,7 +208,8 @@ public class OpenIdProvider extends ContainerLifeCycle
                 resp.setContentType("text/html");
                 writer.println("<h2>Login to OpenID Connect Provider</h2>");
                 writer.println("<form action=\"" + AUTH_PATH + "\" method=\"post\">");
-                writer.println("<input type=\"text\" autocomplete=\"off\" placeholder=\"Username\" name=\"username\" required>");
+                writer.println(
+                    "<input type=\"text\" autocomplete=\"off\" placeholder=\"Username\" name=\"username\" required>");
                 writer.println("<input type=\"hidden\" name=\"redirectUri\" value=\"" + redirectUri + "\">");
                 writer.println("<input type=\"hidden\" name=\"state\" value=\"" + state + "\">");
                 writer.println("<input type=\"submit\">");
@@ -248,7 +249,8 @@ public class OpenIdProvider extends ContainerLifeCycle
             redirectUser(resp, user, redirectUri, state);
         }
 
-        public void redirectUser(HttpServletResponse response, User user, String redirectUri, String state) throws IOException
+        public void redirectUser(HttpServletResponse response, User user, String redirectUri, String state)
+            throws IOException
         {
             String authCode = UUID.randomUUID().toString().replace("-", "");
             issuedAuthCodes.put(authCode, user);
@@ -273,11 +275,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         {
             String code = req.getParameter("code");
 
-            if (!clientId.equals(req.getParameter("client_id")) ||
-                !clientSecret.equals(req.getParameter("client_secret")) ||
-                !redirectUris.contains(req.getParameter("redirect_uri")) ||
-                !"authorization_code".equals(req.getParameter("grant_type")) ||
-                code == null)
+            if (!clientId.equals(req.getParameter("client_id")) || !clientSecret.equals(req.getParameter("client_secret")) || !redirectUris.contains(req.getParameter("redirect_uri")) || !"authorization_code".equals(req.getParameter("grant_type")) || code == null)
             {
                 resp.sendError(HttpServletResponse.SC_FORBIDDEN, "bad auth request");
                 return;
@@ -292,12 +290,7 @@ public class OpenIdProvider extends ContainerLifeCycle
 
             String accessToken = "ABCDEFG";
             long accessTokenDuration = Duration.ofMinutes(10).toSeconds();
-            String response = "{" +
-                "\"access_token\": \"" + accessToken + "\"," +
-                "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken(provider, clientId, _idTokenDuration)) + "\"," +
-                "\"expires_in\": " + accessTokenDuration + "," +
-                "\"token_type\": \"Bearer\"" +
-                "}";
+            String response = "{" + "\"access_token\": \"" + accessToken + "\"," + "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken(provider, clientId, _idTokenDuration)) + "\"," + "\"expires_in\": " + accessTokenDuration + "," + "\"token_type\": \"Bearer\"" + "}";
 
             loggedInUsers.increment();
             resp.setContentType("text/plain");
@@ -342,12 +335,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
         {
-            String discoveryDocument = "{" +
-                "\"issuer\": \"" + provider + "\"," +
-                "\"authorization_endpoint\": \"" + provider + AUTH_PATH + "\"," +
-                "\"token_endpoint\": \"" + provider + TOKEN_PATH + "\"," +
-                "\"end_session_endpoint\": \"" + provider + END_SESSION_PATH + "\"," +
-                "}";
+            String discoveryDocument = "{" + "\"issuer\": \"" + provider + "\"," + "\"authorization_endpoint\": \"" + provider + AUTH_PATH + "\"," + "\"token_endpoint\": \"" + provider + TOKEN_PATH + "\"," + "\"end_session_endpoint\": \"" + provider + END_SESSION_PATH + "\"," + "}";
 
             resp.getWriter().write(discoveryDocument);
         }

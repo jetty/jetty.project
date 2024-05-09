@@ -13,15 +13,21 @@
 
 package org.eclipse.jetty.ee9.security;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
@@ -36,13 +42,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
@@ -87,7 +86,6 @@ public class SpecExampleConstraintTest
         RequestHandler handler = new RequestHandler();
         _security.setHandler(handler);
 
-        
         /*
         
         <security-constraint>
@@ -120,7 +118,7 @@ public class SpecExampleConstraintTest
         mapping2.setPathSpec("/acme/retail/*");
         mapping2.setConstraint(constraint0);
         mapping2.setMethodOmissions(new String[]{"GET", "POST"});
-        
+
         /*
         
         <security-constraint>
@@ -177,21 +175,21 @@ public class SpecExampleConstraintTest
         mapping6.setPathSpec("/acme/wholesale/*");
         mapping6.setMethod("POST");
         mapping6.setConstraint(constraint2);
-        
+
         /*
-<security-constraint>
-<web-resource-collection>
-<web-resource-name>retail</web-resource-name>
-<url-pattern>/acme/retail/*</url-pattern>
-<http-method>GET</http-method>
-<http-method>POST</http-method>
-</web-resource-collection>
-<auth-constraint>
-<role-name>CONTRACTOR</role-name>
-<role-name>HOMEOWNER</role-name>
-</auth-constraint>
-</security-constraint>
-*/
+        <security-constraint>
+        <web-resource-collection>
+        <web-resource-name>retail</web-resource-name>
+        <url-pattern>/acme/retail/*</url-pattern>
+        <http-method>GET</http-method>
+        <http-method>POST</http-method>
+        </web-resource-collection>
+        <auth-constraint>
+        <role-name>CONTRACTOR</role-name>
+        <role-name>HOMEOWNER</role-name>
+        </auth-constraint>
+        </security-constraint>
+        */
         ServletConstraint constraint4 = new ServletConstraint();
         constraint4.setName("retail");
         constraint4.setAuthenticate(true);
@@ -210,11 +208,12 @@ public class SpecExampleConstraintTest
         knownRoles.add("HOMEOWNER");
         knownRoles.add("SALESCLERK");
 
-        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
+        _security.setConstraintMappings(
+            Arrays.asList(new ConstraintMapping[]
             {
-                mapping0, mapping1, mapping2, mapping3, mapping4, mapping5,
-                mapping6, mapping7, mapping8
-            }), knownRoles);
+                mapping0, mapping1, mapping2, mapping3, mapping4, mapping5, mapping6, mapping7, mapping8
+            }),
+            knownRoles);
     }
 
     @AfterEach
@@ -247,16 +246,16 @@ public class SpecExampleConstraintTest
             _security.setAuthenticator(new BasicAuthenticator());
             _server.start();
 
-            //There are uncovered methods for GET/POST at url /*
-            //without deny-uncovered-http-methods they should be accessible
+            // There are uncovered methods for GET/POST at url /*
+            // without deny-uncovered-http-methods they should be accessible
             String response;
             response = _connector.getResponse("GET /ctx/index.html HTTP/1.0\r\n\r\n");
             assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
-            //set deny-uncovered-http-methods true
+            // set deny-uncovered-http-methods true
             _security.setDenyUncoveredHttpMethods(true);
 
-            //check they cannot be accessed
+            // check they cannot be accessed
             response = _connector.getResponse("GET /ctx/index.html HTTP/1.0\r\n\r\n");
             assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
         }
@@ -284,7 +283,7 @@ public class SpecExampleConstraintTest
           /acme/retail/star     POST must be in role CONTRACTOR or HOMEOWNER
         */
 
-        //a user in role HOMEOWNER is forbidden HEAD request
+        // a user in role HOMEOWNER is forbidden HEAD request
         response = _connector.getResponse("HEAD /ctx/index.html HTTP/1.0\r\n\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
 
@@ -292,46 +291,36 @@ public class SpecExampleConstraintTest
         String encodedHarry = authEncoder.encodeToString("harry:password".getBytes(ISO_8859_1));
         String encodedChris = authEncoder.encodeToString("chris:password".getBytes(ISO_8859_1));
 
-        response = _connector.getResponse("HEAD /ctx/index.html HTTP/1.0\r\n" +
-            "Authorization: Basic " + encodedHarry + "\r\n" +
-            "\r\n");
+        response = _connector.getResponse(
+            "HEAD /ctx/index.html HTTP/1.0\r\n" + "Authorization: Basic " + encodedHarry + "\r\n" + "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponse("HEAD /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-            "Authorization: Basic " + encodedHarry + "\r\n" +
-            "\r\n");
+        response = _connector.getResponse("HEAD /ctx/acme/wholesale/index.html HTTP/1.0\r\n" + "Authorization: Basic " + encodedHarry + "\r\n" + "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponse("HEAD /ctx/acme/retail/index.html HTTP/1.0\r\n" +
-            "Authorization: Basic " + encodedHarry + "\r\n" +
-            "\r\n");
+        response = _connector.getResponse("HEAD /ctx/acme/retail/index.html HTTP/1.0\r\n" + "Authorization: Basic " + encodedHarry + "\r\n" + "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
 
-        //a user in role CONTRACTOR can do a GET
-        response = _connector.getResponse("GET /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-            "Authorization: Basic " + encodedChris + "\r\n" +
-            "\r\n");
+        // a user in role CONTRACTOR can do a GET
+        response = _connector.getResponse("GET /ctx/acme/wholesale/index.html HTTP/1.0\r\n" + "Authorization: Basic " + encodedChris + "\r\n" + "\r\n");
 
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
-        //a user in role CONTRACTOR can only do a post if confidential
-        response = _connector.getResponse("POST /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
-            "Authorization: Basic " + encodedChris + "\r\n" +
-            "\r\n");
+        // a user in role CONTRACTOR can only do a post if confidential
+        response = _connector.getResponse("POST /ctx/acme/wholesale/index.html HTTP/1.0\r\n" + "Authorization: Basic " + encodedChris + "\r\n" + "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
         assertThat(response, containsString("!Secure"));
 
-        //a user in role HOMEOWNER can do a GET
-        response = _connector.getResponse("GET /ctx/acme/retail/index.html HTTP/1.0\r\n" +
-            "Authorization: Basic " + encodedHarry + "\r\n" +
-            "\r\n");
+        // a user in role HOMEOWNER can do a GET
+        response = _connector.getResponse("GET /ctx/acme/retail/index.html HTTP/1.0\r\n" + "Authorization: Basic " + encodedHarry + "\r\n" + "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
     private class RequestHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             baseRequest.setHandled(true);
 

@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.demos;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
@@ -39,9 +38,11 @@ public class OneWebApp
         // PlusConfiguration) to choosing where the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee9.demos",
-                "jetty-ee9-demo-async-rest-webapp", "", "war");
-        Path warFile = JettyDemos.find("jetty-ee9-demo-async-rest/jetty-ee9-demo-async-rest-webapp/target/jetty-ee9-demo-async-rest-webapp-@VER@.war", mavenCoordinate);
+        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate(
+            "org.eclipse.jetty.ee9.demos", "jetty-ee9-demo-async-rest-webapp", "", "war");
+        Path warFile = JettyDemos.find(
+            "jetty-ee9-demo-async-rest/jetty-ee9-demo-async-rest-webapp/target/jetty-ee9-demo-async-rest-webapp-@VER@.war",
+            mavenCoordinate);
         webapp.setWar(warFile.toString());
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to

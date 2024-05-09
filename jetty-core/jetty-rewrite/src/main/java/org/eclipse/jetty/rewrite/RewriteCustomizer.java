@@ -14,7 +14,6 @@
 package org.eclipse.jetty.rewrite;
 
 import java.io.IOException;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.rewrite.handler.Rule;

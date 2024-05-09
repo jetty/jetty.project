@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.ee10.demos;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
@@ -24,6 +21,8 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AsyncEchoServlet extends HttpServlet
 {
@@ -78,7 +77,7 @@ public class AsyncEchoServlet extends HttpServlet
             //   1) after first registering a WriteListener (ready for first write)
             //   2) after first registering a ReadListener iff write is ready
             //   3) when a previous write completes after an output.isReady() returns false
-            //   4) from an input callback 
+            //   4) from an input callback
 
             // We should try to read, only if we are able to write!
             while (true)

@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.ee10.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
@@ -33,12 +38,6 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketServletAttributeTest
 {
@@ -91,7 +90,8 @@ public class JettyWebSocketServletAttributeTest
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
 
         // We should have our custom attribute on the upgraded request, which was set in the negotiation.
-        JettyServerUpgradeRequest upgradeRequest = (JettyServerUpgradeRequest)serverEndpoint.session.getUpgradeRequest();
+        JettyServerUpgradeRequest upgradeRequest =
+            (JettyServerUpgradeRequest)serverEndpoint.session.getUpgradeRequest();
         assertThat(upgradeRequest.getServletAttribute("myWebSocketCustomAttribute"), is("true"));
 
         clientEndpoint.session.close();

@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class EmptyCreateStartdTest extends AbstractUseCase
 {
@@ -37,11 +36,7 @@ public class EmptyCreateStartdTest extends AbstractUseCase
         FS.touch(baseDir.resolve("unrelated.txt"));
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
-            "--testing-mode",
-            "--create-startd",
-            "--add-modules=extra,optional"
-        );
+        List<String> prepareArgs = Arrays.asList("--testing-mode", "--create-startd", "--add-modules=extra,optional");
         exec(prepareArgs, true);
 
         // === Execute Main
@@ -53,8 +48,7 @@ public class EmptyCreateStartdTest extends AbstractUseCase
             "${jetty.home}/etc/optional.xml",
             "${jetty.home}/etc/base.xml",
             "${jetty.home}/etc/main.xml",
-            "${jetty.home}/etc/extra.xml"
-        );
+            "${jetty.home}/etc/extra.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
@@ -65,8 +59,7 @@ public class EmptyCreateStartdTest extends AbstractUseCase
             "${jetty.home}/lib/main.jar",
             "${jetty.home}/lib/other.jar",
             "${jetty.home}/lib/extra/extra0.jar",
-            "${jetty.home}/lib/extra/extra1.jar"
-        );
+            "${jetty.home}/lib/extra/extra1.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 
@@ -82,6 +75,7 @@ public class EmptyCreateStartdTest extends AbstractUseCase
         PathAssert.assertDirExists("Required Directory: maindir/", results.baseHome.getPath("maindir/"));
         PathAssert.assertDirExists("Required Directory: start.d/", results.baseHome.getPath("start.d/"));
         PathAssert.assertFileExists("Required File: start.d/extra.ini", results.baseHome.getPath("start.d/extra.ini"));
-        PathAssert.assertFileExists("Required File: start.d/optional.ini", results.baseHome.getPath("start.d/optional.ini"));
+        PathAssert.assertFileExists(
+            "Required File: start.d/optional.ini", results.baseHome.getPath("start.d/optional.ini"));
     }
 }

@@ -100,7 +100,7 @@ public interface Constraint
      * @return The required {@link Transport} or null if the transport can be either.
      */
     Transport getTransport();
-    
+
     /**
      * @return The {@link Authorization} criteria applied by this {@code Constraint}
      * or null if this constraint does not have any authorization requirements.
@@ -123,7 +123,8 @@ public interface Constraint
         private Transport _transport;
 
         public Builder()
-        {}
+        {
+        }
 
         public Builder(Constraint constraint)
         {
@@ -297,9 +298,11 @@ public interface Constraint
 
     static Constraint from(String name, Authorization authorization, String... roles)
     {
-        return from(name, Transport.INHERIT, authorization, (roles == null || roles.length == 0)
-            ? Collections.emptySet()
-            : new HashSet<>(Arrays.stream(roles).toList()));
+        return from(
+            name,
+            Transport.INHERIT,
+            authorization,
+            (roles == null || roles.length == 0) ? Collections.emptySet() : new HashSet<>(Arrays.stream(roles).toList()));
     }
 
     static Constraint from(Transport transport, Authorization authorization, Set<String> roles)
@@ -313,15 +316,14 @@ public interface Constraint
         {
             private final String _name = name == null ? "unnamed@%x".formatted(hashCode()) : name;
             private final Transport _transport = transport == null ? Transport.INHERIT : transport;
-            private final Set<String> _roles = roles == null || roles.isEmpty()
-                ? Collections.emptySet()
-                : Collections.unmodifiableSet(roles);
-            private final Authorization _authorization = authorization == null
-                ? (_roles.isEmpty() ? Authorization.INHERIT : Authorization.SPECIFIC_ROLE)
-                : authorization;
+            private final Set<String> _roles =
+                roles == null || roles.isEmpty() ? Collections.emptySet() : Collections.unmodifiableSet(roles);
+            private final Authorization _authorization = authorization == null ? (_roles.isEmpty() ? Authorization.INHERIT : Authorization.SPECIFIC_ROLE) : authorization;
+
             {
                 if (!_roles.isEmpty() && _authorization != Authorization.SPECIFIC_ROLE)
-                    throw new IllegalStateException("Constraint with roles must be SPECIFIC_ROLE, not " + _authorization);
+                    throw new IllegalStateException(
+                        "Constraint with roles must be SPECIFIC_ROLE, not " + _authorization);
             }
 
             @Override
@@ -351,14 +353,9 @@ public interface Constraint
             @Override
             public String toString()
             {
-                return "Constraint@%x{%s,%s,%s,%s}".formatted(
-                    hashCode(),
-                    getName(),
-                    getTransport(),
-                    getAuthorization(),
-                    getRoles());
+                return "Constraint@%x{%s,%s,%s,%s}"
+                    .formatted(hashCode(), getName(), getTransport(), getAuthorization(), getRoles());
             }
         };
     }
 }
-

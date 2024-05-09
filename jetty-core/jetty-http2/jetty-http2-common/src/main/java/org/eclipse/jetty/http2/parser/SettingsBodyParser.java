@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.RateControl;
@@ -238,20 +237,21 @@ public class SettingsBodyParser extends BodyParser
     public static SettingsFrame parseBody(final ByteBuffer buffer)
     {
         AtomicReference<SettingsFrame> frameRef = new AtomicReference<>();
-        SettingsBodyParser parser = new SettingsBodyParser(new HeaderParser(RateControl.NO_RATE_CONTROL), new Parser.Listener()
-        {
-            @Override
-            public void onSettings(SettingsFrame frame)
+        SettingsBodyParser parser =
+            new SettingsBodyParser(new HeaderParser(RateControl.NO_RATE_CONTROL), new Parser.Listener()
             {
-                frameRef.set(frame);
-            }
+                @Override
+                public void onSettings(SettingsFrame frame)
+                {
+                    frameRef.set(frame);
+                }
 
-            @Override
-            public void onConnectionFailure(int error, String reason)
-            {
-                frameRef.set(null);
-            }
-        });
+                @Override
+                public void onConnectionFailure(int error, String reason)
+                {
+                    frameRef.set(null);
+                }
+            });
         if (buffer.hasRemaining())
             parser.parse(buffer, 0, buffer.remaining());
         else
@@ -261,6 +261,10 @@ public class SettingsBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, SETTING_ID, SETTING_ID_BYTES, SETTING_VALUE, SETTING_VALUE_BYTES
+        PREPARE,
+        SETTING_ID,
+        SETTING_ID_BYTES,
+        SETTING_VALUE,
+        SETTING_VALUE_BYTES
     }
 }

@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -66,15 +65,19 @@ public class ResponseUtils
                                 return f;
                         }
 
-                        return new HttpField(HttpHeader.CONNECTION, fields.stream()
-                            .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
-                            .collect(Collectors.joining(", ")));
+                        return new HttpField(
+                            HttpHeader.CONNECTION,
+                            fields.stream()
+                                .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
+                                .collect(Collectors.joining(", ")));
                     }
 
-                    return new HttpField(HttpHeader.CONNECTION,
-                        Stream.concat(fields.stream()
-                                    .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))),
-                                Stream.of(HttpHeaderValue.CLOSE.asString()))
+                    return new HttpField(
+                        HttpHeader.CONNECTION,
+                        Stream.concat(
+                            fields.stream().flatMap(field -> Stream.of(field.getValues())
+                                .filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))),
+                            Stream.of(HttpHeaderValue.CLOSE.asString()))
                             .collect(Collectors.joining(", ")));
                 });
         }

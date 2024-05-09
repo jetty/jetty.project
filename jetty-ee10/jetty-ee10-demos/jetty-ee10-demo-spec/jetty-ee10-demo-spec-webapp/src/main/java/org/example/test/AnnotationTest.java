@@ -13,13 +13,6 @@
 
 package org.example.test;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import javax.naming.InitialContext;
-import javax.sql.DataSource;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Resource;
@@ -34,6 +27,12 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.UserTransaction;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import javax.naming.InitialContext;
+import javax.sql.DataSource;
 
 /**
  * AnnotationTest
@@ -43,12 +42,11 @@ import jakarta.transaction.UserTransaction;
  * Also, use servlet spec 2.5 resource injection and lifecycle callbacks from within the web.xml
  * to set up some of the JNDI resources.
  */
-
 @RunAs("special")
-@WebServlet(urlPatterns = {"/", "/test/*"}, name = "AnnotationTest", initParams = {
-    @WebInitParam(name = "fromAnnotation", value = "xyz")
-})
-@DeclareRoles({"user", "client"})
+@WebServlet(urlPatterns =
+{"/", "/test/*"}, name = "AnnotationTest", initParams = {@WebInitParam(name = "fromAnnotation", value = "xyz")})
+@DeclareRoles(
+{"user", "client"})
 public class AnnotationTest extends HttpServlet
 {
     static List<String> __HandlesTypes;
@@ -183,15 +181,9 @@ public class AnnotationTest extends HttpServlet
             out.println("<h1>Results</h1>");
 
             out.println("<h2>Context Defaults</h2>");
-            out.println("<p><b>default-context-path: " +
-                (request.getServletContext().getAttribute("default-context-path") != null ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
-                "</span></p>");
-            out.println("<p><b>request-character-encoding: " +
-                ("utf-8".equals(request.getServletContext().getAttribute("request-character-encoding")) ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
-                "</span></p>");
-            out.println("<p><b>response-character-encoding: " +
-                ("utf-8".equals(request.getServletContext().getAttribute("response-character-encoding")) ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
-                "</span></p>");
+            out.println("<p><b>default-context-path: " + (request.getServletContext().getAttribute("default-context-path") != null ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></p>");
+            out.println("<p><b>request-character-encoding: " + ("utf-8".equals(request.getServletContext().getAttribute("request-character-encoding")) ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></p>");
+            out.println("<p><b>response-character-encoding: " + ("utf-8".equals(request.getServletContext().getAttribute("response-character-encoding")) ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></p>");
 
             out.println("<h2>Init Params from Annotation</h2>");
             out.println("<pre>");
@@ -203,10 +195,13 @@ public class AnnotationTest extends HttpServlet
             out.println("<pre>");
             out.println("extra1=123, extra2=345");
             out.println("</pre>");
-            boolean fragInitParamResult = "123".equals(config.getInitParameter("extra1")) && "345".equals(config.getInitParameter("extra2"));
-            out.println("<p><b>Result: " + (fragInitParamResult ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></p>");
+            boolean fragInitParamResult =
+                "123".equals(config.getInitParameter("extra1")) && "345".equals(config.getInitParameter("extra2"));
+            out.println(
+                "<p><b>Result: " + (fragInitParamResult ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></p>");
 
-            __HandlesTypes = Arrays.asList("jakarta.servlet.GenericServlet",
+            __HandlesTypes = Arrays.asList(
+                "jakarta.servlet.GenericServlet",
                 "jakarta.servlet.http.HttpServlet",
                 "org.example.test.AsyncListenerServlet",
                 "org.example.test.ClassLoaderServlet",
@@ -248,23 +243,28 @@ public class AnnotationTest extends HttpServlet
             out.println("<p><b>Result: " + (complete.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
 
             out.println("<h2>ServletContextListener Programmatic Registration from ServletContainerInitializer</h2>");
-            Boolean programmaticListener = (Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.listenerTest");
+            Boolean programmaticListener =
+                (Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.listenerTest");
             out.println("<p><b>Result: " + (programmaticListener.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
 
-            out.println("<h2>ServletContextListener Programmatic Registration Prevented from ServletContextListener</h2>");
-            Boolean programmaticListenerPrevention = (Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.listenerRegoTest");
+            out.println(
+                "<h2>ServletContextListener Programmatic Registration Prevented from ServletContextListener</h2>");
+            Boolean programmaticListenerPrevention =
+                (Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.listenerRegoTest");
             out.println("<p><b>Result: " + (programmaticListenerPrevention.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
 
             out.println("<h2>ServletContextListener Registration Prevented from ServletContextListener</h2>");
-            Boolean webListenerPrevention = (Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.sclFromSclRegoTest");
+            Boolean webListenerPrevention =
+                (Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.sclFromSclRegoTest");
             out.println("<p><b>Result: " + (webListenerPrevention.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
-            
+
             out.println("<h2>Add Jsp File Registration</h2>");
             complete = (Boolean)config.getServletContext().getAttribute("org.example.jsp.file");
             out.println("<p><b>Result: " + (complete.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
-            
+
             out.println("<h2>ServletContextListener In web.xml Injected</h2>");
-            Boolean listenerInject = (Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.sclInjectTest");
+            Boolean listenerInject =
+                (Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.sclInjectTest");
             out.println("<p><b>Result: " + (listenerInject.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
 
             out.println("<h2>ServletContextListener as @WebListener Injected</h2>");
@@ -272,11 +272,11 @@ public class AnnotationTest extends HttpServlet
             out.println("<p><b>Result: " + (annotatedListenerInject.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
 
             out.println("<h2>ServletContextListener as @WebListener Get/Set Session Timeout</h2>");
-            out.println("<p><b>getSessionTimeout Result: " + 
-                ((Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.sclGetSessionTimeout") ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
-            out.println("<p><b>setSessionTimeout Result: " + 
-                ((Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.sclSetSessionTimeout") ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
-            
+            out.println("<p><b>getSessionTimeout Result: " + ((Boolean)config.getServletContext()
+                .getAttribute("org.example.AnnotationTest.sclGetSessionTimeout") ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
+            out.println("<p><b>setSessionTimeout Result: " + ((Boolean)config.getServletContext()
+                .getAttribute("org.example.AnnotationTest.sclSetSessionTimeout") ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
+
             out.println("<h2>Programmatic Listener Injected</h2>");
             Boolean programListenerInject = (Boolean)config.getServletContext().getAttribute("org.example.AnnotationTest.programListenerInjectTest");
             out.println("<p><b>Result: " + (programListenerInject.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");

@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
-import java.util.Iterator;
-import java.util.ServiceLoader;
-
-import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee9.websocket.jakarta.server.config.ContainerDefaultConfigurator;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+
+import jakarta.websocket.server.ServerEndpointConfig;
+import java.util.Iterator;
+import java.util.ServiceLoader;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.config.ContainerDefaultConfigurator;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test the JettyServerEndpointConfigurator impl.
@@ -33,7 +32,8 @@ public class JettyServerEndpointConfiguratorTest
     @Test
     public void testServiceLoader()
     {
-        ServiceLoader<ServerEndpointConfig.Configurator> loader = ServiceLoader.load(jakarta.websocket.server.ServerEndpointConfig.Configurator.class);
+        ServiceLoader<ServerEndpointConfig.Configurator> loader =
+            ServiceLoader.load(jakarta.websocket.server.ServerEndpointConfig.Configurator.class);
         assertThat("loader", loader, notNullValue());
         Iterator<ServerEndpointConfig.Configurator> iter = loader.iterator();
         assertThat("loader.iterator", iter, notNullValue());

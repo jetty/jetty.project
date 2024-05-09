@@ -13,15 +13,18 @@
 
 package org.eclipse.jetty.ee9.jsp;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.jsp.JspFactory;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import org.apache.jasper.runtime.JspFactoryImpl;
 import org.apache.tomcat.InstanceManager;
 import org.apache.tomcat.SimpleInstanceManager;
@@ -38,10 +41,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 
 @ExtendWith(WorkDirExtension.class)
 public class TestJettyJspServlet
@@ -69,7 +68,8 @@ public class TestJettyJspServlet
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
         ServletContextHandler context = new ServletContextHandler(_server, "/context", true, false);
-        context.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
+        context.setClassLoader(
+            new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         ServletHolder jspHolder = context.addServlet(JettyJspServlet.class, "/*");
         jspHolder.setInitParameter("scratchdir", workdir.getEmptyPathDir().toString());
         context.setResourceBase(baseDir.getAbsolutePath());
@@ -90,12 +90,8 @@ public class TestJettyJspServlet
     @Test
     public void testWithJsp() throws Exception
     {
-        //test that an ordinary jsp is served by jsp servlet
-        String request =
-            "GET /context/foo.jsp HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+        // test that an ordinary jsp is served by jsp servlet
+        String request = "GET /context/foo.jsp HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
 
         String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -105,12 +101,8 @@ public class TestJettyJspServlet
     @Test
     public void testWithDirectory() throws Exception
     {
-        //test that a dir is served by the default servlet
-        String request =
-            "GET /context/dir HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+        // test that a dir is served by the default servlet
+        String request = "GET /context/dir HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
         String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getContent(), containsString("This.Is.The.Default."));

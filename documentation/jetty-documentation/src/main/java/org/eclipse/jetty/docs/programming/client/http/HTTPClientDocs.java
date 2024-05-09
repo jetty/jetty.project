@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.docs.programming.client.http;
 
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
-
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.Authentication;
 import org.eclipse.jetty.client.AuthenticationStore;
@@ -82,9 +84,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import static java.lang.System.Logger.Level.ERROR;
-import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
 public class HTTPClientDocs
@@ -201,7 +200,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::headFluent[]
-        ContentResponse response = httpClient.newRequest("http://domain.com/path?query")
+        ContentResponse response = httpClient
+            .newRequest("http://domain.com/path?query")
             .method(HttpMethod.HEAD)
             .agent("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:17.0) Gecko/20100101 Firefox/17.0")
             .send();
@@ -227,7 +227,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::postFluent[]
-        ContentResponse response = httpClient.POST("http://domain.com/entity/1")
+        ContentResponse response = httpClient
+            .POST("http://domain.com/entity/1")
             .param("p", "value")
             .send();
         // end::postFluent[]
@@ -239,7 +240,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::fileFluent[]
-        ContentResponse response = httpClient.POST("http://domain.com/upload")
+        ContentResponse response = httpClient
+            .POST("http://domain.com/upload")
             .file(Paths.get("file_to_upload.txt"), "text/plain")
             .send();
         // end::fileFluent[]
@@ -251,7 +253,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::totalTimeout[]
-        ContentResponse response = httpClient.newRequest("http://domain.com/path?query")
+        ContentResponse response = httpClient
+            .newRequest("http://domain.com/path?query")
             .timeout(5, TimeUnit.SECONDS)
             .send();
         // end::totalTimeout[]
@@ -263,11 +266,10 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::simpleNonBlocking[]
-        httpClient.newRequest("http://domain.com/path")
-            .send(result ->
-            {
-                // Your logic here
-            });
+        httpClient.newRequest("http://domain.com/path").send(result ->
+        {
+            // Your logic here
+        });
         // end::simpleNonBlocking[]
     }
 
@@ -277,7 +279,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::nonBlockingTotalTimeout[]
-        httpClient.newRequest("http://domain.com/path")
+        httpClient
+            .newRequest("http://domain.com/path")
             .timeout(3, TimeUnit.SECONDS)
             .send(result ->
             {
@@ -293,24 +296,61 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::listeners[]
-        httpClient.newRequest("http://domain.com/path")
+        httpClient
+            .newRequest("http://domain.com/path")
             // Add request hooks.
-            .onRequestQueued(request -> { /* ... */ })
-            .onRequestBegin(request -> { /* ... */ })
-            .onRequestHeaders(request -> { /* ... */ })
-            .onRequestCommit(request -> { /* ... */ })
-            .onRequestContent((request, content) -> { /* ... */ })
-            .onRequestFailure((request, failure) -> { /* ... */ })
-            .onRequestSuccess(request -> { /* ... */ })
+            .onRequestQueued(request ->
+            {
+                /* ... */
+            })
+            .onRequestBegin(request ->
+            {
+                /* ... */
+            })
+            .onRequestHeaders(request ->
+            {
+                /* ... */
+            })
+            .onRequestCommit(request ->
+            {
+                /* ... */
+            })
+            .onRequestContent((request, content) ->
+            {
+                /* ... */
+            })
+            .onRequestFailure((request, failure) ->
+            {
+                /* ... */
+            })
+            .onRequestSuccess(request ->
+            {
+                /* ... */
+            })
             // Add response hooks.
-            .onResponseBegin(response -> { /* ... */ })
+            .onResponseBegin(response ->
+            {
+                /* ... */
+            })
             .onResponseHeader((response, field) -> true)
-            .onResponseHeaders(response -> { /* ... */ })
+            .onResponseHeaders(response ->
+            {
+                /* ... */
+            })
             .onResponseContentAsync((response, chunk, demander) -> demander.run())
-            .onResponseFailure((response, failure) -> { /* ... */ })
-            .onResponseSuccess(response -> { /* ... */ })
+            .onResponseFailure((response, failure) ->
+            {
+                /* ... */
+            })
+            .onResponseSuccess(response ->
+            {
+                /* ... */
+            })
             // Result hook.
-            .send(result -> { /* ... */ });
+            .send(result ->
+            {
+                /* ... */
+            });
         // end::listeners[]
     }
 
@@ -320,7 +360,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::pathRequestContent[]
-        ContentResponse response = httpClient.POST("http://domain.com/upload")
+        ContentResponse response = httpClient
+            .POST("http://domain.com/upload")
             .body(new PathRequestContent("text/plain", Paths.get("file_to_upload.txt")))
             .send();
         // end::pathRequestContent[]
@@ -332,7 +373,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::inputStreamRequestContent[]
-        ContentResponse response = httpClient.POST("http://domain.com/upload")
+        ContentResponse response = httpClient
+            .POST("http://domain.com/upload")
             .body(new InputStreamRequestContent("text/plain", new FileInputStream("file_to_upload.txt")))
             .send();
         // end::inputStreamRequestContent[]
@@ -346,11 +388,13 @@ public class HTTPClientDocs
         byte[] bytes = new byte[1024];
         String string = new String(bytes);
         // tag::bytesStringRequestContent[]
-        ContentResponse bytesResponse = httpClient.POST("http://domain.com/upload")
+        ContentResponse bytesResponse = httpClient
+            .POST("http://domain.com/upload")
             .body(new BytesRequestContent("text/plain", bytes))
             .send();
 
-        ContentResponse stringResponse = httpClient.POST("http://domain.com/upload")
+        ContentResponse stringResponse = httpClient
+            .POST("http://domain.com/upload")
             .body(new StringRequestContent("text/plain", string))
             .send();
         // end::bytesStringRequestContent[]
@@ -363,12 +407,10 @@ public class HTTPClientDocs
 
         // tag::asyncRequestContent[]
         AsyncRequestContent content = new AsyncRequestContent();
-        httpClient.POST("http://domain.com/upload")
-            .body(content)
-            .send(result ->
-            {
-                // Your logic here
-            });
+        httpClient.POST("http://domain.com/upload").body(content).send(result ->
+        {
+            // Your logic here
+        });
 
         // Content not available yet here.
 
@@ -402,12 +444,10 @@ public class HTTPClientDocs
         // Use try-with-resources to close the OutputStream when all content is written.
         try (OutputStream output = content.getOutputStream())
         {
-            httpClient.POST("http://localhost:8080/")
-                .body(content)
-                .send(result ->
-                {
-                    // Your logic here
-                });
+            httpClient.POST("http://localhost:8080/").body(content).send(result ->
+            {
+                // Your logic here
+            });
 
             // Content not available yet here.
 
@@ -428,8 +468,7 @@ public class HTTPClientDocs
         Request request = httpClient.newRequest("http://domain.com/path");
 
         // Limit response content buffer to 512 KiB.
-        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, 512 * 1024)
-            .send();
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, 512 * 1024).send();
 
         // You can attach actions to the CompletableFuture,
         // to be performed when the request+response completes.
@@ -445,7 +484,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::bufferingResponseListener[]
-        httpClient.newRequest("http://domain.com/path")
+        httpClient
+            .newRequest("http://domain.com/path")
             // Buffer response content up to 8 MiB
             .send(new BufferingResponseListener(8 * 1024 * 1024)
             {
@@ -469,8 +509,7 @@ public class HTTPClientDocs
 
         // tag::inputStreamResponseListener[]
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        httpClient.newRequest("http://domain.com/path")
-            .send(listener);
+        httpClient.newRequest("http://domain.com/path").send(listener);
 
         // Wait for the response headers to arrive.
         Response response = listener.get(5, TimeUnit.SECONDS);
@@ -502,14 +541,11 @@ public class HTTPClientDocs
         int port2 = 8080;
         // tag::forwardContent[]
         // Prepare a request to server1, the source.
-        Request request1 = httpClient.newRequest(host1, port1)
-            .path("/source");
+        Request request1 = httpClient.newRequest(host1, port1).path("/source");
 
         // Prepare a request to server2, the sink.
         AsyncRequestContent content2 = new AsyncRequestContent();
-        Request request2 = httpClient.newRequest(host2, port2)
-            .path("/sink")
-            .body(content2);
+        Request request2 = httpClient.newRequest(host2, port2).path("/sink").body(content2);
 
         request1.onResponseContentSource(new Response.ContentSourceListener()
         {
@@ -555,18 +591,22 @@ public class HTTPClientDocs
                 }
 
                 // When a response chunk is received from server1, forward it to server2.
-                content2.write(chunk.getByteBuffer(), Callback.from(() ->
-                {
-                    // When the request chunk is successfully sent to server2,
-                    // release the chunk to recycle the buffer.
-                    chunk.release();
-                    // Then demand more response content from server1.
-                    contentSource.demand(() -> forwardContent(response, contentSource));
-                }, x ->
-                {
-                    chunk.release();
-                    response.abort(x);
-                }));
+                content2.write(
+                    chunk.getByteBuffer(),
+                    Callback.from(
+                        () ->
+                        {
+                            // When the request chunk is successfully sent to server2,
+                            // release the chunk to recycle the buffer.
+                            chunk.release();
+                            // Then demand more response content from server1.
+                            contentSource.demand(() -> forwardContent(response, contentSource));
+                        },
+                        x ->
+                        {
+                            chunk.release();
+                            response.abort(x);
+                        }));
             }
         });
 
@@ -612,7 +652,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::requestCookie[]
-        ContentResponse response = httpClient.newRequest("http://domain.com/path")
+        ContentResponse response = httpClient
+            .newRequest("http://domain.com/path")
             .cookie(HttpCookie.from("foo", "bar"))
             .send();
         // end::requestCookie[]
@@ -869,11 +910,13 @@ public class HTTPClientDocs
         ClientConnector connector = new ClientConnector();
 
         // Equivalent to HttpClientTransportOverHTTP.
-        HttpClientTransportDynamic http11Transport = new HttpClientTransportDynamic(connector, HttpClientConnectionFactory.HTTP11);
+        HttpClientTransportDynamic http11Transport =
+            new HttpClientTransportDynamic(connector, HttpClientConnectionFactory.HTTP11);
 
         // Equivalent to HttpClientTransportOverHTTP2.
         HTTP2Client http2Client = new HTTP2Client(connector);
-        HttpClientTransportDynamic http2Transport = new HttpClientTransportDynamic(connector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
+        HttpClientTransportDynamic http2Transport =
+            new HttpClientTransportDynamic(connector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
         // end::dynamicOneProtocol[]
     }
 
@@ -944,8 +987,7 @@ public class HTTPClientDocs
         // Make a clear-text upgrade request from HTTP/1.1 to HTTP/2.
         // The request will start as HTTP/1.1, but the response will be HTTP/2.
         ContentResponse upgradedResponse = client.newRequest("https://host/")
-            .headers(headers -> headers
-                .put(HttpHeader.UPGRADE, "h2c")
+            .headers(headers -> headers.put(HttpHeader.UPGRADE, "h2c")
                 .put(HttpHeader.HTTP2_SETTINGS, "")
                 .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .send();
@@ -975,8 +1017,7 @@ public class HTTPClientDocs
 
         // No explicit HTTP version specified.
         // Either HTTP/3 succeeds, or communication failure.
-        ContentResponse httpResponse = client.newRequest("https://host/")
-            .send();
+        ContentResponse httpResponse = client.newRequest("https://host/").send();
         // end::dynamicPreferH3[]
     }
 
@@ -1004,8 +1045,7 @@ public class HTTPClientDocs
         // No explicit HTTP version specified.
         // Either HTTP/1.1 or HTTP/2 will be negotiated via ALPN.
         // HTTP/3 only possible by specifying the version explicitly.
-        ContentResponse httpResponse = client.newRequest("https://host/")
-            .send();
+        ContentResponse httpResponse = client.newRequest("https://host/").send();
         // end::dynamicPreferH2[]
     }
 
@@ -1042,10 +1082,7 @@ public class HTTPClientDocs
         HttpClientTransport transport = httpClient.getTransport();
 
         // Set the ConnectionPool.Factory using a lambda.
-        transport.setConnectionPoolFactory(destination ->
-            new RoundRobinConnectionPool(destination,
-                maxConnectionsPerDestination,
-                maxRequestsPerConnection));
+        transport.setConnectionPoolFactory(destination -> new RoundRobinConnectionPool(destination, maxConnectionsPerDestination, maxRequestsPerConnection));
         // end::setConnectionPool[]
     }
 
@@ -1074,7 +1111,8 @@ public class HTTPClientDocs
         HttpClient httpClient = new HttpClient(dynamicTransport);
         httpClient.start();
 
-        ContentResponse response = httpClient.newRequest("jetty.org", 80)
+        ContentResponse response = httpClient
+            .newRequest("jetty.org", 80)
             // Specify that the request must be sent over Unix-Domain.
             .transport(new Transport.TCPUnix(unixDomainPath))
             .send();
@@ -1100,7 +1138,8 @@ public class HTTPClientDocs
         // Use the MemoryTransport to communicate with the server-side.
         Transport transport = new MemoryTransport(memoryConnector);
 
-        httpClient.newRequest("http://localhost/")
+        httpClient
+            .newRequest("http://localhost/")
             // Specify the Transport to use.
             .transport(transport)
             .send();
@@ -1133,12 +1172,14 @@ public class HTTPClientDocs
         httpClient.start();
 
         // Make a TCP request to a 3rd party web application.
-        ContentResponse thirdPartyResponse = httpClient.newRequest("https://third-party.com/api")
+        ContentResponse thirdPartyResponse = httpClient
+            .newRequest("https://third-party.com/api")
             // No need to specify the Transport, TCP will be used by default.
             .send();
 
         // Upload the third party response content to a validation process.
-        ContentResponse validatedResponse = httpClient.newRequest("http://localhost/validate")
+        ContentResponse validatedResponse = httpClient
+            .newRequest("http://localhost/validate")
             // The validation process is available via Unix-Domain.
             .transport(new Transport.TCPUnix(unixDomainPath))
             .method(HttpMethod.POST)
@@ -1147,7 +1188,8 @@ public class HTTPClientDocs
 
         // Process the validated response intra-process by sending
         // it to another web application in the same Jetty server.
-        ContentResponse response = httpClient.newRequest("http://localhost/process")
+        ContentResponse response = httpClient
+            .newRequest("http://localhost/process")
             // The processing is in-memory.
             .transport(new MemoryTransport(memoryConnector))
             .method(HttpMethod.POST)

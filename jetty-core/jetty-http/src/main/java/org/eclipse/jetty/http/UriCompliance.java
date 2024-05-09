@@ -13,22 +13,21 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.noneOf;
 import static java.util.EnumSet.of;
+
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * URI compliance modes for Jetty request handling.
@@ -103,7 +102,9 @@ public final class UriCompliance implements ComplianceViolation.Mode
         /**
          * Allow encoded path characters not allowed by the Servlet spec rules.
          */
-        SUSPICIOUS_PATH_CHARACTERS("https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.0.html#uri-path-canonicalization", "Suspicious Path Character"),
+        SUSPICIOUS_PATH_CHARACTERS(
+            "https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.0.html#uri-path-canonicalization",
+            "Suspicious Path Character"),
 
         /**
          * Allow path characters not allowed in the path portion of the URI and HTTP specs.
@@ -156,8 +157,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
     /**
      * Compliance mode that allows all unambiguous violations.
      */
-    public static final UriCompliance UNAMBIGUOUS = new UriCompliance("UNAMBIGUOUS",
-        complementOf(EnumSet.copyOf(AMBIGUOUS_VIOLATIONS)));
+    public static final UriCompliance UNAMBIGUOUS =
+        new UriCompliance("UNAMBIGUOUS", complementOf(EnumSet.copyOf(AMBIGUOUS_VIOLATIONS)));
 
     /**
      * The default compliance mode allows no violations from <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
@@ -170,8 +171,10 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * {@link Violation#AMBIGUOUS_EMPTY_SEGMENT}, {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, {@link Violation#AMBIGUOUS_PATH_ENCODING}
      * and {@link Violation#UTF16_ENCODINGS}.
      */
-    public static final UriCompliance LEGACY = new UriCompliance("LEGACY",
-        of(Violation.AMBIGUOUS_PATH_SEGMENT,
+    public static final UriCompliance LEGACY = new UriCompliance(
+        "LEGACY",
+        of(
+            Violation.AMBIGUOUS_PATH_SEGMENT,
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
             Violation.AMBIGUOUS_EMPTY_SEGMENT,
@@ -249,16 +252,17 @@ public final class UriCompliance implements ComplianceViolation.Mode
         {
             String[] elements = spec.split("\\s*,\\s*");
 
-            Set<Violation> violations = switch (elements[0])
-            {
-                case "0" -> noneOf(Violation.class);
-                case "*" -> allOf(Violation.class);
-                default ->
+            Set<Violation> violations =
+                switch (elements[0])
                 {
-                    UriCompliance mode = UriCompliance.valueOf(elements[0]);
-                    yield (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
-                }
-            };
+                    case "0" -> noneOf(Violation.class);
+                    case "*" -> allOf(Violation.class);
+                    default ->
+                    {
+                        UriCompliance mode = UriCompliance.valueOf(elements[0]);
+                        yield (mode == null) ? noneOf(Violation.class) : copyOf(mode.getAllowed());
+                    }
+                };
 
             for (int i = 1; i < elements.length; i++)
             {
@@ -366,7 +370,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
         return EnumSet.copyOf(violations);
     }
 
-    public static String checkUriCompliance(UriCompliance compliance, HttpURI uri, ComplianceViolation.Listener listener)
+    public static String checkUriCompliance(
+                                            UriCompliance compliance, HttpURI uri, ComplianceViolation.Listener listener)
     {
         if (uri.hasViolations())
         {
@@ -376,7 +381,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
                 if (compliance == null || !compliance.allows(violation))
                 {
                     if (listener != null)
-                        listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString()));
+                        listener.onComplianceViolation(
+                            new ComplianceViolation.Event(compliance, violation, uri.toString()));
 
                     if (violations == null)
                         violations = new StringBuilder();

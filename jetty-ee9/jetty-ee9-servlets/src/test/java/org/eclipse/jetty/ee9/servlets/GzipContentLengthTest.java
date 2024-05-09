@@ -13,14 +13,18 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+
+import jakarta.servlet.Servlet;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
-import jakarta.servlet.Servlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -37,11 +41,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 /**
  * Test the {@code GzipHandler} support for the various ways that an App can set {@code Content-Length}.
@@ -148,7 +147,9 @@ public class GzipContentLengthTest extends AbstractGzipTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void executeScenario(Class<? extends Servlet> contentServlet, int fileSize, String fileName, boolean compressible) throws Exception
+    public void executeScenario(
+                                Class<? extends Servlet> contentServlet, int fileSize, String fileName, boolean compressible)
+        throws Exception
     {
         server = new Server();
         LocalConnector localConnector = new LocalConnector(server);

@@ -18,7 +18,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.generator.ControlGenerator;
 import org.eclipse.jetty.http3.internal.ControlStreamConnection;
@@ -161,7 +160,6 @@ public class ControlFlusher extends IteratingCallback
         return String.format("%s#%s", super.toString(), endPoint.getStreamId());
     }
 
-    private record Entry(Frame frame, Callback callback)
-    {
+    private record Entry(Frame frame, Callback callback) {
     }
 }

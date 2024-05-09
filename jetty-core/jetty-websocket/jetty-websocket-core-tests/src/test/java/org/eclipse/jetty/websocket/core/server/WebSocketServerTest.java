@@ -13,12 +13,19 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
+
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -36,14 +43,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 /**
  * Tests of a core server with a fake client
@@ -344,7 +343,9 @@ public class WebSocketServerTest extends WebSocketTester
             assertThat(serverHandler.receivedFrames.poll().getPayloadAsUTF8(), is("Hello"));
             receivedCallbacks.poll().succeeded();
 
-            serverHandler.getCoreSession().sendFrame(CloseStatus.toFrame(CloseStatus.SHUTDOWN, "Test Close"), Callback.NOOP, false);
+            serverHandler
+                .getCoreSession()
+                .sendFrame(CloseStatus.toFrame(CloseStatus.SHUTDOWN, "Test Close"), Callback.NOOP, false);
 
             Frame frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);

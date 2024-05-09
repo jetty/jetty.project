@@ -34,7 +34,8 @@ public class JettyLogger implements LocationAwareLogger, Logger
         this(factory, name, appender, JettyLevel.INFO, false);
     }
 
-    public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender, JettyLevel level, boolean hideStacks)
+    public JettyLogger(
+                       JettyLoggerFactory factory, String name, JettyAppender appender, JettyLevel level, boolean hideStacks)
     {
         this.factory = factory;
         this.name = name;
@@ -657,7 +658,15 @@ public class JettyLogger implements LocationAwareLogger, Logger
         {
             long timestamp = System.currentTimeMillis();
             String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, JettyLevel.intToLevel(levelInt).toLevel(), timestamp, threadName, throwable, message, argArray);
+            getAppender()
+                .emit(
+                    this,
+                    JettyLevel.intToLevel(levelInt).toLevel(),
+                    timestamp,
+                    threadName,
+                    throwable,
+                    message,
+                    argArray);
         }
     }
 
@@ -671,7 +680,15 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         // TODO: do we want to support org.sfl4j.Marker?
         // TODO: do we want to support org.sfl4j.even.KeyValuePair?
-        getAppender().emit(this, event.getLevel(), event.getTimeStamp(), event.getThreadName(), event.getThrowable(), event.getMessage(), event.getArgumentArray());
+        getAppender()
+            .emit(
+                this,
+                event.getLevel(),
+                event.getTimeStamp(),
+                event.getThreadName(),
+                event.getThrowable(),
+                event.getMessage(),
+                event.getArgumentArray());
     }
 
     @Override

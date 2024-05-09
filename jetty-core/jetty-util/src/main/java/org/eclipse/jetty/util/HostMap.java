@@ -43,8 +43,7 @@ public class HostMap<TYPE> extends HashMap<String, TYPE>
     }
 
     @Override
-    public TYPE put(String host, TYPE object)
-        throws IllegalArgumentException
+    public TYPE put(String host, TYPE object) throws IllegalArgumentException
     {
         return super.put(host, object);
     }

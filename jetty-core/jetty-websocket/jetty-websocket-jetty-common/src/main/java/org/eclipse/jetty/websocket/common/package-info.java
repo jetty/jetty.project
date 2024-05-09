@@ -23,4 +23,3 @@
  * </p>
  */
 package org.eclipse.jetty.websocket.common;
-

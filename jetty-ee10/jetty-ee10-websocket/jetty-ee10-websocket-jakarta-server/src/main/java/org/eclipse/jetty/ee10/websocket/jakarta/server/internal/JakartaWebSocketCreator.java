@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.server.internal;
 
+import jakarta.websocket.Extension;
+import jakarta.websocket.Extension.Parameter;
+import jakarta.websocket.server.ServerEndpointConfig;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import jakarta.websocket.Extension;
-import jakarta.websocket.Extension.Parameter;
-import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.ConfiguredEndpoint;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketExtension;
@@ -52,7 +51,10 @@ public class JakartaWebSocketCreator implements WebSocketCreator
     private final ServerEndpointConfig baseConfig;
     private final WebSocketExtensionRegistry extensionRegistry;
 
-    public JakartaWebSocketCreator(JakartaWebSocketContainer containerScope, ServerEndpointConfig config, WebSocketExtensionRegistry extensionRegistry)
+    public JakartaWebSocketCreator(
+                                   JakartaWebSocketContainer containerScope,
+                                   ServerEndpointConfig config,
+                                   WebSocketExtensionRegistry extensionRegistry)
     {
         this.containerScope = containerScope;
         this.baseConfig = config;
@@ -195,6 +197,9 @@ public class JakartaWebSocketCreator implements WebSocketCreator
     @Override
     public String toString()
     {
-        return String.format("JsrCreator[%s%s]", (baseConfig instanceof AnnotatedServerEndpointConfig ? "@" : ""), baseConfig.getEndpointClass().getName());
+        return String.format(
+            "JsrCreator[%s%s]",
+            (baseConfig instanceof AnnotatedServerEndpointConfig ? "@" : ""),
+            baseConfig.getEndpointClass().getName());
     }
 }

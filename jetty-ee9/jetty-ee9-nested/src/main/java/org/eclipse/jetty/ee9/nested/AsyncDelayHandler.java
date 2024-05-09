@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * A handler wrapper that provides the framework to asynchronously
@@ -33,7 +32,8 @@ public class AsyncDelayHandler extends HandlerWrapper
     public static final String AHW_ATTR = "o.e.j.s.h.AsyncHandlerWrapper";
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         if (!isStarted() || _handler == null)
             return;
@@ -141,6 +141,5 @@ public class AsyncDelayHandler extends HandlerWrapper
      */
     protected void endHandling(Request request)
     {
-
     }
 }

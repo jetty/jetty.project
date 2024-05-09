@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.examples;
 
-import java.security.Principal;
-
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.security.Principal;
 
 public class MyAuthedConfigurator extends ServerEndpointConfig.Configurator
 {

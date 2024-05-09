@@ -18,7 +18,6 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.Date;
 import java.util.Set;
-
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -36,14 +35,14 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- *  This goal is used in-situ on a Maven project without first requiring that the project 
+ *  This goal is used in-situ on a Maven project without first requiring that the project
  *  is assembled into a war, saving time during the development cycle.
  *  <p>
  *  The plugin runs a parallel lifecycle to ensure that the "test-compile" phase has been completed before invoking Jetty. This means
  *  that you do not need to explicity execute a "mvn compile" first. It also means that a "mvn clean jetty:run" will ensure that
  *  a full fresh compile is done before invoking Jetty.
  *  <p>
- *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the project and automatically performing a 
+ *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the project and automatically performing a
  *  hot redeploy when necessary. This allows the developer to concentrate on coding changes to the project using their IDE of choice and have those changes
  *  immediately and transparently reflected in the running web container, eliminating development time that is wasted on rebuilding, reassembling and redeploying.
  *  Alternatively, you can configure the plugin to wait for an &lt;enter&gt; at the command line to manually control redeployment.
@@ -51,11 +50,11 @@ import org.eclipse.jetty.util.thread.Scheduler;
  *  You can configure this goal to run your unassembled webapp either in-process with maven, or forked into a new process, or deployed into a
  *  jetty distribution.
  */
-@Mojo (name = "run", requiresDependencyResolution = ResolutionScope.TEST)
-@Execute (phase = LifecyclePhase.TEST_COMPILE)
+@Mojo(name = "run", requiresDependencyResolution = ResolutionScope.TEST)
+@Execute(phase = LifecyclePhase.TEST_COMPILE)
 public class JettyRunMojo extends AbstractUnassembledWebAppMojo
 {
-    //Start of parameters only valid for deploymentType=EMBED  
+    // Start of parameters only valid for deploymentType=EMBED
     /**
      * Controls redeployment of the webapp.
      * <ol>
@@ -77,6 +76,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
      * the mojo is started in: EMBED, FORK, EXTERNAL
      */
     protected JettyEmbedder embedder;
+
     protected JettyForker forker;
     protected JettyHomeForker homeForker;
 
@@ -91,7 +91,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     {
         try
         {
-            //start jetty
+            // start jetty
             embedder = newJettyEmbedder();
             embedder.setExitVm(true);
             embedder.setStopAtShutdown(true);
@@ -111,17 +111,19 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         try
         {
             forker = newJettyForker();
-            forker.setWaitForChild(true); //we run at the command line, echo child output and wait for it
-            //if we can do hot redeploy, tell the forked process to watch for changes to the generated webapp file
+            forker.setWaitForChild(true); // we run at the command line, echo child output and wait for it
+            // if we can do hot redeploy, tell the forked process to watch for changes to the generated webapp file
             if (scan >= 0)
             {
                 forker.setScan(true);
-                forker.setScanInterval((scan == 0 ? 1 : scan)); //if redeploying on ENTER key, the forked process still needs to watch the generated webapp file
+                forker.setScanInterval(
+                    (scan == 0 ? 1 : scan)); // if redeploying on ENTER key, the forked process still needs to watch the
+                // generated webapp file
             }
 
-            //TODO is it ok to start the scanner before we start jetty?
+            // TODO is it ok to start the scanner before we start jetty?
             startScanner();
-            forker.start(); //forks jetty instance 
+            forker.start(); // forks jetty instance
         }
         catch (Exception e)
         {
@@ -135,10 +137,10 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         try
         {
             homeForker = newJettyHomeForker();
-            homeForker.setWaitForChild(true); //we always run at the command line, echo child output and wait for it
-            //TODO is it ok to start the scanner before we start jetty?
+            homeForker.setWaitForChild(true); // we always run at the command line, echo child output and wait for it
+            // TODO is it ok to start the scanner before we start jetty?
             startScanner();
-            homeForker.start(); //forks a jetty distro
+            homeForker.start(); // forks a jetty distro
         }
         catch (Exception e)
         {
@@ -146,24 +148,23 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         }
     }
 
-    private void startScanner()
-        throws Exception
+    private void startScanner() throws Exception
     {
         if (scan < 0)
         {
             getLog().info("Automatic redeployment disabled, see 'mvn jetty:help' for more redeployment options");
-            return; //no automatic or manual redeployment
+            return; // no automatic or manual redeployment
         }
-        
+
         // start scanning for changes, or wait for linefeed on stdin
         if (scan > 0)
         {
             scanner = new Scanner();
             scanner.setScanInterval(scan);
-            scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); //always fully walk directory hierarchies
+            scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); // always fully walk directory hierarchies
             scanner.setReportExistingFilesOnStartup(false);
             scanner.addListener(new Scanner.BulkListener()
-            {   
+            {
                 public void filesChanged(Set<String> changes)
                 {
                     try
@@ -178,8 +179,8 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             });
             configureScanner();
             getLog().info("Scan interval sec = " + scan);
-            
-            //unmanage scheduler so it is not stopped with the scanner
+
+            // unmanage scheduler so it is not stopped with the scanner
             Scheduler scheduler = scanner.getBean(Scheduler.class);
             scanner.unmanage(scheduler);
             LifeCycle.start(scheduler);
@@ -209,8 +210,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         }
     }
 
-    protected void configureScanner()
-        throws MojoExecutionException
+    protected void configureScanner() throws MojoExecutionException
     {
         try
         {
@@ -250,8 +250,8 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             scanner.addFile(jettyWebXmlFile.toPath());
         }
 
-        //make sure each of the war artifacts is added to the scanner
-        for (Artifact a:mavenProjectHelper.getWarPluginInfo().getWarArtifacts())
+        // make sure each of the war artifacts is added to the scanner
+        for (Artifact a : mavenProjectHelper.getWarPluginInfo().getWarArtifacts())
         {
             File f = a.getFile();
             if (a.getFile().isDirectory())
@@ -260,7 +260,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                 scanner.addFile(f.toPath());
         }
 
-        //set up any extra files or dirs to watch
+        // set up any extra files or dirs to watch
         configureScanTargetPatterns(scanner);
 
         scanner.addFile(project.getFile().toPath());
@@ -349,7 +349,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                 if (reconfigure)
                 {
                     getLog().info("Reconfiguring scanner after change to pom.xml ...");
-                    warArtifacts = null; //will be regenerated by configureWebApp
+                    warArtifacts = null; // will be regenerated by configureWebApp
                     if (scanner != null)
                     {
                         scanner.reset();
@@ -372,7 +372,9 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                 if (reconfigure)
                 {
                     getLog().info("Reconfiguring scanner after change to pom.xml ...");
-                    warArtifacts = null; ///TODO if the pom changes for the forked case, how would we get the forked process to stop and restart?
+                    warArtifacts =
+                        null; /// TODO if the pom changes for the forked case, how would we get the forked process
+                    // to stop and restart?
                     if (scanner != null)
                     {
                         scanner.reset();
@@ -380,9 +382,9 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                     }
                 }
                 configureWebApp();
-                //regenerate with new config and restart the webapp
+                // regenerate with new config and restart the webapp
                 forker.redeployWebApp();
-                //restart scanner
+                // restart scanner
                 if (scanner != null)
                     scanner.start();
                 break;
@@ -398,8 +400,9 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                 {
                     getLog().info("Reconfiguring scanner after change to pom.xml ...");
 
-                    warArtifacts = null; //TODO if there are any changes to the pom, then we would have to tell the
-                    //existing forked home process to stop, then rerun the configuration and then refork - too complicated??!
+                    warArtifacts = null; // TODO if there are any changes to the pom, then we would have to tell the
+                    // existing forked home process to stop, then rerun the configuration and then refork - too
+                    // complicated??!
                     if (scanner != null)
                     {
                         scanner.reset();
@@ -407,9 +410,9 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                     }
                 }
                 configureWebApp();
-                //regenerate the webapp and redeploy it
+                // regenerate the webapp and redeploy it
                 homeForker.redeployWebApp();
-                //restart scanner
+                // restart scanner
                 if (scanner != null)
                     scanner.start();
 

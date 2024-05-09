@@ -13,14 +13,6 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.server;
 
-import java.io.IOException;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.function.Function;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -28,6 +20,13 @@ import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.io.IOException;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.function.Function;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
@@ -56,11 +55,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ManagedObject("JSR356 Server Container")
-public class JakartaWebSocketServerContainer extends JakartaWebSocketClientContainer implements jakarta.websocket.server.ServerContainer, LifeCycle.Listener
+public class JakartaWebSocketServerContainer extends JakartaWebSocketClientContainer
+    implements jakarta.websocket.server.ServerContainer, LifeCycle.Listener
 {
     public static final String PATH_PARAM_ATTRIBUTE = "jakarta.websocket.server.pathParams";
 
-    public static final String JAKARTA_WEBSOCKET_CONTAINER_ATTRIBUTE = jakarta.websocket.server.ServerContainer.class.getName();
+    public static final String JAKARTA_WEBSOCKET_CONTAINER_ATTRIBUTE =
+        jakarta.websocket.server.ServerContainer.class.getName();
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketServerContainer.class);
 
     public static JakartaWebSocketServerContainer getContainer(ServletContext servletContext)
@@ -70,7 +71,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
 
     public static JakartaWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
-        ContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Jakarta Websocket");
+        ContextHandler contextHandler =
+            ServletContextHandler.getServletContextHandler(servletContext, "Jakarta Websocket");
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
@@ -86,7 +88,9 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
                 // Find Pre-Existing (Shared?) HttpClient and/or executor
                 HttpClient httpClient = (HttpClient)servletContext.getAttribute(JakartaWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
                 if (httpClient == null)
-                    httpClient = (HttpClient)contextHandler.getServer().getAttribute(JakartaWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
+                    httpClient = (HttpClient)contextHandler
+                        .getServer()
+                        .getAttribute(JakartaWebSocketServletContainerInitializer.HTTPCLIENT_ATTRIBUTE);
 
                 Executor executor = wsComponents.getExecutor();
                 if (httpClient != null && httpClient.getExecutor() == null)
@@ -94,7 +98,9 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
 
                 // create the core client
                 coreClient = new WebSocketCoreClient(httpClient, wsComponents);
-                coreClient.getHttpClient().setName("Jakarta-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
+                coreClient
+                    .getHttpClient()
+                    .setName("Jakarta-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
                 if (executor != null && httpClient == null)
                     coreClient.getHttpClient().setExecutor(executor);
                 servletContext.setAttribute(WebSocketCoreClient.WEBSOCKET_CORECLIENT_ATTRIBUTE, coreClient);
@@ -129,7 +135,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             }
         });
 
-        // Store a reference to the ServerContainer per - jakarta.websocket spec 1.0 final - section 6.4: Programmatic Server Deployment
+        // Store a reference to the ServerContainer per - jakarta.websocket spec 1.0 final - section 6.4: Programmatic
+        // Server Deployment
         servletContext.setAttribute(JAKARTA_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
         return container;
     }
@@ -146,7 +153,10 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
      * @param components the {@link WebSocketComponents} instance to use
      * @param coreClientSupplier the supplier of the {@link WebSocketCoreClient} instance to use
      */
-    JakartaWebSocketServerContainer(WebSocketMappings webSocketMappings, WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientSupplier)
+    JakartaWebSocketServerContainer(
+                                    WebSocketMappings webSocketMappings,
+                                    WebSocketComponents components,
+                                    Function<WebSocketComponents, WebSocketCoreClient> coreClientSupplier)
     {
         super(components, coreClientSupplier);
         this.webSocketMappings = webSocketMappings;
@@ -178,9 +188,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             throw new DeploymentException("Unable to deploy null endpoint class from ServerEndpointConfig: " + config.getClass().getName());
         }
 
-        if (!(jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass)) &&
-            endpointClass.getAnnotation(ServerEndpoint.class) == null &&
-            endpointClass.getAnnotation(ClientEndpoint.class) == null)
+        if (!(jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass)) && endpointClass.getAnnotation(ServerEndpoint.class) == null && endpointClass.getAnnotation(ClientEndpoint.class) == null)
         {
             throw new DeploymentException("Unable to deploy unknown endpoint class: " + endpointClass.getName());
         }
@@ -194,7 +202,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         {
             if (!ReflectUtils.isDefaultConstructable(endpointClass))
             {
-                throw new DeploymentException("Cannot access default constructor for the class: " + endpointClass.getName());
+                throw new DeploymentException(
+                    "Cannot access default constructor for the class: " + endpointClass.getName());
             }
         }
     }
@@ -212,7 +221,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
             if (anno == null)
             {
-                throw new DeploymentException(String.format("Class must be @%s annotated: %s", ServerEndpoint.class.getName(), endpointClass.getName()));
+                throw new DeploymentException(String.format(
+                    "Class must be @%s annotated: %s", ServerEndpoint.class.getName(), endpointClass.getName()));
             }
 
             if (LOG.isDebugEnabled())
@@ -246,8 +256,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
             Class<?> endpointClass = providedConfig.getEndpointClass();
             ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
-            ServerEndpointConfig config = (anno == null) ? providedConfig
-                : new AnnotatedServerEndpointConfig(this, endpointClass, anno, providedConfig);
+            ServerEndpointConfig config = (anno == null) ? providedConfig : new AnnotatedServerEndpointConfig(this, endpointClass, anno, providedConfig);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
@@ -278,13 +287,18 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         }
         catch (Throwable t)
         {
-            throw new DeploymentException("Unable to deploy: " + config.getEndpointClass().getName(), t);
+            throw new DeploymentException(
+                "Unable to deploy: " + config.getEndpointClass().getName(), t);
         }
     }
 
     @Override
-    public void upgradeHttpToWebSocket(Object httpServletRequest, Object httpServletResponse, ServerEndpointConfig sec,
-                                       Map<String, String> pathParameters) throws IOException, DeploymentException
+    public void upgradeHttpToWebSocket(
+                                       Object httpServletRequest,
+                                       Object httpServletResponse,
+                                       ServerEndpointConfig sec,
+                                       Map<String, String> pathParameters)
+        throws IOException, DeploymentException
     {
         HttpServletRequest request = (HttpServletRequest)httpServletRequest;
         HttpServletResponse response = (HttpServletResponse)httpServletResponse;
@@ -295,8 +309,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
         Class<?> endpointClass = sec.getEndpointClass();
         ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
-        ServerEndpointConfig config = (anno == null) ? sec
-            : new AnnotatedServerEndpointConfig(this, endpointClass, anno, sec);
+        ServerEndpointConfig config =
+            (anno == null) ? sec : new AnnotatedServerEndpointConfig(this, endpointClass, anno, sec);
 
         if (LOG.isDebugEnabled())
             LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
@@ -321,7 +335,13 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
             servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
 
-            if (handshaker.upgradeRequest(negotiator, servletContextRequest, servletContextResponse, callback, components, defaultCustomizer))
+            if (handshaker.upgradeRequest(
+                negotiator,
+                servletContextRequest,
+                servletContextResponse,
+                callback,
+                components,
+                defaultCustomizer))
             {
                 callback.block();
             }

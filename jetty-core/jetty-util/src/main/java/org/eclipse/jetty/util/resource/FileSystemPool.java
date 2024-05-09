@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -122,7 +121,10 @@ public class FileSystemPool implements Dumpable
                 fileSystem = Paths.get(jarURIRoot).getFileSystem();
                 if (!fileSystem.isOpen())
                 {
-                    LOG.warn("FileSystem {} of URI {} already exists but is not open (bug JDK-8291712)", fileSystem, uri);
+                    LOG.warn(
+                        "FileSystem {} of URI {} already exists but is not open (bug JDK-8291712)",
+                        fileSystem,
+                        uri);
                 }
                 else
                 {
@@ -132,7 +134,8 @@ public class FileSystemPool implements Dumpable
             }
             catch (ProviderNotFoundException pnfe)
             {
-                throw new IllegalArgumentException("Unable to mount FileSystem from unsupported URI: " + jarURIRoot, pnfe);
+                throw new IllegalArgumentException(
+                    "Unable to mount FileSystem from unsupported URI: " + jarURIRoot, pnfe);
             }
             // use root FS URI so that pool key/release/sweep is sane
             URI rootURI = fileSystem.getPath("/").toUri();
@@ -258,8 +261,7 @@ public class FileSystemPool implements Dumpable
         {
             values = pool.values();
         }
-        Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("buckets", values));
+        Dumpable.dumpObjects(out, indent, this, new DumpableCollection("buckets", values));
     }
 
     @ManagedOperation(value = "Sweep the pool for deleted mount points", impact = "ACTION")
@@ -280,13 +282,13 @@ public class FileSystemPool implements Dumpable
             try (AutoLock ignore = poolLock.lock())
             {
                 // We must check if the FS is still open under the lock as a concurrent thread may have closed it.
-                if (fileSystem.isOpen() &&
-                    !Files.isReadable(bucket.path) ||
-                    !Files.getLastModifiedTime(bucket.path).equals(bucket.lastModifiedTime) ||
-                    Files.size(bucket.path) != bucket.size)
+                if (fileSystem.isOpen() && !Files.isReadable(bucket.path) || !Files.getLastModifiedTime(bucket.path).equals(bucket.lastModifiedTime) || Files.size(bucket.path) != bucket.size)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("File {} backing filesystem {} has been removed or changed, closing it", bucket.path, fileSystem);
+                        LOG.debug(
+                            "File {} backing filesystem {} has been removed or changed, closing it",
+                            bucket.path,
+                            fileSystem);
                     IO.close(fileSystem);
                     pool.remove(fsUri);
                 }
@@ -294,7 +296,10 @@ public class FileSystemPool implements Dumpable
             catch (IOException e)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Cannot read last access time or size of file {} backing filesystem {}", bucket.path, fileSystem);
+                    LOG.debug(
+                        "Cannot read last access time or size of file {} backing filesystem {}",
+                        bucket.path,
+                        fileSystem);
             }
         }
     }

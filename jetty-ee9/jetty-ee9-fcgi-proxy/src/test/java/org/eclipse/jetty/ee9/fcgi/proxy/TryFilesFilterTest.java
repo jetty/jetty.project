@@ -13,12 +13,14 @@
 
 package org.eclipse.jetty.ee9.fcgi.proxy;
 
-import java.util.EnumSet;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.EnumSet;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -31,9 +33,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TryFilesFilterTest
 {
@@ -65,9 +64,9 @@ public class TryFilesFilterTest
 
         ClientConnector clientConnector = new ClientConnector();
         SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client(true);
-//        clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
-//        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-//        clientSslContextFactory.setKeyStorePassword("storepwd");
+        //        clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
+        //        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
+        //        clientSslContextFactory.setKeyStorePassword("storepwd");
         clientConnector.setSslContextFactory(clientSslContextFactory);
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         server.addBean(client);

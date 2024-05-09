@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.function.Function;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -74,9 +73,7 @@ public enum HttpHeaderValue
     }
 
     private static final EnumSet<HttpHeader> __known =
-        EnumSet.of(HttpHeader.CONNECTION,
-            HttpHeader.TRANSFER_ENCODING,
-            HttpHeader.CONTENT_ENCODING);
+        EnumSet.of(HttpHeader.CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.CONTENT_ENCODING);
 
     public static boolean hasKnownValues(HttpHeader header)
     {
@@ -103,12 +100,14 @@ public enum HttpHeaderValue
      * @param unknown The function to call for foound unknown entries. If the function returns false parsing is halted.
      * @return true if parsing completed normally and all found index items returned true from the found function.
      */
-    public static boolean parseCsvIndex(String value, Function<HttpHeaderValue, Boolean> found, Function<String, Boolean> unknown)
+    public static boolean parseCsvIndex(
+                                        String value, Function<HttpHeaderValue, Boolean> found, Function<String, Boolean> unknown)
     {
         if (StringUtil.isBlank(value))
             return true;
         int next = 0;
-        parsing: while (next < value.length())
+        parsing:
+        while (next < value.length())
         {
             // Look for the best fit next token
             HttpHeaderValue token = CACHE.getBest(value, next, value.length() - next);
@@ -118,7 +117,8 @@ public enum HttpHeaderValue
             {
                 // check that it is only followed by whatspace, EOL and/or comma
                 int i = next + token.toString().length();
-                loop: while (true)
+                loop:
+                while (true)
                 {
                     if (i >= value.length())
                         return found.apply(token);

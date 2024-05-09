@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.ee10.session.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
-
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -40,15 +44,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * ReloadedSessionMissingClassTest
  */
-//TODO
+// TODO
 @Testcontainers(disabledWithoutDocker = true)
 @ExtendWith(WorkDirExtension.class)
 public class ReloadedSessionMissingClassTest
@@ -74,16 +73,7 @@ public class ReloadedSessionMissingClassTest
 
         File webXml = new File(webInfDir, "web.xml");
         String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<web-app xmlns=\"http://java.sun.com/xml/ns/j2ee\"\n" +
-                "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-                "         xsi:schemaLocation=\"http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd\"\n" +
-                "         version=\"2.4\">\n" +
-                "\n" +
-                "<session-config>\n" +
-                " <session-timeout>1</session-timeout>\n" +
-                "</session-config>\n" +
-                "</web-app>";
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<web-app xmlns=\"http://java.sun.com/xml/ns/j2ee\"\n" + "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + "         xsi:schemaLocation=\"http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd\"\n" + "         version=\"2.4\">\n" + "\n" + "<session-config>\n" + " <session-timeout>1</session-timeout>\n" + "</session-config>\n" + "</web-app>";
         FileWriter w = new FileWriter(webXml);
         w.write(xml);
         w.close();
@@ -94,15 +84,22 @@ public class ReloadedSessionMissingClassTest
         URL[] foobarUrls = new URL[]{foobarJar.toURI().toURL()};
         URL[] barUrls = new URL[]{foobarNOfooJar.toURI().toURL()};
 
-        URLClassLoader loaderWithFoo = new URLClassLoader(foobarUrls, Thread.currentThread().getContextClassLoader());
-        URLClassLoader loaderWithoutFoo = new URLClassLoader(barUrls, Thread.currentThread().getContextClassLoader());
+        URLClassLoader loaderWithFoo =
+            new URLClassLoader(foobarUrls, Thread.currentThread().getContextClassLoader());
+        URLClassLoader loaderWithoutFoo =
+            new URLClassLoader(barUrls, Thread.currentThread().getContextClassLoader());
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = JdbcTestHelper.newSessionDataStoreFactory(sessionTableName, false);
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        SessionTestSupport server1 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(
+            0,
+            SessionTestSupport.DEFAULT_MAX_INACTIVE,
+            SessionTestSupport.DEFAULT_SCAVENGE_SEC,
+            cacheFactory,
+            storeFactory);
 
         WebAppContext webApp = server1.addWebAppContext(unpackedWarDir.toFile().getCanonicalPath(), contextPath);
         webApp.getSessionHandler().getSessionCache().setRemoveUnloadableSessions(true);
@@ -125,12 +122,12 @@ public class ReloadedSessionMissingClassTest
                 String sessionId = (String)webApp.getServletContext().getAttribute("foo");
                 assertNotNull(sessionId);
 
-                //Stop the webapp
+                // Stop the webapp
                 webApp.stop();
 
                 webApp.setClassLoader(loaderWithoutFoo);
 
-                //restart webapp
+                // restart webapp
                 webApp.start();
 
                 Request request = client.newRequest("http://localhost:" + port1 + contextPath + "/bar?action=get");

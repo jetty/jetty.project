@@ -16,7 +16,6 @@ package org.eclipse.jetty.client.transport;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.ContentDecoder;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.ProtocolHandler;
@@ -252,7 +251,11 @@ public abstract class HttpReceiver
             HttpResponse response = exchange.getResponse();
             HttpFields responseHeaders = response.getHeaders();
             if (LOG.isDebugEnabled())
-                LOG.debug("Response headers {}{}{}", response, System.lineSeparator(), responseHeaders.toString().trim());
+                LOG.debug(
+                    "Response headers {}{}{}",
+                    response,
+                    System.lineSeparator(),
+                    responseHeaders.toString().trim());
 
             // HEAD responses may have Content-Encoding
             // and Content-Length, but have no content.
@@ -344,28 +347,30 @@ public abstract class HttpReceiver
         if (!exchange.responseComplete(null))
             return;
 
-        invoker.run(() ->
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Executing responseSuccess on {}", this);
+        invoker.run(
+            () ->
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Executing responseSuccess on {}", this);
 
-            responseState = ResponseState.IDLE;
+                responseState = ResponseState.IDLE;
 
-            reset();
+                reset();
 
-            HttpResponse response = exchange.getResponse();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Response success {}", response);
-            exchange.getConversation().getResponseListeners().notifySuccess(response);
+                HttpResponse response = exchange.getResponse();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Response success {}", response);
+                exchange.getConversation().getResponseListeners().notifySuccess(response);
 
-            // Interim responses do not terminate the exchange.
-            if (HttpStatus.isInterim(exchange.getResponse().getStatus()))
-                return;
+                // Interim responses do not terminate the exchange.
+                if (HttpStatus.isInterim(exchange.getResponse().getStatus()))
+                    return;
 
-            // Mark atomically the response as terminated, with
-            // respect to concurrency between request and response.
-            terminateResponse(exchange);
-        }, afterSuccessTask);
+                // Mark atomically the response as terminated, with
+                // respect to concurrency between request and response.
+                terminateResponse(exchange);
+            },
+            afterSuccessTask);
     }
 
     /**
@@ -498,12 +503,9 @@ public abstract class HttpReceiver
     @Override
     public String toString()
     {
-        return String.format("%s@%x(ex=%s,rsp=%s,failure=%s)",
-                getClass().getSimpleName(),
-                hashCode(),
-                getHttpExchange(),
-                responseState,
-                failure);
+        return String.format(
+            "%s@%x(ex=%s,rsp=%s,failure=%s)",
+            getClass().getSimpleName(), hashCode(), getHttpExchange(), responseState, failure);
     }
 
     /**
@@ -557,7 +559,11 @@ public abstract class HttpReceiver
         private final Response _response;
         private volatile Content.Chunk _chunk;
 
-        private DecodingContentSource(NotifiableContentSource rawSource, SerializedInvoker invoker, ContentDecoder decoder, Response response)
+        private DecodingContentSource(
+                                      NotifiableContentSource rawSource,
+                                      SerializedInvoker invoker,
+                                      ContentDecoder decoder,
+                                      Response response)
         {
             super(rawSource, invoker);
             _decoder = decoder;
@@ -830,7 +836,8 @@ public abstract class HttpReceiver
         @Override
         public String toString()
         {
-            return String.format("%s@%x{c=%s,d=%s}", getClass().getSimpleName(), hashCode(), chunk(), demandCallbackRef);
+            return String.format(
+                "%s@%x{c=%s,d=%s}", getClass().getSimpleName(), hashCode(), chunk(), demandCallbackRef);
         }
     }
 }

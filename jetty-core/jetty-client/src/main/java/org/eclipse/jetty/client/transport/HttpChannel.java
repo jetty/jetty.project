@@ -151,7 +151,8 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
         getHttpSender().proceed(exchange, failure);
     }
 
-    public void abort(HttpExchange exchange, Throwable requestFailure, Throwable responseFailure, Promise<Boolean> promise)
+    public void abort(
+                      HttpExchange exchange, Throwable requestFailure, Throwable responseFailure, Promise<Boolean> promise)
     {
         Promise.Completable<Boolean> requestPromise = new Promise.Completable<>();
         if (requestFailure != null)
@@ -165,7 +166,8 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
         else
             responsePromise.succeeded(false);
 
-        promise.completeWith(requestPromise.thenCombine(responsePromise, (requestAborted, responseAborted) -> requestAborted || responseAborted));
+        promise.completeWith(requestPromise.thenCombine(
+            responsePromise, (requestAborted, responseAborted) -> requestAborted || responseAborted));
     }
 
     public void abortResponse(HttpExchange exchange, Throwable failure, Promise<Boolean> promise)

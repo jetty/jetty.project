@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.coders;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import jakarta.websocket.DecodeException;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.LongDecoder;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit tests for class {@link LongDecoder}.

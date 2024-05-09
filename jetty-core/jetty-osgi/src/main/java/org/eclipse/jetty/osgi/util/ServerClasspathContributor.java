@@ -14,7 +14,6 @@
 package org.eclipse.jetty.osgi.util;
 
 import java.util.List;
-
 import org.osgi.framework.Bundle;
 
 public interface ServerClasspathContributor
@@ -22,7 +21,7 @@ public interface ServerClasspathContributor
     /**
      * Get bundles that should be on the Server classpath,
      * and should be scanned for annotations/tlds/resources etc
-     * 
+     *
      * @return list of Bundles to be scanned and put on server classpath
      */
     List<Bundle> getScannableBundles();

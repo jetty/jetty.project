@@ -17,7 +17,6 @@ import java.util.EventListener;
 import java.util.EventObject;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
-
 import org.eclipse.jetty.io.EndPoint;
 
 /**

@@ -15,7 +15,6 @@ package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-
 import org.slf4j.LoggerFactory;
 
 /**
@@ -95,5 +94,6 @@ public class SerializedExecutor implements Executor
      * any exceptions thrown when running the task.</p>
      */
     public interface ErrorHandlingTask extends Runnable, Consumer<Throwable>
-    {}
+    {
+    }
 }

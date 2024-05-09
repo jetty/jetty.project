@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.docs.programming;
 
+import static java.lang.System.Logger.Level.INFO;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CompletableTask;
@@ -27,8 +28,6 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
 public class ContentDocs
@@ -284,7 +283,8 @@ public class ContentDocs
         public void manyWrites(Content.Sink sink, ByteBuffer content1, ByteBuffer content2)
         {
             // Initiate a first write.
-            Callback.Completable resultOfWrites = Callback.Completable.with(callback1 -> sink.write(false, content1, callback1))
+            Callback.Completable resultOfWrites = Callback.Completable.with(
+                callback1 -> sink.write(false, content1, callback1))
                 // Chain a second write only when the first is complete.
                 .compose(callback2 -> sink.write(true, content2, callback2));
 

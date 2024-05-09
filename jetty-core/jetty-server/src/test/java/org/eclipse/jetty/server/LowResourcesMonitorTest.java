@@ -13,13 +13,20 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.InputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
-
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.TimerScheduler;
@@ -28,14 +35,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // TODO these tests take too long
 public class LowResourcesMonitorTest
@@ -165,7 +164,8 @@ public class LowResourcesMonitorTest
     @Test
     public void testLowOnMemory() throws Exception
     {
-        _lowResourcesMonitor.setMaxMemory(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() + (100 * 1024 * 1024));
+        _lowResourcesMonitor.setMaxMemory(
+            Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() + (100 * 1024 * 1024));
         Thread.sleep(1200);
         assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());
 

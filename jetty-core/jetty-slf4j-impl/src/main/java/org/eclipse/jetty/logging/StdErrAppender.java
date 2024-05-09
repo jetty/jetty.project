@@ -16,7 +16,6 @@ package org.eclipse.jetty.logging;
 import java.io.PrintStream;
 import java.util.Objects;
 import java.util.TimeZone;
-
 import org.slf4j.event.Level;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
@@ -27,6 +26,7 @@ public class StdErrAppender implements JettyAppender
      * Configuration keys specific to the StdErrAppender
      */
     static final String NAME_CONDENSE_KEY = "org.eclipse.jetty.logging.appender.NAME_CONDENSE";
+
     static final String MESSAGE_ALIGN_KEY = "org.eclipse.jetty.logging.appender.MESSAGE_ALIGN";
     static final String MESSAGE_ESCAPE_KEY = "org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE";
     static final String ZONEID_KEY = "org.eclipse.jetty.logging.appender.ZONE_ID";
@@ -87,7 +87,14 @@ public class StdErrAppender implements JettyAppender
     }
 
     @Override
-    public void emit(JettyLogger logger, Level level, long timestamp, String threadName, Throwable throwable, String message, Object... argumentArray)
+    public void emit(
+                     JettyLogger logger,
+                     Level level,
+                     long timestamp,
+                     String threadName,
+                     Throwable throwable,
+                     String message,
+                     Object... argumentArray)
     {
         StringBuilder builder = new StringBuilder(64);
         format(builder, logger, level, timestamp, threadName, throwable, message, argumentArray);
@@ -126,7 +133,15 @@ public class StdErrAppender implements JettyAppender
         this.stream = stream;
     }
 
-    private void format(StringBuilder builder, JettyLogger logger, Level level, long timestamp, String threadName, Throwable throwable, String message, Object... argumentArray)
+    private void format(
+                        StringBuilder builder,
+                        JettyLogger logger,
+                        Level level,
+                        long timestamp,
+                        String threadName,
+                        Throwable throwable,
+                        String message,
+                        Object... argumentArray)
     {
         Throwable cause = throwable;
 
@@ -184,7 +199,7 @@ public class StdErrAppender implements JettyAppender
     {
         switch (level)
         {
-            case ERROR:  // New for Jetty 10+
+            case ERROR: // New for Jetty 10+
                 return "ERROR";
             case WARN:
                 return "WARN ";

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -27,14 +26,14 @@ import org.slf4j.LoggerFactory;
  * Each Session has a timer associated with it that fires whenever it has
  * been idle (ie not accessed by a request) for a configurable amount of
  * time, or the Session expires.
- * 
+ *
  * The timer is only scheduled when all Requests have exited the Session.
  * If a request enters a Session whose timer is active, it is cancelled.
  */
 public class SessionInactivityTimer
-{    
+{
     private static final Logger LOG = LoggerFactory.getLogger(SessionInactivityTimer.class);
-    
+
     private final SessionManager _sessionManager;
     private final Scheduler _scheduler;
     private final CyclicTimeout _timer;
@@ -58,27 +57,26 @@ public class SessionInactivityTimer
                 if (LOG.isDebugEnabled())
                     LOG.debug("Timer expired for session {}", _session.getId());
                 long now = System.currentTimeMillis();
-                
+
                 try (AutoLock lock = _session.lock())
                 {
                     if (_session.getRequests() > 0)
-                        return; //session can't expire or be idle if there is a request in it
+                        return; // session can't expire or be idle if there is a request in it
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("Inspecting session {}, valid={}", _session.getId(), _session.isValid());
 
                     if (!_session.isValid())
-                        return; //do nothing, session is no longer valid
+                        return; // do nothing, session is no longer valid
 
                     SessionInactivityTimer.this._sessionManager.sessionTimerExpired(_session, now);
 
-                    //TODO is this still needed? If we cancel the timer when a Request arrives
-                    //check what happened to the session: if it didn't get evicted and
-                    //it hasn't expired, we need to reset the timer
-                    if (_session.isResident() && _session.getRequests() <= 0 && _session.isValid() &&
-                        !_session.isExpiredAt(now))
+                    // TODO is this still needed? If we cancel the timer when a Request arrives
+                    // check what happened to the session: if it didn't get evicted and
+                    // it hasn't expired, we need to reset the timer
+                    if (_session.isResident() && _session.getRequests() <= 0 && _session.isValid() && !_session.isExpiredAt(now))
                     {
-                        //session wasn't expired or evicted, we need to reset the timer
+                        // session wasn't expired or evicted, we need to reset the timer
                         SessionInactivityTimer.this.schedule(_session.calculateInactivityTimeout(now));
                     }
                 }

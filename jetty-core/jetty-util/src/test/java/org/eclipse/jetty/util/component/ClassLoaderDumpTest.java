@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.util.component;
 
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
-
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import org.junit.jupiter.api.Test;
 
 public class ClassLoaderDumpTest
 {
@@ -58,7 +57,9 @@ public class ClassLoaderDumpTest
         assertThat(dump, containsString("packages size="));
         assertThat(dump, containsString("|  +> package org.eclipse.jetty.util"));
         if (ClassLoaderDump.class.getClassLoader().getParent() != null)
-            assertThat(dump, containsString("+> parent: " + ClassLoaderDump.class.getClassLoader().getParent()));
+            assertThat(
+                dump,
+                containsString("+> parent: " + ClassLoaderDump.class.getClassLoader().getParent()));
     }
 
     @Test
@@ -165,24 +166,27 @@ public class ClassLoaderDumpTest
     public void testUrlClassLoaders() throws Exception
     {
         ContainerLifeCycle bean = new ContainerLifeCycle();
-        ClassLoader middleLoader = new URLClassLoader(new URL[]
-            {new URL("file:/one"), new URL("file:/two"), new URL("file:/three")},
-            ContainerLifeCycle.class.getClassLoader())
-        {
-            public String toString()
+        ClassLoader middleLoader =
+            new URLClassLoader(
+                new URL[]
+                {new URL("file:/one"), new URL("file:/two"), new URL("file:/three")},
+                ContainerLifeCycle.class.getClassLoader())
             {
-                return "MiddleLoader";
-            }
-        };
-        ClassLoader loader = new URLClassLoader(new URL[]
-            {new URL("file:/ONE"), new URL("file:/TWO"), new URL("file:/THREE")},
-            middleLoader)
-        {
-            public String toString()
+                public String toString()
+                {
+                    return "MiddleLoader";
+                }
+            };
+        ClassLoader loader =
+            new URLClassLoader(
+                new URL[]
+                {new URL("file:/ONE"), new URL("file:/TWO"), new URL("file:/THREE")}, middleLoader)
             {
-                return "TopLoader";
-            }
-        };
+                public String toString()
+                {
+                    return "TopLoader";
+                }
+            };
 
         bean.addBean(new ClassLoaderDump(loader));
         bean.addBean(ContainerLifeCycle.class.getClassLoader());

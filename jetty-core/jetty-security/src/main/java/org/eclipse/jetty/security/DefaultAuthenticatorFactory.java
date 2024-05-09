@@ -14,7 +14,6 @@
 package org.eclipse.jetty.security;
 
 import java.util.Collection;
-
 import org.eclipse.jetty.security.Authenticator.Configuration;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
@@ -70,8 +69,10 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         {
             Collection<SslContextFactory> sslContextFactories = server.getBeans(SslContextFactory.class);
             if (sslContextFactories.size() != 1)
-                throw new IllegalStateException("SslClientCertAuthenticator requires a single SslContextFactory instances.");
-            authenticator = new SslClientCertAuthenticator(sslContextFactories.iterator().next());
+                throw new IllegalStateException(
+                    "SslClientCertAuthenticator requires a single SslContextFactory instances.");
+            authenticator = new SslClientCertAuthenticator(
+                sslContextFactories.iterator().next());
         }
 
         return authenticator;

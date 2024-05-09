@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,7 +34,6 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -40,12 +45,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class ScannerTest
@@ -193,7 +192,7 @@ public class ScannerTest
         scanner.stop();
         scanner.reset();
 
-        //Depth one should report the dir itself and its file and dir direct children
+        // Depth one should report the dir itself and its file and dir direct children
         scanner.setScanDepth(1);
         scanner.addDirectory(root.toPath());
         scanner.start();
@@ -202,7 +201,7 @@ public class ScannerTest
         scanner.stop();
         scanner.reset();
 
-        //Depth 2 should report the dir itself, all file children, xxx and xxx's children
+        // Depth 2 should report the dir itself, all file children, xxx and xxx's children
         scanner.setScanDepth(2);
         scanner.addDirectory(root.toPath());
         scanner.start();
@@ -214,7 +213,7 @@ public class ScannerTest
     @Test
     public void testPatterns() throws Exception
     {
-        //test include and exclude patterns
+        // test include and exclude patterns
         File root = new File(_directory.toFile(), "proot");
         FS.ensureDirExists(root);
 
@@ -237,13 +236,13 @@ public class ScannerTest
         FS.touch(y2);
 
         BlockingQueue<Event> queue = new LinkedBlockingQueue<>();
-        //only scan the *.txt files for changes
+        // only scan the *.txt files for changes
         Scanner scanner = new Scanner();
         IncludeExcludeSet<PathMatcher, Path> pattern = scanner.addDirectory(root.toPath());
         pattern.exclude(root.toPath().getFileSystem().getPathMatcher("glob:**/*.foo"));
         pattern.exclude(root.toPath().getFileSystem().getPathMatcher("glob:**/ttt.xxx"));
         scanner.setScanInterval(0);
-        scanner.setScanDepth(2); //should never see any files from subdir yyy
+        scanner.setScanDepth(2); // should never see any files from subdir yyy
         scanner.setReportDirs(false);
         scanner.setReportExistingFilesOnStartup(false);
         scanner.addListener(new Scanner.DiscreteListener()
@@ -276,7 +275,7 @@ public class ScannerTest
         FS.touch(x1);
         FS.touch(y2);
         scanner.scan();
-        scanner.scan(); //2 scans for file to be considered settled
+        scanner.scan(); // 2 scans for file to be considered settled
 
         List<Event> results = new ArrayList<>();
         queue.drainTo(results);
@@ -369,7 +368,7 @@ public class ScannerTest
         delete("a1");
         delete("a2");
 
-        //Immediate notification of deletes.
+        // Immediate notification of deletes.
         _scanner.scan();
         a1 = new Event(_directory.resolve("a1").toString(), Notification.REMOVED);
         Event a2 = new Event(_directory.resolve("a2").toString(), Notification.REMOVED);
@@ -388,7 +387,7 @@ public class ScannerTest
         assertNull(event);
         assertTrue(_queue.isEmpty());
 
-        //Now a2 is reported as ADDED.
+        // Now a2 is reported as ADDED.
         _scanner.scan();
         event = _queue.poll();
         assertNotNull(event);

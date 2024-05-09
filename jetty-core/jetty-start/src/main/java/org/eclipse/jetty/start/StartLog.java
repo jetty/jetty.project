@@ -20,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Date;
-
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 
 /**
@@ -158,17 +157,22 @@ public class StartLog
                 if (!FS.exists(startLog) && !FS.createNewFile(startLog))
                 {
                     // Output about error is lost in majority of cases.
-                    throw new UsageException(UsageException.ERR_LOGGING, new IOException("Unable to create: " + startLog.toAbsolutePath()));
+                    throw new UsageException(
+                        UsageException.ERR_LOGGING,
+                        new IOException("Unable to create: " + startLog.toAbsolutePath()));
                 }
 
                 if (!FS.canWrite(startLog))
                 {
                     // Output about error is lost in majority of cases.
-                    throw new UsageException(UsageException.ERR_LOGGING, new IOException("Unable to write to: " + startLog.toAbsolutePath()));
+                    throw new UsageException(
+                        UsageException.ERR_LOGGING,
+                        new IOException("Unable to write to: " + startLog.toAbsolutePath()));
                 }
 
                 err.println("StartLog to " + logfile);
-                OutputStream fileout = Files.newOutputStream(startLog, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                OutputStream fileout =
+                    Files.newOutputStream(startLog, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                 PrintStream logger = new PrintStream(fileout, true);
                 out = logger;
                 err = logger;

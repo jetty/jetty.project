@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -21,7 +26,6 @@ import java.util.List;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -34,11 +38,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SecuredRedirectHandlerCodeTest
 {
@@ -74,7 +73,10 @@ public class SecuredRedirectHandlerCodeTest
             connection.setInstanceFollowRedirects(false);
             connection.setAllowUserInteraction(false);
             assertThat("response code", connection.getResponseCode(), is(302));
-            assertThat("location header", connection.getHeaderField("Location"), is(serverHttpsUri.resolve("/").toASCIIString()));
+            assertThat(
+                "location header",
+                connection.getHeaderField("Location"),
+                is(serverHttpsUri.resolve("/").toASCIIString()));
             connection.disconnect();
         }
         finally
@@ -95,7 +97,10 @@ public class SecuredRedirectHandlerCodeTest
             connection.setInstanceFollowRedirects(false);
             connection.setAllowUserInteraction(false);
             assertThat("response code", connection.getResponseCode(), is(301));
-            assertThat("location header", connection.getHeaderField("Location"), is(serverHttpsUri.resolve("/").toASCIIString()));
+            assertThat(
+                "location header",
+                connection.getHeaderField("Location"),
+                is(serverHttpsUri.resolve("/").toASCIIString()));
             connection.disconnect();
         }
         finally
@@ -130,7 +135,8 @@ public class SecuredRedirectHandlerCodeTest
         HttpConfiguration httpsConf = new HttpConfiguration(httpConf);
         httpsConf.addCustomizer(new SecureRequestCustomizer());
 
-        ServerConnector httpsConnector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(httpsConf));
+        ServerConnector httpsConnector = new ServerConnector(
+            server, new SslConnectionFactory(sslContextFactory, "http/1.1"), new HttpConnectionFactory(httpsConf));
         httpsConnector.setName("secured");
         httpsConnector.setPort(securePort);
 
@@ -166,7 +172,8 @@ public class SecuredRedirectHandlerCodeTest
         origSsf = HttpsURLConnection.getDefaultSSLSocketFactory();
 
         HttpsURLConnection.setDefaultHostnameVerifier(new AllowAllVerifier());
-        HttpsURLConnection.setDefaultSSLSocketFactory(sslContextFactory.getSslContext().getSocketFactory());
+        HttpsURLConnection.setDefaultSSLSocketFactory(
+            sslContextFactory.getSslContext().getSocketFactory());
     }
 
     private void stopServer() throws Exception

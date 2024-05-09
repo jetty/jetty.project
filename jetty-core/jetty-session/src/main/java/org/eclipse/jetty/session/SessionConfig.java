@@ -26,6 +26,7 @@ public interface SessionConfig
      * <code>org.eclipse.jetty.session.SessionCookie</code> context init parameter.
      */
     String __SessionCookieProperty = "org.eclipse.jetty.session.SessionCookie";
+
     String __DefaultSessionCookie = "JSESSIONID";
     /**
      * Session id path parameter name.
@@ -35,6 +36,7 @@ public interface SessionConfig
      * no URL rewriting will be done.
      */
     String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.session.SessionIdPathParameterName";
+
     String __DefaultSessionIdPathParameterName = "jsessionid";
     String __CheckRemoteSessionEncodingProperty = "org.eclipse.jetty.session.CheckingRemoteSessionIdEncoding";
     /**
@@ -44,6 +46,7 @@ public interface SessionConfig
      * no domain is specified for the session cookie.
      */
     String __SessionDomainProperty = "org.eclipse.jetty.session.SessionDomain";
+
     String __DefaultSessionDomain = null;
     /**
      * Session Path.

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;

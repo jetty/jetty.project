@@ -178,5 +178,3 @@ public class JuliLog implements org.apache.juli.logging.Log
             _logger.warn("{}", message, t);
     }
 }
-
-

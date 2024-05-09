@@ -47,7 +47,7 @@ public class TestableSessionDataStore extends AbstractSessionDataStore
     {
         super.initialize(context);
     }
-    
+
     @Override
     public boolean isPassivating()
     {
@@ -66,7 +66,8 @@ public class TestableSessionDataStore extends AbstractSessionDataStore
         SessionData sd = _map.get(id);
         if (sd == null)
             return null;
-        SessionData nsd = new SessionData(id, "", "", System.currentTimeMillis(), System.currentTimeMillis(), System.currentTimeMillis(), 0);
+        SessionData nsd = new SessionData(
+            id, "", "", System.currentTimeMillis(), System.currentTimeMillis(), System.currentTimeMillis(), 0);
         nsd.copy(sd);
         return nsd;
     }
@@ -101,9 +102,9 @@ public class TestableSessionDataStore extends AbstractSessionDataStore
     @Override
     public Set<String> doGetExpired(long timeLimit)
     {
-        Set<String> set =  new HashSet<>();
-        
-        for (SessionData d:_map.values())
+        Set<String> set = new HashSet<>();
+
+        for (SessionData d : _map.values())
         {
             if (d.getExpiry() > 0 && d.getExpiry() <= timeLimit)
                 set.add(d.getId());
@@ -114,6 +115,6 @@ public class TestableSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doCleanOrphans(long timeLimit)
     {
-        //noop
+        // noop
     }
 }

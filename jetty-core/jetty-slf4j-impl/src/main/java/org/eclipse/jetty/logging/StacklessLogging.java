@@ -16,7 +16,6 @@ package org.eclipse.jetty.logging;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
-
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +50,8 @@ public class StacklessLogging implements AutoCloseable
         }
         else
         {
-            LOG.warn("Unable to squelch stacktraces ({} is not a {})",
+            LOG.warn(
+                "Unable to squelch stacktraces ({} is not a {})",
                 activeLoggerFactory.getClass().getName(),
                 JettyLoggerFactory.class.getName());
         }
@@ -62,24 +62,17 @@ public class StacklessLogging implements AutoCloseable
 
     public StacklessLogging(Class<?>... classesToSquelch)
     {
-        this(Stream.of(classesToSquelch)
-            .map(Class::getName)
-            .toArray(String[]::new));
+        this(Stream.of(classesToSquelch).map(Class::getName).toArray(String[]::new));
     }
 
     public StacklessLogging(Package... packagesToSquelch)
     {
-        this(Stream.of(packagesToSquelch)
-            .map(Package::getName)
-            .toArray(String[]::new));
+        this(Stream.of(packagesToSquelch).map(Package::getName).toArray(String[]::new));
     }
 
     public StacklessLogging(String... loggerNames)
     {
-        this(Stream.of(loggerNames)
-            .map(loggerFactory::getJettyLogger)
-            .toArray(Logger[]::new)
-        );
+        this(Stream.of(loggerNames).map(loggerFactory::getJettyLogger).toArray(Logger[]::new));
     }
 
     public StacklessLogging(Logger... logs)

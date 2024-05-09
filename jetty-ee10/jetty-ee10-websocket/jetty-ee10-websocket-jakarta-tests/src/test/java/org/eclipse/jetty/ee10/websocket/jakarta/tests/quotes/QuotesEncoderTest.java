@@ -13,12 +13,7 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.quotes;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
@@ -31,6 +26,12 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSEventTracker;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -39,8 +40,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class QuotesEncoderTest
 {

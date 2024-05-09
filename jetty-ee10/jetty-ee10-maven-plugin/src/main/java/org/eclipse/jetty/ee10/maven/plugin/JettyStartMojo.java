@@ -14,16 +14,14 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Execute;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  *  <p>
- *  This goal is similar to the jetty:run goal in that it it starts jetty on an unassembled webapp, 
+ *  This goal is similar to the jetty:run goal in that it it starts jetty on an unassembled webapp,
  *  EXCEPT that it is designed to be bound to an execution inside your pom. Thus, this goal does NOT
- *  run a parallel build cycle, so you must be careful to ensure that you bind it to a phase in 
+ *  run a parallel build cycle, so you must be careful to ensure that you bind it to a phase in
  *  which all necessary generated files and classes for the webapp have been created.
  *  </p>
  * <p>
@@ -47,7 +45,7 @@ public class JettyStartMojo extends AbstractUnassembledWebAppMojo
     {
         try
         {
-            JettyEmbedder jetty = newJettyEmbedder();        
+            JettyEmbedder jetty = newJettyEmbedder();
             jetty.setExitVm(false);
             jetty.setStopAtShutdown(false);
             jetty.start();
@@ -68,11 +66,11 @@ public class JettyStartMojo extends AbstractUnassembledWebAppMojo
         try
         {
             JettyForker jetty = newJettyForker();
-            jetty.setWaitForChild(false); //we never wait for child to finish
+            jetty.setWaitForChild(false); // we never wait for child to finish
             jetty.setMaxChildStartChecks(maxChildStartChecks);
             jetty.setMaxChildStartCheckMs(maxChildStartCheckMs);
             jetty.setJettyOutputFile(getJettyOutputFile("jetty-start.out"));
-            jetty.start(); //forks jetty instance
+            jetty.start(); // forks jetty instance
         }
         catch (Exception e)
         {
@@ -90,11 +88,11 @@ public class JettyStartMojo extends AbstractUnassembledWebAppMojo
         try
         {
             JettyHomeForker jetty = newJettyHomeForker();
-            jetty.setWaitForChild(false); //never wait for child to finish
+            jetty.setWaitForChild(false); // never wait for child to finish
             jetty.setMaxChildStartChecks(maxChildStartChecks);
             jetty.setMaxChildStartCheckMs(maxChildStartCheckMs);
             jetty.setJettyOutputFile(getJettyOutputFile("jetty-start.out"));
-            jetty.start(); //forks a jetty home
+            jetty.start(); // forks a jetty home
         }
         catch (Exception e)
         {

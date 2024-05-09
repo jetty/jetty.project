@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.qpack.internal.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http.compression.NBitStringDecoder;

@@ -22,7 +22,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
@@ -84,7 +83,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this(httpConfiguration, "h2");
     }
 
-    protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
+    protected AbstractHTTP2ServerConnectionFactory(
+                                                   @Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
         super(protocols);
         for (String p : protocols)
@@ -302,14 +302,16 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     {
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
-        Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxHeaderBlockFragment());
+        Generator generator = new Generator(
+            connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
 
         ServerParser parser = newServerParser(connector, getRateControlFactory().newRateControl(endPoint));
         parser.setMaxFrameSize(getMaxFrameSize());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 
-        HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, parser, generator, listener, flowControl);
+        HTTP2ServerSession session =
+            new HTTP2ServerSession(connector.getScheduler(), endPoint, parser, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
         session.setMaxRemoteStreams(getMaxConcurrentStreams());
         session.setMaxEncoderTableCapacity(getMaxEncoderTableCapacity());
@@ -325,8 +327,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
         session.setConnectProtocolEnabled(isConnectProtocolEnabled());
 
-        HTTP2Connection connection = new HTTP2ServerConnection(connector,
-            endPoint, httpConfiguration, session, getInputBufferSize(), listener);
+        HTTP2Connection connection = new HTTP2ServerConnection(
+            connector, endPoint, httpConfiguration, session, getInputBufferSize(), listener);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         connection.addEventListener(sessionContainer);
@@ -339,7 +341,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     private ServerParser newServerParser(Connector connector, RateControl rateControl)
     {
-        return new ServerParser(connector.getByteBufferPool(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
+        return new ServerParser(
+            connector.getByteBufferPool(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
     }
 
     @ManagedObject("The container of HTTP/2 sessions")

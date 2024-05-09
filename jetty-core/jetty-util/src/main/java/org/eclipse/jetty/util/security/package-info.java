@@ -15,4 +15,3 @@
  * Jetty Util : Common Security Utilities
  */
 package org.eclipse.jetty.util.security;
-

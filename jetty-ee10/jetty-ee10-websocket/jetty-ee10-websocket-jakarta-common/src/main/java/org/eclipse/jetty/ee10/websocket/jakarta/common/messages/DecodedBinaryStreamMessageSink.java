@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common.messages;
 
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.DecodeException;
+import jakarta.websocket.Decoder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.List;
-
-import jakarta.websocket.CloseReason;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.Decoder;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -31,7 +30,8 @@ import org.eclipse.jetty.websocket.core.messages.MessageSink;
 
 public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSink.Stream<Decoder.BinaryStream<T>>
 {
-    public DecodedBinaryStreamMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
+    public DecodedBinaryStreamMessageSink(
+                                          CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
     {
         super(session, methodHandle, decoders);
     }
@@ -40,7 +40,10 @@ public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSin
     MessageSink newMessageSink(CoreSession coreSession) throws Exception
     {
         MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
-            .findVirtual(DecodedBinaryStreamMessageSink.class, "onStreamStart", MethodType.methodType(void.class, InputStream.class))
+            .findVirtual(
+                DecodedBinaryStreamMessageSink.class,
+                "onStreamStart",
+                MethodType.methodType(void.class, InputStream.class))
             .bindTo(this);
         return new InputStreamMessageSink(coreSession, methodHandle, true);
     }

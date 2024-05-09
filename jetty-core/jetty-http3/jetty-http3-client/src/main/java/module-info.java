@@ -14,7 +14,6 @@
 module org.eclipse.jetty.http3.client
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.http3.common;
     requires transitive org.eclipse.jetty.http3.qpack;
     requires transitive org.eclipse.jetty.io;

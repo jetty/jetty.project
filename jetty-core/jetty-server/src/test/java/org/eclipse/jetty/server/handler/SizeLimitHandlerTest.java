@@ -13,13 +13,20 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
@@ -39,14 +46,6 @@ import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class SizeLimitHandlerTest
 {
@@ -87,8 +86,7 @@ public class SizeLimitHandlerTest
             }
         });
         _server.start();
-        HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
         assertThat(response.getContent(), containsString("Hello World"));
     }
@@ -108,8 +106,7 @@ public class SizeLimitHandlerTest
             }
         });
         _server.start();
-        HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(500));
         assertThat(response.getContent(), containsString("8193&gt;8192"));
     }
@@ -127,8 +124,7 @@ public class SizeLimitHandlerTest
             }
         });
         _server.start();
-        HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(500));
         assertThat(response.getContent(), containsString("8193&gt;8192"));
     }
@@ -169,8 +165,7 @@ public class SizeLimitHandlerTest
             }
         });
         _server.start();
-        HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
         assertTrue(error.get());
 
@@ -188,7 +183,7 @@ public class SizeLimitHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                String content =  IO.toString(Content.Source.asInputStream(request));
+                String content = IO.toString(Content.Source.asInputStream(request));
                 PrintWriter out = new PrintWriter(Content.Sink.asOutputStream(response));
                 out.println("OK " + content.length());
                 out.close();
@@ -198,12 +193,13 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
-                POST /ctx/hello HTTP/1.0\r
-                Content-Length: 8\r
-                \r
-                123456\r
-                """));
+            _local.getResponse(
+                """
+                    POST /ctx/hello HTTP/1.0\r
+                    Content-Length: 8\r
+                    \r
+                    123456\r
+                    """));
         assertThat(response.getStatus(), equalTo(200));
         assertThat(response.getContent(), containsString("OK 8"));
     }
@@ -216,7 +212,7 @@ public class SizeLimitHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                String content =  IO.toString(Content.Source.asInputStream(request));
+                String content = IO.toString(Content.Source.asInputStream(request));
                 PrintWriter out = new PrintWriter(Content.Sink.asOutputStream(response));
                 out.println("OK " + content.length());
                 return true;
@@ -224,11 +220,12 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
-                POST /ctx/hello HTTP/1.0\r
-                Content-Length: 32768\r
-                \r
-                123456..."""));
+            _local.getResponse(
+                """
+                    POST /ctx/hello HTTP/1.0\r
+                    Content-Length: 32768\r
+                    \r
+                    123456..."""));
         assertThat(response.getStatus(), equalTo(413));
         assertThat(response.getContent(), containsString("32768&gt;8192"));
     }
@@ -241,7 +238,7 @@ public class SizeLimitHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                String content =  IO.toString(Content.Source.asInputStream(request));
+                String content = IO.toString(Content.Source.asInputStream(request));
                 PrintWriter out = new PrintWriter(Content.Sink.asOutputStream(response));
                 out.println("OK " + content.length());
                 return true;
@@ -290,8 +287,8 @@ public class SizeLimitHandlerTest
 
         for (int i = 0; i < 1000; i++)
         {
-            HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            HttpTester.Response response =
+                HttpTester.parseResponse(_local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
             assertThat(response.getStatus(), equalTo(200));
             assertThat(response.getContent(), equalTo(message));
         }

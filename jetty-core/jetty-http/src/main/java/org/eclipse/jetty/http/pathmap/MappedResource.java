@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http.pathmap;
 
 import java.util.Map;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 

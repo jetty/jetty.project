@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.util.Attributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,13 +80,12 @@ public interface ComplianceViolation
         Set<? extends ComplianceViolation> getAllowed();
     }
 
-    record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
-    {
+    record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details) {
         @Override
         public String toString()
         {
-            return String.format("%s (see %s) in mode %s for %s",
-                violation.getDescription(), violation.getURL(), mode, details);
+            return String.format(
+                "%s (see %s) in mode %s for %s", violation.getDescription(), violation.getURL(), mode, details);
         }
     }
 
@@ -96,7 +94,9 @@ public interface ComplianceViolation
      */
     interface Listener
     {
-        Listener NOOP = new Listener() {};
+        Listener NOOP = new Listener()
+        {
+        };
 
         /**
          * Initialize the listener in preparation for a new request life cycle.

@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.HandlerCollection;
 import org.eclipse.jetty.http.HttpTester;
@@ -29,10 +32,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class HandlerCollectionTest
 {
@@ -65,7 +64,8 @@ public class HandlerCollectionTest
         ServletHolder ee9ServletHolder = new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 resp.setCharacterEncoding("utf-8");
                 resp.setContentType("text/plain");
@@ -83,12 +83,13 @@ public class HandlerCollectionTest
 
         startServer(coreContextHandlerCollection);
 
-        String rawRequest = """
-            GET /test/info HTTP/1.1
-            Host: local
-            Connection: close
-            
-            """;
+        String rawRequest =
+            """
+                GET /test/info HTTP/1.1
+                Host: local
+                Connection: close
+
+                """;
         HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
         assertThat("response content", response.getContent(), containsString("Got GET Request"));

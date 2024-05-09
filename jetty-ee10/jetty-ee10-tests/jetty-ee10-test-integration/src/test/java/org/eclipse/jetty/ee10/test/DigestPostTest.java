@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.ee10.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -26,10 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
@@ -60,24 +63,13 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class DigestPostTest
 {
     private static final String NC = "00000001";
 
     public static final String __message =
-        "0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 \n" +
-            "9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 \n" +
-            "1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 \n" +
-            "0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 \n" +
-            "abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz \n" +
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ ABCDEFGHIJKLMNOPQRSTUVWXYZ ABCDEFGHIJKLMNOPQRSTUVWXYZ \n" +
-            "Now is the time for all good men to come to the aid of the party.\n" +
-            "How now brown cow.\n" +
-            "The quick brown fox jumped over the lazy dog.\n";
+        "0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 \n" + "9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 \n" + "1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 \n" + "0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 \n" + "abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz \n" +
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ ABCDEFGHIJKLMNOPQRSTUVWXYZ ABCDEFGHIJKLMNOPQRSTUVWXYZ \n" + "Now is the time for all good men to come to the aid of the party.\n" + "How now brown cow.\n" + "The quick brown fox jumped over the lazy dog.\n";
 
     public static volatile String _received = null;
     private static Server _server;
@@ -97,7 +89,9 @@ public class DigestPostTest
             UserPrincipal userPrincipal = new UserPrincipal(username, credential);
             users.put(username, userPrincipal);
             if (rolenames != null)
-                roles.put(username, Arrays.stream(rolenames).map(RolePrincipal::new).collect(Collectors.toList()));
+                roles.put(
+                    username,
+                    Arrays.stream(rolenames).map(RolePrincipal::new).collect(Collectors.toList()));
         }
 
         @Override
@@ -133,10 +127,8 @@ public class DigestPostTest
             security.setAuthenticator(new DigestAuthenticator());
             security.setLoginService(realm);
 
-            Constraint constraint = new Constraint.Builder()
-                .name("SecureTest")
-                .roles("test")
-                .build();
+            Constraint constraint =
+                new Constraint.Builder().name("SecureTest").roles("test").build();
             ConstraintMapping mapping = new ConstraintMapping();
             mapping.setConstraint(constraint);
             mapping.setPathSpec("/*");
@@ -166,11 +158,9 @@ public class DigestPostTest
         byte[] bytes = __message.getBytes(StandardCharsets.UTF_8);
 
         _received = null;
-        socket.getOutputStream().write(
-            ("POST /test/ HTTP/1.0\r\n" +
-                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                "Content-Length: " + bytes.length + "\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+        socket.getOutputStream()
+            .write(("POST /test/ HTTP/1.0\r\n" + "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" + "Content-Length: " + bytes.length + "\r\n" + "\r\n")
+                .getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -182,21 +172,17 @@ public class DigestPostTest
         int n = result.indexOf("nonce=");
         String nonce = result.substring(n + 7, result.indexOf('"', n + 7));
         MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] b = md.digest(String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())).getBytes(StandardCharsets.ISO_8859_1));
+        byte[] b = md.digest(
+            String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())).getBytes(StandardCharsets.ISO_8859_1));
         String cnonce = encode(b);
-        String digest = "Digest username=\"testuser\" realm=\"test\" nonce=\"" + nonce + "\" uri=\"/test/\" algorithm=MD5 response=\"" +
-            newResponse("POST", "/test/", cnonce, "testuser", "test", "password", nonce, "auth") +
-            "\" qop=auth nc=" + NC + " cnonce=\"" + cnonce + "\"";
+        String digest = "Digest username=\"testuser\" realm=\"test\" nonce=\"" + nonce + "\" uri=\"/test/\" algorithm=MD5 response=\"" + newResponse("POST", "/test/", cnonce, "testuser", "test", "password", nonce, "auth") + "\" qop=auth nc=" + NC + " cnonce=\"" + cnonce + "\"";
 
         socket = new Socket("127.0.0.1", ((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
 
         _received = null;
-        socket.getOutputStream().write(
-            ("POST /test/ HTTP/1.0\r\n" +
-                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                "Content-Length: " + bytes.length + "\r\n" +
-                "Authorization: " + digest + "\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+        socket.getOutputStream()
+            .write(("POST /test/ HTTP/1.0\r\n" + "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" + "Content-Length: " + bytes.length + "\r\n" + "Authorization: " + digest + "\r\n" + "\r\n")
+                .getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -213,11 +199,9 @@ public class DigestPostTest
         byte[] bytes = __message.getBytes(StandardCharsets.UTF_8);
 
         _received = null;
-        socket.getOutputStream().write(
-            ("POST /test/ HTTP/1.1\r\n" +
-                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                "Content-Length: " + bytes.length + "\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+        socket.getOutputStream()
+            .write(("POST /test/ HTTP/1.1\r\n" + "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" + "Content-Length: " + bytes.length + "\r\n" + "\r\n")
+                .getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -233,19 +217,15 @@ public class DigestPostTest
         int n = result.indexOf("nonce=");
         String nonce = result.substring(n + 7, result.indexOf('"', n + 7));
         MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] b = md.digest(String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())).getBytes(StandardCharsets.ISO_8859_1));
+        byte[] b = md.digest(
+            String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())).getBytes(StandardCharsets.ISO_8859_1));
         String cnonce = encode(b);
-        String digest = "Digest username=\"testuser\" realm=\"test\" nonce=\"" + nonce + "\" uri=\"/test/\" algorithm=MD5 response=\"" +
-            newResponse("POST", "/test/", cnonce, "testuser", "test", "password", nonce, "auth") +
-            "\" qop=auth nc=" + NC + " cnonce=\"" + cnonce + "\"";
+        String digest = "Digest username=\"testuser\" realm=\"test\" nonce=\"" + nonce + "\" uri=\"/test/\" algorithm=MD5 response=\"" + newResponse("POST", "/test/", cnonce, "testuser", "test", "password", nonce, "auth") + "\" qop=auth nc=" + NC + " cnonce=\"" + cnonce + "\"";
 
         _received = null;
-        socket.getOutputStream().write(
-            ("POST /test/ HTTP/1.0\r\n" +
-                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                "Content-Length: " + bytes.length + "\r\n" +
-                "Authorization: " + digest + "\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
+        socket.getOutputStream()
+            .write(("POST /test/ HTTP/1.0\r\n" + "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" + "Content-Length: " + bytes.length + "\r\n" + "Authorization: " + digest + "\r\n" + "\r\n")
+                .getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
 
@@ -316,8 +296,7 @@ public class DigestPostTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        public void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws IOException
+        public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             String received = IO.toString(request.getInputStream());
             _received = received;
@@ -327,7 +306,15 @@ public class DigestPostTest
         }
     }
 
-    protected String newResponse(String method, String uri, String cnonce, String principal, String realm, String credentials, String nonce, String qop)
+    protected String newResponse(
+                                 String method,
+                                 String uri,
+                                 String cnonce,
+                                 String principal,
+                                 String realm,
+                                 String credentials,
+                                 String nonce,
+                                 String qop)
         throws Exception
     {
         MessageDigest md = MessageDigest.getInstance("MD5");

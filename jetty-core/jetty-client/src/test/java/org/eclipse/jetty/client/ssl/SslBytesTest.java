@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client.ssl;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,11 +29,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class SslBytesTest
 {
@@ -66,7 +65,10 @@ public abstract class SslBytesTest
 
         public enum Type
         {
-            CHANGE_CIPHER_SPEC(20), ALERT(21), HANDSHAKE(22), APPLICATION(23);
+            CHANGE_CIPHER_SPEC(20),
+            ALERT(21),
+            HANDSHAKE(22),
+            APPLICATION(23);
 
             private int code;
 
@@ -209,7 +211,8 @@ public abstract class SslBytesTest
             }
         }
 
-        private TLSRecord read(TLSRecord.Type type, InputStream input, byte[] bytes, int offset, int length) throws IOException
+        private TLSRecord read(TLSRecord.Type type, InputStream input, byte[] bytes, int offset, int length)
+            throws IOException
         {
             while (length > 0)
             {
@@ -354,7 +357,8 @@ public abstract class SslBytesTest
             private final Future<Object> clientToServer;
             private final Future<Object> serverToClient;
 
-            public AutomaticFlow(CountDownLatch stopLatch, Future<Object> clientToServer, Future<Object> serverToClient)
+            public AutomaticFlow(
+                                 CountDownLatch stopLatch, Future<Object> clientToServer, Future<Object> serverToClient)
             {
                 this.stopLatch = stopLatch;
                 this.clientToServer = clientToServer;

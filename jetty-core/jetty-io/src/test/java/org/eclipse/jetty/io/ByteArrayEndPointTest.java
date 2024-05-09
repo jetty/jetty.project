@@ -13,11 +13,17 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -25,13 +31,6 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class ByteArrayEndPointTest
 {
@@ -115,7 +114,8 @@ public class ByteArrayEndPointTest
         assertEquals(true, endp.flush(BufferUtil.EMPTY_BUFFER));
         assertEquals("some output some more", endp.getOutputString());
 
-        assertEquals(true, endp.flush(BufferUtil.EMPTY_BUFFER, BufferUtil.toBuffer(" and"), BufferUtil.toBuffer(" more")));
+        assertEquals(
+            true, endp.flush(BufferUtil.EMPTY_BUFFER, BufferUtil.toBuffer(" and"), BufferUtil.toBuffer(" more")));
         assertEquals("some output some more and more", endp.getOutputString());
         endp.close();
     }

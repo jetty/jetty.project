@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
@@ -93,7 +92,6 @@ public class MultiPartByteRanges
          * @param index the index of the {@code MultiPart.Part} to return
          * @return the {@code MultiPart.Part} at the given index
          */
-
         public MultiPart.Part get(int index)
         {
             return parts.get(index);
@@ -219,14 +217,29 @@ public class MultiPartByteRanges
 
         public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength)
         {
-            this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
-                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, null);
+            this(
+                HttpFields.build()
+                    .put(HttpHeader.CONTENT_TYPE, contentType)
+                    .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)),
+                resource,
+                byteRange,
+                null);
         }
 
-        public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength, ByteBufferPool bufferPool)
+        public Part(
+                    String contentType,
+                    Resource resource,
+                    ByteRange byteRange,
+                    long contentLength,
+                    ByteBufferPool bufferPool)
         {
-            this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
-                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, bufferPool);
+            this(
+                HttpFields.build()
+                    .put(HttpHeader.CONTENT_TYPE, contentType)
+                    .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)),
+                resource,
+                byteRange,
+                bufferPool);
         }
 
         public Part(HttpFields headers, Resource resource, ByteRange byteRange)
@@ -245,7 +258,8 @@ public class MultiPartByteRanges
         @Override
         public Content.Source newContentSource()
         {
-            return IOResources.asContentSource(resource, bufferPool, 0, false, byteRange.first(), byteRange.getLength());
+            return IOResources.asContentSource(
+                resource, bufferPool, 0, false, byteRange.first(), byteRange.getLength());
         }
     }
 
@@ -262,28 +276,29 @@ public class MultiPartByteRanges
 
         public CompletableFuture<MultiPartByteRanges.Parts> parse(Content.Source content)
         {
-            ContentSourceCompletableFuture<MultiPartByteRanges.Parts> futureParts = new ContentSourceCompletableFuture<>(content)
-            {
-                @Override
-                protected MultiPartByteRanges.Parts parse(Content.Chunk chunk) throws Throwable
+            ContentSourceCompletableFuture<MultiPartByteRanges.Parts> futureParts =
+                new ContentSourceCompletableFuture<>(content)
                 {
-                    if (listener.isFailed())
-                        throw listener.failure;
-                    parser.parse(chunk);
-                    if (listener.isFailed())
-                        throw listener.failure;
-                    return parts;
-                }
+                    @Override
+                    protected MultiPartByteRanges.Parts parse(Content.Chunk chunk) throws Throwable
+                    {
+                        if (listener.isFailed())
+                            throw listener.failure;
+                        parser.parse(chunk);
+                        if (listener.isFailed())
+                            throw listener.failure;
+                        return parts;
+                    }
 
-                @Override
-                public boolean completeExceptionally(Throwable failure)
-                {
-                    boolean failed = super.completeExceptionally(failure);
-                    if (failed)
-                        listener.fail(failure);
-                    return failed;
-                }
-            };
+                    @Override
+                    public boolean completeExceptionally(Throwable failure)
+                    {
+                        boolean failed = super.completeExceptionally(failure);
+                        if (failed)
+                            listener.fail(failure);
+                        return failed;
+                    }
+                };
             futureParts.parse();
             return futureParts;
         }

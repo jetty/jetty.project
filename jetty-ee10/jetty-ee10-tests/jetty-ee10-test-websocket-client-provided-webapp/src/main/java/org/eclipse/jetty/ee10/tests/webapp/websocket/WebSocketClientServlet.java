@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.ee10.tests.webapp.websocket;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -42,7 +41,8 @@ public class WebSocketClientServlet extends HttpServlet
     @Override
     public void init() throws ServletException
     {
-        // Cannot instantiate an HttpClient here because it's a server class, and therefore must rely on jetty-websocket-httpclient.xml
+        // Cannot instantiate an HttpClient here because it's a server class, and therefore must rely on
+        // jetty-websocket-httpclient.xml
         client = new WebSocketClient();
 
         try
@@ -88,7 +88,8 @@ public class WebSocketClientServlet extends HttpServlet
             writer.println("WebSocketEcho: " + ("test message".equals(response) ? "success" : "failure"));
             writer.println("WebSocketEcho: success");
 
-            // We need to test HttpClient timeout with reflection because it is a server class not exposed to the webapp.
+            // We need to test HttpClient timeout with reflection because it is a server class not exposed to the
+            // webapp.
             Object httpClient = client.getHttpClient();
             Method getConnectTimeout = httpClient.getClass().getMethod("getConnectTimeout");
             writer.println("ConnectTimeout: " + getConnectTimeout.invoke(httpClient));

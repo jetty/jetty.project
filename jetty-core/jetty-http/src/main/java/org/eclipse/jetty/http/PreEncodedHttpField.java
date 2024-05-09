@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
 import java.util.ServiceLoader;
-
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,21 +36,25 @@ public class PreEncodedHttpField extends HttpField
 
     static
     {
-        TypeUtil.serviceProviderStream(ServiceLoader.load(HttpFieldPreEncoder.class)).forEach(provider ->
-        {
-            try
+        TypeUtil.serviceProviderStream(ServiceLoader.load(HttpFieldPreEncoder.class))
+            .forEach(provider ->
             {
-                HttpFieldPreEncoder encoder = provider.get();
-                HttpFieldPreEncoder existing = __encoders.put(encoder.getHttpVersion(), encoder);
-                if (existing != null)
-                    LOG.warn("multiple {} for {}", HttpFieldPreEncoder.class.getSimpleName(), encoder.getHttpVersion());
-            }
-            catch (Error | RuntimeException e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("unable to add {}", HttpFieldPreEncoder.class.getSimpleName(), e);
-            }
-        });
+                try
+                {
+                    HttpFieldPreEncoder encoder = provider.get();
+                    HttpFieldPreEncoder existing = __encoders.put(encoder.getHttpVersion(), encoder);
+                    if (existing != null)
+                        LOG.warn(
+                            "multiple {} for {}",
+                            HttpFieldPreEncoder.class.getSimpleName(),
+                            encoder.getHttpVersion());
+                }
+                catch (Error | RuntimeException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("unable to add {}", HttpFieldPreEncoder.class.getSimpleName(), e);
+                }
+            });
 
         if (LOG.isDebugEnabled())
             LOG.debug("loaded {} {}s", __encoders.size(), HttpFieldPreEncoder.class.getSimpleName());
@@ -73,10 +76,9 @@ public class PreEncodedHttpField extends HttpField
         for (HttpFieldPreEncoder encoder : __encoders.values())
         {
             HttpVersion version = encoder.getHttpVersion();
-            _encodedFields.put(encoder.getHttpVersion(),
-                version == HttpVersion.HTTP_1_1
-                    ? _encodedFields.get(HttpVersion.HTTP_1_0)
-                    : encoder.getEncodedField(header, name, value));
+            _encodedFields.put(
+                encoder.getHttpVersion(),
+                version == HttpVersion.HTTP_1_1 ? _encodedFields.get(HttpVersion.HTTP_1_0) : encoder.getEncodedField(header, name, value));
         }
     }
 

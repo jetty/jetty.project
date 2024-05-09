@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Locale;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
@@ -61,7 +60,9 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
             if (retry)
                 print(name, "RESUME");
             else
-                print(name, "REQUEST " + baseRequest.getRemoteAddr() + " " + request.getMethod() + " " + baseRequest.getHeader("Cookie") + "; " + baseRequest.getHeader("User-Agent"));
+                print(
+                    name,
+                    "REQUEST " + baseRequest.getRemoteAddr() + " " + request.getMethod() + " " + baseRequest.getHeader("Cookie") + "; " + baseRequest.getHeader("User-Agent"));
             thread.setName(name);
 
             getHandler().handle(target, baseRequest, request, response);
@@ -85,7 +86,9 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
                 print(name, "ASYNC");
             }
             else
-                print(name, "RESPONSE " + base_response.getStatus() + (ex == null ? "" : ("/" + ex)) + " " + base_response.getContentType());
+                print(
+                    name,
+                    "RESPONSE " + base_response.getStatus() + (ex == null ? "" : ("/" + ex)) + " " + base_response.getContentType());
         }
     }
 

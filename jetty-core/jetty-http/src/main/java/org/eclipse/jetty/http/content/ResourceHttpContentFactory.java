@@ -16,7 +16,6 @@ package org.eclipse.jetty.http.content;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.util.Objects;
-
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -35,7 +34,8 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     public ResourceHttpContentFactory(Resource baseResource, MimeTypes mimeTypes)
     {
         Objects.requireNonNull(mimeTypes, "MimeTypes cannot be null");
-        _baseResource = Objects.requireNonNullElse(baseResource, ResourceFactory.root().newResource("."));
+        _baseResource =
+            Objects.requireNonNullElse(baseResource, ResourceFactory.root().newResource("."));
         _mimeTypes = mimeTypes;
     }
 

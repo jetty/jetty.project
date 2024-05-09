@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.webapp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
-
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
@@ -39,8 +38,7 @@ public abstract class Descriptor
             throw new IllegalArgumentException("Descriptor cannot be a directory");
     }
 
-    public void parse(XmlParser parser)
-        throws Exception
+    public void parse(XmlParser parser) throws Exception
     {
         if (_root == null)
         {

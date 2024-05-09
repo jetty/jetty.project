@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.internal.HttpChannelState;

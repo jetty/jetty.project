@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.ee9.websocket.api.Session;
@@ -37,10 +40,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class SingleOnMessageTest
 {
     private final Server server = new Server();
@@ -56,8 +55,8 @@ public class SingleOnMessageTest
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
-        JettyWebSocketServletContainerInitializer.configure(contextHandler,
-            (context, container) -> container.addMapping("/", (req, resp) -> serverSocket));
+        JettyWebSocketServletContainerInitializer.configure(
+            contextHandler, (context, container) -> container.addMapping("/", (req, resp) -> serverSocket));
 
         server.setHandler(contextHandler);
         server.start();

@@ -21,7 +21,9 @@ public class FCGI
 
     public enum Role
     {
-        RESPONDER(1), AUTHORIZER(2), FILTER(3);
+        RESPONDER(1),
+        AUTHORIZER(2),
+        FILTER(3);
 
         public static Role from(int code)
         {
@@ -83,7 +85,9 @@ public class FCGI
 
     public enum StreamType
     {
-        STD_IN, STD_OUT, STD_ERR
+        STD_IN,
+        STD_OUT,
+        STD_ERR
     }
 
     public static class Headers

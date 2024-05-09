@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io.ssl;
 
 import javax.net.ssl.SSLEngine;
-
 import org.eclipse.jetty.io.Connection;
 
 public interface ALPNProcessor

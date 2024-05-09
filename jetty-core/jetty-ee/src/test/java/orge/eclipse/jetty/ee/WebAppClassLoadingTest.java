@@ -13,16 +13,6 @@
 
 package orge.eclipse.jetty.ee;
 
-import java.util.Arrays;
-
-import org.eclipse.jetty.ee.WebAppClassLoading;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.ClassMatcher;
-import org.eclipse.jetty.util.component.Environment;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -30,6 +20,15 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+
+import java.util.Arrays;
+import org.eclipse.jetty.ee.WebAppClassLoading;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.ClassMatcher;
+import org.eclipse.jetty.util.component.Environment;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class WebAppClassLoadingTest
 {
@@ -44,7 +43,7 @@ public class WebAppClassLoadingTest
     {
         Environment.ensure("Test").clearAttributes();
     }
-    
+
     @Test
     public void testServerDefaults()
     {
@@ -74,8 +73,8 @@ public class WebAppClassLoadingTest
     public void testServerStringAttributeDefaults()
     {
         Server server = new Server();
-        server.setAttribute(WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE, new String[] {"org.protect."});
-        server.setAttribute(WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE, new String[] {"org.hide."});
+        server.setAttribute(WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE, new String[]{"org.protect."});
+        server.setAttribute(WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE, new String[]{"org.hide."});
 
         ClassMatcher protect = WebAppClassLoading.getProtectedClasses(server);
         assertThat(protect.size(), is(1));
@@ -155,8 +154,8 @@ public class WebAppClassLoadingTest
     public void testEnvironmentStringAttributeDefaults()
     {
         Environment environment = Environment.get("Test");
-        environment.setAttribute(WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE, new String[] {"org.protect."});
-        environment.setAttribute(WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE, new String[] {"org.hide."});
+        environment.setAttribute(WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE, new String[]{"org.protect."});
+        environment.setAttribute(WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE, new String[]{"org.hide."});
 
         ClassMatcher protect = WebAppClassLoading.getProtectedClasses(environment);
         assertThat(protect.size(), is(1));
@@ -218,5 +217,4 @@ public class WebAppClassLoadingTest
             assertThat(hide.getPatterns(), hasItemInArray(pattern));
         assertThat(environment.getAttribute(WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE), sameInstance(hide));
     }
-
 }

@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
@@ -44,11 +48,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled // TODO
 public class ThreadStarvationTest
@@ -92,7 +91,13 @@ public class ThreadStarvationTest
             ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
 
             HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
-            ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,
+            ServerConnector connector = new ServerConnector(
+                server,
+                null,
+                null,
+                pool,
+                acceptors,
+                selectors,
                 AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
             SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
             httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
@@ -150,10 +155,14 @@ public class ThreadStarvationTest
     @AfterEach
     public void dispose() throws Exception
     {
-        ArrayByteBufferPool.Tracking byteBufferPool = (ArrayByteBufferPool.Tracking)_server.getConnectors()[0].getByteBufferPool();
+        ArrayByteBufferPool.Tracking byteBufferPool =
+            (ArrayByteBufferPool.Tracking)_server.getConnectors()[0].getByteBufferPool();
         try
         {
-            assertThat("Server Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
+            assertThat(
+                "Server Leaks: " + byteBufferPool.dumpLeaks(),
+                byteBufferPool.getLeaks().size(),
+                Matchers.is(0));
         }
         finally
         {
@@ -174,11 +183,7 @@ public class ThreadStarvationTest
             InputStream is = client.getInputStream();
 
             String request =
-                "GET / HTTP/1.0\r\n" +
-                    "Host: localhost\r\n" +
-                    "Content-Length: 10\r\n" +
-                    "\r\n" +
-                    "0123456789\r\n";
+                "GET / HTTP/1.0\r\n" + "Host: localhost\r\n" + "Content-Length: 10\r\n" + "\r\n" + "0123456789\r\n";
             os.write(request.getBytes(StandardCharsets.UTF_8));
             os.flush();
 
@@ -211,11 +216,7 @@ public class ThreadStarvationTest
                     client.setSoTimeout(10000);
 
                     String request =
-                        "PUT / HTTP/1.0\r\n" +
-                            "host: localhost\r\n" +
-                            "content-length: 10\r\n" +
-                            "\r\n" +
-                            "1";
+                        "PUT / HTTP/1.0\r\n" + "host: localhost\r\n" + "content-length: 10\r\n" + "\r\n" + "1";
 
                     // Write partial request
                     out.write(request.getBytes(StandardCharsets.UTF_8));
@@ -258,7 +259,7 @@ public class ThreadStarvationTest
         {
             response.setStatus(200);
             /* TODO
-
+            
             int l = request.getContentLength();
             int r = 0;
             while (r < l)
@@ -266,7 +267,7 @@ public class ThreadStarvationTest
                 if (request.getInputStream().read() >= 0)
                     r++;
             }
-
+            
             response.write(true, callback, ByteBuffer.wrap(("Read Input " + r + "\r\n").getBytes()));
             */
             return true;
@@ -294,10 +295,7 @@ public class ThreadStarvationTest
                 {
                     client.setSoTimeout(30000);
 
-                    String request =
-                        "GET / HTTP/1.0\r\n" +
-                            "host: localhost\r\n" +
-                            "\r\n";
+                    String request = "GET / HTTP/1.0\r\n" + "host: localhost\r\n" + "\r\n";
 
                     // Write GET request
                     out.write(request.getBytes(StandardCharsets.UTF_8));
@@ -364,7 +362,7 @@ public class ThreadStarvationTest
             /* TODO
             baseRequest.setHandled(true);
             response.setStatus(200);
-
+            
             response.setContentLength(BUFFERS * BUFFER_SIZE);
             OutputStream out = response.getOutputStream();
             for (int i = 0; i < BUFFERS; i++)
@@ -372,7 +370,7 @@ public class ThreadStarvationTest
                 out.write(content);
                 out.flush();
             }
-
+            
              */
             return true;
         }
@@ -384,7 +382,8 @@ public class ThreadStarvationTest
         public final ConnectorProvider connectorProvider;
         public final ClientSocketProvider clientSocketProvider;
 
-        public Scenario(String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider)
+        public Scenario(
+                        String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider)
         {
             this.testType = testType;
             this.connectorProvider = connectorProvider;

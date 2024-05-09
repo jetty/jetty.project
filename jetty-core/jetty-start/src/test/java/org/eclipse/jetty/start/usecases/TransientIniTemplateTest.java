@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -20,13 +24,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class TransientIniTemplateTest extends AbstractUseCase
 {
@@ -39,35 +38,18 @@ public class TransientIniTemplateTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("modules"));
         FS.touch(baseDir.resolve("etc/d.xml"));
         FS.touch(baseDir.resolve("etc/t.xml"));
-        Files.write(baseDir.resolve("modules/direct.mod"),
-            Arrays.asList(
-                "[xml]",
-                "etc/d.xml",
-                "[depend]",
-                "transient",
-                "[ini-template]",
-                "direct.option=direct"
-            ),
+        Files.write(
+            baseDir.resolve("modules/direct.mod"),
+            Arrays.asList("[xml]", "etc/d.xml", "[depend]", "transient", "[ini-template]", "direct.option=direct"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/transient.mod"),
-            Arrays.asList(
-                "[xml]",
-                "etc/t.xml",
-                "[optional]",
-                "main"
-            ),
+        Files.write(
+            baseDir.resolve("modules/transient.mod"),
+            Arrays.asList("[xml]", "etc/t.xml", "[optional]", "main"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
-            "--testing-mode",
-            "--add-modules=direct"
-        );
+        List<String> prepareArgs = Arrays.asList("--testing-mode", "--add-modules=direct");
         exec(prepareArgs, true);
 
         // === Execute Main
@@ -79,17 +61,13 @@ public class TransientIniTemplateTest extends AbstractUseCase
             "${jetty.home}/etc/base.xml",
             "${jetty.home}/etc/main.xml",
             "${jetty.base}/etc/t.xml",
-            "${jetty.base}/etc/d.xml"
-        );
+            "${jetty.base}/etc/d.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/base.jar", "${jetty.home}/lib/main.jar", "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 
@@ -110,17 +88,12 @@ public class TransientIniTemplateTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("etc"));
         FS.touch(baseDir.resolve("etc/d.xml"));
         FS.touch(baseDir.resolve("etc/t.xml"));
-        Files.write(baseDir.resolve("modules/direct.mod"),
-            Arrays.asList(
-                "[xml]",
-                "etc/d.xml",
-                "[depend]",
-                "transient",
-                "[ini-template]",
-                "direct.option=direct"
-            ),
+        Files.write(
+            baseDir.resolve("modules/direct.mod"),
+            Arrays.asList("[xml]", "etc/d.xml", "[depend]", "transient", "[ini-template]", "direct.option=direct"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/transient.mod"),
+        Files.write(
+            baseDir.resolve("modules/transient.mod"),
             Arrays.asList(
                 "[xml]",
                 "etc/t.xml",
@@ -129,20 +102,12 @@ public class TransientIniTemplateTest extends AbstractUseCase
                 "[ini]",
                 "transient.option=transient",
                 "[ini-template]",
-                "transient.option=transient"
-            ),
+                "transient.option=transient"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
-            "--testing-mode",
-            "--add-modules=direct"
-        );
+        List<String> prepareArgs = Arrays.asList("--testing-mode", "--add-modules=direct");
         exec(prepareArgs, true);
 
         // === Execute Main
@@ -154,17 +119,13 @@ public class TransientIniTemplateTest extends AbstractUseCase
             "${jetty.home}/etc/base.xml",
             "${jetty.home}/etc/main.xml",
             "${jetty.base}/etc/t.xml",
-            "${jetty.base}/etc/d.xml"
-        );
+            "${jetty.base}/etc/d.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/base.jar", "${jetty.home}/lib/main.jar", "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 

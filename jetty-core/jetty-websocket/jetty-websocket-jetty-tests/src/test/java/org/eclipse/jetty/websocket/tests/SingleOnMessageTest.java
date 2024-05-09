@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -36,10 +39,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class SingleOnMessageTest
 {
     private final Server server = new Server();
@@ -53,8 +52,8 @@ public class SingleOnMessageTest
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
-            container.addMapping("/", (rq, rs, cb) -> serverSocket));
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(
+            server, container -> container.addMapping("/", (rq, rs, cb) -> serverSocket));
 
         server.setHandler(wsHandler);
         server.start();

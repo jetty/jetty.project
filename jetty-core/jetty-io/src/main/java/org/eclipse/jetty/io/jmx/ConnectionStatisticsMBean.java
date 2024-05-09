@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;

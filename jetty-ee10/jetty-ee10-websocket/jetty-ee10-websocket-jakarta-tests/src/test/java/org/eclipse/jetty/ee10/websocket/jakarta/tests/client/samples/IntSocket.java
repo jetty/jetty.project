@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.client.samples;
 
-import java.io.IOException;
-
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
+import java.io.IOException;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.coders.BadDualDecoder;
 
 @ClientEndpoint(decoders = BadDualDecoder.class)

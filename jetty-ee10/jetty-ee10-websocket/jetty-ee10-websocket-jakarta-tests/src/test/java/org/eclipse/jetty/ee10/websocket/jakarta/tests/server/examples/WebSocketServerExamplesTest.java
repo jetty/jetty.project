@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server.examples;
 
-import java.net.URI;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
@@ -27,6 +25,10 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
+import java.net.URI;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
@@ -44,9 +46,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class WebSocketServerExamplesTest
 {
@@ -147,7 +146,7 @@ public class WebSocketServerExamplesTest
     @Test
     public void testMyAuthedSocket() throws Exception
     {
-        //HttpClient is configured for BasicAuthentication with the XmlHttpClientProvider
+        // HttpClient is configured for BasicAuthentication with the XmlHttpClientProvider
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/secured/socket");
         WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 

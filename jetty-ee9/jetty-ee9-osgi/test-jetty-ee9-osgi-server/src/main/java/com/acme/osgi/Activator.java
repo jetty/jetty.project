@@ -15,7 +15,6 @@ package com.acme.osgi;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -38,7 +37,7 @@ public class Activator implements BundleActivator
     @Override
     public void start(BundleContext context) throws Exception
     {
-        //For test purposes, use a random port
+        // For test purposes, use a random port
         Server server = new Server(0);
         server.getConnectors()[0].addEventListener(new LifeCycle.Listener()
         {
@@ -63,10 +62,10 @@ public class Activator implements BundleActivator
         server.setAttribute("org.eclipse.jetty.ee9.webapp.configuration", list);
 
         Dictionary serverProps = new Hashtable();
-        //define the unique name of the server instance
+        // define the unique name of the server instance
         serverProps.put("managedServerName", "fooServer");
-        //Could also instead call serverProps.put("jetty.http.port", "9999");
-        //register as an OSGi Service for Jetty to find 
+        // Could also instead call serverProps.put("jetty.http.port", "9999");
+        // register as an OSGi Service for Jetty to find
         _sr = context.registerService(Server.class.getName(), server, serverProps);
     }
 

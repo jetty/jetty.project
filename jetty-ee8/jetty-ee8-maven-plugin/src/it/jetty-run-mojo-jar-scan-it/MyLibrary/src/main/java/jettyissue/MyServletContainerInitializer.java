@@ -21,8 +21,10 @@ import javax.servlet.ServletException;
 import javax.servlet.annotation.HandlesTypes;
 
 @HandlesTypes({MyAnnotation.class})
-public class MyServletContainerInitializer implements ServletContainerInitializer {
-    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException {
-        System.out.println("STARTED"+c);
+public class MyServletContainerInitializer implements ServletContainerInitializer
+{
+    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+    {
+        System.out.println("STARTED" + c);
     }
 }

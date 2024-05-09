@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -20,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.BufferingResponseListener;
@@ -61,12 +66,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HttpClientTransportDynamicTest
 {
     private Server server;
@@ -95,7 +94,8 @@ public class HttpClientTransportDynamicTest
         startClient(clientConnector, infos);
     }
 
-    private void startClient(ClientConnector clientConnector, HttpClientConnectionFactory.Info... infos) throws Exception
+    private void startClient(ClientConnector clientConnector, HttpClientConnectionFactory.Info... infos)
+        throws Exception
     {
         clientConnector.setSelectors(1);
         clientConnector.setSslContextFactory(newClientSslContextFactory());
@@ -132,7 +132,8 @@ public class HttpClientTransportDynamicTest
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h1.getProtocol());
         SslContextFactory.Server sslContextFactory = newServerSslContextFactory();
-        ServerConnector connector = new ServerConnector(server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, alpn, h1));
+        ServerConnector connector =
+            new ServerConnector(server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, alpn, h1));
         server.addConnector(connector);
         return connector;
     }
@@ -144,7 +145,8 @@ public class HttpClientTransportDynamicTest
         HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(httpConfiguration);
         SslContextFactory.Server sslContextFactory = newServerSslContextFactory();
         // No ALPN.
-        ServerConnector connector = new ServerConnector(server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, h1, h2c));
+        ServerConnector connector =
+            new ServerConnector(server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, h1, h2c));
         server.addConnector(connector);
         return connector;
     }
@@ -158,7 +160,8 @@ public class HttpClientTransportDynamicTest
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfiguration);
         SslContextFactory.Server sslContextFactory = newServerSslContextFactory();
         // Make explicitly h1 the default protocol (normally it would be h2).
-        ServerConnector connector = new ServerConnector(server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, alpn, h1, h2));
+        ServerConnector connector = new ServerConnector(
+            server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, alpn, h1, h2));
         server.addConnector(connector);
         return connector;
     }
@@ -171,7 +174,8 @@ public class HttpClientTransportDynamicTest
         alpn.setDefaultProtocol(h1.getProtocol());
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfiguration);
         SslContextFactory.Server sslContextFactory = newServerSslContextFactory();
-        ServerConnector connector = new ServerConnector(server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, alpn, h2, h1));
+        ServerConnector connector = new ServerConnector(
+            server, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, alpn, h2, h1));
         server.addConnector(connector);
         return connector;
     }
@@ -239,7 +243,7 @@ public class HttpClientTransportDynamicTest
         ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
         startClient(clientConnector, h2c);
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-//                .version(HttpVersion.HTTP_2)
+            //                .version(HttpVersion.HTTP_2)
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -275,7 +279,12 @@ public class HttpClientTransportDynamicTest
                 String scheme1 = request.getScheme();
                 boolean secure = HttpScheme.isSecure(scheme1);
                 List<String> protocols = HttpVersion.HTTP_2 == request.getVersion() ? http2.getProtocols(secure) : h1.getProtocols(secure);
-                return new Origin(request.getScheme(), request.getHost(), request.getPort(), request.getTag(), new Origin.Protocol(protocols, false));
+                return new Origin(
+                    request.getScheme(),
+                    request.getHost(),
+                    request.getPort(),
+                    request.getTag(),
+                    new Origin.Protocol(protocols, false));
             }
         };
         client = new HttpClient(transport);
@@ -300,11 +309,13 @@ public class HttpClientTransportDynamicTest
         // We must have 2 different destinations with the same origin.
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
-        assertEquals(1, destinations.stream()
-            .map(Destination::getOrigin)
-            .map(Origin::asString)
-            .distinct()
-            .count());
+        assertEquals(
+            1,
+            destinations.stream()
+                .map(Destination::getOrigin)
+                .map(Origin::asString)
+                .distinct()
+                .count());
     }
 
     @Test
@@ -334,11 +345,13 @@ public class HttpClientTransportDynamicTest
         // We must have 2 different destinations with the same origin.
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
-        assertEquals(1, destinations.stream()
-            .map(Destination::getOrigin)
-            .map(Origin::asString)
-            .distinct()
-            .count());
+        assertEquals(
+            1,
+            destinations.stream()
+                .map(Destination::getOrigin)
+                .map(Origin::asString)
+                .distinct()
+                .count());
     }
 
     @Test
@@ -410,28 +423,28 @@ public class HttpClientTransportDynamicTest
         // Map the proxy request to client IP:port.
         int clientPort1 = ThreadLocalRandom.current().nextInt(1024, 65536);
         proxyRequest1.tag(new V1.Tag("localhost", clientPort1));
-        ContentResponse proxyResponse1 = proxyRequest1
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        ContentResponse proxyResponse1 =
+            proxyRequest1.timeout(5, TimeUnit.SECONDS).send();
         assertEquals(String.valueOf(clientPort1), proxyResponse1.getContentAsString());
 
         // Simulate another request to the server, from a different client port.
         var proxyRequest2 = client.newRequest("localhost", connector.getLocalPort());
         int clientPort2 = ThreadLocalRandom.current().nextInt(1024, 65536);
         proxyRequest2.tag(new V1.Tag("localhost", clientPort2));
-        ContentResponse proxyResponse2 = proxyRequest2
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        ContentResponse proxyResponse2 =
+            proxyRequest2.timeout(5, TimeUnit.SECONDS).send();
         assertEquals(String.valueOf(clientPort2), proxyResponse2.getContentAsString());
 
         // We must have 2 different destinations with the same origin.
         List<Destination> destinations = client.getDestinations();
         assertEquals(2, destinations.size());
-        assertEquals(1, destinations.stream()
-            .map(Destination::getOrigin)
-            .map(Origin::asString)
-            .distinct()
-            .count());
+        assertEquals(
+            1,
+            destinations.stream()
+                .map(Destination::getOrigin)
+                .map(Origin::asString)
+                .distinct()
+                .count());
     }
 
     @Test
@@ -478,11 +491,13 @@ public class HttpClientTransportDynamicTest
         // There should be 4 destinations with 2 origins.
         List<Destination> destinations = client.getDestinations();
         assertEquals(4, destinations.size());
-        assertEquals(2, destinations.stream()
-            .map(Destination::getOrigin)
-            .map(Origin::asString)
-            .distinct()
-            .count());
+        assertEquals(
+            2,
+            destinations.stream()
+                .map(Destination::getOrigin)
+                .map(Origin::asString)
+                .distinct()
+                .count());
     }
 
     @Test
@@ -506,8 +521,7 @@ public class HttpClientTransportDynamicTest
 
         // Make an upgrade request from HTTP/1.1 to H2C.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .headers(headers -> headers
-                .put(HttpHeader.UPGRADE, "h2c")
+            .headers(headers -> headers.put(HttpHeader.UPGRADE, "h2c")
                 .put(HttpHeader.HTTP2_SETTINGS, "")
                 .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .timeout(5, TimeUnit.SECONDS)
@@ -583,13 +597,13 @@ public class HttpClientTransportDynamicTest
         int proxyPort = connector.getLocalPort();
         // The proxy speaks both http/1.1 and h2c.
         Origin.Protocol proxyProtocol = new Origin.Protocol(List.of("http/1.1", "h2c"), false);
-        client.getProxyConfiguration().addProxy(new HttpProxy(new Origin.Address("localhost", proxyPort), false, proxyProtocol));
+        client.getProxyConfiguration()
+            .addProxy(new HttpProxy(new Origin.Address("localhost", proxyPort), false, proxyProtocol));
 
         // Make an upgrade request from HTTP/1.1 to H2C.
         int serverPort = proxyPort + 1; // Any port will do.
         ContentResponse response = client.newRequest("localhost", serverPort)
-            .headers(headers -> headers
-                .put(HttpHeader.UPGRADE, "h2c")
+            .headers(headers -> headers.put(HttpHeader.UPGRADE, "h2c")
                 .put(HttpHeader.HTTP2_SETTINGS, "")
                 .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .timeout(5, TimeUnit.SECONDS)
@@ -623,8 +637,7 @@ public class HttpClientTransportDynamicTest
         // Make an upgrade request from HTTP/1.1 to H2C.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
-            .headers(headers -> headers
-                .put(HttpHeader.UPGRADE, "h2c")
+            .headers(headers -> headers.put(HttpHeader.UPGRADE, "h2c")
                 .put(HttpHeader.HTTP2_SETTINGS, "")
                 .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .timeout(5, TimeUnit.SECONDS)
@@ -662,8 +675,7 @@ public class HttpClientTransportDynamicTest
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
-            .headers(headers -> headers
-                .put(HttpHeader.UPGRADE, "h2c")
+            .headers(headers -> headers.put(HttpHeader.UPGRADE, "h2c")
                 .put(HttpHeader.HTTP2_SETTINGS, "")
                 .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .body(new BytesRequestContent(bytes))
@@ -725,8 +737,7 @@ public class HttpClientTransportDynamicTest
         // Make an upgrade request from HTTP/1.1 to H2C.
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-            .headers(headers -> headers
-                .put(HttpHeader.UPGRADE, "h2c")
+            .headers(headers -> headers.put(HttpHeader.UPGRADE, "h2c")
                 .put(HttpHeader.HTTP2_SETTINGS, "")
                 .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .send(result ->

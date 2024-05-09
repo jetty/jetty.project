@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -68,7 +67,8 @@ public class ErrorHandler implements Request.Handler
     public static final String ERROR_EXCEPTION = "org.eclipse.jetty.server.error_exception";
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
     public static final Set<String> ERROR_METHODS = Set.of("GET", "POST", "HEAD");
-    public static final HttpField ERROR_CACHE_CONTROL = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
+    public static final HttpField ERROR_CACHE_CONTROL =
+        new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
     boolean _showStacks = false;
     boolean _showCauses = false;
@@ -117,9 +117,12 @@ public class ErrorHandler implements Request.Handler
         return true;
     }
 
-    protected void generateResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) throws IOException
+    protected void generateResponse(
+                                    Request request, Response response, int code, String message, Throwable cause, Callback callback)
+        throws IOException
     {
-        List<String> acceptable = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
+        List<String> acceptable =
+            request.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
         if (acceptable.isEmpty())
         {
             if (request.getHeaders().contains(HttpHeader.ACCEPT))
@@ -163,7 +166,16 @@ public class ErrorHandler implements Request.Handler
         callback.succeeded();
     }
 
-    protected boolean generateAcceptableResponse(Request request, Response response, Callback callback, String contentType, List<Charset> charsets, int code, String message, Throwable cause) throws IOException
+    protected boolean generateAcceptableResponse(
+                                                 Request request,
+                                                 Response response,
+                                                 Callback callback,
+                                                 String contentType,
+                                                 List<Charset> charsets,
+                                                 int code,
+                                                 String message,
+                                                 Throwable cause)
+        throws IOException
     {
         Type type;
         Charset charset;
@@ -198,7 +210,8 @@ public class ErrorHandler implements Request.Handler
 
         int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
         bufferSize = Math.min(8192, bufferSize); // TODO ?
-        RetainableByteBuffer buffer = request.getComponents().getByteBufferPool().acquire(bufferSize, false);
+        RetainableByteBuffer buffer =
+            request.getComponents().getByteBufferPool().acquire(bufferSize, false);
 
         try
         {
@@ -216,7 +229,8 @@ public class ErrorHandler implements Request.Handler
                     switch (type)
                     {
                         case TEXT_HTML -> writeErrorHtml(request, writer, charset, code, message, cause, showStacks);
-                        case TEXT_JSON, APPLICATION_JSON -> writeErrorJson(request, writer, code, message, cause, showStacks);
+                        case TEXT_JSON, APPLICATION_JSON -> writeErrorJson(
+                            request, writer, code, message, cause, showStacks);
                         case TEXT_PLAIN -> writeErrorPlain(request, writer, code, message, cause, showStacks);
                         default -> throw new IllegalStateException();
                     }
@@ -262,7 +276,15 @@ public class ErrorHandler implements Request.Handler
         }
     }
 
-    protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause, boolean showStacks) throws IOException
+    protected void writeErrorHtml(
+                                  Request request,
+                                  Writer writer,
+                                  Charset charset,
+                                  int code,
+                                  String message,
+                                  Throwable cause,
+                                  boolean showStacks)
+        throws IOException
     {
         if (message == null)
             message = HttpStatus.getMessage(code);
@@ -295,7 +317,9 @@ public class ErrorHandler implements Request.Handler
         writer.write("</title>\n");
     }
 
-    protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException
+    protected void writeErrorHtmlBody(
+                                      Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks)
+        throws IOException
     {
         String uri = request.getHttpURI().toString();
 
@@ -303,11 +327,11 @@ public class ErrorHandler implements Request.Handler
         if (showStacks)
             writeErrorHtmlStacks(request, writer);
 
-        request.getConnectionMetaData().getHttpConfiguration()
-            .writePoweredBy(writer, "<hr/>", "<hr/>\n");
+        request.getConnectionMetaData().getHttpConfiguration().writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 
-    protected void writeErrorHtmlMessage(Request request, Writer writer, int code, String message, Throwable cause, String uri) throws IOException
+    protected void writeErrorHtmlMessage(
+                                         Request request, Writer writer, int code, String message, Throwable cause, String uri) throws IOException
     {
         writer.write("<h2>HTTP ERROR ");
         String status = Integer.toString(code);
@@ -342,7 +366,8 @@ public class ErrorHandler implements Request.Handler
         writer.write("</td></tr>\n");
     }
 
-    protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+    protected void writeErrorPlain(
+                                   Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
     {
         writer.write("HTTP ERROR ");
         writer.write(Integer.toString(code));
@@ -364,7 +389,8 @@ public class ErrorHandler implements Request.Handler
         }
     }
 
-    protected void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+    protected void writeErrorJson(
+                                  Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
     {
         Map<String, String> json = new HashMap<>();
 

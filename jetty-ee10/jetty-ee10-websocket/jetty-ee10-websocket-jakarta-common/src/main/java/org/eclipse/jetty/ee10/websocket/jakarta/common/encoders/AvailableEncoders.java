@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common.encoders;
 
+import jakarta.websocket.Encoder;
+import jakarta.websocket.EndpointConfig;
 import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
@@ -22,9 +24,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import jakarta.websocket.Encoder;
-import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.InitException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
@@ -83,7 +82,8 @@ public class AvailableEncoders implements Predicate<Class<?>>, Closeable
         registerAll(config.getEncoders());
     }
 
-    private void registerPrimitive(Class<? extends Encoder> encoderClass, Class<? extends Encoder> interfaceType, Class<?> type)
+    private void registerPrimitive(
+                                   Class<? extends Encoder> encoderClass, Class<? extends Encoder> interfaceType, Class<?> type)
     {
         registeredEncoders.add(new RegisteredEncoder(encoderClass, interfaceType, type, true));
     }
@@ -123,8 +123,7 @@ public class AvailableEncoders implements Predicate<Class<?>>, Closeable
 
         if (!foundEncoder)
         {
-            throw new InvalidSignatureException(
-                "Not a valid Encoder class: " + encoder.getName() + " implements no " + Encoder.class.getName() + " interfaces");
+            throw new InvalidSignatureException("Not a valid Encoder class: " + encoder.getName() + " implements no " + Encoder.class.getName() + " interfaces");
         }
     }
 
@@ -234,7 +233,10 @@ public class AvailableEncoders implements Predicate<Class<?>>, Closeable
         {
             throw new InvalidWebSocketException("No Encoder found for type " + type);
         }
-        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
+        catch (InstantiationException
+            | IllegalAccessException
+            | NoSuchMethodException
+            | InvocationTargetException e)
         {
             throw new InitException("Unable to init Encoder for type:" + type.getName(), e);
         }

@@ -52,7 +52,6 @@ public class StartEnvironment
     /**
      * List of all xml references found directly on command line or start.ini
      */
-
     private final List<String> _xmlRefs = new ArrayList<>();
 
     /**
@@ -298,6 +297,14 @@ public class StartEnvironment
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s,%s,%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getName(), getClasspath(), getXmlFiles(), getProperties(), getPropertyFiles());
+        return "%s@%x{%s,%s,%s,%s,%s}"
+            .formatted(
+                this.getClass().getSimpleName(),
+                hashCode(),
+                getName(),
+                getClasspath(),
+                getXmlFiles(),
+                getProperties(),
+                getPropertyFiles());
     }
 }

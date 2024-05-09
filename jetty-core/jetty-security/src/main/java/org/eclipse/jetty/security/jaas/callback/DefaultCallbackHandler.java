@@ -18,7 +18,6 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
-
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -40,8 +39,7 @@ public class DefaultCallbackHandler extends AbstractCallbackHandler
     }
 
     @Override
-    public void handle(Callback[] callbacks)
-        throws IOException, UnsupportedCallbackException
+    public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
     {
         for (Callback callback : callbacks)
         {
@@ -55,7 +53,8 @@ public class DefaultCallbackHandler extends AbstractCallbackHandler
             }
             else if (callback instanceof PasswordCallback)
             {
-                ((PasswordCallback)callback).setPassword(getCredential().toString().toCharArray());
+                ((PasswordCallback)callback)
+                    .setPassword(getCredential().toString().toCharArray());
             }
             else if (callback instanceof RequestParameterCallback)
             {

@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.util.function.BiFunction;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
+import java.io.IOException;
+import java.util.function.BiFunction;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -72,8 +71,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
      *
      * @throws Exception if unable to initialize
      */
-    public void initialize()
-        throws Exception
+    public void initialize() throws Exception
     {
         if (!isStarted())
             throw new IllegalStateException("Not started: " + this);
@@ -81,14 +79,13 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
     @SuppressWarnings("unchecked")
     @Override
-    public void doStart()
-        throws Exception
+    public void doStart() throws Exception
     {
-        //if no class already loaded and no classname, make permanently unavailable
+        // if no class already loaded and no classname, make permanently unavailable
         if (_class == null && (_className == null || _className.isEmpty()))
             throw new UnavailableException("No class in holder " + toString());
 
-        //try to load class
+        // try to load class
         if (_class == null)
         {
             try
@@ -106,8 +103,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     }
 
     @Override
-    public void doStop()
-        throws Exception
+    public void doStop() throws Exception
     {
         if (_instance == null)
             _class = null;
@@ -166,7 +162,9 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         if (_servletHandler != null)
         {
             ServletContext context = _servletHandler.getServletContext();
-            if ((context instanceof ContextHandler.ScopedContext) && ((ContextHandler.ScopedContext)context).getContextHandler().isStarted())
+            if ((context instanceof ContextHandler.ScopedContext) && ((ContextHandler.ScopedContext)context)
+                .getContextHandler()
+                .isStarted())
                 throw new IllegalStateException("Started");
         }
     }
@@ -200,7 +198,9 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
                 return getHeldClass().getDeclaredConstructor().newInstance();
 
             if (ServletContextHandler.ServletContextApi.class.isAssignableFrom(ctx.getClass()))
-                return ((ServletContextHandler.ServletContextApi)ctx).getContext().createInstance(this);
+                return ((ServletContextHandler.ServletContextApi)ctx)
+                    .getContext()
+                    .createInstance(this);
 
             return null;
         }
@@ -210,14 +210,14 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     {
         ServletContext scontext = null;
 
-        //try the ServletHandler first
+        // try the ServletHandler first
         if (getServletHandler() != null)
             scontext = getServletHandler().getServletContext();
 
         if (scontext != null)
             return scontext;
 
-        //try the ServletContextHandler next
+        // try the ServletContextHandler next
         return ServletContextHandler.getCurrentServletContext();
     }
 
@@ -225,14 +225,14 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     {
         ServletContext context = null;
 
-        //try the ServletHandler first
+        // try the ServletHandler first
         if (getServletHandler() != null)
             context = getServletHandler().getServletContext();
 
         if (context instanceof ServletContextHandler.ServletContextApi api)
             return api.getContext().getServletContextHandler();
 
-        //try the ServletContextHandler next
+        // try the ServletContextHandler next
         return ServletContextHandler.getCurrentServletContextHandler();
     }
 

@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -20,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
@@ -46,12 +51,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerConfigTest
 {
@@ -87,7 +86,8 @@ public class ServerConfigTest
 
     public static Stream<Arguments> data()
     {
-        return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig").map(Arguments::of);
+        return Stream.of("servletConfig", "annotatedConfig", "containerConfig", "sessionConfig")
+            .map(Arguments::of);
     }
 
     @WebSocket(idleTimeout = IDLE_TIMEOUT, maxTextMessageSize = MAX_MESSAGE_SIZE, maxBinaryMessageSize = MAX_MESSAGE_SIZE, inputBufferSize = INPUT_BUFFER_SIZE, batchMode = BatchMode.ON)
@@ -215,7 +215,8 @@ public class ServerConfigTest
         connect.get(5, TimeUnit.SECONDS);
 
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
-        WebSocketCoreSession coreSession = (WebSocketCoreSession)((WebSocketSession)serverEndpoint.session).getCoreSession();
+        WebSocketCoreSession coreSession =
+            (WebSocketCoreSession)((WebSocketSession)serverEndpoint.session).getCoreSession();
         WebSocketConnection connection = coreSession.getConnection();
 
         assertThat(connection.getInputBufferSize(), is(INPUT_BUFFER_SIZE));

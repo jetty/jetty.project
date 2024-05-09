@@ -13,14 +13,6 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Objects;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -30,6 +22,13 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -87,8 +86,7 @@ public class FilterHolder extends Holder<Filter>
     }
 
     @Override
-    public void doStart()
-        throws Exception
+    public void doStart() throws Exception
     {
         super.doStart();
 
@@ -151,8 +149,7 @@ public class FilterHolder extends Holder<Filter>
     }
 
     @Override
-    public void doStop()
-        throws Exception
+    public void doStop() throws Exception
     {
         super.doStop();
         _config = null;
@@ -196,7 +193,8 @@ public class FilterHolder extends Holder<Filter>
         return _filter;
     }
 
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+        throws IOException, ServletException
     {
         if (isAsyncSupported() || !request.isAsyncSupported())
             getFilter().doFilter(request, response, chain);
@@ -220,10 +218,12 @@ public class FilterHolder extends Holder<Filter>
     public void dump(Appendable out, String indent) throws IOException
     {
         if (getInitParameters().isEmpty())
-            Dumpable.dumpObjects(out, indent, this,
-                _filter == null ? getHeldClass() : _filter);
+            Dumpable.dumpObjects(out, indent, this, _filter == null ? getHeldClass() : _filter);
         else
-            Dumpable.dumpObjects(out, indent, this,
+            Dumpable.dumpObjects(
+                out,
+                indent,
+                this,
                 _filter == null ? getHeldClass() : _filter,
                 new DumpableCollection("initParams", getInitParameters().entrySet()));
     }
@@ -231,7 +231,8 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public String toString()
     {
-        return String.format("%s==%s@%x{inst=%b,async=%b,src=%s}",
+        return String.format(
+            "%s==%s@%x{inst=%b,async=%b,src=%s}",
             getName(), getClassName(), hashCode(), _filter != null, isAsyncSupported(), getSource());
     }
 
@@ -245,7 +246,8 @@ public class FilterHolder extends Holder<Filter>
     protected class Registration extends HolderRegistration implements FilterRegistration.Dynamic
     {
         @Override
-        public void addMappingForServletNames(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
+        public void addMappingForServletNames(
+                                              EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
         {
             illegalStateIfContextStarted();
             FilterMapping mapping = new FilterMapping();
@@ -259,7 +261,8 @@ public class FilterHolder extends Holder<Filter>
         }
 
         @Override
-        public void addMappingForUrlPatterns(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns)
+        public void addMappingForUrlPatterns(
+                                             EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns)
         {
             illegalStateIfContextStarted();
             FilterMapping mapping = new FilterMapping();
@@ -354,7 +357,8 @@ public class FilterHolder extends Holder<Filter>
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             _filter.doFilter(request, response, chain);
         }

@@ -15,7 +15,6 @@ module org.eclipse.jetty.http2.client.transport
 {
     requires org.eclipse.jetty.alpn.client;
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.http2.client;
 

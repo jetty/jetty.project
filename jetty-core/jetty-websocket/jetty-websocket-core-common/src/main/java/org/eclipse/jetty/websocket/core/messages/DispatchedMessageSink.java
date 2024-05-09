@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -55,7 +54,8 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
     {
         super(session, methodHandle, autoDemand);
         if (!autoDemand)
-            throw new IllegalArgumentException("%s must be auto-demanding".formatted(getClass().getSimpleName()));
+            throw new IllegalArgumentException(
+                "%s must be auto-demanding".formatted(getClass().getSimpleName()));
         executor = session.getWebSocketComponents().getExecutor();
     }
 

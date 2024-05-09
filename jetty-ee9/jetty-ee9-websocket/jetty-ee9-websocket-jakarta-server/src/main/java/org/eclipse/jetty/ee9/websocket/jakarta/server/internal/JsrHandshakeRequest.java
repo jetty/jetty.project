@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.websocket.server.HandshakeRequest;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -21,9 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.websocket.server.HandshakeRequest;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Request;
@@ -40,15 +39,17 @@ public class JsrHandshakeRequest implements HandshakeRequest
     public JsrHandshakeRequest(ServerUpgradeRequest req)
     {
         this.delegate = req;
-        this.httpServletRequest = (HttpServletRequest)req
-            .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+        this.httpServletRequest =
+            (HttpServletRequest)req.getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
         Map<String, List<String>> headers = delegate.getHeaders().getFieldNamesCollection().stream()
-            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(delegate.getHeaders().getValuesList(name))));
+            .collect(Collectors.toMap(
+                (name) -> name,
+                (name) -> new ArrayList<>(delegate.getHeaders().getValuesList(name))));
         return Collections.unmodifiableMap(headers);
     }
 

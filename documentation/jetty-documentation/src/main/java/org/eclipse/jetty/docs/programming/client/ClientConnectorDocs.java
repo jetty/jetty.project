@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.docs.programming.client;
 
+import static java.lang.System.Logger.Level.INFO;
+
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -24,7 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -40,8 +41,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-
-import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
 public class ClientConnectorDocs
@@ -266,8 +265,8 @@ public class ClientConnectorDocs
         int port = 80;
         SocketAddress address = new InetSocketAddress(host, port);
 
-        ClientConnectionFactory connectionFactory = (endPoint, context) ->
-            new TelnetConnection(endPoint, clientConnector.getExecutor());
+        ClientConnectionFactory connectionFactory =
+            (endPoint, context) -> new TelnetConnection(endPoint, clientConnector.getExecutor());
 
         CompletableFuture<TelnetConnection> connectionPromise = new Promise.Completable<>();
 
@@ -386,12 +385,15 @@ public class ClientConnectorDocs
         int port = 443;
         SocketAddress address = new InetSocketAddress(host, port);
 
-        ClientConnectionFactory connectionFactory = (endPoint, context) ->
-            new TelnetConnection(endPoint, clientConnector.getExecutor());
+        ClientConnectionFactory connectionFactory =
+            (endPoint, context) -> new TelnetConnection(endPoint, clientConnector.getExecutor());
 
         // Wrap the "telnet" ClientConnectionFactory with the SslClientConnectionFactory.
-        connectionFactory = new SslClientConnectionFactory(clientConnector.getSslContextFactory(),
-            clientConnector.getByteBufferPool(), clientConnector.getExecutor(), connectionFactory);
+        connectionFactory = new SslClientConnectionFactory(
+            clientConnector.getSslContextFactory(),
+            clientConnector.getByteBufferPool(),
+            clientConnector.getExecutor(),
+            connectionFactory);
 
         // We will obtain a SslConnection now.
         CompletableFuture<SslConnection> connectionPromise = new Promise.Completable<>();
@@ -407,7 +409,8 @@ public class ClientConnectorDocs
             if (failure == null)
             {
                 // Unwrap the SslConnection to access the "line" APIs in TelnetConnection.
-                TelnetConnection connection = (TelnetConnection)sslConnection.getSslEndPoint().getConnection();
+                TelnetConnection connection =
+                    (TelnetConnection)sslConnection.getSslEndPoint().getConnection();
                 // Register a listener that receives string lines.
                 connection.onLine(line -> System.getLogger("app").log(INFO, "line: {0}", line));
 

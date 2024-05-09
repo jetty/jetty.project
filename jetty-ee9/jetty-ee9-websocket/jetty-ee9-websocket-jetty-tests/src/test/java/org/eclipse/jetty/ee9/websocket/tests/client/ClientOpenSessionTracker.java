@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.tests.client;
 
-import java.util.concurrent.CountDownLatch;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
 import org.eclipse.jetty.io.Connection;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientOpenSessionTracker implements Connection.Listener, WebSocketSessionListener
 {

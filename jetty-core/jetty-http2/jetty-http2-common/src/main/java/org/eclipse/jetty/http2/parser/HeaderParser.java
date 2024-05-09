@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.frames.Frame;
@@ -180,6 +179,10 @@ public class HeaderParser
 
     private enum State
     {
-        LENGTH, TYPE, FLAGS, STREAM_ID, STREAM_ID_BYTES
+        LENGTH,
+        TYPE,
+        FLAGS,
+        STREAM_ID,
+        STREAM_ID_BYTES
     }
 }

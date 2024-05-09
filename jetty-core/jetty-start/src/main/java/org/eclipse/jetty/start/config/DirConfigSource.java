@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.start.config;
 
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
+
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -24,7 +26,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.NaturalSort;
 import org.eclipse.jetty.start.PathMatchers;
@@ -34,8 +35,6 @@ import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.StartIni;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.UsageException;
-
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * A Directory based {@link ConfigSource}.
@@ -277,6 +276,8 @@ public class DirConfigSource implements ConfigSource
     @Override
     public String toString()
     {
-        return String.format("%s[%s,%s,args.length=%d]", this.getClass().getSimpleName(), id, dir, getArgs().size());
+        return String.format(
+            "%s[%s,%s,args.length=%d]",
+            this.getClass().getSimpleName(), id, dir, getArgs().size());
     }
 }

@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.annotations;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +40,7 @@ public class ClassInheritanceHandler extends AnnotationParser.AbstractHandler
     {
         try
         {
-            //Don't scan Object
+            // Don't scan Object
             if ("java.lang.Object".equals(classInfo.getClassName()))
                 return;
 
@@ -49,7 +48,7 @@ public class ClassInheritanceHandler extends AnnotationParser.AbstractHandler
             {
                 addToInheritanceMap(classInfo.getInterfaces()[i], classInfo.getClassName());
             }
-            //To save memory, we don't record classes that only extend Object, as that can be assumed
+            // To save memory, we don't record classes that only extend Object, as that can be assumed
             if (!"java.lang.Object".equals(classInfo.getSuperName()))
             {
                 addToInheritanceMap(classInfo.getSuperName(), classInfo.getClassName());
@@ -64,10 +63,10 @@ public class ClassInheritanceHandler extends AnnotationParser.AbstractHandler
     private void addToInheritanceMap(String interfaceOrSuperClassName, String implementingOrExtendingClassName)
     {
 
-        //As it is likely that the interfaceOrSuperClassName is already in the map, try getting it first
+        // As it is likely that the interfaceOrSuperClassName is already in the map, try getting it first
         Set<String> implementingClasses = _inheritanceMap.get(interfaceOrSuperClassName);
-        //If it isn't in the map, then add it in, but test to make sure that someone else didn't get in 
-        //first and add it
+        // If it isn't in the map, then add it in, but test to make sure that someone else didn't get in
+        // first and add it
         if (implementingClasses == null)
         {
             implementingClasses = ConcurrentHashMap.newKeySet();

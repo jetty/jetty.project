@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -26,10 +30,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContextHandlerDeepTest
 {
@@ -70,16 +70,16 @@ public class ContextHandlerDeepTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-                String msg = """
-                    contextPath=%s
-                    pathInContext=%s
-                    httpURI.getPath=%s
+                String msg =
                     """
-                    .formatted(
-                        Request.getContextPath(request),
-                        Request.getPathInContext(request),
-                        request.getHttpURI().getPath()
-                    );
+                        contextPath=%s
+                        pathInContext=%s
+                        httpURI.getPath=%s
+                        """
+                        .formatted(
+                            Request.getContextPath(request),
+                            Request.getPathInContext(request),
+                            request.getHttpURI().getPath());
 
                 response.write(true, BufferUtil.toBuffer(msg), callback);
                 return true;
@@ -88,12 +88,13 @@ public class ContextHandlerDeepTest
 
         startServer(contextHandlerA);
 
-        String rawRequest = """
-            GET /a/b/c/d HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-                        
-            """;
+        String rawRequest =
+            """
+                GET /a/b/c/d HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+
+                """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getContent(), containsString("contextPath=/a/b/c\n"));

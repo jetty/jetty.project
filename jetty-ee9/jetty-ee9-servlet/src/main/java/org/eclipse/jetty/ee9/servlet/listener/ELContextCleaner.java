@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.servlet.listener;
 
-import java.lang.reflect.Field;
-import java.util.Iterator;
-import java.util.Map;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
+import java.lang.reflect.Field;
+import java.util.Iterator;
+import java.util.Map;
 import org.eclipse.jetty.util.Loader;
 
 /**
@@ -48,20 +47,20 @@ public class ELContextCleaner implements ServletContextListener
     {
         try
         {
-            //Check that the BeanELResolver class is on the classpath
+            // Check that the BeanELResolver class is on the classpath
             Class<?> beanELResolver = Loader.loadClass("jakarta.el.BeanELResolver");
 
-            //Get a reference via reflection to the properties field which is holding class references
+            // Get a reference via reflection to the properties field which is holding class references
             Field field = beanELResolver.getDeclaredField("properties");
 
             field.setAccessible(true);
 
-            //Get rid of references
+            // Get rid of references
             purgeEntries(sce.getServletContext(), field);
         }
         catch (ClassNotFoundException | NoSuchFieldException e)
         {
-            //BeanELResolver not on classpath,or has no .properties field, ignore
+            // BeanELResolver not on classpath,or has no .properties field, ignore
         }
         catch (SecurityException | IllegalArgumentException | IllegalAccessException e)
         {
@@ -92,7 +91,8 @@ public class ELContextCleaner implements ServletContextListener
             }
             else
             {
-                context.log(String.format("not removed: contextClassLoader=%s class's classLoader=%s",
+                context.log(String.format(
+                    "not removed: contextClassLoader=%s class's classLoader=%s",
                     Thread.currentThread().getContextClassLoader(), clazz.getClassLoader()));
             }
         }

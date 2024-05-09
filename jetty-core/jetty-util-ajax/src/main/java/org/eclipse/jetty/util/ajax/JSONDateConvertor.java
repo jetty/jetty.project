@@ -19,7 +19,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
-
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 import org.eclipse.jetty.util.thread.AutoLock;

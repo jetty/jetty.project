@@ -13,25 +13,24 @@
 
 package org.eclipse.jetty.jmx;
 
-import java.lang.management.ManagementFactory;
-import javax.management.Attribute;
-import javax.management.MBeanInfo;
-import javax.management.MBeanOperationInfo;
-import javax.management.MBeanParameterInfo;
-import javax.management.ObjectName;
-
-import com.acme.Derived;
-import com.acme.Managed;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.acme.Derived;
+import com.acme.Managed;
+import java.lang.management.ManagementFactory;
+import javax.management.Attribute;
+import javax.management.MBeanInfo;
+import javax.management.MBeanOperationInfo;
+import javax.management.MBeanParameterInfo;
+import javax.management.ObjectName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ObjectMBeanTest
 {
@@ -154,7 +153,10 @@ public class ObjectMBeanTest
                 doodle = true;
                 assertEquals("Doodle something", operationInfo.getDescription(), "description doesn't match");
                 MBeanParameterInfo[] parameterInfos = operationInfo.getSignature();
-                assertEquals("A description of the argument", parameterInfos[0].getDescription(), "parameter description doesn't match");
+                assertEquals(
+                    "A description of the argument",
+                    parameterInfos[0].getDescription(),
+                    "parameter description doesn't match");
                 assertEquals("doodle", parameterInfos[0].getName(), "parameter name doesn't match");
             }
 
@@ -163,7 +165,8 @@ public class ObjectMBeanTest
             {
                 good = true;
                 assertEquals("test of proxy operations", operationInfo.getDescription(), "description does not match");
-                assertEquals("not bad", mbean.invoke("good", new Object[]{}, new String[]{}), "execution contexts wrong");
+                assertEquals(
+                    "not bad", mbean.invoke("good", new Object[]{}, new String[]{}), "execution contexts wrong");
             }
         }
 

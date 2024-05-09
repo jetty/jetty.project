@@ -33,7 +33,6 @@ import javax.management.MBeanServer;
 import javax.management.MXBean;
 import javax.management.ObjectName;
 import javax.management.modelmbean.ModelMBean;
-
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -218,7 +217,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         List<MetaData> interfaces = Arrays.stream(klass.getInterfaces())
             .map(intf -> findMetaData(container, intf))
             .collect(Collectors.toList());
-        MetaData metaData = new MetaData(klass, findConstructor(klass), findMetaData(container, klass.getSuperclass()), interfaces);
+        MetaData metaData =
+            new MetaData(klass, findConstructor(klass), findMetaData(container, klass.getSuperclass()), interfaces);
 
         if (container != null)
         {
@@ -246,9 +246,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         try
         {
             Class<?> mbeanClass = Loader.loadClass(klass, mName);
-            Constructor<?> constructor = ModelMBean.class.isAssignableFrom(mbeanClass)
-                ? mbeanClass.getConstructor()
-                : mbeanClass.getConstructor(Object.class);
+            Constructor<?> constructor = ModelMBean.class.isAssignableFrom(mbeanClass) ? mbeanClass.getConstructor() : mbeanClass.getConstructor(Object.class);
             if (LOG.isDebugEnabled())
                 LOG.debug("Found MBean wrapper: {} for {}", mName, klass.getName());
             return constructor;
@@ -354,9 +352,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 
                 StringBuilder buf = new StringBuilder();
 
-                String context = (mbean instanceof ObjectMBean)
-                    ? makeName(((ObjectMBean)mbean).getObjectContextBasis())
-                    : makeName(reflectContextBasis(mbean));
+                String context = (mbean instanceof ObjectMBean) ? makeName(((ObjectMBean)mbean).getObjectContextBasis()) : makeName(reflectContextBasis(mbean));
                 if (context == null && parentObjectName != null)
                     context = parentObjectName.getKeyProperty("context");
 
@@ -365,9 +361,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 
                 buf.append("type=").append(type);
 
-                String name = (mbean instanceof ObjectMBean)
-                    ? makeName(((ObjectMBean)mbean).getObjectNameBasis())
-                    : makeName(reflectNameBasis(mbean));
+                String name = (mbean instanceof ObjectMBean) ? makeName(((ObjectMBean)mbean).getObjectNameBasis()) : makeName(reflectNameBasis(mbean));
                 if (name != null && name.length() > 1)
                     buf.append(",").append("name=").append(name);
 
@@ -461,9 +455,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     public void destroy()
     {
         _metaData.clear();
-        _mbeans.values().stream()
-            .filter(Objects::nonNull)
-            .forEach(this::unregister);
+        _mbeans.values().stream().filter(Objects::nonNull).forEach(this::unregister);
         _mbeans.clear();
         _beans.clear();
     }

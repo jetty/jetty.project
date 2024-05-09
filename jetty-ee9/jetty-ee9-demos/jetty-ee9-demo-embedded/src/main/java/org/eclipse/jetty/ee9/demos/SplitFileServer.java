@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.demos;
 
 import java.nio.file.Paths;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -69,9 +68,7 @@ public class SplitFileServer
         // Create a ContextHandlerCollection and set the context handlers to it.
         // This will let jetty process urls against the declared contexts in
         // order to match up content.
-        ContextHandlerCollection contexts = new ContextHandlerCollection(
-            context0, context1
-        );
+        ContextHandlerCollection contexts = new ContextHandlerCollection(context0, context1);
         server.setHandler(contexts);
         return server;
     }

@@ -13,13 +13,20 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -50,14 +57,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class GoAwayTest extends AbstractTest
 {
     @Test
@@ -71,7 +70,8 @@ public class GoAwayTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -126,7 +126,8 @@ public class GoAwayTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -176,15 +177,17 @@ public class GoAwayTest extends AbstractTest
                 // The client sends the second request and should eventually fail it
                 // locally since it has a larger streamId, and the server discarded it.
                 MetaData.Request request2 = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-                clientSession.newStream(new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener()
-                {
-                    @Override
-                    public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
+                clientSession.newStream(
+                    new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener()
                     {
-                        streamFailureLatch.countDown();
-                        callback.succeeded();
-                    }
-                });
+                        @Override
+                        public void onFailure(
+                                              Stream stream, int error, String reason, Throwable failure, Callback callback)
+                        {
+                            streamFailureLatch.countDown();
+                            callback.succeeded();
+                        }
+                    });
             }
         });
 
@@ -210,7 +213,8 @@ public class GoAwayTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -358,7 +362,10 @@ public class GoAwayTest extends AbstractTest
 
         // Now the client cannot create new streams.
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
-        clientSession.newStream(new HeadersFrame(newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY), null, true), streamPromise, null);
+        clientSession.newStream(
+            new HeadersFrame(newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY), null, true),
+            streamPromise,
+            null);
         assertThrows(ExecutionException.class, () -> streamPromise.get(5, TimeUnit.SECONDS));
 
         // The client must not reply to a graceful GOAWAY.
@@ -366,7 +373,8 @@ public class GoAwayTest extends AbstractTest
 
         // Previous streams must complete successfully.
         Stream serverStream = serverStreamRef.get();
-        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+        MetaData.Response response =
+            new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
         serverStream.headers(new HeadersFrame(serverStream.getId(), response, null, true), Callback.NOOP);
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
@@ -390,49 +398,52 @@ public class GoAwayTest extends AbstractTest
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
-        start(new ServerSessionListener()
-        {
-            @Override
-            public void onAccept(Session session)
+        start(
+            new ServerSessionListener()
             {
-                serverSessionRef.set(session);
-            }
-
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                stream.demand();
-                return new Stream.Listener()
+                @Override
+                public void onAccept(Session session)
                 {
-                    @Override
-                    public void onDataAvailable(Stream stream)
+                    serverSessionRef.set(session);
+                }
+
+                @Override
+                public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+                {
+                    stream.demand();
+                    return new Stream.Listener()
                     {
-                        // Send the response, but do not read.
-                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                    }
-                };
-            }
+                        @Override
+                        public void onDataAvailable(Stream stream)
+                        {
+                            // Send the response, but do not read.
+                            MetaData.Response response = new MetaData.Response(
+                                HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        }
+                    };
+                }
 
-            @Override
-            public void onGoAway(Session session, GoAwayFrame frame)
-            {
-                serverGoAwayLatch.countDown();
-            }
+                @Override
+                public void onGoAway(Session session, GoAwayFrame frame)
+                {
+                    serverGoAwayLatch.countDown();
+                }
 
-            @Override
-            public void onClose(Session session, GoAwayFrame frame, Callback callback)
+                @Override
+                public void onClose(Session session, GoAwayFrame frame, Callback callback)
+                {
+                    serverCloseLatch.countDown();
+                    callback.succeeded();
+                }
+            },
+            h2 ->
             {
-                serverCloseLatch.countDown();
-                callback.succeeded();
-            }
-        }, h2 ->
-        {
-            // Use the simple, predictable, strategy for window updates.
-            h2.setFlowControlStrategyFactory(SimpleFlowControlStrategy::new);
-            h2.setInitialSessionRecvWindow(flowControlWindow);
-            h2.setInitialStreamRecvWindow(flowControlWindow);
-        });
+                // Use the simple, predictable, strategy for window updates.
+                h2.setFlowControlStrategyFactory(SimpleFlowControlStrategy::new);
+                h2.setInitialSessionRecvWindow(flowControlWindow);
+                h2.setInitialStreamRecvWindow(flowControlWindow);
+            });
 
         CountDownLatch clientSettingsLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
@@ -471,34 +482,48 @@ public class GoAwayTest extends AbstractTest
         MetaData.Request request1 = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame headersFrame1 = new HeadersFrame(request1, null, false);
         DataFrame dataFrame1 = new DataFrame(ByteBuffer.allocate(flowControlWindow / 2), false);
-        ((HTTP2Session)clientSession).newStream(new HTTP2Stream.FrameList(headersFrame1, dataFrame1, null), new Promise.Adapter<>(), new Stream.Listener()
-        {
-            @Override
-            public void onHeaders(Stream clientStream1, HeadersFrame frame)
-            {
-                // Send the server GOAWAY frame.
-                serverSessionRef.get().close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
-
-                // Send a second, in-flight, stream with data, which
-                // will exhaust the client session flow control window.
-                // The server should consume the data even if it will drop
-                // this stream, so that the first stream can send more data.
-                MetaData.Request request2 = newRequest("POST", HttpFields.EMPTY);
-                HeadersFrame headersFrame2 = new HeadersFrame(request2, null, false);
-                DataFrame dataFrame2 = new DataFrame(ByteBuffer.allocate(flowControlWindow / 2), true);
-                ((HTTP2Session)clientStream1.getSession()).newStream(new HTTP2Stream.FrameList(headersFrame2, dataFrame2, null), new Promise.Adapter<>()
+        ((HTTP2Session)clientSession)
+            .newStream(
+                new HTTP2Stream.FrameList(headersFrame1, dataFrame1, null),
+                new Promise.Adapter<>(),
+                new Stream.Listener()
                 {
                     @Override
-                    public void succeeded(Stream clientStream2)
+                    public void onHeaders(Stream clientStream1, HeadersFrame frame)
                     {
-                        // After the in-flight stream is sent, try to complete the first stream.
-                        // The client should receive the window update from
-                        // the server and be able to complete this stream.
-                        clientStream1.data(new DataFrame(clientStream1.getId(), ByteBuffer.allocate(flowControlWindow / 2), true), Callback.NOOP);
+                        // Send the server GOAWAY frame.
+                        serverSessionRef.get().close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
+
+                        // Send a second, in-flight, stream with data, which
+                        // will exhaust the client session flow control window.
+                        // The server should consume the data even if it will drop
+                        // this stream, so that the first stream can send more data.
+                        MetaData.Request request2 = newRequest("POST", HttpFields.EMPTY);
+                        HeadersFrame headersFrame2 = new HeadersFrame(request2, null, false);
+                        DataFrame dataFrame2 = new DataFrame(ByteBuffer.allocate(flowControlWindow / 2), true);
+                        ((HTTP2Session)clientStream1.getSession())
+                            .newStream(
+                                new HTTP2Stream.FrameList(headersFrame2, dataFrame2, null),
+                                new Promise.Adapter<>()
+                                {
+                                    @Override
+                                    public void succeeded(Stream clientStream2)
+                                    {
+                                        // After the in-flight stream is sent, try to complete the first
+                                        // stream.
+                                        // The client should receive the window update from
+                                        // the server and be able to complete this stream.
+                                        clientStream1.data(
+                                            new DataFrame(
+                                                clientStream1.getId(),
+                                                ByteBuffer.allocate(flowControlWindow / 2),
+                                                true),
+                                            Callback.NOOP);
+                                    }
+                                },
+                                AUTO_DISCARD);
                     }
-                }, AUTO_DISCARD);
-            }
-        });
+                });
 
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverGoAwayLatch.await(5, TimeUnit.SECONDS));
@@ -583,7 +608,8 @@ public class GoAwayTest extends AbstractTest
 
         // Complete the stream.
         Stream serverStream = serverStreamRef.get();
-        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+        MetaData.Response response =
+            new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
         serverStream.headers(new HeadersFrame(serverStream.getId(), response, null, true), Callback.NOOP);
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
@@ -668,7 +694,8 @@ public class GoAwayTest extends AbstractTest
 
         // Complete the stream, the server should send the non-graceful GOAWAY.
         Stream serverStream = serverStreamRef.get();
-        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+        MetaData.Response response =
+            new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
         serverStream.headers(new HeadersFrame(serverStream.getId(), response, null, true), Callback.NOOP);
 
         // The server already received the client GOAWAY,
@@ -684,7 +711,8 @@ public class GoAwayTest extends AbstractTest
     }
 
     @Test
-    public void testClientGracefulGoAwayWithStreamsServerGracefulGoAwayServerClosesWhenLastStreamCloses() throws Exception
+    public void testClientGracefulGoAwayWithStreamsServerGracefulGoAwayServerClosesWhenLastStreamCloses()
+        throws Exception
     {
         AtomicReference<Stream> serverStreamRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
@@ -705,7 +733,8 @@ public class GoAwayTest extends AbstractTest
                         data.release();
                         if (data.frame().isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            MetaData.Response response = new MetaData.Response(
+                                HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         }
                     }
@@ -775,7 +804,9 @@ public class GoAwayTest extends AbstractTest
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
 
-        assertFalse(((HTTP2Session)serverStreamRef.get().getSession()).getEndPoint().isOpen());
+        assertFalse(((HTTP2Session)serverStreamRef.get().getSession())
+            .getEndPoint()
+            .isOpen());
         assertFalse(((HTTP2Session)clientSession).getEndPoint().isOpen());
     }
 
@@ -795,7 +826,9 @@ public class GoAwayTest extends AbstractTest
             }
         });
 
-        Session clientSession = newClientSession(new Session.Listener() {});
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+        });
         // TODO: get rid of sleep!
         // Wait for the SETTINGS frames to be exchanged.
         Thread.sleep(500);
@@ -1139,7 +1172,8 @@ public class GoAwayTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testConnectionIsRemovedFromPoolOnGracefulGoAwayReceived(boolean graceful) throws Exception
     {
         long timeout = 5000;
@@ -1180,7 +1214,8 @@ public class GoAwayTest extends AbstractTest
                         Thread.sleep(1000);
 
                         // This request will be performed on a different connection.
-                        httpClient.newRequest("localhost", connector.getLocalPort())
+                        httpClient
+                            .newRequest("localhost", connector.getLocalPort())
                             .path("/after")
                             .timeout(timeout / 2, TimeUnit.MILLISECONDS)
                             .send(result ->
@@ -1211,19 +1246,22 @@ public class GoAwayTest extends AbstractTest
             {
                 long remotePort = ((InetSocketAddress)stream.getSession().getRemoteSocketAddress()).getPort();
                 HttpFields responseHeaders = HttpFields.build().put("X-Remote-Port", remotePort);
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, responseHeaders);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, responseHeaders);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true));
             }
         });
 
-        Response response = httpClient.newRequest("localhost", connector.getLocalPort())
+        Response response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .path("/prime")
             .timeout(timeout, TimeUnit.MILLISECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         long primePort = response.getHeaders().getLongField("X-Remote-Port");
 
-        response = httpClient.newRequest("localhost", connector.getLocalPort())
+        response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .path("/goaway")
             .timeout(timeout, TimeUnit.MILLISECONDS)
             .send();

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util;
 
 import java.util.concurrent.TimeUnit;
-
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
@@ -105,7 +104,7 @@ public class StringReplaceBenchmark
     {
         Options opt = new OptionsBuilder()
             .include(StringReplaceBenchmark.class.getSimpleName())
-//            .addProfiler(GCProfiler.class)
+            //            .addProfiler(GCProfiler.class)
             .forks(1)
             .build();
 

@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import jakarta.servlet.DispatcherType;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -33,6 +32,7 @@ public class FilterMapping implements Dumpable
      * Dispatch types
      */
     public static final int DEFAULT = 0;
+
     public static final int REQUEST = 1;
     public static final int FORWARD = 2;
     public static final int INCLUDE = 4;
@@ -247,7 +247,7 @@ public class FilterMapping implements Dumpable
      */
     public void setFilterName(String filterName)
     {
-        _filterName = Objects.requireNonNull(filterName); 
+        _filterName = Objects.requireNonNull(filterName);
     }
 
     /**
@@ -305,11 +305,7 @@ public class FilterMapping implements Dumpable
     @Override
     public String toString()
     {
-        return
-            TypeUtil.asList(_pathSpecs) + "/" +
-                TypeUtil.asList(_servletNames) + "/" +
-                Arrays.stream(DispatcherType.values()).filter(this::appliesTo).collect(Collectors.toSet()) + "=>" +
-                _filterName;
+        return TypeUtil.asList(_pathSpecs) + "/" + TypeUtil.asList(_servletNames) + "/" + Arrays.stream(DispatcherType.values()).filter(this::appliesTo).collect(Collectors.toSet()) + "=>" + _filterName;
     }
 
     @Override

@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.ee9.websocket.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -24,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.ee9.websocket.api.Session;
@@ -47,15 +55,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WebSocketClientTest
 {
@@ -81,20 +80,19 @@ public class WebSocketClientTest
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
 
-        JettyWebSocketServletContainerInitializer.configure(context,
-            (servletContext, configuration) ->
+        JettyWebSocketServletContainerInitializer.configure(context, (servletContext, configuration) ->
+        {
+            configuration.setIdleTimeout(Duration.ofSeconds(10));
+            configuration.addMapping("/echo", (req, resp) ->
             {
-                configuration.setIdleTimeout(Duration.ofSeconds(10));
-                configuration.addMapping("/echo", (req, resp) ->
-                {
-                    if (req.hasSubProtocol("echo"))
-                        resp.setAcceptedSubProtocol("echo");
-                    return new EchoSocket();
-                });
-                configuration.addMapping("/anno-max-message", (req, resp) -> new AnnoMaxMessageEndpoint());
-                configuration.addMapping("/connect-msg", (req, resp) -> new ConnectMessageEndpoint());
-                configuration.addMapping("/get-params", (req, resp) -> new ParamsEndpoint());
+                if (req.hasSubProtocol("echo"))
+                    resp.setAcceptedSubProtocol("echo");
+                return new EchoSocket();
             });
+            configuration.addMapping("/anno-max-message", (req, resp) -> new AnnoMaxMessageEndpoint());
+            configuration.addMapping("/connect-msg", (req, resp) -> new ConnectMessageEndpoint());
+            configuration.addMapping("/get-params", (req, resp) -> new ParamsEndpoint());
+        });
 
         server.setHandler(context);
         server.start();
@@ -321,7 +319,8 @@ public class WebSocketClientTest
             assertThat("Local Socket Address", local, notNullValue());
             assertThat("Remote Socket Address", remote, notNullValue());
 
-            // Hard to validate (in a portable unit test) the local address that was used/bound in the low level Jetty Endpoint
+            // Hard to validate (in a portable unit test) the local address that was used/bound in the low level Jetty
+            // Endpoint
             assertThat("Local Socket Address / Host", local.getAddress().getHostAddress(), notNullValue());
             assertThat("Local Socket Address / Port", local.getPort(), greaterThan(0));
 

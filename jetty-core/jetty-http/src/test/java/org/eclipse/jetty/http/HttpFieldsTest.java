@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +40,6 @@ import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -36,18 +47,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpFieldsTest
 {
@@ -94,17 +93,14 @@ public class HttpFieldsTest
                 {
                     return fields.asImmutable();
                 }
-            }
-        );
+            });
     }
 
     @ParameterizedTest
     @MethodSource("mutables")
     public void testPut(HttpFields.Mutable header)
     {
-        header
-            .put("name0", "value:0")
-            .put("name1", "value1");
+        header.put("name0", "value:0").put("name1", "value1");
 
         assertEquals(2, header.size());
         assertEquals("value:0", header.get("name0"));
@@ -130,7 +126,9 @@ public class HttpFieldsTest
         header.add("name1", "extra1");
         header.put(new HttpField("name0", "ZERO"));
         header.put(new HttpField("name1", "ONE"));
-        assertThat(header.stream().map(HttpField::getValue).collect(Collectors.toList()), Matchers.contains("ZERO", "ONE"));
+        assertThat(
+            header.stream().map(HttpField::getValue).collect(Collectors.toList()),
+            Matchers.contains("ZERO", "ONE"));
 
         header.put("name0", (String)null);
         assertThat(header.stream().map(HttpField::getValue).collect(Collectors.toList()), Matchers.contains("ONE"));
@@ -140,8 +138,7 @@ public class HttpFieldsTest
     @MethodSource("mutables")
     public void testPutTo(HttpFields.Mutable header)
     {
-        header
-            .put("name0", "value0")
+        header.put("name0", "value0")
             .put("name1", "value:A")
             .add("name1", "value:B")
             .add("name2", "");
@@ -160,9 +157,8 @@ public class HttpFieldsTest
     @Test
     public void testImmutable()
     {
-        HttpFields header = HttpFields.build()
-            .put("name0", "value0")
-            .put("name1", "value1").asImmutable();
+        HttpFields header =
+            HttpFields.build().put("name0", "value0").put("name1", "value1").asImmutable();
 
         assertEquals("value0", header.get("name0"));
         assertEquals("value0", header.get("Name0"));
@@ -185,21 +181,17 @@ public class HttpFieldsTest
     {
         return Stream.of(
             Arguments.of(
-                (Consumer<HttpFields.Mutable>)m -> m.remove("name0"),
-                (Consumer<HttpFields.Mutable>)m ->
+                (Consumer<HttpFields.Mutable>)m -> m.remove("name0"), (Consumer<HttpFields.Mutable>)m ->
                 {
                     assertThat(m.size(), is(1));
                     assertThat(m.get("name1"), is("value1"));
-                }
-            ),
+                }),
             Arguments.of(
-                (Consumer<HttpFields.Mutable>)m -> m.remove("name1"),
-                (Consumer<HttpFields.Mutable>)m ->
+                (Consumer<HttpFields.Mutable>)m -> m.remove("name1"), (Consumer<HttpFields.Mutable>)m ->
                 {
                     assertThat(m.size(), is(1));
                     assertThat(m.get("name0"), is("value0"));
-                }
-            ),
+                }),
             Arguments.of(
                 (Consumer<HttpFields.Mutable>)m ->
                 {
@@ -211,17 +203,14 @@ public class HttpFieldsTest
                 {
                     assertThat(m.size(), is(1));
                     assertThat(m.get("name1"), is("value1"));
-                }
-            ),
+                }),
             Arguments.of(
-                (Consumer<HttpFields.Mutable>)m -> m.remove("name2"),
-                (Consumer<HttpFields.Mutable>)m ->
+                (Consumer<HttpFields.Mutable>)m -> m.remove("name2"), (Consumer<HttpFields.Mutable>)m ->
                 {
                     assertThat(m.size(), is(2));
                     assertThat(m.get("name0"), is("value0"));
                     assertThat(m.get("name1"), is("value1"));
-                }
-            ),
+                }),
             Arguments.of(
                 (Consumer<HttpFields.Mutable>)m -> m.add("name2", "value2"),
                 (Consumer<HttpFields.Mutable>)m ->
@@ -230,8 +219,7 @@ public class HttpFieldsTest
                     assertThat(m.get("name0"), is("value0"));
                     assertThat(m.get("name1"), is("value1"));
                     assertThat(m.get("name2"), is("value2"));
-                }
-            ),
+                }),
             Arguments.of(
                 (Consumer<HttpFields.Mutable>)m -> m.put("name2", "value2"),
                 (Consumer<HttpFields.Mutable>)m ->
@@ -240,28 +228,24 @@ public class HttpFieldsTest
                     assertThat(m.get("name0"), is("value0"));
                     assertThat(m.get("name1"), is("value1"));
                     assertThat(m.get("name2"), is("value2"));
-                }
-            ),
+                }),
             Arguments.of(
-                (Consumer<HttpFields.Mutable>)m -> m.put("name1", "ONE"),
-                (Consumer<HttpFields.Mutable>)m ->
+                (Consumer<HttpFields.Mutable>)m -> m.put("name1", "ONE"), (Consumer<HttpFields.Mutable>)m ->
                 {
                     assertThat(m.size(), is(2));
                     assertThat(m.get("name0"), is("value0"));
                     assertThat(m.get("name1"), is("ONE"));
-                }
-            )
-        );
+                }));
     }
 
     @ParameterizedTest
     @MethodSource("afterAsImmutable")
-    public void testMutationAfterAsImmutable(Consumer<HttpFields.Mutable> mutation, Consumer<HttpFields.Mutable> check)
+    public void testMutationAfterAsImmutable(
+                                             Consumer<HttpFields.Mutable> mutation, Consumer<HttpFields.Mutable> check)
     {
         HttpFields.Mutable mutable = HttpFields.build();
-        HttpFields immutable = mutable
-            .put("name0", "value0")
-            .put("name1", "value1").asImmutable();
+        HttpFields immutable =
+            mutable.put("name0", "value0").put("name1", "value1").asImmutable();
 
         assertThat(immutable.size(), is(2));
         assertThat(immutable.get("name0"), is("value0"));
@@ -280,14 +264,15 @@ public class HttpFieldsTest
     @MethodSource("mutables")
     public void testMutable(HttpFields.Mutable mutable)
     {
-        HttpFields headers = mutable
-            .add(HttpHeader.ETAG, "tag")
+        HttpFields headers = mutable.add(HttpHeader.ETAG, "tag")
             .add("name0", "value0")
-            .add("name1", "value1").asImmutable();
+            .add("name1", "value1")
+            .asImmutable();
 
         headers = HttpFields.build(headers, EnumSet.of(HttpHeader.ETAG, HttpHeader.CONTENT_RANGE))
             .add(new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
-            .addDateField("name2", System.currentTimeMillis()).asImmutable();
+            .addDateField("name2", System.currentTimeMillis())
+            .asImmutable();
 
         headers = HttpFields.build(headers, new HttpField(HttpHeader.CONNECTION, "open"));
 
@@ -305,18 +290,31 @@ public class HttpFieldsTest
         map.put(HttpFields.build().add("X", "1").add(HttpHeader.ETAG, "tag").asImmutable(), "1");
         map.put(HttpFields.build().add("X", "2").add(HttpHeader.ETAG, "other").asImmutable(), "2");
 
-        assertThat(map.get(HttpFields.build().add("X", "1").add(HttpHeader.ETAG, "tag").asImmutable()), is("1"));
-        assertThat(map.get(HttpFields.build().add("X", "2").add(HttpHeader.ETAG, "other").asImmutable()), is("2"));
+        assertThat(
+            map.get(HttpFields.build()
+                .add("X", "1")
+                .add(HttpHeader.ETAG, "tag")
+                .asImmutable()),
+            is("1"));
+        assertThat(
+            map.get(HttpFields.build()
+                .add("X", "2")
+                .add(HttpHeader.ETAG, "other")
+                .asImmutable()),
+            is("2"));
         assertThat(map.get(HttpFields.build().add("X", "2").asImmutable()), nullValue());
-        assertThat(map.get(HttpFields.build().add("X", "2").add(HttpHeader.ETAG, "tag").asImmutable()), nullValue());
+        assertThat(
+            map.get(HttpFields.build()
+                .add("X", "2")
+                .add(HttpHeader.ETAG, "tag")
+                .asImmutable()),
+            nullValue());
     }
 
     @Test
     public void testGet()
     {
-        HttpFields header = HttpFields.build()
-            .put("name0", "value0")
-            .put("name1", "value1");
+        HttpFields header = HttpFields.build().put("name0", "value0").put("name1", "value1");
 
         assertEquals("value0", header.get("name0"));
         assertEquals("value0", header.get("Name0"));
@@ -384,9 +382,18 @@ public class HttpFieldsTest
         BufferUtil.flipToFlush(buffer, 0);
         String out = BufferUtil.toString(buffer).toLowerCase(Locale.ENGLISH);
 
-        assertThat(out, Matchers.containsString((HttpHeader.CONNECTION + ": " + HttpHeaderValue.KEEP_ALIVE).toLowerCase(Locale.ENGLISH)));
-        assertThat(out, Matchers.containsString((HttpHeader.TRANSFER_ENCODING + ": " + HttpHeaderValue.CHUNKED).toLowerCase(Locale.ENGLISH)));
-        assertThat(out, Matchers.containsString((HttpHeader.CONTENT_ENCODING + ": " + HttpHeaderValue.GZIP).toLowerCase(Locale.ENGLISH)));
+        assertThat(
+            out,
+            Matchers.containsString(
+                (HttpHeader.CONNECTION + ": " + HttpHeaderValue.KEEP_ALIVE).toLowerCase(Locale.ENGLISH)));
+        assertThat(
+            out,
+            Matchers.containsString(
+                (HttpHeader.TRANSFER_ENCODING + ": " + HttpHeaderValue.CHUNKED).toLowerCase(Locale.ENGLISH)));
+        assertThat(
+            out,
+            Matchers.containsString(
+                (HttpHeader.CONTENT_ENCODING + ": " + HttpHeaderValue.GZIP).toLowerCase(Locale.ENGLISH)));
     }
 
     @ParameterizedTest
@@ -430,8 +437,7 @@ public class HttpFieldsTest
     @MethodSource("mutables")
     public void testRemove(HttpFields.Mutable header)
     {
-        header
-            .put("name0", "value0")
+        header.put("name0", "value0")
             .add(HttpHeader.CONTENT_TYPE, "text")
             .add("name1", "WRONG")
             .add(HttpHeader.EXPECT, "spanish inquisition")
@@ -491,10 +497,14 @@ public class HttpFieldsTest
 
         assertEquals(7, originalHeaders.size(), "Size of Original fields");
 
-        assertEquals("Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", originalHeaders.get(HttpHeader.ACCEPT_ENCODING));
+        assertEquals(
+            "Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", originalHeaders.get(HttpHeader.ACCEPT_ENCODING));
         assertEquals("iso-8859-5, unicode-1-1;q=0.8", originalHeaders.get(HttpHeader.ACCEPT_CHARSET));
         assertEquals("images/jpeg", originalHeaders.get(HttpHeader.ACCEPT), "Should have only gotten the first value?");
-        assertEquals("images/jpeg, text/plain, */*", String.join(", ", originalHeaders.getValuesList(HttpHeader.ACCEPT)), "Should have gotten all of the values");
+        assertEquals(
+            "images/jpeg, text/plain, */*",
+            String.join(", ", originalHeaders.getValuesList(HttpHeader.ACCEPT)),
+            "Should have gotten all of the values");
 
         HttpFields immutable = originalHeaders.asImmutable();
 
@@ -503,7 +513,10 @@ public class HttpFieldsTest
         assertEquals("Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", immutable.get(HttpHeader.ACCEPT_ENCODING));
         assertEquals("iso-8859-5, unicode-1-1;q=0.8", immutable.get(HttpHeader.ACCEPT_CHARSET));
         assertEquals("images/jpeg", immutable.get(HttpHeader.ACCEPT), "Should have only gotten the first value?");
-        assertEquals("images/jpeg, text/plain, */*", String.join(", ", immutable.getValuesList(HttpHeader.ACCEPT)), "Should have gotten all of the values");
+        assertEquals(
+            "images/jpeg, text/plain, */*",
+            String.join(", ", immutable.getValuesList(HttpHeader.ACCEPT)),
+            "Should have gotten all of the values");
 
         // Lets remove "Accept" headers in a copy of the headers
         HttpFields.Mutable headersCopy = HttpFields.build(immutable);
@@ -513,7 +526,8 @@ public class HttpFieldsTest
         // Attempt to remove all the "Accept" headers.
         headersCopy.remove("Accept");
 
-        assertEquals("Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", headersCopy.get(HttpHeader.ACCEPT_ENCODING));
+        assertEquals(
+            "Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", headersCopy.get(HttpHeader.ACCEPT_ENCODING));
         assertNull(headersCopy.get(HttpHeader.ACCEPT));
     }
 
@@ -929,7 +943,8 @@ public class HttpFieldsTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Host", "host", "HOST", "HoSt", "Connection", "CONNECTION", "connection", "CoNnEcTiOn"})
+    @ValueSource(strings =
+    {"Host", "host", "HOST", "HoSt", "Connection", "CONNECTION", "connection", "CoNnEcTiOn"})
     public void testContainsKeyTrue(String keyName)
     {
         HttpFields.Mutable fields = HttpFields.build();
@@ -941,7 +956,8 @@ public class HttpFieldsTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Content-Type", "Content-Length", "X-Bogus", ""})
+    @ValueSource(strings =
+    {"Content-Type", "Content-Length", "X-Bogus", ""})
     public void testContainsKeyFalse(String keyName)
     {
         HttpFields.Mutable fields = HttpFields.build();
@@ -1132,10 +1148,7 @@ public class HttpFieldsTest
         Iterator<HttpField> i = header.iterator();
         assertThat(i.hasNext(), is(false));
 
-        header.add("REMOVE", "ME")
-            .add("name1", "valueA")
-            .add("name2", "valueB")
-            .add("name3", "valueC");
+        header.add("REMOVE", "ME").add("name1", "valueA").add("name2", "valueB").add("name3", "valueC");
 
         i = header.iterator();
 
@@ -1208,7 +1221,12 @@ public class HttpFieldsTest
         fields.put("name2", "valueB");
         fields.add("name3", "valueC");
         assertThat(fields.stream().count(), is(3L));
-        assertThat(fields.stream().map(HttpField::getName).filter("name2"::equalsIgnoreCase).count(), is(1L));
+        assertThat(
+            fields.stream()
+                .map(HttpField::getName)
+                .filter("name2"::equalsIgnoreCase)
+                .count(),
+            is(1L));
     }
 
     @Test
@@ -1223,20 +1241,30 @@ public class HttpFieldsTest
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value"));
 
         fields.computeField("Test", (n, f) -> new HttpField(n, "one"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Before: value", "Test: one"));
 
         fields.add(new HttpField("After", "value"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one", "After: value"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Before: value", "Test: one", "After: value"));
 
         fields.add(new HttpField("Test", "two"));
         fields.add(new HttpField("Test", "three"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one", "After: value", "Test: two", "Test: three"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Before: value", "Test: one", "After: value", "Test: two", "Test: three"));
 
         fields.computeField("Test", (n, f) -> new HttpField("TEST", "count=" + f.size()));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "TEST: count=3", "After: value"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Before: value", "TEST: count=3", "After: value"));
 
         fields.computeField("TEST", (n, f) -> null);
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "After: value"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Before: value", "After: value"));
     }
 
     @Test
@@ -1266,7 +1294,9 @@ public class HttpFieldsTest
         fields.put(new HttpField(HttpHeader.VARY, "one"));
         fields.add(new HttpField(HttpHeader.VARY, "two"));
         fields.ensureField(new HttpField(HttpHeader.VARY, "three"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Vary: one, two, three"));
     }
 
     @Test
@@ -1285,10 +1315,14 @@ public class HttpFieldsTest
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two"));
 
         fields.ensureField(new HttpField(HttpHeader.VARY, "three, one"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Vary: one, two, three"));
 
         fields.ensureField(new HttpField(HttpHeader.VARY, "four, five"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three, four, five"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Vary: one, two, three, four, five"));
 
         // many existing cases
         fields.put(new HttpField(HttpHeader.VARY, "one"));
@@ -1299,12 +1333,16 @@ public class HttpFieldsTest
         fields.put(new HttpField(HttpHeader.VARY, "one"));
         fields.add(new HttpField(HttpHeader.VARY, "two"));
         fields.ensureField(new HttpField(HttpHeader.VARY, "three, two"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Vary: one, two, three"));
 
         fields.put(new HttpField(HttpHeader.VARY, "one"));
         fields.add(new HttpField(HttpHeader.VARY, "two"));
         fields.ensureField(new HttpField(HttpHeader.VARY, "three, four"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three, four"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Vary: one, two, three, four"));
     }
 
     @Test
@@ -1334,7 +1372,9 @@ public class HttpFieldsTest
         fields.put(new HttpField("Test", "one"));
         fields.add(new HttpField("Test", "two"));
         fields.ensureField(new HttpField("Test", "three"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Test: one, two, three"));
     }
 
     @Test
@@ -1353,10 +1393,14 @@ public class HttpFieldsTest
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two"));
 
         fields.ensureField(new HttpField("Test", "three, one"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Test: one, two, three"));
 
         fields.ensureField(new HttpField("Test", "four, five"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three, four, five"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Test: one, two, three, four, five"));
 
         // many existing cases
         fields.put(new HttpField("Test", "one"));
@@ -1367,12 +1411,16 @@ public class HttpFieldsTest
         fields.put(new HttpField("Test", "one"));
         fields.add(new HttpField("Test", "two"));
         fields.ensureField(new HttpField("Test", "three, two"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Test: one, two, three"));
 
         fields.put(new HttpField("Test", "one"));
         fields.add(new HttpField("Test", "two"));
         fields.ensureField(new HttpField("Test", "three, four"));
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three, four"));
+        assertThat(
+            fields.stream().map(HttpField::toString).collect(Collectors.toList()),
+            contains("Test: one, two, three, four"));
     }
 
     @Test

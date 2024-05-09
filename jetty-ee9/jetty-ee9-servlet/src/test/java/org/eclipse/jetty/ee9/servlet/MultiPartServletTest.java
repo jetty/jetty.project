@@ -13,6 +13,22 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -25,13 +41,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
-
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Part;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -58,16 +67,6 @@ import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class MultiPartServletTest
 {
@@ -140,12 +139,12 @@ public class MultiPartServletTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        MultipartConfigElement config = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
-            MAX_FILE_SIZE, -1, 1);
-        MultipartConfigElement requestSizedConfig = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
-            -1, MAX_REQUEST_SIZE, 1);
-        MultipartConfigElement defaultConfig = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
-            -1, -1, 1);
+        MultipartConfigElement config =
+            new MultipartConfigElement(tmpDir.toAbsolutePath().toString(), MAX_FILE_SIZE, -1, 1);
+        MultipartConfigElement requestSizedConfig =
+            new MultipartConfigElement(tmpDir.toAbsolutePath().toString(), -1, MAX_REQUEST_SIZE, 1);
+        MultipartConfigElement defaultConfig =
+            new MultipartConfigElement(tmpDir.toAbsolutePath().toString(), -1, -1, 1);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
@@ -279,7 +278,8 @@ public class MultiPartServletTest
         assert400orEof(listener, null);
     }
 
-    private static void assert400orEof(InputStreamResponseListener listener, Consumer<String> checkbody) throws InterruptedException, TimeoutException
+    private static void assert400orEof(InputStreamResponseListener listener, Consumer<String> checkbody)
+        throws InterruptedException, TimeoutException
     {
         // There is a race here, either we fail trying to write some more content OR
         // we get 400 response, for some reason reading the content throws EofException.
@@ -321,7 +321,8 @@ public class MultiPartServletTest
                 .send();
 
             assertEquals(500, response.getStatus());
-            assertThat(response.getContentAsString(),
+            assertThat(
+                response.getContentAsString(),
                 containsString("Multipart Mime part largePart exceeds max filesize"));
         }
 
@@ -333,8 +334,8 @@ public class MultiPartServletTest
     @Test
     public void testMultiPartGzip() throws Exception
     {
-        String contentString = "the quick brown fox jumps over the lazy dog, " +
-            "the quick brown fox jumps over the lazy dog";
+        String contentString =
+            "the quick brown fox jumps over the lazy dog, " + "the quick brown fox jumps over the lazy dog";
         StringRequestContent content = new StringRequestContent(contentString);
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();

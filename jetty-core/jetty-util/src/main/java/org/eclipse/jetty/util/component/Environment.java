@@ -18,7 +18,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
-
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.TypeUtil;
 
@@ -34,7 +33,7 @@ public interface Environment extends Attributes
     {
         return Collections.unmodifiableCollection(Named.__environments.values());
     }
-    
+
     static Environment get(String name)
     {
         return Named.__environments.get(name);
@@ -88,7 +87,7 @@ public interface Environment extends Attributes
 
         public Named(String name)
         {
-            this (name, null);
+            this(name, null);
         }
 
         public Named(String name, ClassLoader classLoader)
@@ -118,10 +117,13 @@ public interface Environment extends Attributes
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            Dumpable.dumpObjects(out, indent,
+            Dumpable.dumpObjects(
+                out,
+                indent,
                 this,
                 new ClassLoaderDump(getClassLoader()),
-                new DumpableCollection("Attributes " + _name, asAttributeMap().entrySet()));
+                new DumpableCollection(
+                    "Attributes " + _name, asAttributeMap().entrySet()));
         }
 
         @Override
@@ -130,5 +132,4 @@ public interface Environment extends Attributes
             return "%s@%x{%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name);
         }
     }
-
 }

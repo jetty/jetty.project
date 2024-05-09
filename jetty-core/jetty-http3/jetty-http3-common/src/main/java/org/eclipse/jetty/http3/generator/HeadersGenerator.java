@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.generator;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
@@ -45,7 +44,8 @@ public class HeadersGenerator extends FrameGenerator
         return generateHeadersFrame(accumulator, streamId, headersFrame, fail);
     }
 
-    private int generateHeadersFrame(ByteBufferPool.Accumulator accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
+    private int generateHeadersFrame(
+                                     ByteBufferPool.Accumulator accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
     {
         try
         {
@@ -54,7 +54,8 @@ public class HeadersGenerator extends FrameGenerator
             int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
             // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
             int maxLength = encoder.getMaxHeadersSize();
-            RetainableByteBuffer buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
+            RetainableByteBuffer buffer =
+                getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             BufferUtil.clearToFill(byteBuffer);
             byteBuffer.position(maxHeaderLength);

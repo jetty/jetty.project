@@ -51,7 +51,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
@@ -88,24 +87,30 @@ import org.xml.sax.SAXException;
 public class XmlConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(XmlConfiguration.class);
-    private static final Class<?>[] PRIMITIVES =
-        {
-            Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
-        };
-    private static final Class<?>[] BOXED_PRIMITIVES =
-        {
-            Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class,
-            Void.class
-        };
-    private static final Class<?>[] SUPPORTED_COLLECTIONS =
-        {
-            ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
-        };
-    private static final List<ConfigurationProcessorFactory> PROCESSOR_FACTORIES = TypeUtil.serviceProviderStream(ServiceLoader.load(ConfigurationProcessorFactory.class))
+    private static final Class<?>[] PRIMITIVES = {
+        Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
+    };
+    private static final Class<?>[] BOXED_PRIMITIVES = {
+        Boolean.class,
+        Character.class,
+        Byte.class,
+        Short.class,
+        Integer.class,
+        Long.class,
+        Float.class,
+        Double.class,
+        Void.class
+    };
+    private static final Class<?>[] SUPPORTED_COLLECTIONS = {
+        ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
+    };
+    private static final List<ConfigurationProcessorFactory> PROCESSOR_FACTORIES = TypeUtil.serviceProviderStream(
+        ServiceLoader.load(ConfigurationProcessorFactory.class))
         .flatMap(p -> Stream.of(p.get()))
         .toList();
-    private static final Pool<ConfigurationParser> __parsers =
-        new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, Math.min(8, Runtime.getRuntime().availableProcessors()));
+    private static final Pool<ConfigurationParser> __parsers = new ConcurrentPool<>(
+        ConcurrentPool.StrategyType.THREAD_ID,
+        Math.min(8, Runtime.getRuntime().availableProcessors()));
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
         // Favour methods with less parameters
@@ -171,7 +176,9 @@ public class XmlConfiguration
             while (!interfaces.isEmpty())
             {
                 depth++;
-                interfaces = interfaces.stream().flatMap(i -> Arrays.stream(i.getInterfaces())).collect(Collectors.toSet());
+                interfaces = interfaces.stream()
+                    .flatMap(i -> Arrays.stream(i.getInterfaces()))
+                    .collect(Collectors.toSet());
             }
         }
         else
@@ -219,7 +226,10 @@ public class XmlConfiguration
             {
                 getProperties().put("jetty.webapp", webapp.toString());
                 getProperties().put("jetty.webapps", webapp.getParent().toString());
-                getProperties().put("jetty.webapps.uri", normalizeURI(webapp.getParent().toUri().toString()));
+                getProperties()
+                    .put(
+                        "jetty.webapps.uri",
+                        normalizeURI(webapp.getParent().toUri().toString()));
             }
         }
         catch (Exception e)
@@ -272,7 +282,8 @@ public class XmlConfiguration
      * @throws SAXException not thrown anymore (kept for signature backwards compat)
      * @throws XmlConfigurationException if configuration was not able to loaded from XML provided
      */
-    public XmlConfiguration(Resource resource, Map<String, Object> idMap, Map<String, String> properties) throws SAXException, IOException
+    public XmlConfiguration(Resource resource, Map<String, Object> idMap, Map<String, String> properties)
+        throws SAXException, IOException
     {
         XmlParser parser = getXmlParser();
         try (InputStream inputStream = resource.newInputStream())
@@ -432,7 +443,8 @@ public class XmlConfiguration
             if (oClass != null && !oClass.isInstance(obj))
             {
                 String loaders = (oClass.getClassLoader() == obj.getClass().getClassLoader()) ? "" : "Object Class and type Class are from different loaders.";
-                throw new IllegalArgumentException("Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders);
+                throw new IllegalArgumentException(
+                    "Object of class '" + obj.getClass().getCanonicalName() + "' is not of type '" + oClass.getCanonicalName() + "'. " + loaders);
             }
             String id = _root.getAttribute("id");
             if (id != null)
@@ -440,8 +452,7 @@ public class XmlConfiguration
 
             AttrOrElementNode aoeNode = new AttrOrElementNode(obj, _root, "Id", "Class", "Arg");
             // The Object already existed, if it has <Arg> nodes, warn about them not being used.
-            aoeNode.getNodes("Arg")
-                .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, _configuration));
+            aoeNode.getNodes("Arg").forEach((node) -> LOG.warn("Ignored arg {} in {}", node, _configuration));
             configure(obj, _root, aoeNode.getNext());
             return obj;
         }
@@ -474,8 +485,7 @@ public class XmlConfiguration
             else
             {
                 // The Object already existed, if it has <Arg> nodes, warn about them not being used.
-                aoeNode.getNodes("Arg")
-                    .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, _configuration));
+                aoeNode.getNodes("Arg").forEach((node) -> LOG.warn("Ignored arg {} in {}", node, _configuration));
             }
 
             _configuration.initializeDefaults(obj);
@@ -599,11 +609,15 @@ public class XmlConfiguration
                 if (propertyValue == null)
                 {
                     // check that there is at least one setter or field that could have matched
-                    if (Arrays.stream(oClass.getMethods()).noneMatch(m -> m.getName().equals(setter)) &&
-                        Arrays.stream(oClass.getFields()).filter(f -> Modifier.isPublic(f.getModifiers())).noneMatch(f -> f.getName().equals(name)))
+                    if (Arrays.stream(oClass.getMethods())
+                        .noneMatch(m -> m.getName().equals(setter)) && Arrays.stream(oClass.getFields())
+                            .filter(f -> Modifier.isPublic(f.getModifiers()))
+                            .noneMatch(f -> f.getName().equals(name)))
                     {
-                        NoSuchMethodException e = new NoSuchMethodException(String.format("No method '%s' on %s", setter, oClass.getName()));
-                        e.addSuppressed(new NoSuchFieldException(String.format("No field '%s' on %s", name, oClass.getName())));
+                        NoSuchMethodException e = new NoSuchMethodException(
+                            String.format("No method '%s' on %s", setter, oClass.getName()));
+                        e.addSuppressed(
+                            new NoSuchFieldException(String.format("No field '%s' on %s", name, oClass.getName())));
                         throw e;
                     }
                     // otherwise it is a noop
@@ -651,7 +665,10 @@ public class XmlConfiguration
                     invokeMethod(set, obj, arg);
                     return;
                 }
-                catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
+                catch (NoSuchFieldException
+                    | IllegalArgumentException
+                    | IllegalAccessException
+                    | NoSuchMethodException e)
                 {
                     LOG.trace("IGNORED", e);
                     errors.add(e);
@@ -785,7 +802,8 @@ public class XmlConfiguration
             throw ExceptionUtil.withSuppressed(new NoSuchMethodException(message), errors);
         }
 
-        private Object invokeConstructor(Constructor<?> constructor, Object... args) throws IllegalAccessException, InvocationTargetException, InstantiationException
+        private Object invokeConstructor(Constructor<?> constructor, Object... args)
+            throws IllegalAccessException, InvocationTargetException, InstantiationException
         {
             Object result = constructor.newInstance(args);
             if (constructor.getAnnotation(Deprecated.class) != null)
@@ -793,7 +811,8 @@ public class XmlConfiguration
             return result;
         }
 
-        private Object invokeMethod(Method method, Object obj, Object... args) throws IllegalAccessException, InvocationTargetException
+        private Object invokeMethod(Method method, Object obj, Object... args)
+            throws IllegalAccessException, InvocationTargetException
         {
             Object result = method.invoke(obj, args);
             if (method.getAnnotation(Deprecated.class) != null)
@@ -906,7 +925,8 @@ public class XmlConfiguration
                 else
                 {
                     // Try calling a getXxx method.
-                    Method method = oClass.getMethod("get" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1));
+                    Method method = oClass.getMethod(
+                        "get" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1));
                     obj = invokeMethod(method, obj);
                 }
                 if (id != null)
@@ -918,7 +938,8 @@ public class XmlConfiguration
                 try
                 {
                     // Try calling a isXxx() method.
-                    Method method = oClass.getMethod("is" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1));
+                    Method method = oClass.getMethod(
+                        "is" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1));
                     obj = invokeMethod(method, obj);
                     if (id != null)
                         _configuration.getIdMap().put(id, obj);
@@ -980,7 +1001,8 @@ public class XmlConfiguration
             }
         }
 
-        private Object call(Class<?> oClass, String methodName, Object obj, Args args) throws InvocationTargetException, NoSuchMethodException
+        private Object call(Class<?> oClass, String methodName, Object obj, Args args)
+            throws InvocationTargetException, NoSuchMethodException
         {
             Objects.requireNonNull(oClass, "Class cannot be null");
             Objects.requireNonNull(methodName, "Method name cannot be null");
@@ -1575,7 +1597,7 @@ public class XmlConfiguration
             if ("Env".equals(tag))
                 return envObj(node);
 
-            LOG.warn("Unknown value tag: {} in {}", node,  _configuration, new Throwable());
+            LOG.warn("Unknown value tag: {} in {}", node, _configuration, new Throwable());
             return null;
         }
 
@@ -1652,7 +1674,8 @@ public class XmlConfiguration
                     if (elementName.equals(n.getTag()))
                     {
                         if (attr != null)
-                            throw new IllegalStateException("Cannot have attr '" + attrName + "' and element '" + elementName + "'");
+                            throw new IllegalStateException(
+                                "Cannot have attr '" + attrName + "' and element '" + elementName + "'");
 
                         value = value(_obj, n);
                         break;
@@ -1660,7 +1683,8 @@ public class XmlConfiguration
                 }
 
                 if (mandatory && value == null)
-                    throw new IllegalStateException("Must have attr '" + attrName + "' or element '" + elementName + "'");
+                    throw new IllegalStateException(
+                        "Must have attr '" + attrName + "' or element '" + elementName + "'");
 
                 return value;
             }
@@ -1689,14 +1713,16 @@ public class XmlConfiguration
                     if (elementName.equals(n.getTag()))
                     {
                         if (attr != null)
-                            throw new IllegalStateException("Cannot have attr '" + attrName + "' and element '" + elementName + "'");
+                            throw new IllegalStateException(
+                                "Cannot have attr '" + attrName + "' and element '" + elementName + "'");
 
                         values.add(value(_obj, n));
                     }
                 }
 
                 if (manditory && values.isEmpty())
-                    throw new IllegalStateException("Must have attr '" + attrName + "' or element '" + elementName + "'");
+                    throw new IllegalStateException(
+                        "Must have attr '" + attrName + "' or element '" + elementName + "'");
 
                 return values;
             }
@@ -1742,7 +1768,8 @@ public class XmlConfiguration
                     if (count > 0 && executable.getParameters()[count - 1].isVarArgs())
                     {
                         // There is not a no varArgs alternative so let's try a an empty varArgs match
-                        args = asEmptyVarArgs(executable.getParameterTypes()[count - 1]).matchArgsToParameters(executable);
+                        args = asEmptyVarArgs(executable.getParameterTypes()[count - 1])
+                            .matchArgsToParameters(executable);
                     }
                 }
                 return args;
@@ -1791,7 +1818,8 @@ public class XmlConfiguration
                         Arrays.stream(paramAnnotation)
                             .filter(Name.class::isInstance)
                             .map(Name.class::cast)
-                            .findFirst().ifPresent(n -> position.put(n.value(), pos));
+                            .findFirst()
+                            .ifPresent(n -> position.put(n.value(), pos));
                     }
 
                     List<Object> arguments = new ArrayList<>(_arguments);
@@ -1854,7 +1882,8 @@ public class XmlConfiguration
             if (elementName.equals(n.getTag()))
             {
                 if (attr != null)
-                    throw new IllegalStateException("Cannot have attr '" + attrName + "' and element '" + elementName + "'");
+                    throw new IllegalStateException(
+                        "Cannot have attr '" + attrName + "' and element '" + elementName + "'");
 
                 values.add(n);
             }
@@ -1952,8 +1981,10 @@ public class XmlConfiguration
                         }
                         else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                         {
-                            Resource resource = ResourceFactory.of(mountContainer).newResource(arg);
-                            try (InputStream inputStream = Files.newInputStream(resource.getPath(), StandardOpenOption.READ))
+                            Resource resource =
+                                ResourceFactory.of(mountContainer).newResource(arg);
+                            try (InputStream inputStream =
+                                Files.newInputStream(resource.getPath(), StandardOpenOption.READ))
                             {
                                 (envBuilder == null ? coreProperties : envProperties).load(inputStream);
                             }
@@ -1963,7 +1994,8 @@ public class XmlConfiguration
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Parsing xml file {}", arg);
                             // Create an XmlConfiguration
-                            XmlConfiguration configuration = new XmlConfiguration(ResourceFactory.of(mountContainer).newResource(arg));
+                            XmlConfiguration configuration = new XmlConfiguration(
+                                ResourceFactory.of(mountContainer).newResource(arg));
 
                             // Copy Id map
                             if (lastCoreConfiguration != null)
@@ -1975,9 +2007,13 @@ public class XmlConfiguration
 
                             // copy properties
                             for (Object name : coreProperties.keySet())
-                                configuration.getProperties().put(String.valueOf(name), String.valueOf(coreProperties.get(name)));
+                                configuration
+                                    .getProperties()
+                                    .put(String.valueOf(name), String.valueOf(coreProperties.get(name)));
                             for (Object name : envProperties.keySet())
-                                configuration.getProperties().put(String.valueOf(name), String.valueOf(envProperties.get(name)));
+                                configuration
+                                    .getProperties()
+                                    .put(String.valueOf(name), String.valueOf(envProperties.get(name)));
 
                             // remember the last configuration
                             if (environment == null)

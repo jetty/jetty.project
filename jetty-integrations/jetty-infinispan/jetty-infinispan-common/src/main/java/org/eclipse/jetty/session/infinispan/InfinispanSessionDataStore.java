@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.session.AbstractSessionDataStore;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.UnreadableSessionDataException;
@@ -41,27 +40,28 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
      * Clustered cache of sessions
      */
     private BasicCache<String, InfinispanSessionData> _cache;
+
     private int _infinispanIdleTimeoutSec;
     private QueryManager _queryManager;
     private boolean _passivating;
     private boolean _serialization;
-    
+
     /**
      * Get the clustered cache instance.
-     * 
+     *
      * @return the cache
      */
-    public BasicCache<String, InfinispanSessionData> getCache() 
+    public BasicCache<String, InfinispanSessionData> getCache()
     {
         return _cache;
     }
-    
+
     /**
      * Set the clustered cache instance.
-     * 
+     *
      * @param cache the cache
      */
-    public void setCache(BasicCache<String, InfinispanSessionData> cache) 
+    public void setCache(BasicCache<String, InfinispanSessionData> cache)
     {
         this._cache = cache;
     }
@@ -73,15 +73,17 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         if (_cache == null)
             throw new IllegalStateException("No cache");
 
-        try 
+        try
         {
-            Class<?> remoteClass = InfinispanSessionDataStore.class.getClassLoader().loadClass("org.infinispan.client.hotrod.RemoteCache");
+            Class<?> remoteClass = InfinispanSessionDataStore.class
+                .getClassLoader()
+                .loadClass("org.infinispan.client.hotrod.RemoteCache");
             if (remoteClass.isAssignableFrom(_cache.getClass()) || _serialization)
                 _passivating = true;
         }
         catch (ClassNotFoundException e)
         {
-            //expected if not running with remote cache
+            // expected if not running with remote cache
             LOG.info("Hotrod classes not found, assuming infinispan in embedded mode");
         }
     }
@@ -98,16 +100,16 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
 
     @Override
     public SessionData doLoad(String id) throws Exception
-    {  
+    {
         try
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Loading session {} from infinispan", id);
 
             InfinispanSessionData sd = _cache.get(getCacheKey(id));
-            
-            //Deserialize the attributes now that we are back in a thread that
-            //has the correct classloader set on it
+
+            // Deserialize the attributes now that we are back in a thread that
+            // has the correct classloader set on it
             if (isPassivating() && sd != null)
             {
                 if (LOG.isDebugEnabled())
@@ -134,12 +136,12 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
-        if (candidates == null  || candidates.isEmpty())
+        if (candidates == null || candidates.isEmpty())
             return candidates;
 
         Set<String> expired = new HashSet<>();
-   
-        for (String candidate:candidates)
+
+        for (String candidate : candidates)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Checking expiry for candidate {}", candidate);
@@ -147,7 +149,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
             {
                 SessionData sd = load(candidate);
 
-                //if the session no longer exists
+                // if the session no longer exists
                 if (sd == null)
                 {
                     expired.add(candidate);
@@ -158,7 +160,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
                 {
                     if (_context.getWorkerName().equals(sd.getLastNode()))
                     {
-                        //we are its manager, add it to the expired set if it is expired now
+                        // we are its manager, add it to the expired set if it is expired now
                         if ((sd.getExpiry() > 0) && sd.getExpiry() <= time)
                         {
                             expired.add(candidate);
@@ -175,11 +177,11 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         }
         return expired;
     }
-    
+
     @Override
     public Set<String> doGetExpired(long time)
     {
-        //If there is a query manager, find the sessions for our context that expired before the time limit
+        // If there is a query manager, find the sessions for our context that expired before the time limit
         if (_queryManager != null)
         {
             Set<String> expired = new HashSet<>();
@@ -197,39 +199,44 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doCleanOrphans(long timeLimit)
     {
-        //if there is a query manager, find the sessions for any context that expired before the time limit and delete
+        // if there is a query manager, find the sessions for any context that expired before the time limit and delete
         if (_queryManager != null)
             _queryManager.deleteOrphanSessions(timeLimit);
-        else
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to clean orphans, no QueryManager");
+        else if (LOG.isDebugEnabled())
+            LOG.debug("Unable to clean orphans, no QueryManager");
     }
 
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
-        //prepare for serialization: we need to convert the attributes now while the context
-        //classloader is set, because infinispan uses a different thread and classloader to
-        //perform the serialization
+        // prepare for serialization: we need to convert the attributes now while the context
+        // classloader is set, because infinispan uses a different thread and classloader to
+        // perform the serialization
         if (isPassivating() && data != null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Serializing session attributes for {}", id);
             ((InfinispanSessionData)data).serializeAttributes();
         }
-        //Put an idle timeout on the cache entry if the session is not immortal - 
-        //if no requests arrive at any node before this timeout occurs, or no node 
-        //scavenges the session before this timeout occurs, the session will be removed.
-        //NOTE: that no session listeners can be called for this.
+        // Put an idle timeout on the cache entry if the session is not immortal -
+        // if no requests arrive at any node before this timeout occurs, or no node
+        // scavenges the session before this timeout occurs, the session will be removed.
+        // NOTE: that no session listeners can be called for this.
         if (data.getMaxInactiveMs() > 0 && getInfinispanIdleTimeoutSec() > 0)
-            _cache.put(getCacheKey(id), (InfinispanSessionData)data, -1, TimeUnit.MILLISECONDS, getInfinispanIdleTimeoutSec(), TimeUnit.SECONDS);
+            _cache.put(
+                getCacheKey(id),
+                (InfinispanSessionData)data,
+                -1,
+                TimeUnit.MILLISECONDS,
+                getInfinispanIdleTimeoutSec(),
+                TimeUnit.SECONDS);
         else
             _cache.put(getCacheKey(id), (InfinispanSessionData)data);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Session {} saved to infinispan, expires {} ", id, data.getExpiry());
     }
-    
+
     public String getCacheKey(String id)
     {
         return InfinispanKeyBuilder.build(_context.getCanonicalContextPath(), _context.getVhost(), id);
@@ -245,13 +252,13 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public boolean doExists(String id) throws Exception
     {
-        //if we have a query manager we can do a query with a projection to check
-        //if there is an unexpired session with the given id
+        // if we have a query manager we can do a query with a projection to check
+        // if there is an unexpired session with the given id
         if (_queryManager != null)
             return _queryManager.exists(_context, id);
         else
         {
-            //no query manager, load the entire session data object
+            // no query manager, load the entire session data object
             SessionData sd = doLoad(id);
             if (sd == null)
                 return false;
@@ -259,14 +266,21 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
             if (sd.getExpiry() <= 0)
                 return true;
             else
-                return (sd.getExpiry() > System.currentTimeMillis()); //not expired yet
+                return (sd.getExpiry() > System.currentTimeMillis()); // not expired yet
         }
     }
 
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new InfinispanSessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+        return new InfinispanSessionData(
+            id,
+            _context.getCanonicalContextPath(),
+            _context.getVhost(),
+            created,
+            accessed,
+            lastAccessed,
+            maxInactiveMs);
     }
 
     /**
@@ -276,14 +290,14 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     public void setInfinispanIdleTimeoutSec(int sec)
     {
         _infinispanIdleTimeoutSec = sec;
-    } 
-    
+    }
+
     @ManagedAttribute(value = "infinispan idle timeout sec", readonly = true)
     public int getInfinispanIdleTimeoutSec()
     {
         return _infinispanIdleTimeoutSec;
     }
-    
+
     public void setSerialization(boolean serialization)
     {
         _serialization = serialization;
@@ -292,6 +306,8 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     @Override
     public String toString()
     {
-        return String.format("%s[cache=%s,idleTimeoutSec=%d]", super.toString(), (_cache == null ? "" : _cache.getName()), _infinispanIdleTimeoutSec);
+        return String.format(
+            "%s[cache=%s,idleTimeoutSec=%d]",
+            super.toString(), (_cache == null ? "" : _cache.getName()), _infinispanIdleTimeoutSec);
     }
 }

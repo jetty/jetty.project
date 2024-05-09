@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
-
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +39,11 @@ public class VirtualHttpContentFactory implements HttpContent.Factory
         _matchSuffix = "/" + _resource.getFileName();
         _contentType = contentType;
         if (LOG.isDebugEnabled())
-            LOG.debug("resource=({}) {}, resource.getFileName()={}", _resource.getClass().getName(), _resource, _resource.getFileName());
+            LOG.debug(
+                "resource=({}) {}, resource.getFileName()={}",
+                _resource.getClass().getName(),
+                _resource,
+                _resource.getFileName());
     }
 
     /**
@@ -70,6 +73,8 @@ public class VirtualHttpContentFactory implements HttpContent.Factory
     @Override
     public String toString()
     {
-        return String.format("%s@%x(factory=%s, resource=%s, matchSuffix=%s, contentType=%s)", this.getClass().getName(), this.hashCode(), _factory, _resource, _matchSuffix, _contentType);
+        return String.format(
+            "%s@%x(factory=%s, resource=%s, matchSuffix=%s, contentType=%s)",
+            this.getClass().getName(), this.hashCode(), _factory, _resource, _matchSuffix, _contentType);
     }
 }

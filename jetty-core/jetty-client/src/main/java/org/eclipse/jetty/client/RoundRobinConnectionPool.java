@@ -50,7 +50,13 @@ public class RoundRobinConnectionPool extends MultiplexConnectionPool
 
     public RoundRobinConnectionPool(Destination destination, int maxConnections, int initialMaxMultiplex)
     {
-        super(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.ROUND_ROBIN, maxConnections, newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex);
+        super(
+            destination,
+            () -> new ConcurrentPool<>(
+                ConcurrentPool.StrategyType.ROUND_ROBIN,
+                maxConnections,
+                newMaxMultiplexer(initialMaxMultiplex)),
+            initialMaxMultiplex);
         // If there are queued requests and connections get
         // closed due to idle timeout or overuse, we want to
         // aggressively try to open new connections to replace

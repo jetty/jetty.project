@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee9.security.authentication;
 
-import java.security.Principal;
-import java.security.cert.X509Certificate;
-import java.util.Base64;
-import java.util.Objects;
-
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.security.Principal;
+import java.security.cert.X509Certificate;
+import java.util.Base64;
+import java.util.Objects;
 import org.eclipse.jetty.ee9.nested.Authentication;
 import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.ee9.security.Authenticator;
@@ -54,7 +53,8 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory)
+        throws ServerAuthException
     {
         if (!mandatory)
             return new DeferredAuthentication(this);
@@ -90,7 +90,9 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
                         return new UserAuthentication(getAuthMethod(), user);
 
                     // try with certs sig against login service as previous behaviour
-                    char[] credential = Base64.getEncoder().encodeToString(cert.getSignature()).toCharArray();
+                    char[] credential = Base64.getEncoder()
+                        .encodeToString(cert.getSignature())
+                        .toCharArray();
                     user = login(username, credential, req);
                     if (user != null)
                         return new UserAuthentication(getAuthMethod(), user);
@@ -112,7 +114,8 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser)
+        throws ServerAuthException
     {
         return true;
     }

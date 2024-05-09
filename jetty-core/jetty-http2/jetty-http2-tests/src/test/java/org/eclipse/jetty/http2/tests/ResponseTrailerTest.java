@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -20,7 +24,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
@@ -37,10 +40,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResponseTrailerTest extends AbstractTest
 {
@@ -81,11 +80,14 @@ public class ResponseTrailerTest extends AbstractTest
             int port = connector.getLocalPort();
             InetSocketAddress address = new InetSocketAddress(host, port);
             FuturePromise<Session> sessionPromise = new FuturePromise<>();
-            http2Client.connect(address, new Session.Listener() {}, sessionPromise);
+            http2Client.connect(address, new Session.Listener()
+            {
+            }, sessionPromise);
             Session session = sessionPromise.get(5, TimeUnit.SECONDS);
 
             HttpURI uri = HttpURI.from("http://" + host + ":" + port + "/");
-            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+            MetaData.Request request =
+                new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
             HeadersFrame frame = new HeadersFrame(request, null, true);
             BlockingQueue<HeadersFrame> headers = new LinkedBlockingQueue<>();
             CountDownLatch latch = new CountDownLatch(1);

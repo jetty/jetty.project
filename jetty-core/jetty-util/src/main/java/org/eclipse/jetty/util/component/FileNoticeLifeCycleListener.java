@@ -15,7 +15,6 @@ package org.eclipse.jetty.util.component;
 
 import java.io.FileWriter;
 import java.io.Writer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

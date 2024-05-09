@@ -13,6 +13,17 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -29,7 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -39,17 +49,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.in;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class TestAnnotationParser
@@ -125,7 +124,9 @@ public class TestAnnotationParser
                 if (!Sample.class.getName().equals(annotation))
                     return;
                 assertEquals("m", info.getFieldName());
-                assertEquals(org.objectweb.asm.Type.OBJECT, org.objectweb.asm.Type.getType(info.getFieldType()).getSort());
+                assertEquals(
+                    org.objectweb.asm.Type.OBJECT,
+                    org.objectweb.asm.Type.getType(info.getFieldType()).getSort());
             }
 
             @Override
@@ -194,7 +195,8 @@ public class TestAnnotationParser
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             parser.parse(emptySet, resourceFactory.newResource(badClassesJar));
-            // only the valid classes inside bad-classes.jar should be parsed. If any invalid classes are parsed and exception would be thrown here
+            // only the valid classes inside bad-classes.jar should be parsed. If any invalid classes are parsed and
+            // exception would be thrown here
         }
     }
 
@@ -215,7 +217,7 @@ public class TestAnnotationParser
     @Test
     public void testJep238MultiReleaseInJar() throws Exception
     {
-       Path badClassesJar = MavenTestingUtils.getTargetPath("test-classes/jdk9/log4j-api-2.9.0.jar");
+        Path badClassesJar = MavenTestingUtils.getTargetPath("test-classes/jdk9/log4j-api-2.9.0.jar");
 
         AnnotationParser parser = new AnnotationParser();
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
@@ -223,7 +225,7 @@ public class TestAnnotationParser
             // Should throw no exceptions and work with the META-INF/versions without incident
             parser.parse(Collections.emptySet(), resourceFactory.newResource(badClassesJar));
 
-            //check for a class that is only in versions 9
+            // check for a class that is only in versions 9
             Map<String, URI> parsed = parser.getParsedClassNames();
             URI processIdUtilURI = parsed.get("org.apache.logging.log4j.util.ProcessIdUtil");
             assertNotNull(processIdUtilURI);
@@ -243,7 +245,7 @@ public class TestAnnotationParser
             parser.parse(Collections.emptySet(), resourceFactory.newResource(jdk10Jar));
 
             Map<String, URI> parsed = parser.getParsedClassNames();
-            assertEquals(3, parsed.size());           
+            assertEquals(3, parsed.size());
             assertThat(parsed.keySet(), containsInAnyOrder("hello.DetailedVer", "hello.Greetings", "hello.Hello"));
             if (Runtime.version().feature() > 17)
                 assertThat(parsed.get("hello.Greetings").toString(), containsString("META-INF/versions/10"));
@@ -256,7 +258,7 @@ public class TestAnnotationParser
         // Build up basedir, which itself has a path segment that violates java package and classnaming.
         // The basedir should have no effect on annotation scanning.
         // Intentionally using a base directory name that starts with a "."
-        // This mimics what you see in jenkins, hudson, hadoop, solr, camel, and selenium for their 
+        // This mimics what you see in jenkins, hudson, hadoop, solr, camel, and selenium for their
         // installed and/or managed webapps
         Path basedir = workDir.getPath().resolve(".base/workspace/classes");
         FS.ensureEmpty(basedir);
@@ -285,8 +287,10 @@ public class TestAnnotationParser
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource testJar = resourceFactory.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest.jar"));
-            Resource testJar2 = resourceFactory.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest_copy.jar"));
+            Resource testJar =
+                resourceFactory.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest.jar"));
+            Resource testJar2 =
+                resourceFactory.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest_copy.jar"));
             AnnotationParser parser = new AnnotationParser();
             DuplicateClassScanHandler handler = new DuplicateClassScanHandler();
             Set<AnnotationParser.Handler> handlers = Collections.singleton(handler);
@@ -304,7 +308,8 @@ public class TestAnnotationParser
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource testJar = resourceFactory.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest.jar"));
+            Resource testJar =
+                resourceFactory.newResource(MavenTestingUtils.getTargetPath("test-classes/tinytest.jar"));
             File testClasses = new File(MavenTestingUtils.getTargetDir(), "test-classes");
             AnnotationParser parser = new AnnotationParser();
             DuplicateClassScanHandler handler = new DuplicateClassScanHandler();

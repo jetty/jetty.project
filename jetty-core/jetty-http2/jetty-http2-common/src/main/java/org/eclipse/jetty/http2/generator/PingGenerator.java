@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -42,7 +41,8 @@ public class PingGenerator extends FrameGenerator
         if (payload.length != PingFrame.PING_LENGTH)
             throw new IllegalArgumentException("Invalid payload length: " + payload.length);
 
-        RetainableByteBuffer header = generateHeader(FrameType.PING, PingFrame.PING_LENGTH, reply ? Flags.ACK : Flags.NONE, 0);
+        RetainableByteBuffer header =
+            generateHeader(FrameType.PING, PingFrame.PING_LENGTH, reply ? Flags.ACK : Flags.NONE, 0);
         ByteBuffer byteBuffer = header.getByteBuffer();
 
         byteBuffer.put(payload);

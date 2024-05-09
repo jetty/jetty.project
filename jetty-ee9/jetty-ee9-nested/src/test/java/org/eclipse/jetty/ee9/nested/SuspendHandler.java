@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
@@ -23,6 +20,8 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
 
 class SuspendHandler extends HandlerWrapper implements AsyncListener
 {
@@ -76,7 +75,12 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
     }
 
     @Override
-    public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
+    public void handle(
+                       String target,
+                       final Request baseRequest,
+                       final HttpServletRequest request,
+                       final HttpServletResponse response)
+        throws IOException, ServletException
     {
         if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
         {

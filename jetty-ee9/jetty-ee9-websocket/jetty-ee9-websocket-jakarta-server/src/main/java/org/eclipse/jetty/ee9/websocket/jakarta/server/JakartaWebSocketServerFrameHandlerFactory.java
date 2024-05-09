@@ -26,7 +26,8 @@ import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
-public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketClientFrameHandlerFactory implements FrameHandlerFactory
+public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketClientFrameHandlerFactory
+    implements FrameHandlerFactory
 {
     public JakartaWebSocketServerFrameHandlerFactory(JakartaWebSocketContainer container)
     {
@@ -44,13 +45,15 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
             return super.getMetadata(endpointClass, endpointConfig);
 
         UriTemplatePathSpec templatePathSpec = new UriTemplatePathSpec(anno.value());
-        JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig, components);
+        JakartaWebSocketFrameHandlerMetadata metadata =
+            new JakartaWebSocketFrameHandlerMetadata(endpointConfig, components);
         metadata.setUriTemplatePathSpec(templatePathSpec);
         return discoverJakartaFrameHandlerMetadata(endpointClass, metadata);
     }
 
     @Override
-    public FrameHandler newFrameHandler(Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
+    public FrameHandler newFrameHandler(
+                                        Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
     {
         return newJakartaWebSocketFrameHandler(websocketPojo, new JakartaServerUpgradeRequest(upgradeRequest));
     }

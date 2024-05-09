@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.docs.programming.migration;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -22,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -37,8 +38,6 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.Fields;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @SuppressWarnings("unused")
 public class ServletToHandlerDocs
@@ -445,7 +444,8 @@ public class ServletToHandlerDocs
             // Replaces:
             //   - servletResponse.sendError(code);
             //   - servletResponse.sendError(code, message);
-            Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, "Request Cannot be Processed");
+            Response.writeError(
+                request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, "Request Cannot be Processed");
 
             callback.succeeded();
             return true;

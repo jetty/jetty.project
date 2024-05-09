@@ -18,7 +18,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -49,7 +48,8 @@ public class ChunksContentSource implements Content.Source
             if (chunk != null)
             {
                 if (it.hasNext() && chunk.isLast())
-                    throw new IllegalArgumentException("Collection cannot contain a last Content.Chunk that is not at the last position: " + chunk);
+                    throw new IllegalArgumentException(
+                        "Collection cannot contain a last Content.Chunk that is not at the last position: " + chunk);
                 sum += chunk.getByteBuffer().remaining();
             }
         }

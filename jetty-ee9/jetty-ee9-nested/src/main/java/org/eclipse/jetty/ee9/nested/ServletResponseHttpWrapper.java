@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Collection;
 
 /**
  * ServletResponseHttpWrapper

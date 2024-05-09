@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -85,7 +84,10 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         if (extensions == null)
             return Collections.emptyList();
 
-        return extensions.stream().filter(e -> !e.getName().startsWith("@")).map(Extension::getConfig).collect(Collectors.toList());
+        return extensions.stream()
+            .filter(e -> !e.getName().startsWith("@"))
+            .map(Extension::getConfig)
+            .collect(Collectors.toList());
     }
 
     @ManagedAttribute(name = "Next Incoming Frames Handler", readonly = true)
@@ -140,7 +142,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             {
                 /* If there was an error creating the extension we need to differentiate between a
                 bad ExtensionConfig offered by the client and a bad ExtensionConfig negotiated by the server.
-
+                
                 When deciding whether to throw a BadMessageException and send a 400 response or a WebSocketException
                 and send a 500 response it depends on whether this is running on the client or the server. */
                 switch (behavior)
@@ -360,8 +362,12 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             }
             s.append(']');
         }
-        s.append(",incoming=").append((this.incoming == null) ? "<null>" : this.incoming.getClass().getName());
-        s.append(",outgoing=").append((this.outgoing == null) ? "<null>" : this.outgoing.getClass().getName());
+        s.append(",incoming=")
+            .append(
+                (this.incoming == null) ? "<null>" : this.incoming.getClass().getName());
+        s.append(",outgoing=")
+            .append(
+                (this.outgoing == null) ? "<null>" : this.outgoing.getClass().getName());
         s.append("]");
         return s.toString();
     }

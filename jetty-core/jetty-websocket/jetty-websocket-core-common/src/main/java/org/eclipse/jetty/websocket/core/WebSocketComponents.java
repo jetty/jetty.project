@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core;
 
 import java.util.concurrent.Executor;
 import java.util.zip.Deflater;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -43,19 +42,29 @@ public class WebSocketComponents extends ContainerLifeCycle
         this(null, null, null, null, null);
     }
 
-    public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory,
-                               ByteBufferPool bufferPool, InflaterPool inflaterPool, DeflaterPool deflaterPool)
+    public WebSocketComponents(
+                               WebSocketExtensionRegistry extensionRegistry,
+                               DecoratedObjectFactory objectFactory,
+                               ByteBufferPool bufferPool,
+                               InflaterPool inflaterPool,
+                               DeflaterPool deflaterPool)
     {
-        this (extensionRegistry, objectFactory, bufferPool, inflaterPool, deflaterPool, null);
+        this(extensionRegistry, objectFactory, bufferPool, inflaterPool, deflaterPool, null);
     }
 
-    public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory,
-                               ByteBufferPool bufferPool, InflaterPool inflaterPool, DeflaterPool deflaterPool, Executor executor)
+    public WebSocketComponents(
+                               WebSocketExtensionRegistry extensionRegistry,
+                               DecoratedObjectFactory objectFactory,
+                               ByteBufferPool bufferPool,
+                               InflaterPool inflaterPool,
+                               DeflaterPool deflaterPool,
+                               Executor executor)
     {
         _extensionRegistry = (extensionRegistry == null) ? new WebSocketExtensionRegistry() : extensionRegistry;
         _objectFactory = (objectFactory == null) ? new DecoratedObjectFactory() : objectFactory;
         _bufferPool = (bufferPool == null) ? new ArrayByteBufferPool() : bufferPool;
-        _inflaterPool = (inflaterPool == null) ? new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true) : inflaterPool;
+        _inflaterPool =
+            (inflaterPool == null) ? new InflaterPool(CompressionPool.DEFAULT_CAPACITY, true) : inflaterPool;
         _deflaterPool = (deflaterPool == null) ? new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true) : deflaterPool;
 
         if (executor == null)

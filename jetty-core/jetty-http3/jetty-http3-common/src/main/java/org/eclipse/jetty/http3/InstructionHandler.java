@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3;
 
 import java.util.List;
-
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

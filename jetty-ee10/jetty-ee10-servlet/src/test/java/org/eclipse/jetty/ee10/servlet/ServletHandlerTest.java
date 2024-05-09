@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -32,20 +35,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.Container;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletHandlerTest
 {
@@ -142,7 +141,7 @@ public class ServletHandlerTest
         assertThat(h, is(holders[0]));
 
         FilterHolder h2 = new FilterHolder();
-        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        h2.setName("x"); // not allowed by servlet spec, just here to test object equality
         handler.addFilter(h2);
         holders = handler.getFilters();
         assertNotNull(holders);
@@ -176,7 +175,7 @@ public class ServletHandlerTest
         assertThat(h, is(holders[0]));
 
         FilterHolder h2 = new FilterHolder();
-        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        h2.setName("x"); // not allowed by servlet spec, just here to test object equality
         FilterMapping m3 = new FilterMapping();
         m3.setPathSpec("/*");
         m3.setFilterHolder(h);
@@ -207,7 +206,7 @@ public class ServletHandlerTest
         assertThat(h, is(holders[0]));
 
         FilterHolder h2 = new FilterHolder();
-        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        h2.setName("x"); // not allowed by servlet spec, just here to test object equality
 
         handler.addFilterWithMapping(h2, "/*", 0);
         holders = handler.getFilters();
@@ -235,7 +234,7 @@ public class ServletHandlerTest
         assertThat(h, is(holders[0]));
 
         FilterHolder h2 = new FilterHolder();
-        h2.setName("x"); //not allowed by servlet spec, just here to test object equality
+        h2.setName("x"); // not allowed by servlet spec, just here to test object equality
 
         handler.addFilterWithMapping(h2, "/*", EnumSet.allOf(DispatcherType.class));
         holders = handler.getFilters();
@@ -262,7 +261,7 @@ public class ServletHandlerTest
         }
         catch (IllegalStateException e)
         {
-            //expected error
+            // expected error
         }
     }
 
@@ -333,7 +332,7 @@ public class ServletHandlerTest
         handler.addFilter(fh1);
         handler.addFilter(fh2);
 
-        //add some ordinary filter mappings
+        // add some ordinary filter mappings
         handler.addFilterMapping(fm1);
         handler.addFilterMapping(fm2);
 
@@ -342,7 +341,7 @@ public class ServletHandlerTest
         assertThat(mappings[0], is(fm1));
         assertThat(mappings[1], is(fm2));
 
-        //add another ordinary mapping
+        // add another ordinary mapping
         FilterHolder of1 = new FilterHolder(new Source(Source.Origin.DESCRIPTOR, "foo.xml"));
         of1.setName("foo");
         FilterMapping ofm1 = new FilterMapping();
@@ -363,7 +362,7 @@ public class ServletHandlerTest
     {
         ServletHandler handler = new ServletHandler();
 
-        //do equivalent of FilterRegistration.addMappingForUrlPatterns(isMatchAfter=false)
+        // do equivalent of FilterRegistration.addMappingForUrlPatterns(isMatchAfter=false)
         handler.addFilter(fh4);
         handler.prependFilterMapping(fm4);
 
@@ -371,7 +370,7 @@ public class ServletHandlerTest
         assertNotNull(mappings);
         assertEquals(1, mappings.length);
 
-        //add another with isMatchAfter=false
+        // add another with isMatchAfter=false
         handler.addFilter(fh5);
         handler.prependFilterMapping(fm5);
 
@@ -387,14 +386,14 @@ public class ServletHandlerTest
     public void testAllAfterFilterMappings()
     {
         ServletHandler handler = new ServletHandler();
-        //do equivalent of FilterRegistration.addMappingForUrlPatterns(isMatchAfter=true)
+        // do equivalent of FilterRegistration.addMappingForUrlPatterns(isMatchAfter=true)
         handler.addFilter(fh4);
         handler.addFilterMapping(fm4);
         FilterMapping[] mappings = handler.getFilterMappings();
         assertEquals(1, mappings.length);
         assertThat(mappings[0], is(fm4));
 
-        //do equivalent of FilterRegistration.addMappingForUrlPatterns(isMatchAfter=true)
+        // do equivalent of FilterRegistration.addMappingForUrlPatterns(isMatchAfter=true)
         handler.addFilter(fh5);
         handler.addFilterMapping(fm5);
         mappings = handler.getFilterMappings();
@@ -408,7 +407,7 @@ public class ServletHandlerTest
     {
         ServletHandler handler = new ServletHandler();
 
-        //add a programmatic one, isMatchAfter=true
+        // add a programmatic one, isMatchAfter=true
         handler.addFilter(fh3);
         handler.addFilterMapping(fm3);
         FilterMapping[] mappings = handler.getFilterMappings();
@@ -416,7 +415,7 @@ public class ServletHandlerTest
         assertEquals(1, mappings.length);
         assertThat(mappings[0], is(fm3));
 
-        //add a programmatic one, isMatchAfter=false
+        // add a programmatic one, isMatchAfter=false
         handler.addFilter(fh4);
         handler.prependFilterMapping(fm4);
         mappings = handler.getFilterMappings();
@@ -431,7 +430,7 @@ public class ServletHandlerTest
     {
         ServletHandler handler = new ServletHandler();
 
-        //add a programmatic one, isMatchAfter=false
+        // add a programmatic one, isMatchAfter=false
         handler.addFilter(fh3);
         handler.prependFilterMapping(fm3);
         FilterMapping[] mappings = handler.getFilterMappings();
@@ -439,7 +438,7 @@ public class ServletHandlerTest
         assertEquals(1, mappings.length);
         assertThat(mappings[0], is(fm3));
 
-        //add a programmatic one, isMatchAfter=true
+        // add a programmatic one, isMatchAfter=true
         handler.addFilter(fh4);
         handler.addFilterMapping(fm4);
         mappings = handler.getFilterMappings();
@@ -456,7 +455,7 @@ public class ServletHandlerTest
         handler.addFilter(fh1);
         handler.addFilter(fh2);
 
-        //add some ordinary filter mappings first
+        // add some ordinary filter mappings first
         handler.addFilterMapping(fm1);
         handler.addFilterMapping(fm2);
 
@@ -465,14 +464,14 @@ public class ServletHandlerTest
         assertThat(mappings[0], is(fm1));
         assertThat(mappings[1], is(fm2));
 
-        //do equivalent of FilterRegistration.addMappingForUrlPatterns(isMatchAfter=false)
+        // do equivalent of FilterRegistration.addMappingForUrlPatterns(isMatchAfter=false)
         handler.addFilter(fh4);
         handler.prependFilterMapping(fm4);
         mappings = handler.getFilterMappings();
         assertEquals(3, mappings.length);
         assertThat(mappings[0], is(fm4));
 
-        //do equivalent of FilterRegistration.addMappingForUrlPatterns(isMatchAfter=true)
+        // do equivalent of FilterRegistration.addMappingForUrlPatterns(isMatchAfter=true)
         handler.addFilter(fh5);
         handler.addFilterMapping(fm5);
         mappings = handler.getFilterMappings();
@@ -486,7 +485,7 @@ public class ServletHandlerTest
         FilterMapping mapping = new FilterMapping();
         mapping.setPathSpec("/*");
         mapping.setFilterName("foo");
-        //default dispatch is REQUEST, and there is no holder to check for async supported
+        // default dispatch is REQUEST, and there is no holder to check for async supported
         assertFalse(mapping.appliesTo(DispatcherType.ASYNC));
     }
 
@@ -495,14 +494,14 @@ public class ServletHandlerTest
     {
         ServletHandler handler = new ServletHandler();
 
-        //add a non-programmatic one to begin with
+        // add a non-programmatic one to begin with
         handler.addFilter(fh1);
         handler.addFilterMapping(fm1);
         FilterMapping[] mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertThat(mappings[0], is(fm1));
 
-        //add a programmatic one, isMatchAfter=false
+        // add a programmatic one, isMatchAfter=false
         handler.addFilter(fh4);
         handler.prependFilterMapping(fm4);
         mappings = handler.getFilterMappings();
@@ -511,7 +510,7 @@ public class ServletHandlerTest
         assertThat(mappings[0], is(fm4));
         assertThat(mappings[1], is(fm1));
 
-        //add a programmatic one, isMatchAfter=true
+        // add a programmatic one, isMatchAfter=true
         handler.addFilter(fh3);
         handler.addFilterMapping(fm3);
         mappings = handler.getFilterMappings();
@@ -521,18 +520,18 @@ public class ServletHandlerTest
         assertThat(mappings[1], is(fm1));
         assertThat(mappings[2], is(fm3));
 
-        //add a programmatic one, isMatchAfter=false
+        // add a programmatic one, isMatchAfter=false
         handler.addFilter(fh5);
         handler.prependFilterMapping(fm5);
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(4, mappings.length);
-        assertThat(mappings[0], is(fm4)); //isMatchAfter = false;
-        assertThat(mappings[1], is(fm5)); //isMatchAfter = false;
-        assertThat(mappings[2], is(fm1)); //ordinary
-        assertThat(mappings[3], is(fm3)); //isMatchAfter = true;
+        assertThat(mappings[0], is(fm4)); // isMatchAfter = false;
+        assertThat(mappings[1], is(fm5)); // isMatchAfter = false;
+        assertThat(mappings[2], is(fm1)); // ordinary
+        assertThat(mappings[3], is(fm3)); // isMatchAfter = true;
 
-        //add a non-programmatic one
+        // add a non-programmatic one
         FilterHolder f = new FilterHolder(Source.EMBEDDED);
         f.setName("non-programmatic");
         FilterMapping fm = new FilterMapping();
@@ -543,13 +542,13 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(5, mappings.length);
-        assertThat(mappings[0], is(fm4)); //isMatchAfter = false;
-        assertThat(mappings[1], is(fm5)); //isMatchAfter = false;
-        assertThat(mappings[2], is(fm1)); //ordinary
-        assertThat(mappings[3], is(fm));  //ordinary
-        assertThat(mappings[4], is(fm3)); //isMatchAfter = true;
+        assertThat(mappings[0], is(fm4)); // isMatchAfter = false;
+        assertThat(mappings[1], is(fm5)); // isMatchAfter = false;
+        assertThat(mappings[2], is(fm1)); // ordinary
+        assertThat(mappings[3], is(fm)); // ordinary
+        assertThat(mappings[4], is(fm3)); // isMatchAfter = true;
 
-        //add a programmatic one, isMatchAfter=true
+        // add a programmatic one, isMatchAfter=true
         FilterHolder pf = new FilterHolder(Source.JAKARTA_API);
         pf.setName("programmaticA");
         FilterMapping pfm = new FilterMapping();
@@ -560,14 +559,14 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(6, mappings.length);
-        assertThat(mappings[0], is(fm4)); //isMatchAfter = false;
-        assertThat(mappings[1], is(fm5)); //isMatchAfter = false;
-        assertThat(mappings[2], is(fm1)); //ordinary
-        assertThat(mappings[3], is(fm));  //ordinary
-        assertThat(mappings[4], is(fm3)); //isMatchAfter = true;
-        assertThat(mappings[5], is(pfm)); //isMatchAfter = true;
+        assertThat(mappings[0], is(fm4)); // isMatchAfter = false;
+        assertThat(mappings[1], is(fm5)); // isMatchAfter = false;
+        assertThat(mappings[2], is(fm1)); // ordinary
+        assertThat(mappings[3], is(fm)); // ordinary
+        assertThat(mappings[4], is(fm3)); // isMatchAfter = true;
+        assertThat(mappings[5], is(pfm)); // isMatchAfter = true;
 
-        //add a programmatic one, isMatchAfter=false
+        // add a programmatic one, isMatchAfter=false
         FilterHolder pf2 = new FilterHolder(Source.JAKARTA_API);
         pf2.setName("programmaticB");
         FilterMapping pfm2 = new FilterMapping();
@@ -578,13 +577,13 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(7, mappings.length);
-        assertThat(mappings[0], is(fm4)); //isMatchAfter = false;
-        assertThat(mappings[1], is(fm5)); //isMatchAfter = false;
-        assertThat(mappings[2], is(pfm2)); //isMatchAfter = false;
-        assertThat(mappings[3], is(fm1)); //ordinary
-        assertThat(mappings[4], is(fm));  //ordinary
-        assertThat(mappings[5], is(fm3)); //isMatchAfter = true;
-        assertThat(mappings[6], is(pfm)); //isMatchAfter = true;
+        assertThat(mappings[0], is(fm4)); // isMatchAfter = false;
+        assertThat(mappings[1], is(fm5)); // isMatchAfter = false;
+        assertThat(mappings[2], is(pfm2)); // isMatchAfter = false;
+        assertThat(mappings[3], is(fm1)); // ordinary
+        assertThat(mappings[4], is(fm)); // ordinary
+        assertThat(mappings[5], is(fm3)); // isMatchAfter = true;
+        assertThat(mappings[6], is(pfm)); // isMatchAfter = true;
     }
 
     @Test
@@ -592,14 +591,14 @@ public class ServletHandlerTest
     {
         ServletHandler handler = new ServletHandler();
 
-        //add a non-programmatic one to begin with
+        // add a non-programmatic one to begin with
         handler.addFilterWithMapping(fh1, "/*", EnumSet.allOf(DispatcherType.class));
         handler.updateMappings();
         FilterMapping[] mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertThat(mappings[0].getFilterHolder(), is(fh1));
 
-        //add a programmatic one, isMatchAfter=false
+        // add a programmatic one, isMatchAfter=false
         fh4.setServletHandler(handler);
         handler.addFilter(fh4);
         fh4.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");
@@ -610,7 +609,7 @@ public class ServletHandlerTest
         assertThat(mappings[0].getFilterHolder(), is(fh4));
         assertThat(mappings[1].getFilterHolder(), is(fh1));
 
-        //add a programmatic one, isMatchAfter=true
+        // add a programmatic one, isMatchAfter=true
         fh3.setServletHandler(handler);
         handler.addFilter(fh3);
         fh3.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
@@ -622,7 +621,7 @@ public class ServletHandlerTest
         assertThat(mappings[1].getFilterHolder(), is(fh1));
         assertThat(mappings[2].getFilterHolder(), is(fh3));
 
-        //add a programmatic one, isMatchAfter=false
+        // add a programmatic one, isMatchAfter=false
         fh5.setServletHandler(handler);
         handler.addFilter(fh5);
         fh5.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");
@@ -630,12 +629,12 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(4, mappings.length);
-        assertThat(mappings[0].getFilterHolder(), is(fh4)); //isMatchAfter = false;
-        assertThat(mappings[1].getFilterHolder(), is(fh5)); //isMatchAfter = false;
-        assertThat(mappings[2].getFilterHolder(), is(fh1)); //ordinary
-        assertThat(mappings[3].getFilterHolder(), is(fh3)); //isMatchAfter = true;
+        assertThat(mappings[0].getFilterHolder(), is(fh4)); // isMatchAfter = false;
+        assertThat(mappings[1].getFilterHolder(), is(fh5)); // isMatchAfter = false;
+        assertThat(mappings[2].getFilterHolder(), is(fh1)); // ordinary
+        assertThat(mappings[3].getFilterHolder(), is(fh3)); // isMatchAfter = true;
 
-        //add a non-programmatic one
+        // add a non-programmatic one
         FilterHolder f = new FilterHolder(Source.EMBEDDED);
         f.setName("non-programmatic");
         handler.addFilterWithMapping(f, "/*", EnumSet.allOf(DispatcherType.class));
@@ -643,13 +642,13 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(5, mappings.length);
-        assertThat(mappings[0].getFilterHolder(), is(fh4)); //isMatchAfter = false;
-        assertThat(mappings[1].getFilterHolder(), is(fh5)); //isMatchAfter = false;
-        assertThat(mappings[2].getFilterHolder(), is(fh1)); //ordinary
-        assertThat(mappings[3].getFilterHolder(), is(f));  //ordinary
-        assertThat(mappings[4].getFilterHolder(), is(fh3)); //isMatchAfter = true;
+        assertThat(mappings[0].getFilterHolder(), is(fh4)); // isMatchAfter = false;
+        assertThat(mappings[1].getFilterHolder(), is(fh5)); // isMatchAfter = false;
+        assertThat(mappings[2].getFilterHolder(), is(fh1)); // ordinary
+        assertThat(mappings[3].getFilterHolder(), is(f)); // ordinary
+        assertThat(mappings[4].getFilterHolder(), is(fh3)); // isMatchAfter = true;
 
-        //add a programmatic one, isMatchAfter=true
+        // add a programmatic one, isMatchAfter=true
         FilterHolder pf = new FilterHolder(Source.JAKARTA_API);
         pf.setServletHandler(handler);
         pf.setName("programmaticA");
@@ -659,14 +658,14 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(6, mappings.length);
-        assertThat(mappings[0].getFilterHolder(), is(fh4)); //isMatchAfter = false;
-        assertThat(mappings[1].getFilterHolder(), is(fh5)); //isMatchAfter = false;
-        assertThat(mappings[2].getFilterHolder(), is(fh1)); //ordinary
-        assertThat(mappings[3].getFilterHolder(), is(f));  //ordinary
-        assertThat(mappings[4].getFilterHolder(), is(fh3)); //isMatchAfter = true;
-        assertThat(mappings[5].getFilterHolder(), is(pf)); //isMatchAfter = true;
+        assertThat(mappings[0].getFilterHolder(), is(fh4)); // isMatchAfter = false;
+        assertThat(mappings[1].getFilterHolder(), is(fh5)); // isMatchAfter = false;
+        assertThat(mappings[2].getFilterHolder(), is(fh1)); // ordinary
+        assertThat(mappings[3].getFilterHolder(), is(f)); // ordinary
+        assertThat(mappings[4].getFilterHolder(), is(fh3)); // isMatchAfter = true;
+        assertThat(mappings[5].getFilterHolder(), is(pf)); // isMatchAfter = true;
 
-        //add a programmatic one, isMatchAfter=false
+        // add a programmatic one, isMatchAfter=false
         FilterHolder pf2 = new FilterHolder(Source.JAKARTA_API);
         pf2.setServletHandler(handler);
         pf2.setName("programmaticB");
@@ -677,24 +676,24 @@ public class ServletHandlerTest
 
         assertNotNull(mappings);
         assertEquals(7, mappings.length);
-        assertThat(mappings[0].getFilterHolder(), is(fh4)); //isMatchAfter = false;
-        assertThat(mappings[1].getFilterHolder(), is(fh5)); //isMatchAfter = false;
-        assertThat(mappings[2].getFilterHolder(), is(pf2)); //isMatchAfter = false;
-        assertThat(mappings[3].getFilterHolder(), is(fh1)); //ordinary
-        assertThat(mappings[4].getFilterHolder(), is(f));  //ordinary
-        assertThat(mappings[5].getFilterHolder(), is(fh3)); //isMatchAfter = true;
-        assertThat(mappings[6].getFilterHolder(), is(pf)); //isMatchAfter = true;
+        assertThat(mappings[0].getFilterHolder(), is(fh4)); // isMatchAfter = false;
+        assertThat(mappings[1].getFilterHolder(), is(fh5)); // isMatchAfter = false;
+        assertThat(mappings[2].getFilterHolder(), is(pf2)); // isMatchAfter = false;
+        assertThat(mappings[3].getFilterHolder(), is(fh1)); // ordinary
+        assertThat(mappings[4].getFilterHolder(), is(f)); // ordinary
+        assertThat(mappings[5].getFilterHolder(), is(fh3)); // isMatchAfter = true;
+        assertThat(mappings[6].getFilterHolder(), is(pf)); // isMatchAfter = true;
     }
-    
+
     @Test
     public void testFiltersServletsListenersAsBeans()
     {
         ServletContextHandler context = new ServletContextHandler();
-        
+
         ServletHandler handler = context.getServletHandler();
-        
-        //test that filters, servlets and listeners are added as beans
-        //and thus reported in a Container.Listener
+
+        // test that filters, servlets and listeners are added as beans
+        // and thus reported in a Container.Listener
         List<Object> addResults = new ArrayList<>();
         List<Object> removeResults = new ArrayList<>();
         handler.addEventListener(new Container.Listener()
@@ -716,25 +715,25 @@ public class ServletHandlerTest
         handler.addServlet(sh1);
         ListenerHolder lh1 = new ListenerHolder(new Source(Source.Origin.DESCRIPTOR, "foo.xml"));
         lh1.setInstance(new HttpSessionListener()
-        {  
+        {
             @Override
             public void sessionDestroyed(HttpSessionEvent se)
             {
             }
-            
+
             @Override
             public void sessionCreated(HttpSessionEvent se)
-            {   
+            {
             }
         });
         handler.addListener(lh1);
-        
+
         assertTrue(addResults.contains(fh1));
         assertTrue(addResults.contains(sh1));
         assertTrue(addResults.contains(lh1));
-        
-        //test that servlets, filters and listeners are dumped, but
-        //not as beans
+
+        // test that servlets, filters and listeners are dumped, but
+        // not as beans
         String dump = handler.dump();
 
         assertTrue(dump.contains("+> listeners"));
@@ -747,7 +746,7 @@ public class ServletHandlerTest
         handler.setServlets(null);
         handler.setListeners(null);
 
-        //check they're removed as beans
+        // check they're removed as beans
         assertTrue(removeResults.contains(fh1));
         assertTrue(removeResults.contains(sh1));
         assertTrue(removeResults.contains(lh1));
@@ -761,19 +760,23 @@ public class ServletHandlerTest
         server.setHandler(context);
         ServletHandler handler = new ServletHandler();
         context.setHandler(handler);
-        for (final String mapping : new String[] {"/", "/foo", "/bar/*", "*.bob"})
+        for (final String mapping : new String[]{"/", "/foo", "/bar/*", "*.bob"})
         {
-            handler.addServletWithMapping(new ServletHolder(new HttpServlet()
-            {
-                @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            handler.addServletWithMapping(
+                new ServletHolder(new HttpServlet()
                 {
-                    resp.getOutputStream().println("mapping='" + mapping + "'");
-                }
-            }), mapping);
+                    @Override
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+                    {
+                        resp.getOutputStream().println("mapping='" + mapping + "'");
+                    }
+                }),
+                mapping);
         }
         // add servlet with no mapping
-        handler.addServlet(new ServletHolder(new HttpServlet() {}));
+        handler.addServlet(new ServletHolder(new HttpServlet()
+        {
+        }));
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -820,11 +823,14 @@ public class ServletHandlerTest
 
         for (final String mapping : new String[]{"/*", "/foo", "/bar/*", "*.bob"})
         {
-            handler.addFilterWithMapping(new FilterHolder((TestFilter)(request, response, chain) ->
-            {
-                response.getOutputStream().print("path-" + mapping + "-");
-                chain.doFilter(request, response);
-            }), mapping, EnumSet.of(DispatcherType.REQUEST));
+            handler.addFilterWithMapping(
+                new FilterHolder((TestFilter)(request, response, chain) ->
+                {
+                    response.getOutputStream().print("path-" + mapping + "-");
+                    chain.doFilter(request, response);
+                }),
+                mapping,
+                EnumSet.of(DispatcherType.REQUEST));
         }
 
         FilterHolder fooFilter = new FilterHolder((TestFilter)(request, response, chain) ->
@@ -844,10 +850,14 @@ public class ServletHandlerTest
         server.start();
 
         assertThat(connector.getResponse("GET /default HTTP/1.0\r\n\r\n"), containsString("path-/*-default"));
-        assertThat(connector.getResponse("GET /foo HTTP/1.0\r\n\r\n"), containsString("path-/*-path-/foo-name-foo-FOO"));
+        assertThat(
+            connector.getResponse("GET /foo HTTP/1.0\r\n\r\n"), containsString("path-/*-path-/foo-name-foo-FOO"));
         assertThat(connector.getResponse("GET /foo/bar HTTP/1.0\r\n\r\n"), containsString("path-/*-name-foo-FOO"));
-        assertThat(connector.getResponse("GET /foo/bar.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-name-foo-FOO"));
-        assertThat(connector.getResponse("GET /other.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-default"));
+        assertThat(
+            connector.getResponse("GET /foo/bar.bob HTTP/1.0\r\n\r\n"),
+            containsString("path-/*-path-*.bob-name-foo-FOO"));
+        assertThat(
+            connector.getResponse("GET /other.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-default"));
     }
 
     @Test
@@ -865,7 +875,9 @@ public class ServletHandlerTest
         fh6.setFilter(new SomeFilter());
         fm6.setPathSpec("/sm4");
         fm6.setFilterHolder(fh6);
-        fh7.setFilter(new SomeFilter(){});
+        fh7.setFilter(new SomeFilter()
+        {
+        });
         fm7.setPathSpec("/sm5");
         fm7.setFilterHolder(fh7);
         sh4.setServlet(new SomeServlet());
@@ -875,21 +887,21 @@ public class ServletHandlerTest
         sm5.setPathSpec("/sm5");
         sm5.setServletName(sh5.getName());
 
-        handler.setListeners(new ListenerHolder[] {lh1});
-        handler.setFilters(new FilterHolder[] {fh6});
-        handler.setFilterMappings(new FilterMapping[] {fm6});
-        handler.setServlets(new ServletHolder[] {sh4});
-        handler.setServletMappings(new ServletMapping[] {sm4});
+        handler.setListeners(new ListenerHolder[]{lh1});
+        handler.setFilters(new FilterHolder[]{fh6});
+        handler.setFilterMappings(new FilterMapping[]{fm6});
+        handler.setServlets(new ServletHolder[]{sh4});
+        handler.setServletMappings(new ServletMapping[]{sm4});
 
         server.start();
 
-        //emulate some listeners, servlets and filters added after the ServletHandler has started,
-        //these cannot be durable
-        handler.setListeners(new ListenerHolder[] {lh1, lh2});
-        handler.setFilters(new FilterHolder[] {fh6, fh7});
-        handler.setFilterMappings(new FilterMapping[] {fm6, fm7});
-        handler.setServlets(new ServletHolder[] {sh4, sh5});
-        handler.setServletMappings(new ServletMapping[] {sm4, sm5});
+        // emulate some listeners, servlets and filters added after the ServletHandler has started,
+        // these cannot be durable
+        handler.setListeners(new ListenerHolder[]{lh1, lh2});
+        handler.setFilters(new FilterHolder[]{fh6, fh7});
+        handler.setFilterMappings(new FilterMapping[]{fm6, fm7});
+        handler.setServlets(new ServletHolder[]{sh4, sh5});
+        handler.setServletMappings(new ServletMapping[]{sm4, sm5});
 
         assertThat(Arrays.asList(handler.getListeners()), contains(lh1, lh2));
         assertThat(Arrays.asList(handler.getFilters()), contains(fh6, fh7));
@@ -937,7 +949,8 @@ public class ServletHandlerTest
     public static class SomeFilter implements TestFilter
     {
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             chain.doFilter(request, response);
         }
@@ -946,5 +959,4 @@ public class ServletHandlerTest
     public static class SomeServlet extends HttpServlet
     {
     }
-
 }

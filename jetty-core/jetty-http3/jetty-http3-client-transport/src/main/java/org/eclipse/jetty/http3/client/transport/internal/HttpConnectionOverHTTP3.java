@@ -19,7 +19,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.transport.HttpChannel;
@@ -33,7 +32,8 @@ import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverHTTP3 extends HttpConnection implements ConnectionPool.MaxMultiplexable, ConnectionPool.MaxUsable
+public class HttpConnectionOverHTTP3 extends HttpConnection
+    implements ConnectionPool.MaxMultiplexable, ConnectionPool.MaxUsable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP3.class);
 

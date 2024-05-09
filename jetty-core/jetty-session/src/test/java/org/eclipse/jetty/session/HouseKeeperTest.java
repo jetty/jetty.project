@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.session;
 
-import java.util.Collections;
-import java.util.Set;
-
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.thread.Scheduler;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Collections;
+import java.util.Set;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.thread.Scheduler;
+import org.junit.jupiter.api.Test;
 
 /**
  * HouseKeeperTest
@@ -43,12 +42,12 @@ public class HouseKeeperTest
         {
             return _task;
         }
-        
+
         public Runner getRunner()
         {
             return _runner;
         }
-        
+
         public boolean isOwnScheduler()
         {
             return _ownScheduler;
@@ -68,7 +67,7 @@ public class HouseKeeperTest
             return Collections.emptySet();
         }
     }
-    
+
     @Test
     public void testHouseKeeper() throws Exception
     {
@@ -77,13 +76,13 @@ public class HouseKeeperTest
 
         HouseKeeper t = new TestHouseKeeper();
         assertThrows(IllegalStateException.class, () -> t.start());
-        
+
         TestHouseKeeper hk = new TestHouseKeeper();
         hk.setSessionIdManager(new TestSessionIdManager(server));
         hk.setIntervalSec(-1);
-        hk.start(); //no scavenging
-        
-        //check that the housekeeper isn't running
+        hk.start(); // no scavenging
+
+        // check that the housekeeper isn't running
         assertNull(hk.getRunner());
         assertNull(hk.getTask());
         assertNull(hk.getScheduler());
@@ -93,37 +92,37 @@ public class HouseKeeperTest
         assertNull(hk.getTask());
         assertNull(hk.getScheduler());
         assertFalse(hk.isOwnScheduler());
-        
-        //set the interval but don't start it
+
+        // set the interval but don't start it
         hk.setIntervalSec(10000);
         assertNull(hk.getRunner());
         assertNull(hk.getTask());
         assertNull(hk.getScheduler());
         assertFalse(hk.isOwnScheduler());
-        
-        //now start it
+
+        // now start it
         hk.start();
         assertNotNull(hk.getRunner());
         assertNotNull(hk.getTask());
         assertNotNull(hk.getScheduler());
 
-        //stop it
+        // stop it
         hk.stop();
         assertNull(hk.getRunner());
         assertNull(hk.getTask());
         assertNull(hk.getScheduler());
         assertFalse(hk.isOwnScheduler());
-        
-        //start it, but set a different interval after start
+
+        // start it, but set a different interval after start
         hk.start();
         Scheduler.Task oldTask = hk.getTask();
         hk.setIntervalSec(50000);
         assertTrue(hk.getIntervalSec() >= 50000);
         assertNotNull(hk.getRunner());
         assertNotNull(hk.getTask());
-        //Note: it would be nice to test if the old task was
-        //cancelled, but the Scheduler.Task interface does not
-        //provide that functionality.
+        // Note: it would be nice to test if the old task was
+        // cancelled, but the Scheduler.Task interface does not
+        // provide that functionality.
         assertNotSame(oldTask, hk.getTask());
         assertNotNull(hk.getScheduler());
     }

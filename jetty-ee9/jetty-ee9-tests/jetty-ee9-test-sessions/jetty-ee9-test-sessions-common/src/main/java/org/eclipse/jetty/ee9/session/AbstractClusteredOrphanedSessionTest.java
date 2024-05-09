@@ -13,14 +13,17 @@
 
 package org.eclipse.jetty.ee9.session;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -31,10 +34,6 @@ import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.AbstractSessionTestBase;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * AbstractClusteredOrphanedSessionTest
@@ -57,7 +56,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractSessi
         int inactivePeriod = 5;
         DefaultSessionCacheFactory cacheFactory1 = new DefaultSessionCacheFactory();
         cacheFactory1.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        cacheFactory1.setFlushOnResponseCommit(true); //ensure session is saved before response comes back
+        cacheFactory1.setFlushOnResponseCommit(true); // ensure session is saved before response comes back
         SessionDataStoreFactory storeFactory1 = createSessionDataStoreFactory();
         if (storeFactory1 instanceof AbstractSessionDataStoreFactory)
         {
@@ -78,7 +77,8 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractSessi
             {
                 ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(0);
             }
-            SessionTestSupport server2 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
+            SessionTestSupport server2 =
+                new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
             try
             {
@@ -89,7 +89,8 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractSessi
                 try
                 {
                     // Connect to server1 to create a session and get its session cookie
-                    ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
+                    ContentResponse response1 = client.GET(
+                        "http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertNotNull(sessionCookie);
@@ -102,7 +103,8 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractSessi
                     Thread.sleep(TimeUnit.SECONDS.toMillis(inactivePeriod + 2L * scavengePeriod));
 
                     // Perform one request to server2 to be sure that the session has been expired
-                    Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1) + "?action=check");
+                    Request request = client.newRequest(
+                        "http://localhost:" + port2 + contextPath + servletMapping.substring(1) + "?action=check");
                     HttpField cookie = new HttpField("Cookie", sessionCookie);
                     request.headers(headers -> headers.put(cookie));
                     ContentResponse response2 = request.send();
@@ -127,7 +129,8 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractSessi
     public static class TestServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
             if ("init".equals(action))
@@ -139,7 +142,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractSessi
             {
                 HttpSession session = request.getSession(false);
                 session.invalidate();
-                //assertTrue(session == null);
+                // assertTrue(session == null);
             }
             else if ("check".equals(action))
             {

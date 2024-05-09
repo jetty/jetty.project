@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http;
 
+import static java.time.ZoneOffset.UTC;
+
 import java.nio.charset.StandardCharsets;
 import java.time.DateTimeException;
 import java.time.ZonedDateTime;
@@ -22,13 +24,10 @@ import java.util.Calendar;
 import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.time.ZoneOffset.UTC;
 
 /**
  * HTTP Date/Time parsing and formatting.
@@ -69,11 +68,12 @@ public class HttpDateTime
     private static final String DELIMITERS = new String(
         StringUtil.fromHexString(
             "09" + // %x09
-            "202122232425262728292a2b2c2d2e2f" + // %x20-2F
-            "3b3c3d3e3f40" + // %x3B-40
-            "5b5c5d5e5f60" + // %x5B-60
-            "7b7c7d7e" // %x7B-7E
-        ), StandardCharsets.US_ASCII);
+                "202122232425262728292a2b2c2d2e2f" + // %x20-2F
+                "3b3c3d3e3f40" + // %x3B-40
+                "5b5c5d5e5f60" + // %x5B-60
+                "7b7c7d7e" // %x7B-7E
+        ),
+        StandardCharsets.US_ASCII);
 
     private HttpDateTime()
     {
@@ -220,8 +220,7 @@ public class HttpDateTime
         // RFC 6265 - Section 5.1.1 - Step 6
         try
         {
-            ZonedDateTime dateTime = ZonedDateTime.of(year,
-                month, day, hour, minute, second, 0, UTC);
+            ZonedDateTime dateTime = ZonedDateTime.of(year, month, day, hour, minute, second, 0, UTC);
 
             // RFC 6265 - Section 5.1.1 - Step 7
             return dateTime;
@@ -241,8 +240,6 @@ public class HttpDateTime
      */
     public static String format(TemporalAccessor datetime)
     {
-        return DateTimeFormatter.RFC_1123_DATE_TIME
-            .withZone(UTC)
-            .format(datetime);
+        return DateTimeFormatter.RFC_1123_DATE_TIME.withZone(UTC).format(datetime);
     }
 }

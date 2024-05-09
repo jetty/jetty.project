@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -20,10 +30,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
@@ -48,13 +54,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-
 /**
  * Test the GzipHandler support when working with the {@link DefaultServlet}.
  */
@@ -69,7 +68,8 @@ public class GzipDefaultServletTest extends AbstractGzipTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"POST", "WIBBLE", "GET", "HEAD"})
+    @ValueSource(strings =
+    {"POST", "WIBBLE", "GET", "HEAD"})
     public void testIsGzipByMethod(String method) throws Exception
     {
         GzipHandler gzipHandler = new GzipHandler();
@@ -122,7 +122,8 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
-        assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
+        assertThat(
+            "Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
 
         assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
         // A HEAD request should have similar headers, but no body
@@ -210,10 +211,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
     public static Stream<Integer> compressibleSizes()
     {
-        return Stream.of(
-            DEFAULT_OUTPUT_BUFFER_SIZE / 4,
-            DEFAULT_OUTPUT_BUFFER_SIZE,
-            DEFAULT_OUTPUT_BUFFER_SIZE * 4);
+        return Stream.of(DEFAULT_OUTPUT_BUFFER_SIZE / 4, DEFAULT_OUTPUT_BUFFER_SIZE, DEFAULT_OUTPUT_BUFFER_SIZE * 4);
     }
 
     @ParameterizedTest
@@ -325,7 +323,8 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
-        assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
+        assertThat(
+            "Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
         assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
@@ -443,7 +442,10 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
-        assertThat("Response[ETag]", response.get("ETag"), not(containsString(CompressedContentFormat.GZIP.getEtagSuffix())));
+        assertThat(
+            "Response[ETag]",
+            response.get("ETag"),
+            not(containsString(CompressedContentFormat.GZIP.getEtagSuffix())));
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);

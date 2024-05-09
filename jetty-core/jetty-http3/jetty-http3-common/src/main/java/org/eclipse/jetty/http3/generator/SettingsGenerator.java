@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.generator;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.VarLenInt;

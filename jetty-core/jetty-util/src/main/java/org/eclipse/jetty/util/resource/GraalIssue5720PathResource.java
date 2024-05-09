@@ -23,13 +23,12 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * GraalVM Native-Image {@link Path} Resource.
- * 
+ *
  * @see <a href="https://github.com/oracle/graal/issues/5720">Graal issue 5720</a>
  */
 final class GraalIssue5720PathResource extends PathResource
@@ -49,7 +48,7 @@ final class GraalIssue5720PathResource extends PathResource
 
     /**
      * Checks if the given resource URL is affected by Graal issue 5720.
-     * 
+     *
      * @param url The URL to check.
      * @return {@code true} if affected.
      */
@@ -99,7 +98,7 @@ final class GraalIssue5720PathResource extends PathResource
 
     /**
      * Corrects any bad {@code resource} based URIs, such as those starting with {@code resource:file:///resources!}.
-     * 
+     *
      * @param uri The URI to correct.
      * @return the corrected URI, or the original URI.
      * @see <a href="https://github.com/oracle/graal/issues/5720">Graal issue 5720</a>

@@ -19,7 +19,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -253,11 +252,8 @@ public class ReservedThreadExecutorExchanger extends ContainerLifeCycle implemen
     @Override
     public String toString()
     {
-        return String.format("%s@%x{capacity=%d,threads=%s}",
-            getClass().getSimpleName(),
-            hashCode(),
-            getCapacity(),
-            _threads);
+        return String.format(
+            "%s@%x{capacity=%d,threads=%s}", getClass().getSimpleName(), hashCode(), getCapacity(), _threads);
     }
 
     private class ReservedThread implements Runnable
@@ -309,7 +305,8 @@ public class ReservedThreadExecutorExchanger extends ContainerLifeCycle implemen
                     try
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} reservedThread run {} on {}", ReservedThreadExecutorExchanger.this, task, this);
+                            LOG.debug(
+                                "{} reservedThread run {} on {}", ReservedThreadExecutorExchanger.this, task, this);
                         task.run();
                     }
                     catch (Throwable t)
@@ -346,7 +343,7 @@ public class ReservedThreadExecutorExchanger extends ContainerLifeCycle implemen
             catch (Throwable e)
             {
                 if (LOG.isDebugEnabled())
-                   LOG.debug("exchange failed", e);
+                    LOG.debug("exchange failed", e);
             }
             return false;
         }
@@ -379,10 +376,7 @@ public class ReservedThreadExecutorExchanger extends ContainerLifeCycle implemen
         @Override
         public String toString()
         {
-            return String.format("%s@%x{thread=%s}",
-                getClass().getSimpleName(),
-                hashCode(),
-                _thread);
+            return String.format("%s@%x{thread=%s}", getClass().getSimpleName(), hashCode(), _thread);
         }
     }
 }

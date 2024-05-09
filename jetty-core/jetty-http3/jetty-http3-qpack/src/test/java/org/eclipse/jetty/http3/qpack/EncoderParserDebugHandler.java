@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.qpack;
 
 import java.util.LinkedList;
 import java.util.Queue;
-
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 
 public class EncoderParserDebugHandler implements EncoderInstructionParser.Handler

@@ -36,8 +36,7 @@ public class StringUtil
     public static final String DEFAULT_DELIMS = ",;";
 
     // @checkstyle-disable-check : IllegalTokenTextCheck
-    private static final char[] LOWERCASES =
-    {
+    private static final char[] LOWERCASES = {
         '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
         '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
         '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
@@ -57,8 +56,7 @@ public class StringUtil
     };
 
     // @checkstyle-disable-check : IllegalTokenTextCheck
-    private static final char[] UPPERCASES =
-    {
+    private static final char[] UPPERCASES = {
         '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
         '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
         '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
@@ -335,7 +333,7 @@ public class StringUtil
         if (stringLength < suffixLength)
             return false;
 
-        for (int i = suffixLength; i-- > 0; )
+        for (int i = suffixLength; i-- > 0;)
         {
             char c1 = string.charAt(--stringLength);
             char c2 = suffix.charAt(i);
@@ -478,10 +476,7 @@ public class StringUtil
      * @param offset The offset of the substring
      * @param length The length of the substring
      */
-    public static void append(StringBuilder buf,
-                              String s,
-                              int offset,
-                              int length)
+    public static void append(StringBuilder buf, String s, int offset, int length)
     {
         int end = offset + length;
         for (int i = offset; i < end; i++)
@@ -737,9 +732,7 @@ public class StringUtil
         for (int i = offset; i < (offset + length); i++)
         {
             char c = str.charAt(i);
-            if (!(((c >= 'a') && (c <= 'f')) ||
-                ((c >= 'A') && (c <= 'F')) ||
-                ((c >= '0') && (c <= '9'))))
+            if (!(((c >= 'a') && (c <= 'f')) || ((c >= 'A') && (c <= 'F')) || ((c >= '0') && (c <= '9'))))
             {
                 return false;
             }
@@ -949,7 +942,12 @@ public class StringUtil
 
     enum CsvSplitState
     {
-        PRE_DATA, QUOTE, SLOSH, DATA, WHITE, POST_DATA
+        PRE_DATA,
+        QUOTE,
+        SLOSH,
+        DATA,
+        WHITE,
+        POST_DATA
     }
 
     /**
@@ -1122,7 +1120,7 @@ public class StringUtil
         if (i == html.length())
             return html;
 
-        // Create builder with OK content so far 
+        // Create builder with OK content so far
         StringBuilder out = new StringBuilder(html.length() * 4 / 3);
         out.append(html, 0, i);
 
@@ -1182,5 +1180,3 @@ public class StringUtil
         // prevent instantiation
     }
 }
-
-

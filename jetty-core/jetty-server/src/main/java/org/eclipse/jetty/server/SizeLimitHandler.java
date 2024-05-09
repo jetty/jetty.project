@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -95,7 +94,9 @@ public class SizeLimitHandler extends Handler.Wrapper
                 _read += content.remaining();
                 if (_requestLimit >= 0 && _read > _requestLimit)
                 {
-                    BadMessageException e = new BadMessageException(HttpStatus.PAYLOAD_TOO_LARGE_413, "Request body is too large: " + _read + ">" + _requestLimit);
+                    BadMessageException e = new BadMessageException(
+                        HttpStatus.PAYLOAD_TOO_LARGE_413,
+                        "Request body is too large: " + _read + ">" + _requestLimit);
                     getWrapped().fail(e);
                     return null;
                 }
@@ -124,7 +125,9 @@ public class SizeLimitHandler extends Handler.Wrapper
                     {
                         long contentLength = field.getLongValue();
                         if (_responseLimit >= 0 && contentLength > _responseLimit)
-                            throw new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, "Response body is too large: " + contentLength + ">" + _responseLimit);
+                            throw new HttpException.RuntimeException(
+                                HttpStatus.INTERNAL_SERVER_ERROR_500,
+                                "Response body is too large: " + contentLength + ">" + _responseLimit);
                     }
                     return super.onAddField(field);
                 }
@@ -148,10 +151,12 @@ public class SizeLimitHandler extends Handler.Wrapper
 
             if (content != null && content.remaining() > 0)
             {
-                if (_responseLimit >= 0 && (_written + content.remaining())  > _responseLimit)
+                if (_responseLimit >= 0 && (_written + content.remaining()) > _responseLimit)
                 {
-                    _failure = new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500,
-                        "Response body is too large: %d>%d".formatted(_written + content.remaining(), _responseLimit));
+                    _failure = new HttpException.RuntimeException(
+                        HttpStatus.INTERNAL_SERVER_ERROR_500,
+                        "Response body is too large: %d>%d"
+                            .formatted(_written + content.remaining(), _responseLimit));
                     callback.failed(_failure);
                     return;
                 }

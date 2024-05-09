@@ -13,22 +13,20 @@
 
 package org.eclipse.jetty.util.statistic;
 
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import org.junit.jupiter.api.Test;
 
 public class CounterStatisticTest
 {
 
     @Test
-    public void testCounter()
-        throws Exception
+    public void testCounter() throws Exception
     {
         CounterStatistic count = new CounterStatistic();
 
@@ -71,8 +69,7 @@ public class CounterStatisticTest
     }
 
     @Test
-    public void testCounterContended()
-        throws Exception
+    public void testCounterContended() throws Exception
     {
         final CounterStatistic counter = new CounterStatistic();
         final int N = 100;
@@ -81,53 +78,50 @@ public class CounterStatisticTest
         final CyclicBarrier incBarrier = new CyclicBarrier(N);
         final CountDownLatch decBarrier = new CountDownLatch(N / 2);
 
-        for (int i = N; i-- > 0; )
+        for (int i = N; i-- > 0;)
         {
-            threads[i] = (i >= N / 2)
-                ? new Thread(() ->
+            threads[i] = (i >= N / 2) ? new Thread(() ->
+            {
+                try
                 {
-                    try
-                    {
-                        incBarrier.await();
-                        decBarrier.await();
-                    }
-                    catch (Exception e)
-                    {
-                        throw new RuntimeException(e);
-                    }
-                    Random random = new Random();
-                    for (int l = L; l-- > 0; )
-                    {
-                        counter.decrement();
-                        if (random.nextInt(5) == 0)
-                            Thread.yield();
-                    }
-                })
-
-                : new Thread(() ->
+                    incBarrier.await();
+                    decBarrier.await();
+                }
+                catch (Exception e)
                 {
-                    try
-                    {
-                        incBarrier.await();
-                    }
-                    catch (Exception e)
-                    {
-                        throw new RuntimeException(e);
-                    }
-                    Random random = new Random();
-                    for (int l = L; l-- > 0; )
-                    {
-                        counter.increment();
-                        if (l == L / 2)
-                            decBarrier.countDown();
-                        if (random.nextInt(5) == 0)
-                            Thread.yield();
-                    }
-                });
+                    throw new RuntimeException(e);
+                }
+                Random random = new Random();
+                for (int l = L; l-- > 0;)
+                {
+                    counter.decrement();
+                    if (random.nextInt(5) == 0)
+                        Thread.yield();
+                }
+            }) : new Thread(() ->
+            {
+                try
+                {
+                    incBarrier.await();
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+                Random random = new Random();
+                for (int l = L; l-- > 0;)
+                {
+                    counter.increment();
+                    if (l == L / 2)
+                        decBarrier.countDown();
+                    if (random.nextInt(5) == 0)
+                        Thread.yield();
+                }
+            });
             threads[i].start();
         }
 
-        for (int i = N; i-- > 0; )
+        for (int i = N; i-- > 0;)
         {
             threads[i].join();
         }

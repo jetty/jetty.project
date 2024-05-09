@@ -13,6 +13,17 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,14 +34,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -38,10 +41,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class IncludedServletTest
 {
@@ -162,8 +161,9 @@ public class IncludedServletTest
             if (HttpURLConnection.HTTP_OK != connection.getResponseCode())
             {
                 String body = getPotentialBody(connection);
-                String err = String.format("GET request failed (%d %s) %s%n%s", connection.getResponseCode(), connection.getResponseMessage(),
-                    uri.toASCIIString(), body);
+                String err = String.format(
+                    "GET request failed (%d %s) %s%n%s",
+                    connection.getResponseCode(), connection.getResponseMessage(), uri.toASCIIString(), body);
                 throw new IOException(err);
             }
             in = connection.getInputStream();
@@ -179,8 +179,14 @@ public class IncludedServletTest
             assertThat("Response", response, containsString("<h2> Hello, this is the top page."));
             assertThat("Response", response, containsString("<h3> This is the included page"));
 
-            assertThat("Response Header[main-page-key]", connection.getHeaderField("main-page-key"), is("main-page-value"));
-            assertThat("Response Header[included-page-key]", connection.getHeaderField("included-page-key"), is("included-page-value"));
+            assertThat(
+                "Response Header[main-page-key]",
+                connection.getHeaderField("main-page-key"),
+                is("main-page-value"));
+            assertThat(
+                "Response Header[included-page-key]",
+                connection.getHeaderField("included-page-key"),
+                is("included-page-value"));
         }
         finally
         {
@@ -241,23 +247,24 @@ public class IncludedServletTest
                 line = reader.readLine();
             }
 
-            assertThat(result, Matchers.contains(
-                "BEFORE0: jakarta.servlet.include.context_path='null'",
-                "BEFORE0: jakarta.servlet.include.servlet_path='null'",
-                "BEFORE0: jakarta.servlet.include.path_info='null'",
-                "BEFORE1: jakarta.servlet.include.context_path=''",
-                "BEFORE1: jakarta.servlet.include.servlet_path='/attr'",
-                "BEFORE1: jakarta.servlet.include.path_info='/one'",
-                "DURING: jakarta.servlet.include.context_path=''",
-                "DURING: jakarta.servlet.include.servlet_path='/attr'",
-                "DURING: jakarta.servlet.include.path_info='/two'",
-                "AFTER1: jakarta.servlet.include.context_path=''",
-                "AFTER1: jakarta.servlet.include.servlet_path='/attr'",
-                "AFTER1: jakarta.servlet.include.path_info='/one'",
-                "AFTER0: jakarta.servlet.include.context_path='null'",
-                "AFTER0: jakarta.servlet.include.servlet_path='null'",
-                "AFTER0: jakarta.servlet.include.path_info='null'"
-            ));
+            assertThat(
+                result,
+                Matchers.contains(
+                    "BEFORE0: jakarta.servlet.include.context_path='null'",
+                    "BEFORE0: jakarta.servlet.include.servlet_path='null'",
+                    "BEFORE0: jakarta.servlet.include.path_info='null'",
+                    "BEFORE1: jakarta.servlet.include.context_path=''",
+                    "BEFORE1: jakarta.servlet.include.servlet_path='/attr'",
+                    "BEFORE1: jakarta.servlet.include.path_info='/one'",
+                    "DURING: jakarta.servlet.include.context_path=''",
+                    "DURING: jakarta.servlet.include.servlet_path='/attr'",
+                    "DURING: jakarta.servlet.include.path_info='/two'",
+                    "AFTER1: jakarta.servlet.include.context_path=''",
+                    "AFTER1: jakarta.servlet.include.servlet_path='/attr'",
+                    "AFTER1: jakarta.servlet.include.path_info='/one'",
+                    "AFTER0: jakarta.servlet.include.context_path='null'",
+                    "AFTER0: jakarta.servlet.include.servlet_path='null'",
+                    "AFTER0: jakarta.servlet.include.path_info='null'"));
         }
         finally
         {

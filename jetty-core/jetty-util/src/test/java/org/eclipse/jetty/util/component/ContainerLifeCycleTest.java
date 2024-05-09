@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.util.component;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -20,17 +27,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContainerLifeCycleTest
 {
@@ -274,9 +273,14 @@ public class ContainerLifeCycleTest
             @Override
             public void dump(Appendable out, String indent) throws IOException
             {
-                Dumpable.dumpObjects(out, indent, this.toString(), TypeUtil.asList(new Object[]{
-                    a1, a2
-                }), TypeUtil.asList(new Object[]{a3, a4}));
+                Dumpable.dumpObjects(
+                    out,
+                    indent,
+                    this.toString(),
+                    TypeUtil.asList(new Object[]
+                    {a1, a2}),
+                    TypeUtil.asList(new Object[]
+                    {a3, a4}));
             }
         };
         a0.addBean(aa, true);
@@ -493,7 +497,8 @@ public class ContainerLifeCycleTest
         assertEquals(c00, child.poll());
     }
 
-    private static final class InheritedListenerLifeCycle extends AbstractLifeCycle implements Container.InheritedListener
+    private static final class InheritedListenerLifeCycle extends AbstractLifeCycle
+        implements Container.InheritedListener
     {
         @Override
         public void beanRemoved(Container p, Object c)

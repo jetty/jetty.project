@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
@@ -194,7 +193,9 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             throw new IllegalStateException("No configuration dir specified");
         if (_environmentName == null)
         {
-            List<Environment> nonCore = Environment.getAll().stream().filter(environment -> !environment.equals(Environment.CORE)).toList();
+            List<Environment> nonCore = Environment.getAll().stream()
+                .filter(environment -> !environment.equals(Environment.CORE))
+                .toList();
             if (nonCore.size() != 1)
                 throw new IllegalStateException("No environment configured");
             _environmentName = nonCore.get(0).getName();
@@ -215,7 +216,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             }
 
             // handle resource smartly
-            for (Resource r: resource)
+            for (Resource r : resource)
             {
                 Path path = r.getPath();
                 if (path == null)
@@ -235,7 +236,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         _scanner.setScanInterval(_scanInterval);
         _scanner.setFilenameFilter(_filenameFilter);
         _scanner.setReportDirs(true);
-        _scanner.setScanDepth(1); //consider direct dir children of monitored dir
+        _scanner.setScanDepth(1); // consider direct dir children of monitored dir
         _scanner.addListener(_scannerListener);
         _scanner.setReportExistingFilesOnStartup(true);
         _scanner.setAutoStartScanning(!_deferInitialScan);
@@ -245,20 +246,19 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         {
             // Setup listener to wait for Server in STARTED state, which
             // triggers the first scan of the monitored directories
-            getDeploymentManager().getServer().addEventListener(
-                new LifeCycle.Listener()
+            getDeploymentManager().getServer().addEventListener(new LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStarted(LifeCycle event)
                 {
-                    @Override
-                    public void lifeCycleStarted(LifeCycle event)
+                    if (event instanceof Server)
                     {
-                        if (event instanceof Server)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Triggering Deferred Scan of {}", _monitored);
-                            _scanner.startScanning();
-                        }
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Triggering Deferred Scan of {}", _monitored);
+                        _scanner.startScanning();
                     }
-                });
+                }
+            });
         }
 
         super.doStart();
@@ -439,10 +439,11 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     @ManagedOperation(value = "Scan the monitored directories", impact = "ACTION")
     public void scan()
     {
-        LOG.info("Performing scan of monitored directories: {}",
-            getMonitoredResources().stream().map((r) -> r.getURI().toASCIIString())
-                .collect(Collectors.joining(", ", "[", "]"))
-        );
+        LOG.info(
+            "Performing scan of monitored directories: {}",
+            getMonitoredResources().stream()
+                .map((r) -> r.getURI().toASCIIString())
+                .collect(Collectors.joining(", ", "[", "]")));
         _scanner.nudge();
     }
 

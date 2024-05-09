@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.util.component.Dumpable;
 
 class SslSelectionDump implements Dumpable
@@ -53,7 +52,8 @@ class SslSelectionDump implements Dumpable
     final SslSelectionDump.CaptionedList enabled = new SslSelectionDump.CaptionedList("Enabled");
     final SslSelectionDump.CaptionedList disabled = new SslSelectionDump.CaptionedList("Disabled");
 
-    public SslSelectionDump(String type,
+    public SslSelectionDump(
+                            String type,
                             String[] supportedByJVM,
                             String[] enabledByJVM,
                             String[] excludedByConfig,
@@ -69,83 +69,81 @@ class SslSelectionDump implements Dumpable
             .map((entry) -> Pattern.compile(entry))
             .collect(Collectors.toList());
 
-        Arrays.stream(supportedByJVM)
-            .sorted(Comparator.naturalOrder())
-            .forEach((entry) ->
+        Arrays.stream(supportedByJVM).sorted(Comparator.naturalOrder()).forEach((entry) ->
+        {
+            boolean isPresent = true;
+
+            StringBuilder s = new StringBuilder();
+            s.append(entry);
+
+            for (Pattern pattern : excludedPatterns)
             {
-                boolean isPresent = true;
-
-                StringBuilder s = new StringBuilder();
-                s.append(entry);
-
-                for (Pattern pattern : excludedPatterns)
-                {
-                    Matcher m = pattern.matcher(entry);
-                    if (m.matches())
-                    {
-                        if (isPresent)
-                        {
-                            s.append(" -");
-                            isPresent = false;
-                        }
-                        else
-                        {
-                            s.append(",");
-                        }
-                        s.append(" ConfigExcluded:'").append(pattern.pattern()).append('\'');
-                    }
-                }
-
-                boolean isIncluded = false;
-
-                if (!includedPatterns.isEmpty())
-                {
-                    for (Pattern pattern : includedPatterns)
-                    {
-                        Matcher m = pattern.matcher(entry);
-                        if (m.matches())
-                        {
-                            isIncluded = true;
-                            break;
-                        }
-                    }
-
-                    if (!isIncluded)
-                    {
-                        if (isPresent)
-                        {
-                            s.append(" -");
-                            isPresent = false;
-                        }
-                        else
-                        {
-                            s.append(",");
-                        }
-
-                        s.append(" ConfigIncluded:NotSelected");
-                    }
-                }
-
-                if (!isIncluded && !jvmEnabled.contains(entry))
+                Matcher m = pattern.matcher(entry);
+                if (m.matches())
                 {
                     if (isPresent)
                     {
                         s.append(" -");
                         isPresent = false;
                     }
+                    else
+                    {
+                        s.append(",");
+                    }
+                    s.append(" ConfigExcluded:'").append(pattern.pattern()).append('\'');
+                }
+            }
 
-                    s.append(" JVM:disabled");
+            boolean isIncluded = false;
+
+            if (!includedPatterns.isEmpty())
+            {
+                for (Pattern pattern : includedPatterns)
+                {
+                    Matcher m = pattern.matcher(entry);
+                    if (m.matches())
+                    {
+                        isIncluded = true;
+                        break;
+                    }
                 }
 
+                if (!isIncluded)
+                {
+                    if (isPresent)
+                    {
+                        s.append(" -");
+                        isPresent = false;
+                    }
+                    else
+                    {
+                        s.append(",");
+                    }
+
+                    s.append(" ConfigIncluded:NotSelected");
+                }
+            }
+
+            if (!isIncluded && !jvmEnabled.contains(entry))
+            {
                 if (isPresent)
                 {
-                    enabled.add(s.toString());
+                    s.append(" -");
+                    isPresent = false;
                 }
-                else
-                {
-                    disabled.add(s.toString());
-                }
-            });
+
+                s.append(" JVM:disabled");
+            }
+
+            if (isPresent)
+            {
+                enabled.add(s.toString());
+            }
+            else
+            {
+                disabled.add(s.toString());
+            }
+        });
     }
 
     @Override

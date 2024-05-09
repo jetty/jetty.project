@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -98,8 +97,8 @@ public class HandlerCollection extends AbstractHandlerContainer
             // check for loops
             for (Handler handler : handlers._handlers)
             {
-                if (handler == this || (handler instanceof HandlerContainer &&
-                    Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
+                if (handler == this || (handler instanceof HandlerContainer && Arrays.asList(((HandlerContainer)handler).getChildHandlers())
+                    .contains(this)))
                     throw new IllegalStateException("setHandler loop");
             }
 
@@ -163,7 +162,8 @@ public class HandlerCollection extends AbstractHandlerContainer
         while (true)
         {
             Handlers old = _handlers.get();
-            Handlers handlers = newHandlers(ArrayUtil.addToArray(old == null ? null : ArrayUtil.removeFromArray(old._handlers, handler), handler, Handler.class));
+            Handlers handlers = newHandlers(ArrayUtil.addToArray(
+                old == null ? null : ArrayUtil.removeFromArray(old._handlers, handler), handler, Handler.class));
             if (updateHandlers(old, handlers))
                 break;
         }
@@ -178,7 +178,8 @@ public class HandlerCollection extends AbstractHandlerContainer
         while (true)
         {
             Handlers old = _handlers.get();
-            Handlers handlers = newHandlers(ArrayUtil.prependToArray(handler, old == null ? null : old._handlers, Handler.class));
+            Handlers handlers =
+                newHandlers(ArrayUtil.prependToArray(handler, old == null ? null : old._handlers, Handler.class));
             if (updateHandlers(old, handlers))
                 break;
         }

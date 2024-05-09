@@ -35,18 +35,15 @@ public class MultiPartOutputStream extends FilterOutputStream
 
     private boolean inPart = false;
 
-    public MultiPartOutputStream(OutputStream out)
-        throws IOException
+    public MultiPartOutputStream(OutputStream out) throws IOException
     {
         super(out);
 
-        boundary = "jetty" + System.identityHashCode(this) +
-            Long.toString(System.currentTimeMillis(), 36);
+        boundary = "jetty" + System.identityHashCode(this) + Long.toString(System.currentTimeMillis(), 36);
         boundaryBytes = boundary.getBytes(StandardCharsets.ISO_8859_1);
     }
 
-    public MultiPartOutputStream(OutputStream out, String boundary)
-        throws IOException
+    public MultiPartOutputStream(OutputStream out, String boundary) throws IOException
     {
         super(out);
 
@@ -60,8 +57,7 @@ public class MultiPartOutputStream extends FilterOutputStream
      * @throws IOException IOException
      */
     @Override
-    public void close()
-        throws IOException
+    public void close() throws IOException
     {
         try
         {
@@ -95,8 +91,7 @@ public class MultiPartOutputStream extends FilterOutputStream
      * @param contentType the content type of the part
      * @throws IOException if unable to write the part
      */
-    public void startPart(String contentType)
-        throws IOException
+    public void startPart(String contentType) throws IOException
     {
         if (inPart)
         {
@@ -121,8 +116,7 @@ public class MultiPartOutputStream extends FilterOutputStream
      * @param headers the part headers
      * @throws IOException if unable to write the part
      */
-    public void startPart(String contentType, String[] headers)
-        throws IOException
+    public void startPart(String contentType, String[] headers) throws IOException
     {
         if (inPart)
             out.write(CRLF);

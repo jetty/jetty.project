@@ -13,24 +13,23 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.endpoints;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.Defaults;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Base Abstract Class.
@@ -43,7 +42,8 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
     protected Session session;
     protected EndpointConfig config;
 
-    public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher) throws InterruptedException
+    public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher)
+        throws InterruptedException
     {
         CloseStatus close = closeInfo.get();
         assertThat(prefix + " close info", close, Matchers.notNullValue());

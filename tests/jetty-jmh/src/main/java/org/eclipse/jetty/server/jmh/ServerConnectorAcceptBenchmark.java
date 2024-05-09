@@ -17,7 +17,6 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
@@ -56,7 +55,7 @@ public class ServerConnectorAcceptBenchmark
         new Runner(opt).run();
     }
 
-//    @Param({"0", "1", "2", "4"})
+    //    @Param({"0", "1", "2", "4"})
     @Param({"4", "2", "1", "0"})
     public int acceptors;
 
@@ -91,7 +90,8 @@ public class ServerConnectorAcceptBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public void accept() throws Exception
     {
         count.increment();

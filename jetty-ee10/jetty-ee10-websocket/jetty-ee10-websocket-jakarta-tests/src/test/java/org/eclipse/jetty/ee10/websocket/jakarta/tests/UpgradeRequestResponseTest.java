@@ -13,17 +13,19 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.ServerEndpoint;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.websocket.ClientEndpoint;
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.Session;
-import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
@@ -32,9 +34,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UpgradeRequestResponseTest
 {
@@ -56,7 +55,8 @@ public class UpgradeRequestResponseTest
         @Override
         public void beforeRequest(Map<String, List<String>> headers)
         {
-            headers.put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(), Collections.singletonList("permessage-deflate"));
+            headers.put(
+                HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(), Collections.singletonList("permessage-deflate"));
         }
     }
 
@@ -76,8 +76,8 @@ public class UpgradeRequestResponseTest
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         server.setHandler(contextHandler);
         contextHandler.setContextPath("/");
-        JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addEndpoint(ServerSocket.class));
+        JakartaWebSocketServletContainerInitializer.configure(
+            contextHandler, (context, container) -> container.addEndpoint(ServerSocket.class));
 
         client = new JakartaWebSocketClientContainer();
         server.start();

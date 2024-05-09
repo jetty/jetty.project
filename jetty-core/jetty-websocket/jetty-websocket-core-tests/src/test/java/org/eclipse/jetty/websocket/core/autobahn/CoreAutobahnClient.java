@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.websocket.core.autobahn;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Callback;
@@ -29,9 +31,6 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.MessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * WebSocket Client for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
@@ -166,7 +165,8 @@ public class CoreAutobahnClient
 
     public void runCaseByNumber(int caseNumber) throws Exception
     {
-        URI wsUri = baseWebsocketUri.resolve("/runCase?case=" + caseNumber + "&agent=" + UrlEncoded.encodeString(userAgent));
+        URI wsUri = baseWebsocketUri.resolve(
+            "/runCase?case=" + caseNumber + "&agent=" + UrlEncoded.encodeString(userAgent));
         LOG.info("test uri: {}", wsUri);
 
         AutobahnFrameHandler echoHandler = new AutobahnFrameHandler();

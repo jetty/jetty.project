@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.http.pathmap;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -26,6 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ServletPathSpecTest
 {
@@ -42,17 +42,8 @@ public class ServletPathSpecTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "foo",
-        "/foo/*.do",
-        "foo/*.do",
-        "foo/*.*do",
-        "*",
-        "*do",
-        "/foo/*/bar",
-        "*/foo",
-        "*.foo/*"
-    })
+    @ValueSource(strings =
+    {"foo", "/foo/*.do", "foo/*.do", "foo/*.*do", "*", "*do", "/foo/*/bar", "*/foo", "*.foo/*"})
     public void testBadPathSpecs(String str)
     {
         assertThrows(IllegalArgumentException.class, () -> new ServletPathSpec(str));
@@ -195,7 +186,6 @@ public class ServletPathSpecTest
         assertFalse(new ServletPathSpec("/On*").matches("/One"), "!match /One");
 
         assertTrue(new ServletPathSpec("").matches("/"), "match \"\"");
-
     }
 
     @Test

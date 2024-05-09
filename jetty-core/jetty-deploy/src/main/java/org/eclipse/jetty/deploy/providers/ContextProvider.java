@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.Deployable;
@@ -125,10 +124,7 @@ public class ContextProvider extends ScanningAppProvider
                 return false;
 
             // ignore directories that have sibling war or XML file
-            if (Files.exists(dir.toPath().resolve(name + ".war")) ||
-                Files.exists(dir.toPath().resolve(name + ".WAR")) ||
-                Files.exists(dir.toPath().resolve(name + ".xml")) ||
-                Files.exists(dir.toPath().resolve(name + ".XML")))
+            if (Files.exists(dir.toPath().resolve(name + ".war")) || Files.exists(dir.toPath().resolve(name + ".WAR")) || Files.exists(dir.toPath().resolve(name + ".xml")) || Files.exists(dir.toPath().resolve(name + ".XML")))
                 return false;
 
             return true;
@@ -256,9 +252,8 @@ public class ContextProvider extends ScanningAppProvider
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        _properties.put(Deployable.CONFIGURATION_CLASSES, (configurations == null)
-            ? null
-            : String.join(",", configurations));
+        _properties.put(
+            Deployable.CONFIGURATION_CLASSES, (configurations == null) ? null : String.join(",", configurations));
     }
 
     /**
@@ -301,8 +296,8 @@ public class ContextProvider extends ScanningAppProvider
         if (Files.isDirectory(path))
             contextHandler.setBaseResource(ResourceFactory.of(this).newResource(path));
 
-        //TODO think of better way of doing this
-        //pass through properties as attributes directly
+        // TODO think of better way of doing this
+        // pass through properties as attributes directly
         for (Map.Entry<String, String> prop : properties.entrySet())
         {
             String key = prop.getKey();
@@ -335,7 +330,12 @@ public class ContextProvider extends ScanningAppProvider
             Thread.currentThread().setContextClassLoader(environment.getClassLoader());
 
             // Create de-aliased file
-            Path path = app.getPath().toRealPath().toAbsolutePath().toFile().getCanonicalFile().toPath();
+            Path path = app.getPath()
+                .toRealPath()
+                .toAbsolutePath()
+                .toFile()
+                .getCanonicalFile()
+                .toPath();
             if (!Files.exists(path))
                 throw new IllegalStateException("App resource does not exist " + path);
 
@@ -347,21 +347,23 @@ public class ContextProvider extends ScanningAppProvider
             // Handle a context XML file
             if (FileID.isXml(path))
             {
-                XmlConfiguration xmlc = new XmlConfiguration(ResourceFactory.of(this).newResource(path), null, properties)
-                {
-                    @Override
-                    public void initializeDefaults(Object context)
+                XmlConfiguration xmlc =
+                    new XmlConfiguration(ResourceFactory.of(this).newResource(path), null, properties)
                     {
-                        super.initializeDefaults(context);
-                        ContextProvider.this.initializeContextHandler(context, path, properties);
-                    }
-                };
+                        @Override
+                        public void initializeDefaults(Object context)
+                        {
+                            super.initializeDefaults(context);
+                            ContextProvider.this.initializeContextHandler(context, path, properties);
+                        }
+                    };
 
                 xmlc.getIdMap().put("Environment", environment);
                 xmlc.setJettyStandardIdsAndProperties(getDeploymentManager().getServer(), path);
 
                 // If it is a core context environment, then look for a classloader
-                ClassLoader coreContextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : null;
+                ClassLoader coreContextClassLoader =
+                    Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : null;
                 if (coreContextClassLoader != null)
                     Thread.currentThread().setContextClassLoader(coreContextClassLoader);
 
@@ -399,7 +401,8 @@ public class ContextProvider extends ScanningAppProvider
                 throw new IllegalStateException("No ContextHandler classname for " + app);
             Class<?> contextHandlerClass = Loader.loadClass(contextHandlerClassName);
             if (contextHandlerClass == null)
-                throw new IllegalStateException("Unknown ContextHandler class " + contextHandlerClassName + " for " + app);
+                throw new IllegalStateException(
+                    "Unknown ContextHandler class " + contextHandlerClassName + " for " + app);
 
             Object context = contextHandlerClass.getDeclaredConstructor().newInstance();
             properties.put(Deployable.WAR, path.toString());
@@ -430,19 +433,17 @@ public class ContextProvider extends ScanningAppProvider
         {
             try (Stream<Path> paths = Files.list(libDir))
             {
-                paths.filter(FileID::isJavaArchive)
-                    .map(Path::toUri)
-                    .forEach(uri ->
+                paths.filter(FileID::isJavaArchive).map(Path::toUri).forEach(uri ->
+                {
+                    try
                     {
-                        try
-                        {
-                            urls.add(uri.toURL());
-                        }
-                        catch (Exception e)
-                        {
-                            throw new RuntimeException(e);
-                        }
-                    });
+                        urls.add(uri.toURL());
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                });
             }
         }
 
@@ -492,22 +493,18 @@ public class ContextProvider extends ScanningAppProvider
     {
         String basename = FileID.getBasename(path);
 
-        //is the file that changed a directory?
+        // is the file that changed a directory?
         if (Files.isDirectory(path))
         {
             // deploy if there is not a .xml or .war file of the same basename?
-            return !Files.exists(path.getParent().resolve(basename + ".xml")) &&
-                !Files.exists(path.getParent().resolve(basename + ".XML")) &&
-                !Files.exists(path.getParent().resolve(basename + ".war")) &&
-                !Files.exists(path.getParent().resolve(basename + ".WAR"));
+            return !Files.exists(path.getParent().resolve(basename + ".xml")) && !Files.exists(path.getParent().resolve(basename + ".XML")) && !Files.exists(path.getParent().resolve(basename + ".war")) && !Files.exists(path.getParent().resolve(basename + ".WAR"));
         }
 
         // deploy if it is a .war and there is not a .xml for of the same basename
         if (FileID.isWebArchive(path))
         {
             // if a .xml file exists for it
-            return !Files.exists(path.getParent().resolve(basename + ".xml")) &&
-                !Files.exists(path.getParent().resolve(basename + ".XML"));
+            return !Files.exists(path.getParent().resolve(basename + ".xml")) && !Files.exists(path.getParent().resolve(basename + ".XML"));
         }
 
         // otherwise only deploy an XML

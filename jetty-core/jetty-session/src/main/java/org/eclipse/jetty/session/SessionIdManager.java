@@ -88,7 +88,7 @@ public interface SessionIdManager extends LifeCycle
      * @return the new session id
      */
     String renewSessionId(String oldId, String oldExtendedId, Request request);
-    
+
     void scavenge();
 
     /**

@@ -15,14 +15,14 @@ package org.eclipse.jetty.websocket.server.internal;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
-public class ServerUpgradeResponseDelegate extends Response.Wrapper implements org.eclipse.jetty.websocket.server.ServerUpgradeResponse
+public class ServerUpgradeResponseDelegate extends Response.Wrapper
+    implements org.eclipse.jetty.websocket.server.ServerUpgradeResponse
 {
     public ServerUpgradeResponseDelegate(ServerUpgradeRequest request, ServerUpgradeResponse wrapped)
     {
@@ -58,8 +58,9 @@ public class ServerUpgradeResponseDelegate extends Response.Wrapper implements o
     @Override
     public void setExtensions(List<ExtensionConfig> configs)
     {
-        getWrapped().setExtensions(configs.stream()
-            .map(apiExt -> org.eclipse.jetty.websocket.core.ExtensionConfig.parse(apiExt.getParameterizedName()))
-            .collect(Collectors.toList()));
+        getWrapped()
+            .setExtensions(configs.stream()
+                .map(apiExt -> org.eclipse.jetty.websocket.core.ExtensionConfig.parse(apiExt.getParameterizedName()))
+                .collect(Collectors.toList()));
     }
 }

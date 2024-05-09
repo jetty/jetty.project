@@ -18,7 +18,6 @@ import java.net.SocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -72,7 +71,12 @@ public class MemoryConnector extends AbstractConnector
         this(server, null, null, null, factories);
     }
 
-    public MemoryConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, ConnectionFactory... factories)
+    public MemoryConnector(
+                           Server server,
+                           Executor executor,
+                           Scheduler scheduler,
+                           ByteBufferPool bufferPool,
+                           ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, 0, factories);
     }
@@ -126,7 +130,8 @@ public class MemoryConnector extends AbstractConnector
     {
         endPoint.setIdleTimeout(getIdleTimeout());
 
-        AbstractConnection connection = (AbstractConnection)getDefaultConnectionFactory().newConnection(this, endPoint);
+        AbstractConnection connection =
+            (AbstractConnection)getDefaultConnectionFactory().newConnection(this, endPoint);
         endPoint.setConnection(connection);
 
         endPoint.onOpen();

@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
-import java.nio.ByteBuffer;
-import java.text.DecimalFormat;
-import java.text.ParseException;
-
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
+import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
+import java.text.ParseException;
 
 /**
  * Example of a valid decoder impl declaring 2 decoders.

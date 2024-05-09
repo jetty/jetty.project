@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.slf4j.Logger;
@@ -44,16 +43,16 @@ public class SessionData implements Serializable
     protected String _contextPath;
     protected String _vhost;
     protected String _lastNode;
-    protected long _expiry; //precalculated time of expiry in ms since epoch
+    protected long _expiry; // precalculated time of expiry in ms since epoch
     protected long _created;
     protected long _cookieSet;
-    protected long _accessed;         // the time of the last access
-    protected long _lastAccessed;     // the time of the last access excluding this one
+    protected long _accessed; // the time of the last access
+    protected long _lastAccessed; // the time of the last access excluding this one
     protected long _maxInactiveMs;
     protected Map<String, Object> _attributes;
     protected boolean _dirty;
-    protected long _lastSaved; //time in msec since last save
-    protected boolean _metaDataDirty; //non-attribute data has changed
+    protected long _lastSaved; // time in msec since last save
+    protected boolean _metaDataDirty; // non-attribute data has changed
 
     /**
      * Serialize the attribute map of the session.
@@ -65,8 +64,7 @@ public class SessionData implements Serializable
      * @param data the SessionData for which to serialize the attributes
      * @param out the stream to which to serialize
      */
-    public static void serializeAttributes(SessionData data, java.io.ObjectOutputStream out)
-        throws IOException
+    public static void serializeAttributes(SessionData data, java.io.ObjectOutputStream out) throws IOException
     {
         int entries = data._attributes.size();
         out.writeObject(entries);
@@ -77,37 +75,38 @@ public class SessionData implements Serializable
             Class<?> clazz = entry.getValue().getClass();
             ClassLoader loader = clazz.getClassLoader();
             ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
-            
+
             boolean isContextLoader;
 
-            if (loader == contextLoader) //is it the context classloader?
+            if (loader == contextLoader) // is it the context classloader?
                 isContextLoader = true;
-            else if (contextLoader == null) //not context classloader
+            else if (contextLoader == null) // not context classloader
                 isContextLoader = false;
             else if (contextLoader instanceof ClassVisibilityChecker)
             {
-                //Clazz not loaded by context classloader, but ask if loadable by context classloader,
-                //because preferable to use context classloader if possible (eg for deep structures).
+                // Clazz not loaded by context classloader, but ask if loadable by context classloader,
+                // because preferable to use context classloader if possible (eg for deep structures).
                 ClassVisibilityChecker checker = (ClassVisibilityChecker)(contextLoader);
                 isContextLoader = (checker.isProtectedClass(clazz) && !(checker.isHiddenClass(clazz)));
             }
             else
             {
-                //Class wasn't loaded by context classloader, but try loading from context loader,
-                //because preferable to use context classloader if possible (eg for deep structures).
+                // Class wasn't loaded by context classloader, but try loading from context loader,
+                // because preferable to use context classloader if possible (eg for deep structures).
                 try
                 {
                     Class<?> result = contextLoader.loadClass(clazz.getName());
-                    isContextLoader = (result == clazz); //only if TTCL loaded this instance of the class
+                    isContextLoader = (result == clazz); // only if TTCL loaded this instance of the class
                 }
                 catch (Throwable e)
                 {
-                    isContextLoader = false; //TCCL can't see the class
+                    isContextLoader = false; // TCCL can't see the class
                 }
             }
-            
+
             if (LOG.isDebugEnabled())
-                LOG.debug("Attribute {} class={} isServerLoader={}", entry.getKey(), clazz.getName(), (!isContextLoader));
+                LOG.debug(
+                    "Attribute {} class={} isServerLoader={}", entry.getKey(), clazz.getName(), (!isContextLoader));
             out.writeBoolean(!isContextLoader);
             out.writeObject(entry.getValue());
         }
@@ -129,7 +128,7 @@ public class SessionData implements Serializable
         Object o = in.readObject();
         if (o instanceof Integer)
         {
-            //new serialization was used
+            // new serialization was used
             if (!(ClassLoadingObjectInputStream.class.isAssignableFrom(in.getClass())))
                 throw new IOException("Not ClassLoadingObjectInputStream");
 
@@ -139,11 +138,17 @@ public class SessionData implements Serializable
             ClassLoader serverLoader = SessionData.class.getClassLoader();
             for (int i = 0; i < entries; i++)
             {
-                String name = in.readUTF(); //attribute name
-                boolean isServerClassLoader = in.readBoolean(); //use server or webapp classloader to load
+                String name = in.readUTF(); // attribute name
+                boolean isServerClassLoader = in.readBoolean(); // use server or webapp classloader to load
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Deserialize {} isServerLoader={} serverLoader={} tccl={}", name, isServerClassLoader, serverLoader, contextLoader);
-                Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader ? serverLoader : contextLoader);
+                    LOG.debug(
+                        "Deserialize {} isServerLoader={} serverLoader={} tccl={}",
+                        name,
+                        isServerClassLoader,
+                        serverLoader,
+                        contextLoader);
+                Object value = ((ClassLoadingObjectInputStream)in)
+                    .readObject(isServerClassLoader ? serverLoader : contextLoader);
                 if (value != null)
                     data._attributes.put(name, value);
             }
@@ -151,14 +156,15 @@ public class SessionData implements Serializable
         else
         {
             LOG.info("Legacy serialization detected for {}", data.getId());
-            //legacy serialization was used, we have just deserialized the 
-            //entire attribute map
+            // legacy serialization was used, we have just deserialized the
+            // entire attribute map
             data._attributes = new ConcurrentHashMap<>();
             data.putAllAttributes((Map<String, Object>)o);
         }
     }
 
-    public SessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    public SessionData(
+                       String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
         _id = id;
         setContextPath(cpath);
@@ -171,7 +177,15 @@ public class SessionData implements Serializable
         _attributes = new ConcurrentHashMap<>();
     }
 
-    public SessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs, Map<String, Object> attributes)
+    public SessionData(
+                       String id,
+                       String cpath,
+                       String vhost,
+                       long created,
+                       long accessed,
+                       long lastAccessed,
+                       long maxInactiveMs,
+                       Map<String, Object> attributes)
     {
         this(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
         putAllAttributes(attributes);
@@ -185,13 +199,13 @@ public class SessionData implements Serializable
     public void copy(SessionData data)
     {
         if (data == null)
-            return; //don't copy if no data
+            return; // don't copy if no data
 
         if (data.getId() == null || !(getId().equals(data.getId())))
             throw new IllegalStateException("Can only copy data for same session id");
 
         if (data == this)
-            return; //don't copy ourself
+            return; // don't copy ourself
 
         setLastNode(data.getLastNode());
         setContextPath(data.getContextPath());
@@ -277,7 +291,7 @@ public class SessionData implements Serializable
     {
         Object old = (value == null ? _attributes.remove(name) : _attributes.put(name, value));
         if (value == null && old == null)
-            return old; //if same as remove attribute but attribute was already removed, no change
+            return old; // if same as remove attribute but attribute was already removed, no change
 
         setDirty(name);
         return old;
@@ -469,14 +483,14 @@ public class SessionData implements Serializable
 
     private void writeObject(java.io.ObjectOutputStream out) throws IOException
     {
-        out.writeUTF(_id); //session id
-        out.writeUTF(_contextPath); //context path
-        out.writeUTF(_vhost); //first vhost
-        out.writeLong(_accessed); //accessTime
-        out.writeLong(_lastAccessed); //lastAccessTime
-        out.writeLong(_created); //time created
-        out.writeLong(_cookieSet); //time cookie was set
-        out.writeUTF(_lastNode); //name of last node managing
+        out.writeUTF(_id); // session id
+        out.writeUTF(_contextPath); // context path
+        out.writeUTF(_vhost); // first vhost
+        out.writeLong(_accessed); // accessTime
+        out.writeLong(_lastAccessed); // lastAccessTime
+        out.writeLong(_created); // time created
+        out.writeLong(_cookieSet); // time cookie was set
+        out.writeUTF(_lastNode); // name of last node managing
         out.writeLong(_expiry);
         out.writeLong(_maxInactiveMs);
         serializeAttributes(this, out);
@@ -487,11 +501,11 @@ public class SessionData implements Serializable
         _id = in.readUTF();
         _contextPath = in.readUTF();
         _vhost = in.readUTF();
-        _accessed = in.readLong(); //accessTime
-        _lastAccessed = in.readLong(); //lastAccessTime
-        _created = in.readLong(); //time created
-        _cookieSet = in.readLong(); //time cookie was set
-        _lastNode = in.readUTF(); //last managing node
+        _accessed = in.readLong(); // accessTime
+        _lastAccessed = in.readLong(); // lastAccessTime
+        _created = in.readLong(); // time created
+        _cookieSet = in.readLong(); // time cookie was set
+        _lastNode = in.readUTF(); // last managing node
         _expiry = in.readLong();
         _maxInactiveMs = in.readLong();
         deserializeAttributes(this, in);
@@ -500,9 +514,14 @@ public class SessionData implements Serializable
     public boolean isExpiredAt(long time)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Testing expiry on session {}: expires at {} now {} maxIdle {}", _id, getExpiry(), time, getMaxInactiveMs());
+            LOG.debug(
+                "Testing expiry on session {}: expires at {} now {} maxIdle {}",
+                _id,
+                getExpiry(),
+                time,
+                getMaxInactiveMs());
         if (getMaxInactiveMs() <= 0)
-            return false; //never expires
+            return false; // never expires
         return (getExpiry() <= time);
     }
 

@@ -15,7 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
-
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -148,8 +147,19 @@ public enum HttpHeader
     static
     {
         CONTENT_HEADERS = EnumSet.of(
-            CONTENT_TYPE, CONTENT_LENGTH, CONTENT_ENCODING, CONTENT_LANGUAGE, CONTENT_RANGE, CONTENT_MD5, CONTENT_LOCATION, TRANSFER_ENCODING, CACHE_CONTROL, LAST_MODIFIED, EXPIRES, VARY, ETAG
-        );
+            CONTENT_TYPE,
+            CONTENT_LENGTH,
+            CONTENT_ENCODING,
+            CONTENT_LANGUAGE,
+            CONTENT_RANGE,
+            CONTENT_MD5,
+            CONTENT_LOCATION,
+            TRANSFER_ENCODING,
+            CACHE_CONTROL,
+            LAST_MODIFIED,
+            EXPIRES,
+            VARY,
+            ETAG);
         CONTENT_HEADERS_304 = EnumSet.copyOf(CONTENT_HEADERS);
         CONTENT_HEADERS_304.remove(ETAG);
     }
@@ -225,4 +235,3 @@ public enum HttpHeader
         return _string;
     }
 }
-

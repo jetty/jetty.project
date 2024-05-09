@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlets;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
@@ -24,6 +20,9 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +73,8 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+        throws IOException, ServletException
     {
         HttpServletRequest httpRequest = (HttpServletRequest)request;
         HttpServletResponse httpResponse = (HttpServletResponse)response;
@@ -134,7 +134,8 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
         String[] headerTokens = header.trim().split(":", 2);
         String headerName = headerTokens[0].trim();
         String headerValue = headerTokens[1].trim();
-        ConfiguredHeader configuredHeader = new ConfiguredHeader(headerName, headerValue, method.startsWith("add"), method.endsWith("Date"));
+        ConfiguredHeader configuredHeader =
+            new ConfiguredHeader(headerName, headerValue, method.startsWith("add"), method.endsWith("Date"));
         return configuredHeader;
     }
 

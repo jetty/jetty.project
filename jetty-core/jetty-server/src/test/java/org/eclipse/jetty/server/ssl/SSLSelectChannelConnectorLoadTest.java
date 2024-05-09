@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -32,7 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -45,9 +47,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class SSLSelectChannelConnectorLoadTest
 {
@@ -76,7 +75,8 @@ public class SSLSelectChannelConnectorLoadTest
         {
             keystore.load(stream, "storepwd".toCharArray());
         }
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        TrustManagerFactory trustManagerFactory =
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         sslContext = SSLContext.getInstance("SSL");
         sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
@@ -106,7 +106,8 @@ public class SSLSelectChannelConnectorLoadTest
         int mebiByte = 1048510;
         int clients = 1;
         int iterations = 2;
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(clients, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());
+        ThreadPoolExecutor threadPool =
+            new ThreadPoolExecutor(clients, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());
         threadPool.prestartAllCoreThreads();
         Worker[] workers = new Worker[clients];
         Future[] tasks = new Future[clients];
@@ -143,7 +144,7 @@ public class SSLSelectChannelConnectorLoadTest
         }
 
         // Keep the JVM running
-//        new CountDownLatch(1).await();
+        //        new CountDownLatch(1).await();
     }
 
     @Test
@@ -154,7 +155,8 @@ public class SSLSelectChannelConnectorLoadTest
         int mebiByte = 1048510;
         int clients = 1;
         int iterations = 2;
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(clients, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
+            clients, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
         threadPool.prestartAllCoreThreads();
         Worker[] workers = new Worker[clients];
         Future[] tasks = new Future[clients];
@@ -185,7 +187,7 @@ public class SSLSelectChannelConnectorLoadTest
         }
 
         // Keep the JVM running
-//        new CountDownLatch(1).await();
+        //        new CountDownLatch(1).await();
     }
 
     private static class Worker implements Runnable
@@ -209,7 +211,8 @@ public class SSLSelectChannelConnectorLoadTest
 
         public void open() throws IOException
         {
-            this.sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort());
+            this.sslSocket =
+                (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort());
         }
 
         public void close() throws IOException
@@ -243,7 +246,7 @@ public class SSLSelectChannelConnectorLoadTest
                     }
 
                     int contentSize = random.nextInt(maxContent - minContent) + minContent;
-//                    System.err.println("Writing " + content + " request bytes");
+                    //                    System.err.println("Writing " + content + " request bytes");
                     out.write("POST / HTTP/1.1\r\n".getBytes());
                     out.write("Host: localhost\r\n".getBytes());
                     out.write(("Content-Length: " + contentSize + "\r\n").getBytes());
@@ -268,11 +271,12 @@ public class SSLSelectChannelConnectorLoadTest
                     String line;
                     while ((line = reader.readLine()) != null)
                     {
-//                        System.err.println(line);
+                        //                        System.err.println(line);
                         String contentLength = "Content-Length:";
                         if (line.startsWith(contentLength))
                         {
-                            responseLength = Integer.parseInt(line.substring(contentLength.length()).trim());
+                            responseLength = Integer.parseInt(
+                                line.substring(contentLength.length()).trim());
                         }
                         else if (line.length() == 0)
                         {
@@ -322,7 +326,8 @@ public class SSLSelectChannelConnectorLoadTest
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.Source.asByteBuffer(request);
-            response.write(true, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()), callback);
+            response.write(
+                true, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()), callback);
             return true;
         }
     }

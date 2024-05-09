@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.server;
 
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.thread.Invocable;

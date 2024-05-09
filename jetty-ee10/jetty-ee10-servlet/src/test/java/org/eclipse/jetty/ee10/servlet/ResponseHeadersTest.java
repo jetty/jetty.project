@@ -13,16 +13,23 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URLDecoder;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.UriCompliance;
@@ -34,14 +41,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 
 public class ResponseHeadersTest
 {
@@ -72,7 +71,8 @@ public class ResponseHeadersTest
         HttpServlet fakeWsServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setHeader("Upgrade", "WebSocket");
                 response.addHeader("Connection", "Upgrade");
@@ -109,7 +109,8 @@ public class ResponseHeadersTest
         HttpServlet multilineServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 // The bad use-case
                 String pathInfo = URIUtil.decodePath(req.getPathInfo());
@@ -128,7 +129,10 @@ public class ResponseHeadersTest
 
         contextHandler.addServlet(multilineServlet, "/multiline/*");
         startServer(contextHandler);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setUriCompliance(UriCompliance.UNSAFE);
 
         String actualPathInfo = "%0A%20Content-Type%3A%20image/png%0A%20Content-Length%3A%208%0A%20%0A%20yuck<!--";
 
@@ -162,7 +166,8 @@ public class ResponseHeadersTest
         HttpServlet charsetResetToJsonMimeTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 // We set an initial desired behavior.
                 response.setContentType("text/html; charset=US-ASCII");
@@ -207,7 +212,8 @@ public class ResponseHeadersTest
         HttpServlet charsetChangeToJsonMimeTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 // We set an initial desired behavior.
                 response.setContentType("text/html; charset=US-ASCII");
@@ -250,7 +256,8 @@ public class ResponseHeadersTest
         HttpServlet charsetChangeToJsonMimeTypeSetCharsetToNullServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 // We set an initial desired behavior.
                 response.setContentType("text/html; charset=us-ascii");
@@ -295,7 +302,8 @@ public class ResponseHeadersTest
         HttpServlet addHeaderNullServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 // Add the header
                 response.addHeader("X-Foo", "foo-value");
@@ -359,7 +367,8 @@ public class ResponseHeadersTest
         HttpServlet addHeaderNullServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 // Add the header
                 response.addDateHeader("X-Foo", date);
@@ -410,7 +419,8 @@ public class ResponseHeadersTest
         HttpServlet addHeaderNullServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 // Add the header
                 response.addIntHeader("X-Foo", foovalue);
@@ -457,7 +467,8 @@ public class ResponseHeadersTest
         HttpServlet addHeaderServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.addIntHeader("X-Foo", 10);
                 response.setIntHeader("X-Foo", 20);
@@ -495,7 +506,8 @@ public class ResponseHeadersTest
         HttpServlet flushResponseServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 PrintWriter writer = response.getWriter();
                 writer.println("Hello");
@@ -532,7 +544,8 @@ public class ResponseHeadersTest
         HttpServlet contentTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setContentType("text/xml;charset=ISO-8859-7");
                 PrintWriter pw = response.getWriter();
@@ -557,7 +570,10 @@ public class ResponseHeadersTest
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat("Response Code", response.getStatus(), is(200));
-        assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/html;charset=ISO-8859-7"));
+        assertThat(
+            "Content Type",
+            response.getField("Content-Type").getValue(),
+            containsString("text/html;charset=ISO-8859-7"));
         assertThat(response.getContent(), containsString("Hello"));
     }
 
@@ -569,7 +585,8 @@ public class ResponseHeadersTest
         HttpServlet contentTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setContentType("text/html;charset=Shift_Jis");
                 response.setContentType("text/xml");
@@ -593,7 +610,10 @@ public class ResponseHeadersTest
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat("Response Code", response.getStatus(), is(200));
-        assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/xml;charset=Shift_Jis"));
+        assertThat(
+            "Content Type",
+            response.getField("Content-Type").getValue(),
+            containsString("text/xml;charset=Shift_Jis"));
         assertThat(response.getContent(), containsString("Hello"));
     }
 
@@ -605,7 +625,8 @@ public class ResponseHeadersTest
         HttpServlet contentTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setContentType("text/html;charset=Shift_Jis");
                 response.setContentType(null);
@@ -642,7 +663,8 @@ public class ResponseHeadersTest
         HttpServlet addHeaderServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setHeader("Test", "Before");
                 response.setHeader("Content-Length", "2");

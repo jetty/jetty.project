@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.ee10.tests.distribution;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.ee10.tests.distribution.openid.OpenIdProvider;
 import org.eclipse.jetty.http.HttpStatus;
@@ -24,12 +29,6 @@ import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Isolated
 public class OpenIdTests extends AbstractJettyHomeTest
@@ -45,9 +44,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
             .build();
 
         String[] args1 = {
-            "--create-startd",
-            "--approve-all-licenses",
-            "--add-to-start=http,ee10-webapp,ee10-deploy,openid"
+            "--create-startd", "--approve-all-licenses", "--add-to-start=http,ee10-webapp,ee10-deploy,openid"
         };
 
         String clientId = "clientId123";
@@ -58,7 +55,8 @@ public class OpenIdTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Path webApp = distribution.resolveArtifact("org.eclipse.jetty.ee10:jetty-ee10-test-openid-webapp:war:" + jettyVersion);
+            Path webApp = distribution.resolveArtifact(
+                "org.eclipse.jetty.ee10:jetty-ee10-test-openid-webapp:war:" + jettyVersion);
             distribution.installWar(webApp, "test");
 
             int port = Tester.freePort();
@@ -70,7 +68,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 "jetty.openid.provider=" + openIdProvider.getProvider(),
                 "jetty.openid.clientId=" + clientId,
                 "jetty.openid.clientSecret=" + clientSecret,
-                //"jetty.server.dumpAfterStart=true",
+                // "jetty.server.dumpAfterStart=true",
             };
 
             try (JettyHomeTester.Run run2 = distribution.start(args2))

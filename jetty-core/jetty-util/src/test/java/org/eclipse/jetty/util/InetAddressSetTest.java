@@ -13,25 +13,24 @@
 
 package org.eclipse.jetty.util;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
-
-import org.eclipse.jetty.toolchain.test.Net;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+import org.eclipse.jetty.toolchain.test.Net;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class InetAddressSetTest
 {
@@ -73,7 +72,8 @@ public class InetAddressSetTest
         set.add("::abcd");
 
         assertTrue(set.test(InetAddress.getByName("webtide.com")));
-        assertTrue(set.test(InetAddress.getByName(InetAddress.getByName("webtide.com").getHostAddress())));
+        assertTrue(set.test(
+            InetAddress.getByName(InetAddress.getByName("webtide.com").getHostAddress())));
         assertTrue(set.test(InetAddress.getByName("1.2.3.4")));
         assertTrue(set.test(InetAddress.getByAddress(new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
         assertTrue(set.test(InetAddress.getByAddress("hostname", new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
@@ -85,7 +85,9 @@ public class InetAddressSetTest
         assertFalse(set.test(InetAddress.getByName("www.google.com")));
         assertFalse(set.test(InetAddress.getByName("1.2.3.5")));
         assertFalse(set.test(InetAddress.getByAddress(new byte[]{(byte)1, (byte)2, (byte)3, (byte)5})));
-        assertFalse(set.test(InetAddress.getByAddress("webtide.com", new byte[]{(byte)1, (byte)2, (byte)3, (byte)5})));
+        assertFalse(
+            set.test(InetAddress.getByAddress("webtide.com", new byte[]
+            {(byte)1, (byte)2, (byte)3, (byte)5})));
         assertFalse(set.test(InetAddress.getByName("::1.2.3.4")));
         assertFalse(set.test(InetAddress.getByName("::1234")));
         assertFalse(set.test(InetAddress.getByName("::abce")));
@@ -121,7 +123,8 @@ public class InetAddressSetTest
         {
             //noinspection MismatchedQueryAndUpdateOfCollection
             InetAddressSet inetAddressSet = new InetAddressSet();
-            IllegalArgumentException cause = assertThrows(IllegalArgumentException.class, () -> inetAddressSet.add(badAddr));
+            IllegalArgumentException cause =
+                assertThrows(IllegalArgumentException.class, () -> inetAddressSet.add(badAddr));
             assertThat(cause.getMessage(), containsString(badAddr));
         }
     }
@@ -241,10 +244,8 @@ public class InetAddressSetTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "10.0.0.0-9.0.0.0",
-        "9.0.0.0-[::10.0.0.0]"
-    })
+    @ValueSource(strings =
+    {"10.0.0.0-9.0.0.0", "9.0.0.0-[::10.0.0.0]"})
     public void testBadMinMax(String bad)
     {
         //noinspection MismatchedQueryAndUpdateOfCollection
@@ -280,11 +281,8 @@ public class InetAddressSetTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "9.0-10.0",
-        "10.0.0--1.1",
-        "10.0.0-256.1"
-    })
+    @ValueSource(strings =
+    {"9.0-10.0", "10.0.0--1.1", "10.0.0-256.1"})
     public void testBadLegacy(String bad)
     {
         //noinspection MismatchedQueryAndUpdateOfCollection
@@ -304,7 +302,8 @@ public class InetAddressSetTest
         set.add("10.0.0.4-10.0.0.6");
 
         assertTrue(set.test(InetAddress.getByName("webtide.com")));
-        assertTrue(set.test(InetAddress.getByName(InetAddress.getByName("webtide.com").getHostAddress())));
+        assertTrue(set.test(
+            InetAddress.getByName(InetAddress.getByName("webtide.com").getHostAddress())));
         assertTrue(set.test(InetAddress.getByName("1.2.3.4")));
         assertTrue(set.test(InetAddress.getByAddress(new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
         assertTrue(set.test(InetAddress.getByAddress("hostname", new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
@@ -321,10 +320,13 @@ public class InetAddressSetTest
 
         set.remove("1.2.3.4");
         assertTrue(set.test(InetAddress.getByName("webtide.com")));
-        assertTrue(set.test(InetAddress.getByName(InetAddress.getByName("webtide.com").getHostAddress())));
+        assertTrue(set.test(
+            InetAddress.getByName(InetAddress.getByName("webtide.com").getHostAddress())));
         assertFalse(set.test(InetAddress.getByName("1.2.3.4")));
         assertFalse(set.test(InetAddress.getByAddress(new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
-        assertFalse(set.test(InetAddress.getByAddress("hostname", new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
+        assertFalse(
+            set.test(InetAddress.getByAddress("hostname", new byte[]
+            {(byte)1, (byte)2, (byte)3, (byte)4})));
         if (Net.isIpv6InterfaceAvailable())
         {
             assertTrue(set.test(InetAddress.getByName("::0:0:abcd")));
@@ -339,10 +341,13 @@ public class InetAddressSetTest
         set.removeIf("::abcd"::equals);
 
         assertTrue(set.test(InetAddress.getByName("webtide.com")));
-        assertTrue(set.test(InetAddress.getByName(InetAddress.getByName("webtide.com").getHostAddress())));
+        assertTrue(set.test(
+            InetAddress.getByName(InetAddress.getByName("webtide.com").getHostAddress())));
         assertFalse(set.test(InetAddress.getByName("1.2.3.4")));
         assertFalse(set.test(InetAddress.getByAddress(new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
-        assertFalse(set.test(InetAddress.getByAddress("hostname", new byte[]{(byte)1, (byte)2, (byte)3, (byte)4})));
+        assertFalse(
+            set.test(InetAddress.getByAddress("hostname", new byte[]
+            {(byte)1, (byte)2, (byte)3, (byte)4})));
         if (Net.isIpv6InterfaceAvailable())
         {
             assertFalse(set.test(InetAddress.getByName("::0:0:abcd")));

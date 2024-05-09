@@ -13,7 +13,11 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -22,6 +26,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+import java.io.IOException;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -34,12 +39,6 @@ import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * RemoveSessionTest
@@ -76,35 +75,41 @@ public class RemoveSessionTest
             client.start();
             try
             {
-                ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                ContentResponse response =
+                    client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
 
-                //ensure sessionCreated bindingListener is called
+                // ensure sessionCreated bindingListener is called
                 assertTrue(testListener.isCreated());
                 assertEquals(1, m.getSessionsCreated());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionCache()).getSessionsMax());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionCache()).getSessionsTotal());
 
-                //now delete the session
-                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=delete");
+                // now delete the session
+                Request request =
+                    client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=delete");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-                //ensure sessionDestroyed bindingListener is called
+                // ensure sessionDestroyed bindingListener is called
                 assertTrue(testListener.isDestroyed());
                 assertEquals(0, ((DefaultSessionCache)m.getSessionCache()).getSessionsCurrent());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionCache()).getSessionsMax());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionCache()).getSessionsTotal());
-                
-                //check the session is no longer in the cache
-                assertFalse(((AbstractSessionCache)m.getSessionCache()).contains(SessionTestSupport.extractSessionId(sessionCookie)));
 
-                //check the session is not persisted any more
-                assertFalse(m.getSessionCache().getSessionDataStore().exists(SessionTestSupport.extractSessionId(sessionCookie)));
+                // check the session is no longer in the cache
+                assertFalse(((AbstractSessionCache)m.getSessionCache())
+                    .contains(SessionTestSupport.extractSessionId(sessionCookie)));
+
+                // check the session is not persisted any more
+                assertFalse(m.getSessionCache()
+                    .getSessionDataStore()
+                    .exists(SessionTestSupport.extractSessionId(sessionCookie)));
 
                 // The session is not there anymore, even if we present an old cookie
-                request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check");
+                request =
+                    client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 assertEquals(0, ((DefaultSessionCache)m.getSessionCache()).getSessionsCurrent());
@@ -126,7 +131,8 @@ public class RemoveSessionTest
     {
         private static final long serialVersionUID = 1L;
 
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
             if ("create".equals(action))

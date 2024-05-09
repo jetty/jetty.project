@@ -13,13 +13,20 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
@@ -33,14 +40,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class DemoModulesTests extends AbstractJettyHomeTest
@@ -65,9 +64,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         int httpPort = Tester.freePort();
         int sslPort = Tester.freePort();
 
-        String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demos", env)};
 
         String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -75,11 +72,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart =
-            {
-                "jetty.http.port=" + httpPort,
-                "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
@@ -110,9 +103,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demos", env)};
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
@@ -124,14 +115,15 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertTrue(runListConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(0, runListConfig.getExitValue(), "Exit value");
                 // Example of what we expect
-                // jetty.webapp.addHiddenClasses = org.eclipse.jetty.logging.,${jetty.home.uri}/lib/logging/,org.slf4j.,${jetty.base.uri}/lib/bouncycastle/
+                // jetty.webapp.addHiddenClasses =
+                // org.eclipse.jetty.logging.,${jetty.home.uri}/lib/logging/,org.slf4j.,${jetty.base.uri}/lib/bouncycastle/
                 String addServerKey = " jetty.webapp.addHiddenClasses = ";
                 String addServerClasses = runListConfig.getLogs().stream()
                     .filter(s -> s.startsWith(addServerKey))
                     .findFirst()
-                    .orElseThrow(() ->
-                        new NoSuchElementException("Unable to find [" + addServerKey + "]"));
-                assertThat("'jetty.webapp.addHiddenClasses' entry count",
+                    .orElseThrow(() -> new NoSuchElementException("Unable to find [" + addServerKey + "]"));
+                assertThat(
+                    "'jetty.webapp.addHiddenClasses' entry count",
                     addServerClasses.split(",").length,
                     greaterThan(1));
             }
@@ -152,9 +144,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         int httpPort = Tester.freePort();
         int sslPort = Tester.freePort();
 
-        String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo-jsp", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demo-jsp", env)};
 
         String baseURI = "http://localhost:%d/%s-demo-jsp".formatted(httpPort, env);
 
@@ -163,10 +153,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
@@ -178,12 +165,10 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("PathInfo"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
-
-
             }
         }
     }
-    
+
     @ParameterizedTest
     @MethodSource("provideEnvironmentsToTest")
     public void testJaasDemo(String env) throws Exception
@@ -191,17 +176,15 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .jettyBase(jettyBase)
-                .build();
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
 
         int httpPort = Tester.freePort();
         int sslPort = Tester.freePort();
 
-        String[] argsConfig = {
-                "--add-modules=http," + toEnvironment("demo-jaas", env)
-        };
-        
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demo-jaas", env)};
+
         String baseURI = "http://localhost:%d/%s-test-jaas".formatted(httpPort, env);
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -209,11 +192,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart = 
-            {
-                    "jetty.http.port=" + httpPort,
-                    "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
@@ -238,16 +217,14 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .jettyBase(jettyBase)
-                .build();
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
 
         int httpPort = Tester.freePort();
         int sslPort = Tester.freePort();
 
-        String[] argsConfig = {
-                "--add-modules=http," + toEnvironment("demo-jsp", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demo-jsp", env)};
 
         String baseURI = "http://localhost:%d/%s-demo-jsp".formatted(httpPort, env);
 
@@ -256,10 +233,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart = {
-                    "jetty.http.port=" + httpPort,
-                    "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
@@ -273,8 +247,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertThat(response.getContentAsString(), containsString("5"));
                 assertThat(response.getContentAsString(), containsString("10"));
                 assertThat(response.getContentAsString(), not(containsString("<c:forEach")));
-
-
             }
         }
     }
@@ -294,9 +266,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         int httpPort = Tester.freePort();
         int sslPort = Tester.freePort();
 
-        String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo-async-rest", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demo-async-rest", env)};
 
         String baseURI = "http://localhost:%d/%s-demo-async-rest".formatted(httpPort, env);
 
@@ -305,10 +275,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
@@ -350,19 +317,14 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         int httpPort = Tester.freePort();
         int sslPort = Tester.freePort();
 
-        String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demos", env)};
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
@@ -372,19 +334,19 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 String baseURI = "http://localhost:%d/%s-test-spec".formatted(httpPort, env);
 
-                //test the async listener
+                // test the async listener
                 ContentResponse response = client.POST(baseURI + "/asy/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
                 assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
 
-                //test the servlet 3.1/4 features
+                // test the servlet 3.1/4 features
                 response = client.POST(baseURI + "/test/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
                 assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
 
-                //test dynamic jsp
+                // test dynamic jsp
                 response = client.POST(baseURI + "/dynamicjsp/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Programmatically Added Jsp File"));
@@ -406,9 +368,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         int httpPort = Tester.freePort();
         int sslPort = Tester.freePort();
 
-        String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demos", env)};
 
         String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -416,12 +376,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart =
-            {
-                "--jpms",
-                "jetty.http.port=" + httpPort,
-                "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"--jpms", "jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
                 assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
@@ -451,9 +406,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demos", env)};
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
@@ -462,14 +415,12 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             int httpPort = Tester.freePort();
             int sslPort = Tester.freePort();
-            String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
-                        String.join("", runStart.getLogs()));
+                assertTrue(
+                    runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
+                    String.join("", runStart.getLogs()));
 
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
 
@@ -497,9 +448,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 form.add("Action", "Set");
                 form.add("Name", "Zed");
                 form.add("Value", "[alpha]");
-                response = client.POST(location)
-                    .body(new FormRequestContent(form))
-                    .send();
+                response =
+                    client.POST(location).body(new FormRequestContent(form)).send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 content = response.getContentAsString();
                 assertThat("Content", content, containsString("<b>Zed:</b> [alpha]<br/>"));
@@ -518,9 +468,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demos", env)};
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
@@ -530,13 +478,11 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             int httpPort = Tester.freePort();
             int sslPort = Tester.freePort();
 
-            String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
-                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
+                assertTrue(
+                    runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
                     String.join("", runStart.getLogs()));
 
                 String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
@@ -558,16 +504,14 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .jettyBase(jettyBase)
-                .build();
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
 
         int httpPort = Tester.freePort();
         int sslPort = Tester.freePort();
 
-        String[] argsConfig = {
-                "--add-modules=http,demo-handler"
-        };
+        String[] argsConfig = {"--add-modules=http,demo-handler"};
 
         String baseURI = "http://localhost:%d/demo-handler/".formatted(httpPort);
 
@@ -576,10 +520,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart = {
-                    "jetty.http.port=" + httpPort,
-                    "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
@@ -608,21 +549,14 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         int httpPort = Tester.freePort();
         int sslPort = Tester.freePort();
 
-        String[] argsConfig =
-        {
-            "--add-modules=http," + toEnvironment("demos", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demos", env)};
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart =
-            {
-                 "jetty.http.port=" + httpPort,
-                 "jetty.ssl.port=" + sslPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort};
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {
                 assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
@@ -633,7 +567,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 ContentResponse response;
 
-                for (String welcome : new String[] {"", "/", "/index.html"})
+                for (String welcome : new String[]{"", "/", "/index.html"})
                 {
                     response = client.GET(rootURI + welcome);
                     assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -644,7 +578,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                     assertThat(response.getContentAsString(), containsString("Eclipse Jetty Demo Webapp"));
                 }
 
-                for (String directory : new String[] {rootURI + "/", demoJettyURI + "/", demoJettyURI + "/rewrite/"})
+                for (String directory : new String[]{rootURI + "/", demoJettyURI + "/", demoJettyURI + "/rewrite/"})
                 {
                     response = client.GET(directory + "jetty-dir.css");
                     assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -670,9 +604,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         int httpPort = Tester.freePort();
         int sslPort = Tester.freePort();
 
-        String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env)
-        };
+        String[] argsConfig = {"--add-modules=http," + toEnvironment("demos", env)};
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
@@ -680,9 +612,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.ssl.port=" + sslPort,
-                "jetty.server.dumpAfterStart=true"
+                "jetty.http.port=" + httpPort, "jetty.ssl.port=" + sslPort, "jetty.server.dumpAfterStart=true"
             };
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -694,9 +624,10 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 ContentResponse response = client.POST(baseURI + "/dump/info").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Dump Servlet"));
-                assertThat(response.getContentAsString(), containsString("context-override-example:&nbsp;</th><td>a context value"));
+                assertThat(
+                    response.getContentAsString(),
+                    containsString("context-override-example:&nbsp;</th><td>a context value"));
             }
         }
     }
-
 }

@@ -15,7 +15,6 @@ package org.eclipse.jetty.session;
 
 import java.util.Collections;
 import java.util.Set;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -36,7 +35,14 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new SessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+        return new SessionData(
+            id,
+            _context.getCanonicalContextPath(),
+            _context.getVhost(),
+            created,
+            accessed,
+            lastAccessed,
+            maxInactiveMs);
     }
 
     @Override
@@ -48,13 +54,13 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
-        //noop
+        // noop
     }
 
     @Override
     public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
-        return candidates; //whatever is suggested we accept
+        return candidates; // whatever is suggested we accept
     }
 
     @Override
@@ -62,8 +68,8 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     {
         return Collections.emptySet();
     }
-    
-    /** 
+
+    /**
      * @see org.eclipse.jetty.session.SessionDataStore#isPassivating()
      */
     @ManagedAttribute(value = "does this store serialize sessions", readonly = true)
@@ -82,6 +88,6 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doCleanOrphans(long timeLimit)
     {
-        //noop
+        // noop
     }
 }

@@ -102,7 +102,7 @@ public interface PathSpec extends Comparable<PathSpec>
      *
      * @param path the path to test
      * @return true if the path matches this path spec, false otherwise
-     * @see #matched(String) 
+     * @see #matched(String)
      */
     default boolean matches(String path)
     {
@@ -114,7 +114,7 @@ public interface PathSpec extends Comparable<PathSpec>
      *
      * @param path the path to test
      * @return the matched details, if a match was possible, or null if not able to be matched.
-     * @see #matches(String) 
+     * @see #matches(String)
      */
     MatchedPath matched(String path);
 }

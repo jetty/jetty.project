@@ -13,20 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.stream.Stream;
-
-import org.eclipse.jetty.http.UriCompliance.Violation;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -39,6 +25,19 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.stream.Stream;
+import org.eclipse.jetty.http.UriCompliance.Violation;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpURITest
@@ -67,8 +66,12 @@ public class HttpURITest
         assertThat(uri.getQuery(), is("query=value"));
         assertThat(uri.getFragment(), is("fragment"));
         assertThat(uri.getAuthority(), is("host:8888"));
-        assertThat(uri.toString(), is("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment"));
-        assertThat(uri.toURI().toString(), is("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment"));
+        assertThat(
+            uri.toString(),
+            is("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment"));
+        assertThat(
+            uri.toURI().toString(),
+            is("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment"));
 
         uri = HttpURI.build(uri)
             .scheme("https")
@@ -94,7 +97,8 @@ public class HttpURITest
     @Test
     public void testExample()
     {
-        HttpURI uri = HttpURI.from("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment");
+        HttpURI uri = HttpURI.from(
+            "http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment");
 
         assertThat(uri.getScheme(), is("http"));
         assertThat(uri.getUser(), is("user:password"));
@@ -365,137 +369,233 @@ public class HttpURITest
 
     public static Stream<Arguments> decodePathTests()
     {
-        return Arrays.stream(new Object[][]
+        return Arrays.stream(new Object[][]{
+            // Simple path example
+            {"http://host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+            {"//host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+            {"/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+
+            // Scheme & host containing unusual valid characters
+            {"ht..tp://host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
             {
-                // Simple path example
-                {"http://host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
-                {"//host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
-                {"/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                "ht1.2+..-3.4tp://127.0.0.1:8080/path/info",
+                "/path/info",
+                "/path/info",
+                EnumSet.noneOf(Violation.class)
+            },
+            {"http://h%2est/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+            {"http://h..est/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
 
-                // Scheme & host containing unusual valid characters
-                {"ht..tp://host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
-                {"ht1.2+..-3.4tp://127.0.0.1:8080/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
-                {"http://h%2est/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
-                {"http://h..est/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+            // legal non ambiguous relative paths
+            {"http://host/../path/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"http://host/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
+            {"http://host/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+            {"//host/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
+            {"//host/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+            {"/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
+            {"/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+            {"path/../info", "info", "info", EnumSet.noneOf(Violation.class)},
+            {"path/./info", "path/info", "path/info", EnumSet.noneOf(Violation.class)},
 
-                // legal non ambiguous relative paths
-                {"http://host/../path/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"http://host/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
-                {"http://host/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
-                {"//host/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
-                {"//host/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
-                {"/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
-                {"/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
-                {"path/../info", "info", "info", EnumSet.noneOf(Violation.class)},
-                {"path/./info", "path/info", "path/info", EnumSet.noneOf(Violation.class)},
+            // encoded paths
+            {"/f%6f%6F/bar", "/foo/bar", "/foo/bar", EnumSet.noneOf(Violation.class)},
+            {"/context/dir%3B/", "/context/dir%3B/", "/context/dir;/", EnumSet.noneOf(Violation.class)},
+            {"/f%u006f%u006F/bar", "/foo/bar", "/foo/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
+            {"/f%u0001%u0001/bar", "/f%01%01/bar", "/f\001\001/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
+            {"/foo/%u20AC/bar", "/foo/\u20AC/bar", "/foo/\u20AC/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
 
-                // encoded paths
-                {"/f%6f%6F/bar", "/foo/bar", "/foo/bar", EnumSet.noneOf(Violation.class)},
-                {"/context/dir%3B/", "/context/dir%3B/", "/context/dir;/", EnumSet.noneOf(Violation.class)},
-                {"/f%u006f%u006F/bar", "/foo/bar", "/foo/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
-                {"/f%u0001%u0001/bar", "/f%01%01/bar", "/f\001\001/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
-                {"/foo/%u20AC/bar", "/foo/\u20AC/bar", "/foo/\u20AC/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
+            // nfc encoded unicode path
+            {
+                "/dir/swedish-%C3%A5.txt",
+                "/dir/swedish-å.txt",
+                "/dir/swedish-å.txt",
+                EnumSet.noneOf(Violation.class)
+            },
 
-                // nfc encoded unicode path
-                {"/dir/swedish-%C3%A5.txt", "/dir/swedish-å.txt", "/dir/swedish-å.txt", EnumSet.noneOf(Violation.class)},
+            // nfd encoded unicode path
+            {
+                "/dir/swedish-a%CC%8A.txt",
+                URLDecoder.decode("/dir/swedish-a%CC%8A.txt", UTF_8),
+                URLDecoder.decode("/dir/swedish-a%CC%8A.txt", UTF_8),
+                EnumSet.noneOf(Violation.class)
+            },
 
-                // nfd encoded unicode path
-                {"/dir/swedish-a%CC%8A.txt", URLDecoder.decode("/dir/swedish-a%CC%8A.txt", UTF_8), URLDecoder.decode("/dir/swedish-a%CC%8A.txt", UTF_8), EnumSet.noneOf(Violation.class)},
+            // illegal paths
+            {"//host/../path/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"/../path/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"../path/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"/path/%XX/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"/path/%2/F/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"/path/%/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"/path/%u000X/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"/path/Fo%u0000/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"/path/Fo%00/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"/path/Foo/info%u0000", null, null, EnumSet.noneOf(Violation.class)},
+            {"/path/Foo/info%00", null, null, EnumSet.noneOf(Violation.class)},
+            {"/path/%U20AC", null, null, EnumSet.noneOf(Violation.class)},
+            {"%2e%2e/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"%u002e%u002e/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"%2e%2e;/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"%u002e%u002e;/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"%2e.", null, null, EnumSet.noneOf(Violation.class)},
+            {"%u002e.", null, null, EnumSet.noneOf(Violation.class)},
+            {".%2e", null, null, EnumSet.noneOf(Violation.class)},
+            {".%u002e", null, null, EnumSet.noneOf(Violation.class)},
+            {"%2e%2e", null, null, EnumSet.noneOf(Violation.class)},
+            {"%u002e%u002e", null, null, EnumSet.noneOf(Violation.class)},
+            {"%2e%u002e", null, null, EnumSet.noneOf(Violation.class)},
+            {"%u002e%2e", null, null, EnumSet.noneOf(Violation.class)},
+            {"..;/info", null, null, EnumSet.noneOf(Violation.class)},
+            {"..;param/info", null, null, EnumSet.noneOf(Violation.class)},
 
-                // illegal paths
-                {"//host/../path/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"/../path/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"../path/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"/path/%XX/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"/path/%2/F/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"/path/%/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"/path/%u000X/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"/path/Fo%u0000/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"/path/Fo%00/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"/path/Foo/info%u0000", null, null, EnumSet.noneOf(Violation.class)},
-                {"/path/Foo/info%00", null, null, EnumSet.noneOf(Violation.class)},
-                {"/path/%U20AC", null, null, EnumSet.noneOf(Violation.class)},
-                {"%2e%2e/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"%u002e%u002e/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"%2e%2e;/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"%u002e%u002e;/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"%2e.", null, null, EnumSet.noneOf(Violation.class)},
-                {"%u002e.", null, null, EnumSet.noneOf(Violation.class)},
-                {".%2e", null, null, EnumSet.noneOf(Violation.class)},
-                {".%u002e", null, null, EnumSet.noneOf(Violation.class)},
-                {"%2e%2e", null, null, EnumSet.noneOf(Violation.class)},
-                {"%u002e%u002e", null, null, EnumSet.noneOf(Violation.class)},
-                {"%2e%u002e", null, null, EnumSet.noneOf(Violation.class)},
-                {"%u002e%2e", null, null, EnumSet.noneOf(Violation.class)},
-                {"..;/info", null, null, EnumSet.noneOf(Violation.class)},
-                {"..;param/info", null, null, EnumSet.noneOf(Violation.class)},
+            // ambiguous dot encodings
+            {
+                "scheme://host/path/%2e/info",
+                "/path/info",
+                "/path/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)
+            },
+            {"scheme:/path/%2e/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
+            {"/path/%2e/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
+            {"path/%2e/info/", "path/info/", "path/info/", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
+            {"/path/%2e%2e/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
+            {
+                "/path/%2e%2e;/info",
+                "/info",
+                "/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)
+            },
+            {
+                "/path/%2e%2e;param/info",
+                "/info",
+                "/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)
+            },
+            {
+                "/path/%2e%2e;param;other/info;other",
+                "/info",
+                "/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)
+            },
+            {"%2e/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
+            {
+                "%u002e/info",
+                "info",
+                "info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.UTF16_ENCODINGS)
+            },
+            {"%2e", "", "", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
+            {"%u002e", "", "", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.UTF16_ENCODINGS)},
 
-                // ambiguous dot encodings
-                {"scheme://host/path/%2e/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"scheme:/path/%2e/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"/path/%2e/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"path/%2e/info/", "path/info/", "path/info/", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"/path/%2e%2e/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"/path/%2e%2e;/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/%2e%2e;param/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/%2e%2e;param;other/info;other", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"%2e/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"%u002e/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.UTF16_ENCODINGS)},
+            // empty segment treated as ambiguous
+            {"/foo//bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo//../bar", "/foo/bar", "/foo/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo///../../../bar", "/bar", "/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo/./../bar", "/bar", "/bar", EnumSet.noneOf(Violation.class)},
+            {"/foo//./bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"foo/bar", "foo/bar", "foo/bar", EnumSet.noneOf(Violation.class)},
+            {"foo;/bar", "foo/bar", "foo/bar", EnumSet.noneOf(Violation.class)},
+            {";/bar", "/bar", "/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {";?n=v", "", "", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"?n=v", "", "", EnumSet.noneOf(Violation.class)},
+            {"#n=v", "", "", EnumSet.noneOf(Violation.class)},
+            {"", "", "", EnumSet.noneOf(Violation.class)},
+            {"http:/foo", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
 
-                {"%2e", "", "", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"%u002e", "", "", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.UTF16_ENCODINGS)},
+            // ambiguous parameter inclusions
+            {"/path/.;/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            {"/path/.;param/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            {"/path/..;/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            {"/path/..;param/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            {".;/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            {".;param/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
 
-                // empty segment treated as ambiguous
-                {"/foo//bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo//../bar", "/foo/bar", "/foo/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo///../../../bar", "/bar", "/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo/./../bar", "/bar", "/bar", EnumSet.noneOf(Violation.class)},
-                {"/foo//./bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"foo/bar", "foo/bar", "foo/bar", EnumSet.noneOf(Violation.class)},
-                {"foo;/bar", "foo/bar", "foo/bar", EnumSet.noneOf(Violation.class)},
-                {";/bar", "/bar", "/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {";?n=v", "", "", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"?n=v", "", "", EnumSet.noneOf(Violation.class)},
-                {"#n=v", "", "", EnumSet.noneOf(Violation.class)},
-                {"", "", "", EnumSet.noneOf(Violation.class)},
-                {"http:/foo", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
+            // ambiguous segment separators
+            {"/path/%2f/info", "/path/%2F/info", "/path///info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)
+            },
+            {"%2f/info", "%2F/info", "//info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
+            {"%2F/info", "%2F/info", "//info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
+            {
+                "/path/%2f../info",
+                "/path/%2F../info",
+                "/path//../info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)
+            },
 
-                // ambiguous parameter inclusions
-                {"/path/.;/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/.;param/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/..;/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/..;param/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {".;/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {".;param/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            // ambiguous encoding
+            {"/path/%25/info", "/path/%25/info", "/path/%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
+            {
+                "/path/%2520/info",
+                "/path/%2520/info",
+                "/path/%20/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)
+            },
+            {
+                "/path/%u0025/info",
+                "/path/%25/info",
+                "/path/%/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING, Violation.UTF16_ENCODINGS)
+            },
+            {"%25/info", "%25/info", "%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
+            {
+                "/path/%25../info",
+                "/path/%25../info",
+                "/path/%../info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)
+            },
+            {
+                "/path/%u0025../info",
+                "/path/%25../info",
+                "/path/%../info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING, Violation.UTF16_ENCODINGS)
+            },
 
-                // ambiguous segment separators
-                {"/path/%2f/info", "/path/%2F/info", "/path///info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
-                {"%2f/info", "%2F/info", "//info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
-                {"%2F/info", "%2F/info", "//info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
-                {"/path/%2f../info", "/path/%2F../info", "/path//../info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
+            // bad utf8
+            {"/path/%C0%AF/info", "/path/��/info", "/path/��/info", EnumSet.of(Violation.BAD_UTF8_ENCODING)},
 
-                // ambiguous encoding
-                {"/path/%25/info", "/path/%25/info", "/path/%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
-                {"/path/%2520/info", "/path/%2520/info", "/path/%20/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
-                {"/path/%u0025/info", "/path/%25/info", "/path/%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING, Violation.UTF16_ENCODINGS)},
-                {"%25/info", "%25/info", "%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
-                {"/path/%25../info", "/path/%25../info", "/path/%../info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
-                {"/path/%u0025../info", "/path/%25../info", "/path/%../info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING, Violation.UTF16_ENCODINGS)},
+            // combinations
+            {
+                "/path/%2f/..;/info",
+                "/path/info",
+                "/path/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_PARAMETER)
+            },
+            {
+                "/path/%u002f/..;/info",
+                "/path/info",
+                "/path/info",
+                EnumSet.of(
+                    Violation.AMBIGUOUS_PATH_SEPARATOR,
+                    Violation.AMBIGUOUS_PATH_PARAMETER,
+                    Violation.UTF16_ENCODINGS)
+            },
+            {
+                "/path/%2f/..;/%2e/info",
+                "/path/info",
+                "/path/info",
+                EnumSet.of(
+                    Violation.AMBIGUOUS_PATH_SEPARATOR,
+                    Violation.AMBIGUOUS_PATH_PARAMETER,
+                    Violation.AMBIGUOUS_PATH_SEGMENT)
+            },
 
-                // bad utf8
-                {"/path/%C0%AF/info", "/path/��/info", "/path/��/info", EnumSet.of(Violation.BAD_UTF8_ENCODING)},
-
-                // combinations
-                {"/path/%2f/..;/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/%u002f/..;/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_PARAMETER, Violation.UTF16_ENCODINGS)},
-                {"/path/%2f/..;/%2e/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_PARAMETER, Violation.AMBIGUOUS_PATH_SEGMENT)},
-
-                // Non ascii characters
-                // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-                {"http://localhost:9000/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", EnumSet.noneOf(Violation.class)},
-                {"http://localhost:9000/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", EnumSet.noneOf(Violation.class)},
-                // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
-            }).map(Arguments::of);
+            // Non ascii characters
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+            {
+                "http://localhost:9000/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32",
+                "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32",
+                "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32",
+                EnumSet.noneOf(Violation.class)
+            },
+            {
+                "http://localhost:9000/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32",
+                "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32",
+                "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32",
+                EnumSet.noneOf(Violation.class)
+            },
+            // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
+        })
+            .map(Arguments::of);
     }
 
     @ParameterizedTest
@@ -509,7 +609,8 @@ public class HttpURITest
             assertThat("Decoded Path", uri.getDecodedPath(), is(decodedPath));
 
             EnumSet<Violation> ambiguous = EnumSet.copyOf(expected);
-            ambiguous.retainAll(EnumSet.complementOf(EnumSet.of(Violation.UTF16_ENCODINGS, Violation.BAD_UTF8_ENCODING)));
+            ambiguous.retainAll(
+                EnumSet.complementOf(EnumSet.of(Violation.UTF16_ENCODINGS, Violation.BAD_UTF8_ENCODING)));
 
             assertThat(uri.isAmbiguous(), is(!ambiguous.isEmpty()));
             assertThat(uri.hasAmbiguousSegment(), is(ambiguous.contains(Violation.AMBIGUOUS_PATH_SEGMENT)));
@@ -529,95 +630,144 @@ public class HttpURITest
 
     public static Stream<Arguments> testPathQueryTests()
     {
-        return Arrays.stream(new Object[][]
+        return Arrays.stream(new Object[][]{
+            // Simple path example
+            {"/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+
+            // legal non ambiguous relative paths
+            {"/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
+            {"/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+            {"path/../info", "info", "info", EnumSet.noneOf(Violation.class)},
+            {"path/./info", "path/info", "path/info", EnumSet.noneOf(Violation.class)},
+
+            // illegal paths
+            {"/../path/info", null, null, null},
+            {"../path/info", null, null, null},
+            {"/path/%XX/info", null, null, null},
+            {"/path/%2/F/info", null, null, null},
+            {"%2e%2e/info", null, null, null},
+            {"%2e%2e;/info", null, null, null},
+            {"%2e.", null, null, null},
+            {".%2e", null, null, null},
+            {"%2e%2e", null, null, null},
+            {"..;/info", null, null, null},
+            {"..;param/info", null, null, null},
+
+            // ambiguous dot encodings
+            {"/path/%2e/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
+            {"path/%2e/info/", "path/info/", "path/info/", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
+            {"/path/%2e%2e/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
             {
-                // Simple path example
-                {"/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                "/path/%2e%2e;/info",
+                "/info",
+                "/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)
+            },
+            {
+                "/path/%2e%2e;param/info",
+                "/info",
+                "/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)
+            },
+            {
+                "/path/%2e%2e;param;other/info;other",
+                "/info",
+                "/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)
+            },
+            {"%2e/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
+            {"%2e", "", "", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
 
-                // legal non ambiguous relative paths
-                {"/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
-                {"/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
-                {"path/../info", "info", "info", EnumSet.noneOf(Violation.class)},
-                {"path/./info", "path/info", "path/info", EnumSet.noneOf(Violation.class)},
+            // empty segment treated as ambiguous
+            {"/", "/", "/", EnumSet.noneOf(Violation.class)},
+            {"/#", "/", "/", EnumSet.noneOf(Violation.class)},
+            {"/path", "/path", "/path", EnumSet.noneOf(Violation.class)},
+            {"/path/", "/path/", "/path/", EnumSet.noneOf(Violation.class)},
+            {"//", "//", "//", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo//", "/foo//", "/foo//", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo//bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"//foo/bar", "//foo/bar", "//foo/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo?bar", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
+            {"/foo#bar", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
+            {"/foo;bar", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
+            {"/foo/?bar", "/foo/", "/foo/", EnumSet.noneOf(Violation.class)},
+            {"/foo/#bar", "/foo/", "/foo/", EnumSet.noneOf(Violation.class)},
+            {"/foo/;param", "/foo/", "/foo/", EnumSet.noneOf(Violation.class)},
+            {"/foo/;param/bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo//bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo//bar//", "/foo//bar//", "/foo//bar//", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"//foo//bar//", "//foo//bar//", "//foo//bar//", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo//../bar", "/foo/bar", "/foo/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo///../../../bar", "/bar", "/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"/foo/./../bar", "/bar", "/bar", EnumSet.noneOf(Violation.class)},
+            {"/foo//./bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"foo/bar", "foo/bar", "foo/bar", EnumSet.noneOf(Violation.class)},
+            {"foo;/bar", "foo/bar", "foo/bar", EnumSet.noneOf(Violation.class)},
+            {";/bar", "/bar", "/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {";?n=v", "", "", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
+            {"?n=v", "", "", EnumSet.noneOf(Violation.class)},
+            {"#n=v", "", "", EnumSet.noneOf(Violation.class)},
+            {"", "", "", EnumSet.noneOf(Violation.class)},
 
-                // illegal paths
-                {"/../path/info", null, null, null},
-                {"../path/info", null, null, null},
-                {"/path/%XX/info", null, null, null},
-                {"/path/%2/F/info", null, null, null},
-                {"%2e%2e/info", null, null, null},
-                {"%2e%2e;/info", null, null, null},
-                {"%2e.", null, null, null},
-                {".%2e", null, null, null},
-                {"%2e%2e", null, null, null},
-                {"..;/info", null, null, null},
-                {"..;param/info", null, null, null},
+            // ambiguous parameter inclusions
+            {"/path/.;/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            {"/path/.;param/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            {"/path/..;/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            {"/path/..;param/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            {".;/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
+            {".;param/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
 
-                // ambiguous dot encodings
-                {"/path/%2e/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"path/%2e/info/", "path/info/", "path/info/", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"/path/%2e%2e/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"/path/%2e%2e;/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/%2e%2e;param/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/%2e%2e;param;other/info;other", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"%2e/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"%2e", "", "", EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT)},
+            // ambiguous segment separators
+            {"/path/%2f/info", "/path/%2F/info", "/path///info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)
+            },
+            {"%2f/info", "%2F/info", "//info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
+            {"%2F/info", "%2F/info", "//info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
+            {
+                "/path/%2f../info",
+                "/path/%2F../info",
+                "/path//../info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)
+            },
 
-                // empty segment treated as ambiguous
-                {"/", "/", "/", EnumSet.noneOf(Violation.class)},
-                {"/#", "/", "/", EnumSet.noneOf(Violation.class)},
-                {"/path", "/path", "/path", EnumSet.noneOf(Violation.class)},
-                {"/path/", "/path/", "/path/", EnumSet.noneOf(Violation.class)},
-                {"//", "//", "//", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo//", "/foo//", "/foo//", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo//bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"//foo/bar", "//foo/bar", "//foo/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo?bar", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
-                {"/foo#bar", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
-                {"/foo;bar", "/foo", "/foo", EnumSet.noneOf(Violation.class)},
-                {"/foo/?bar", "/foo/", "/foo/", EnumSet.noneOf(Violation.class)},
-                {"/foo/#bar", "/foo/", "/foo/", EnumSet.noneOf(Violation.class)},
-                {"/foo/;param", "/foo/", "/foo/", EnumSet.noneOf(Violation.class)},
-                {"/foo/;param/bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo//bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo//bar//", "/foo//bar//", "/foo//bar//", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"//foo//bar//", "//foo//bar//", "//foo//bar//", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo//../bar", "/foo/bar", "/foo/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo///../../../bar", "/bar", "/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"/foo/./../bar", "/bar", "/bar", EnumSet.noneOf(Violation.class)},
-                {"/foo//./bar", "/foo//bar", "/foo//bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"foo/bar", "foo/bar", "foo/bar", EnumSet.noneOf(Violation.class)},
-                {"foo;/bar", "foo/bar", "foo/bar", EnumSet.noneOf(Violation.class)},
-                {";/bar", "/bar", "/bar", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {";?n=v", "", "", EnumSet.of(Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-                {"?n=v", "", "", EnumSet.noneOf(Violation.class)},
-                {"#n=v", "", "", EnumSet.noneOf(Violation.class)},
-                {"", "", "", EnumSet.noneOf(Violation.class)},
+            // ambiguous encoding
+            {"/path/%25/info", "/path/%25/info", "/path/%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
+            {"%25/info", "%25/info", "%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
+            {
+                "/path/%25../info",
+                "/path/%25../info",
+                "/path/%../info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)
+            },
 
-                // ambiguous parameter inclusions
-                {"/path/.;/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/.;param/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/..;/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/..;param/info", "/info", "/info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {".;/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {".;param/info", "info", "info", EnumSet.of(Violation.AMBIGUOUS_PATH_PARAMETER)},
-
-                // ambiguous segment separators
-                {"/path/%2f/info", "/path/%2F/info", "/path///info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
-                {"%2f/info", "%2F/info", "//info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
-                {"%2F/info", "%2F/info", "//info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
-                {"/path/%2f../info", "/path/%2F../info", "/path//../info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
-
-                // ambiguous encoding
-                {"/path/%25/info", "/path/%25/info", "/path/%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
-                {"%25/info", "%25/info", "%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
-                {"/path/%25../info", "/path/%25../info", "/path/%../info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
-
-                // combinations
-                {"/path/%2f/..;/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_PARAMETER)},
-                {"/path/%2f/..;/%2e/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_PARAMETER, Violation.AMBIGUOUS_PATH_SEGMENT)},
-                {"/path/%2f/%25/..;/%2e//info", "/path/%2F//info", "/path////info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_PARAMETER, Violation.AMBIGUOUS_PATH_SEGMENT, Violation.AMBIGUOUS_PATH_ENCODING, Violation.AMBIGUOUS_EMPTY_SEGMENT)},
-            }).map(Arguments::of);
+            // combinations
+            {
+                "/path/%2f/..;/info",
+                "/path/info",
+                "/path/info",
+                EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.AMBIGUOUS_PATH_PARAMETER)
+            },
+            {
+                "/path/%2f/..;/%2e/info",
+                "/path/info",
+                "/path/info",
+                EnumSet.of(
+                    Violation.AMBIGUOUS_PATH_SEPARATOR,
+                    Violation.AMBIGUOUS_PATH_PARAMETER,
+                    Violation.AMBIGUOUS_PATH_SEGMENT)
+            },
+            {
+                "/path/%2f/%25/..;/%2e//info",
+                "/path/%2F//info",
+                "/path////info",
+                EnumSet.of(
+                    Violation.AMBIGUOUS_PATH_SEPARATOR,
+                    Violation.AMBIGUOUS_PATH_PARAMETER,
+                    Violation.AMBIGUOUS_PATH_SEGMENT,
+                    Violation.AMBIGUOUS_PATH_ENCODING,
+                    Violation.AMBIGUOUS_EMPTY_SEGMENT)
+            },
+        })
+            .map(Arguments::of);
     }
 
     @ParameterizedTest
@@ -643,12 +793,8 @@ public class HttpURITest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "/a%2Fb",
-        "/a%2F",
-        "/%2f",
-        "/%2f/"
-    })
+    @ValueSource(strings =
+    {"/a%2Fb", "/a%2F", "/%2f", "/%2f/"})
     public void testAmbiguousViaBuilderPath(String input)
     {
         HttpURI uri = HttpURI.build().path(input);
@@ -676,8 +822,7 @@ public class HttpURITest
             Arguments.of("/%0d"),
             Arguments.of("/a/\r/\n/b"),
             Arguments.of("/foo\r\nbar/"),
-            Arguments.of("/%0d%0a")
-        );
+            Arguments.of("/%0d%0a"));
     }
 
     @ParameterizedTest
@@ -686,7 +831,10 @@ public class HttpURITest
     {
         HttpURI uri = HttpURI.build().path(input);
         assertThat("has any violations", uri.hasViolations(), is(true));
-        assertThat("has SUSPICIOUS_PATH_CHARACTERS violation", uri.hasViolation(Violation.SUSPICIOUS_PATH_CHARACTERS), is(true));
+        assertThat(
+            "has SUSPICIOUS_PATH_CHARACTERS violation",
+            uri.hasViolation(Violation.SUSPICIOUS_PATH_CHARACTERS),
+            is(true));
     }
 
     @ParameterizedTest
@@ -695,7 +843,10 @@ public class HttpURITest
     {
         HttpURI uri = HttpURI.from(input);
         assertThat("has any violations", uri.hasViolations(), is(true));
-        assertThat("has SUSPICIOUS_PATH_CHARACTERS violation", uri.hasViolation(Violation.SUSPICIOUS_PATH_CHARACTERS), is(true));
+        assertThat(
+            "has SUSPICIOUS_PATH_CHARACTERS violation",
+            uri.hasViolation(Violation.SUSPICIOUS_PATH_CHARACTERS),
+            is(true));
     }
 
     public static Stream<Arguments> illegalPathCharacterData()
@@ -715,8 +866,7 @@ public class HttpURITest
             // space character
             Arguments.of("/a b"),
             // double-quotes
-            Arguments.of("/a\"b")
-        );
+            Arguments.of("/a\"b"));
     }
 
     @ParameterizedTest
@@ -725,7 +875,8 @@ public class HttpURITest
     {
         HttpURI uri = HttpURI.build().path(input);
         assertThat("has any violations", uri.hasViolations(), is(true));
-        assertThat("has ILLEGAL_PATH_CHARACTERS violation", uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+        assertThat(
+            "has ILLEGAL_PATH_CHARACTERS violation", uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
     }
 
     @ParameterizedTest
@@ -734,7 +885,8 @@ public class HttpURITest
     {
         HttpURI uri = HttpURI.from(input);
         assertThat("has any violations", uri.hasViolations(), is(true));
-        assertThat("has ILLEGAL_PATH_CHARACTERS violation", uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+        assertThat(
+            "has ILLEGAL_PATH_CHARACTERS violation", uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
     }
 
     public static Stream<Arguments> parseData()
@@ -749,12 +901,32 @@ public class HttpURITest
             Arguments.of("/path/to/context", null, null, "-1", "/path/to/context", null, null, null),
 
             // Basic with encoded query
-            Arguments.of("http://example.com/path/to/context;param?query=%22value%22#fragment", "http", "example.com", "-1", "/path/to/context;param", "param", "query=%22value%22", "fragment"),
-            Arguments.of("http://[::1]/path/to/context;param?query=%22value%22#fragment", "http", "[::1]", "-1", "/path/to/context;param", "param", "query=%22value%22", "fragment"),
+            Arguments.of(
+                "http://example.com/path/to/context;param?query=%22value%22#fragment",
+                "http",
+                "example.com",
+                "-1",
+                "/path/to/context;param",
+                "param",
+                "query=%22value%22",
+                "fragment"),
+            Arguments.of(
+                "http://[::1]/path/to/context;param?query=%22value%22#fragment",
+                "http", "[::1]", "-1", "/path/to/context;param", "param", "query=%22value%22", "fragment"),
 
             // Basic with parameters and query
-            Arguments.of("http://example.com:8080/path/to/context;param?query=%22value%22#fragment", "http", "example.com", "8080", "/path/to/context;param", "param", "query=%22value%22", "fragment"),
-            Arguments.of("http://[::1]:8080/path/to/context;param?query=%22value%22#fragment", "http", "[::1]", "8080", "/path/to/context;param", "param", "query=%22value%22", "fragment"),
+            Arguments.of(
+                "http://example.com:8080/path/to/context;param?query=%22value%22#fragment",
+                "http",
+                "example.com",
+                "8080",
+                "/path/to/context;param",
+                "param",
+                "query=%22value%22",
+                "fragment"),
+            Arguments.of(
+                "http://[::1]:8080/path/to/context;param?query=%22value%22#fragment",
+                "http", "[::1]", "8080", "/path/to/context;param", "param", "query=%22value%22", "fragment"),
 
             // Path References
             Arguments.of("/path/info", null, null, null, "/path/info", null, null, null),
@@ -762,10 +934,27 @@ public class HttpURITest
             Arguments.of("/path/info?query", null, null, null, "/path/info", null, "query", null),
             Arguments.of("/path/info?query#fragment", null, null, null, "/path/info", null, "query", "fragment"),
             Arguments.of("/path/info;param", null, null, null, "/path/info;param", "param", null, null),
-            Arguments.of("/path/info;param#fragment", null, null, null, "/path/info;param", "param", null, "fragment"),
+            Arguments.of(
+                "/path/info;param#fragment", null, null, null, "/path/info;param", "param", null, "fragment"),
             Arguments.of("/path/info;param?query", null, null, null, "/path/info;param", "param", "query", null),
-            Arguments.of("/path/info;param?query#fragment", null, null, null, "/path/info;param", "param", "query", "fragment"),
-            Arguments.of("/path/info;a=b/foo;c=d", null, null, null, "/path/info;a=b/foo;c=d", "c=d", null, null), // TODO #405
+            Arguments.of(
+                "/path/info;param?query#fragment",
+                null,
+                null,
+                null,
+                "/path/info;param",
+                "param",
+                "query",
+                "fragment"),
+            Arguments.of(
+                "/path/info;a=b/foo;c=d",
+                null,
+                null,
+                null,
+                "/path/info;a=b/foo;c=d",
+                "c=d",
+                null,
+                null), // TODO #405
 
             // Protocol Less (aka scheme-less) URIs
             Arguments.of("//host/path/info", null, "host", null, "/path/info", null, null, null),
@@ -777,15 +966,49 @@ public class HttpURITest
             Arguments.of("http:/path/info", "http", null, null, "/path/info", null, null, null),
             Arguments.of("http:/path/info#fragment", "http", null, null, "/path/info", null, null, "fragment"),
             Arguments.of("http:/path/info?query", "http", null, null, "/path/info", null, "query", null),
-            Arguments.of("http:/path/info?query#fragment", "http", null, null, "/path/info", null, "query", "fragment"),
+            Arguments.of(
+                "http:/path/info?query#fragment", "http", null, null, "/path/info", null, "query", "fragment"),
             Arguments.of("http:/path/info;param", "http", null, null, "/path/info;param", "param", null, null),
-            Arguments.of("http:/path/info;param#fragment", "http", null, null, "/path/info;param", "param", null, "fragment"),
-            Arguments.of("http:/path/info;param?query", "http", null, null, "/path/info;param", "param", "query", null),
-            Arguments.of("http:/path/info;param?query#fragment", "http", null, null, "/path/info;param", "param", "query", "fragment"),
+            Arguments.of(
+                "http:/path/info;param#fragment",
+                "http",
+                null,
+                null,
+                "/path/info;param",
+                "param",
+                null,
+                "fragment"),
+            Arguments.of(
+                "http:/path/info;param?query", "http", null, null, "/path/info;param", "param", "query", null),
+            Arguments.of(
+                "http:/path/info;param?query#fragment",
+                "http",
+                null,
+                null,
+                "/path/info;param",
+                "param",
+                "query",
+                "fragment"),
 
             // Everything and the kitchen sink
-            Arguments.of("http://user@host:8080/path/info;param?query#fragment", "http", "host", "8080", "/path/info;param", "param", "query", "fragment"),
-            Arguments.of("xxxxx://user@host:8080/path/info;param?query#fragment", "xxxxx", "host", "8080", "/path/info;param", "param", "query", "fragment"),
+            Arguments.of(
+                "http://user@host:8080/path/info;param?query#fragment",
+                "http",
+                "host",
+                "8080",
+                "/path/info;param",
+                "param",
+                "query",
+                "fragment"),
+            Arguments.of(
+                "xxxxx://user@host:8080/path/info;param?query#fragment",
+                "xxxxx",
+                "host",
+                "8080",
+                "/path/info;param",
+                "param",
+                "query",
+                "fragment"),
 
             // No host, parameter with no content
             Arguments.of("http:///;?#", "http", null, null, "/;", "", "", ""),
@@ -852,20 +1075,35 @@ public class HttpURITest
             Arguments.of("*", null, null, null, "*", null, null, null),
 
             // Path detection Tests (seen from JSP/JSTL and <c:url> use)
-            Arguments.of("http://host:8080/path/info?q1=v1&q2=v2", "http", "host", "8080", "/path/info", null, "q1=v1&q2=v2", null),
+            Arguments.of(
+                "http://host:8080/path/info?q1=v1&q2=v2",
+                "http",
+                "host",
+                "8080",
+                "/path/info",
+                null,
+                "q1=v1&q2=v2",
+                null),
             Arguments.of("/path/info?q1=v1&q2=v2", null, null, null, "/path/info", null, "q1=v1&q2=v2", null),
             Arguments.of("/info?q1=v1&q2=v2", null, null, null, "/info", null, "q1=v1&q2=v2", null),
             Arguments.of("info?q1=v1&q2=v2", null, null, null, "info", null, "q1=v1&q2=v2", null),
             Arguments.of("info;q1=v1?q2=v2", null, null, null, "info;q1=v1", "q1=v1", "q2=v2", null),
 
             // Path-less, query only (seen from JSP/JSTL and <c:url> use)
-            Arguments.of("?q1=v1&q2=v2", null, null, null, "", null, "q1=v1&q2=v2", null)
-        );
+            Arguments.of("?q1=v1&q2=v2", null, null, null, "", null, "q1=v1&q2=v2", null));
     }
 
     @ParameterizedTest
     @MethodSource("parseData")
-    public void testParseString(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment)
+    public void testParseString(
+                                String input,
+                                String scheme,
+                                String host,
+                                Integer port,
+                                String path,
+                                String param,
+                                String query,
+                                String fragment)
     {
         HttpURI httpUri = HttpURI.from(input);
 
@@ -902,7 +1140,16 @@ public class HttpURITest
 
     @ParameterizedTest
     @MethodSource("parseData")
-    public void testParseURI(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment) throws Exception
+    public void testParseURI(
+                             String input,
+                             String scheme,
+                             String host,
+                             Integer port,
+                             String path,
+                             String param,
+                             String query,
+                             String fragment)
+        throws Exception
     {
         URI javaUri = null;
         try
@@ -929,7 +1176,16 @@ public class HttpURITest
 
     @ParameterizedTest
     @MethodSource("parseData")
-    public void testCompareToJavaNetURI(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment) throws Exception
+    public void testCompareToJavaNetURI(
+                                        String input,
+                                        String scheme,
+                                        String host,
+                                        Integer port,
+                                        String path,
+                                        String param,
+                                        String query,
+                                        String fragment)
+        throws Exception
     {
         URI javaUri = null;
         try
@@ -956,10 +1212,8 @@ public class HttpURITest
 
     public static Stream<Arguments> queryData()
     {
-        return Stream.of(
-            new String[]{"/path?p=%U20AC", "p=%U20AC"},
-            new String[]{"/path?p=%u20AC", "p=%u20AC"}
-        ).map(Arguments::of);
+        return Stream.of(new String[]{"/path?p=%U20AC", "p=%U20AC"}, new String[]{"/path?p=%u20AC", "p=%u20AC"})
+            .map(Arguments::of);
     }
 
     @ParameterizedTest
@@ -982,42 +1236,33 @@ public class HttpURITest
     @Test
     public void testRelativePathWithAuthority()
     {
-        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
-            .authority("host")
-            .path("path"));
-        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
-            .authority("host", 8080)
-            .path(";p=v/url"));
-        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
-            .host("host")
-            .path(";"));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> HttpURI.build().authority("host").path("path"));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> HttpURI.build().authority("host", 8080).path(";p=v/url"));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> HttpURI.build().host("host").path(";"));
 
-        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
-            .path("path")
-            .authority("host"));
-        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
-            .path(";p=v/url")
-            .authority("host", 8080));
-        assertThrows(IllegalArgumentException.class, () -> HttpURI.build()
-            .path(";")
-            .host("host"));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> HttpURI.build().path("path").authority("host"));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> HttpURI.build().path(";p=v/url").authority("host", 8080));
+        assertThrows(
+            IllegalArgumentException.class, () -> HttpURI.build().path(";").host("host"));
 
-        HttpURI.Mutable uri = HttpURI.build()
-            .path("*")
-            .authority("host");
+        HttpURI.Mutable uri = HttpURI.build().path("*").authority("host");
         assertEquals("//host*", uri.asString());
-        uri = HttpURI.build()
-            .authority("host")
-            .path("*");
+        uri = HttpURI.build().authority("host").path("*");
         assertEquals("//host*", uri.asString());
 
-        uri = HttpURI.build()
-            .path("")
-            .authority("host");
+        uri = HttpURI.build().path("").authority("host");
         assertEquals("//host", uri.asString());
-        uri = HttpURI.build()
-            .authority("host")
-            .path("");
+        uri = HttpURI.build().authority("host").path("");
         assertEquals("//host", uri.asString());
     }
 
@@ -1074,8 +1319,7 @@ public class HttpURITest
             Arguments.of("ftp", "example.org", 21, "ftp://example.org"),
             Arguments.of("ssh", "example.org", 2222, "ssh://example.org:2222"),
             Arguments.of("ftp", "example.org", 2121, "ftp://example.org:2121"),
-            Arguments.of("file", "etc", -1, "file://etc")
-        );
+            Arguments.of("file", "etc", -1, "file://etc"));
     }
 
     @ParameterizedTest
@@ -1127,7 +1371,14 @@ public class HttpURITest
             Arguments.of("http", "example.org", 0, "/foo%252Fbaz", null, null, "http://example.org/foo%252Fbaz"),
             // Query specified
             Arguments.of("http", "example.org", 0, "/", "a=b", null, "http://example.org/?a=b"),
-            Arguments.of("http", "example.org", 0, "/documentation/latest/", "a=b", null, "http://example.org/documentation/latest/?a=b"),
+            Arguments.of(
+                "http",
+                "example.org",
+                0,
+                "/documentation/latest/",
+                "a=b",
+                null,
+                "http://example.org/documentation/latest/?a=b"),
             Arguments.of("http", "example.org", 0, null, "a=b", null, "http://example.org/?a=b"),
             Arguments.of("http", "example.org", 0, null, "", null, "http://example.org/?"),
             // Fragment specified
@@ -1135,13 +1386,13 @@ public class HttpURITest
             Arguments.of("http", "example.org", 0, "/", null, "toc", "http://example.org/#toc"),
             Arguments.of("http", "example.org", 0, null, null, "toc", "http://example.org/#toc"),
             // Empty query & fragment - behavior matches java URI and URL
-            Arguments.of("http", "example.org", 0, null, "", "", "http://example.org/?#")
-        );
+            Arguments.of("http", "example.org", 0, null, "", "", "http://example.org/?#"));
     }
 
     @ParameterizedTest
     @MethodSource("concatNormalizedURICases")
-    public void testFromAsStringNormalized(String scheme, String server, int port, String path, String query, String fragment, String expectedStr)
+    public void testFromAsStringNormalized(
+                                           String scheme, String server, int port, String path, String query, String fragment, String expectedStr)
     {
         HttpURI httpURI = HttpURI.from(scheme, server, port, path, query, fragment);
         assertThat(httpURI.asString(), is(expectedStr));
@@ -1153,8 +1404,7 @@ public class HttpURITest
             Arguments.of("http://localhost:4444/", "http://localhost:4444/"),
             Arguments.of("/foo/baz", "/foo/baz"),
             Arguments.of("/foo%2Fbaz", "/foo%2Fbaz"),
-            Arguments.of("/foo%252Fbaz", "/foo%252Fbaz")
-        );
+            Arguments.of("/foo%252Fbaz", "/foo%252Fbaz"));
     }
 
     @ParameterizedTest
@@ -1180,13 +1430,13 @@ public class HttpURITest
             // bad ports
             Arguments.of("http", "example.org", 1_000_000, "http://example.org:1000000"),
             // bad ports
-            Arguments.of("ws", "example.org", -222333, "ws://example.org"), // negative port same as -1, i.e. not set.
+            Arguments.of(
+                "ws", "example.org", -222333, "ws://example.org"), // negative port same as -1, i.e. not set.
             // bad servers
             Arguments.of("http", null, 0, "http:"),
             Arguments.of("http", "", 0, "http://"),
             Arguments.of("http", "\t", 0, "http://\t"),
-            Arguments.of("http", "    ", 0, "http://    ")
-        );
+            Arguments.of("http", "    ", 0, "http://    "));
     }
 
     @ParameterizedTest

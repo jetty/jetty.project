@@ -16,7 +16,6 @@ package org.eclipse.jetty.io.content;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;

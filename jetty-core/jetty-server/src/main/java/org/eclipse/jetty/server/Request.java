@@ -33,7 +33,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -396,9 +395,7 @@ public interface Request extends Attributes, Content.Source
             return inetSocketAddress.getHostString();
 
         InetAddress address = inetSocketAddress.getAddress();
-        String result = address == null
-            ? inetSocketAddress.getHostString()
-            : address.getHostAddress();
+        String result = address == null ? inetSocketAddress.getHostString() : address.getHostAddress();
         return HostPort.normalizeHost(result);
     }
 
@@ -481,7 +478,8 @@ public interface Request extends Attributes, Content.Source
             return uri.getPort();
 
         // Is there a configured server authority?
-        HostPort authority = request.getConnectionMetaData().getHttpConfiguration().getServerAuthority();
+        HostPort authority =
+            request.getConnectionMetaData().getHttpConfiguration().getServerAuthority();
         if (authority != null && authority.getPort() > 0)
             return authority.getPort();
 
@@ -513,11 +511,15 @@ public interface Request extends Attributes, Content.Source
             case 1 -> List.of(Locale.forLanguageTag(acceptable.get(0)));
             default ->
             {
-                List<Locale> locales = acceptable.stream().map(Locale::forLanguageTag).toList();
-                List<Locale> known = locales.stream().filter(MimeTypes::isKnownLocale).toList();
+                List<Locale> locales =
+                    acceptable.stream().map(Locale::forLanguageTag).toList();
+                List<Locale> known =
+                    locales.stream().filter(MimeTypes::isKnownLocale).toList();
                 if (known.size() == locales.size())
                     yield locales; // All locales are known
-                List<Locale> unknown = locales.stream().filter(l -> !MimeTypes.isKnownLocale(l)).toList();
+                List<Locale> unknown = locales.stream()
+                    .filter(l -> !MimeTypes.isKnownLocale(l))
+                    .toList();
                 locales = new ArrayList<>(known);
                 locales.addAll(unknown);
                 yield locales; // List of known locales before unknown locales
@@ -540,7 +542,8 @@ public interface Request extends Attributes, Content.Source
     static Charset getCharset(Request request) throws IllegalCharsetNameException, UnsupportedCharsetException
     {
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-        return Objects.requireNonNullElse(request.getContext().getMimeTypes(), MimeTypes.DEFAULTS).getCharset(contentType);
+        return Objects.requireNonNullElse(request.getContext().getMimeTypes(), MimeTypes.DEFAULTS)
+            .getCharset(contentType);
     }
 
     static Fields extractQueryParameters(Request request)

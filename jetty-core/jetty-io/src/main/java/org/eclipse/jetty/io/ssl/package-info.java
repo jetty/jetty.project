@@ -15,4 +15,3 @@
  * Jetty IO : Core SSL Support
  */
 package org.eclipse.jetty.io.ssl;
-

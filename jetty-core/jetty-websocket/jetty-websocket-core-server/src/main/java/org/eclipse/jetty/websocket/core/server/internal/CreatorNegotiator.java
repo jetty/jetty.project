@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.FrameHandler;

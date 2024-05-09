@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * HandlerList.

@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpUpgrader;
@@ -49,7 +48,8 @@ import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverHTTP extends AbstractConnection implements IConnection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable, Attachable
+public class HttpConnectionOverHTTP extends AbstractConnection
+    implements IConnection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable, Attachable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP.class);
 
@@ -279,7 +279,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     @Override
     public String toConnectionString()
     {
-        return String.format("%s@%x(l:%s <-> r:%s,closed=%b)=>%s",
+        return String.format(
+            "%s@%x(l:%s <-> r:%s,closed=%b)=>%s",
             getClass().getSimpleName(),
             hashCode(),
             getEndPoint().getLocalSocketAddress(),
@@ -345,7 +346,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
             HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
             if (upgrader == null)
             {
-                HttpUpgrader.Factory upgraderFactory = (HttpUpgrader.Factory)request.getAttributes().get(HttpUpgrader.Factory.class.getName());
+                HttpUpgrader.Factory upgraderFactory =
+                    (HttpUpgrader.Factory)request.getAttributes().get(HttpUpgrader.Factory.class.getName());
                 if (upgraderFactory != null)
                 {
                     upgrader = upgraderFactory.newHttpUpgrader(HttpVersion.HTTP_1_1);

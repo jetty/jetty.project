@@ -13,23 +13,18 @@
 
 package org.eclipse.jetty.ee10.session.jdbc;
 
-import java.io.NotSerializableException;
+import static org.junit.Assert.assertThrows;
 
+import java.io.NotSerializableException;
 import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
 import org.eclipse.jetty.session.JdbcTestHelper;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
 
 /**
  * JDBCSessionDataStoreTest
@@ -70,8 +65,7 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     }
 
     @Override
-    public void persistSession(SessionData data)
-        throws Exception
+    public void persistSession(SessionData data) throws Exception
     {
         JdbcTestHelper.insertSession(data, sessionTableName, false);
     }
@@ -79,12 +73,21 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        JdbcTestHelper.insertUnreadableSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(),
-            data.getCreated(), data.getAccessed(), data.getLastAccessed(),
-            data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(),
-            data.getLastSaved(), sessionTableName);
+        JdbcTestHelper.insertUnreadableSession(
+            data.getId(),
+            data.getContextPath(),
+            data.getVhost(),
+            data.getLastNode(),
+            data.getCreated(),
+            data.getAccessed(),
+            data.getLastAccessed(),
+            data.getMaxInactiveMs(),
+            data.getExpiry(),
+            data.getCookieSet(),
+            data.getLastSaved(),
+            sessionTableName);
     }
-    
+
     @Test
     public void testCleanOrphans() throws Exception
     {
@@ -120,9 +123,9 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 
         SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
-        //persist a session that has an unserializable attribute
+        // persist a session that has an unserializable attribute
         long now = System.currentTimeMillis();
-        final SessionData data = store.newSessionData("xxx999", 100, now, now - 1, -1); //never expires
+        final SessionData data = store.newSessionData("xxx999", 100, now, now - 1, -1); // never expires
         data.setLastNode(_sessionIdManager.getWorkerName());
         data.setAttribute("bad", new NonSerializable());
 

@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,7 +25,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import javax.net.ssl.SSLContext;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -40,10 +43,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SSLReadEOFAfterResponseTest
 {
@@ -131,11 +130,7 @@ public class SSLReadEOFAfterResponseTest
                 client.setSoTimeout(5 * idleTimeout);
 
                 OutputStream output = client.getOutputStream();
-                String request =
-                    "POST / HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Content-Length: " + content.length() + "\r\n" +
-                        "\r\n";
+                String request = "POST / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Length: " + content.length() + "\r\n" + "\r\n";
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.write(bytes);
                 output.flush();

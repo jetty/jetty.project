@@ -29,7 +29,8 @@ public class OpenIdAuthConfiguration extends WrappedAuthConfiguration
 {
     private final OpenIdLoginService _openIdLoginService;
 
-    public OpenIdAuthConfiguration(OpenIdConfiguration openIdConfiguration, Authenticator.AuthConfiguration authConfiguration)
+    public OpenIdAuthConfiguration(
+                                   OpenIdConfiguration openIdConfiguration, Authenticator.AuthConfiguration authConfiguration)
     {
         super(authConfiguration);
 

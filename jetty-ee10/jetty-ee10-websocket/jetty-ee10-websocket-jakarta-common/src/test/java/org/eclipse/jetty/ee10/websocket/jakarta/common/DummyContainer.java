@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.Executor;
-
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.Session;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
@@ -66,13 +65,15 @@ public class DummyContainer extends JakartaWebSocketContainer
     }
 
     @Override
-    public Session connectToServer(Endpoint endpointInstance, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
+    public Session connectToServer(Endpoint endpointInstance, ClientEndpointConfig cec, URI path)
+        throws DeploymentException, IOException
     {
         throw new UnsupportedOperationException("Not supported by DummyContainer");
     }
 
     @Override
-    public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig cec, URI path) throws DeploymentException, IOException
+    public Session connectToServer(Class<? extends Endpoint> endpointClass, ClientEndpointConfig cec, URI path)
+        throws DeploymentException, IOException
     {
         throw new UnsupportedOperationException("Not supported by DummyContainer");
     }

@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
@@ -294,9 +293,7 @@ public class AsyncJSON
             {
                 if (chunks == null)
                     chunks = new ArrayList<>();
-                ByteBuffer copy = buffer.isDirect()
-                    ? ByteBuffer.allocateDirect(buffer.remaining())
-                    : ByteBuffer.allocate(buffer.remaining());
+                ByteBuffer copy = buffer.isDirect() ? ByteBuffer.allocateDirect(buffer.remaining()) : ByteBuffer.allocate(buffer.remaining());
                 copy.put(buffer).flip();
                 chunks.add(copy);
                 buffer.flip();
@@ -853,10 +850,7 @@ public class AsyncJSON
             hex.put(hexToByte(buffer, currentByte));
             if (!hex.hasRemaining())
             {
-                int result = (hex.get(0) << 12) +
-                    (hex.get(1) << 8) +
-                    (hex.get(2) << 4) +
-                    (hex.get(3));
+                int result = (hex.get(0) << 12) + (hex.get(1) << 8) + (hex.get(2) << 4) + (hex.get(3));
                 stack.pop();
                 // Also done with escape parsing.
                 stack.pop();
@@ -1202,7 +1196,19 @@ public class AsyncJSON
 
     private enum State
     {
-        COMPLETE, NULL, TRUE, FALSE, NUMBER, STRING, ESCAPE, UNICODE, ARRAY, OBJECT, OBJECT_FIELD, OBJECT_FIELD_NAME, OBJECT_FIELD_VALUE
+        COMPLETE,
+        NULL,
+        TRUE,
+        FALSE,
+        NUMBER,
+        STRING,
+        ESCAPE,
+        UNICODE,
+        ARRAY,
+        OBJECT,
+        OBJECT_FIELD,
+        OBJECT_FIELD_NAME,
+        OBJECT_FIELD_VALUE
     }
 
     private static class Frame

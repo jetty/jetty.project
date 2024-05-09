@@ -35,16 +35,15 @@ public class JettyHomeForker extends AbstractHomeForker
         this.webApp = webApp;
     }
 
-    protected void redeployWebApp()
-        throws Exception
+    protected void redeployWebApp() throws Exception
     {
         generateWebAppPropertiesFile();
         webappPath.resolve("maven.xml").toFile().setLastModified(System.currentTimeMillis());
     }
 
-    protected void generateWebAppPropertiesFile()
-        throws Exception
+    protected void generateWebAppPropertiesFile() throws Exception
     {
-        WebAppPropertyConverter.toProperties(webApp, etcPath.resolve("maven.props").toFile(), contextXml);
+        WebAppPropertyConverter.toProperties(
+            webApp, etcPath.resolve("maven.props").toFile(), contextXml);
     }
 }

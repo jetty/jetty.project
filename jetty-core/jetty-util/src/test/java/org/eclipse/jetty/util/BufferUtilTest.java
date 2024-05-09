@@ -13,24 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
-
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
@@ -42,6 +24,23 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BufferUtilTest
 {
@@ -60,21 +59,17 @@ public class BufferUtilTest
     @Test
     public void testToInt() throws Exception
     {
-        ByteBuffer[] buf =
-            {
-                BufferUtil.toBuffer("0"),
-                BufferUtil.toBuffer(" 42 "),
-                BufferUtil.toBuffer("   43abc"),
-                BufferUtil.toBuffer("-44"),
-                BufferUtil.toBuffer(" - 45;"),
-                BufferUtil.toBuffer("-2147483648"),
-                BufferUtil.toBuffer("2147483647"),
-            };
+        ByteBuffer[] buf = {
+            BufferUtil.toBuffer("0"),
+            BufferUtil.toBuffer(" 42 "),
+            BufferUtil.toBuffer("   43abc"),
+            BufferUtil.toBuffer("-44"),
+            BufferUtil.toBuffer(" - 45;"),
+            BufferUtil.toBuffer("-2147483648"),
+            BufferUtil.toBuffer("2147483647"),
+        };
 
-        int[] val =
-            {
-                0, 42, 43, -44, -45, -2147483648, 2147483647
-            };
+        int[] val = {0, 42, 43, -44, -45, -2147483648, 2147483647};
 
         for (int i = 0; i < buf.length; i++)
         {
@@ -85,15 +80,9 @@ public class BufferUtilTest
     @Test
     public void testPutInt() throws Exception
     {
-        int[] val =
-            {
-                0, 42, 43, -44, -45, Integer.MIN_VALUE, Integer.MAX_VALUE
-            };
+        int[] val = {0, 42, 43, -44, -45, Integer.MIN_VALUE, Integer.MAX_VALUE};
 
-        String[] str =
-            {
-                "0", "42", "43", "-44", "-45", "" + Integer.MIN_VALUE, "" + Integer.MAX_VALUE
-            };
+        String[] str = {"0", "42", "43", "-44", "-45", "" + Integer.MIN_VALUE, "" + Integer.MAX_VALUE};
 
         ByteBuffer buffer = ByteBuffer.allocate(24);
 
@@ -109,15 +98,9 @@ public class BufferUtilTest
     @Test
     public void testPutLong() throws Exception
     {
-        long[] val =
-            {
-                0L, 42L, 43L, -44L, -45L, Long.MIN_VALUE, Long.MAX_VALUE
-            };
+        long[] val = {0L, 42L, 43L, -44L, -45L, Long.MIN_VALUE, Long.MAX_VALUE};
 
-        String[] str =
-            {
-                "0", "42", "43", "-44", "-45", "" + Long.MIN_VALUE, "" + Long.MAX_VALUE
-            };
+        String[] str = {"0", "42", "43", "-44", "-45", "" + Long.MIN_VALUE, "" + Long.MAX_VALUE};
 
         ByteBuffer buffer = ByteBuffer.allocate(50);
 
@@ -133,15 +116,9 @@ public class BufferUtilTest
     @Test
     public void testPutHexInt() throws Exception
     {
-        int[] val =
-            {
-                0, 42, 43, -44, -45, -2147483648, 2147483647
-            };
+        int[] val = {0, 42, 43, -44, -45, -2147483648, 2147483647};
 
-        String[] str =
-            {
-                "0", "2A", "2B", "-2C", "-2D", "-80000000", "7FFFFFFF"
-            };
+        String[] str = {"0", "2A", "2B", "-2C", "-2D", "-80000000", "7FFFFFFF"};
 
         ByteBuffer buffer = ByteBuffer.allocate(50);
 
@@ -266,8 +243,7 @@ public class BufferUtilTest
 
     @Test
     public void testWriteToWithBufferThatDoesNotExposeArrayAndContentSlightlyBiggerThanTwoTimesTempBufferSize()
-        throws
-        IOException
+        throws IOException
     {
         int capacity = BufferUtil.TEMP_BUFFER_SIZE * 2 + 1024;
         testWriteToWithBufferThatDoesNotExposeArray(capacity);

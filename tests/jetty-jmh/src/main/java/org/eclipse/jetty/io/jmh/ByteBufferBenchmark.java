@@ -16,7 +16,6 @@ package org.eclipse.jetty.io.jmh;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -89,7 +88,8 @@ public class ByteBufferBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testDirect()
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(32768);
@@ -103,7 +103,8 @@ public class ByteBufferBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testInDirect()
     {
         ByteBuffer buffer = ByteBuffer.allocate(32768);
@@ -117,7 +118,8 @@ public class ByteBufferBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testInDirectArray()
     {
         ByteBuffer buffer = ByteBuffer.allocate(32768);

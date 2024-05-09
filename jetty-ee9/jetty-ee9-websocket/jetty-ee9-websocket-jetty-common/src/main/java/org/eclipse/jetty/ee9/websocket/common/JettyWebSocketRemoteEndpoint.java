@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.common;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
 import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.BufferUtil;
@@ -29,8 +30,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint
 {
@@ -68,7 +67,8 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
     @Override
     public void sendBytes(ByteBuffer data, WriteCallback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
+        coreSession.sendFrame(
+            new Frame(OpCode.BINARY).setPayload(data),
             Callback.from(callback::writeSuccess, callback::writeFailed),
             isBatch());
     }
@@ -100,7 +100,8 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
                 frame = new Frame(OpCode.CONTINUATION);
                 break;
             default:
-                callback.failed(new ProtocolException("Attempt to send Partial Binary during active opcode " + messageType));
+                callback.failed(
+                    new ProtocolException("Attempt to send Partial Binary during active opcode " + messageType));
                 return;
         }
 
@@ -138,8 +139,10 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
     @Override
     public void sendPing(ByteBuffer applicationData, WriteCallback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData),
-            Callback.from(callback::writeSuccess, callback::writeFailed), false);
+        coreSession.sendFrame(
+            new Frame(OpCode.PING).setPayload(applicationData),
+            Callback.from(callback::writeSuccess, callback::writeFailed),
+            false);
     }
 
     @Override
@@ -151,8 +154,10 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
     @Override
     public void sendPong(ByteBuffer applicationData, WriteCallback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData),
-            Callback.from(callback::writeSuccess, callback::writeFailed), false);
+        coreSession.sendFrame(
+            new Frame(OpCode.PONG).setPayload(applicationData),
+            Callback.from(callback::writeSuccess, callback::writeFailed),
+            false);
     }
 
     private void sendPartialText(String fragment, boolean isLast, Callback callback)
@@ -168,7 +173,8 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
                 frame = new Frame(OpCode.CONTINUATION);
                 break;
             default:
-                callback.failed(new ProtocolException("Attempt to send Partial Text during active opcode " + messageType));
+                callback.failed(
+                    new ProtocolException("Attempt to send Partial Text during active opcode " + messageType));
                 return;
         }
 

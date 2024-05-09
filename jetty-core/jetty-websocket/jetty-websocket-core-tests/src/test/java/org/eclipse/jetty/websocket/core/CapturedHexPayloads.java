@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.Callback;
 

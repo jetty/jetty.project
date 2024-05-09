@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
-
 import org.eclipse.jetty.server.AbstractConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +28,9 @@ import org.slf4j.LoggerFactory;
 public class HttpChannelListeners implements HttpChannel.Listener
 {
     static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
-    public static HttpChannel.Listener NOOP = new HttpChannel.Listener() {};
+    public static HttpChannel.Listener NOOP = new HttpChannel.Listener()
+    {
+    };
 
     private final NotifyRequest onRequestBegin;
     private final NotifyRequest onBeforeDispatch;
@@ -69,33 +70,61 @@ public class HttpChannelListeners implements HttpChannel.Listener
 
             for (HttpChannel.Listener listener : listeners)
             {
-                if (!listener.getClass().getMethod("onRequestBegin", Request.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onRequestBegin", Request.class)
+                    .isDefault())
                     onRequestBegin = combine(onRequestBegin, listener::onRequestBegin);
-                if (!listener.getClass().getMethod("onBeforeDispatch", Request.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onBeforeDispatch", Request.class)
+                    .isDefault())
                     onBeforeDispatch = combine(onBeforeDispatch, listener::onBeforeDispatch);
-                if (!listener.getClass().getMethod("onDispatchFailure", Request.class, Throwable.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onDispatchFailure", Request.class, Throwable.class)
+                    .isDefault())
                     onDispatchFailure = combine(onDispatchFailure, listener::onDispatchFailure);
-                if (!listener.getClass().getMethod("onAfterDispatch", Request.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onAfterDispatch", Request.class)
+                    .isDefault())
                     onAfterDispatch = combine(onAfterDispatch, listener::onAfterDispatch);
-                if (!listener.getClass().getMethod("onRequestContent", Request.class, ByteBuffer.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onRequestContent", Request.class, ByteBuffer.class)
+                    .isDefault())
                     onRequestContent = combine(onRequestContent, listener::onRequestContent);
-                if (!listener.getClass().getMethod("onRequestContentEnd", Request.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onRequestContentEnd", Request.class)
+                    .isDefault())
                     onRequestContentEnd = combine(onRequestContentEnd, listener::onRequestContentEnd);
-                if (!listener.getClass().getMethod("onRequestTrailers", Request.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onRequestTrailers", Request.class)
+                    .isDefault())
                     onRequestTrailers = combine(onRequestTrailers, listener::onRequestTrailers);
-                if (!listener.getClass().getMethod("onRequestEnd", Request.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onRequestEnd", Request.class)
+                    .isDefault())
                     onRequestEnd = combine(onRequestEnd, listener::onRequestEnd);
-                if (!listener.getClass().getMethod("onRequestFailure", Request.class, Throwable.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onRequestFailure", Request.class, Throwable.class)
+                    .isDefault())
                     onRequestFailure = combine(onRequestFailure, listener::onRequestFailure);
-                if (!listener.getClass().getMethod("onResponseBegin", Request.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onResponseBegin", Request.class)
+                    .isDefault())
                     onResponseBegin = combine(onResponseBegin, listener::onResponseBegin);
-                if (!listener.getClass().getMethod("onResponseCommit", Request.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onResponseCommit", Request.class)
+                    .isDefault())
                     onResponseCommit = combine(onResponseCommit, listener::onResponseCommit);
-                if (!listener.getClass().getMethod("onResponseContent", Request.class, ByteBuffer.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onResponseContent", Request.class, ByteBuffer.class)
+                    .isDefault())
                     onResponseContent = combine(onResponseContent, listener::onResponseContent);
-                if (!listener.getClass().getMethod("onResponseEnd", Request.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onResponseEnd", Request.class)
+                    .isDefault())
                     onResponseEnd = combine(onResponseEnd, listener::onResponseEnd);
-                if (!listener.getClass().getMethod("onResponseFailure", Request.class, Throwable.class).isDefault())
+                if (!listener.getClass()
+                    .getMethod("onResponseFailure", Request.class, Throwable.class)
+                    .isDefault())
                     onResponseFailure = combine(onResponseFailure, listener::onResponseFailure);
                 if (!listener.getClass().getMethod("onComplete", Request.class).isDefault())
                     onComplete = combine(onComplete, listener::onComplete);

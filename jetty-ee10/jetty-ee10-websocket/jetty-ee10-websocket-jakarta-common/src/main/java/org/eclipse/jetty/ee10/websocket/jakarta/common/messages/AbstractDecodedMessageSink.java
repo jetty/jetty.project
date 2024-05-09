@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common.messages;
 
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.Decoder;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import jakarta.websocket.CloseReason;
-import jakarta.websocket.Decoder;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -95,9 +94,7 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
             super(coreSession, methodHandle);
             if (decoders.isEmpty())
                 throw new IllegalArgumentException("Require at least one decoder for " + this.getClass());
-            _decoders = decoders.stream()
-                .map(RegisteredDecoder::<T>getInstance)
-                .collect(Collectors.toList());
+            _decoders = decoders.stream().map(RegisteredDecoder::<T>getInstance).collect(Collectors.toList());
         }
     }
 

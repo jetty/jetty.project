@@ -24,7 +24,9 @@ public abstract class QuotedCSVParser
 {
     private enum State
     {
-        VALUE, PARAM_NAME, PARAM_VALUE
+        VALUE,
+        PARAM_NAME,
+        PARAM_VALUE
     }
 
     public static final String DELIMITERS = ",;=";

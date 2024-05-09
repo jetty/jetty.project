@@ -18,7 +18,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,9 +75,7 @@ public class InclusiveByteRange
 
     private boolean overlaps(InclusiveByteRange range)
     {
-        return (range.first >= this.first && range.first <= this.last) ||
-            (range.last >= this.first && range.last <= this.last) ||
-            (range.first < this.first && range.last > this.last);
+        return (range.first >= this.first && range.first <= this.last) || (range.last >= this.first && range.last <= this.last) || (range.first < this.first && range.last > this.last);
     }
 
     public long getSize()
@@ -113,8 +110,7 @@ public class InclusiveByteRange
         if (!(obj instanceof InclusiveByteRange))
             return false;
 
-        return ((InclusiveByteRange)obj).first == this.first &&
-            ((InclusiveByteRange)obj).last == this.last;
+        return ((InclusiveByteRange)obj).first == this.first && ((InclusiveByteRange)obj).last == this.last;
     }
 
     @Override
@@ -145,7 +141,7 @@ public class InclusiveByteRange
             String t = null;
             try
             {
-                // read all byte ranges for this header 
+                // read all byte ranges for this header
                 while (tok.hasMoreTokens())
                 {
                     try
@@ -209,7 +205,7 @@ public class InclusiveByteRange
                             ranges = new ArrayList<>();
 
                         boolean coalesced = false;
-                        for (Iterator<InclusiveByteRange> i = ranges.listIterator(); i.hasNext(); )
+                        for (Iterator<InclusiveByteRange> i = ranges.listIterator(); i.hasNext();)
                         {
                             InclusiveByteRange r = i.next();
                             if (range.overlaps(r))
@@ -259,6 +255,3 @@ public class InclusiveByteRange
         return sb.toString();
     }
 }
-
-
-

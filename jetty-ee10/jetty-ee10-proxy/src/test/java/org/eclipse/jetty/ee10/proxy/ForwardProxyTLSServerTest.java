@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.ee10.proxy;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import jakarta.servlet.ServletException;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.URI;
@@ -31,8 +39,6 @@ import java.util.stream.Stream;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedKeyManager;
-
-import jakarta.servlet.ServletException;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.Connection;
@@ -72,13 +78,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class ForwardProxyTLSServerTest
 {
@@ -133,7 +132,8 @@ public class ForwardProxyTLSServerTest
     protected HttpProxy newHttpProxy()
     {
         // Use an address to avoid resolution of "localhost" to multiple addresses.
-        return new HttpProxy(new Origin.Address("127.0.0.1", proxyConnector.getLocalPort()), proxySslContextFactory != null);
+        return new HttpProxy(
+            new Origin.Address("127.0.0.1", proxyConnector.getLocalPort()), proxySslContextFactory != null);
     }
 
     private HttpClient newHttpClient()
@@ -147,7 +147,8 @@ public class ForwardProxyTLSServerTest
     private static SslContextFactory.Server newServerSslContextFactory()
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        String keyStorePath =
+            MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         return sslContextFactory;
@@ -156,7 +157,8 @@ public class ForwardProxyTLSServerTest
     private static SslContextFactory.Server newProxySslContextFactory()
     {
         SslContextFactory.Server proxyTLS = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("proxy_keystore.p12").getAbsolutePath();
+        String keyStorePath =
+            MavenTestingUtils.getTestResourceFile("proxy_keystore.p12").getAbsolutePath();
         proxyTLS.setKeyStorePath(keyStorePath);
         proxyTLS.setKeyStorePassword("storepwd");
         return proxyTLS;
@@ -210,7 +212,8 @@ public class ForwardProxyTLSServerTest
             // but when the host is numeric it is not a valid URI.
             String host = "127.0.0.1";
             String body = "BODY";
-            ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
+            ContentResponse response = httpClient
+                .newRequest(host, serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
                 .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
@@ -241,7 +244,8 @@ public class ForwardProxyTLSServerTest
         try
         {
             String body = "BODY";
-            ContentResponse response1 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response1 = httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
                 .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
@@ -254,7 +258,8 @@ public class ForwardProxyTLSServerTest
 
             content = "body=" + body;
             int contentLength = content.length();
-            ContentResponse response2 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response2 = httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.POST)
                 .path("/echo")
@@ -290,7 +295,8 @@ public class ForwardProxyTLSServerTest
             AtomicReference<Connection> connection = new AtomicReference<>();
             CountDownLatch connectionLatch = new CountDownLatch(1);
             String content1 = "BODY";
-            ContentResponse response1 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response1 = httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
                 .path("/echo?body=" + URLEncoder.encode(content1, StandardCharsets.UTF_8))
@@ -317,7 +323,8 @@ public class ForwardProxyTLSServerTest
             assertTrue(connectionLatch.await(5, TimeUnit.SECONDS));
 
             String body2 = "body=" + content1;
-            org.eclipse.jetty.client.Request request2 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            org.eclipse.jetty.client.Request request2 = httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.POST)
                 .path("/echo")
@@ -326,7 +333,8 @@ public class ForwardProxyTLSServerTest
                 .body(new StringRequestContent(body2));
 
             // Make sure the second connection can send the exchange via the tunnel
-            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request2).send(connection.get());
+            CompletableFuture<ContentResponse> completable =
+                new CompletableResponseListener(request2).send(connection.get());
             ContentResponse response2 = completable.get(5, TimeUnit.SECONDS);
 
             assertEquals(HttpStatus.OK_200, response2.getStatus());
@@ -375,7 +383,8 @@ public class ForwardProxyTLSServerTest
         {
             String host = "localhost";
             String body = "BODY";
-            ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
+            ContentResponse response = httpClient
+                .newRequest(host, serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
                 .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
@@ -404,13 +413,16 @@ public class ForwardProxyTLSServerTest
         stopProxy();
 
         HttpClient httpClient = newHttpClient();
-        httpClient.getProxyConfiguration().addProxy(new HttpProxy(new Origin.Address("localhost", proxyPort), proxySslContextFactory != null));
+        httpClient
+            .getProxyConfiguration()
+            .addProxy(new HttpProxy(new Origin.Address("localhost", proxyPort), proxySslContextFactory != null));
         httpClient.start();
 
         ExecutionException x = assertThrows(ExecutionException.class, () ->
         {
             String body = "BODY";
-            httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
                 .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
@@ -438,7 +450,8 @@ public class ForwardProxyTLSServerTest
         assertThrows(ExecutionException.class, () ->
         {
             String body = "BODY";
-            httpClient.newRequest("localhost", serverPort)
+            httpClient
+                .newRequest("localhost", serverPort)
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
                 .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
@@ -467,11 +480,11 @@ public class ForwardProxyTLSServerTest
         httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
-        assertThrows(ExecutionException.class, () ->
-            httpClient.newRequest("localhost", serverConnector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .timeout(5, TimeUnit.SECONDS)
-                .send());
+        assertThrows(ExecutionException.class, () -> httpClient
+            .newRequest("localhost", serverConnector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
 
         httpClient.stop();
     }
@@ -486,13 +499,15 @@ public class ForwardProxyTLSServerTest
         startProxy(proxyTLS);
 
         HttpClient httpClient = newHttpClient();
-        HttpProxy httpProxy = new HttpProxy(new Origin.Address("[::1]", proxyConnector.getLocalPort()), proxyTLS != null);
+        HttpProxy httpProxy =
+            new HttpProxy(new Origin.Address("[::1]", proxyConnector.getLocalPort()), proxyTLS != null);
         httpClient.getProxyConfiguration().addProxy(httpProxy);
         httpClient.start();
 
         try
         {
-            ContentResponse response = httpClient.newRequest("[::1]", serverConnector.getLocalPort())
+            ContentResponse response = httpClient
+                .newRequest("[::1]", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .path("/echo?body=")
                 .timeout(5, TimeUnit.SECONDS)
@@ -511,22 +526,25 @@ public class ForwardProxyTLSServerTest
     public void testProxyAuthentication(SslContextFactory.Server proxyTLS) throws Exception
     {
         String realm = "test-realm";
-        testProxyAuthentication(proxyTLS, new ConnectHandler()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+        testProxyAuthentication(
+            proxyTLS,
+            new ConnectHandler()
             {
-                String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
-                if (proxyAuth == null)
+                @Override
+                public boolean handle(Request request, Response response, Callback callback) throws Exception
                 {
-                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                    callback.succeeded();
-                    return true;
+                    String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
+                    if (proxyAuth == null)
+                    {
+                        response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                        response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                        callback.succeeded();
+                        return true;
+                    }
+                    return super.handle(request, response, callback);
                 }
-                return super.handle(request, response, callback);
-            }
-        }, realm);
+            },
+            realm);
     }
 
     @ParameterizedTest
@@ -534,45 +552,53 @@ public class ForwardProxyTLSServerTest
     public void testProxyAuthenticationWithResponseContent(SslContextFactory.Server proxyTLS) throws Exception
     {
         String realm = "test-realm";
-        testProxyAuthentication(proxyTLS, new ConnectHandler()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+        testProxyAuthentication(
+            proxyTLS,
+            new ConnectHandler()
             {
-                String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
-                if (proxyAuth == null)
+                @Override
+                public boolean handle(Request request, Response response, Callback callback) throws Exception
                 {
-                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                    response.write(true, ByteBuffer.allocate(4096), callback);
-                    return true;
+                    String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
+                    if (proxyAuth == null)
+                    {
+                        response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                        response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                        response.write(true, ByteBuffer.allocate(4096), callback);
+                        return true;
+                    }
+                    return super.handle(request, response, callback);
                 }
-                return super.handle(request, response, callback);
-            }
-        }, realm);
+            },
+            realm);
     }
 
     @ParameterizedTest
     @MethodSource("proxyTLS")
-    public void testProxyAuthenticationWithIncludedAddressWithResponseContent(SslContextFactory.Server proxyTLS) throws Exception
+    public void testProxyAuthenticationWithIncludedAddressWithResponseContent(SslContextFactory.Server proxyTLS)
+        throws Exception
     {
         String realm = "test-realm";
-        testProxyAuthentication(proxyTLS, new ConnectHandler()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+        testProxyAuthentication(
+            proxyTLS,
+            new ConnectHandler()
             {
-                String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
-                if (proxyAuth == null)
+                @Override
+                public boolean handle(Request request, Response response, Callback callback) throws Exception
                 {
-                    response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                    response.write(true, ByteBuffer.allocate(1024), callback);
-                    return true;
+                    String proxyAuth = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
+                    if (proxyAuth == null)
+                    {
+                        response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
+                        response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                        response.write(true, ByteBuffer.allocate(1024), callback);
+                        return true;
+                    }
+                    return super.handle(request, response, callback);
                 }
-                return super.handle(request, response, callback);
-            }
-        }, realm, true);
+            },
+            realm,
+            true);
     }
 
     @ParameterizedTest
@@ -580,32 +606,38 @@ public class ForwardProxyTLSServerTest
     public void testProxyAuthenticationClosesConnection(SslContextFactory.Server proxyTLS) throws Exception
     {
         String realm = "test-realm";
-        testProxyAuthentication(proxyTLS, new ConnectHandler()
-        {
-            @Override
-            protected boolean handleAuthentication(Request request, Response response, String address)
+        testProxyAuthentication(
+            proxyTLS,
+            new ConnectHandler()
             {
-                String header = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
-                if (header == null || !header.startsWith("Basic "))
+                @Override
+                protected boolean handleAuthentication(Request request, Response response, String address)
                 {
-                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                    // Returning false adds Connection: close to the 407 response.
-                    return false;
+                    String header = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
+                    if (header == null || !header.startsWith("Basic "))
+                    {
+                        response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                        // Returning false adds Connection: close to the 407 response.
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
                 }
-                else
-                {
-                    return true;
-                }
-            }
-        }, realm);
+            },
+            realm);
     }
 
-    private void testProxyAuthentication(SslContextFactory.Server proxyTLS, ConnectHandler connectHandler, String realm) throws Exception
+    private void testProxyAuthentication(SslContextFactory.Server proxyTLS, ConnectHandler connectHandler, String realm)
+        throws Exception
     {
         testProxyAuthentication(proxyTLS, connectHandler, realm, false);
     }
 
-    private void testProxyAuthentication(SslContextFactory.Server proxyTLS, ConnectHandler connectHandler, String realm, boolean includeAddress) throws Exception
+    private void testProxyAuthentication(
+                                         SslContextFactory.Server proxyTLS, ConnectHandler connectHandler, String realm, boolean includeAddress)
+        throws Exception
     {
         startTLSServer(new ServerHandler());
         startProxy(proxyTLS, connectHandler);
@@ -615,15 +647,19 @@ public class ForwardProxyTLSServerTest
         if (includeAddress)
             httpProxy.getIncludedAddresses().add("localhost:" + serverConnector.getLocalPort());
         httpClient.getProxyConfiguration().addProxy(httpProxy);
-        URI uri = URI.create((proxySslContextFactory == null ? "http" : "https") + "://127.0.0.1:" + proxyConnector.getLocalPort());
-        httpClient.getAuthenticationStore().addAuthentication(new BasicAuthentication(uri, realm, "proxyUser", "proxyPassword"));
+        URI uri = URI.create(
+            (proxySslContextFactory == null ? "http" : "https") + "://127.0.0.1:" + proxyConnector.getLocalPort());
+        httpClient
+            .getAuthenticationStore()
+            .addAuthentication(new BasicAuthentication(uri, realm, "proxyUser", "proxyPassword"));
         httpClient.start();
 
         try
         {
             String host = "localhost";
             String body = "BODY";
-            ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
+            ContentResponse response = httpClient
+                .newRequest(host, serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
                 .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
@@ -672,7 +708,8 @@ public class ForwardProxyTLSServerTest
                         keyManagers[i] = new X509ExtendedKeyManagerWrapper(extKeyManager)
                         {
                             @Override
-                            public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
+                            public String chooseEngineClientAlias(
+                                                                  String[] keyType, Principal[] issuers, SSLEngine engine)
                             {
                                 int port = engine.getPeerPort();
                                 if (port == serverPort)
@@ -688,7 +725,8 @@ public class ForwardProxyTLSServerTest
                 return keyManagers;
             }
         };
-        clientSslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_keystore.p12").getAbsolutePath());
+        clientSslContextFactory.setKeyStorePath(
+            MavenTestingUtils.getTestResourceFile("client_keystore.p12").getAbsolutePath());
         clientSslContextFactory.setKeyStorePassword("storepwd");
         clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
         ClientConnector clientConnector = new ClientConnector();
@@ -701,7 +739,8 @@ public class ForwardProxyTLSServerTest
         try
         {
             String body = "BODY";
-            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response = httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
                 .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
@@ -743,7 +782,8 @@ public class ForwardProxyTLSServerTest
                 return super.newSSLEngine(host, port);
             }
         };
-        clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_server_keystore.p12").getAbsolutePath());
+        clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_server_keystore.p12")
+            .getAbsolutePath());
         clientTLS.setKeyStorePassword("storepwd");
         clientTLS.setEndpointIdentificationAlgorithm(null);
         ClientConnector clientConnector = new ClientConnector();
@@ -761,18 +801,21 @@ public class ForwardProxyTLSServerTest
                 return super.newSSLEngine(host, port);
             }
         };
-        proxyClientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_proxy_keystore.p12").getAbsolutePath());
+        proxyClientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_proxy_keystore.p12")
+            .getAbsolutePath());
         proxyClientTLS.setKeyStorePassword("storepwd");
         proxyClientTLS.setEndpointIdentificationAlgorithm(null);
         proxyClientTLS.start();
-        HttpProxy httpProxy = new HttpProxy(new Origin.Address("localhost", proxyConnector.getLocalPort()), proxyClientTLS);
+        HttpProxy httpProxy =
+            new HttpProxy(new Origin.Address("localhost", proxyConnector.getLocalPort()), proxyClientTLS);
         httpClient.getProxyConfiguration().addProxy(httpProxy);
         httpClient.start();
 
         try
         {
             String body = "BODY";
-            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response = httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
                 .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
@@ -809,7 +852,8 @@ public class ForwardProxyTLSServerTest
             });
 
             String body = "BODY";
-            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response = httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
                 .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
@@ -850,7 +894,8 @@ public class ForwardProxyTLSServerTest
         try
         {
             // The idle timeout is larger than the server processing time, request should succeed.
-            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response = httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .send();
 
@@ -887,7 +932,8 @@ public class ForwardProxyTLSServerTest
         try
         {
             // The idle timeout is larger than the server processing time, request should succeed.
-            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response = httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 // Long idle timeout for the request, should override that of the client.
                 .idleTimeout(4 * timeout, TimeUnit.MILLISECONDS)
@@ -929,7 +975,8 @@ public class ForwardProxyTLSServerTest
             // it as a "connect" timeout (rather than an idle timeout).
             AtomicReference<Result> resultRef = new AtomicReference<>();
             CountDownLatch latch = new CountDownLatch(1);
-            httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .send(result ->
                 {
@@ -971,7 +1018,8 @@ public class ForwardProxyTLSServerTest
 
         try
         {
-            ContentResponse response = httpClient.newRequest("https://www.google.com")
+            ContentResponse response = httpClient
+                .newRequest("https://www.google.com")
                 // Use a longer timeout, sometimes the proxy takes a while to answer
                 .timeout(20, TimeUnit.SECONDS)
                 .send();

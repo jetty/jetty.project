@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
@@ -22,6 +20,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import java.io.IOException;
 
 public class AsyncContextState implements AsyncContext
 {
@@ -48,7 +47,8 @@ public class AsyncContextState implements AsyncContext
     }
 
     @Override
-    public void addListener(final AsyncListener listener, final ServletRequest request, final ServletResponse response)
+    public void addListener(
+                            final AsyncListener listener, final ServletRequest request, final ServletResponse response)
     {
         AsyncListener wrap = new WrappedAsyncListener(listener, request, response);
         state().addListener(wrap);
@@ -140,7 +140,8 @@ public class AsyncContextState implements AsyncContext
             @Override
             public void run()
             {
-                ContextHandler.APIContext context = state().getAsyncContextEvent().getContext();
+                ContextHandler.APIContext context =
+                    state().getAsyncContextEvent().getContext();
                 if (context == null)
                     task.run();
                 else

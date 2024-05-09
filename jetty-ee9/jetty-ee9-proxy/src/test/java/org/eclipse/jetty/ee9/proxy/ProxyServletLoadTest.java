@@ -13,16 +13,17 @@
 
 package org.eclipse.jetty.ee9.proxy;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -44,16 +45,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ProxyServletLoadTest
 {
     public static Stream<Arguments> data()
     {
-        return Stream.of(
-            ProxyServlet.class,
-            AsyncProxyServlet.class,
-            AsyncMiddleManServlet.class)
+        return Stream.of(ProxyServlet.class, AsyncProxyServlet.class, AsyncMiddleManServlet.class)
             .map(Arguments::of);
     }
 
@@ -67,7 +63,8 @@ public class ProxyServletLoadTest
     private Server server;
     private ServerConnector serverConnector;
 
-    private void startServer(Class<? extends AbstractProxyServlet> proxyServletClass, HttpServlet servlet) throws Exception
+    private void startServer(Class<? extends AbstractProxyServlet> proxyServletClass, HttpServlet servlet)
+        throws Exception
     {
         proxyServlet = proxyServletClass.getDeclaredConstructor().newInstance();
 
@@ -156,7 +153,8 @@ public class ProxyServletLoadTest
         // Start clients
         for (int i = 0; i < clientCount; i++)
         {
-            ClientLoop r = new ClientLoop(activeClientLatch, success, client, "localhost", serverConnector.getLocalPort(), iterations);
+            ClientLoop r = new ClientLoop(
+                activeClientLatch, success, client, "localhost", serverConnector.getLocalPort(), iterations);
             String name = "client-" + i;
             Thread thread = new Thread(r, name);
             thread.start();
@@ -175,7 +173,13 @@ public class ProxyServletLoadTest
         private final int port;
         private int iterations;
 
-        public ClientLoop(CountDownLatch activeClientLatch, AtomicBoolean success, HttpClient client, String serverHost, int serverPort, int iterations)
+        public ClientLoop(
+                          CountDownLatch activeClientLatch,
+                          AtomicBoolean success,
+                          HttpClient client,
+                          String serverHost,
+                          int serverPort,
+                          int iterations)
         {
             this.active = activeClientLatch;
             this.success = success;
@@ -198,12 +202,19 @@ public class ProxyServletLoadTest
 
                     byte[] content = new byte[1024];
                     new Random().nextBytes(content);
-                    ContentResponse response = client.newRequest(host, port).method(HttpMethod.POST).body(new BytesRequestContent(content))
-                        .timeout(5, TimeUnit.SECONDS).send();
+                    ContentResponse response = client.newRequest(host, port)
+                        .method(HttpMethod.POST)
+                        .body(new BytesRequestContent(content))
+                        .timeout(5, TimeUnit.SECONDS)
+                        .send();
 
                     if (response.getStatus() != 200)
                     {
-                        LOG.warn("Got response <{}>, expecting <{}> iteration={}", response.getStatus(), 200, iterations);
+                        LOG.warn(
+                            "Got response <{}>, expecting <{}> iteration={}",
+                            response.getStatus(),
+                            200,
+                            iterations);
                         // allow all ClientLoops to finish
                         success.set(false);
                     }

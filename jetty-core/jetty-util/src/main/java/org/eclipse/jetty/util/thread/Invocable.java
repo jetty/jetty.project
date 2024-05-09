@@ -29,7 +29,9 @@ package org.eclipse.jetty.util.thread;
  */
 public interface Invocable
 {
-    Runnable NOOP = () -> {};
+    Runnable NOOP = () ->
+    {
+    };
 
     ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 

@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.Objects;
-
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -43,7 +42,8 @@ public class MemoryTransport implements Transport
         try
         {
             EndPoint endPoint = connector.connect().getLocalEndPoint();
-            ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY);
+            ClientConnector clientConnector =
+                (ClientConnector)context.get(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY);
             endPoint.setIdleTimeout(clientConnector.getIdleTimeout().toMillis());
 
             // This instance may be nested inside other Transport instances.

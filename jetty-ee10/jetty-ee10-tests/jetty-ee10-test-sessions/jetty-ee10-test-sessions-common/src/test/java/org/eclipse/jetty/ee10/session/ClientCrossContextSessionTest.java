@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -31,10 +34,6 @@ import org.eclipse.jetty.session.NullSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * ClientCrossContextSessionTest
@@ -57,8 +56,12 @@ public class ClientCrossContextSessionTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new NullSessionDataStoreFactory();
 
-        SessionTestSupport server = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC,
-            cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(
+            0,
+            SessionTestSupport.DEFAULT_MAX_INACTIVE,
+            SessionTestSupport.DEFAULT_SCAVENGE_SEC,
+            cacheFactory,
+            storeFactory);
         TestServletA servletA = new TestServletA();
         ServletHolder holderA = new ServletHolder(servletA);
         ServletContextHandler ctxA = server.addContext(contextA);
@@ -110,7 +113,8 @@ public class ClientCrossContextSessionTest
         public String sessionId;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             HttpSession session = request.getSession(false);
             if (session == null)
@@ -134,7 +138,8 @@ public class ClientCrossContextSessionTest
         public volatile String sessionId;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse)
+            throws ServletException, IOException
         {
             HttpSession session = request.getSession(false);
             if (session == null)

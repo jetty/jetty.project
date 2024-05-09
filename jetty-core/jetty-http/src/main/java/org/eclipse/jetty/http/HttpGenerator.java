@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http;
 
+import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
+
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -20,15 +22,12 @@ import java.util.Arrays;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 
 /**
  * HttpGenerator. Builds HTTP Messages.
@@ -45,7 +44,8 @@ public class HttpGenerator
     public static final boolean __STRICT = Boolean.getBoolean("org.eclipse.jetty.http.HttpGenerator.STRICT");
 
     private static final byte[] __colon_space = new byte[]{':', ' '};
-    public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(100, null, HttpVersion.HTTP_1_1, HttpFields.EMPTY);
+    public static final MetaData.Response CONTINUE_100_INFO =
+        new MetaData.Response(100, null, HttpVersion.HTTP_1_1, HttpFields.EMPTY);
 
     // states
     public enum State
@@ -59,15 +59,15 @@ public class HttpGenerator
 
     public enum Result
     {
-        NEED_CHUNK,             // Need a small chunk buffer of CHUNK_SIZE
-        NEED_INFO,              // Need the request/response metadata info 
-        NEED_HEADER,            // Need a buffer to build HTTP headers into
-        HEADER_OVERFLOW,        // The header buffer overflowed
-        NEED_CHUNK_TRAILER,     // Need a large chunk buffer for last chunk and trailers
-        FLUSH,                  // The buffers previously generated should be flushed 
-        CONTINUE,               // Continue generating the message
-        SHUTDOWN_OUT,           // Need EOF to be signaled
-        DONE                    // The current phase of generation is complete
+        NEED_CHUNK, // Need a small chunk buffer of CHUNK_SIZE
+        NEED_INFO, // Need the request/response metadata info
+        NEED_HEADER, // Need a buffer to build HTTP headers into
+        HEADER_OVERFLOW, // The header buffer overflowed
+        NEED_CHUNK_TRAILER, // Need a large chunk buffer for last chunk and trailers
+        FLUSH, // The buffers previously generated should be flushed
+        CONTINUE, // Continue generating the message
+        SHUTDOWN_OUT, // Need EOF to be signaled
+        DONE // The current phase of generation is complete
     }
 
     // other statics
@@ -178,7 +178,9 @@ public class HttpGenerator
         _endOfContent = null;
     }
 
-    public Result generateRequest(MetaData.Request info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
+    public Result generateRequest(
+                                  MetaData.Request info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last)
+        throws IOException
     {
         switch (_state)
         {
@@ -203,7 +205,8 @@ public class HttpGenerator
 
                     generateHeaders(header, content, last);
 
-                    boolean expect100 = info.getHttpFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+                    boolean expect100 =
+                        info.getHttpFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
                     if (expect100)
                     {
@@ -337,7 +340,9 @@ public class HttpGenerator
         return Boolean.TRUE.equals(_persistent) ? Result.DONE : Result.SHUTDOWN_OUT;
     }
 
-    public Result generateResponse(MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
+    public Result generateResponse(
+                                   MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last)
+        throws IOException
     {
         switch (_state)
         {
@@ -554,7 +559,7 @@ public class HttpGenerator
             reason = reason.substring(0, 1024);
         byte[] bytes = StringUtil.getBytes(reason);
 
-        for (int i = bytes.length; i-- > 0; )
+        for (int i = bytes.length; i-- > 0;)
         {
             if (bytes[i] == '\r' || bytes[i] == '\n')
                 bytes[i] = '?';
@@ -601,7 +606,11 @@ public class HttpGenerator
                             if (contentLength < 0)
                                 contentLength = field.getLongValue();
                             else if (contentLength != field.getLongValue())
-                                throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, field.getLongValue()));
+                                throw new HttpException.RuntimeException(
+                                    INTERNAL_SERVER_ERROR_500,
+                                    String.format(
+                                        "Incorrect Content-Length %d!=%d",
+                                        contentLength, field.getLongValue()));
                             contentLengthField = true;
                             break;
 
@@ -639,8 +648,10 @@ public class HttpGenerator
                             }
                             if (keepAlive && _persistent == Boolean.FALSE)
                             {
-                                field = new HttpField(HttpHeader.CONNECTION,
-                                    Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
+                                field = new HttpField(
+                                    HttpHeader.CONNECTION,
+                                    Stream.of(field.getValues())
+                                        .filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
                                         .collect(Collectors.joining(", ")));
                             }
                             putTo(field, header);
@@ -691,7 +702,8 @@ public class HttpGenerator
                         content.clear();
                     }
                     else
-                        throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
+                        throw new HttpException.RuntimeException(
+                            INTERNAL_SERVER_ERROR_500, "Content for no content response");
                 }
             }
         }
@@ -718,10 +730,10 @@ public class HttpGenerator
             else
                 throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Bad Transfer-Encoding");
         }
-        // Else if we known the content length and are a request or a persistent response, 
+        // Else if we known the content length and are a request or a persistent response,
         else if (contentLength >= 0 && (request != null || _persistent))
         {
-            // Use the content length 
+            // Use the content length
             _endOfContent = EndOfContent.CONTENT_LENGTH;
             putContentLength(header, contentLength);
         }
@@ -755,7 +767,11 @@ public class HttpGenerator
                 String v = transferEncoding.getValue();
                 int c = v.lastIndexOf(',');
                 if (c > 0 && v.lastIndexOf(HttpHeaderValue.CHUNKED.toString(), c) > c)
-                    putTo(new HttpField(HttpHeader.TRANSFER_ENCODING, v.substring(0, c).trim()), header);
+                    putTo(
+                        new HttpField(
+                            HttpHeader.TRANSFER_ENCODING,
+                            v.substring(0, c).trim()),
+                        header);
             }
             else
             {
@@ -788,10 +804,7 @@ public class HttpGenerator
     @Override
     public String toString()
     {
-        return String.format("%s@%x{s=%s}",
-            getClass().getSimpleName(),
-            hashCode(),
-            _state);
+        return String.format("%s@%x{s=%s}", getClass().getSimpleName(), hashCode(), _state);
     }
 
     // common _content

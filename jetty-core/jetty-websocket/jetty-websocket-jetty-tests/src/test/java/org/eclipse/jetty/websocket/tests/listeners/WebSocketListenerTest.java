@@ -13,13 +13,18 @@
 
 package org.eclipse.jetty.websocket.tests.listeners;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -37,12 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketListenerTest
 {
@@ -93,7 +92,8 @@ public class WebSocketListenerTest
     public void testTextListeners(Class<?> clazz) throws Exception
     {
         EventSocket clientEndpoint = new EventSocket();
-        client.connect(clientEndpoint, serverUri.resolve("/text/" + clazz.getSimpleName())).get(5, TimeUnit.SECONDS);
+        client.connect(clientEndpoint, serverUri.resolve("/text/" + clazz.getSimpleName()))
+            .get(5, TimeUnit.SECONDS);
 
         // Send and receive echo on client.
         String payload = "hello world";
@@ -113,7 +113,8 @@ public class WebSocketListenerTest
     public void testBinaryListeners(Class<?> clazz) throws Exception
     {
         EventSocket clientEndpoint = new EventSocket();
-        client.connect(clientEndpoint, serverUri.resolve("/binary/" + clazz.getSimpleName())).get(5, TimeUnit.SECONDS);
+        client.connect(clientEndpoint, serverUri.resolve("/binary/" + clazz.getSimpleName()))
+            .get(5, TimeUnit.SECONDS);
 
         // Send and receive echo on client.
         ByteBuffer payload = BufferUtil.toBuffer("hello world");
@@ -138,7 +139,9 @@ public class WebSocketListenerTest
             {
             }
         };
-        Exception failure = assertThrows(Exception.class, () -> client.connect(clientEndpoint, serverUri.resolve("/echo")).get(5, TimeUnit.SECONDS));
+        Exception failure =
+            assertThrows(Exception.class, () -> client.connect(clientEndpoint, serverUri.resolve("/echo"))
+                .get(5, TimeUnit.SECONDS));
         // The endpoint class is not public.
         assertThat(failure.getCause(), instanceOf(IllegalAccessException.class));
     }

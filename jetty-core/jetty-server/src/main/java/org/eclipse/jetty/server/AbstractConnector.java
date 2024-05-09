@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -142,7 +141,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     private final AutoLock _lock = new AutoLock();
     private final Condition _setAccepting = _lock.newCondition();
-    private final Map<String, ConnectionFactory> _factories = new LinkedHashMap<>(); // Order is important on server side, so we use a LinkedHashMap
+    private final Map<String, ConnectionFactory> _factories =
+        new LinkedHashMap<>(); // Order is important on server side, so we use a LinkedHashMap
     private final Server _server;
     private final Executor _executor;
     private final Scheduler _scheduler;
@@ -171,12 +171,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * @param factories The {@link ConnectionFactory} instances to use
      */
     public AbstractConnector(
-        Server server,
-        Executor executor,
-        Scheduler scheduler,
-        ByteBufferPool bufferPool,
-        int acceptors,
-        ConnectionFactory... factories)
+                             Server server,
+                             Executor executor,
+                             Scheduler scheduler,
+                             ByteBufferPool bufferPool,
+                             int acceptors,
+                             ConnectionFactory... factories)
     {
         _server = Objects.requireNonNull(server);
 
@@ -271,8 +271,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     protected void doStart() throws Exception
     {
-        if (!getBeans(ComplianceViolation.Listener.class).isEmpty() ||
-            !getServer().getBeans(ComplianceViolation.Listener.class).isEmpty())
+        if (!getBeans(ComplianceViolation.Listener.class).isEmpty() || !getServer().getBeans(ComplianceViolation.Listener.class).isEmpty())
             LOG.warn("ComplianceViolation.Listeners must now be set on HttpConfiguration");
 
         getConnectionFactories().stream()
@@ -302,7 +301,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             throw new IllegalStateException("No default protocol for " + this);
         _defaultConnectionFactory = getConnectionFactory(_defaultProtocol);
         if (_defaultConnectionFactory == null)
-            throw new IllegalStateException("No protocol factory for default protocol '" + _defaultProtocol + "' in " + this);
+            throw new IllegalStateException(
+                "No protocol factory for default protocol '" + _defaultProtocol + "' in " + this);
         SslConnectionFactory ssl = getConnectionFactory(SslConnectionFactory.class);
         if (ssl != null)
         {
@@ -576,7 +576,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         {
             for (Thread thread : _acceptors)
             {
-                thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, thread.getPriority() - old + acceptorPriorityDelta)));
+                thread.setPriority(Math.max(
+                    Thread.MIN_PRIORITY,
+                    Math.min(Thread.MAX_PRIORITY, thread.getPriority() - old + acceptorPriorityDelta)));
             }
         }
     }
@@ -669,7 +671,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
             int priority = thread.getPriority();
             if (_acceptorPriorityDelta != 0)
-                thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, priority + _acceptorPriorityDelta)));
+                thread.setPriority(Math.max(
+                    Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, priority + _acceptorPriorityDelta)));
 
             try (AutoLock l = _lock.lock())
             {
@@ -776,9 +779,11 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s, %s}",
+        return String.format(
+            "%s@%x{%s, %s}",
             _name == null ? getClass().getSimpleName() : _name,
             hashCode(),
-            getDefaultProtocol(), getProtocols().stream().collect(Collectors.joining(", ", "(", ")")));
+            getDefaultProtocol(),
+            getProtocols().stream().collect(Collectors.joining(", ", "(", ")")));
     }
 }

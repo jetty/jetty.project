@@ -22,7 +22,6 @@ import javax.naming.NameNotFoundException;
 import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,18 +42,17 @@ public class NamingUtil
      * @return the bound context
      * @throws NamingException if an error occurs
      */
-    public static Context bind(Context ctx, String nameStr, Object obj)
-        throws NamingException
+    public static Context bind(Context ctx, String nameStr, Object obj) throws NamingException
     {
         Name name = ctx.getNameParser("").parse(nameStr);
 
-        //no name, nothing to do
+        // no name, nothing to do
         if (name.size() == 0)
             return null;
 
         Context subCtx = ctx;
 
-        //last component of the name will be the name to bind
+        // last component of the name will be the name to bind
         for (int i = 0; i < name.size() - 1; i++)
         {
             try
@@ -77,10 +75,9 @@ public class NamingUtil
         return subCtx;
     }
 
-    public static void unbind(Context ctx)
-        throws NamingException
+    public static void unbind(Context ctx) throws NamingException
     {
-        //unbind everything in the context and all of its subdirectories
+        // unbind everything in the context and all of its subdirectories
         NamingEnumeration<Binding> ne = ctx.listBindings(ctx.getNameInNamespace());
 
         while (ne.hasMoreElements())
@@ -95,13 +92,12 @@ public class NamingUtil
         }
     }
 
-    public static void unbind(Context context, String name, boolean deep)
-        throws NamingException
+    public static void unbind(Context context, String name, boolean deep) throws NamingException
     {
         NameParser parser = context.getNameParser("");
         Name parsedName = parser.parse(name);
 
-        //step backwards through the compound name, checking if intermediate contexts are now empty, and removing if so
+        // step backwards through the compound name, checking if intermediate contexts are now empty, and removing if so
         while (parsedName.size() > 0)
         {
 
@@ -127,16 +123,15 @@ public class NamingUtil
      * @return map: key is fully qualified name, value is the bound object
      * @throws NamingException if unable to flatten bindings
      */
-    public static Map<String, Object> flattenBindings(Context ctx, String name)
-        throws NamingException
+    public static Map<String, Object> flattenBindings(Context ctx, String name) throws NamingException
     {
         HashMap<String, Object> map = new HashMap<>();
 
-        //the context representation of name arg
+        // the context representation of name arg
         Context c = (Context)ctx.lookup(name);
         NameParser parser = c.getNameParser("");
         NamingEnumeration<Binding> enm = ctx.listBindings(name);
-        //empty context, add it to the map
+        // empty context, add it to the map
         if (!enm.hasMore())
         {
             map.put(parser.parse(c.getNameInNamespace()).toString(), c);

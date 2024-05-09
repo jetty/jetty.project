@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class CharsetStringBuilderTest
@@ -32,11 +31,11 @@ public class CharsetStringBuilderTest
     public static Stream<Arguments> tests()
     {
         return Stream.of(
-            Arguments.of("Hello World \uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-16 Æ\tÿ!!!", StandardCharsets.UTF_16),
+            Arguments.of(
+                "Hello World \uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-16 Æ\tÿ!!!", StandardCharsets.UTF_16),
             Arguments.of("Hello World \uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8 Æ\tÿ!!!", StandardCharsets.UTF_8),
             Arguments.of("Now is the time for all good men to test US_ASCII \r\n\t!", StandardCharsets.US_ASCII),
-            Arguments.of("How Now Brown Cow. Test iso 8859 Æ\tÿ!", StandardCharsets.ISO_8859_1)
-        );
+            Arguments.of("How Now Brown Cow. Test iso 8859 Æ\tÿ!", StandardCharsets.ISO_8859_1));
     }
 
     @ParameterizedTest
@@ -65,8 +64,7 @@ public class CharsetStringBuilderTest
             StandardCharsets.UTF_8,
             StandardCharsets.ISO_8859_1,
             StandardCharsets.US_ASCII,
-            StandardCharsets.UTF_16
-        );
+            StandardCharsets.UTF_16);
     }
 
     @ParameterizedTest

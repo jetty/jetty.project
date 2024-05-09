@@ -17,13 +17,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
  * OverlayConfig
- * 
+ *
  * The configuration of a war overlay in a pom. Used to help determine which resources
  * from a project's dependent war should be included.
  */
@@ -272,9 +271,7 @@ public class OverlayConfig
      */
     public boolean matchesArtifact(String gid, String aid, String cls)
     {
-        if (((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid))) &&
-            ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))) &&
-            ((getClassifier() == null) || (getClassifier().equals(cls))))
+        if (((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid))) && ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))) && ((getClassifier() == null) || (getClassifier().equals(cls))))
             return true;
 
         return false;
@@ -289,8 +286,7 @@ public class OverlayConfig
      */
     public boolean matchesArtifact(String gid, String aid)
     {
-        if (((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid))) &&
-            ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))))
+        if (((getGroupId() == null && gid == null) || (getGroupId() != null && getGroupId().equals(gid))) && ((getArtifactId() == null && aid == null) || (getArtifactId() != null && getArtifactId().equals(aid))))
             return true;
 
         return false;
@@ -334,4 +330,3 @@ public class OverlayConfig
         return strbuff.toString();
     }
 }
-

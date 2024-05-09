@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.quic.quiche.jna.macos;
 
+import com.sun.jna.Structure;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-
-import com.sun.jna.Structure;
 import org.eclipse.jetty.quic.quiche.jna.SizedStructure;
 import org.eclipse.jetty.quic.quiche.jna.size_t;
 import org.eclipse.jetty.quic.quiche.jna.sockaddr;
@@ -84,11 +83,11 @@ public interface netinet_macos
     @Structure.FieldOrder({"sin6_len", "sin6_family", "sin6_port", "sin6_flowinfo", "sin6_addr", "sin6_scope_id"})
     class sockaddr_in6 extends Structure
     {
-        public uint8_t  sin6_len;
-        public uint8_t  sin6_family;
+        public uint8_t sin6_len;
+        public uint8_t sin6_family;
         public uint16_t sin6_port;
         public uint32_t sin6_flowinfo;
-        public byte[]   sin6_addr = new byte[16];
+        public byte[] sin6_addr = new byte[16];
         public uint32_t sin6_scope_id;
 
         public sockaddr to_sockaddr()

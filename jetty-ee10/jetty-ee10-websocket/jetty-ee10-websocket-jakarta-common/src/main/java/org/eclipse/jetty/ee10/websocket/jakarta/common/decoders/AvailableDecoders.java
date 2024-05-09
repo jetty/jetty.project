@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common.decoders;
 
+import jakarta.websocket.Decoder;
+import jakarta.websocket.EndpointConfig;
 import java.io.Closeable;
 import java.io.InputStream;
 import java.io.Reader;
@@ -23,9 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import jakarta.websocket.Decoder;
-import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
@@ -75,7 +74,8 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>, Closeable
         registerPrimitive(InputStreamDecoder.class, Decoder.BinaryStream.class, InputStream.class);
     }
 
-    private void registerPrimitive(Class<? extends Decoder> decoderClass, Class<? extends Decoder> interfaceType, Class<?> type)
+    private void registerPrimitive(
+                                   Class<? extends Decoder> decoderClass, Class<? extends Decoder> interfaceType, Class<?> type)
     {
         registeredDecoders.add(new RegisteredDecoder(decoderClass, interfaceType, type, config, components, true));
     }
@@ -115,8 +115,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>, Closeable
 
         if (!foundDecoder)
         {
-            throw new InvalidSignatureException(
-                "Not a valid Decoder class: " + decoder.getName() + " implements no " + Decoder.class.getName() + " interfaces");
+            throw new InvalidSignatureException("Not a valid Decoder class: " + decoder.getName() + " implements no " + Decoder.class.getName() + " interfaces");
         }
     }
 
@@ -132,8 +131,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>, Closeable
         Class<?> objectType = ReflectUtils.findGenericClassFor(decoder, interfaceClass);
         if (objectType == null)
         {
-            String err = "Unknown Decoder Object type declared for interface " +
-                interfaceClass.getName() + " on class " + decoder;
+            String err = "Unknown Decoder Object type declared for interface " + interfaceClass.getName() + " on class " + decoder;
             throw new InvalidWebSocketException(err);
         }
 
@@ -148,7 +146,8 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>, Closeable
 
                 // If we have the same objectType, then the interfaceTypes must be the same to form a decoder list.
                 if (!registered.interfaceType.equals(interfaceClass))
-                    throw new InvalidWebSocketException("Multiple decoders with different interface types for objectType " + objectType);
+                    throw new InvalidWebSocketException(
+                        "Multiple decoders with different interface types for objectType " + objectType);
             }
 
             // If this decoder is already registered for this interface type we can skip adding a duplicate.

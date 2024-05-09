@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.util.Collections;
 import java.util.List;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -27,7 +26,8 @@ public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
 {
     private final ServerUpgradeResponse _response;
 
-    public WebSocketHttpFieldsWrapper(Mutable fields, ServerUpgradeResponse response, WebSocketNegotiation negotiation)
+    public WebSocketHttpFieldsWrapper(
+                                      Mutable fields, ServerUpgradeResponse response, WebSocketNegotiation negotiation)
     {
         super(fields);
         _response = response;

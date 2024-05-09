@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.Future;
-
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.SendHandler;
 import jakarta.websocket.SendResult;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -32,7 +31,8 @@ import org.eclipse.jetty.websocket.core.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteEndpoint.Async
+public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint
+    implements jakarta.websocket.RemoteEndpoint.Async
 {
     static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketAsyncRemote.class);
 
@@ -93,8 +93,7 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         return future;
     }
 
-    @SuppressWarnings(
-        {"rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void sendObject(Object data, SendHandler handler)
     {

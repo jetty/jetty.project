@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.ee10.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.Selector;
@@ -28,10 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -58,11 +62,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FailedSelectorTest
 {
@@ -124,7 +123,8 @@ public class FailedSelectorTest
 
         startServer((server) ->
         {
-            RestartSelectorCustomConnector connector = new RestartSelectorCustomConnector(server, 1, 1, new RestartServerTask(server, failedLatch));
+            RestartSelectorCustomConnector connector =
+                new RestartSelectorCustomConnector(server, 1, 1, new RestartServerTask(server, failedLatch));
             connector.setPort(0);
             connector.setIdleTimeout(1000);
             return connector;
@@ -150,7 +150,8 @@ public class FailedSelectorTest
 
         startServer((server) ->
         {
-            RestartSelectorCustomConnector connector = new RestartSelectorCustomConnector(server, 1, 1, new RestartSelectorTask(failedLatch));
+            RestartSelectorCustomConnector connector =
+                new RestartSelectorCustomConnector(server, 1, 1, new RestartSelectorTask(failedLatch));
             connector.setPort(0);
             connector.setIdleTimeout(1000);
             return connector;
@@ -234,7 +235,8 @@ public class FailedSelectorTest
     {
         private final Consumer<CustomManagedSelector> onSelectFailConsumer;
 
-        public RestartSelectorCustomConnector(Server server, int acceptors, int selectors, Consumer<CustomManagedSelector> onSelectFailConsumer)
+        public RestartSelectorCustomConnector(
+                                              Server server, int acceptors, int selectors, Consumer<CustomManagedSelector> onSelectFailConsumer)
         {
             super(server, acceptors, selectors);
             this.onSelectFailConsumer = onSelectFailConsumer;
@@ -259,7 +261,8 @@ public class FailedSelectorTest
         private final Set<EndPoint> endpoints = ConcurrentHashMap.newKeySet();
         private final Consumer<CustomManagedSelector> onSelectFailConsumer;
 
-        public CustomManagedSelector(SelectorManager selectorManager, int id, Consumer<CustomManagedSelector> onSelectFailConsumer)
+        public CustomManagedSelector(
+                                     SelectorManager selectorManager, int id, Consumer<CustomManagedSelector> onSelectFailConsumer)
         {
             super(selectorManager, id);
             this.onSelectFailConsumer = onSelectFailConsumer;

@@ -19,7 +19,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
@@ -253,11 +252,8 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
     @Override
     public String toString()
     {
-        return String.format("%s@%x{capacity=%d,threads=%s}",
-            getClass().getSimpleName(),
-            hashCode(),
-            getCapacity(),
-            _threads);
+        return String.format(
+            "%s@%x{capacity=%d,threads=%s}", getClass().getSimpleName(), hashCode(), getCapacity(), _threads);
     }
 
     private class ReservedThread implements Runnable
@@ -379,10 +375,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
         @Override
         public String toString()
         {
-            return String.format("%s@%x{thread=%s}",
-                getClass().getSimpleName(),
-                hashCode(),
-                _thread);
+            return String.format("%s@%x{thread=%s}", getClass().getSimpleName(), hashCode(), _thread);
         }
     }
 }

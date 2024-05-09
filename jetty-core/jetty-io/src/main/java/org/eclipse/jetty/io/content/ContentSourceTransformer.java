@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io.content;
 
 import java.util.Objects;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 

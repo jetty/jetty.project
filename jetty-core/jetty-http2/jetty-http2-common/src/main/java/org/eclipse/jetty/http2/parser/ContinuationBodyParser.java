@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
@@ -29,7 +28,11 @@ public class ContinuationBodyParser extends BodyParser
     private State state = State.PREPARE;
     private int length;
 
-    public ContinuationBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser, HeaderBlockFragments headerBlockFragments)
+    public ContinuationBodyParser(
+                                  HeaderParser headerParser,
+                                  Parser.Listener listener,
+                                  HeaderBlockParser headerBlockParser,
+                                  HeaderBlockFragments headerBlockFragments)
     {
         super(headerParser, listener);
         this.headerBlockParser = headerBlockParser;
@@ -78,10 +81,12 @@ public class ContinuationBodyParser extends BodyParser
                     {
                         ContinuationFrame frame = new ContinuationFrame(getStreamId(), false);
                         if (!rateControlOnEvent(frame))
-                            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
+                            return connectionFailure(
+                                buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
 
                         if (!headerBlockFragments.storeFragment(buffer, remaining, false))
-                            return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_continuation_stream");
+                            return connectionFailure(
+                                buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_continuation_stream");
 
                         length -= remaining;
                         break;
@@ -91,10 +96,12 @@ public class ContinuationBodyParser extends BodyParser
                         boolean endHeaders = hasFlag(Flags.END_HEADERS);
                         ContinuationFrame frame = new ContinuationFrame(getStreamId(), endHeaders);
                         if (!rateControlOnEvent(frame))
-                            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
+                            return connectionFailure(
+                                buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
 
                         if (!headerBlockFragments.storeFragment(buffer, length, endHeaders))
-                            return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_continuation_stream");
+                            return connectionFailure(
+                                buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_continuation_stream");
 
                         reset();
                         if (endHeaders)
@@ -116,7 +123,8 @@ public class ContinuationBodyParser extends BodyParser
         RetainableByteBuffer headerBlock = headerBlockFragments.complete();
         MetaData metaData = headerBlockParser.parse(headerBlock.getByteBuffer(), headerBlock.remaining());
         headerBlock.release();
-        HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, headerBlockFragments.getPriorityFrame(), headerBlockFragments.isEndStream());
+        HeadersFrame frame = new HeadersFrame(
+            getStreamId(), metaData, headerBlockFragments.getPriorityFrame(), headerBlockFragments.isEndStream());
         headerBlockFragments.reset();
 
         if (metaData == HeaderBlockParser.SESSION_FAILURE)
@@ -142,6 +150,7 @@ public class ContinuationBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, FRAGMENT
+        PREPARE,
+        FRAGMENT
     }
 }

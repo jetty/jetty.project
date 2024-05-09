@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-
 import org.osgi.framework.Bundle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,8 @@ public class OSGiClassLoader extends URLClassLoader
         super(new URL[]{}, parent);
         _parent = getParent();
         _bundle = bundle;
-        _osgiBundleClassLoader = BundleClassLoaderHelperFactory.getFactory().getHelper().getBundleClassLoader(_bundle);
+        _osgiBundleClassLoader =
+            BundleClassLoaderHelperFactory.getFactory().getHelper().getBundleClassLoader(_bundle);
     }
 
     /**

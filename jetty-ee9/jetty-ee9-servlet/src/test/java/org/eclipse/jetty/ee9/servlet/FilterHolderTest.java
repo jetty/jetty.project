@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -22,13 +23,11 @@ import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * FilterHolderTest
@@ -47,14 +46,14 @@ public class FilterHolderTest
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
         }
     }
 
     @Test
-    public void testInitialize()
-        throws Exception
+    public void testInitialize() throws Exception
     {
         ServletHandler handler = new ServletHandler();
 
@@ -109,14 +108,14 @@ public class FilterHolderTest
     {
         try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, ServletContextHandler.class))
         {
-            //test without a ServletContextHandler or current ContextHandler
+            // test without a ServletContextHandler or current ContextHandler
             FilterHolder holder = new FilterHolder();
             holder.setName("foo");
             holder.setHeldClass(DummyFilter.class);
             Filter filter = holder.createInstance();
             assertNotNull(filter);
 
-            //test with a ServletContextHandler
+            // test with a ServletContextHandler
             Server server = new Server();
             ServletContextHandler context = new ServletContextHandler();
             server.setHandler(context);

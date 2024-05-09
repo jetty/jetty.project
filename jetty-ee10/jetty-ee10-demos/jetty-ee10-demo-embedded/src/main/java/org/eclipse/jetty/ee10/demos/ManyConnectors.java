@@ -17,7 +17,6 @@ import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -62,8 +61,7 @@ public class ManyConnectors
         // the http configuration we configured above so it can get things like
         // the output buffer size, etc. We also set the port (8080) and
         // configure an idle timeout.
-        ServerConnector http = new ServerConnector(server,
-            new HttpConnectionFactory(httpConfig));
+        ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
         http.setPort(plainPort);
         http.setIdleTimeout(30000);
 
@@ -81,8 +79,8 @@ public class ManyConnectors
         // OPTIONAL: Un-comment the following to use Conscrypt for SSL instead of
         // the native JSSE implementation.
 
-        //Security.addProvider(new OpenSSLProvider());
-        //sslContextFactory.setProvider("Conscrypt");
+        // Security.addProvider(new OpenSSLProvider());
+        // sslContextFactory.setProvider("Conscrypt");
 
         // HTTPS Configuration
         // A new HttpConfiguration object is needed for the next connector and
@@ -101,7 +99,8 @@ public class ManyConnectors
         // We create a second ServerConnector, passing in the http configuration
         // we just made along with the previously created ssl context factory.
         // Next we set the port and a longer idle timeout.
-        ServerConnector https = new ServerConnector(server,
+        ServerConnector https = new ServerConnector(
+            server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(httpsConfig));
         https.setPort(securePort);

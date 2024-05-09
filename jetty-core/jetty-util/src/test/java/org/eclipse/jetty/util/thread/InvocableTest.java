@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.junit.jupiter.api.Test;
-
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.BLOCKING;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.EITHER;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
@@ -26,6 +21,10 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import org.junit.jupiter.api.Test;
 
 public class InvocableTest
 {

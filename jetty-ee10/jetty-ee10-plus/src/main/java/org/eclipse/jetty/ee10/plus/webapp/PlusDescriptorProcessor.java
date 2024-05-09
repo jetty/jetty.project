@@ -18,7 +18,6 @@ import java.util.Objects;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
-
 import org.eclipse.jetty.ee10.webapp.Descriptor;
 import org.eclipse.jetty.ee10.webapp.FragmentDescriptor;
 import org.eclipse.jetty.ee10.webapp.IterativeDescriptorProcessor;
@@ -69,7 +68,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     public void start(WebAppContext context, Descriptor descriptor)
     {
 
-        InjectionCollection injections = (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+        InjectionCollection injections =
+            (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
         if (injections == null)
         {
             injections = new InjectionCollection();
@@ -97,8 +97,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node the xml node
      * @throws Exception if unable to process jndi bindings
      */
-    public void visitEnvEntry(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
-        throws Exception
+    public void visitEnvEntry(WebAppContext context, Descriptor descriptor, XmlParser.Node node) throws Exception
     {
         String name = node.getString("env-entry-name", false, true);
         String type = node.getString("env-entry-type", false, true);
@@ -109,30 +108,30 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         {
             case NotSet:
             {
-                //no descriptor has configured an env-entry of this name previously
+                // no descriptor has configured an env-entry of this name previously
                 context.getMetaData().setOrigin("env-entry." + name, descriptor);
-                makeEnvEntryInjectionsAndBindings(context, descriptor, node, name, type, valueStr);        
+                makeEnvEntryInjectionsAndBindings(context, descriptor, node, name, type, valueStr);
                 break;
             }
             case WebXml:
             case WebDefaults:
             case WebOverride:
             {
-                //ServletSpec 3.0 p75. web.xml (or web-override/web-defaults) declared
-                //the env-entry. A fragment is not allowed to change that, except unless
-                //the web.xml did not declare any injections.
+                // ServletSpec 3.0 p75. web.xml (or web-override/web-defaults) declared
+                // the env-entry. A fragment is not allowed to change that, except unless
+                // the web.xml did not declare any injections.
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
-                    //We're processing web-defaults, web.xml or web-override. Any of them can
-                    //set or change the env-entry.
+                    // We're processing web-defaults, web.xml or web-override. Any of them can
+                    // set or change the env-entry.
                     context.getMetaData().setOrigin("env-entry." + name, descriptor);
                     makeEnvEntryInjectionsAndBindings(context, descriptor, node, name, type, valueStr);
                 }
                 else
                 {
-                    //A web.xml declared the env-entry. Check to see if any injections have been
-                    //declared for it. If it was declared in web.xml then don't merge any injections.
-                    //If it was declared in a web-fragment, then we can keep merging fragments.
+                    // A web.xml declared the env-entry. Check to see if any injections have been
+                    // declared for it. If it was declared in web.xml then don't merge any injections.
+                    // If it was declared in a web-fragment, then we can keep merging fragments.
                     Descriptor d = context.getMetaData().getOriginDescriptor("env-entry." + name + ".injection");
                     if (d == null || d instanceof FragmentDescriptor)
                         addInjections(context, descriptor, node, name, TypeUtil.fromName(type));
@@ -141,7 +140,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             }
             case WebFragment:
             {
-                //ServletSpec p.75. No declaration in web.xml, but in multiple web-fragments. Error.
+                // ServletSpec p.75. No declaration in web.xml, but in multiple web-fragments. Error.
                 throw new IllegalStateException("Conflicting env-entry " + name + " in " + descriptor.getURI());
             }
             default:
@@ -197,8 +196,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node the xml node
      * @throws Exception if unable to bind nodes, or load classes
      */
-    public void visitResourceRef(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
-        throws Exception
+    public void visitResourceRef(WebAppContext context, Descriptor descriptor, XmlParser.Node node) throws Exception
     {
         String jndiName = node.getString("res-ref-name", false, true);
         String type = node.getString("res-type", false, true);
@@ -210,10 +208,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         {
             case NotSet:
             {
-                //No descriptor or annotation previously declared a resource-ref of this name.
+                // No descriptor or annotation previously declared a resource-ref of this name.
                 context.getMetaData().setOrigin("resource-ref." + jndiName, descriptor);
 
-                //check for <injection> elements
+                // check for <injection> elements
                 Class<?> typeClass = TypeUtil.fromName(type);
                 if (typeClass == null)
                     typeClass = context.loadClass(type);
@@ -225,29 +223,29 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             case WebDefaults:
             case WebOverride:
             {
-                //A web xml previously declared the resource-ref.
+                // A web xml previously declared the resource-ref.
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
-                    //We're processing web-defaults, web.xml or web-override. Any of them can
-                    //set or change the resource-ref.
+                    // We're processing web-defaults, web.xml or web-override. Any of them can
+                    // set or change the resource-ref.
                     context.getMetaData().setOrigin("resource-ref." + jndiName, descriptor);
 
-                    //check for <injection> elements
+                    // check for <injection> elements
                     Class<?> typeClass = TypeUtil.fromName(type);
                     if (typeClass == null)
                         typeClass = context.loadClass(type);
 
                     addInjections(context, descriptor, node, jndiName, typeClass);
 
-                    //bind the entry into jndi
+                    // bind the entry into jndi
                     bindResourceRef(context, jndiName, typeClass);
                 }
                 else
                 {
-                    //A web xml declared the resource-ref and we're processing a
-                    //web-fragment. Check to see if any injections were declared for it by web.xml.
-                    //If any injection was declared in web.xml then don't merge any injections.
-                    //If it was declared in a web-fragment, then we can keep merging fragments.
+                    // A web xml declared the resource-ref and we're processing a
+                    // web-fragment. Check to see if any injections were declared for it by web.xml.
+                    // If any injection was declared in web.xml then don't merge any injections.
+                    // If it was declared in a web-fragment, then we can keep merging fragments.
                     Descriptor d = context.getMetaData().getOriginDescriptor("resource-ref." + jndiName + ".injection");
                     if (d == null || d instanceof FragmentDescriptor)
                     {
@@ -275,10 +273,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                         otherNode = n;
                 }
 
-                //If declared in another web-fragment
+                // If declared in another web-fragment
                 if (otherNode != null)
                 {
-                    //declarations of the resource-ref must be the same in both fragment descriptors
+                    // declarations of the resource-ref must be the same in both fragment descriptors
                     String otherType = otherNode.getString("res-type", false, true);
                     otherType = (otherType == null ? "" : otherType);
                     String otherAuth = otherNode.getString("res-auth", false, true);
@@ -286,19 +284,22 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     String otherShared = otherNode.getString("res-sharing-scope", false, true);
                     otherShared = (otherShared == null ? "" : otherShared);
 
-                    //otherType, otherAuth and otherShared must be the same as type, auth, shared
+                    // otherType, otherAuth and otherShared must be the same as type, auth, shared
                     type = (type == null ? "" : type);
                     auth = (auth == null ? "" : auth);
                     shared = (shared == null ? "" : shared);
 
-                    //ServletSpec p.75. No declaration of resource-ref in web xml, but different in multiple web-fragments. Error.
+                    // ServletSpec p.75. No declaration of resource-ref in web xml, but different in multiple
+                    // web-fragments. Error.
                     if (!type.equals(otherType) || !auth.equals(otherAuth) || !shared.equals(otherShared))
-                        throw new IllegalStateException("Conflicting resource-ref " + jndiName + " in " + descriptor.getURI());
-                    //same in multiple web-fragments, merge the injections
+                        throw new IllegalStateException(
+                            "Conflicting resource-ref " + jndiName + " in " + descriptor.getURI());
+                    // same in multiple web-fragments, merge the injections
                     addInjections(context, descriptor, node, jndiName, TypeUtil.fromName(type));
                 }
                 else
-                    throw new IllegalStateException("resource-ref." + jndiName + " not found in declaring descriptor " + otherFragment);
+                    throw new IllegalStateException(
+                        "resource-ref." + jndiName + " not found in declaring descriptor " + otherFragment);
                 break;
             }
 
@@ -333,9 +334,9 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         {
             case NotSet:
             {
-                //First declaration of resource-env-ref with this jndiName
-                //JavaEE Spec sec 5.7.1.3 says the resource-env-ref-type
-                //is mandatory, but the schema says it is optional!
+                // First declaration of resource-env-ref with this jndiName
+                // JavaEE Spec sec 5.7.1.3 says the resource-env-ref-type
+                // is mandatory, but the schema says it is optional!
                 Class<?> typeClass = TypeUtil.fromName(type);
                 if (typeClass == null)
                     typeClass = context.loadClass(type);
@@ -347,12 +348,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             case WebDefaults:
             case WebOverride:
             {
-                //A resource-env-ref of this name has been declared first in a web xml.
-                //Only allow other web-default, web.xml, web-override to change it.
+                // A resource-env-ref of this name has been declared first in a web xml.
+                // Only allow other web-default, web.xml, web-override to change it.
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
-                    //We're processing web-defaults, web.xml or web-override. Any of them can
-                    //set or change the resource-env-ref.
+                    // We're processing web-defaults, web.xml or web-override. Any of them can
+                    // set or change the resource-env-ref.
                     context.getMetaData().setOrigin("resource-env-ref." + jndiName, descriptor);
                     Class<?> typeClass = TypeUtil.fromName(type);
                     if (typeClass == null)
@@ -362,9 +363,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 else
                 {
-                    //We're processing a web-fragment. It can only contribute injections if the
-                    //there haven't been any injections declared yet, or they weren't declared in a WebXml file.
-                    Descriptor d = context.getMetaData().getOriginDescriptor("resource-env-ref." + jndiName + ".injection");
+                    // We're processing a web-fragment. It can only contribute injections if the
+                    // there haven't been any injections declared yet, or they weren't declared in a WebXml file.
+                    Descriptor d =
+                        context.getMetaData().getOriginDescriptor("resource-env-ref." + jndiName + ".injection");
                     if (d == null || d instanceof FragmentDescriptor)
                     {
                         Class<?> typeClass = TypeUtil.fromName(type);
@@ -392,22 +394,25 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 if (otherNode != null)
                 {
-                    //declarations of the resource-ref must be the same in both fragment descriptors
+                    // declarations of the resource-ref must be the same in both fragment descriptors
                     String otherType = otherNode.getString("resource-env-ref-type", false, true);
 
-                    //types must be the same
+                    // types must be the same
                     type = (type == null ? "" : type);
                     otherType = (otherType == null ? "" : otherType);
 
-                    //ServletSpec p.75. No declaration of resource-ref in web xml, but different in multiple web-fragments. Error.
+                    // ServletSpec p.75. No declaration of resource-ref in web xml, but different in multiple
+                    // web-fragments. Error.
                     if (!type.equals(otherType))
-                        throw new IllegalStateException("Conflicting resource-env-ref " + jndiName + " in " + descriptor.getURI());
+                        throw new IllegalStateException(
+                            "Conflicting resource-env-ref " + jndiName + " in " + descriptor.getURI());
 
-                    //same in multiple web-fragments, merge the injections
+                    // same in multiple web-fragments, merge the injections
                     addInjections(context, descriptor, node, jndiName, TypeUtil.fromName(type));
                 }
                 else
-                    throw new IllegalStateException("resource-env-ref." + jndiName + " not found in declaring descriptor " + otherFragment);
+                    throw new IllegalStateException(
+                        "resource-env-ref." + jndiName + " not found in declaring descriptor " + otherFragment);
                 break;
             }
             default:
@@ -441,7 +446,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         {
             case NotSet:
             {
-                //A message-destination-ref of this name has not been previously declared
+                // A message-destination-ref of this name has not been previously declared
                 Class<?> typeClass = TypeUtil.fromName(type);
                 if (typeClass == null)
                     typeClass = context.loadClass(type);
@@ -454,8 +459,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             case WebDefaults:
             case WebOverride:
             {
-                //A message-destination-ref of this name has been declared first in a web xml.
-                //Only allow other web-default, web.xml, web-override to change it.
+                // A message-destination-ref of this name has been declared first in a web xml.
+                // Only allow other web-default, web.xml, web-override to change it.
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
                     Class<?> typeClass = TypeUtil.fromName(type);
@@ -467,9 +472,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 else
                 {
-                    //A web-fragment has declared a message-destination-ref with the same name as a web xml.
-                    //It can only contribute injections, and only if the web xml didn't declare any.
-                    Descriptor d = context.getMetaData().getOriginDescriptor("message-destination-ref." + jndiName + ".injection");
+                    // A web-fragment has declared a message-destination-ref with the same name as a web xml.
+                    // It can only contribute injections, and only if the web xml didn't declare any.
+                    Descriptor d = context.getMetaData()
+                        .getOriginDescriptor("message-destination-ref." + jndiName + ".injection");
                     if (d == null || d instanceof FragmentDescriptor)
                     {
                         Class<?> typeClass = TypeUtil.fromName(type);
@@ -482,7 +488,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             }
             case WebFragment:
             {
-                Descriptor otherFragment = context.getMetaData().getOriginDescriptor("message-destination-ref." + jndiName);
+                Descriptor otherFragment =
+                    context.getMetaData().getOriginDescriptor("message-destination-ref." + jndiName);
                 XmlParser.Node otherFragmentRoot = otherFragment.getRoot();
                 Iterator<Object> iter = otherFragmentRoot.iterator();
                 XmlParser.Node otherNode = null;
@@ -503,9 +510,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     type = (type == null ? "" : type);
                     usage = (usage == null ? "" : usage);
                     if (!type.equals(otherType) || !usage.equalsIgnoreCase(otherUsage))
-                        throw new IllegalStateException("Conflicting message-destination-ref " + jndiName + " in " + descriptor.getURI());
+                        throw new IllegalStateException(
+                            "Conflicting message-destination-ref " + jndiName + " in " + descriptor.getURI());
 
-                    //same in multiple web-fragments, merge the injections
+                    // same in multiple web-fragments, merge the injections
                     addInjections(context, descriptor, node, jndiName, TypeUtil.fromName(type));
                 }
                 else
@@ -543,33 +551,36 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             return;
         }
 
-        //ServletSpec 3.0 p80 If web.xml declares a post-construct then all post-constructs
-        //in fragments must be ignored. Otherwise, they are additive.
+        // ServletSpec 3.0 p80 If web.xml declares a post-construct then all post-constructs
+        // in fragments must be ignored. Otherwise, they are additive.
         Origin o = context.getMetaData().getOrigin("post-construct");
         switch (o)
         {
             case NotSet:
             {
-                //No post-constructs have been declared previously.
+                // No post-constructs have been declared previously.
                 context.getMetaData().setOrigin("post-construct", descriptor);
 
                 LifeCycleCallback callback = new PostConstructCallback(className, methodName);
-                ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
+                ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION))
+                    .add(callback);
                 break;
             }
             case WebXml:
             case WebDefaults:
             case WebOverride:
             {
-                //A web xml first declared a post-construct. Only allow other web xml files (web-defaults, web-overrides etc)
-                //to add to it
+                // A web xml first declared a post-construct. Only allow other web xml files (web-defaults,
+                // web-overrides etc)
+                // to add to it
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
                     try
                     {
                         Class<?> clazz = context.loadClass(className);
                         LifeCycleCallback callback = new PostConstructCallback(clazz, methodName);
-                        ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
+                        ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION))
+                            .add(callback);
                     }
                     catch (ClassNotFoundException e)
                     {
@@ -580,12 +591,14 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             }
             case WebFragment:
             {
-                //A web-fragment first declared a post-construct. Allow all other web-fragments to merge in their post-constructs
+                // A web-fragment first declared a post-construct. Allow all other web-fragments to merge in their
+                // post-constructs
                 try
                 {
                     Class<?> clazz = context.loadClass(className);
                     LifeCycleCallback callback = new PostConstructCallback(clazz, methodName);
-                    ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
+                    ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION))
+                        .add(callback);
                 }
                 catch (ClassNotFoundException e)
                 {
@@ -626,12 +639,13 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         {
             case NotSet:
             {
-                //No pre-destroys have been declared previously. Record this descriptor
-                //as the first declarer.
+                // No pre-destroys have been declared previously. Record this descriptor
+                // as the first declarer.
                 context.getMetaData().setOrigin("pre-destroy", descriptor);
 
                 LifeCycleCallback callback = new PreDestroyCallback(className, methodName);
-                ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
+                ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION))
+                    .add(callback);
 
                 break;
             }
@@ -639,15 +653,16 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             case WebDefaults:
             case WebOverride:
             {
-                //A web xml file previously declared a pre-destroy. Only allow other web xml files
-                //(not web-fragments) to add to them.
+                // A web xml file previously declared a pre-destroy. Only allow other web xml files
+                // (not web-fragments) to add to them.
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
                     try
                     {
                         Class<?> clazz = context.loadClass(className);
                         LifeCycleCallback callback = new PreDestroyCallback(clazz, methodName);
-                        ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
+                        ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION))
+                            .add(callback);
                     }
                     catch (ClassNotFoundException e)
                     {
@@ -658,12 +673,13 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             }
             case WebFragment:
             {
-                //No pre-destroys in web xml, so allow all fragments to merge their pre-destroys.
+                // No pre-destroys in web xml, so allow all fragments to merge their pre-destroys.
                 try
                 {
                     Class<?> clazz = context.loadClass(className);
                     LifeCycleCallback callback = new PreDestroyCallback(clazz, methodName);
-                    ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
+                    ((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION))
+                        .add(callback);
                 }
                 catch (ClassNotFoundException e)
                 {
@@ -685,11 +701,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param jndiName the jndi name
      * @param valueClass the value class
      */
-    public void addInjections(WebAppContext context, Descriptor descriptor, XmlParser.Node node, String jndiName, Class<?> valueClass)
+    public void addInjections(
+                              WebAppContext context, Descriptor descriptor, XmlParser.Node node, String jndiName, Class<?> valueClass)
     {
         Objects.requireNonNull(context);
         Objects.requireNonNull(node);
-        
+
         Iterator<XmlParser.Node> itor = node.iterator("injection-target");
 
         while (itor.hasNext())
@@ -708,7 +725,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 continue;
             }
 
-            InjectionCollection injections = (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+            InjectionCollection injections =
+                (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
             if (injections == null)
             {
                 injections = new InjectionCollection();
@@ -722,7 +740,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 Injection injection = new Injection(clazz, targetName, valueClass, jndiName, null);
                 injections.add(injection);
 
-                //Record which was the first descriptor to declare an injection for this name
+                // Record which was the first descriptor to declare an injection for this name
                 String name = node.getTag() + "." + jndiName + ".injection";
                 if (context.getMetaData().getOriginDescriptor(name) == null)
                     context.getMetaData().setOrigin(name, descriptor);
@@ -745,13 +763,13 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         Context envCtx = (Context)ic.lookup("java:comp/env");
         NamingUtil.bind(envCtx, name, value);
     }
-    
+
     /**
      * Make injections and any java:comp/env bindings necessary given an env-entry declaration.
      * The handling of env-entries is different to other resource declarations like resource-ref, resource-env-ref etc
-     * because we allow the EnvEntry (@see org.eclipse.jetty.plus.jndi.EnvEntry) class that is configured externally to the webapp 
+     * because we allow the EnvEntry (@see org.eclipse.jetty.plus.jndi.EnvEntry) class that is configured externally to the webapp
      * to specify a value that can override a value present in a web.xml descriptor.
-     * 
+     *
      * @param context the WebAppContext of the env-entry
      * @param descriptor the web.xml, web-default.xml, web-override.xml or web-fragment.xml
      * @param node the parsed xml representation of the env-entry declaration
@@ -760,7 +778,9 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param value the value field of the env-entry
      * @throws Exception if there is an unspecified problem
      */
-    public void makeEnvEntryInjectionsAndBindings(WebAppContext context, Descriptor descriptor, XmlParser.Node node, String name, String type, String value) throws Exception
+    public void makeEnvEntryInjectionsAndBindings(
+                                                  WebAppContext context, Descriptor descriptor, XmlParser.Node node, String name, String type, String value)
+        throws Exception
     {
         InitialContext ic = new InitialContext();
         try
@@ -769,20 +789,20 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
             if (StringUtil.isEmpty(value))
             {
-                //There is an empty or missing value in the env-entry:
-                //If there is an existing EnvEntry (eg from a declaration in jetty-env.xml) that is override=true, then
-                //we make the injection, but we can skip the rebinding because we want to use the value already bound.
-                //If there isn't an existing EnvEntry then there is nothing to do: according to the spec we do not make
-                //an injection if the env-entry value is missing, and of course there is no value to rebind.
+                // There is an empty or missing value in the env-entry:
+                // If there is an existing EnvEntry (eg from a declaration in jetty-env.xml) that is override=true, then
+                // we make the injection, but we can skip the rebinding because we want to use the value already bound.
+                // If there isn't an existing EnvEntry then there is nothing to do: according to the spec we do not make
+                // an injection if the env-entry value is missing, and of course there is no value to rebind.
                 if (envEntry != null && envEntry.isOverrideWebXml())
                     addInjections(context, descriptor, node, name, TypeUtil.fromName(type));
             }
             else
             {
-                //There is a value for the env-entry:
-                //According to the spec, we need to make an injection (if one is present).
-                //If there is an existing EnvEntry(eg from a declaration in jetty-env.xml) that is override=false, then
-                //we need to rebind name with the value from web.xml.
+                // There is a value for the env-entry:
+                // According to the spec, we need to make an injection (if one is present).
+                // If there is an existing EnvEntry(eg from a declaration in jetty-env.xml) that is override=false, then
+                // we need to rebind name with the value from web.xml.
                 addInjections(context, descriptor, node, name, TypeUtil.fromName(type));
 
                 if (envEntry == null || !envEntry.isOverrideWebXml())
@@ -791,7 +811,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         }
         catch (NameNotFoundException e)
         {
-            //No matching EnvEntry has previously been bound so make the injection and do the binding with the value from web.xml
+            // No matching EnvEntry has previously been bound so make the injection and do the binding with the value
+            // from web.xml
             addInjections(context, descriptor, node, name, TypeUtil.fromName(type));
             bindEnvEntry(name, TypeUtil.valueOf(type, value));
         }
@@ -808,20 +829,17 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param typeClass the type class
      * @throws Exception if unable to bind resource
      */
-    public void bindResourceRef(WebAppContext context, String name, Class<?> typeClass)
-        throws Exception
+    public void bindResourceRef(WebAppContext context, String name, Class<?> typeClass) throws Exception
     {
         bindEntry(context, name, typeClass);
     }
 
-    public void bindResourceEnvRef(WebAppContext context, String name, Class<?> typeClass)
-        throws Exception
+    public void bindResourceEnvRef(WebAppContext context, String name, Class<?> typeClass) throws Exception
     {
         bindEntry(context, name, typeClass);
     }
 
-    public void bindMessageDestinationRef(WebAppContext context, String name, Class<?> typeClass)
-        throws Exception
+    public void bindMessageDestinationRef(WebAppContext context, String name, Class<?> typeClass) throws Exception
     {
         bindEntry(context, name, typeClass);
     }
@@ -842,46 +860,45 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param typeClass the type class
      * @throws Exception the exception
      */
-    protected void bindEntry(WebAppContext context, String name, Class<?> typeClass)
-        throws Exception
+    protected void bindEntry(WebAppContext context, String name, Class<?> typeClass) throws Exception
     {
         String nameInEnvironment = name;
         boolean bound = false;
 
-        //check if the name in web.xml has been mapped to something else
-        //check a context-specific naming environment first
+        // check if the name in web.xml has been mapped to something else
+        // check a context-specific naming environment first
         Object scope = context;
         NamingEntry ne = NamingEntryUtil.lookupNamingEntry(scope, name);
 
         if (ne != null && (ne instanceof Link))
         {
-            //if we found a mapping, get out name it is mapped to in the environment
+            // if we found a mapping, get out name it is mapped to in the environment
             nameInEnvironment = ((Link)ne).getLink();
         }
 
-        //try finding that mapped name in the webapp's environment first
+        // try finding that mapped name in the webapp's environment first
         scope = context;
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
 
         if (bound)
             return;
 
-        //try the server's environment
+        // try the server's environment
         scope = context.getServer();
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
         if (bound)
             return;
 
-        //try the jvm environment
+        // try the jvm environment
         bound = NamingEntryUtil.bindToENC(null, name, nameInEnvironment);
         if (bound)
             return;
 
-        //There is no matching resource so try a default name.
-        //The default name syntax is: the [res-type]/default
-        //eg       javax.sql.DataSource/default
+        // There is no matching resource so try a default name.
+        // The default name syntax is: the [res-type]/default
+        // eg       javax.sql.DataSource/default
         nameInEnvironment = typeClass.getName() + "/default";
-        //First try the server scope
+        // First try the server scope
         NamingEntry defaultNE = NamingEntryUtil.lookupNamingEntry(context.getServer(), nameInEnvironment);
         if (defaultNE == null)
             defaultNE = NamingEntryUtil.lookupNamingEntry(null, nameInEnvironment);

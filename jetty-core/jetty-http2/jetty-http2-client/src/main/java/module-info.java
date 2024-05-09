@@ -15,7 +15,6 @@ module org.eclipse.jetty.http2.client
 {
     requires org.eclipse.jetty.alpn.client;
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.http2.common;
 
     exports org.eclipse.jetty.http2.client;

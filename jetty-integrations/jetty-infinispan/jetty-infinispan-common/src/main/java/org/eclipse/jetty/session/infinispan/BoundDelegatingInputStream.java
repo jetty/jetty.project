@@ -27,7 +27,7 @@ public class BoundDelegatingInputStream extends InputStream
     protected final ObjectInput objectInput;
     private final int length;
     private int position = 0;
-    
+
     public BoundDelegatingInputStream(ObjectInput objectInput) throws IOException
     {
         this.objectInput = objectInput;
@@ -48,7 +48,7 @@ public class BoundDelegatingInputStream extends InputStream
     @Override
     public int read(byte[] b) throws IOException
     {
-        int available = length - position; 
+        int available = length - position;
         int read = -1;
         if (position == length)
         {
@@ -83,7 +83,7 @@ public class BoundDelegatingInputStream extends InputStream
         }
         else
         {
-            read = objectInput.read(b, off, len); 
+            read = objectInput.read(b, off, len);
         }
         if (read != -1)
         {

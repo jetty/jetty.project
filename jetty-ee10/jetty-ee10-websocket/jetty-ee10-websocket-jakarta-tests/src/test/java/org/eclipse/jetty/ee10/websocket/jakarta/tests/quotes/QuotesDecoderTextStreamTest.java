@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.quotes;
 
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.ServerEndpoint;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -27,11 +31,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Tests a {@link jakarta.websocket.Decoder.TextStream} automatic decoding to a Socket onMessage parameter
@@ -84,10 +83,12 @@ public class QuotesDecoderTextStreamTest
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
             Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
-            assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
-                containsString("Author: Benjamin Franklin"),
-                containsString("Quote: Our new Constitution is now established")
-            ));
+            assertThat(
+                "Frame.text-payload",
+                frame.getPayloadAsUTF8(),
+                allOf(
+                    containsString("Author: Benjamin Franklin"),
+                    containsString("Quote: Our new Constitution is now established")));
         }
     }
 
@@ -104,10 +105,12 @@ public class QuotesDecoderTextStreamTest
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
             Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
-            assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
-                containsString("Author: Benjamin Franklin"),
-                containsString("Quote: Our new Constitution is now established")
-            ));
+            assertThat(
+                "Frame.text-payload",
+                frame.getPayloadAsUTF8(),
+                allOf(
+                    containsString("Author: Benjamin Franklin"),
+                    containsString("Quote: Our new Constitution is now established")));
         }
     }
 
@@ -124,10 +127,12 @@ public class QuotesDecoderTextStreamTest
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
             Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
-            assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
-                containsString("Author: Benjamin Franklin"),
-                containsString("Quote: Our new Constitution is now established")
-            ));
+            assertThat(
+                "Frame.text-payload",
+                frame.getPayloadAsUTF8(),
+                allOf(
+                    containsString("Author: Benjamin Franklin"),
+                    containsString("Quote: Our new Constitution is now established")));
         }
     }
 }

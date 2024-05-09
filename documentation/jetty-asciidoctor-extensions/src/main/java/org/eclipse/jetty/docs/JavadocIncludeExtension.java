@@ -35,7 +35,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.IncludeProcessor;
@@ -108,7 +107,8 @@ public class JavadocIncludeExtension implements ExtensionRegistry
         }
 
         @Override
-        public void process(Document document, PreprocessorReader reader, String target, Map<String, Object> attributes)
+        public void process(
+                            Document document, PreprocessorReader reader, String target, Map<String, Object> attributes)
         {
             try
             {
@@ -146,7 +146,8 @@ public class JavadocIncludeExtension implements ExtensionRegistry
 
                 List<String> contentLines = new ArrayList<>();
                 contentLines.add("<root>");
-                Iterator<String> lines = Files.lines(filePath, StandardCharsets.UTF_8).iterator();
+                Iterator<String> lines =
+                    Files.lines(filePath, StandardCharsets.UTF_8).iterator();
                 Deque<Tag> tagStack = new ArrayDeque<>();
                 while (lines.hasNext())
                 {
@@ -196,11 +197,14 @@ public class JavadocIncludeExtension implements ExtensionRegistry
                 // Run the XML stylesheet over the remaining lines.
                 DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
                 org.w3c.dom.Document xml = builder.parse(new InputSource(new StringReader(content)));
-                Transformer transformer = TransformerFactory.newInstance().newTransformer(new StreamSource(xslPath.toFile()));
+                Transformer transformer =
+                    TransformerFactory.newInstance().newTransformer(new StreamSource(xslPath.toFile()));
                 StringWriter output = new StringWriter(content.length());
                 transformer.transform(new DOMSource(xml), new StreamResult(output));
                 String asciidoc = output.toString();
-                asciidoc = Arrays.stream(asciidoc.split("\n")).map(String::stripLeading).collect(Collectors.joining("\n"));
+                asciidoc = Arrays.stream(asciidoc.split("\n"))
+                    .map(String::stripLeading)
+                    .collect(Collectors.joining("\n"));
 
                 reader.pushInclude(asciidoc, "javadoc", target, 1, attributes);
             }

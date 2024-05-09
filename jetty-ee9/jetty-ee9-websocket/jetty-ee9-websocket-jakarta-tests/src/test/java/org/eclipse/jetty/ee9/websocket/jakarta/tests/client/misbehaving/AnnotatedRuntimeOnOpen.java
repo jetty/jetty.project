@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.client.misbehaving;
 
-import java.util.LinkedList;
-import java.util.concurrent.CountDownLatch;
-
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
@@ -23,6 +20,8 @@ import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
+import java.util.LinkedList;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * A JSR-356 Annotated that tosses a RuntimeException during its onOpen call

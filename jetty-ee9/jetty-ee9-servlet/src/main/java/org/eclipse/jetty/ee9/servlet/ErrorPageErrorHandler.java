@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Dispatcher;
 import org.eclipse.jetty.ee9.nested.ErrorHandler;
@@ -38,7 +37,9 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 
     private enum PageLookupTechnique
     {
-        THROWABLE, STATUS_CODE, GLOBAL
+        THROWABLE,
+        STATUS_CODE,
+        GLOBAL
     }
 
     private final Map<String, String> _errorPages = new HashMap<>(); // code or exception to URL
@@ -275,8 +276,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         private final int _to;
         private final String _uri;
 
-        ErrorCodeRange(int from, int to, String uri)
-            throws IllegalArgumentException
+        ErrorCodeRange(int from, int to, String uri) throws IllegalArgumentException
         {
             if (from > to)
                 throw new IllegalArgumentException("from>to");

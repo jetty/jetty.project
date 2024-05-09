@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -61,7 +60,8 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
         }
     }
 
-    protected void invoke(MethodHandle methodHandle, ByteBuffer byteBuffer, boolean fin, Callback callback) throws Throwable
+    protected void invoke(MethodHandle methodHandle, ByteBuffer byteBuffer, boolean fin, Callback callback)
+        throws Throwable
     {
         methodHandle.invoke(byteBuffer, fin);
         callback.succeeded();

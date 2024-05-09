@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -21,7 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -39,15 +47,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class RequestTest
 {
@@ -75,7 +74,8 @@ public class RequestTest
     @Test
     public void testEncodedSpace() throws Exception
     {
-        String request = """
+        String request =
+            """
                 GET /fo%6f%20bar HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -90,7 +90,8 @@ public class RequestTest
     @Test
     public void testEncodedPath() throws Exception
     {
-        String request = """
+        String request =
+            """
                 GET /fo%6f%2fbar HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -104,15 +105,14 @@ public class RequestTest
     public void testAmbiguousPathSep() throws Exception
     {
         server.stop();
-        for (Connector connector: server.getConnectors())
+        for (Connector connector : server.getConnectors())
         {
             HttpConnectionFactory httpConnectionFactory = connector.getConnectionFactory(HttpConnectionFactory.class);
             if (httpConnectionFactory != null)
             {
                 HttpConfiguration httpConfiguration = httpConnectionFactory.getHttpConfiguration();
-                httpConfiguration.setUriCompliance(UriCompliance.from(
-                    EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR)
-                ));
+                httpConfiguration.setUriCompliance(
+                    UriCompliance.from(EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR)));
             }
         }
 
@@ -132,7 +132,8 @@ public class RequestTest
         });
         server.setHandler(fooContext);
         server.start();
-        String request = """
+        String request =
+            """
                 GET /foo/zed%2Fbar HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -146,7 +147,8 @@ public class RequestTest
     @Test
     public void testConnectRequestURLSameAsHost() throws Exception
     {
-        String request = """
+        String request =
+            """
                 CONNECT myhost:9999 HTTP/1.1\r
                 Host: myhost:9999\r
                 Connection: close\r
@@ -165,7 +167,8 @@ public class RequestTest
     public void testConnectRequestURLDifferentThanHost() throws Exception
     {
         // per spec, "Host" is ignored if request-target is authority-form
-        String request = """
+        String request =
+            """
                 CONNECT myhost:9999 HTTP/1.1\r
                 Host: otherhost:8888\r
                 Connection: close\r
@@ -204,10 +207,10 @@ public class RequestTest
         server.start();
 
         String request = """
-                GET /foo HTTP/1.1\r
-                Host: local\r
-                \r
-                """;
+            GET /foo HTTP/1.1\r
+            Host: local\r
+            \r
+            """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getLongField(HttpHeader.CONTENT_LENGTH), greaterThan(0L));
@@ -250,10 +253,10 @@ public class RequestTest
         server.start();
 
         String request = """
-                GET /foo HTTP/1.1\r
-                Host: local\r
-                \r
-                """;
+            GET /foo HTTP/1.1\r
+            Host: local\r
+            \r
+            """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertNull(response.getField(HttpHeader.CONTENT_LENGTH));
@@ -265,7 +268,7 @@ public class RequestTest
     /**
      * Test that multiple requests on the same connection with different cookies
      * do not bleed cookies.
-     * 
+     *
      * @throws Exception if there is a problem
      */
     @Test
@@ -291,7 +294,7 @@ public class RequestTest
                 return true;
             }
         });
-        
+
         server.start();
         String sessionId1 = "JSESSIONID=node0o250bm47otmz1qjqqor54fj6h0.node0";
         String sessionId2 = "JSESSIONID=node0q4z00xb0pnyl1f312ec6e93lw1.node0";
@@ -299,7 +302,7 @@ public class RequestTest
         String request1 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId1 + "\r\n\r\n";
         String request2 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId2 + "\r\n\r\n";
         String request3 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId3 + "\r\n\r\n";
-        
+
         try (LocalEndPoint lep = connector.connect())
         {
             lep.addInput(request1);
@@ -342,7 +345,7 @@ public class RequestTest
         String rawRequest = """
             GET / HTTP/1.1
             Host: tester
-            
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
@@ -375,10 +378,10 @@ public class RequestTest
         server.start();
 
         String rawRequest = """
-                HEAD / HTTP/1.1
-                Host: tester
+            HEAD / HTTP/1.1
+            Host: tester
 
-                """;
+            """;
 
         LocalConnector.LocalEndPoint localEndPoint = connector.executeRequest(rawRequest);
         ByteBuffer rawResponse = localEndPoint.waitForResponse(true, 2, TimeUnit.SECONDS);
@@ -412,11 +415,12 @@ public class RequestTest
 
         server.start();
 
-        String rawRequest = """
+        String rawRequest =
+            """
                 HEAD / HTTP/1.1
                 Host: tester
                 Connection: close
-                            
+
                 """;
 
         HttpTester.Response response = HttpTester.parseHeadResponse(connector.getResponse(rawRequest));
@@ -433,23 +437,34 @@ public class RequestTest
             Arguments.of("en-gb", List.of(Locale.UK.toLanguageTag()).toString()),
             Arguments.of("en-us", List.of(Locale.US.toLanguageTag()).toString()),
             Arguments.of("EN-US", List.of(Locale.US.toLanguageTag()).toString()),
-            Arguments.of("en-us,en-gb", List.of(Locale.US.toLanguageTag(), Locale.UK.toLanguageTag()).toString()),
-            Arguments.of("en-us;q=0.5,fr;q=0.0,en-gb;q=1.0", List.of(Locale.UK.toLanguageTag(), Locale.US.toLanguageTag()).toString()),
-            Arguments.of("en-us;q=0.5,zz-yy;q=0.7,en-gb;q=1.0", List.of(Locale.UK.toLanguageTag(), Locale.US.toLanguageTag(), "zz-YY").toString())
-        );
+            Arguments.of(
+                "en-us,en-gb",
+                List.of(Locale.US.toLanguageTag(), Locale.UK.toLanguageTag())
+                    .toString()),
+            Arguments.of(
+                "en-us;q=0.5,fr;q=0.0,en-gb;q=1.0",
+                List.of(Locale.UK.toLanguageTag(), Locale.US.toLanguageTag())
+                    .toString()),
+            Arguments.of(
+                "en-us;q=0.5,zz-yy;q=0.7,en-gb;q=1.0",
+                List.of(Locale.UK.toLanguageTag(), Locale.US.toLanguageTag(), "zz-YY")
+                    .toString()));
     }
 
     @ParameterizedTest
     @MethodSource("localeTests")
     public void testAcceptableLocales(String acceptLanguage, String expectedLocales) throws Exception
     {
-        acceptLanguage = acceptLanguage == null ? "" : (HttpHeader.ACCEPT_LANGUAGE.asString() + ": " + acceptLanguage + "\n");
-        String rawRequest = """
+        acceptLanguage =
+            acceptLanguage == null ? "" : (HttpHeader.ACCEPT_LANGUAGE.asString() + ": " + acceptLanguage + "\n");
+        String rawRequest =
+            """
                 GET / HTTP/1.1
                 Host: tester
                 Connection: close
                 %s
-                """.formatted(acceptLanguage);
+                """
+                .formatted(acceptLanguage);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertNotNull(response);

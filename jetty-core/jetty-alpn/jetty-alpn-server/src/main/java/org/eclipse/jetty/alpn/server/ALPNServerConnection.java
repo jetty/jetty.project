@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -29,7 +28,8 @@ public class ALPNServerConnection extends NegotiatingServerConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(ALPNServerConnection.class);
 
-    public ALPNServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
+    public ALPNServerConnection(
+                                Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
         super(connector, endPoint, engine, protocols, defaultProtocol);
     }
@@ -60,7 +60,13 @@ public class ALPNServerConnection extends NegotiatingServerConnection
                 if (factory instanceof CipherDiscriminator && !((CipherDiscriminator)factory).isAcceptable(serverProtocol, tlsProtocol, tlsCipher))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Protocol {} not acceptable to {} for {}/{} on {}", serverProtocol, factory, tlsProtocol, tlsCipher, getEndPoint());
+                        LOG.debug(
+                            "Protocol {} not acceptable to {} for {}/{} on {}",
+                            serverProtocol,
+                            factory,
+                            tlsProtocol,
+                            tlsCipher,
+                            getEndPoint());
                     continue;
                 }
 
@@ -77,12 +83,21 @@ public class ALPNServerConnection extends NegotiatingServerConnection
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not negotiate protocol from client{} and server{} on {}", clientProtocols, serverProtocols, getEndPoint());
+                    LOG.debug(
+                        "Could not negotiate protocol from client{} and server{} on {}",
+                        clientProtocols,
+                        serverProtocols,
+                        getEndPoint());
                 throw new IllegalStateException();
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Protocol selected {} from client{} and server{} on {}", negotiated, clientProtocols, serverProtocols, getEndPoint());
+            LOG.debug(
+                "Protocol selected {} from client{} and server{} on {}",
+                negotiated,
+                clientProtocols,
+                serverProtocols,
+                getEndPoint());
         setProtocol(negotiated);
     }
 }

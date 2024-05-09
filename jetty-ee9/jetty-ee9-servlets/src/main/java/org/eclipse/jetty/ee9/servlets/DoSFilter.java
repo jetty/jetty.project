@@ -13,6 +13,19 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
@@ -28,20 +41,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.AsyncEvent;
-import jakarta.servlet.AsyncListener;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.NanoTime;
@@ -120,7 +119,8 @@ public class DoSFilter implements Filter
     private static final Logger LOG = LoggerFactory.getLogger(DoSFilter.class);
 
     private static final String IPv4_GROUP = "(\\d{1,3})";
-    private static final Pattern IPv4_PATTERN = Pattern.compile(IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP);
+    private static final Pattern IPv4_PATTERN =
+        Pattern.compile(IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP);
     private static final String IPv6_GROUP = "(\\p{XDigit}{1,4})";
     private static final Pattern IPv6_PATTERN = Pattern.compile(IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP);
     private static final Pattern CIDR_PATTERN = Pattern.compile("([^/]+)/(\\d+)");
@@ -145,8 +145,10 @@ public class DoSFilter implements Filter
     static final String MAX_REQUEST_MS_INIT_PARAM = "maxRequestMs";
     static final String MAX_IDLE_TRACKER_MS_INIT_PARAM = "maxIdleTrackerMs";
     static final String INSERT_HEADERS_INIT_PARAM = "insertHeaders";
+
     @Deprecated
     static final String TRACK_SESSIONS_INIT_PARAM = "trackSessions";
+
     static final String REMOTE_PORT_INIT_PARAM = "remotePort";
     static final String IP_WHITELIST_INIT_PARAM = "ipWhitelist";
     static final String ENABLED_INIT_PARAM = "enabled";
@@ -277,12 +279,14 @@ public class DoSFilter implements Filter
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
+        throws IOException, ServletException
     {
         doFilter((HttpServletRequest)request, (HttpServletResponse)response, filterChain);
     }
 
-    protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException
+    protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+        throws IOException, ServletException
     {
         if (!isEnabled())
         {
@@ -360,7 +364,9 @@ public class DoSFilter implements Filter
         }
     }
 
-    private void throttleRequest(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain, RateTracker tracker) throws IOException, ServletException
+    private void throttleRequest(
+                                 HttpServletRequest request, HttpServletResponse response, FilterChain filterChain, RateTracker tracker)
+        throws IOException, ServletException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Throttling {}", request);
@@ -452,7 +458,9 @@ public class DoSFilter implements Filter
         }
     }
 
-    protected void doFilterChain(FilterChain chain, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
+    protected void doFilterChain(
+                                 FilterChain chain, final HttpServletRequest request, final HttpServletResponse response)
+        throws IOException, ServletException
     {
         final Thread thread = Thread.currentThread();
         Runnable requestTimeout = () -> onRequestTimeout(request, response, thread);
@@ -549,8 +557,7 @@ public class DoSFilter implements Filter
         {
             boolean allowed = checkWhitelist(request.getRemoteAddr());
             int maxRequestsPerSec = getMaxRequestsPerSec();
-            tracker = allowed ? new FixedRateTracker(_context, _name, loadId, maxRequestsPerSec)
-                : new RateTracker(_context, _name, loadId, maxRequestsPerSec);
+            tracker = allowed ? new FixedRateTracker(_context, _name, loadId, maxRequestsPerSec) : new RateTracker(_context, _name, loadId, maxRequestsPerSec);
             tracker.setContext(_context);
             RateTracker existing = _rateTrackers.putIfAbsent(loadId, tracker);
             if (existing != null)
@@ -1012,7 +1019,7 @@ public class DoSFilter implements Filter
     public String getWhitelist()
     {
         StringBuilder result = new StringBuilder();
-        for (Iterator<String> iterator = _whitelist.iterator(); iterator.hasNext(); )
+        for (Iterator<String> iterator = _whitelist.iterator(); iterator.hasNext();)
         {
             String address = iterator.next();
             result.append(address);
@@ -1234,11 +1241,7 @@ public class DoSFilter implements Filter
             @Override
             public String toString()
             {
-                return OverLimit.class.getSimpleName() + '@' + Integer.toHexString(hashCode()) +
-                    "[id=" + getRateId() +
-                    ", duration=" + duration +
-                    ", count=" + count +
-                    ']';
+                return OverLimit.class.getSimpleName() + '@' + Integer.toHexString(hashCode()) + "[id=" + getRateId() + ", duration=" + duration + ", count=" + count + ']';
             }
         }
     }
@@ -1379,13 +1382,26 @@ public class DoSFilter implements Filter
             switch (action)
             {
                 case REJECT:
-                    LOG.warn("DoS ALERT: Request rejected ip={}, overlimit={}, user={}", request.getRemoteAddr(), overlimit, request.getUserPrincipal());
+                    LOG.warn(
+                        "DoS ALERT: Request rejected ip={}, overlimit={}, user={}",
+                        request.getRemoteAddr(),
+                        overlimit,
+                        request.getUserPrincipal());
                     break;
                 case DELAY:
-                    LOG.warn("DoS ALERT: Request delayed={}ms, ip={}, overlimit={}, user={}", dosFilter.getDelayMs(), request.getRemoteAddr(), overlimit, request.getUserPrincipal());
+                    LOG.warn(
+                        "DoS ALERT: Request delayed={}ms, ip={}, overlimit={}, user={}",
+                        dosFilter.getDelayMs(),
+                        request.getRemoteAddr(),
+                        overlimit,
+                        request.getUserPrincipal());
                     break;
                 case THROTTLE:
-                    LOG.warn("DoS ALERT: Request throttled ip={}, overlimit={}, user={}", request.getRemoteAddr(), overlimit, request.getUserPrincipal());
+                    LOG.warn(
+                        "DoS ALERT: Request throttled ip={}, overlimit={}, user={}",
+                        request.getRemoteAddr(),
+                        overlimit,
+                        request.getUserPrincipal());
                     break;
             }
 

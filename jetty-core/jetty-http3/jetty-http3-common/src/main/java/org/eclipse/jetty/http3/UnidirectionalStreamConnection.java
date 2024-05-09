@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.http3.internal.ControlStreamConnection;
 import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.http3.parser.ControlParser;
@@ -43,7 +42,13 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
 
-    public UnidirectionalStreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
+    public UnidirectionalStreamConnection(
+                                          QuicStreamEndPoint endPoint,
+                                          Executor executor,
+                                          ByteBufferPool bufferPool,
+                                          QpackEncoder encoder,
+                                          QpackDecoder decoder,
+                                          ParserListener listener)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
@@ -136,7 +141,8 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         if (streamType == ControlStreamConnection.STREAM_TYPE)
         {
             ControlParser parser = new ControlParser(listener);
-            ControlStreamConnection newConnection = new ControlStreamConnection(getEndPoint(), getExecutor(), bufferPool, parser);
+            ControlStreamConnection newConnection =
+                new ControlStreamConnection(getEndPoint(), getExecutor(), bufferPool, parser);
             newConnection.setInputBufferSize(getInputBufferSize());
             newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
@@ -145,7 +151,8 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         }
         else if (streamType == EncoderStreamConnection.STREAM_TYPE)
         {
-            EncoderStreamConnection newConnection = new EncoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, decoder, listener);
+            EncoderStreamConnection newConnection =
+                new EncoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, decoder, listener);
             newConnection.setInputBufferSize(getInputBufferSize());
             newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
@@ -154,7 +161,8 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         }
         else if (streamType == DecoderStreamConnection.STREAM_TYPE)
         {
-            DecoderStreamConnection newConnection = new DecoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, encoder, listener);
+            DecoderStreamConnection newConnection =
+                new DecoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, encoder, listener);
             newConnection.setInputBufferSize(getInputBufferSize());
             newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())

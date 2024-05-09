@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.qpack.internal.table;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
@@ -91,8 +90,9 @@ public class Entry
     @Override
     public String toString()
     {
-        return String.format("%s@%x{index=%d, refs=%d, field=\"%s\"}", getClass().getSimpleName(), hashCode(),
-            _absoluteIndex, _referenceCount.get(), _field);
+        return String.format(
+            "%s@%x{index=%d, refs=%d, field=\"%s\"}",
+            getClass().getSimpleName(), hashCode(), _absoluteIndex, _referenceCount.get(), _field);
     }
 
     public static int getSize(Entry entry)

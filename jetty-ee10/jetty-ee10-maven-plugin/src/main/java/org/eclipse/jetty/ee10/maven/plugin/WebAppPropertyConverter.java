@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
@@ -54,9 +53,9 @@ public class WebAppPropertyConverter
     public static String LIB_JARS = "lib.jars";
     public static String DEFAULTS_DESCRIPTOR = "web.default.xml";
     public static String OVERRIDE_DESCRIPTORS = "web.overrides.xml";
-    
-    //TODO :Support defaults descriptor!
-    
+
+    // TODO :Support defaults descriptor!
+
     /**
      * Convert a webapp to properties stored in a file.
      *
@@ -65,22 +64,21 @@ public class WebAppPropertyConverter
      * @param contextXml the optional context xml file related to the webApp
      * @throws IOException if any I/O exception occurs
      */
-    public static void toProperties(MavenWebAppContext webApp, File propsFile, String contextXml)
-        throws IOException
+    public static void toProperties(MavenWebAppContext webApp, File propsFile, String contextXml) throws IOException
     {
         if (webApp == null)
             throw new IllegalArgumentException("No webapp");
         if (propsFile == null)
             throw new IllegalArgumentException("No properties file");
 
-        //work out the configuration based on what is configured in the pom
+        // work out the configuration based on what is configured in the pom
         if (propsFile.exists())
             propsFile.delete();
 
         propsFile.createNewFile();
 
         Properties props = new Properties();
-        //web.xml
+        // web.xml
         if (webApp.getDescriptor() != null)
         {
             props.put(WEB_XML, webApp.getDescriptor());
@@ -92,29 +90,29 @@ public class WebAppPropertyConverter
             props.put(QUICKSTART_WEB_XML, tmp.toString());
         }
 
-        //sort out the context path
+        // sort out the context path
         if (webApp.getContextPath() != null)
         {
             props.put(CONTEXT_PATH, webApp.getContextPath());
         }
 
-        //tmp dir
+        // tmp dir
         props.put(TMP_DIR, webApp.getTempDirectory().getAbsolutePath());
-        //props.put("tmp.dir.persist", Boolean.toString(originalPersistTemp));
+        // props.put("tmp.dir.persist", Boolean.toString(originalPersistTemp));
         props.put(TMP_DIR_PERSIST, Boolean.toString(webApp.isTempDirectoryPersistent()));
 
-        //send over the calculated resource bases that includes unpacked overlays
+        // send over the calculated resource bases that includes unpacked overlays
         Resource baseResource = webApp.getBaseResource();
         if (baseResource instanceof CombinedResource)
             props.put(BASE_DIRS, toCSV(((CombinedResource)webApp.getBaseResource()).getResources()));
         else if (baseResource instanceof Resource)
             props.put(BASE_DIRS, webApp.getBaseResource().toString());
-        
-        //if there is a war file, use that
+
+        // if there is a war file, use that
         if (webApp.getWar() != null)
             props.put(WAR_FILE, webApp.getWar());
 
-        //web-inf classes
+        // web-inf classes
         if (webApp.getClasses() != null)
         {
             props.put(CLASSES_DIR, webApp.getClasses().getAbsolutePath());
@@ -125,7 +123,7 @@ public class WebAppPropertyConverter
             props.put(TEST_CLASSES_DIR, webApp.getTestClasses().getAbsolutePath());
         }
 
-        //web-inf lib
+        // web-inf lib
         List<File> deps = webApp.getWebInfLib();
         StringBuilder strbuff = new StringBuilder();
         if (deps != null)
@@ -140,13 +138,13 @@ public class WebAppPropertyConverter
         }
         props.put(LIB_JARS, strbuff.toString());
 
-        //context xml to apply
+        // context xml to apply
         if (contextXml != null)
             props.put(CONTEXT_XML, contextXml);
-        
+
         if (webApp.getDefaultsDescriptor() != null)
             props.put(DEFAULTS_DESCRIPTOR, webApp.getDefaultsDescriptor());
-        
+
         if (webApp.getOverrideDescriptors() != null)
         {
             props.put(OVERRIDE_DESCRIPTORS, String.join(",", webApp.getOverrideDescriptors()));
@@ -167,7 +165,8 @@ public class WebAppPropertyConverter
      * @param jettyProperties jetty properties to use if there is a context xml file to apply
      * @throws Exception if there is an unspecified problem
      */
-    public static void fromProperties(MavenWebAppContext webApp, String resource, Server server, Map<String, String> jettyProperties)
+    public static void fromProperties(
+                                      MavenWebAppContext webApp, String resource, Server server, Map<String, String> jettyProperties)
         throws Exception
     {
         if (resource == null)
@@ -178,20 +177,21 @@ public class WebAppPropertyConverter
 
     /**
      * Configure a webapp from properties.
-     * 
+     *
      * @param webApp the webapp to configure
      * @param webAppProperties properties that describe the configuration of the webapp
      * @param server the jetty Server instance
      * @param jettyProperties jetty properties
-     * 
+     *
      * @throws Exception if there is an unspecified problem
      */
-    public static void fromProperties(MavenWebAppContext webApp, Properties webAppProperties, Server server, Map<String, String> jettyProperties)
+    public static void fromProperties(
+                                      MavenWebAppContext webApp, Properties webAppProperties, Server server, Map<String, String> jettyProperties)
         throws Exception
     {
         if (webApp == null)
             throw new IllegalArgumentException("No webapp");
-        
+
         if (webAppProperties == null)
             return;
 
@@ -204,11 +204,13 @@ public class WebAppPropertyConverter
         if (!StringUtil.isBlank(str))
             webApp.setDescriptor(str);
 
-        //if there is a pregenerated quickstart file
+        // if there is a pregenerated quickstart file
         str = webAppProperties.getProperty(QUICKSTART_WEB_XML);
         if (!StringUtil.isBlank(str))
         {
-            webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, webApp.getResourceFactory().newResource(str));
+            webApp.setAttribute(
+                QuickStartConfiguration.QUICKSTART_WEB_XML,
+                webApp.getResourceFactory().newResource(str));
         }
 
         // - the tmp directory
@@ -220,13 +222,14 @@ public class WebAppPropertyConverter
         if (!StringUtil.isBlank(str))
             webApp.setTempDirectoryPersistent(Boolean.valueOf(str));
 
-        //Get the calculated base dirs which includes the overlays
+        // Get the calculated base dirs which includes the overlays
         str = webAppProperties.getProperty(BASE_DIRS);
         if (!StringUtil.isBlank(str))
         {
             // This is a use provided list of overlays, which could have mountable entries.
             webApp.setWar(null);
-            webApp.setBaseResource(ResourceFactory.combine(webApp.getResourceFactory().split(str)));
+            webApp.setBaseResource(
+                ResourceFactory.combine(webApp.getResourceFactory().split(str)));
         }
 
         str = webAppProperties.getProperty(WAR_FILE);
@@ -234,7 +237,7 @@ public class WebAppPropertyConverter
         {
             webApp.setWar(str);
         }
-        
+
         // - the equivalent of web-inf classes
         str = webAppProperties.getProperty(CLASSES_DIR);
         if (!StringUtil.isBlank(str))
@@ -261,14 +264,14 @@ public class WebAppPropertyConverter
             webApp.setWebInfLib(jars);
         }
 
-        //any defaults descriptor
+        // any defaults descriptor
         str = (String)webAppProperties.getProperty(DEFAULTS_DESCRIPTOR);
         if (!StringUtil.isBlank(str))
         {
             webApp.setDefaultsDescriptor(str);
         }
-        
-        //any override descriptors
+
+        // any override descriptors
         str = (String)webAppProperties.getProperty(OVERRIDE_DESCRIPTORS);
         if (!StringUtil.isBlank(str))
         {
@@ -278,19 +281,20 @@ public class WebAppPropertyConverter
                 webApp.addOverrideDescriptor(names[j]);
             }
         }
-        
-        //set up the webapp from the context xml file provided
-        //NOTE: just like jetty:run mojo this means that the context file can
-        //potentially override settings made in the pom. Ideally, we'd like
-        //the pom to override the context xml file, but as the other mojos all
-        //configure a WebAppContext in the pom (the <webApp> element), it is 
-        //already configured by the time the context xml file is applied.
+
+        // set up the webapp from the context xml file provided
+        // NOTE: just like jetty:run mojo this means that the context file can
+        // potentially override settings made in the pom. Ideally, we'd like
+        // the pom to override the context xml file, but as the other mojos all
+        // configure a WebAppContext in the pom (the <webApp> element), it is
+        // already configured by the time the context xml file is applied.
         str = (String)webAppProperties.getProperty(CONTEXT_XML);
         if (!StringUtil.isBlank(str))
         {
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(webApp.getResourceFactory().newResource(str));
+            XmlConfiguration xmlConfiguration =
+                new XmlConfiguration(webApp.getResourceFactory().newResource(str));
             xmlConfiguration.getIdMap().put("Server", server);
-            //add in any properties
+            // add in any properties
             if (jettyProperties != null)
             {
                 for (Map.Entry<String, String> prop : jettyProperties.entrySet())
@@ -301,7 +305,7 @@ public class WebAppPropertyConverter
             xmlConfiguration.configure(webApp);
         }
     }
-    
+
     /**
      * Configure a webapp from a properties file
      * @param webApp the webapp to configure
@@ -310,7 +314,8 @@ public class WebAppPropertyConverter
      * @param jettyProperties jetty properties to use if there is a context xml file to apply
      * @throws Exception if there is an unspecified problem
      */
-    public static void fromProperties(MavenWebAppContext webApp, Path propsFile, Server server, Map<String, String> jettyProperties)
+    public static void fromProperties(
+                                      MavenWebAppContext webApp, Path propsFile, Server server, Map<String, String> jettyProperties)
         throws Exception
     {
 
@@ -325,7 +330,7 @@ public class WebAppPropertyConverter
         {
             props.load(in);
         }
-       
+
         fromProperties(webApp, props, server, jettyProperties);
     }
 

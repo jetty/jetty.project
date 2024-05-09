@@ -14,7 +14,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Response;
@@ -73,7 +72,8 @@ public class RedirectPatternRule extends PatternRule
     public void setStatusCode(int statusCode)
     {
         if (!HttpStatus.isRedirection(statusCode))
-            throw new IllegalArgumentException("Invalid redirect status code " + statusCode + " (must be a value between 300 and 399)");
+            throw new IllegalArgumentException(
+                "Invalid redirect status code " + statusCode + " (must be a value between 300 and 399)");
         _statusCode = statusCode;
     }
 

@@ -15,7 +15,6 @@ package org.eclipse.jetty.client.transport;
 
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
-
 import org.eclipse.jetty.client.AuthenticationProtocolHandler;
 import org.eclipse.jetty.client.RedirectProtocolHandler;
 import org.eclipse.jetty.client.Request;
@@ -137,7 +136,11 @@ public class HttpConversation extends Attributes.Lazy
                 listeners.addResponseListeners(firstExchange.getResponseListeners());
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Exchanges in conversation {}, override={}, listeners={}", exchanges.size(), overrideListener, listeners);
+            LOG.debug(
+                "Exchanges in conversation {}, override={}, listeners={}",
+                exchanges.size(),
+                overrideListener,
+                listeners);
         this.listeners = listeners;
     }
 

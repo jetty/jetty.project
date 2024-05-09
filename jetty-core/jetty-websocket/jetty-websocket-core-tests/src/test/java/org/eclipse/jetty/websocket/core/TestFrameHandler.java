@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -64,7 +63,8 @@ public class TestFrameHandler implements SynchronousFrameHandler
     public void onFrame(Frame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onFrame: " + OpCode.name(frame.getOpCode()) + ":" + BufferUtil.toDetailString(frame.getPayload()));
+            LOG.debug(
+                "onFrame: " + OpCode.name(frame.getOpCode()) + ":" + BufferUtil.toDetailString(frame.getPayload()));
         receivedFrames.offer(Frame.copy(frame));
         demand();
     }

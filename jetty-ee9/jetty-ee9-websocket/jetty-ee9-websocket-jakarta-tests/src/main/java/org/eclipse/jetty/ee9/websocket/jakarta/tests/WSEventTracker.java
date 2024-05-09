@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
@@ -26,15 +25,15 @@ import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
+import java.nio.ByteBuffer;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings("unused")
 public abstract class WSEventTracker
@@ -94,7 +93,8 @@ public abstract class WSEventTracker
         events.offer(String.format(format, args));
     }
 
-    public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher) throws InterruptedException
+    public void assertCloseInfo(String prefix, int expectedCloseStatusCode, Matcher<? super String> reasonMatcher)
+        throws InterruptedException
     {
         CloseReason close = closeDetail.get();
         assertThat(prefix + " close info", close, notNullValue());
@@ -102,7 +102,8 @@ public abstract class WSEventTracker
         assertThat(prefix + " received close reason", close.getReasonPhrase(), reasonMatcher);
     }
 
-    public void assertErrorEvent(String prefix, Matcher<Throwable> throwableMatcher, Matcher<? super String> messageMatcher)
+    public void assertErrorEvent(
+                                 String prefix, Matcher<Throwable> throwableMatcher, Matcher<? super String> messageMatcher)
     {
         assertThat(prefix + " error event type", error.get(), throwableMatcher);
         assertThat(prefix + " error event message", error.get().getMessage(), messageMatcher);

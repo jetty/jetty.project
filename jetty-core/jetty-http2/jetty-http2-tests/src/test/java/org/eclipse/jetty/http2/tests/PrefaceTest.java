@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -31,7 +38,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -59,13 +65,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PrefaceTest extends AbstractTest
 {
@@ -239,7 +238,8 @@ public class PrefaceTest extends AbstractTest
                     @Override
                     public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
                     {
-                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                        MetaData.Response response =
+                            new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         return null;
                     }
@@ -253,14 +253,15 @@ public class PrefaceTest extends AbstractTest
         {
             socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
-            String upgradeRequest = """
-                GET /one HTTP/1.1\r
-                Host: localhost\r
-                Connection: Upgrade, HTTP2-Settings\r
-                Upgrade: h2c\r
-                HTTP2-Settings: \r
-                \r
-                """;
+            String upgradeRequest =
+                """
+                    GET /one HTTP/1.1\r
+                    Host: localhost\r
+                    Connection: Upgrade, HTTP2-Settings\r
+                    Upgrade: h2c\r
+                    HTTP2-Settings: \r
+                    \r
+                    """;
             ByteBuffer upgradeBuffer = ByteBuffer.wrap(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
             socket.write(upgradeBuffer);
 
@@ -394,7 +395,9 @@ public class PrefaceTest extends AbstractTest
     @Test
     public void testInvalidClientPreface() throws Exception
     {
-        start(new ServerSessionListener() {});
+        start(new ServerSessionListener()
+        {
+        });
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {

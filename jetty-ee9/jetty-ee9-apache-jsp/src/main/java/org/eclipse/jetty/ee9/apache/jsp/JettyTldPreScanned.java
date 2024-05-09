@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.apache.jsp;
 
+import jakarta.servlet.ServletContext;
 import java.net.URL;
 import java.util.Collection;
-
-import jakarta.servlet.ServletContext;
 import org.apache.jasper.servlet.TldPreScanned;
 import org.apache.tomcat.util.descriptor.tld.TldResourcePath;
 
@@ -37,7 +36,12 @@ public class JettyTldPreScanned extends TldPreScanned
 {
     private final Collection<URL> _jettyPreScannedURLs;
 
-    public JettyTldPreScanned(ServletContext context, boolean namespaceAware, boolean validation, boolean blockExternal, Collection<URL> preScannedTlds)
+    public JettyTldPreScanned(
+                              ServletContext context,
+                              boolean namespaceAware,
+                              boolean validation,
+                              boolean blockExternal,
+                              Collection<URL> preScannedTlds)
     {
         super(context, namespaceAware, validation, blockExternal, preScannedTlds);
         _jettyPreScannedURLs = preScannedTlds;

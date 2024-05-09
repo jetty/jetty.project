@@ -179,11 +179,16 @@ public class RFC6265SetCookieParser implements SetCookieParser
         {
             case NAME -> null;
             case VALUE_START -> HttpCookie.from(name, "");
-            case VALUE -> HttpCookie.from(name, setCookieValue.substring(offset, length).trim());
+            case VALUE -> HttpCookie.from(
+                name, setCookieValue.substring(offset, length).trim());
             case ATTRIBUTE -> cookie.build();
-            case ATTRIBUTE_NAME -> setAttribute(cookie, setCookieValue.substring(offset, length).trim(), "") ? cookie.build() : null;
+            case ATTRIBUTE_NAME -> setAttribute(
+                cookie, setCookieValue.substring(offset, length).trim(), "") ? cookie.build() : null;
             case ATTRIBUTE_VALUE_START -> setAttribute(cookie, name, "") ? cookie.build() : null;
-            case ATTRIBUTE_VALUE -> setAttribute(cookie, name, setCookieValue.substring(offset, length).trim()) ? cookie.build() : null;
+            case ATTRIBUTE_VALUE -> setAttribute(
+                cookie,
+                name,
+                setCookieValue.substring(offset, length).trim()) ? cookie.build() : null;
         };
     }
 
@@ -210,6 +215,12 @@ public class RFC6265SetCookieParser implements SetCookieParser
 
     private enum State
     {
-        NAME, VALUE_START, VALUE, ATTRIBUTE, ATTRIBUTE_NAME, ATTRIBUTE_VALUE_START, ATTRIBUTE_VALUE
+        NAME,
+        VALUE_START,
+        VALUE,
+        ATTRIBUTE,
+        ATTRIBUTE_NAME,
+        ATTRIBUTE_VALUE_START,
+        ATTRIBUTE_VALUE
     }
 }

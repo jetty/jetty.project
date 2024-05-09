@@ -16,7 +16,6 @@ package org.eclipse.jetty.security.authentication;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -60,8 +59,7 @@ public class SessionAuthentication extends LoginAuthenticator.UserAuthentication
         return super.getUserIdentity();
     }
 
-    private void readObject(ObjectInputStream stream)
-        throws IOException, ClassNotFoundException
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException
     {
         stream.defaultReadObject();
 
@@ -94,7 +92,9 @@ public class SessionAuthentication extends LoginAuthenticator.UserAuthentication
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,%s}", this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
+        return String.format(
+            "%s@%x{%s,%s}",
+            this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
     }
 
     @Override

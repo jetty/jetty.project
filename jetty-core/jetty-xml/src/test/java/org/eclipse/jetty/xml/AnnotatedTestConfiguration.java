@@ -44,7 +44,8 @@ public class AnnotatedTestConfiguration
         throw new UnsupportedOperationException("Should not be called");
     }
 
-    public AnnotatedTestConfiguration(@Name("first") String first, @Name("second") String second, @Name("third") String third)
+    public AnnotatedTestConfiguration(
+                                      @Name("first") String first, @Name("second") String second, @Name("third") String third)
     {
         this.first = first;
         this.second = second;

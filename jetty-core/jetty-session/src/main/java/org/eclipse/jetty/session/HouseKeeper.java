@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -38,7 +37,7 @@ public class HouseKeeper extends AbstractLifeCycle
     private final AutoLock _lock = new AutoLock();
     protected SessionIdManager _sessionIdManager;
     protected Scheduler _scheduler;
-    protected Scheduler.Task _task; //scavenge task
+    protected Scheduler.Task _task; // scavenge task
     protected Runner _runner;
     protected boolean _ownScheduler = false;
     private long _intervalMs = DEFAULT_PERIOD_MS;
@@ -99,13 +98,16 @@ public class HouseKeeper extends AbstractLifeCycle
             {
                 if (_sessionIdManager instanceof DefaultSessionIdManager)
                 {
-                    //try and use a common scheduler, fallback to own
-                    _scheduler = ((DefaultSessionIdManager)_sessionIdManager).getServer().getScheduler();
+                    // try and use a common scheduler, fallback to own
+                    _scheduler = ((DefaultSessionIdManager)_sessionIdManager)
+                        .getServer()
+                        .getScheduler();
                 }
 
                 if (_scheduler == null)
                 {
-                    _scheduler = new ScheduledExecutorScheduler(String.format("Session-HouseKeeper-%x", hashCode()), false);
+                    _scheduler =
+                        new ScheduledExecutorScheduler(String.format("Session-HouseKeeper-%x", hashCode()), false);
                     _ownScheduler = true;
                     _scheduler.start();
                     if (LOG.isDebugEnabled())
@@ -115,7 +117,7 @@ public class HouseKeeper extends AbstractLifeCycle
                     throw new IllegalStateException("Shared scheduler not started");
             }
 
-            //cancel any previous task
+            // cancel any previous task
             if (_task != null)
                 _task.cancel();
             if (_runner == null)
@@ -185,12 +187,15 @@ public class HouseKeeper extends AbstractLifeCycle
                 else
                 {
                     if (sec < 10)
-                        LOG.warn("{} short interval of {}sec for session scavenging.", _sessionIdManager.getWorkerName(), sec);
+                        LOG.warn(
+                            "{} short interval of {}sec for session scavenging.",
+                            _sessionIdManager.getWorkerName(),
+                            sec);
 
                     _intervalMs = sec * 1000L;
 
-                    //add a bit of variability into the scavenge time so that not all
-                    //nodes with the same scavenge interval sync up
+                    // add a bit of variability into the scavenge time so that not all
+                    // nodes with the same scavenge interval sync up
                     long tenPercent = _intervalMs / 10;
                     if ((System.currentTimeMillis() % 2) == 0)
                         _intervalMs += tenPercent;
@@ -227,13 +232,13 @@ public class HouseKeeper extends AbstractLifeCycle
      */
     public void scavenge()
     {
-        //don't attempt to scavenge if we are shutting down
+        // don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())
             return;
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} scavenging sessions", _sessionIdManager.getWorkerName());
-        
+
         _sessionIdManager.scavenge();
     }
 

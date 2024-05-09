@@ -31,7 +31,11 @@ public class JspConfiguration extends AbstractConfiguration
 
     public JspConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
+        addDependencies(
+            WebXmlConfiguration.class,
+            MetaInfConfiguration.class,
+            WebInfConfiguration.class,
+            FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
         protectAndExpose("org.eclipse.jetty.ee9.jsp.");
         expose("org.eclipse.jetty.ee9.apache.");
@@ -52,4 +56,3 @@ public class JspConfiguration extends AbstractConfiguration
         }
     }
 }
-

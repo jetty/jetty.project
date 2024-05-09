@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
+import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class NBitIntegerParserTest
 {

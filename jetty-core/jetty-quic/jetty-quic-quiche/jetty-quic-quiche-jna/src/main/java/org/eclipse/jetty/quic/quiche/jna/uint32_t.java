@@ -21,6 +21,7 @@ public class uint32_t extends IntegerType
     {
         this(0);
     }
+
     public uint32_t(int v)
     {
         super(4, v, true);

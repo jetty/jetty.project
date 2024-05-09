@@ -16,7 +16,6 @@ package org.eclipse.jetty.util.thread;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -30,7 +29,8 @@ import org.slf4j.LoggerFactory;
  * An implementation of {@link ThreadPool} interface that does not pool, but instead uses {@link VirtualThreads}.
  */
 @ManagedObject("A thread non-pool for virtual threads")
-public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
+public class VirtualThreadPool extends ContainerLifeCycle
+    implements ThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
 {
     private static final Logger LOG = LoggerFactory.getLogger(VirtualThreadPool.class);
 
@@ -101,7 +101,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
         if (_virtualExecutor instanceof TrackingExecutor trackingExecutor)
             trackingExecutor.setDetailedDump(detailedDump);
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
@@ -128,9 +128,8 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
         if (_virtualExecutor == null)
         {
             _externalExecutor = false;
-            _virtualExecutor = Objects.requireNonNull(StringUtil.isBlank(_name)
-                ? VirtualThreads.getDefaultVirtualThreadsExecutor()
-                : VirtualThreads.getNamedVirtualThreadsExecutor(_name));
+            _virtualExecutor = Objects.requireNonNull(
+                StringUtil.isBlank(_name) ? VirtualThreads.getDefaultVirtualThreadsExecutor() : VirtualThreads.getNamedVirtualThreadsExecutor(_name));
         }
         if (_tracking && !(_virtualExecutor instanceof TrackingExecutor))
             _virtualExecutor = new TrackingExecutor(_virtualExecutor, _detailedDump);

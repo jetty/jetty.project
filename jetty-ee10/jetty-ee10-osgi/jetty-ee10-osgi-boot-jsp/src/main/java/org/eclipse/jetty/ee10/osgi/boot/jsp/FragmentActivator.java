@@ -36,12 +36,12 @@ import org.osgi.framework.BundleContext;
 public class FragmentActivator implements BundleActivator
 {
     ServerClasspathContributor _tldClasspathContributor;
-    
+
     @Override
     public void start(BundleContext context) throws Exception
     {
-        //Register a class that will provide the identity of bundles that 
-        //contain TLDs and therefore need to be scanned.
+        // Register a class that will provide the identity of bundles that
+        // contain TLDs and therefore need to be scanned.
         _tldClasspathContributor = new TLDServerClasspathContributor();
         EE10Activator.registerServerClasspathContributor(_tldClasspathContributor);
     }

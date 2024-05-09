@@ -13,26 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.net.URI;
-import java.nio.file.ClosedFileSystemException;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
-import java.util.zip.ZipFile;
-
-import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -43,6 +23,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.net.URI;
+import java.nio.file.ClosedFileSystemException;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
+import java.util.zip.ZipFile;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(WorkDirExtension.class)
 public class MountedPathResourceTest
@@ -61,8 +60,7 @@ public class MountedPathResourceTest
     }
 
     @Test
-    public void testJarFile(WorkDir workDir)
-        throws Exception
+    public void testJarFile(WorkDir workDir) throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
@@ -201,8 +199,7 @@ public class MountedPathResourceTest
     }
 
     @Test
-    public void testJarFileGetAllResources()
-        throws Exception
+    public void testJarFileGetAllResources() throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
@@ -212,20 +209,14 @@ public class MountedPathResourceTest
             Resource r = resourceFactory.newResource(uri);
             Collection<Resource> deep = r.getAllResources();
 
-            assertThat(deep.stream().map(r::getPathTo).map(Path::toString).toList(),
-                containsInAnyOrder(
-                    "numbers",
-                    "subsubdir",
-                    "subsubdir/numbers",
-                    "subsubdir/alphabet",
-                    "alphabet"
-                ));
+            assertThat(
+                deep.stream().map(r::getPathTo).map(Path::toString).toList(),
+                containsInAnyOrder("numbers", "subsubdir", "subsubdir/numbers", "subsubdir/alphabet", "alphabet"));
         }
     }
 
     @Test
-    public void testJarFileIsContainedIn()
-        throws Exception
+    public void testJarFileIsContainedIn() throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/");
@@ -244,8 +235,7 @@ public class MountedPathResourceTest
     }
 
     @Test
-    public void testJarFileLastModified()
-        throws Exception
+    public void testJarFileLastModified() throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/subdir/numbers");
@@ -260,8 +250,7 @@ public class MountedPathResourceTest
     }
 
     @Test
-    public void testEncodedFileName()
-        throws Exception
+    public void testEncodedFileName() throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
         URI uri = URI.create("jar:" + testZip.toUri().toASCIIString() + "!/file%20name.txt");
@@ -286,14 +275,8 @@ public class MountedPathResourceTest
 
             List<String> actual = rez.list().stream().map(Resource::getFileName).toList();
             String[] expected = new String[]{
-                "one",
-                "aaa",
-                "bbb",
-                "oddities",
-                "another dir",
-                "ccc",
-                "deep",
-                };
+                "one", "aaa", "bbb", "oddities", "another dir", "ccc", "deep",
+            };
             assertThat("Dir contents", actual, containsInAnyOrder(expected));
         }
     }
@@ -362,12 +345,11 @@ public class MountedPathResourceTest
 
             assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
 
-            List<String> actual = anotherDir.list().stream().map(Resource::getFileName).toList();
+            List<String> actual =
+                anotherDir.list().stream().map(Resource::getFileName).toList();
             String[] expected = new String[]{
-                "a file.txt",
-                "another file.txt",
-                "..\\a different file.txt",
-                };
+                "a file.txt", "another file.txt", "..\\a different file.txt",
+            };
             assertThat("Dir contents", actual, containsInAnyOrder(expected));
         }
     }

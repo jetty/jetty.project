@@ -128,15 +128,7 @@ public class Foo
         if (another instanceof Foo)
         {
             Foo foo = (Foo)another;
-            return _name.equals(foo.getName()) &&
-                _int1 == foo.getInt1() &&
-                _int2.equals(foo.getInt2()) &&
-                _long1 == foo.getLong1() &&
-                _long2.equals(foo.getLong2()) &&
-                _float1 == foo.getFloat1() &&
-                _float2.equals(foo.getFloat2()) &&
-                _double1 == foo.getDouble1() &&
-                _double2.equals(foo.getDouble2());
+            return _name.equals(foo.getName()) && _int1 == foo.getInt1() && _int2.equals(foo.getInt2()) && _long1 == foo.getLong1() && _long2.equals(foo.getLong2()) && _float1 == foo.getFloat1() && _float2.equals(foo.getFloat2()) && _double1 == foo.getDouble1() && _double2.equals(foo.getDouble2());
         }
 
         return false;
@@ -145,15 +137,6 @@ public class Foo
     @Override
     public String toString()
     {
-        return "\n=== " + getClass().getSimpleName() + " ===" +
-            "\nname: " + _name +
-            "\nint1: " + _int1 +
-            "\nint2: " + _int2 +
-            "\nlong1: " + _long1 +
-            "\nlong2: " + _long2 +
-            "\nfloat1: " + _float1 +
-            "\nfloat2: " + _float2 +
-            "\ndouble1: " + _double1 +
-            "\ndouble2: " + _double2;
+        return "\n=== " + getClass().getSimpleName() + " ===" + "\nname: " + _name + "\nint1: " + _int1 + "\nint2: " + _int2 + "\nlong1: " + _long1 + "\nlong2: " + _long2 + "\nfloat1: " + _float1 + "\nfloat2: " + _float2 + "\ndouble1: " + _double1 + "\ndouble2: " + _double2;
     }
 }

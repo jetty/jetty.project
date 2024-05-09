@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -40,10 +39,8 @@ class ResourceFactoryInternals
     /**
      * The Index (Map) of URI schemes to ResourceFactory implementations that is used by {@link CompositeResourceFactory}
      */
-    static final Index.Mutable<ResourceFactory> RESOURCE_FACTORIES = new Index.Builder<ResourceFactory>()
-        .caseSensitive(false)
-        .mutable()
-        .build();
+    static final Index.Mutable<ResourceFactory> RESOURCE_FACTORIES =
+        new Index.Builder<ResourceFactory>().caseSensitive(false).mutable().build();
 
     static
     {
@@ -58,7 +55,7 @@ class ResourceFactoryInternals
 
         /* Best-effort attempt to support an alternate FileSystem type that is in use for classpath
          * resources.
-         * 
+         *
          * The build.properties is present in the jetty-util jar, and explicitly included for reflection
          * with native-image (unlike classes, which are not accessible by default), so we use that
          * resource as a reference.

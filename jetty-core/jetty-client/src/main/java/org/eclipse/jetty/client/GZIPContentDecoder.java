@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.util.ListIterator;
-
 import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;

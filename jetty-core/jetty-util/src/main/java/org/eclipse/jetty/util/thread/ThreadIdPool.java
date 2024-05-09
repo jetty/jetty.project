@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.util.MemoryUtils;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.TypeUtil;
@@ -73,7 +72,7 @@ public class ThreadIdPool<E> implements Dumpable
     {
         return (index + 1) * SPREAD_FACTOR;
     }
-    
+
     /**
      * @return the maximum number of items
      */
@@ -100,7 +99,7 @@ public class ThreadIdPool<E> implements Dumpable
      * Offer an item to the pool.
      * @param e The item to offer
      * @return The index the item was added at or -1, if it was not added
-     * @see #remove(Object, int) 
+     * @see #remove(Object, int)
      */
     public int offer(E e)
     {
@@ -141,7 +140,7 @@ public class ThreadIdPool<E> implements Dumpable
     }
 
     /**
-     * Remove a specific item from the pool from a specific index 
+     * Remove a specific item from the pool from a specific index
      * @param e The item to remove
      * @param index The index the item was given to, as returned by {@link #offer(Object)}
      * @return {@code True} if the item was in the pool and was able to be removed.
@@ -243,9 +242,6 @@ public class ThreadIdPool<E> implements Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{capacity=%d}",
-            getClass().getSimpleName(),
-            hashCode(),
-            capacity());
+        return String.format("%s@%x{capacity=%d}", getClass().getSimpleName(), hashCode(), capacity());
     }
 }

@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpScheme;
@@ -57,7 +56,8 @@ import org.slf4j.LoggerFactory;
  * AbstractSessionHandler
  * Class to implement most non-servlet-spec specific session behaviour.
  */
-public abstract class AbstractSessionManager extends ContainerLifeCycle implements SessionManager, SessionConfig.Mutable
+public abstract class AbstractSessionManager extends ContainerLifeCycle
+    implements SessionManager, SessionConfig.Mutable
 {
     static final Logger LOG = LoggerFactory.getLogger(AbstractSessionManager.class);
     private final Set<String> _candidateSessionIdsForExpiry = ConcurrentHashMap.newKeySet();
@@ -68,6 +68,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * -1 means no timeout
      */
     private int _dftMaxIdleSecs = -1;
+
     private boolean _usingUriParameters;
     private boolean _usingCookies = true;
     private SessionIdManager _sessionIdManager;
@@ -90,7 +91,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     public AbstractSessionManager()
     {
     }
-    
+
     /**
      * Called when a session is first accessed by request processing.
      * Updates the last access time for the session and generates a fresh cookie if necessary.
@@ -111,10 +112,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         if (session.access(now))
         {
             // Do we need to refresh the cookie?
-            if (isUsingCookies() &&
-                (session.isSetCookieNeeded() ||
-                    (getMaxCookieAge() > 0 && getRefreshCookieAge() > 0 &&
-                        ((now - session.getCookieSetTime()) / 1000 > getRefreshCookieAge()))))
+            if (isUsingCookies() && (session.isSetCookieNeeded() || (getMaxCookieAge() > 0 && getRefreshCookieAge() > 0 && ((now - session.getCookieSetTime()) / 1000 > getRefreshCookieAge()))))
             {
                 return getSessionCookie(session, secure);
             }
@@ -144,7 +142,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             // sessions are immortal, they never expire
             if (evictionPolicy < SessionCache.EVICT_ON_INACTIVITY)
             {
-                //session not subject to timeouts
+                // session not subject to timeouts
                 time = -1;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session {} is immortal && no inactivity eviction", id);
@@ -162,7 +160,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             // sessions are not immortal
             if (evictionPolicy == SessionCache.NEVER_EVICT)
             {
-                //timeout is the time remaining until its expiry
+                // timeout is the time remaining until its expiry
                 time = (timeRemainingMs > 0 ? timeRemainingMs : 0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session {} no eviction", id);
@@ -181,8 +179,11 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 time = (timeRemainingMs > 0 ? (Math.min(maxInactiveMs, TimeUnit.SECONDS.toMillis(evictionPolicy))) : 0);
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Session {} timer set to lesser of maxInactive={} and inactivityEvict={}", id,
-                        maxInactiveMs, evictionPolicy);
+                    LOG.debug(
+                        "Session {} timer set to lesser of maxInactive={} and inactivityEvict={}",
+                        id,
+                        maxInactiveMs,
+                        evictionPolicy);
             }
         }
 
@@ -237,20 +238,19 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public void doStart() throws Exception
     {
-        //check if session management is set up, if not set up defaults
+        // check if session management is set up, if not set up defaults
         final Server server = getServer();
 
         _context = ContextHandler.getCurrentContext(server);
         _loader = Thread.currentThread().getContextClassLoader();
 
-        //default the session cookie name
+        // default the session cookie name
         if (getSessionCookie() == null)
             setSessionCookie(__DefaultSessionCookie);
 
-        //default the session id parameter name
+        // default the session id parameter name
         if (getSessionIdPathParameterName() == null)
             setSessionIdPathParameterName(__DefaultSessionIdPathParameterName);
-
 
         // ensure a session path is set
         String contextPath = _context == null ? "/" : _context.getContextPath();
@@ -260,7 +260,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         // Use a coarser lock to serialize concurrent start of many contexts.
         synchronized (server)
         {
-            //Get a SessionDataStore and a SessionDataStore, falling back to in-memory sessions only
+            // Get a SessionDataStore and a SessionDataStore, falling back to in-memory sessions only
             if (_sessionCache == null)
             {
                 SessionCacheFactory ssFactory = server.getBean(SessionCacheFactory.class);
@@ -280,10 +280,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 _sessionIdManager = server.getBean(SessionIdManager.class);
                 if (_sessionIdManager == null)
                 {
-                    //create a default SessionIdManager and set it as the shared
-                    //SessionIdManager for the Server, being careful NOT to use
-                    //the webapp context's classloader, otherwise if the context
-                    //is stopped, the classloader is leaked.
+                    // create a default SessionIdManager and set it as the shared
+                    // SessionIdManager for the Server, being careful NOT to use
+                    // the webapp context's classloader, otherwise if the context
+                    // is stopped, the classloader is leaked.
                     ClassLoader serverLoader = server.getClass().getClassLoader();
                     try
                     {
@@ -327,12 +327,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             addBean(_sessionLifeCycleListeners);
         }
     }
-    
+
     public org.eclipse.jetty.server.Context getContext()
     {
         return _context;
     }
-    
+
     @Override
     public int getMaxCookieAge()
     {
@@ -357,7 +357,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return _dftMaxIdleSecs;
     }
-    
+
     /**
      * Sets the max period of inactivity, after which the session is invalidated, in seconds.
      *
@@ -370,7 +370,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         if (LOG.isDebugEnabled())
         {
             if (_dftMaxIdleSecs <= 0)
-                LOG.debug("Sessions created by this manager are immortal (default maxInactiveInterval={})", _dftMaxIdleSecs);
+                LOG.debug(
+                    "Sessions created by this manager are immortal (default maxInactiveInterval={})",
+                    _dftMaxIdleSecs);
             else
                 LOG.debug("SessionManager default maxInactiveInterval={}", _dftMaxIdleSecs);
         }
@@ -381,13 +383,13 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return _refreshCookieAge;
     }
-    
+
     @Override
     public void setRefreshCookieAge(int ageInSeconds)
     {
         _refreshCookieAge = ageInSeconds;
     }
-    
+
     public abstract Server getServer();
 
     /**
@@ -405,10 +407,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             ManagedSession session = _sessionCache.get(id);
             if (session != null)
             {
-                //If the session we got back has expired
+                // If the session we got back has expired
                 if (session.isExpiredAt(System.currentTimeMillis()))
                 {
-                    //Expire the session
+                    // Expire the session
                     try
                     {
                         session.invalidate();
@@ -435,7 +437,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             LOG.warn("Error loading session {}", id, e);
             try
             {
-                //tell id mgr to remove session from all contexts
+                // tell id mgr to remove session from all contexts
                 getSessionIdManager().invalidateAll(id);
             }
             catch (Exception x)
@@ -471,7 +473,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         updateBean(_sessionCache, cache);
         _sessionCache = cache;
     }
-    
+
     @Override
     public String getSessionComment()
     {
@@ -508,7 +510,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return _sessionCookie;
     }
-    
+
     @Override
     public void setSessionCookie(String cookieName)
     {
@@ -523,25 +525,25 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return _sessionCookieAttributes.get(HttpCookie.DOMAIN_ATTRIBUTE);
     }
-    
+
     @Override
     public void setSessionDomain(String domain)
     {
         _sessionCookieAttributes.put(HttpCookie.DOMAIN_ATTRIBUTE, domain);
         secureRequestOnlyAttributes();
     }
-    
+
     public void setSessionCookieAttribute(String name, String value)
     {
         _sessionCookieAttributes.put(name, value);
         secureRequestOnlyAttributes();
     }
-    
+
     public String getSessionCookieAttribute(String name)
     {
         return _sessionCookieAttributes.get(name);
     }
-    
+
     /**
      * @return all of the cookie config attributes EXCEPT for
      * those that have explicit setter/getters
@@ -550,7 +552,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return Collections.unmodifiableMap(_sessionCookieAttributes);
     }
-    
+
     @Override
     public SessionIdManager getSessionIdManager()
     {
@@ -590,8 +592,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     public void setSessionIdPathParameterName(String param)
     {
         _sessionIdPathParameterName = (param == null || "none".equals(param)) ? null : param;
-        _sessionIdPathParameterNamePrefix = (param == null || "none".equals(param))
-            ? null : (";" + _sessionIdPathParameterName + "=");
+        _sessionIdPathParameterNamePrefix =
+            (param == null || "none".equals(param)) ? null : (";" + _sessionIdPathParameterName + "=");
     }
 
     /**
@@ -617,7 +619,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _sessionCookieAttributes.put(HttpCookie.PATH_ATTRIBUTE, sessionPath);
         secureRequestOnlyAttributes();
     }
-    
+
     /**
      * @return mean amount of time session remained valid
      */
@@ -627,7 +629,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return _sessionTimeStats.getMean();
     }
-    
+
     /**
      * @return standard deviation of amount of time session remained valid
      */
@@ -647,7 +649,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return _sessionTimeStats.getTotal();
     }
-    
+
     @ManagedAttribute("number of sessions created by this context")
     @Override
     public int getSessionsCreated()
@@ -727,8 +729,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
             if (suffix <= prefix)
                 return uri.substring(0, prefix + sessionURLPrefix.length()) + id;
-            return uri.substring(0, prefix + sessionURLPrefix.length()) + id +
-                uri.substring(suffix);
+            return uri.substring(0, prefix + sessionURLPrefix.length()) + id + uri.substring(suffix);
         }
 
         // edit the session
@@ -737,13 +738,11 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             suffix = uri.indexOf('#');
         if (suffix < 0)
         {
-            return uri +
-                ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + //if no path, insert the root path
+            return uri + ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + // if no path, insert the root path
                 sessionURLPrefix + id;
         }
 
-        return uri.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + //if no path so insert the root path
+        return uri.substring(0, suffix) + ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + // if no path so insert the root path
             sessionURLPrefix + id + uri.substring(suffix);
     }
 
@@ -788,7 +787,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             ManagedSession session = _sessionCache.delete(id);
             if (session != null)
             {
-                //start invalidating if it is not already begun, and call the listeners
+                // start invalidating if it is not already begun, and call the listeners
                 try
                 {
                     if (session.beginInvalidate())
@@ -801,7 +800,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                         {
                             LOG.warn("Error during Session destroy listener", e);
                         }
-                        //call the attribute removed listeners and finally mark it as invalid
+                        // call the attribute removed listeners and finally mark it as invalid
                         session.finishInvalidate();
                     }
                 }
@@ -817,7 +816,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             LOG.warn("Unable to delete Session {}", id, e);
         }
     }
-    
+
     /**
      * @return True if absolute URLs are check for remoteness before being session encoded.
      */
@@ -857,7 +856,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         _sessionCookieAttributes.put(HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(httpOnly));
     }
-    
+
     /**
      * @return true if session cookies should have the {@code Partitioned} attribute
      * @see HttpCookie#isPartitioned()
@@ -890,7 +889,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public boolean isIdInUse(String id) throws Exception
     {
-        //Ask the session store
+        // Ask the session store
         return _sessionCache.exists(id);
     }
 
@@ -904,7 +903,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return Boolean.parseBoolean(_sessionCookieAttributes.get(HttpCookie.SECURE_ATTRIBUTE));
     }
-    
+
     @Override
     public void setSecureCookies(boolean secure)
     {
@@ -920,7 +919,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return _secureRequestOnly;
     }
-    
+
     /**
      * HTTPS request. Can be overridden by setting SessionCookieConfig.setSecure(true),
      * in which case the session cookie will be marked as secure on both HTTPS and HTTP.
@@ -948,7 +947,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             _sessionCookieSecureAttributes = _sessionCookieAttributes;
         }
     }
-    
+
     /**
      * @return true if using session cookies is allowed, false otherwise
      */
@@ -957,7 +956,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         return _usingCookies;
     }
-    
+
     /**
      * @param usingCookies true if cookies are used to track sessions
      */
@@ -1009,7 +1008,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         long created = System.currentTimeMillis();
         String id = _sessionIdManager.newSessionId(request, requestedSessionId, created);
-        ManagedSession session = _sessionCache.newSession(id, created, (_dftMaxIdleSecs > 0 ? _dftMaxIdleSecs * 1000L : -1));
+        ManagedSession session =
+            _sessionCache.newSession(id, created, (_dftMaxIdleSecs > 0 ? _dftMaxIdleSecs * 1000L : -1));
         session.setExtendedId(_sessionIdManager.getExtendedId(id, request));
         session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());
         try
@@ -1029,7 +1029,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             LOG.warn("Unable to add Session {}", id, e);
         }
     }
-    
+
     /**
      * Make a new timer for the session.
      * @param session the session to time
@@ -1049,9 +1049,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public void recordSessionTime(ManagedSession session)
     {
-        _sessionTimeStats.record(Math.round((System.currentTimeMillis() - session.getSessionData().getCreated()) / 1000.0));
+        _sessionTimeStats.record(Math.round(
+            (System.currentTimeMillis() - session.getSessionData().getCreated()) / 1000.0));
     }
-    
+
     /**
      * Change the existing session id.
      *
@@ -1066,15 +1067,15 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         ManagedSession session = null;
         try
         {
-            //the use count for the session will be incremented in renewSessionId
-            session = _sessionCache.renewSessionId(oldId, newId, oldExtendedId, newExtendedId); //swap the id over
+            // the use count for the session will be incremented in renewSessionId
+            session = _sessionCache.renewSessionId(oldId, newId, oldExtendedId, newExtendedId); // swap the id over
             if (session == null)
             {
-                //session doesn't exist on this context
+                // session doesn't exist on this context
                 return;
             }
 
-            //inform the listeners
+            // inform the listeners
             onSessionIdChanged(session, oldId);
         }
         catch (Exception e)
@@ -1104,15 +1105,15 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public void scavenge()
     {
-        //don't attempt to scavenge if we are shutting down
+        // don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())
             return;
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} scavenging sessions", this);
-        //Get a snapshot of the candidates as they are now. Others that
-        //arrive during this processing will be dealt with on
-        //subsequent call to scavenge
+        // Get a snapshot of the candidates as they are now. Others that
+        // arrive during this processing will be dealt with on
+        // subsequent call to scavenge
         String[] ss = _candidateSessionIdsForExpiry.toArray(new String[0]);
         Set<String> candidates = new HashSet<>(Arrays.asList(ss));
         _candidateSessionIdsForExpiry.removeAll(candidates);
@@ -1135,12 +1136,13 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         }
         catch (Exception e)
         {
-            LOG.warn("Failed to check expiration on {}",
+            LOG.warn(
+                "Failed to check expiration on {}",
                 candidates.stream().map(Objects::toString).collect(Collectors.joining(", ", "[", "]")),
                 e);
         }
     }
-    
+
     /**
      * Each session has a timer that is configured to go off
      * when either the session has not been accessed for a
@@ -1169,14 +1171,13 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         {
             if (session.isExpiredAt(now))
             {
-                //instead of expiring the session directly here, accumulate a list of
-                //session ids that need to be expired. This is an efficiency measure: as
-                //the expiration involves the SessionDataStore doing a delete, it is
-                //most efficient if it can be done as a bulk operation to eg reduce
-                //roundtrips to the persistent store. Only do this if the HouseKeeper that
-                //does the scavenging is configured to actually scavenge
-                if (_sessionIdManager.getSessionHouseKeeper() != null &&
-                    _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+                // instead of expiring the session directly here, accumulate a list of
+                // session ids that need to be expired. This is an efficiency measure: as
+                // the expiration involves the SessionDataStore doing a delete, it is
+                // most efficient if it can be done as a bulk operation to eg reduce
+                // roundtrips to the persistent store. Only do this if the HouseKeeper that
+                // does the scavenging is configured to actually scavenge
+                if (_sessionIdManager.getSessionHouseKeeper() != null && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
                 {
                     _candidateSessionIdsForExpiry.add(session.getId());
                     if (LOG.isDebugEnabled())
@@ -1185,12 +1186,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             }
             else
             {
-                //possibly evict the session
+                // possibly evict the session
                 _sessionCache.checkInactiveSession(session);
             }
         }
     }
-    
+
     protected void addSessionStreamWrapper(Request request)
     {
         request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request));
@@ -1224,10 +1225,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
         List<String> ids = null;
 
-        //first try getting list of id from cookies
+        // first try getting list of id from cookies
         if (isUsingCookies())
         {
-            //Cookie[] cookies = request.getCookies();
+            // Cookie[] cookies = request.getCookies();
             List<HttpCookie> cookies = Request.getCookies(request);
             if (cookies != null && cookies.size() > 0)
             {
@@ -1245,7 +1246,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         }
         int cookieIds = ids == null ? 0 : ids.size();
 
-        //try getting id from a url
+        // try getting id from a url
         if (isUsingUriParameters())
         {
             HttpURI uri = request.getHttpURI();
@@ -1277,12 +1278,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             String id = ids.get(i);
             if (session == null)
             {
-                //we currently do not have a session selected, use this one if it is valid
+                // we currently do not have a session selected, use this one if it is valid
                 ManagedSession s = getManagedSession(id);
                 if (s != null && s.isValid())
                 {
-                    //associate it with the request so its reference count is decremented as the
-                    //request exits
+                    // associate it with the request so its reference count is decremented as the
+                    // request exits
                     requestedSessionId = id;
                     requestedSessionIdFromCookie = i < cookieIds;
                     session = s;
@@ -1295,7 +1296,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     if (LOG.isDebugEnabled())
                         LOG.debug("No session found for session id {}", id);
 
-                    //if we don't have a valid session id yet, just choose the first one
+                    // if we don't have a valid session id yet, just choose the first one
                     if (requestedSessionId == null)
                     {
                         requestedSessionId = id;
@@ -1305,16 +1306,15 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             }
             else if (session.getId().equals(getSessionIdManager().getId(id)))
             {
-                //we already have a valid session and now have a duplicate ID for it
+                // we already have a valid session and now have a duplicate ID for it
                 if (LOG.isDebugEnabled())
                     LOG.debug(duplicateSession(
-                        requestedSessionId, true, requestedSessionIdFromCookie,
-                        id, false, i < cookieIds));
+                        requestedSessionId, true, requestedSessionIdFromCookie, id, false, i < cookieIds));
             }
             else
             {
-                //we already have a valid session and now have an ID for a different session
-                //load the session to see if it is valid or not
+                // we already have a valid session and now have an ID for a different session
+                // load the session to see if it is valid or not
                 ManagedSession s = getManagedSession(id);
                 if (s != null && s.isValid())
                 {
@@ -1338,26 +1338,33 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     }
 
                     throw new BadMessageException(duplicateSession(
-                        requestedSessionId, true, requestedSessionIdFromCookie,
-                        id, true, i < cookieIds));
+                        requestedSessionId, true, requestedSessionIdFromCookie, id, true, i < cookieIds));
                 }
                 else if (LOG.isDebugEnabled())
                 {
                     LOG.debug(duplicateSession(
-                        requestedSessionId, true, requestedSessionIdFromCookie,
-                        id, false, i < cookieIds));
+                        requestedSessionId, true, requestedSessionIdFromCookie, id, false, i < cookieIds));
                 }
             }
         }
 
-        return new RequestedSession((session != null && session.isValid()) ? session : null, requestedSessionId, requestedSessionIdFromCookie);
+        return new RequestedSession(
+            (session != null && session.isValid()) ? session : null,
+            requestedSessionId,
+            requestedSessionIdFromCookie);
     }
 
-    private static String duplicateSession(String id0, boolean valid0, boolean cookie0, String id1, boolean valid1, boolean cookie1)
+    private static String duplicateSession(
+                                           String id0, boolean valid0, boolean cookie0, String id1, boolean valid1, boolean cookie1)
     {
-        return "Duplicate sessions: %s[%s,%s] & %s[%s,%s]".formatted(
-            id0, valid0 ? "valid" : "unknown", cookie0 ? "cookie" : "param",
-            id1, valid1 ? "valid" : "unknown", cookie1 ? "cookie" : "param");
+        return "Duplicate sessions: %s[%s,%s] & %s[%s,%s]"
+            .formatted(
+                id0,
+                valid0 ? "valid" : "unknown",
+                cookie0 ? "cookie" : "param",
+                id1,
+                valid1 ? "valid" : "unknown",
+                cookie1 ? "cookie" : "param");
     }
 
     /**
@@ -1367,12 +1374,11 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         _sessionCache.shutdown();
     }
-    
-    public record RequestedSession(ManagedSession session, String sessionId, boolean sessionIdFromCookie)
-    {
+
+    public record RequestedSession(ManagedSession session, String sessionId, boolean sessionIdFromCookie) {
     }
 
-    private static final  RequestedSession NO_REQUESTED_SESSION = new RequestedSession(null, null, false);
+    private static final RequestedSession NO_REQUESTED_SESSION = new RequestedSession(null, null, false);
 
     /**
      * A session cookie is marked as secure IFF any of the following conditions are true:
@@ -1414,7 +1420,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             if (name == null)
                 name = _sessionCookieAttributes.get("name");
             if (name == null)
-                name =  __DefaultSessionCookie;
+                name = __DefaultSessionCookie;
             if (isSecureRequestOnly() && requestIsSecure && _sessionCookieSecureAttributes != null && _sessionCookieAttributes != _sessionCookieSecureAttributes)
                 return session.generateSetCookie(name, _sessionCookieSecureAttributes);
             return session.generateSetCookie(name, _sessionCookieAttributes);
@@ -1444,13 +1450,18 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         @Override
         public void failed(Throwable x)
         {
-            //Leave session
+            // Leave session
             _context.run(this::doComplete, _request);
             super.failed(x);
         }
 
         @Override
-        public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, ByteBuffer content, Callback callback)
+        public void send(
+                         MetaData.Request metadataRequest,
+                         MetaData.Response metadataResponse,
+                         boolean last,
+                         ByteBuffer content,
+                         Callback callback)
         {
             if (metadataResponse != null)
             {

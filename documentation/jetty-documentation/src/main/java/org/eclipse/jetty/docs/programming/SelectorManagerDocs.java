@@ -21,7 +21,6 @@ import java.nio.channels.SocketChannel;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -120,7 +119,8 @@ public class SelectorManagerDocs
                 if (count > threshold && !notified)
                 {
                     notified = true;
-                    System.getLogger("connection.threshold").log(System.Logger.Level.WARNING, "Connection threshold exceeded");
+                    System.getLogger("connection.threshold")
+                        .log(System.Logger.Level.WARNING, "Connection threshold exceeded");
                 }
             }
 

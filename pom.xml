@@ -1666,6 +1666,38 @@
         <artifactId>spotless-maven-plugin</artifactId>
         <version>2.41.1</version>
         <configuration>
+          <java>
+            <endWithNewline></endWithNewline>
+            <importOrder></importOrder>
+            <!--            &lt;!&ndash; or a custom ordering &ndash;&gt;-->
+            <!--            <importOrder>  -->
+            <!--              <wildcardsLast>false</wildcardsLast> &lt;!&ndash; Optional, default false. Sort wildcard import after specific imports &ndash;&gt;-->
+            <!--              <order>java|javax,org,com,com.diffplug,,\#com.diffplug,\#</order>  &lt;!&ndash; or use <file>${project.basedir}/eclipse.importorder</file> &ndash;&gt;-->
+            <!--              &lt;!&ndash; you can use an empty string for all the imports you didn't specify explicitly, '|' to join group without blank line, and '\#` prefix for static imports. &ndash;&gt;-->
+            <!--              <semanticSort>false</semanticSort> &lt;!&ndash; Optional, default false. Sort by package, then class, then member (for static imports). Splitting is based on common conventions (packages are lower case, classes start with upper case). Use <treatAsPackage> and <treatAsClass> for exceptions. &ndash;&gt;-->
+            <!--            </importOrder>-->
+
+            <indent>
+              <spaces>true</spaces>
+            </indent>
+            <!-- comment this and un comment eclipse to use something similar to our current format -->
+            <!--            <palantirJavaFormat></palantirJavaFormat>-->
+            <removeUnusedImports></removeUnusedImports>
+            <trimTrailingWhitespace></trimTrailingWhitespace>
+
+            <!-- comment this and un comment palantirJavaFormat for something differemt -->
+            <eclipse>
+              <file>${session.executionRootDirectory}/build/build-resources/jetty-codestyle-eclipse-ide.xml</file>
+            </eclipse>
+            <!--            <includes>-->
+            <!--              <include>src/**/*.java</include>-->
+            <!--            </includes>-->
+
+            <!--            <licenseHeader>-->
+            <!--              <content>/* (C)$YEAR */</content>  &lt;!&ndash; or <file>${project.basedir}/license-header</file> &ndash;&gt;-->
+            <!--            </licenseHeader>            -->
+
+          </java>
           <pom>
             <includes>
               <include>pom.xml</include>

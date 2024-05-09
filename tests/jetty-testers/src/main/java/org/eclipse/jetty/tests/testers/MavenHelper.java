@@ -15,7 +15,6 @@ package org.eclipse.jetty.tests.testers;
 
 import java.nio.file.Path;
 import java.util.List;
-
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -61,7 +60,8 @@ class MavenHelper
     {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
 
-        String mavenLocalRepository = System.getProperty("mavenRepoPath", System.getProperty("user.home") + "/.m2/repository");
+        String mavenLocalRepository =
+            System.getProperty("mavenRepoPath", System.getProperty("user.home") + "/.m2/repository");
         LocalRepository localRepository = new LocalRepository(mavenLocalRepository);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepository));
 

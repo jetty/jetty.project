@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.websocket.api.Session;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 
 public abstract class AbstractCloseEndpoint extends Session.Listener.AbstractAutoDemanding
 {
@@ -64,7 +63,9 @@ public abstract class AbstractCloseEndpoint extends Session.Listener.AbstractAut
         closeLatch.countDown();
     }
 
-    public void assertReceivedCloseEvent(int clientTimeoutMs, Matcher<Integer> statusCodeMatcher, Matcher<String> reasonMatcher) throws InterruptedException
+    public void assertReceivedCloseEvent(
+                                         int clientTimeoutMs, Matcher<Integer> statusCodeMatcher, Matcher<String> reasonMatcher)
+        throws InterruptedException
     {
         assertThat("Client Close Event Occurred", closeLatch.await(clientTimeoutMs, TimeUnit.MILLISECONDS), is(true));
         assertThat("Client Close Event Status Code", closeStatusCode, statusCodeMatcher);

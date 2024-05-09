@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.URI;
@@ -20,7 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
-
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -31,12 +36,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestWebAppPropertyConverter
 {
@@ -57,7 +56,8 @@ public class TestWebAppPropertyConverter
     {
         testDir = MavenTestingUtils.getTargetTestingDir("TestWebApPropertyConverter");
         testDir.mkdirs();
-        contextXml = MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml").getAbsolutePath();
+        contextXml = MavenTestingUtils.getTargetFile("test-classes/embedder-context.xml")
+            .getAbsolutePath();
         tmpDir = new File(testDir, "testToProperties");
         tmpDir.mkdirs();
         classesDir = new File(testDir, "imaginaryClasses");
@@ -94,7 +94,8 @@ public class TestWebAppPropertyConverter
 
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/foo");
-        webApp.setBaseResource(webApp.getResourceFactory().newResource(MavenTestingUtils.getTargetPath("test-classes/root")));
+        webApp.setBaseResource(
+            webApp.getResourceFactory().newResource(MavenTestingUtils.getTargetPath("test-classes/root")));
         webApp.setTempDirectory(tmpDir);
         webApp.setPersistTempDirectory(false);
         webApp.setClasses(classesDir);
@@ -114,10 +115,14 @@ public class TestWebAppPropertyConverter
         assertEquals("false", props.get(WebAppPropertyConverter.TMP_DIR_PERSIST));
         assertEquals(classesDir.getAbsolutePath(), props.get(WebAppPropertyConverter.CLASSES_DIR));
         assertEquals(testClassesDir.getAbsolutePath(), props.get(WebAppPropertyConverter.TEST_CLASSES_DIR));
-        assertEquals(String.join(",", jar1.getAbsolutePath(), jar2.getAbsolutePath()), props.get(WebAppPropertyConverter.LIB_JARS));
+        assertEquals(
+            String.join(",", jar1.getAbsolutePath(), jar2.getAbsolutePath()),
+            props.get(WebAppPropertyConverter.LIB_JARS));
         assertEquals(war.getAbsolutePath(), props.get(WebAppPropertyConverter.WAR_FILE));
         assertEquals(WebAppContext.WEB_DEFAULTS_XML, props.get(WebAppPropertyConverter.DEFAULTS_DESCRIPTOR));
-        assertEquals(String.join(",", override1.getAbsolutePath(), override2.getAbsolutePath()), props.get(WebAppPropertyConverter.OVERRIDE_DESCRIPTORS));
+        assertEquals(
+            String.join(",", override1.getAbsolutePath(), override2.getAbsolutePath()),
+            props.get(WebAppPropertyConverter.OVERRIDE_DESCRIPTORS));
     }
 
     @Test
@@ -129,13 +134,17 @@ public class TestWebAppPropertyConverter
         base2.mkdirs();
         MavenWebAppContext webApp = new MavenWebAppContext();
         Properties props = new Properties();
-        props.setProperty(WebAppPropertyConverter.BASE_DIRS, String.join(",", base1.getAbsolutePath(), base2.getAbsolutePath()));
+        props.setProperty(
+            WebAppPropertyConverter.BASE_DIRS, String.join(",", base1.getAbsolutePath(), base2.getAbsolutePath()));
         props.setProperty(WebAppPropertyConverter.CLASSES_DIR, classesDir.getAbsolutePath());
         props.setProperty(WebAppPropertyConverter.CONTEXT_PATH, "/foo");
         props.setProperty(WebAppPropertyConverter.CONTEXT_XML, contextXml);
-        props.setProperty(WebAppPropertyConverter.LIB_JARS, String.join(",", jar1.getAbsolutePath(), jar2.getAbsolutePath()));
-        props.setProperty(WebAppPropertyConverter.OVERRIDE_DESCRIPTORS, String.join(",", override1.getAbsolutePath(), override2.getAbsolutePath()));
-        //props.setProperty(WebAppPropertyConverter.QUICKSTART_WEB_XML, value);
+        props.setProperty(
+            WebAppPropertyConverter.LIB_JARS, String.join(",", jar1.getAbsolutePath(), jar2.getAbsolutePath()));
+        props.setProperty(
+            WebAppPropertyConverter.OVERRIDE_DESCRIPTORS,
+            String.join(",", override1.getAbsolutePath(), override2.getAbsolutePath()));
+        // props.setProperty(WebAppPropertyConverter.QUICKSTART_WEB_XML, value);
         props.setProperty(WebAppPropertyConverter.TEST_CLASSES_DIR, testClassesDir.getAbsolutePath());
         props.setProperty(WebAppPropertyConverter.TMP_DIR, tmpDir.getAbsolutePath());
         props.setProperty(WebAppPropertyConverter.TMP_DIR_PERSIST, "true");
@@ -143,11 +152,13 @@ public class TestWebAppPropertyConverter
         props.setProperty(WebAppPropertyConverter.WEB_XML, webXml.getAbsolutePath());
         WebAppPropertyConverter.fromProperties(webApp, props, new Server(), null);
 
-        assertEquals("/embedder", webApp.getContextPath()); //the embedder-context file changes the context path
+        assertEquals("/embedder", webApp.getContextPath()); // the embedder-context file changes the context path
         assertEquals(classesDir, webApp.getClasses());
         assertEquals(testClassesDir, webApp.getTestClasses());
         assertThat(webApp.getWebInfLib(), Matchers.contains(jar1, jar2));
-        assertThat(webApp.getOverrideDescriptors(), Matchers.contains(override1.getAbsolutePath(), override2.getAbsolutePath()));
+        assertThat(
+            webApp.getOverrideDescriptors(),
+            Matchers.contains(override1.getAbsolutePath(), override2.getAbsolutePath()));
         assertEquals(tmpDir, webApp.getTempDirectory());
         assertEquals(true, webApp.isPersistTempDirectory());
         assertEquals(war.getAbsolutePath(), webApp.getWar());
@@ -155,7 +166,10 @@ public class TestWebAppPropertyConverter
         assertThat(webApp.getBaseResource(), instanceOf(CombinedResource.class));
 
         CombinedResource combinedResource = (CombinedResource)webApp.getBaseResource();
-        List<URI> actual = combinedResource.getResources().stream().filter(Objects::nonNull).map(Resource::getURI).toList();
+        List<URI> actual = combinedResource.getResources().stream()
+            .filter(Objects::nonNull)
+            .map(Resource::getURI)
+            .toList();
         URI[] expected = new URI[]{base1.toURI(), base2.toURI()};
         assertThat(actual, containsInAnyOrder(expected));
     }

@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.NetworkTrafficListener;
@@ -39,7 +38,8 @@ public class NetworkTrafficServerConnector extends ServerConnector
         this(server, null, null, null, 0, 0, new HttpConnectionFactory());
     }
 
-    public NetworkTrafficServerConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory.Server sslContextFactory)
+    public NetworkTrafficServerConnector(
+                                         Server server, ConnectionFactory connectionFactory, SslContextFactory.Server sslContextFactory)
     {
         super(server, sslContextFactory, connectionFactory);
     }
@@ -49,7 +49,14 @@ public class NetworkTrafficServerConnector extends ServerConnector
         super(server, connectionFactory);
     }
 
-    public NetworkTrafficServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, int acceptors, int selectors, ConnectionFactory... factories)
+    public NetworkTrafficServerConnector(
+                                         Server server,
+                                         Executor executor,
+                                         Scheduler scheduler,
+                                         ByteBufferPool bufferPool,
+                                         int acceptors,
+                                         int selectors,
+                                         ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, acceptors, selectors, factories);
     }
@@ -80,6 +87,7 @@ public class NetworkTrafficServerConnector extends ServerConnector
     @Override
     protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
     {
-        return new NetworkTrafficSocketChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout(), getNetworkTrafficListener());
+        return new NetworkTrafficSocketChannelEndPoint(
+            channel, selectSet, key, getScheduler(), getIdleTimeout(), getNetworkTrafficListener());
     }
 }

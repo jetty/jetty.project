@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 

@@ -16,7 +16,6 @@ package org.eclipse.jetty.client.transport;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.DuplexConnectionPool;
@@ -71,7 +70,8 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     }
 
     @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+        throws IOException
     {
         var connection = factory.newConnection(endPoint, context);
         if (LOG.isDebugEnabled())

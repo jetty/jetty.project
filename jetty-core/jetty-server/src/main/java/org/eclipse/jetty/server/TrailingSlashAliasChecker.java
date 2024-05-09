@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.util.Objects;
-
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 

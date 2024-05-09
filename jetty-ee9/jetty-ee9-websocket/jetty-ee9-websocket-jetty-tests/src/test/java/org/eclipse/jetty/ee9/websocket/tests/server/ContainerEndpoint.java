@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.websocket.tests.server;
 
 import java.util.Collection;
-
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
@@ -47,7 +46,11 @@ public class ContainerEndpoint extends AbstractCloseEndpoint
             int idx = 0;
             for (Session sess : sessions)
             {
-                ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
+                ret.append('[')
+                    .append(idx++)
+                    .append("] ")
+                    .append(sess.toString())
+                    .append('\n');
             }
             session.getRemote().sendString(ret.toString(), WriteCallback.NOOP);
         }

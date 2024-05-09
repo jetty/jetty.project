@@ -19,7 +19,6 @@ import java.net.URI;
 import java.nio.channels.ReadPendingException;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 

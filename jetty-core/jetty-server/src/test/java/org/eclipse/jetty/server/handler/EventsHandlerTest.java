@@ -13,13 +13,19 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -32,13 +38,6 @@ import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
 
 public class EventsHandlerTest
 {
@@ -100,12 +99,13 @@ public class EventsHandlerTest
 
         startServer(eventsHandler);
 
-        String rawRequest = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """;
+        String rawRequest =
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
 
         String response = connector.getResponse(rawRequest);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
@@ -129,13 +129,14 @@ public class EventsHandlerTest
         startServer(eventsHandler);
 
         String reqLine = "POST / HTTP/1.1\r\n";
-        String headers = """
-            Host: localhost\r
-            Content-length: 6\r
-            Content-type: application/octet-stream\r
-            Connection: close\r
-            \r
-            """;
+        String headers =
+            """
+                Host: localhost\r
+                Content-length: 6\r
+                Content-type: application/octet-stream\r
+                Connection: close\r
+                \r
+                """;
         String body = "ABCDEF";
 
         try (LocalConnector.LocalEndPoint endPoint = connector.connect())
@@ -158,76 +159,79 @@ public class EventsHandlerTest
     {
         List<String> events = new CopyOnWriteArrayList<>();
 
-        EventsHandler eventsHandler = new EventsHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
+        EventsHandler eventsHandler =
+            new EventsHandler(new Handler.Abstract()
             {
-                callback.succeeded();
-                return true;
-            }
-        })
-        {
-            @Override
-            protected void onRequestRead(Request request, Content.Chunk chunk)
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    callback.succeeded();
+                    return true;
+                }
+            })
             {
-                events.add("onRequestRead");
-            }
+                @Override
+                protected void onRequestRead(Request request, Content.Chunk chunk)
+                {
+                    events.add("onRequestRead");
+                }
 
-            @Override
-            protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
-            {
-                events.add("onResponseWrite");
-            }
+                @Override
+                protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+                {
+                    events.add("onResponseWrite");
+                }
 
-            @Override
-            protected void onResponseWriteComplete(Request request, Throwable failure)
-            {
-                events.add("onResponseWriteComplete");
-            }
+                @Override
+                protected void onResponseWriteComplete(Request request, Throwable failure)
+                {
+                    events.add("onResponseWriteComplete");
+                }
 
-            @Override
-            protected void onResponseTrailersComplete(Request request, HttpFields trailers)
-            {
-                events.add("onResponseTrailersComplete");
-            }
+                @Override
+                protected void onResponseTrailersComplete(Request request, HttpFields trailers)
+                {
+                    events.add("onResponseTrailersComplete");
+                }
 
-            @Override
-            protected void onBeforeHandling(Request request)
-            {
-                events.add("onBeforeHandling");
-            }
+                @Override
+                protected void onBeforeHandling(Request request)
+                {
+                    events.add("onBeforeHandling");
+                }
 
-            @Override
-            protected void onAfterHandling(Request request, boolean handled, Throwable failure)
-            {
-                events.add("onAfterHandling");
-            }
+                @Override
+                protected void onAfterHandling(Request request, boolean handled, Throwable failure)
+                {
+                    events.add("onAfterHandling");
+                }
 
-            @Override
-            protected void onResponseBegin(Request request, int status, HttpFields headers)
-            {
-                events.add("onResponseBegin");
-            }
+                @Override
+                protected void onResponseBegin(Request request, int status, HttpFields headers)
+                {
+                    events.add("onResponseBegin");
+                }
 
-            @Override
-            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
-            {
-                events.add("onComplete");
-            }
-        };
+                @Override
+                protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
+                {
+                    events.add("onComplete");
+                }
+            };
 
         startServer(eventsHandler);
 
-        String rawRequest = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """;
+        String rawRequest =
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
 
         String response = connector.getResponse(rawRequest);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(events, equalTo(Arrays.asList("onBeforeHandling", "onAfterHandling", "onResponseBegin", "onComplete")));
+        assertThat(
+            events, equalTo(Arrays.asList("onBeforeHandling", "onAfterHandling", "onResponseBegin", "onComplete")));
     }
 }

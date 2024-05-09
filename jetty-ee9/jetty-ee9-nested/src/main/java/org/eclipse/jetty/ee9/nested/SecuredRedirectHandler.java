@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.URIUtil;
@@ -58,7 +57,8 @@ public class SecuredRedirectHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         HttpChannel channel = baseRequest.getHttpChannel();
         if (baseRequest.isSecure() || channel == null)
@@ -81,7 +81,12 @@ public class SecuredRedirectHandler extends HandlerWrapper
         if (securePort > 0)
         {
             String secureScheme = httpConfig.getSecureScheme();
-            String uri = URIUtil.newURI(secureScheme, baseRequest.getServerName(), securePort, baseRequest.getRequestURI(), baseRequest.getQueryString());
+            String uri = URIUtil.newURI(
+                secureScheme,
+                baseRequest.getServerName(),
+                securePort,
+                baseRequest.getRequestURI(),
+                baseRequest.getQueryString());
             response.setContentLength(0);
             baseRequest.getResponse().sendRedirect(_redirectCode, uri, true);
         }

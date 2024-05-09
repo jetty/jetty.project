@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
-import java.util.Arrays;
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import jakarta.servlet.annotation.HttpConstraint;
 import jakarta.servlet.annotation.HttpMethodConstraint;
@@ -22,6 +25,8 @@ import jakarta.servlet.annotation.ServletSecurity;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import jakarta.servlet.http.HttpServlet;
+import java.util.Arrays;
+import java.util.List;
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
 import org.eclipse.jetty.ee9.security.ConstraintAware;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
@@ -30,12 +35,6 @@ import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.servlet.ServletMapping;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class TestSecurityAnnotationConversions
 {
@@ -49,32 +48,19 @@ public class TestSecurityAnnotationConversions
     {
     }
 
-    @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed =
-        {
-            "tom", "dick", "harry"
-        }))
+    @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed = {"tom", "dick", "harry"}))
     public static class RolesServlet extends HttpServlet
     {
     }
 
-    @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed =
-        {
-            "tom", "dick", "harry"
-        }), httpMethodConstraints = {@HttpMethodConstraint(value = "GET")})
+    @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed = {"tom", "dick", "harry"}), httpMethodConstraints = {@HttpMethodConstraint(value = "GET")})
     public static class Method1Servlet extends HttpServlet
     {
     }
 
-    @ServletSecurity(
-        value = @HttpConstraint(
-            value = EmptyRoleSemantic.PERMIT,
-            transportGuarantee = TransportGuarantee.CONFIDENTIAL,
-            rolesAllowed = {
-                "tom", "dick", "harry"
-            }),
-        httpMethodConstraints = {
-            @HttpMethodConstraint(value = "GET", transportGuarantee = TransportGuarantee.CONFIDENTIAL)
-        })
+    @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed = {"tom", "dick", "harry"}), httpMethodConstraints = {
+        @HttpMethodConstraint(value = "GET", transportGuarantee = TransportGuarantee.CONFIDENTIAL)
+    })
     public static class Method2Servlet extends HttpServlet
     {
     }
@@ -87,17 +73,17 @@ public class TestSecurityAnnotationConversions
     public void testDenyAllOnClass() throws Exception
     {
 
-        WebAppContext wac = makeWebAppContext(DenyServlet.class.getCanonicalName(), "denyServlet", new String[]{
-            "/foo/*", "*.foo"
-        });
+        WebAppContext wac = makeWebAppContext(
+            DenyServlet.class.getCanonicalName(), "denyServlet", new String[]
+            {"/foo/*", "*.foo"});
 
-        //Assume we found 1 servlet with a @HttpConstraint with value=EmptyRoleSemantic.DENY security annotation
+        // Assume we found 1 servlet with a @HttpConstraint with value=EmptyRoleSemantic.DENY security annotation
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
         AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         introspector.registerHandler(annotationHandler);
 
-        //set up the expected outcomes:
-        //1 ConstraintMapping per ServletMapping pathSpec
+        // set up the expected outcomes:
+        // 1 ConstraintMapping per ServletMapping pathSpec
         ServletConstraint expectedConstraint = new ServletConstraint();
         expectedConstraint.setAuthenticate(true);
         expectedConstraint.setDataConstraint(ServletConstraint.DC_NONE);
@@ -120,17 +106,17 @@ public class TestSecurityAnnotationConversions
     @Test
     public void testPermitAll() throws Exception
     {
-        //Assume we found 1 servlet with a @ServletSecurity security annotation
-        WebAppContext wac = makeWebAppContext(PermitServlet.class.getCanonicalName(), "permitServlet", new String[]{
-            "/foo/*", "*.foo"
-        });
+        // Assume we found 1 servlet with a @ServletSecurity security annotation
+        WebAppContext wac = makeWebAppContext(
+            PermitServlet.class.getCanonicalName(), "permitServlet", new String[]
+            {"/foo/*", "*.foo"});
 
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
         AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         introspector.registerHandler(annotationHandler);
 
-        //set up the expected outcomes - no constraints at all as per Servlet Spec 3.1 pg 129
-        //1 ConstraintMapping per ServletMapping pathSpec
+        // set up the expected outcomes - no constraints at all as per Servlet Spec 3.1 pg 129
+        // 1 ConstraintMapping per ServletMapping pathSpec
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[]{};
         PermitServlet permit = new PermitServlet();
@@ -142,19 +128,19 @@ public class TestSecurityAnnotationConversions
     @Test
     public void testRolesAllowedWithTransportGuarantee() throws Exception
     {
-        //Assume we found 1 servlet with annotation with roles defined and
-        //and a TransportGuarantee
+        // Assume we found 1 servlet with annotation with roles defined and
+        // and a TransportGuarantee
 
-        WebAppContext wac = makeWebAppContext(RolesServlet.class.getCanonicalName(), "rolesServlet", new String[]{
-            "/foo/*", "*.foo"
-        });
+        WebAppContext wac = makeWebAppContext(
+            RolesServlet.class.getCanonicalName(), "rolesServlet", new String[]
+            {"/foo/*", "*.foo"});
 
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
         AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         introspector.registerHandler(annotationHandler);
 
-        //set up the expected outcomes:compareResults
-        //1 ConstraintMapping per ServletMapping
+        // set up the expected outcomes:compareResults
+        // 1 ConstraintMapping per ServletMapping
         ServletConstraint expectedConstraint = new ServletConstraint();
         expectedConstraint.setAuthenticate(true);
         expectedConstraint.setRoles(new String[]{"tom", "dick", "harry"});
@@ -175,23 +161,24 @@ public class TestSecurityAnnotationConversions
     @Test
     public void testMethodAnnotation() throws Exception
     {
-        //ServletSecurity annotation with HttpConstraint of TransportGuarantee.CONFIDENTIAL, and a list of rolesAllowed, and
-        //an HttpMethodConstraint for GET method that permits all and has TransportGuarantee.NONE (ie is default)
+        // ServletSecurity annotation with HttpConstraint of TransportGuarantee.CONFIDENTIAL, and a list of
+        // rolesAllowed, and
+        // an HttpMethodConstraint for GET method that permits all and has TransportGuarantee.NONE (ie is default)
 
-        WebAppContext wac = makeWebAppContext(Method1Servlet.class.getCanonicalName(), "method1Servlet", new String[]{
-            "/foo/*", "*.foo"
-        });
+        WebAppContext wac = makeWebAppContext(
+            Method1Servlet.class.getCanonicalName(), "method1Servlet", new String[]
+            {"/foo/*", "*.foo"});
 
-        //set up the expected outcomes: - a Constraint for the RolesAllowed on the class
-        //with userdata constraint of DC_CONFIDENTIAL
-        //and mappings for each of the pathSpecs
+        // set up the expected outcomes: - a Constraint for the RolesAllowed on the class
+        // with userdata constraint of DC_CONFIDENTIAL
+        // and mappings for each of the pathSpecs
         ServletConstraint expectedConstraint1 = new ServletConstraint();
         expectedConstraint1.setAuthenticate(true);
         expectedConstraint1.setRoles(new String[]{"tom", "dick", "harry"});
         expectedConstraint1.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
 
-        //a Constraint for the PermitAll on the doGet method with a userdata
-        //constraint of DC_CONFIDENTIAL inherited from the class
+        // a Constraint for the PermitAll on the doGet method with a userdata
+        // constraint of DC_CONFIDENTIAL inherited from the class
         ServletConstraint expectedConstraint2 = new ServletConstraint();
         expectedConstraint2.setDataConstraint(ServletConstraint.DC_NONE);
 
@@ -224,26 +211,26 @@ public class TestSecurityAnnotationConversions
     @Test
     public void testMethodAnnotation2() throws Exception
     {
-        //A ServletSecurity annotation that has HttpConstraint of CONFIDENTIAL with defined roles, but a
-        //HttpMethodConstraint for GET that permits all, but also requires CONFIDENTIAL
-        WebAppContext wac = makeWebAppContext(Method2Servlet.class.getCanonicalName(), "method2Servlet", new String[]{
-            "/foo/*", "*.foo"
-        });
+        // A ServletSecurity annotation that has HttpConstraint of CONFIDENTIAL with defined roles, but a
+        // HttpMethodConstraint for GET that permits all, but also requires CONFIDENTIAL
+        WebAppContext wac = makeWebAppContext(
+            Method2Servlet.class.getCanonicalName(), "method2Servlet", new String[]
+            {"/foo/*", "*.foo"});
 
         AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
         introspector.registerHandler(annotationHandler);
 
-        //set up the expected outcomes: - a Constraint for the RolesAllowed on the class
-        //with userdata constraint of DC_CONFIDENTIAL
-        //and mappings for each of the pathSpecs
+        // set up the expected outcomes: - a Constraint for the RolesAllowed on the class
+        // with userdata constraint of DC_CONFIDENTIAL
+        // and mappings for each of the pathSpecs
         ServletConstraint expectedConstraint1 = new ServletConstraint();
         expectedConstraint1.setAuthenticate(true);
         expectedConstraint1.setRoles(new String[]{"tom", "dick", "harry"});
         expectedConstraint1.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
 
-        //a Constraint for the Permit on the GET method with a userdata
-        //constraint of DC_CONFIDENTIAL
+        // a Constraint for the Permit on the GET method with a userdata
+        // constraint of DC_CONFIDENTIAL
         ServletConstraint expectedConstraint2 = new ServletConstraint();
         expectedConstraint2.setDataConstraint(ServletConstraint.DC_CONFIDENTIAL);
 
@@ -289,8 +276,12 @@ public class TestSecurityAnnotationConversions
                     {
                         matched = true;
 
-                        assertEquals(em.getConstraint().getAuthenticate(), am.getConstraint().getAuthenticate());
-                        assertEquals(em.getConstraint().getDataConstraint(), am.getConstraint().getDataConstraint());
+                        assertEquals(
+                            em.getConstraint().getAuthenticate(),
+                            am.getConstraint().getAuthenticate());
+                        assertEquals(
+                            em.getConstraint().getDataConstraint(),
+                            am.getConstraint().getDataConstraint());
                         if (em.getMethodOmissions() == null)
                         {
                             assertNull(am.getMethodOmissions());
@@ -306,7 +297,9 @@ public class TestSecurityAnnotationConversions
                         }
                         else
                         {
-                            assertTrue(Arrays.equals(em.getConstraint().getRoles(), am.getConstraint().getRoles()));
+                            assertTrue(Arrays.equals(
+                                em.getConstraint().getRoles(),
+                                am.getConstraint().getRoles()));
                         }
                     }
                 }

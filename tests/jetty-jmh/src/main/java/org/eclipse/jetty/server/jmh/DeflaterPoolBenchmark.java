@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.jmh;
 
 import java.util.concurrent.TimeUnit;
 import java.util.zip.Deflater;
-
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -89,7 +88,8 @@ public class DeflaterPoolBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testPool() throws Exception
     {
         DeflaterPool.Entry entry = _pool.acquire();
@@ -118,5 +118,3 @@ public class DeflaterPoolBenchmark
         new Runner(opt).run();
     }
 }
-
-

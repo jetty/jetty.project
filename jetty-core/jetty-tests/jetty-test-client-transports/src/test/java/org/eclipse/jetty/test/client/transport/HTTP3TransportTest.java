@@ -13,13 +13,18 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
@@ -50,12 +55,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 public class HTTP3TransportTest extends AbstractTransportTest
 {
     private SslContextFactory.Server sslServer;
@@ -67,7 +66,8 @@ public class HTTP3TransportTest extends AbstractTransportTest
     public void prepare(WorkDir workDir) throws Exception
     {
         sslServer = new SslContextFactory.Server();
-        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslServer.setKeyStorePath(
+            MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
         pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
@@ -89,12 +89,14 @@ public class HTTP3TransportTest extends AbstractTransportTest
     public void testDefaultTransport() throws Exception
     {
         ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslServer, pemServerDir);
-        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
+        QuicServerConnector connector =
+            new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -109,7 +111,11 @@ public class HTTP3TransportTest extends AbstractTransportTest
         assertThat(transport, sameInstance(Transport.UDP_IP));
 
         HttpClientTransportOverHTTP3 httpClientTransport = (HttpClientTransportOverHTTP3)httpClient.getTransport();
-        int networkConnections = httpClientTransport.getHTTP3Client().getClientConnector().getSelectorManager().getTotalKeys();
+        int networkConnections = httpClientTransport
+            .getHTTP3Client()
+            .getClientConnector()
+            .getSelectorManager()
+            .getTotalKeys();
         assertThat(networkConnections, is(1));
     }
 
@@ -117,12 +123,14 @@ public class HTTP3TransportTest extends AbstractTransportTest
     public void testExplicitTransport() throws Exception
     {
         ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslServer, pemServerDir);
-        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
+        QuicServerConnector connector =
+            new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .transport(new QuicTransport(http3Client.getQuicConfiguration()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -141,7 +149,8 @@ public class HTTP3TransportTest extends AbstractTransportTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("http://localhost/")
+        ContentResponse response = httpClient
+            .newRequest("http://localhost/")
             .transport(new QuicTransport(new MemoryTransport(connector), http3Client.getQuicConfiguration()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -149,7 +158,11 @@ public class HTTP3TransportTest extends AbstractTransportTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         HttpClientTransportOverHTTP3 httpClientTransport = (HttpClientTransportOverHTTP3)httpClient.getTransport();
-        int networkConnections = httpClientTransport.getHTTP3Client().getClientConnector().getSelectorManager().getTotalKeys();
+        int networkConnections = httpClientTransport
+            .getHTTP3Client()
+            .getClientConnector()
+            .getSelectorManager()
+            .getTotalKeys();
         assertThat(networkConnections, is(0));
     }
 
@@ -163,16 +176,22 @@ public class HTTP3TransportTest extends AbstractTransportTest
     public void testLowLevelH3OverUDPIP() throws Exception
     {
         ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslServer, pemServerDir);
-        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
+        QuicServerConnector connector =
+            new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
         server.start();
 
         InetSocketAddress socketAddress = new InetSocketAddress("localhost", connector.getLocalPort());
-        Session.Client session = http3Client.connect(socketAddress, new Session.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Session.Client session = http3Client
+            .connect(socketAddress, new Session.Client.Listener()
+            {
+            })
+            .get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
+        MetaData.Request request =
+            new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
         session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener()
         {
             @Override
@@ -199,10 +218,15 @@ public class HTTP3TransportTest extends AbstractTransportTest
         server.start();
 
         Transport transport = new QuicTransport(new MemoryTransport(connector), http3Client.getQuicConfiguration());
-        Session.Client session = http3Client.connect(transport, connector.getLocalSocketAddress(), new Session.Client.Listener() {}, null).get(5, TimeUnit.SECONDS);
+        Session.Client session = http3Client
+            .connect(transport, connector.getLocalSocketAddress(), new Session.Client.Listener()
+            {
+            }, null)
+            .get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
+        MetaData.Request request =
+            new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
         session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener()
         {
             @Override

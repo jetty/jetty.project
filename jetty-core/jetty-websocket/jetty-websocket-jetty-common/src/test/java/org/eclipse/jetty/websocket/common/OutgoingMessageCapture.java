@@ -19,7 +19,6 @@ import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
@@ -49,13 +48,18 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
 
     public OutgoingMessageCapture()
     {
-        MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getApplicationMethodHandleLookup(this.getClass());
+        MethodHandles.Lookup lookup =
+            JettyWebSocketFrameHandlerFactory.getApplicationMethodHandleLookup(this.getClass());
         try
         {
-            MethodHandle text = lookup.findVirtual(this.getClass(), "onWholeText", MethodType.methodType(Void.TYPE, String.class));
+            MethodHandle text =
+                lookup.findVirtual(this.getClass(), "onWholeText", MethodType.methodType(Void.TYPE, String.class));
             this.wholeTextHandle = text.bindTo(this);
 
-            MethodHandle binary = lookup.findVirtual(this.getClass(), "onWholeBinary", MethodType.methodType(Void.TYPE, ByteBuffer.class, Callback.class));
+            MethodHandle binary = lookup.findVirtual(
+                this.getClass(),
+                "onWholeBinary",
+                MethodType.methodType(Void.TYPE, ByteBuffer.class, Callback.class));
             this.wholeBinaryHandle = binary.bindTo(this);
         }
         catch (NoSuchMethodException | IllegalAccessException e)
@@ -72,7 +76,8 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
             case OpCode.CLOSE:
             {
                 CloseStatus closeStatus = new CloseStatus(frame.getPayload());
-                String event = String.format("CLOSE:%s:%s", CloseStatus.codeString(closeStatus.getCode()), closeStatus.getReason());
+                String event = String.format(
+                    "CLOSE:%s:%s", CloseStatus.codeString(closeStatus.getCode()), closeStatus.getReason());
                 LOG.debug(event);
                 events.offer(event);
                 break;
@@ -119,7 +124,9 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
         if (OpCode.isDataFrame(frame.getOpCode()))
         {
             Frame copy = Frame.copy(frame);
-            messageSink.accept(copy, org.eclipse.jetty.util.Callback.from(() -> {}, Throwable::printStackTrace));
+            messageSink.accept(copy, org.eclipse.jetty.util.Callback.from(() ->
+            {
+            }, Throwable::printStackTrace));
             if (frame.isFin())
                 messageSink = null;
         }

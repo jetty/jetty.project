@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -126,7 +125,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
                     case STARTING:
                     case STOPPING:
                         throw new IllegalStateException(getState());
-                        
+
                     default:
                         setStopping();
                         doStop();
@@ -342,5 +341,6 @@ public abstract class AbstractLifeCycle implements LifeCycle
      * An exception, which if thrown by doStart will immediately stop the component
      */
     public class StopException extends RuntimeException
-    {}
+    {
+    }
 }

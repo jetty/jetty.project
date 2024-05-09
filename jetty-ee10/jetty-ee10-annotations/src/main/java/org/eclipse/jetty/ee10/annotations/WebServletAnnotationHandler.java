@@ -40,7 +40,8 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
         if (annotationName == null || !"jakarta.servlet.annotation.WebServlet".equals(annotationName))
             return;
 
-        WebServletAnnotation annotation = new WebServletAnnotation(_context, info.getClassName(), info.getContainingResource());
+        WebServletAnnotation annotation =
+            new WebServletAnnotation(_context, info.getClassName(), info.getContainingResource());
         addAnnotation(annotation);
     }
 

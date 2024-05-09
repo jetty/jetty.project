@@ -21,7 +21,6 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 
 /**
@@ -64,8 +63,7 @@ public abstract class WriteThroughWriter extends Writer
      * @return A Writer that will
      * @throws IOException If there is a problem creating the {@link Writer}.
      */
-    public static WriteThroughWriter newWriter(OutputStream outputStream, String charset)
-        throws IOException
+    public static WriteThroughWriter newWriter(OutputStream outputStream, String charset) throws IOException
     {
         if (StandardCharsets.ISO_8859_1.name().equalsIgnoreCase(charset))
             return new Iso88591Writer(outputStream);
@@ -82,8 +80,7 @@ public abstract class WriteThroughWriter extends Writer
      * @return A Writer that will
      * @throws IOException If there is a problem creating the {@link Writer}.
      */
-    public static WriteThroughWriter newWriter(OutputStream outputStream, Charset charset)
-        throws IOException
+    public static WriteThroughWriter newWriter(OutputStream outputStream, Charset charset) throws IOException
     {
         if (StandardCharsets.ISO_8859_1 == charset)
             return new Iso88591Writer(outputStream);
@@ -102,7 +99,7 @@ public abstract class WriteThroughWriter extends Writer
     {
         _out.close();
     }
-    
+
     @Override
     public void flush() throws IOException
     {

@@ -13,17 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
@@ -31,6 +20,16 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Deprecated
 public class SharedBlockingCallbackTest
@@ -86,7 +85,8 @@ public class SharedBlockingCallbackTest
                     }
                     blocker.succeeded();
                 }
-            }).start();
+            })
+                .start();
 
             latch.await();
             start = NanoTime.now();
@@ -148,7 +148,8 @@ public class SharedBlockingCallbackTest
                         }
                         blocker.failed(ex);
                     }
-                }).start();
+                })
+                    .start();
 
                 latch.await();
                 start = NanoTime.now();
@@ -190,7 +191,8 @@ public class SharedBlockingCallbackTest
                     e.printStackTrace();
                 }
             }
-        }).start();
+        })
+            .start();
 
         latch.await();
         long start = NanoTime.now();

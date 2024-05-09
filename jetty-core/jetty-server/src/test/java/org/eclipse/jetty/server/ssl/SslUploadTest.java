@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -24,7 +28,6 @@ import java.util.Arrays;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -42,10 +45,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class SslUploadTest
 {
@@ -82,29 +81,34 @@ public class SslUploadTest
     public void testUpload() throws Exception
     {
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        SslContextFactory ctx = connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
+        SslContextFactory ctx =
+            connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
         try (InputStream stream = Files.newInputStream(keystoreFile))
         {
             keystore.load(stream, keystorePassword.toCharArray());
         }
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        TrustManagerFactory trustManagerFactory =
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         SSLContext sslContext = SSLContext.getInstance("SSL");
         sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 
-        try (SSLSocket socket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
+        try (SSLSocket socket =
+            (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
         {
             byte[] requestBody = new byte[16777216];
             Arrays.fill(requestBody, (byte)'x');
 
-            String rawRequest = """
-                POST / HTTP/1.1\r
-                Host: localhost\r
-                Content-Length: %d\r
-                Content-Type: bytes\r
-                Connection: close\r
-                \r
-                """.formatted(requestBody.length);
+            String rawRequest =
+                """
+                    POST / HTTP/1.1\r
+                    Host: localhost\r
+                    Content-Length: %d\r
+                    Content-Type: bytes\r
+                    Connection: close\r
+                    \r
+                    """
+                    .formatted(requestBody.length);
 
             try (OutputStream out = socket.getOutputStream();
                  InputStream in = socket.getInputStream())

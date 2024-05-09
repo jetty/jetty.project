@@ -13,6 +13,24 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,13 +45,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
-
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Part;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -63,18 +74,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class MultiPartServletTest
 {
@@ -130,17 +129,21 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testLargePart(boolean eager) throws Exception
     {
-        start(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp)
+        start(
+            new HttpServlet()
             {
-                req.getParameterMap();
-            }
-        }, new MultipartConfigElement(tmpDirString), eager);
+                @Override
+                protected void service(HttpServletRequest req, HttpServletResponse resp)
+                {
+                    req.getParameterMap();
+                }
+            },
+            new MultipartConfigElement(tmpDirString),
+            eager);
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
@@ -168,17 +171,21 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testManyParts(boolean eager) throws Exception
     {
-        start(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp)
+        start(
+            new HttpServlet()
             {
-                req.getParameterMap();
-            }
-        }, new MultipartConfigElement(tmpDirString), eager);
+                @Override
+                protected void service(HttpServletRequest req, HttpServletResponse resp)
+                {
+                    req.getParameterMap();
+                }
+            },
+            new MultipartConfigElement(tmpDirString),
+            eager);
 
         byte[] byteArray = new byte[1024];
         Arrays.fill(byteArray, (byte)1);
@@ -203,17 +210,22 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testMaxRequestSize(boolean eager) throws Exception
     {
-        start(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        start(
+            new HttpServlet()
             {
-                req.getParameterMap();
-            }
-        }, new MultipartConfigElement(tmpDirString, -1, 1024, 1024 * 1024 * 8), eager);
+                @Override
+                protected void service(HttpServletRequest req, HttpServletResponse resp)
+                    throws ServletException, IOException
+                {
+                    req.getParameterMap();
+                }
+            },
+            new MultipartConfigElement(tmpDirString, -1, 1024, 1024 * 1024 * 8),
+            eager);
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
@@ -250,7 +262,8 @@ public class MultiPartServletTest
         assert400orEof(listener, null);
     }
 
-    private static void assert400orEof(InputStreamResponseListener listener, Consumer<String> checkbody) throws InterruptedException, TimeoutException
+    private static void assert400orEof(InputStreamResponseListener listener, Consumer<String> checkbody)
+        throws InterruptedException, TimeoutException
     {
         // There is a race here, either we fail trying to write some more content OR
         // we get 400 response, for some reason reading the content throws EofException.
@@ -273,46 +286,54 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testSimpleMultiPart(boolean eager) throws Exception
     {
-        start(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response1) throws ServletException, IOException
+        start(
+            new HttpServlet()
             {
-                Collection<Part> parts = request.getParts();
-                assertNotNull(parts);
-                assertEquals(1, parts.size());
-                Part part = parts.iterator().next();
-                assertEquals("part1", part.getName());
-                Collection<String> headerNames = part.getHeaderNames();
-                assertNotNull(headerNames);
-                assertEquals(2, headerNames.size());
-                String content1 = IO.toString(part.getInputStream(), UTF_8);
-                assertEquals("content1", content1);
-            }
-        }, null, eager);
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response1)
+                    throws ServletException, IOException
+                {
+                    Collection<Part> parts = request.getParts();
+                    assertNotNull(parts);
+                    assertEquals(1, parts.size());
+                    Part part = parts.iterator().next();
+                    assertEquals("part1", part.getName());
+                    Collection<String> headerNames = part.getHeaderNames();
+                    assertNotNull(headerNames);
+                    assertEquals(2, headerNames.size());
+                    String content1 = IO.toString(part.getInputStream(), UTF_8);
+                    assertEquals("content1", content1);
+                }
+            },
+            null,
+            eager);
 
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             OutputStream output = socket.getOutputStream();
 
-            String content = """
-                --A1B2C3
-                Content-Disposition: form-data; name="part1"
-                Content-Type: text/plain; charset="UTF-8"
-                                
-                content1
-                --A1B2C3--
-                """;
-            String header = """
-                POST / HTTP/1.1
-                Host: localhost
-                Content-Type: multipart/form-data; boundary="A1B2C3"
-                Content-Length: $L
-                                
-                """.replace("$L", String.valueOf(content.length()));
+            String content =
+                """
+                    --A1B2C3
+                    Content-Disposition: form-data; name="part1"
+                    Content-Type: text/plain; charset="UTF-8"
+
+                    content1
+                    --A1B2C3--
+                    """;
+            String header =
+                """
+                    POST / HTTP/1.1
+                    Host: localhost
+                    Content-Type: multipart/form-data; boundary="A1B2C3"
+                    Content-Length: $L
+
+                    """
+                    .replace("$L", String.valueOf(content.length()));
 
             output.write(header.getBytes(UTF_8));
             output.write(content.getBytes(UTF_8));
@@ -325,25 +346,31 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testTempFilesDeletedOnError(boolean eager) throws Exception
     {
         byte[] bytes = new byte[2 * MAX_FILE_SIZE];
         Arrays.fill(bytes, (byte)1);
 
         // Should throw as the max file size is exceeded.
-        start(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response1) throws ServletException, IOException
+        start(
+            new HttpServlet()
             {
-                // Should throw as the max file size is exceeded.
-                request.getParts();
-            }
-        }, null, eager);
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response1)
+                    throws ServletException, IOException
+                {
+                    // Should throw as the max file size is exceeded.
+                    request.getParts();
+                }
+            },
+            null,
+            eager);
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        multiPart.addPart(new MultiPart.ContentSourcePart("largePart", "largeFile.bin", HttpFields.EMPTY, new BytesRequestContent(bytes)));
+        multiPart.addPart(new MultiPart.ContentSourcePart(
+            "largePart", "largeFile.bin", HttpFields.EMPTY, new BytesRequestContent(bytes)));
         multiPart.close();
 
         try (StacklessLogging ignored = new StacklessLogging(ServletChannel.class))
@@ -363,46 +390,54 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testDefaultTempDirectory(boolean eager) throws Exception
     {
-        start(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response1) throws ServletException, IOException
+        start(
+            new HttpServlet()
             {
-                Collection<Part> parts = request.getParts();
-                assertNotNull(parts);
-                assertEquals(1, parts.size());
-                Part part = parts.iterator().next();
-                assertEquals("part1", part.getName());
-                Collection<String> headerNames = part.getHeaderNames();
-                assertNotNull(headerNames);
-                assertEquals(2, headerNames.size());
-                String content1 = IO.toString(part.getInputStream(), UTF_8);
-                assertEquals("content1", content1);
-            }
-        }, new MultipartConfigElement(null, MAX_FILE_SIZE, -1, 0), eager);
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response1)
+                    throws ServletException, IOException
+                {
+                    Collection<Part> parts = request.getParts();
+                    assertNotNull(parts);
+                    assertEquals(1, parts.size());
+                    Part part = parts.iterator().next();
+                    assertEquals("part1", part.getName());
+                    Collection<String> headerNames = part.getHeaderNames();
+                    assertNotNull(headerNames);
+                    assertEquals(2, headerNames.size());
+                    String content1 = IO.toString(part.getInputStream(), UTF_8);
+                    assertEquals("content1", content1);
+                }
+            },
+            new MultipartConfigElement(null, MAX_FILE_SIZE, -1, 0),
+            eager);
 
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             OutputStream output = socket.getOutputStream();
 
-            String content = """
-                --A1B2C3
-                Content-Disposition: form-data; name="part1"
-                Content-Type: text/plain; charset="UTF-8"
-                                
-                content1
-                --A1B2C3--
-                """;
-            String header = """
-                POST / HTTP/1.1
-                Host: localhost
-                Content-Type: multipart/form-data; boundary="A1B2C3"
-                Content-Length: $L
-                                
-                """.replace("$L", String.valueOf(content.length()));
+            String content =
+                """
+                    --A1B2C3
+                    Content-Disposition: form-data; name="part1"
+                    Content-Type: text/plain; charset="UTF-8"
+
+                    content1
+                    --A1B2C3--
+                    """;
+            String header =
+                """
+                    POST / HTTP/1.1
+                    Host: localhost
+                    Content-Type: multipart/form-data; boundary="A1B2C3"
+                    Content-Length: $L
+
+                    """
+                    .replace("$L", String.valueOf(content.length()));
 
             output.write(header.getBytes(UTF_8));
             output.write(content.getBytes(UTF_8));
@@ -415,38 +450,48 @@ public class MultiPartServletTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testMultiPartGzip(boolean eager) throws Exception
     {
-        start(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response1) throws IOException, ServletException
+        start(
+            new HttpServlet()
             {
-                String contentType1 = request.getContentType();
-                response1.setContentType(contentType1);
-                response1.flushBuffer();
-
-                MultiPartRequestContent echoParts = new MultiPartRequestContent(MultiPart.extractBoundary(contentType1));
-                Collection<Part> servletParts = request.getParts();
-                for (Part part : servletParts)
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response1)
+                    throws IOException, ServletException
                 {
-                    HttpFields.Mutable partHeaders = HttpFields.build();
-                    for (String h1 : part.getHeaderNames())
-                        partHeaders.add(h1, part.getHeader(h1));
+                    String contentType1 = request.getContentType();
+                    response1.setContentType(contentType1);
+                    response1.flushBuffer();
 
-                    echoParts.addPart(new MultiPart.ContentSourcePart(part.getName(), part.getSubmittedFileName(), partHeaders, new InputStreamContentSource(part.getInputStream())));
+                    MultiPartRequestContent echoParts =
+                        new MultiPartRequestContent(MultiPart.extractBoundary(contentType1));
+                    Collection<Part> servletParts = request.getParts();
+                    for (Part part : servletParts)
+                    {
+                        HttpFields.Mutable partHeaders = HttpFields.build();
+                        for (String h1 : part.getHeaderNames())
+                            partHeaders.add(h1, part.getHeader(h1));
+
+                        echoParts.addPart(new MultiPart.ContentSourcePart(
+                            part.getName(),
+                            part.getSubmittedFileName(),
+                            partHeaders,
+                            new InputStreamContentSource(part.getInputStream())));
+                    }
+                    echoParts.close();
+                    IO.copy(Content.Source.asInputStream(echoParts), response1.getOutputStream());
                 }
-                echoParts.close();
-                IO.copy(Content.Source.asInputStream(echoParts), response1.getOutputStream());
-            }
-        }, null, eager);
+            },
+            null,
+            eager);
 
         // Do not automatically handle gzip.
         client.getContentDecoderFactories().clear();
 
-        String contentString = "the quick brown fox jumps over the lazy dog, " +
-            "the quick brown fox jumps over the lazy dog";
+        String contentString =
+            "the quick brown fox jumps over the lazy dog, " + "the quick brown fox jumps over the lazy dog";
         StringRequestContent content = new StringRequestContent(contentString);
 
         MultiPartRequestContent multiPartContent = new MultiPartRequestContent();
@@ -472,32 +517,40 @@ public class MultiPartServletTest
         InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
         formData.setMaxParts(1);
-        MultiPartFormData.Parts parts = formData.parse(new InputStreamContentSource(inputStream)).join();
+        MultiPartFormData.Parts parts =
+            formData.parse(new InputStreamContentSource(inputStream)).join();
 
         assertThat(parts.size(), is(1));
         assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testDoubleReadFromPart(boolean eager) throws Exception
     {
-        start(new HttpServlet()
-        {
-            @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        start(
+            new HttpServlet()
             {
-                resp.setContentType("text/plain");
-                for (Part part : req.getParts())
+                @Override
+                protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                    throws ServletException, IOException
                 {
-                    resp.getWriter().println("Part: name=" + part.getName() + ", size=" + part.getSize() + ", content=" + IO.toString(part.getInputStream()));
-                    resp.getWriter().println("Part: name=" + part.getName() + ", size=" + part.getSize() + ", content=" + IO.toString(part.getInputStream()));
+                    resp.setContentType("text/plain");
+                    for (Part part : req.getParts())
+                    {
+                        resp.getWriter()
+                            .println("Part: name=" + part.getName() + ", size=" + part.getSize() + ", content=" + IO.toString(part.getInputStream()));
+                        resp.getWriter()
+                            .println("Part: name=" + part.getName() + ", size=" + part.getSize() + ", content=" + IO.toString(part.getInputStream()));
+                    }
                 }
-            }
-        }, null, eager);
+            },
+            null,
+            eager);
 
-        String contentString = "the quick brown fox jumps over the lazy dog, " +
-            "the quick brown fox jumps over the lazy dog";
+        String contentString =
+            "the quick brown fox jumps over the lazy dog, " + "the quick brown fox jumps over the lazy dog";
         StringRequestContent content = new StringRequestContent(contentString);
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
         multiPart.addPart(new MultiPart.ContentSourcePart("myPart", null, HttpFields.EMPTY, content));
@@ -510,36 +563,47 @@ public class MultiPartServletTest
             .send();
 
         assertEquals(200, response.getStatus());
-        assertThat(response.getContentAsString(), containsString("Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog\n" +
-            "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog"));
+        assertThat(
+            response.getContentAsString(),
+            containsString(
+                "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog\n" + "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog"));
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testPartAsParameter(boolean eager) throws Exception
     {
-        start(new HttpServlet()
-        {
-            @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        start(
+            new HttpServlet()
             {
-                resp.setContentType("text/plain");
-                Map<String, String[]> parameterMap = req.getParameterMap();
-                for (Map.Entry<String, String[]> entry : parameterMap.entrySet())
+                @Override
+                protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                    throws ServletException, IOException
                 {
-                    assertThat(entry.getValue().length, equalTo(1));
-                    resp.getWriter().println("Parameter: " + entry.getKey() + "=" + entry.getValue()[0]);
+                    resp.setContentType("text/plain");
+                    Map<String, String[]> parameterMap = req.getParameterMap();
+                    for (Map.Entry<String, String[]> entry : parameterMap.entrySet())
+                    {
+                        assertThat(entry.getValue().length, equalTo(1));
+                        resp.getWriter().println("Parameter: " + entry.getKey() + "=" + entry.getValue()[0]);
+                    }
                 }
-            }
-        }, null, eager);
+            },
+            null,
+            eager);
 
-        String contentString = "the quick brown fox jumps over the lazy dog, " +
-            "the quick brown fox jumps over the lazy dog";
+        String contentString =
+            "the quick brown fox jumps over the lazy dog, " + "the quick brown fox jumps over the lazy dog";
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        multiPart.addPart(new MultiPart.ContentSourcePart("part1", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
-        multiPart.addPart(new MultiPart.ContentSourcePart("part2", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
-        multiPart.addPart(new MultiPart.ContentSourcePart("part3", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
-        multiPart.addPart(new MultiPart.ContentSourcePart("partFileName", "myFile", HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.addPart(new MultiPart.ContentSourcePart(
+            "part1", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.addPart(new MultiPart.ContentSourcePart(
+            "part2", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.addPart(new MultiPart.ContentSourcePart(
+            "part3", null, HttpFields.EMPTY, new StringRequestContent(contentString)));
+        multiPart.addPart(new MultiPart.ContentSourcePart(
+            "partFileName", "myFile", HttpFields.EMPTY, new StringRequestContent(contentString)));
         multiPart.close();
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())

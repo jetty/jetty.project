@@ -39,7 +39,6 @@ import javax.naming.OperationNotSupportedException;
 import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
-
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,15 +113,13 @@ public class NamingContext implements Context, Dumpable
      * @param parent immediate ancestor Context (can be null)
      * @param parser NameParser for this Context
      */
-    public NamingContext(Hashtable<String, Object> env,
-                         String name,
-                         NamingContext parent,
-                         NameParser parser)
+    public NamingContext(Hashtable<String, Object> env, String name, NamingContext parent, NameParser parser)
     {
         this(env, name, parent, parser, null);
     }
 
-    protected NamingContext(Hashtable<String, Object> env,
+    protected NamingContext(
+                            Hashtable<String, Object> env,
                             String name,
                             NamingContext parent,
                             NameParser parser,
@@ -205,7 +202,7 @@ public class NamingContext implements Context, Dumpable
     {
         if (ctx instanceof Reference)
         {
-            //deference the object
+            // deference the object
             try
             {
                 return NamingManager.getObjectInstance(ctx, _parser.parse(firstComponent), this, _env);
@@ -254,8 +251,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void bind(Name name, Object obj)
-        throws NamingException
+    public void bind(Name name, Object obj) throws NamingException
     {
         if (isLocked())
             throw new NamingException("This context is immutable");
@@ -268,10 +264,10 @@ public class NamingContext implements Context, Dumpable
         if (cname.size() == 0)
             throw new NamingException("Name is empty");
 
-        //if no subcontexts, just bind it
+        // if no subcontexts, just bind it
         if (cname.size() == 1)
         {
-            //get the object to be bound
+            // get the object to be bound
             Object objToBind = NamingManager.getStateToBind(obj, name, this, _env);
             // Check for Referenceable
             if (objToBind instanceof Referenceable)
@@ -279,16 +275,17 @@ public class NamingContext implements Context, Dumpable
                 objToBind = ((Referenceable)objToBind).getReference();
             }
 
-            //anything else we should be able to bind directly
+            // anything else we should be able to bind directly
             addBinding(cname, objToBind);
         }
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Checking for existing binding for name={} for first element of name={}", cname, cname.get(0));
+                LOG.debug(
+                    "Checking for existing binding for name={} for first element of name={}", cname, cname.get(0));
 
-            //walk down the subcontext hierarchy
-            //need to ignore trailing empty "" name components
+            // walk down the subcontext hierarchy
+            // need to ignore trailing empty "" name components
 
             String firstComponent = cname.get(0);
             Object ctx = null;
@@ -333,8 +330,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void bind(String name, Object obj)
-        throws NamingException
+    public void bind(String name, Object obj) throws NamingException
     {
         bind(_parser.parse(name), obj);
     }
@@ -347,8 +343,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public Context createSubcontext(Name name)
-        throws NamingException
+    public Context createSubcontext(Name name) throws NamingException
     {
         if (isLocked())
         {
@@ -366,7 +361,7 @@ public class NamingContext implements Context, Dumpable
 
         if (cname.size() == 1)
         {
-            //not permitted to bind if something already bound at that name
+            // not permitted to bind if something already bound at that name
             Binding binding = getBinding(cname);
             if (binding != null)
                 throw new NameAlreadyBoundException(cname.toString());
@@ -387,8 +382,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public Context createSubcontext(String name)
-        throws NamingException
+    public Context createSubcontext(String name) throws NamingException
     {
         return createSubcontext(_parser.parse(name));
     }
@@ -398,8 +392,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void destroySubcontext(String name)
-        throws NamingException
+    public void destroySubcontext(String name) throws NamingException
     {
         removeBinding(_parser.parse(name));
     }
@@ -409,8 +402,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void destroySubcontext(Name name)
-        throws NamingException
+    public void destroySubcontext(Name name) throws NamingException
     {
         removeBinding(name);
     }
@@ -422,8 +414,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public Object lookup(Name name)
-        throws NamingException
+    public Object lookup(Name name) throws NamingException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Looking up name=\"{}\"", name);
@@ -448,16 +439,16 @@ public class NamingContext implements Context, Dumpable
 
             Object o = binding.getObject();
 
-            //handle links by looking up the link
+            // handle links by looking up the link
             if (o instanceof LinkRef)
             {
-                //if link name starts with ./ it is relative to current context
+                // if link name starts with ./ it is relative to current context
                 String linkName = ((LinkRef)o).getLinkName();
                 if (linkName.startsWith("./"))
                     return this.lookup(linkName.substring(2));
                 else
                 {
-                    //link name is absolute
+                    // link name is absolute
                     InitialContext ictx = new InitialContext();
                     return ictx.lookup(linkName);
                 }
@@ -494,8 +485,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public Object lookup(String name)
-        throws NamingException
+    public Object lookup(String name) throws NamingException
     {
         return lookup(_parser.parse(name));
     }
@@ -508,8 +498,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public Object lookupLink(Name name)
-        throws NamingException
+    public Object lookupLink(Name name) throws NamingException
     {
         Name cname = toCanonicalName(name);
 
@@ -541,8 +530,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public Object lookupLink(String name)
-        throws NamingException
+    public Object lookupLink(String name) throws NamingException
     {
         return lookupLink(_parser.parse(name));
     }
@@ -555,8 +543,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public NamingEnumeration list(Name name)
-        throws NamingException
+    public NamingEnumeration list(Name name) throws NamingException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("list() on Context={} for name={}", getName(), name);
@@ -572,7 +559,7 @@ public class NamingContext implements Context, Dumpable
             return new NameEnumeration(_bindings.values().iterator());
         }
 
-        //multipart name
+        // multipart name
         return getContext(cname).list(cname.getSuffix(1));
     }
 
@@ -584,8 +571,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public NamingEnumeration list(String name)
-        throws NamingException
+    public NamingEnumeration list(String name) throws NamingException
     {
         return list(_parser.parse(name));
     }
@@ -598,8 +584,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public NamingEnumeration listBindings(Name name)
-        throws NamingException
+    public NamingEnumeration listBindings(Name name) throws NamingException
     {
         Name cname = toCanonicalName(name);
 
@@ -624,8 +609,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public NamingEnumeration listBindings(String name)
-        throws NamingException
+    public NamingEnumeration listBindings(String name) throws NamingException
     {
         return listBindings(_parser.parse(name));
     }
@@ -638,9 +622,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void rebind(Name name,
-                       Object obj)
-        throws NamingException
+    public void rebind(Name name, Object obj) throws NamingException
     {
         if (isLocked())
             throw new NamingException("This context is immutable");
@@ -653,10 +635,10 @@ public class NamingContext implements Context, Dumpable
         if (cname.size() == 0)
             throw new NamingException("Name is empty");
 
-        //if no subcontexts, just bind it
+        // if no subcontexts, just bind it
         if (cname.size() == 1)
         {
-            //check if it is a Referenceable
+            // check if it is a Referenceable
             Object objToBind = NamingManager.getStateToBind(obj, name, this, _env);
 
             if (objToBind instanceof Referenceable)
@@ -680,9 +662,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void rebind(String name,
-                       Object obj)
-        throws NamingException
+    public void rebind(String name, Object obj) throws NamingException
     {
         rebind(_parser.parse(name), obj);
     }
@@ -694,8 +674,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void unbind(String name)
-        throws NamingException
+    public void unbind(String name) throws NamingException
     {
         unbind(_parser.parse(name));
     }
@@ -707,8 +686,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void unbind(Name name)
-        throws NamingException
+    public void unbind(Name name) throws NamingException
     {
         if (name.size() == 0)
             return;
@@ -724,7 +702,7 @@ public class NamingContext implements Context, Dumpable
         if (cname.size() == 0)
             throw new NamingException("Name is empty");
 
-        //if no subcontexts, just unbind it
+        // if no subcontexts, just unbind it
         if (cname.size() == 1)
         {
             removeBinding(cname);
@@ -743,9 +721,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void rename(Name oldName,
-                       Name newName)
-        throws NamingException
+    public void rename(Name oldName, Name newName) throws NamingException
     {
         throw new OperationNotSupportedException();
     }
@@ -758,9 +734,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void rename(String oldName,
-                       String newName)
-        throws NamingException
+    public void rename(String oldName, String newName) throws NamingException
     {
         throw new OperationNotSupportedException();
     }
@@ -775,9 +749,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public Name composeName(Name name,
-                            Name prefix)
-        throws NamingException
+    public Name composeName(Name name, Name prefix) throws NamingException
     {
         if (name == null)
             throw new NamingException("Name cannot be null");
@@ -799,9 +771,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public String composeName(String name,
-                              String prefix)
-        throws NamingException
+    public String composeName(String name, String prefix) throws NamingException
     {
         if (name == null)
             throw new NamingException("Name cannot be null");
@@ -819,8 +789,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public void close()
-        throws NamingException
+    public void close() throws NamingException
     {
     }
 
@@ -859,8 +828,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public String getNameInNamespace()
-        throws NamingException
+    public String getNameInNamespace() throws NamingException
     {
         Name name = _parser.parse("");
 
@@ -884,9 +852,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public Object addToEnvironment(String propName,
-                                   Object propVal)
-        throws NamingException
+    public Object addToEnvironment(String propName, Object propVal) throws NamingException
     {
         switch (propName)
         {
@@ -915,8 +881,7 @@ public class NamingContext implements Context, Dumpable
      * @throws NamingException if an error occurs
      */
     @Override
-    public Object removeFromEnvironment(String propName)
-        throws NamingException
+    public Object removeFromEnvironment(String propName) throws NamingException
     {
         if (isLocked())
             throw new NamingException("This context is immutable");
@@ -1041,7 +1006,7 @@ public class NamingContext implements Context, Dumpable
 
     public boolean isLocked()
     {
-        //TODO lock whole hierarchy?
+        // TODO lock whole hierarchy?
         return _lock != null;
     }
 
@@ -1103,7 +1068,9 @@ public class NamingContext implements Context, Dumpable
         buf.append(",parent=");
         if (this._parent != null)
         {
-            buf.append(this._parent.getClass().getName()).append('@').append(Integer.toHexString(this._parent.hashCode()));
+            buf.append(this._parent.getClass().getName())
+                .append('@')
+                .append(Integer.toHexString(this._parent.hashCode()));
         }
         buf.append(",bindings");
         if (this._bindings == null)

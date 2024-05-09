@@ -79,6 +79,8 @@ public class HeadersFrame extends StreamFrame
     @Override
     public String toString()
     {
-        return String.format("%s#%d[end=%b,{%s},priority=%s]", super.toString(), getStreamId(), isEndStream(), getMetaData(), getPriority());
+        return String.format(
+            "%s#%d[end=%b,{%s},priority=%s]",
+            super.toString(), getStreamId(), isEndStream(), getMetaData(), getPriority());
     }
 }

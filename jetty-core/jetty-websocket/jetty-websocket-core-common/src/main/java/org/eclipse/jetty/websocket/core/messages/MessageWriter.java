@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.OpCode;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Support for writing a single WebSocket TEXT message via a {@link Writer}

@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.proxy;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
@@ -31,8 +32,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class InterimResponseProxyTest extends AbstractProxyTest
 {
     @Test
@@ -44,17 +43,19 @@ public class InterimResponseProxyTest extends AbstractProxyTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 CompletableFuture<Void> completable = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY)
-                    .thenCompose(ignored -> Promise.Completable.<String>with(p -> Content.Source.asString(request, StandardCharsets.UTF_8, p)))
-                    .thenCompose(content -> response.writeInterim(HttpStatus.PROCESSING_102, HttpFields.EMPTY).thenApply(ignored -> content))
-                    .thenCompose(content -> response.writeInterim(HttpStatus.EARLY_HINTS_103, HttpFields.EMPTY).thenApply(ignored -> content))
+                    .thenCompose(ignored -> Promise.Completable.<String>with(
+                        p -> Content.Source.asString(request, StandardCharsets.UTF_8, p)))
+                    .thenCompose(content -> response.writeInterim(HttpStatus.PROCESSING_102, HttpFields.EMPTY)
+                        .thenApply(ignored -> content))
+                    .thenCompose(content -> response.writeInterim(HttpStatus.EARLY_HINTS_103, HttpFields.EMPTY)
+                        .thenApply(ignored -> content))
                     .thenCompose(content -> Callback.Completable.with(c -> Content.Sink.write(response, true, content, c)));
                 callback.completeWith(completable);
                 return true;
             }
         });
 
-        startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->
-            HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort())));
+        startProxy(new ProxyHandler.Reverse(clientToProxyRequest -> HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort())));
 
         startClient();
 

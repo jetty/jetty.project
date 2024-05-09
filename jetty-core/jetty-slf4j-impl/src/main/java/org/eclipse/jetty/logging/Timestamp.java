@@ -52,9 +52,7 @@ class Timestamp
     public Timestamp(TimeZone timeZone)
     {
         zoneId = timeZone.toZoneId();
-        tzFormatter = DateTimeFormatter
-                .ofPattern("yyyy-MM-dd HH:mm:ss")
-                .withZone(zoneId);
+        tzFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(zoneId);
         tick = null;
     }
 
@@ -106,7 +104,8 @@ class Timestamp
         // recheck the tick, to save multiple formats
         if (tick == null || tick.seconds != seconds)
         {
-            String s = ZonedDateTime.ofInstant(Instant.ofEpochMilli(now), zoneId).format(tzFormatter);
+            String s =
+                ZonedDateTime.ofInstant(Instant.ofEpochMilli(now), zoneId).format(tzFormatter);
             builder.append(s);
             this.tick = new Tick(seconds, s);
         }

@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.ee10.demos;
 
-import java.net.URI;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
+import java.net.URI;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -25,11 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-
-@Disabled //TODO
+@Disabled // TODO
 public class OneWebAppWithJspTest extends AbstractEmbeddedTest
 {
     private Server server;
@@ -55,9 +54,7 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
     public void testGetDumpInfo() throws Exception
     {
         URI uri = serverLocalUri.resolve("/dump.jsp");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
@@ -71,9 +68,7 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
     public void testGetJspExpr() throws Exception
     {
         URI uri = serverLocalUri.resolve("/expr.jsp?A=1");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
@@ -88,9 +83,7 @@ public class OneWebAppWithJspTest extends AbstractEmbeddedTest
     public void testGetJstlExpr() throws Exception
     {
         URI uri = serverLocalUri.resolve("/jstl.jsp");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);

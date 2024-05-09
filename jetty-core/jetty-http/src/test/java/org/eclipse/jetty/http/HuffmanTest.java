@@ -13,10 +13,15 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
@@ -25,12 +30,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HuffmanTest
 {
@@ -48,16 +47,16 @@ public class HuffmanTest
 
     public static Stream<Arguments> data()
     {
-        return Stream.of(
-            new String[][]{
-                {"D.4.1", "f1e3c2e5f23a6ba0ab90f4ff", "www.example.com"},
-                {"D.4.2", "a8eb10649cbf", "no-cache"},
-                {"D.6.1k", "6402", "302"},
-                {"D.6.1v", "aec3771a4b", "private"},
-                {"D.6.1d", "d07abe941054d444a8200595040b8166e082a62d1bff", "Mon, 21 Oct 2013 20:13:21 GMT"},
-                {"D.6.1l", "9d29ad171863c78f0b97c8e9ae82ae43d3", "https://www.example.com"},
-                {"D.6.2te", "640cff", "303"},
-                }).map(Arguments::of);
+        return Stream.of(new String[][]{
+            {"D.4.1", "f1e3c2e5f23a6ba0ab90f4ff", "www.example.com"},
+            {"D.4.2", "a8eb10649cbf", "no-cache"},
+            {"D.6.1k", "6402", "302"},
+            {"D.6.1v", "aec3771a4b", "private"},
+            {"D.6.1d", "d07abe941054d444a8200595040b8166e082a62d1bff", "Mon, 21 Oct 2013 20:13:21 GMT"},
+            {"D.6.1l", "9d29ad171863c78f0b97c8e9ae82ae43d3", "https://www.example.com"},
+            {"D.6.2te", "640cff", "303"},
+        })
+            .map(Arguments::of);
     }
 
     @ParameterizedTest(name = "[{index}] spec={0}")
@@ -122,8 +121,7 @@ public class HuffmanTest
             Arguments.of((char)456, null),
             Arguments.of((char)256, null),
             Arguments.of((char)-1, null),
-            Arguments.of((char)(' ' - 1), null)
-        );
+            Arguments.of((char)(' ' - 1), null));
     }
 
     @ParameterizedTest(name = "[{index}]") // don't include unprintable character in test display-name

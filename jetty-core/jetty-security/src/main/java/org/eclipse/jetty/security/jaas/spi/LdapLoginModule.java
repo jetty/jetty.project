@@ -38,7 +38,6 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
-
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.util.StringUtil;
@@ -194,7 +193,7 @@ public class LdapLoginModule extends AbstractLoginModule
     }
 
     public class LDAPBindingUser extends JAASUser
-    {   
+    {
         DirContext _context;
         String _userDn;
 
@@ -313,7 +312,8 @@ public class LdapLoginModule extends AbstractLoginModule
      * <p>
      * NOTE: this is not an user authenticated operation
      */
-    private List<String> getUserRoles(DirContext dirContext, String username, Attributes attributes) throws LoginException, NamingException
+    private List<String> getUserRoles(DirContext dirContext, String username, Attributes attributes)
+        throws LoginException, NamingException
     {
         String rdnValue = username;
         Attribute attribute = attributes.get(_userRdnAttribute);
@@ -321,7 +321,7 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             try
             {
-                rdnValue = (String)attribute.get();        // switch to the value stored in the _userRdnAttribute if we can
+                rdnValue = (String)attribute.get(); // switch to the value stored in the _userRdnAttribute if we can
             }
             catch (NamingException ignored)
             {
@@ -330,10 +330,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         String filter = "({0}={1})";
 
-        Object[] filterArguments = new Object[]{
-            _userRdnAttribute,
-            rdnValue
-        };
+        Object[] filterArguments = new Object[]{_userRdnAttribute, rdnValue};
 
         SearchResult searchResult = findUser(dirContext, filter, filterArguments);
 
@@ -446,7 +443,7 @@ public class LdapLoginModule extends AbstractLoginModule
                     authed = credentialLogin(webCredential);
             }
 
-            //only fetch roles if authenticated
+            // only fetch roles if authenticated
             if (authed)
                 getCurrentUser().fetchRoles();
 
@@ -519,7 +516,8 @@ public class LdapLoginModule extends AbstractLoginModule
             throw new FailedLoginException("username may not be empty");
         }
         environment.put(Context.SECURITY_PRINCIPAL, userDn);
-        // RFC 4513 section 6.3.1, protect against ldap server implementations that allow successful binding on empty passwords
+        // RFC 4513 section 6.3.1, protect against ldap server implementations that allow successful binding on empty
+        // passwords
         if (password == null || "".equals(password))
         {
             throw new FailedLoginException("password may not be empty");
@@ -550,16 +548,13 @@ public class LdapLoginModule extends AbstractLoginModule
         if (LOG.isDebugEnabled())
             LOG.debug("Searching for user {} with filter: \'{}\' from base dn: {}", username, filter, _userBaseDn);
 
-        Object[] filterArguments = new Object[]{
-            _userObjectClass,
-            _userIdAttribute,
-            username
-        };
+        Object[] filterArguments = new Object[]{_userObjectClass, _userIdAttribute, username};
 
         return findUser(_rootContext, filter, filterArguments);
     }
 
-    private SearchResult findUser(DirContext dirContext, String filter, Object[] filterArguments) throws LoginException
+    private SearchResult findUser(DirContext dirContext, String filter, Object[] filterArguments)
+        throws LoginException
     {
         SearchControls ctls = new SearchControls();
         ctls.setDerefLinkFlag(true);
@@ -599,10 +594,8 @@ public class LdapLoginModule extends AbstractLoginModule
      * @param options the option map
      */
     @Override
-    public void initialize(Subject subject,
-                           CallbackHandler callbackHandler,
-                           Map<String, ?> sharedState,
-                           Map<String, ?> options)
+    public void initialize(
+                           Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
     {
         super.initialize(subject, callbackHandler, sharedState, options);
 
@@ -701,7 +694,9 @@ public class LdapLoginModule extends AbstractLoginModule
 
         if (_hostname != null)
         {
-            env.put(Context.PROVIDER_URL, (_useLdaps ? "ldaps://" : "ldap://") + _hostname + (_port == 0 ? "" : ":" + _port) + "/");
+            env.put(
+                Context.PROVIDER_URL,
+                (_useLdaps ? "ldaps://" : "ldap://") + _hostname + (_port == 0 ? "" : ":" + _port) + "/");
         }
 
         if (_authenticationMethod != null)

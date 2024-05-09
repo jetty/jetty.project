@@ -13,13 +13,12 @@
 
 package org.acme.webapp;
 
-import java.io.IOException;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class GetResourcePathsServlet extends HttpServlet
 {

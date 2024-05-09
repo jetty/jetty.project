@@ -48,9 +48,6 @@ public class Security
     @Override
     public String toString()
     {
-        return "Security{" +
-            "principal='" + principal + '\'' +
-            ", roles=" + roles +
-            '}';
+        return "Security{" + "principal='" + principal + '\'' + ", roles=" + roles + '}';
     }
 }

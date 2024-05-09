@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.test.client.transport;
 
+import jakarta.servlet.http.HttpServlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -26,8 +27,6 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
-
-import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -172,7 +171,8 @@ public class AbstractTest
         return ssl;
     }
 
-    private static void configureSslContextFactory(SslContextFactory sslContextFactory) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException
+    private static void configureSslContextFactory(SslContextFactory sslContextFactory)
+        throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException
     {
         KeyStore keystore = KeyStore.getInstance("PKCS12");
         try (InputStream is = Files.newInputStream(Path.of("src/test/resources/keystore.p12")))
@@ -200,47 +200,48 @@ public class AbstractTest
     {
         return switch (transport)
         {
-            case HTTP, HTTPS, H2C, H2, FCGI ->
-                new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
-            case H3 ->
-                new QuicServerConnector(server, serverQuicConfig, newServerConnectionFactory(transport));
+            case HTTP, HTTPS, H2C, H2, FCGI -> new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
+            case H3 -> new QuicServerConnector(server, serverQuicConfig, newServerConnectionFactory(transport));
         };
     }
 
     protected ConnectionFactory[] newServerConnectionFactory(Transport transport)
     {
-        List<ConnectionFactory> list = switch (transport)
-        {
-            case HTTP -> List.of(new HttpConnectionFactory(httpConfig));
-            case HTTPS ->
+        List<ConnectionFactory> list =
+            switch (transport)
             {
-                httpConfig.addCustomizer(new SecureRequestCustomizer());
-                HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
-                SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, http.getProtocol());
-                yield List.of(ssl, http);
-            }
-            case H2C ->
-            {
-                httpConfig.addCustomizer(new HostHeaderCustomizer());
-                yield List.of(new HTTP2CServerConnectionFactory(httpConfig));
-            }
-            case H2 ->
-            {
-                httpConfig.addCustomizer(new SecureRequestCustomizer());
-                httpConfig.addCustomizer(new HostHeaderCustomizer());
-                HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
-                ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
-                SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
-                yield List.of(ssl, alpn, h2);
-            }
-            case H3 ->
-            {
-                httpConfig.addCustomizer(new SecureRequestCustomizer());
-                httpConfig.addCustomizer(new HostHeaderCustomizer());
-                yield List.of(new HTTP3ServerConnectionFactory(serverQuicConfig, httpConfig));
-            }
-            case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
-        };
+                case HTTP -> List.of(new HttpConnectionFactory(httpConfig));
+                case HTTPS ->
+                {
+                    httpConfig.addCustomizer(new SecureRequestCustomizer());
+                    HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+                    SslConnectionFactory ssl =
+                        new SslConnectionFactory(sslContextFactoryServer, http.getProtocol());
+                    yield List.of(ssl, http);
+                }
+                case H2C ->
+                {
+                    httpConfig.addCustomizer(new HostHeaderCustomizer());
+                    yield List.of(new HTTP2CServerConnectionFactory(httpConfig));
+                }
+                case H2 ->
+                {
+                    httpConfig.addCustomizer(new SecureRequestCustomizer());
+                    httpConfig.addCustomizer(new HostHeaderCustomizer());
+                    HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
+                    ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
+                    SslConnectionFactory ssl =
+                        new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
+                    yield List.of(ssl, alpn, h2);
+                }
+                case H3 ->
+                {
+                    httpConfig.addCustomizer(new SecureRequestCustomizer());
+                    httpConfig.addCustomizer(new HostHeaderCustomizer());
+                    yield List.of(new HTTP3ServerConnectionFactory(serverQuicConfig, httpConfig));
+                }
+                case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
+            };
         return list.toArray(ConnectionFactory[]::new);
     }
 
@@ -278,7 +279,8 @@ public class AbstractTest
                 SslContextFactory.Client sslContextFactory = newSslContextFactoryClient();
                 clientConnector.setSslContextFactory(sslContextFactory);
                 Path clientPemDirectory = Files.createDirectories(pemDir.resolve("client"));
-                HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, clientPemDirectory));
+                HTTP3Client http3Client =
+                    new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, clientPemDirectory));
                 yield new HttpClientTransportOverHTTP3(http3Client);
             }
             case FCGI -> new HttpClientTransportOverFCGI(1, "");
@@ -296,14 +298,16 @@ public class AbstractTest
 
     protected void setStreamIdleTimeout(long idleTimeout)
     {
-        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
+        AbstractHTTP2ServerConnectionFactory h2 =
+            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
         if (h2 != null)
         {
             h2.setStreamIdleTimeout(idleTimeout);
         }
         else
         {
-            AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
+            AbstractHTTP3ServerConnectionFactory h3 =
+                connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
             if (h3 != null)
                 h3.getHTTP3Configuration().setStreamIdleTimeout(idleTimeout);
             else
@@ -313,7 +317,12 @@ public class AbstractTest
 
     public enum Transport
     {
-        HTTP, HTTPS, H2C, H2, H3, FCGI;
+        HTTP,
+        HTTPS,
+        H2C,
+        H2,
+        H3,
+        FCGI;
 
         public boolean isSecure()
         {

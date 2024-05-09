@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CompletableTask;
@@ -104,7 +103,8 @@ public class ChunkAccumulator
             }
         }
 
-        RetainableByteBuffer buffer = Objects.requireNonNullElse(pool, NON_POOLING).acquire(_length, direct);
+        RetainableByteBuffer buffer =
+            Objects.requireNonNullElse(pool, NON_POOLING).acquire(_length, direct);
         int offset = 0;
         for (Chunk chunk : _chunks)
         {
@@ -151,7 +151,8 @@ public class ChunkAccumulator
      * @return A {@link CompletableFuture} that will be completed when the complete content is read or
      * failed if the max size is exceeded or there is a read error.
      */
-    public CompletableFuture<RetainableByteBuffer> readAll(Content.Source source, ByteBufferPool pool, boolean direct, int maxSize)
+    public CompletableFuture<RetainableByteBuffer> readAll(
+                                                           Content.Source source, ByteBufferPool pool, boolean direct, int maxSize)
     {
         CompletableTask<RetainableByteBuffer> task = new AccumulatorTask<>(source, maxSize)
         {

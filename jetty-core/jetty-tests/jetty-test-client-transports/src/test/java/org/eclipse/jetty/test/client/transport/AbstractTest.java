@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.AnnotatedElement;
 import java.net.URI;
@@ -25,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.management.MBeanServer;
-
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
@@ -75,16 +76,18 @@ import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 @ExtendWith(WorkDirExtension.class)
 public class AbstractTest
 {
     public WorkDir workDir;
 
     @RegisterExtension
-    public final BeforeTestExecutionCallback printMethodName = context ->
-        System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
+    public final BeforeTestExecutionCallback printMethodName = context -> System.err.printf(
+        "Running %s.%s() %s%n",
+        context.getRequiredTestClass().getSimpleName(),
+        context.getRequiredTestMethod().getName(),
+        context.getDisplayName());
+
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected SslContextFactory.Server sslContextFactoryServer;
     protected ServerQuicConfiguration serverQuicConfig;
@@ -129,9 +132,17 @@ public class AbstractTest
         try
         {
             if (serverBufferPool != null && !isLeakTrackingDisabled(testInfo, "server"))
-                assertNoLeaks(serverBufferPool, testInfo, "server-", "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
+                assertNoLeaks(
+                    serverBufferPool,
+                    testInfo,
+                    "server-",
+                    "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
             if (clientBufferPool != null && !isLeakTrackingDisabled(testInfo, "client"))
-                assertNoLeaks(clientBufferPool, testInfo, "client-", "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
+                assertNoLeaks(
+                    clientBufferPool,
+                    testInfo,
+                    "client-",
+                    "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
         }
         finally
         {
@@ -145,11 +156,14 @@ public class AbstractTest
         LifeCycle.stop(server);
     }
 
-    private void assertNoLeaks(ArrayByteBufferPool.Tracking bufferPool, TestInfo testInfo, String prefix, String msg) throws Exception
+    private void assertNoLeaks(ArrayByteBufferPool.Tracking bufferPool, TestInfo testInfo, String prefix, String msg)
+        throws Exception
     {
         try
         {
-            Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
+            Awaitility.await()
+                .atMost(3, TimeUnit.SECONDS)
+                .until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
         }
         catch (Exception e)
         {
@@ -166,8 +180,7 @@ public class AbstractTest
         String transports = split.length > 1 ? split[1] : "";
         String[] transportNames = transports.split("\\|");
 
-        boolean disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue) ||
-                           isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue);
+        boolean disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue) || isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue);
         if (disabled)
         {
             System.err.println("Not tracking " + tagSubValue + " leaks");
@@ -176,8 +189,9 @@ public class AbstractTest
 
         for (String transportName : transportNames)
         {
-            disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName) ||
-                       isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName);
+            disabled = isAnnotatedWithTagValue(
+                testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName) || isAnnotatedWithTagValue(
+                    testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName);
             if (disabled)
             {
                 System.err.println("Not tracking " + tagSubValue + " leaks for transport " + transportName);
@@ -185,8 +199,9 @@ public class AbstractTest
             }
         }
 
-        disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue) ||
-                   isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue);
+        disabled = isAnnotatedWithTagValue(
+            testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue) || isAnnotatedWithTagValue(
+                testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue);
         if (disabled)
         {
             System.err.println("Not tracking " + tagSubValue + " leaks");
@@ -195,8 +210,11 @@ public class AbstractTest
 
         for (String transportName : transportNames)
         {
-            disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName) ||
-                       isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName);
+            disabled = isAnnotatedWithTagValue(
+                testInfo.getTestMethod().orElseThrow(),
+                disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName) || isAnnotatedWithTagValue(
+                    testInfo.getTestClass().orElseThrow(),
+                    disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName);
             if (disabled)
             {
                 System.err.println("Not tracking " + tagSubValue + " leaks for transport " + transportName);
@@ -233,9 +251,7 @@ public class AbstractTest
         {
             try (Stream<Path> stream = Files.walk(targetDir))
             {
-                stream.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(java.io.File::delete);
+                stream.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(java.io.File::delete);
             }
         }
         Files.createDirectories(targetDir);
@@ -318,38 +334,41 @@ public class AbstractTest
 
     protected ConnectionFactory[] newServerConnectionFactory(Transport transport)
     {
-        List<ConnectionFactory> list = switch (transport)
-        {
-            case HTTP -> List.of(new HttpConnectionFactory(httpConfig));
-            case HTTPS ->
+        List<ConnectionFactory> list =
+            switch (transport)
             {
-                httpConfig.addCustomizer(new SecureRequestCustomizer());
-                HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
-                SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, http.getProtocol());
-                yield List.of(ssl, http);
-            }
-            case H2C ->
-            {
-                httpConfig.addCustomizer(new HostHeaderCustomizer());
-                yield List.of(new HTTP2CServerConnectionFactory(httpConfig));
-            }
-            case H2 ->
-            {
-                httpConfig.addCustomizer(new SecureRequestCustomizer());
-                httpConfig.addCustomizer(new HostHeaderCustomizer());
-                HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
-                ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
-                SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
-                yield List.of(ssl, alpn, h2);
-            }
-            case H3 ->
-            {
-                httpConfig.addCustomizer(new SecureRequestCustomizer());
-                httpConfig.addCustomizer(new HostHeaderCustomizer());
-                yield List.of(new HTTP3ServerConnectionFactory(serverQuicConfig, httpConfig));
-            }
-            case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
-        };
+                case HTTP -> List.of(new HttpConnectionFactory(httpConfig));
+                case HTTPS ->
+                {
+                    httpConfig.addCustomizer(new SecureRequestCustomizer());
+                    HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+                    SslConnectionFactory ssl =
+                        new SslConnectionFactory(sslContextFactoryServer, http.getProtocol());
+                    yield List.of(ssl, http);
+                }
+                case H2C ->
+                {
+                    httpConfig.addCustomizer(new HostHeaderCustomizer());
+                    yield List.of(new HTTP2CServerConnectionFactory(httpConfig));
+                }
+                case H2 ->
+                {
+                    httpConfig.addCustomizer(new SecureRequestCustomizer());
+                    httpConfig.addCustomizer(new HostHeaderCustomizer());
+                    HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
+                    ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory("h2");
+                    SslConnectionFactory ssl =
+                        new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
+                    yield List.of(ssl, alpn, h2);
+                }
+                case H3 ->
+                {
+                    httpConfig.addCustomizer(new SecureRequestCustomizer());
+                    httpConfig.addCustomizer(new HostHeaderCustomizer());
+                    yield List.of(new HTTP3ServerConnectionFactory(serverQuicConfig, httpConfig));
+                }
+                case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
+            };
         return list.toArray(ConnectionFactory[]::new);
     }
 
@@ -382,7 +401,8 @@ public class AbstractTest
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
                 SslContextFactory.Client sslClient = newSslContextFactoryClient();
-                HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslClient, null), clientConnector);
+                HTTP3Client http3Client =
+                    new HTTP3Client(new ClientQuicConfiguration(sslClient, null), clientConnector);
                 yield new HttpClientTransportOverHTTP3(http3Client);
             }
             case FCGI -> new HttpClientTransportOverFCGI(1, "");
@@ -400,14 +420,16 @@ public class AbstractTest
 
     protected void setStreamIdleTimeout(long idleTimeout)
     {
-        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
+        AbstractHTTP2ServerConnectionFactory h2 =
+            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
         if (h2 != null)
         {
             h2.setStreamIdleTimeout(idleTimeout);
         }
         else
         {
-            AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
+            AbstractHTTP3ServerConnectionFactory h3 =
+                connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
             if (h3 != null)
                 h3.getHTTP3Configuration().setStreamIdleTimeout(idleTimeout);
             else
@@ -417,7 +439,8 @@ public class AbstractTest
 
     protected void setMaxRequestsPerConnection(int maxRequestsPerConnection)
     {
-        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
+        AbstractHTTP2ServerConnectionFactory h2 =
+            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
         if (h2 != null)
         {
             h2.setMaxConcurrentStreams(maxRequestsPerConnection);
@@ -425,13 +448,20 @@ public class AbstractTest
         else
         {
             if (connector instanceof QuicServerConnector)
-                ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxRequestsPerConnection);
+                ((QuicServerConnector)connector)
+                    .getQuicConfiguration()
+                    .setMaxBidirectionalRemoteStreams(maxRequestsPerConnection);
         }
     }
 
     public enum Transport
     {
-        HTTP, HTTPS, H2C, H2, H3, FCGI;
+        HTTP,
+        HTTPS,
+        H2C,
+        H2,
+        H3,
+        FCGI;
 
         public boolean isSecure()
         {

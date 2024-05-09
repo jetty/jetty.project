@@ -36,5 +36,7 @@ public interface WebSocketCreator
      * instance should be created for the given upgrade request
      * @throws Exception if the WebSocket endpoint instance creation fails
      */
-    Object createWebSocket(ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse, Callback callback) throws Exception;
+    Object createWebSocket(
+                           ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse, Callback callback)
+        throws Exception;
 }

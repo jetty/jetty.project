@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.tests.listeners;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
@@ -33,8 +32,8 @@ public class TextListeners
             StringPartialListener.class,
             AnnotatedStringWholeListener.class,
             AnnotatedReaderWholeListener.class,
-            AnnotatedReverseArgumentPartialListener.class
-        ).map(Arguments::of);
+            AnnotatedReverseArgumentPartialListener.class)
+            .map(Arguments::of);
     }
 
     public static class StringWholeListener extends Session.Listener.Abstract

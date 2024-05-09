@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee9.security.jaspi.provider;
 
-import java.util.Map;
-import javax.security.auth.Subject;
-import javax.security.auth.callback.CallbackHandler;
-
 import jakarta.security.auth.message.AuthException;
 import jakarta.security.auth.message.AuthStatus;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.config.ServerAuthContext;
 import jakarta.security.auth.message.module.ServerAuthModule;
+import java.util.Map;
+import javax.security.auth.Subject;
+import javax.security.auth.callback.CallbackHandler;
 
 /**
  * Simple bridge implementation of the Jakarta Authentication {@link ServerAuthContext} interface.
@@ -33,14 +32,16 @@ class SimpleServerAuthContext implements ServerAuthContext
     private final ServerAuthModule serverAuthModule;
 
     @SuppressWarnings("rawtypes")
-    public SimpleServerAuthContext(CallbackHandler callbackHandler, ServerAuthModule serverAuthModule, Map properties) throws AuthException
+    public SimpleServerAuthContext(CallbackHandler callbackHandler, ServerAuthModule serverAuthModule, Map properties)
+        throws AuthException
     {
         this.serverAuthModule = serverAuthModule;
         serverAuthModule.initialize(null, null, callbackHandler, properties);
     }
 
     @Override
-    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
+    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject)
+        throws AuthException
     {
         return serverAuthModule.validateRequest(messageInfo, clientSubject, serviceSubject);
     }

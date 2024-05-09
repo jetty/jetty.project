@@ -13,9 +13,6 @@
 
 package org.example.test;
 
-import java.util.EventListener;
-import java.util.logging.Logger;
-
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletContextAttributeEvent;
 import jakarta.servlet.ServletContextAttributeListener;
@@ -32,10 +29,13 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import java.util.EventListener;
+import java.util.logging.Logger;
 
 @org.example.initializer.Foo(1)
 @WebListener
-public class TestListener implements HttpSessionListener,
+public class TestListener
+    implements HttpSessionListener,
     HttpSessionAttributeListener,
     HttpSessionActivationListener,
     ServletContextListener,
@@ -44,6 +44,7 @@ public class TestListener implements HttpSessionListener,
     ServletRequestAttributeListener
 {
     private static final Logger LOG = Logger.getLogger(TestListener.class.getName());
+
     @Resource(mappedName = "maxAmount")
     private Double maxAmount;
 
@@ -149,7 +150,9 @@ public class TestListener implements HttpSessionListener,
         try
         {
             ValidListener l = sce.getServletContext().createListener(ValidListener.class);
-            sce.getServletContext().setAttribute("org.example.AnnotationTest.programListenerInjectTest", l != null && l.maxAmount != null);
+            sce.getServletContext()
+                .setAttribute(
+                    "org.example.AnnotationTest.programListenerInjectTest", l != null && l.maxAmount != null);
         }
         catch (Exception e)
         {

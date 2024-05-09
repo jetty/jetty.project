@@ -34,7 +34,12 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     private volatile Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
-    public AsyncContextEvent(ServletContextHandler.ServletScopedContext context, AsyncContextState asyncContext, ServletChannelState state, ServletRequest request, ServletResponse response)
+    public AsyncContextEvent(
+                             ServletContextHandler.ServletScopedContext context,
+                             AsyncContextState asyncContext,
+                             ServletChannelState state,
+                             ServletRequest request,
+                             ServletResponse response)
     {
         super(null, request, response, null);
         _context = context;

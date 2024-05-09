@@ -22,12 +22,11 @@ import org.junit.jupiter.api.AfterEach;
 /**
  * ClusteredOrphanedSessionTest
  */
-public class ClusteredOrphanedSessionTest
-    extends AbstractClusteredOrphanedSessionTest
+public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
     HazelcastSessionDataStoreFactory factory;
 
-    HazelcastTestHelper _testHelper  = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
+    HazelcastTestHelper _testHelper = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
 
     @AfterEach
     public void shutdown()

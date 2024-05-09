@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.core.util.FrameValidation;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class ParserCapture
 {
@@ -49,7 +48,8 @@ public class ParserCapture
         WebSocketComponents components = new WebSocketComponents();
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(new LinkedList<>(), new LinkedList<>());
-        this.coreSession = new WebSocketCoreSession(new TestMessageHandler(), behavior, Negotiated.from(exStack), components);
+        this.coreSession =
+            new WebSocketCoreSession(new TestMessageHandler(), behavior, Negotiated.from(exStack), components);
         coreSession.setAutoFragment(false);
         coreSession.setMaxFrameSize(0);
         this.parser = new Parser(components.getByteBufferPool(), coreSession);

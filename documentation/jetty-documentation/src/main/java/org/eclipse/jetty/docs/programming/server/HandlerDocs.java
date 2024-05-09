@@ -19,7 +19,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Flow;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
@@ -178,7 +177,8 @@ public class HandlerDocs
         public boolean handle(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            response.getHeaders().put(HttpHeader.CONTENT_TYPE, request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+            response.getHeaders()
+                .put(HttpHeader.CONTENT_TYPE, request.getHeaders().get(HttpHeader.CONTENT_TYPE));
 
             long contentLength = request.getLength();
             if (contentLength >= 0)

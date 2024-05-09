@@ -22,7 +22,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -74,14 +73,21 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final SocketAddress remoteSocketAddress;
     private boolean recycleHttpChannels;
 
-    public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(
+                                 Connector connector,
+                                 EndPoint endPoint,
+                                 HttpConfiguration httpConfig,
+                                 HTTP2ServerSession session,
+                                 int inputBufferSize,
+                                 ServerSessionListener listener)
     {
         super(connector.getByteBufferPool(), connector.getExecutor(), endPoint, session, inputBufferSize);
         this.connector = connector;
         this.listener = listener;
         this.httpConfig = httpConfig;
         this.id = StringUtil.randomAlphaNumeric(16);
-        localSocketAddress = httpConfig.getLocalAddress() != null ? httpConfig.getLocalAddress() : endPoint.getLocalSocketAddress();
+        localSocketAddress =
+            httpConfig.getLocalAddress() != null ? httpConfig.getLocalAddress() : endPoint.getLocalSocketAddress();
         remoteSocketAddress = endPoint.getRemoteSocketAddress();
         setRecycleHttpChannels(true);
     }
@@ -220,11 +226,11 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         HTTP2Session session = getSession();
         // Compute whether all requests are idle.
         boolean result = session.getStreams().stream()
-                .map(stream -> (HTTP2Stream)stream)
-                .map(stream -> (HTTP2Channel.Server)stream.getAttachment())
-                .filter(Objects::nonNull)
-                .map(HTTP2Channel.Server::isIdle)
-                .reduce(true, Boolean::logicalAnd);
+            .map(stream -> (HTTP2Stream)stream)
+            .map(stream -> (HTTP2Channel.Server)stream.getAttachment())
+            .filter(Objects::nonNull)
+            .map(HTTP2Channel.Server::isIdle)
+            .reduce(true, Boolean::logicalAnd);
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}", result ? "Processed" : "Ignored", session, failure);
         return result;

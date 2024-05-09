@@ -13,27 +13,25 @@
 
 package org.eclipse.jetty.ee9.maven.plugin.it;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
-
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class IntegrationTestGetContent
 {
     @Test
-    public void getContentResponse()
-        throws Exception
+    public void getContentResponse() throws Exception
     {
         int port = getPort();
         assertTrue(port > 0);
@@ -48,16 +46,22 @@ public class IntegrationTestGetContent
 
             if (Boolean.getBoolean("helloServlet"))
             {
-                String response = httpClient.GET("http://localhost:" + port + contextPath + "/hello?name=beer").getContentAsString();
+                String response = httpClient
+                    .GET("http://localhost:" + port + contextPath + "/hello?name=beer")
+                    .getContentAsString();
                 assertEquals("Hello beer", response.trim(), "it test " + System.getProperty("maven.it.name"));
-                response = httpClient.GET("http://localhost:" + port + contextPath + "/hello?name=foo").getContentAsString();
+                response = httpClient
+                    .GET("http://localhost:" + port + contextPath + "/hello?name=foo")
+                    .getContentAsString();
                 assertEquals("Hello foo", response.trim(), "it test " + System.getProperty("maven.it.name"));
                 System.out.println("helloServlet");
             }
             if (Boolean.getBoolean("pingServlet"))
             {
                 System.out.println("pingServlet");
-                String response = httpClient.GET("http://localhost:" + port + contextPath + "/ping?name=beer").getContentAsString();
+                String response = httpClient
+                    .GET("http://localhost:" + port + contextPath + "/ping?name=beer")
+                    .getContentAsString();
                 assertEquals("pong beer", response.trim(), "it test " + System.getProperty("maven.it.name"));
                 System.out.println("pingServlet ok");
             }
@@ -71,15 +75,20 @@ public class IntegrationTestGetContent
                     url += pathToCheck;
                 }
                 String response = httpClient.GET(url).getContentAsString();
-                assertTrue(response.contains(contentCheck), "it test " + System.getProperty("maven.it.name") +
-                    ", response not contentCheck: " + contentCheck + ", response:" + response);
+                assertTrue(
+                    response.contains(contentCheck),
+                    "it test " + System.getProperty("maven.it.name") + ", response not contentCheck: " + contentCheck + ", response:" + response);
                 System.out.println("contentCheck");
             }
             if (Boolean.getBoolean("helloTestServlet"))
             {
-                String response = httpClient.GET("http://localhost:" + port + contextPath + "/testhello?name=beer").getContentAsString();
+                String response = httpClient
+                    .GET("http://localhost:" + port + contextPath + "/testhello?name=beer")
+                    .getContentAsString();
                 assertEquals("Hello from test beer", response.trim(), "it test " + System.getProperty("maven.it.name"));
-                response = httpClient.GET("http://localhost:" + port + contextPath + "/testhello?name=foo").getContentAsString();
+                response = httpClient
+                    .GET("http://localhost:" + port + contextPath + "/testhello?name=foo")
+                    .getContentAsString();
                 assertEquals("Hello from test foo", response.trim(), "it test " + System.getProperty("maven.it.name"));
                 System.out.println("helloServlet");
             }
@@ -95,8 +104,7 @@ public class IntegrationTestGetContent
         return System.getProperty("context.path", "/");
     }
 
-    public static int getPort()
-            throws Exception
+    public static int getPort() throws Exception
     {
         String s = System.getProperty("jetty.port.file");
         assertNotNull(s, "jetty.port.file System property");
@@ -105,9 +113,9 @@ public class IntegrationTestGetContent
         System.err.println("Looking for port file: " + p);
 
         Awaitility.await()
-                .pollInterval(1, TimeUnit.MILLISECONDS)
-                .atMost(30, TimeUnit.SECONDS)
-                .until(() -> Files.exists(p));
+            .pollInterval(1, TimeUnit.MILLISECONDS)
+            .atMost(30, TimeUnit.SECONDS)
+            .until(() -> Files.exists(p));
 
         try (Reader r = Files.newBufferedReader(p);
              LineNumberReader lnr = new LineNumberReader(r))

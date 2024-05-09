@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Response;
@@ -91,11 +90,15 @@ public class ServerUpgradeResponseImpl extends Response.Wrapper implements Serve
             if (config.getName().startsWith("@"))
                 continue;
 
-            long matches = negotiation.getOfferedExtensions().stream().filter(e -> e.getName().equals(config.getName())).count();
+            long matches = negotiation.getOfferedExtensions().stream()
+                .filter(e -> e.getName().equals(config.getName()))
+                .count();
             if (matches < 1)
                 throw new IllegalArgumentException("Extension not a requested extension");
 
-            matches = configs.stream().filter(e -> e.getName().equals(config.getName())).count();
+            matches = configs.stream()
+                .filter(e -> e.getName().equals(config.getName()))
+                .count();
             if (matches > 1)
                 throw new IllegalArgumentException("Multiple extensions of the same name");
         }

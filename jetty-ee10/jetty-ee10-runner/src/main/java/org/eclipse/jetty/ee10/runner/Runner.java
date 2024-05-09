@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -72,19 +71,18 @@ public class Runner
 {
     private static final Logger LOG = LoggerFactory.getLogger(Runner.class);
 
-    public static final String[] PLUS_CONFIGURATION_CLASSES =
-        {
-            org.eclipse.jetty.ee10.webapp.WebInfConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee10.webapp.WebXmlConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee10.webapp.MetaInfConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee10.webapp.FragmentConfiguration.class.getCanonicalName(),
-            EnvConfiguration.class.getCanonicalName(),
-            PlusConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee10.annotations.AnnotationConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee10.webapp.WebAppConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee10.webapp.JspConfiguration.class.getCanonicalName()
-        };
+    public static final String[] PLUS_CONFIGURATION_CLASSES = {
+        org.eclipse.jetty.ee10.webapp.WebInfConfiguration.class.getCanonicalName(),
+        org.eclipse.jetty.ee10.webapp.WebXmlConfiguration.class.getCanonicalName(),
+        org.eclipse.jetty.ee10.webapp.MetaInfConfiguration.class.getCanonicalName(),
+        org.eclipse.jetty.ee10.webapp.FragmentConfiguration.class.getCanonicalName(),
+        EnvConfiguration.class.getCanonicalName(),
+        PlusConfiguration.class.getCanonicalName(),
+        org.eclipse.jetty.ee10.annotations.AnnotationConfiguration.class.getCanonicalName(),
+        org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration.class.getCanonicalName(),
+        org.eclipse.jetty.ee10.webapp.WebAppConfiguration.class.getCanonicalName(),
+        org.eclipse.jetty.ee10.webapp.JspConfiguration.class.getCanonicalName()
+    };
     public static final String CONTAINER_INCLUDE_JAR_PATTERN = ".*/jetty-runner-[^/]*\\.jar$";
     public static final String DEFAULT_CONTEXT_PATH = "/";
     public static final int DEFAULT_PORT = 8080;
@@ -111,7 +109,7 @@ public class Runner
             if (!Resources.isReadableFile(lib) || !FileID.isJavaArchive(lib.getURI()))
                 throw new IllegalStateException("Invalid lib: " + lib);
 
-            for (Resource item: lib.list())
+            for (Resource item : lib.list())
             {
                 if (item.isDirectory())
                     addJars(item);
@@ -123,7 +121,7 @@ public class Runner
         public void addPath(Resource path)
         {
             Objects.requireNonNull(path, "Path is null");
-            for (Resource r: path)
+            for (Resource r : path)
             {
                 if (FileID.isLibArchive(r.getFileName()))
                     _classpath.add(r.getURI());
@@ -149,23 +147,32 @@ public class Runner
     {
         if (error != null)
             System.err.println("ERROR: " + error);
-        System.err.println("Usage: java [-Djetty.home=dir] -jar jetty-runner.jar [--help|--version] [ server opts] [[ context opts] context ...] ");
+        System.err.println(
+            "Usage: java [-Djetty.home=dir] -jar jetty-runner.jar [--help|--version] [ server opts] [[ context opts] context ...] ");
         System.err.println("Server opts:");
         System.err.println(" --version                           - display version and exit");
-        System.err.println(" --log file                          - request log filename (with optional 'yyyy_mm_dd' wildcard");
-        System.err.println(" --out file                          - info/warn/debug log filename (with optional 'yyyy_mm_dd' wildcard");
+        System.err.println(
+            " --log file                          - request log filename (with optional 'yyyy_mm_dd' wildcard");
+        System.err.println(
+            " --out file                          - info/warn/debug log filename (with optional 'yyyy_mm_dd' wildcard");
         System.err.println(" --host name|ip                      - interface to listen on (default is all interfaces)");
         System.err.println(" --port n                            - port to listen on (default 8080)");
         System.err.println(" --server-uri-file path              - file to write a single line with server base URI");
         System.err.println(" --stop-port n                       - port to listen for stop command (or -DSTOP.PORT=n)");
-        System.err.println(" --stop-key n                        - security string for stop command (required if --stop-port is present) (or -DSTOP.KEY=n)");
-        System.err.println(" [--jar file]*n                      - each tuple specifies an extra jar to be added to the classloader");
-        System.err.println(" [--lib dir]*n                       - each tuple specifies an extra directory of jars to be added to the classloader");
-        System.err.println(" [--classes dir]*n                   - each tuple specifies an extra directory of classes to be added to the classloader");
+        System.err.println(
+            " --stop-key n                        - security string for stop command (required if --stop-port is present) (or -DSTOP.KEY=n)");
+        System.err.println(
+            " [--jar file]*n                      - each tuple specifies an extra jar to be added to the classloader");
+        System.err.println(
+            " [--lib dir]*n                       - each tuple specifies an extra directory of jars to be added to the classloader");
+        System.err.println(
+            " [--classes dir]*n                   - each tuple specifies an extra directory of classes to be added to the classloader");
         System.err.println(" --stats [unsecure|realm.properties] - enable stats gathering servlet context");
-        System.err.println(" [--config file]*n                   - each tuple specifies the name of a jetty xml config file to apply (in the order defined)");
+        System.err.println(
+            " [--config file]*n                   - each tuple specifies the name of a jetty xml config file to apply (in the order defined)");
         System.err.println("Context opts:");
-        System.err.println(" [[--path /path] context]*n          - WAR file, web app dir or context xml file, optionally with a context path");
+        System.err.println(
+            " [[--path /path] context]*n          - WAR file, web app dir or context xml file, optionally with a context path");
         System.exit(1);
     }
 
@@ -271,15 +278,15 @@ public class Runner
                     _configFiles.add(args[++i]);
                     break;
                 case "--lib":
-                    ++i; //skip
+                    ++i; // skip
 
                     break;
                 case "--jar":
-                    ++i; //skip
+                    ++i; // skip
 
                     break;
                 case "--classes":
-                    ++i; //skip
+                    ++i; // skip
 
                     break;
                 case "--stats":
@@ -320,7 +327,7 @@ public class Runner
                         if (_server.getDefaultHandler() == null)
                             _server.setDefaultHandler(new DefaultHandler());
 
-                        //apply jetty config files if there are any
+                        // apply jetty config files if there are any
                         if (_configFiles != null)
                         {
                             for (String cfg : _configFiles)
@@ -331,7 +338,7 @@ public class Runner
                             }
                         }
 
-                        //check that everything got configured, and if not, make the handlers
+                        // check that everything got configured, and if not, make the handlers
                         Handler.Sequence handlers = _server.getDescendant(Handler.Sequence.class);
                         if (handlers == null)
                         {
@@ -339,7 +346,7 @@ public class Runner
                             _server.setHandler(handlers);
                         }
 
-                        //check if contexts already configured
+                        // check if contexts already configured
                         _contexts = handlers.getDescendant(ContextHandlerCollection.class);
                         if (_contexts == null)
                         {
@@ -349,7 +356,7 @@ public class Runner
 
                         if (_enableStats)
                         {
-                            //if no stats handler already configured
+                            // if no stats handler already configured
                             if (handlers.getDescendant(StatisticsHandler.class) == null)
                             {
                                 StatisticsHandler statsHandler = new StatisticsHandler();
@@ -365,7 +372,8 @@ public class Runner
                                 {
                                     ResourceFactory resourceFactory = ResourceFactory.of(statsContext);
                                     Resource statsResource = resourceFactory.newResource(_statsPropFile);
-                                    final HashLoginService loginService = new HashLoginService("StatsRealm", statsResource);
+                                    final HashLoginService loginService =
+                                        new HashLoginService("StatsRealm", statsResource);
                                     Constraint constraint = new Constraint.Builder()
                                         .name("Admin Only")
                                         .roles("admin")
@@ -384,13 +392,13 @@ public class Runner
                             }
                         }
 
-                        //ensure a DefaultHandler is present
+                        // ensure a DefaultHandler is present
                         if (handlers.getDescendant(DefaultHandler.class) == null)
                         {
                             handlers.addHandler(new DefaultHandler());
                         }
 
-                        //check a connector is configured to listen on
+                        // check a connector is configured to listen on
                         Connector[] connectors = _server.getConnectors();
                         if (connectors == null || connectors.length == 0)
                         {
@@ -434,7 +442,8 @@ public class Runner
                         if (contextPathSet)
                             handler.setContextPath(contextPath);
                         _contexts.addHandler(handler);
-                        String containerIncludeJarPattern = (String)handler.getAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN);
+                        String containerIncludeJarPattern =
+                            (String)handler.getAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN);
                         if (containerIncludeJarPattern == null)
                             containerIncludeJarPattern = CONTAINER_INCLUDE_JAR_PATTERN;
                         else
@@ -447,7 +456,7 @@ public class Runner
 
                         handler.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, containerIncludeJarPattern);
 
-                        //check the configurations, if not explicitly set up, then configure all of them
+                        // check the configurations, if not explicitly set up, then configure all of them
                         if (handler instanceof WebAppContext)
                         {
                             WebAppContext wac = (WebAppContext)handler;
@@ -460,12 +469,11 @@ public class Runner
                         // assume it is a WAR file
                         WebAppContext webapp = new WebAppContext(ctx.toString(), contextPath);
                         webapp.setConfigurationClasses(PLUS_CONFIGURATION_CLASSES);
-                        webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
-                            CONTAINER_INCLUDE_JAR_PATTERN);
+                        webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, CONTAINER_INCLUDE_JAR_PATTERN);
                         _contexts.addHandler(webapp);
                     }
 
-                    //reset
+                    // reset
                     contextPathSet = false;
                     contextPath = DEFAULT_CONTEXT_PATH;
                     break;

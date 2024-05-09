@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -21,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ManagedSelector;
@@ -30,14 +33,11 @@ import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ServerConnectorAcceptTest
 {
     @ParameterizedTest
-    @ValueSource(ints = {0, 1, 2})
+    @ValueSource(ints =
+    {0, 1, 2})
     public void testAccept(int acceptors) throws Exception
     {
         Server server = new Server();
@@ -84,10 +84,8 @@ public class ServerConnectorAcceptTest
                     {
                         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
                         {
-                            String request = "GET / HTTP/1.1\r\n" +
-                                "Host: localhost\r\n" +
-                                "Connection: close\r\n" +
-                                "\r\n";
+                            String request =
+                                "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
                             socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
                             HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
                             assertNotNull(response);
@@ -102,11 +100,9 @@ public class ServerConnectorAcceptTest
                             latch.countDown();
                         }
                     }
-                    System.err.printf("%d acceptors, %d threads, %d requests each, time = %d ms%n",
-                        acceptors,
-                        threads,
-                        iterations,
-                        NanoTime.millisSince(start));
+                    System.err.printf(
+                        "%d acceptors, %d threads, %d requests each, time = %d ms%n",
+                        acceptors, threads, iterations, NanoTime.millisSince(start));
                 }
                 finally
                 {
@@ -126,7 +122,8 @@ public class ServerConnectorAcceptTest
 
         Collection<ManagedSelector> selectors = connector.getSelectorManager().getBeans(ManagedSelector.class);
         selectors.stream()
-            .map(s -> String.format("avg selected keys = %.3f, selects = %d", s.getAverageSelectedKeys(), s.getSelectCount()))
+            .map(s -> String.format(
+                "avg selected keys = %.3f, selects = %d", s.getAverageSelectedKeys(), s.getSelectCount()))
             .forEach(System.err::println);
         selectors.forEach(ManagedSelector::resetStats);
     }

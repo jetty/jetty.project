@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.ee10.proxy;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -25,15 +33,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.UnavailableException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContinueProtocolHandler;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.ProtocolHandlers;
@@ -92,8 +91,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         "transfer-encoding",
         "te",
         "trailer",
-        "upgrade"
-    );
+        "upgrade");
 
     private final Set<String> _whiteList = new HashSet<>();
     private final Set<String> _blackList = new HashSet<>();
@@ -456,9 +454,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected boolean hasContent(HttpServletRequest clientRequest)
     {
-        return clientRequest.getContentLength() > 0 ||
-            clientRequest.getContentType() != null ||
-            clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
+        return clientRequest.getContentLength() > 0 || clientRequest.getContentType() != null || clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
     }
 
     protected boolean expects100Continue(HttpServletRequest request)
@@ -470,7 +466,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
     {
         // Do not copy the HTTP version, since the client-to-proxy
         // version may be different from the proxy-to-server version.
-        return getHttpClient().newRequest(rewrittenTarget)
+        return getHttpClient()
+            .newRequest(rewrittenTarget)
             .method(request.getMethod())
             .attribute(CLIENT_REQUEST_ATTRIBUTE, request);
     }
@@ -482,7 +479,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
         Set<String> headersToRemove = findConnectionHeaders(clientRequest);
 
-        for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements(); )
+        for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements();)
         {
             String headerName = headerNames.nextElement();
             String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
@@ -496,7 +493,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (headersToRemove != null && headersToRemove.contains(lowerHeaderName))
                 continue;
 
-            for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements(); )
+            for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements();)
             {
                 String headerValue = headerValues.nextElement();
                 if (headerValue != null)
@@ -546,7 +543,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
      */
     protected void addViaHeader(Request proxyRequest)
     {
-        HttpServletRequest clientRequest = (HttpServletRequest)proxyRequest.getAttributes().get(CLIENT_REQUEST_ATTRIBUTE);
+        HttpServletRequest clientRequest =
+            (HttpServletRequest)proxyRequest.getAttributes().get(CLIENT_REQUEST_ATTRIBUTE);
         addViaHeader(clientRequest, proxyRequest);
     }
 
@@ -596,7 +594,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
             proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_SERVER, localName));
     }
 
-    protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
+    protected void sendProxyRequest(
+                                    HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
     {
         if (_log.isDebugEnabled())
         {
@@ -606,11 +605,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (query != null)
                 builder.append("?").append(query);
             builder.append(" ").append(clientRequest.getProtocol()).append(System.lineSeparator());
-            for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements(); )
+            for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements();)
             {
                 String headerName = headerNames.nextElement();
                 builder.append(headerName).append(": ");
-                for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements(); )
+                for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements();)
                 {
                     String headerValue = headerValues.nextElement();
                     if (headerValue != null)
@@ -622,7 +621,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
             }
             builder.append(System.lineSeparator());
 
-            _log.debug("{} proxying to upstream:{}{}{}{}{}",
+            _log.debug(
+                "{} proxying to upstream:{}{}{}{}{}",
                 getRequestId(clientRequest),
                 System.lineSeparator(),
                 builder,
@@ -634,9 +634,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
         proxyRequest.send(newProxyResponseListener(clientRequest, proxyResponse));
     }
 
-    protected abstract Response.CompleteListener newProxyResponseListener(HttpServletRequest clientRequest, HttpServletResponse proxyResponse);
+    protected abstract Response.CompleteListener newProxyResponseListener(
+                                                                          HttpServletRequest clientRequest, HttpServletResponse proxyResponse);
 
-    protected void onClientRequestFailure(HttpServletRequest clientRequest, Request proxyRequest, HttpServletResponse proxyResponse, Throwable failure)
+    protected void onClientRequestFailure(
+                                          HttpServletRequest clientRequest,
+                                          Request proxyRequest,
+                                          HttpServletResponse proxyResponse,
+                                          Throwable failure)
     {
         proxyRequest.abort(failure).whenComplete((aborted, x) ->
         {
@@ -649,12 +654,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected int clientRequestStatus(Throwable failure)
     {
-        return failure instanceof TimeoutException
-            ? HttpStatus.REQUEST_TIMEOUT_408
-            : HttpStatus.INTERNAL_SERVER_ERROR_500;
+        return failure instanceof TimeoutException ? HttpStatus.REQUEST_TIMEOUT_408 : HttpStatus.INTERNAL_SERVER_ERROR_500;
     }
 
-    protected void onServerResponseHeaders(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+    protected void onServerResponseHeaders(
+                                           HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
     {
         for (HttpField field : serverResponse.getHeaders())
         {
@@ -663,7 +667,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (HOP_HEADERS.contains(lowerHeaderName))
                 continue;
 
-            String newHeaderValue = filterServerResponseHeader(clientRequest, serverResponse, headerName, field.getValue());
+            String newHeaderValue =
+                filterServerResponseHeader(clientRequest, serverResponse, headerName, field.getValue());
             if (newHeaderValue == null)
                 continue;
 
@@ -673,12 +678,17 @@ public abstract class AbstractProxyServlet extends HttpServlet
         if (_log.isDebugEnabled())
         {
             StringBuilder builder = new StringBuilder(System.lineSeparator());
-            builder.append(clientRequest.getProtocol()).append(" ").append(proxyResponse.getStatus())
-                .append(" ").append(serverResponse.getReason()).append(System.lineSeparator());
+            builder.append(clientRequest.getProtocol())
+                .append(" ")
+                .append(proxyResponse.getStatus())
+                .append(" ")
+                .append(serverResponse.getReason())
+                .append(System.lineSeparator());
             for (String headerName : proxyResponse.getHeaderNames())
             {
                 builder.append(headerName).append(": ");
-                for (Iterator<String> headerValues = proxyResponse.getHeaders(headerName).iterator(); headerValues.hasNext(); )
+                for (Iterator<String> headerValues =
+                    proxyResponse.getHeaders(headerName).iterator(); headerValues.hasNext();)
                 {
                     String headerValue = headerValues.next();
                     if (headerValue != null)
@@ -688,19 +698,18 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 }
                 builder.append(System.lineSeparator());
             }
-            _log.debug("{} proxying to downstream:{}{}",
-                getRequestId(clientRequest),
-                System.lineSeparator(),
-                builder);
+            _log.debug("{} proxying to downstream:{}{}", getRequestId(clientRequest), System.lineSeparator(), builder);
         }
     }
 
-    protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
+    protected String filterServerResponseHeader(
+                                                HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
     {
         return headerValue;
     }
 
-    protected void onProxyResponseSuccess(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+    protected void onProxyResponseSuccess(
+                                          HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
     {
         if (_log.isDebugEnabled())
             _log.debug("{} proxying successful", getRequestId(clientRequest));
@@ -709,7 +718,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
         asyncContext.complete();
     }
 
-    protected void onProxyResponseFailure(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse, Throwable failure)
+    protected void onProxyResponseFailure(
+                                          HttpServletRequest clientRequest,
+                                          HttpServletResponse proxyResponse,
+                                          Response serverResponse,
+                                          Throwable failure)
     {
         if (_log.isDebugEnabled())
             _log.debug(getRequestId(clientRequest) + " proxying failed", failure);
@@ -723,9 +736,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected int proxyResponseStatus(Throwable failure)
     {
-        return failure instanceof TimeoutException
-            ? HttpStatus.GATEWAY_TIMEOUT_504
-            : HttpStatus.BAD_GATEWAY_502;
+        return failure instanceof TimeoutException ? HttpStatus.GATEWAY_TIMEOUT_504 : HttpStatus.BAD_GATEWAY_502;
     }
 
     protected int getRequestId(HttpServletRequest clientRequest)
@@ -733,7 +744,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
         return System.identityHashCode(clientRequest);
     }
 
-    protected void sendProxyResponseError(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, int status)
+    protected void sendProxyResponseError(
+                                          HttpServletRequest clientRequest, HttpServletResponse proxyResponse, int status)
     {
         try
         {
@@ -853,7 +865,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
         @Override
         protected void onContinue(Request request)
         {
-            HttpServletRequest clientRequest = (HttpServletRequest)request.getAttributes().get(CLIENT_REQUEST_ATTRIBUTE);
+            HttpServletRequest clientRequest =
+                (HttpServletRequest)request.getAttributes().get(CLIENT_REQUEST_ATTRIBUTE);
             AbstractProxyServlet.this.onContinue(clientRequest, request);
         }
     }

@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -21,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
@@ -35,10 +38,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ZippedRequestContentTest extends AbstractTest
 {
@@ -76,8 +75,8 @@ public class ZippedRequestContentTest extends AbstractTest
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(
             client.newRequest(newURI(transport))
                 .method(HttpMethod.POST)
-                .body(content)
-        ).send();
+                .body(content))
+            .send();
 
         OutputStream output = content.getOutputStream();
         try (ZipOutputStream zipOutput = new ZipOutputStream(output))

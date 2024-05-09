@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
-
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.junit.jupiter.api.Test;

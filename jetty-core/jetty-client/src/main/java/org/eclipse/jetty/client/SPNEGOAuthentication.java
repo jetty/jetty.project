@@ -29,7 +29,6 @@ import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.security.SecurityUtils;
@@ -214,8 +213,10 @@ public class SPNEGOAuthentication extends AbstractAuthentication
 
         String b64Input = headerInfo.getBase64();
         byte[] input = b64Input == null ? new byte[0] : Base64.getDecoder().decode(b64Input);
-        byte[] output = SecurityUtils.doAs(spnegoContext.subject, initGSSContext(spnegoContext, request.getHost(), input));
-        String b64Output = output == null ? null : new String(Base64.getEncoder().encode(output));
+        byte[] output =
+            SecurityUtils.doAs(spnegoContext.subject, initGSSContext(spnegoContext, request.getHost(), input));
+        String b64Output =
+            output == null ? null : new String(Base64.getEncoder().encode(output));
 
         // The result cannot be used for subsequent requests,
         // so it always has a null URI to avoid being cached.
@@ -370,7 +371,8 @@ public class SPNEGOAuthentication extends AbstractAuthentication
             }
 
             String moduleClass = "com.sun.security.auth.module.Krb5LoginModule";
-            AppConfigurationEntry config = new AppConfigurationEntry(moduleClass, AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, options);
+            AppConfigurationEntry config = new AppConfigurationEntry(
+                moduleClass, AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, options);
             return new AppConfigurationEntry[]{config};
         }
     }

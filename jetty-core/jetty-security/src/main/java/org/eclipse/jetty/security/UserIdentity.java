@@ -15,7 +15,6 @@ package org.eclipse.jetty.security;
 
 import java.security.Principal;
 import javax.security.auth.Subject;
-
 import org.eclipse.jetty.security.internal.DefaultUserIdentity;
 
 /**

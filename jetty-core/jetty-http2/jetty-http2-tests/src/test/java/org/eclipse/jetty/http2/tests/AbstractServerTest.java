@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -77,7 +76,14 @@ public class AbstractServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields, -1);
+        return new MetaData.Request(
+            method,
+            HttpScheme.HTTP.asString(),
+            new HostPortHttpField(authority),
+            path,
+            HttpVersion.HTTP_2,
+            fields,
+            -1);
     }
 
     @AfterEach

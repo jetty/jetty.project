@@ -19,7 +19,6 @@ import java.security.MessageDigest;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
@@ -40,9 +39,10 @@ public abstract class Credential implements Serializable
     private static final long serialVersionUID = -7760551052768181572L;
     // Intentionally NOT using TypeUtil.serviceProviderStream
     // as that introduces a Logger requirement that command line Password cannot use.
-    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = ServiceLoader.load(CredentialProvider.class).stream()
-        .map(ServiceLoader.Provider::get)
-        .collect(Collectors.toList());
+    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS =
+        ServiceLoader.load(CredentialProvider.class).stream()
+            .map(ServiceLoader.Provider::get)
+            .collect(Collectors.toList());
 
     /**
      * Check a credential

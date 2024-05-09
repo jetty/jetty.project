@@ -17,7 +17,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
-
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -50,7 +49,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP2.class);
 
-    private final Runnable onDataAvailableTask = new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, this::responseContentAvailable);
+    private final Runnable onDataAvailableTask =
+        new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, this::responseContentAvailable);
 
     public HttpReceiverOverHTTP2(HttpChannel channel)
     {
@@ -92,11 +92,18 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     public void failAndClose(Throwable failure)
     {
         Stream stream = getHttpChannel().getStream();
-        responseFailure(failure, Promise.from(failed ->
-        {
-            if (failed)
-                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        }, x -> stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP)));
+        responseFailure(
+            failure,
+            Promise.from(
+                failed ->
+                {
+                    if (failed)
+                        stream.reset(
+                            new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code),
+                            Callback.NOOP);
+                },
+                x -> stream.reset(
+                    new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP)));
     }
 
     @Override
@@ -122,7 +129,10 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         MetaData.Response response = (MetaData.Response)frame.getMetaData();
         HttpResponse httpResponse = exchange.getResponse();
-        httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
+        httpResponse
+            .version(response.getHttpVersion())
+            .status(response.getStatus())
+            .reason(response.getReason());
 
         responseBegin(exchange);
 
@@ -166,7 +176,10 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     {
         try
         {
-            upgrader.upgrade(response, endPoint, Callback.from(Callback.NOOP::succeeded, failure -> responseFailure(failure, Promise.noop())));
+            upgrader.upgrade(
+                response,
+                endPoint,
+                Callback.from(Callback.NOOP::succeeded, failure -> responseFailure(failure, Promise.noop())));
         }
         catch (Throwable x)
         {
@@ -182,7 +195,9 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         HttpRequest request = exchange.getRequest();
         MetaData.Request metaData = frame.getMetaData();
-        HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getHttpURI().toString());
+        HttpRequest pushRequest = (HttpRequest)getHttpDestination()
+            .getHttpClient()
+            .newRequest(metaData.getHttpURI().toString());
         // TODO: copy PUSH_PROMISE headers into pushRequest.
 
         BiFunction<Request, Request, Response.CompleteListener> pushHandler = request.getPushHandler();
@@ -191,7 +206,8 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             Response.CompleteListener listener = pushHandler.apply(request, pushRequest);
             if (listener != null)
             {
-                HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().acquireHttpChannel();
+                HttpChannelOverHTTP2 pushChannel =
+                    getHttpChannel().getHttpConnection().acquireHttpChannel();
                 pushRequest.getResponseListeners().addCompleteListener(listener, true);
                 HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest);
                 pushChannel.associate(pushExchange);
@@ -242,9 +258,9 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             promise.succeeded(false);
             return null;
         }
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
-            promise.completeWith(exchange.getRequest().abort(failure))
-        );
+        return new Invocable.ReadyTask(
+            Invocable.InvocationType.NON_BLOCKING,
+            () -> promise.completeWith(exchange.getRequest().abort(failure)));
     }
 
     @Override

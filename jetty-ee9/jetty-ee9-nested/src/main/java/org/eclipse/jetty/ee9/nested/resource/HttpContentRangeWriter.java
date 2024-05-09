@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.io.IOResources;
 

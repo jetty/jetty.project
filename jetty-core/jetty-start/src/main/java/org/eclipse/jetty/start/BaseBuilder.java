@@ -29,7 +29,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.BaseHomeFileInitializer;
@@ -91,9 +90,8 @@ public class BaseBuilder
             if (localRepoDir != null)
             {
                 // Use provided local repo directory
-                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome, localRepoDir,
-                    args.getMavenLocalRepoDir() == null,
-                    startArgs.getMavenBaseUri()));
+                fileInitializers.add(new MavenLocalRepoFileInitializer(
+                    baseHome, localRepoDir, args.getMavenLocalRepoDir() == null, startArgs.getMavenBaseUri()));
             }
             else
             {
@@ -231,8 +229,7 @@ public class BaseBuilder
             }
         }
 
-        if ((startArgs.isCreateStartD() && (!Files.exists(startd) || Files.exists(startini))) ||
-            (!newlyAdded.isEmpty() && !Files.exists(startini) && !Files.exists(startd)))
+        if ((startArgs.isCreateStartD() && (!Files.exists(startd) || Files.exists(startini))) || (!newlyAdded.isEmpty() && !Files.exists(startini) && !Files.exists(startd)))
         {
             if (Files.exists(getBaseHome().getBasePath("start.jar")) && !startArgs.isCreateStartD())
             {
@@ -270,69 +267,72 @@ public class BaseBuilder
 
         boolean useStartD = Files.exists(startd);
         if (useStartD && Files.exists(startini))
-            StartLog.warn("Use of both %s and %s is deprecated", getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
+            StartLog.warn(
+                "Use of both %s and %s is deprecated",
+                getBaseHome().toShortForm(startd), getBaseHome().toShortForm(startini));
 
         builder.set(useStartD ? new StartDirBuilder(this) : new StartIniBuilder(this));
 
         // Collect the filesystem operations to perform,
         // only for those modules that are enabled.
-        newlyAdded.stream()
-            .map(modules::get)
-            .filter(Module::isEnabled)
-            .forEach(module ->
+        newlyAdded.stream().map(modules::get).filter(Module::isEnabled).forEach(module ->
+        {
+            String ini = null;
+            try
             {
-                String ini = null;
-                try
+                if (module.isSkipFilesValidation())
                 {
-                    if (module.isSkipFilesValidation())
-                    {
-                        StartLog.debug("Skipping [files] validation on %s", module.getName());
-                    }
-                    else
-                    {
-                        // if (explicitly added and ini file modified)
-                        if (startArgs.getStartModules().contains(module.getName()))
-                        {
-                            ini = builder.get().addModule(module, startArgs.getJettyEnvironment().getProperties());
-                            if (ini != null)
-                                modified.set(true);
-                        }
-                        for (String file : module.getFiles())
-                        {
-                            files.add(new FileArg(module, startArgs.getJettyEnvironment().getProperties().expand(file)));
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-
-                if (module.isDynamic())
-                {
-                    for (String s : module.getEnableSources())
-                    {
-                        StartLog.info("%-15s %s", module.getName(), s);
-                    }
-                }
-                else if (module.isTransitive())
-                {
-                    if (module.hasIniTemplate())
-                    {
-                        StartLog.info("%-15s transitively enabled, ini template available with --add-modules=%s",
-                            module.getName(),
-                            module.getName());
-                    }
-                    else
-                    {
-                        StartLog.info("%-15s transitively enabled", module.getName());
-                    }
+                    StartLog.debug("Skipping [files] validation on %s", module.getName());
                 }
                 else
                 {
-                    StartLog.info("%-15s initialized in %s", module.getName(), ini);
+                    // if (explicitly added and ini file modified)
+                    if (startArgs.getStartModules().contains(module.getName()))
+                    {
+                        ini = builder.get()
+                            .addModule(
+                                module, startArgs.getJettyEnvironment().getProperties());
+                        if (ini != null)
+                            modified.set(true);
+                    }
+                    for (String file : module.getFiles())
+                    {
+                        files.add(new FileArg(
+                            module,
+                            startArgs.getJettyEnvironment().getProperties().expand(file)));
+                    }
                 }
-            });
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            if (module.isDynamic())
+            {
+                for (String s : module.getEnableSources())
+                {
+                    StartLog.info("%-15s %s", module.getName(), s);
+                }
+            }
+            else if (module.isTransitive())
+            {
+                if (module.hasIniTemplate())
+                {
+                    StartLog.info(
+                        "%-15s transitively enabled, ini template available with --add-modules=%s",
+                        module.getName(), module.getName());
+                }
+                else
+                {
+                    StartLog.info("%-15s transitively enabled", module.getName());
+                }
+            }
+            else
+            {
+                StartLog.info("%-15s initialized in %s", module.getName(), ini);
+            }
+        });
 
         files.addAll(startArgs.getFiles());
         if (!files.isEmpty() && processFileResources(files))

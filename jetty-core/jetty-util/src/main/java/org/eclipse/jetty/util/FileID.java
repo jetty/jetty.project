@@ -369,7 +369,7 @@ public class FileID
         Path fileNamePath = path.getFileName();
         if (fileNamePath == null)
             return false;
-        
+
         String filename = fileNamePath.toString();
         // has to end in ".class"
         if (!StringUtil.asciiEndsWithIgnoreCase(filename, ".class"))

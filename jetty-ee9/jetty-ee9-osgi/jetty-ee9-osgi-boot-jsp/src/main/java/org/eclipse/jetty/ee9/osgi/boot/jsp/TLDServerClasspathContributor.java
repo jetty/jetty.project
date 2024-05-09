@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.eclipse.jetty.ee9.osgi.boot.OSGiMetaInfConfiguration;
 import org.eclipse.jetty.osgi.util.ServerClasspathContributor;
 import org.osgi.framework.Bundle;
@@ -29,7 +28,7 @@ import org.osgi.framework.FrameworkUtil;
  */
 public class TLDServerClasspathContributor implements ServerClasspathContributor
 {
-    
+
     /**
      * Name of a class that belongs to the jstl bundle. From that class
      * we locate the corresponding bundle.
@@ -47,7 +46,7 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
         List<Bundle> scannableBundles = new ArrayList<>();
         List<String> bundleNames = Collections.emptyList();
 
-        String tmp = System.getProperty(OSGiMetaInfConfiguration.SYS_PROP_TLD_BUNDLES); //comma separated exact names
+        String tmp = System.getProperty(OSGiMetaInfConfiguration.SYS_PROP_TLD_BUNDLES); // comma separated exact names
 
         if (tmp != null)
         {
@@ -58,17 +57,18 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
         Bundle jstlBundle = findJstlBundle();
         if (jstlBundle != null)
             scannableBundles.add(jstlBundle);
-        
-        final Bundle[] bundles = FrameworkUtil.getBundle(getClass()).getBundleContext().getBundles();
+
+        final Bundle[] bundles =
+            FrameworkUtil.getBundle(getClass()).getBundleContext().getBundles();
         for (Bundle bundle : bundles)
         {
             if (bundleNames.contains(bundle.getSymbolicName()))
                 scannableBundles.add(bundle);
         }
-      
+
         return scannableBundles;
     }
-    
+
     /**
      * Check that jsp is on the classpath
      *
@@ -104,7 +104,7 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
         }
         catch (ClassNotFoundException e)
         {
-            //no jstl do nothing
+            // no jstl do nothing
         }
 
         return null;

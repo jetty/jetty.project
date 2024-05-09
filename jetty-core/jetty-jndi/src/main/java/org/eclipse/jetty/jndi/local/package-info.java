@@ -15,4 +15,3 @@
  * Jetty Jndi : Mappings for local
  */
 package org.eclipse.jetty.jndi.local;
-

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.websocket.tests.server;
 
 import java.util.concurrent.CountDownLatch;
-
 import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 
 public class CloseInOnCloseEndpointNewThread extends AbstractCloseEndpoint
@@ -29,7 +28,8 @@ public class CloseInOnCloseEndpointNewThread extends AbstractCloseEndpoint
             {
                 getSession().close(StatusCode.SERVER_ERROR, "this should be a noop");
                 complete.countDown();
-            }).start();
+            })
+                .start();
             complete.await();
         }
         catch (InterruptedException e)

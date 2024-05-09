@@ -13,8 +13,13 @@
 
 package org.eclipse.jetty.security;
 
-import java.util.Arrays;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 
+import java.util.Arrays;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
@@ -32,12 +37,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-
 public class BasicAuthenticatorTest
 {
     private Server _server;
@@ -51,7 +50,8 @@ public class BasicAuthenticatorTest
     {
         _server = new Server();
 
-        _server.addBean(new AuthenticationTestHandler.CustomLoginService(new AuthenticationTestHandler.TestIdentityService()));
+        _server.addBean(
+            new AuthenticationTestHandler.CustomLoginService(new AuthenticationTestHandler.TestIdentityService()));
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         HttpConfiguration httpConfiguration = http.getHttpConfiguration();
@@ -130,28 +130,34 @@ public class BasicAuthenticatorTest
         assertThat(response, containsString("HTTP/1.1 401 Unauthorized"));
         assertThat(response, not(containsString("OK")));
 
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("wrong", "user")));
+        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+            .formatted(BasicAuthenticator.authorization("wrong", "user")));
         assertThat(response, containsString("HTTP/1.1 401 Unauthorized"));
         assertThat(response, not(containsString("OK")));
 
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("user", "password")));
+        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+            .formatted(BasicAuthenticator.authorization("user", "password")));
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("user is OK"));
 
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "password")));
+        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+            .formatted(BasicAuthenticator.authorization("admin", "password")));
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("admin is OK"));
 
-        response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("user", "password")));
+        response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+            .formatted(BasicAuthenticator.authorization("user", "password")));
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
         assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("OK")));
 
-        response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "password")));
+        response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+            .formatted(BasicAuthenticator.authorization("admin", "password")));
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("admin is OK"));
 
-        response = _connector.getResponse("GET /ctx/known/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("user", "password")));
+        response = _connector.getResponse("GET /ctx/known/user HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+            .formatted(BasicAuthenticator.authorization("user", "password")));
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
         assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("OK")));
@@ -162,31 +168,35 @@ public class BasicAuthenticatorTest
     {
         HttpTester.Response response;
 
-        response = HttpTester.parseResponse(_connector.getResponse(
-            "GET /ctx/some/thing?action=authenticate HTTP/1.0\r\n\r\n"));
+        response = HttpTester.parseResponse(
+            _connector.getResponse("GET /ctx/some/thing?action=authenticate HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("-", "Deferred", "path=/ctx/some/thing"));
 
-        response = HttpTester.parseResponse(_connector.getResponse(
-            "GET /ctx/some/thing?action=authenticate HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+        response = HttpTester.parseResponse(
+            _connector.getResponse("GET /ctx/some/thing?action=authenticate HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
                 .formatted(BasicAuthenticator.authorization("user", "wrong"))));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("-", "Deferred", "path=/ctx/some/thing"));
 
-        response = HttpTester.parseResponse(_connector.getResponse(
-            "GET /ctx/some/thing?action=authenticate HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+        response = HttpTester.parseResponse(
+            _connector.getResponse("GET /ctx/some/thing?action=authenticate HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
                 .formatted(BasicAuthenticator.authorization("user", "password"))));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("user", "user is OK", "path=/ctx/some/thing"));
 
         response = HttpTester.parseResponse(_connector.getResponse(
             "GET /ctx/any/user?action=logout&action=authenticate HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
                 .formatted(BasicAuthenticator.authorization("user", "password"))));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("true", "-", "Deferred", "path=/ctx/any/user"));
     }
 
@@ -195,20 +205,21 @@ public class BasicAuthenticatorTest
     {
         HttpTester.Response response;
 
-        response = HttpTester.parseResponse(_connector.getResponse(
-            "GET /ctx/some/thing?action=challenge HTTP/1.0\r\n\r\n"));
+        response = HttpTester.parseResponse(
+            _connector.getResponse("GET /ctx/some/thing?action=challenge HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(401));
 
-        response = HttpTester.parseResponse(_connector.getResponse(
-            "GET /ctx/some/thing?action=challenge HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+        response = HttpTester.parseResponse(
+            _connector.getResponse("GET /ctx/some/thing?action=challenge HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
                 .formatted(BasicAuthenticator.authorization("user", "wrong"))));
         assertThat(response.getStatus(), equalTo(401));
 
-        response = HttpTester.parseResponse(_connector.getResponse(
-            "GET /ctx/some/thing?action=challenge HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+        response = HttpTester.parseResponse(
+            _connector.getResponse("GET /ctx/some/thing?action=challenge HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
                 .formatted(BasicAuthenticator.authorization("user", "password"))));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("user", "user is OK", "path=/ctx/some/thing"));
 
         response = HttpTester.parseResponse(_connector.getResponse(
@@ -225,19 +236,23 @@ public class BasicAuthenticatorTest
         response = HttpTester.parseResponse(_connector.getResponse(
             "GET /ctx/some/thing?action=login&username=user&password=wrong HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("-", "Deferred", "path=/ctx/some/thing"));
 
         response = HttpTester.parseResponse(_connector.getResponse(
             "GET /ctx/some/thing?action=login&username=user&password=password HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("user", "user is OK", "path=/ctx/some/thing"));
 
-        response = HttpTester.parseResponse(_connector.getResponse(
-            "GET /ctx/some/thing?action=login&username=user&password=password&action=logout&action=login&username=admin&password=password HTTP/1.0\r\n\r\n"));
+        response = HttpTester.parseResponse(
+            _connector.getResponse(
+                "GET /ctx/some/thing?action=login&username=user&password=password&action=logout&action=login&username=admin&password=password HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("user", "true", "admin", "admin is OK", "path=/ctx/some/thing"));
 
         response = HttpTester.parseResponse(_connector.getResponse(
@@ -251,24 +266,27 @@ public class BasicAuthenticatorTest
     {
         HttpTester.Response response;
 
-        response = HttpTester.parseResponse(_connector.getResponse(
-            "GET /ctx/some/thing?action=thread HTTP/1.0\r\n\r\n"));
+        response =
+            HttpTester.parseResponse(_connector.getResponse("GET /ctx/some/thing?action=thread HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("null", "Deferred", "path=/ctx/some/thing"));
 
-        response = HttpTester.parseResponse(_connector.getResponse(
-            "GET /ctx/any/user?action=thread HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
+        response = HttpTester.parseResponse(
+            _connector.getResponse("GET /ctx/any/user?action=thread HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
                 .formatted(BasicAuthenticator.authorization("user", "password"))));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("user", "user is OK", "path=/ctx/any/user"));
 
         response = HttpTester.parseResponse(_connector.getResponse(
             "GET /ctx/any/user?action=thread&action=logout&action=thread HTTP/1.0\r\nAuthorization: %s\r\n\r\n"
                 .formatted(BasicAuthenticator.authorization("user", "password"))));
         assertThat(response.getStatus(), equalTo(200));
-        assertThat(Arrays.stream(response.getContent().split(",")).toList(),
+        assertThat(
+            Arrays.stream(response.getContent().split(",")).toList(),
             contains("user", "true", "null", "Deferred", "path=/ctx/any/user"));
     }
 }

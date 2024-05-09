@@ -21,18 +21,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * LifeCycleCallbackCollection
- * 
+ *
  * This class collects the classes and methods that have been configured
  * in web.xml with postconstruct/predestroy callbacks, or that contain the
- * equivalent annotations.  It is also responsible for calling the 
+ * equivalent annotations.  It is also responsible for calling the
  * callbacks.
- * 
+ *
  * This class is not threadsafe for concurrent modifications, but is
  * threadsafe for reading with concurrent modifications.
  */
@@ -78,7 +77,11 @@ public class LifeCycleCallbackCollection
 
         boolean added = callbacks.add(callback);
         if (LOG.isDebugEnabled())
-            LOG.debug("Adding callback for class={} on method={} added={}", callback.getTargetClassName(), callback.getMethodName(), added);
+            LOG.debug(
+                "Adding callback for class={} on method={} added={}",
+                callback.getTargetClassName(),
+                callback.getMethodName(),
+                added);
     }
 
     public Set<LifeCycleCallback> getPreDestroyCallbacks(Object o)
@@ -136,8 +139,7 @@ public class LifeCycleCallbackCollection
      * @param o the object on which to attempt the callback
      * @throws Exception if unable to call {@link PostConstructCallback}
      */
-    public void callPostConstructCallback(Object o)
-        throws Exception
+    public void callPostConstructCallback(Object o) throws Exception
     {
         if (o == null)
             return;
@@ -159,8 +161,7 @@ public class LifeCycleCallbackCollection
      * @param o the object on which to attempt the callback
      * @throws Exception if unable to call {@link PreDestroyCallback}
      */
-    public void callPreDestroyCallback(Object o)
-        throws Exception
+    public void callPreDestroyCallback(Object o) throws Exception
     {
         if (o == null)
             return;

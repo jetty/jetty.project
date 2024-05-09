@@ -13,15 +13,18 @@
 
 package org.eclipse.jetty.ee9.session;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Set;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Set;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -39,10 +42,6 @@ import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.session.UnreadableSessionDataException;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class DeleteUnloadableSessionTest
 {
@@ -85,7 +84,7 @@ public class DeleteUnloadableSessionTest
         @Override
         public void doStore(String id, SessionData data, long lastSaveTime)
         {
-            //pretend it was saved
+            // pretend it was saved
         }
 
         @Override
@@ -103,9 +102,8 @@ public class DeleteUnloadableSessionTest
         @Override
         public void doCleanOrphans(long timeLimit)
         {
-           //noop
+            // noop
         }
-        
     }
 
     public static class DelSessionDataStoreFactory extends AbstractSessionDataStoreFactory
@@ -122,7 +120,8 @@ public class DeleteUnloadableSessionTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
 
@@ -151,14 +150,16 @@ public class DeleteUnloadableSessionTest
         AbstractSessionDataStoreFactory storeFactory = new DelSessionDataStoreFactory();
         storeFactory.setGracePeriodSec(scavengePeriod);
 
-        SessionTestSupport server = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server =
+            new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
 
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         context.addServlet(holder, servletMapping);
 
-        try (StacklessLogging ignored = new StacklessLogging(DeleteUnloadableSessionTest.class.getPackage(), ManagedSession.class.getPackage()))
+        try (StacklessLogging ignored = new StacklessLogging(
+            DeleteUnloadableSessionTest.class.getPackage(), ManagedSession.class.getPackage()))
         {
             server.start();
             int port = server.getPort();
@@ -167,12 +168,17 @@ public class DeleteUnloadableSessionTest
             try
             {
                 String sessionCookie = "JSESSIONID=w0rm3zxpa6h1zg1mevtv76b3te00.w0;$Path=/";
-                Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=test");
+                Request request =
+                    client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=test");
                 HttpField cookie = new HttpField("Cookie", sessionCookie);
                 request.headers(headers -> headers.put(cookie));
                 ContentResponse response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-                assertFalse(context.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(SessionTestSupport.extractSessionId(sessionCookie)));
+                assertFalse(context.getSessionHandler()
+                    .getSessionManager()
+                    .getSessionCache()
+                    .getSessionDataStore()
+                    .exists(SessionTestSupport.extractSessionId(sessionCookie)));
             }
             finally
             {

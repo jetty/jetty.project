@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -245,7 +244,8 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         AtomicBoolean added = new AtomicBoolean();
         cachingHttpContent = _cache.computeIfAbsent(path, key ->
         {
-            CachingHttpContent cachingContent = (httpContent == null) ? newNotFoundContent(key) : newCachedContent(key, httpContent);
+            CachingHttpContent cachingContent =
+                (httpContent == null) ? newNotFoundContent(key) : newCachedContent(key, httpContent);
             added.set(true);
             _cachedSize.addAndGet(cachingContent.getBytesOccupied());
             return cachingContent;
@@ -335,7 +335,8 @@ public class CachingHttpContentFactory implements HttpContent.Factory
                 try
                 {
                     if (_contentLengthValue <= _maxCachedFileSize)
-                        buffer = IOResources.toRetainableByteBuffer(httpContent.getResource(), _bufferPool, _useDirectByteBuffers);
+                        buffer = IOResources.toRetainableByteBuffer(
+                            httpContent.getResource(), _bufferPool, _useDirectByteBuffers);
                     else
                         buffer = null;
                 }

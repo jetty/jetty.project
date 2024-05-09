@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util;
 
+import static org.eclipse.jetty.util.TypeUtil.convertHexDigit;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,11 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.util.TypeUtil.convertHexDigit;
 
 /**
  * Handles coding of MIME  "x-www-form-urlencoded".
@@ -185,11 +184,14 @@ public class UrlEncoded
      */
     public static void decodeTo(String content, MultiMap<String> map, Charset charset, int maxKeys)
     {
-        decodeTo(content, (key, val) ->
-        {
-            map.add(key, val);
-            checkMaxKeys(map, maxKeys);
-        }, charset);
+        decodeTo(
+            content,
+            (key, val) ->
+            {
+                map.add(key, val);
+                checkMaxKeys(map, maxKeys);
+            },
+            charset);
     }
 
     /**
@@ -202,11 +204,14 @@ public class UrlEncoded
     public static void decodeTo(String content, BiConsumer<String, String> adder, Charset charset, int maxKeys)
     {
         AtomicInteger keys = new AtomicInteger(0);
-        decodeTo(content, (key, val) ->
-        {
-            adder.accept(key, val);
-            checkMaxKeys(keys.incrementAndGet(), maxKeys);
-        }, charset);
+        decodeTo(
+            content,
+            (key, val) ->
+            {
+                adder.accept(key, val);
+                checkMaxKeys(keys.incrementAndGet(), maxKeys);
+            },
+            charset);
     }
 
     /**
@@ -274,9 +279,7 @@ public class UrlEncoded
         }
         else if (mark < content.length())
         {
-            key = encoded
-                ? decodeString(content, mark + 1, content.length() - mark - 1, charset)
-                : content.substring(mark + 1);
+            key = encoded ? decodeString(content, mark + 1, content.length() - mark - 1, charset) : content.substring(mark + 1);
             if (key != null && key.length() > 0)
             {
                 adder.accept(key, "");
@@ -598,12 +601,14 @@ public class UrlEncoded
         checkMaxKeys(keys, maxKeys);
     }
 
-    public static void decodeUtf16To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys) throws IOException
+    public static void decodeUtf16To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
+        throws IOException
     {
         decodeUtf16To(in, map::add, maxLength, maxKeys);
     }
 
-    public static void decodeUtf16To(InputStream in, BiConsumer<String, String> adder, int maxLength, int maxKeys) throws IOException
+    public static void decodeUtf16To(InputStream in, BiConsumer<String, String> adder, int maxLength, int maxKeys)
+        throws IOException
     {
         InputStreamReader input = new InputStreamReader(in, StandardCharsets.UTF_16);
         StringWriter buf = new StringWriter(8192);
@@ -649,10 +654,11 @@ public class UrlEncoded
      * @param maxKeys the maximum number of keys to decode
      * @throws IOException if unable to decode input stream
      */
-    public static void decodeTo(InputStream in, BiConsumer<String, String> adder, Charset charset, int maxLength, int maxKeys)
+    public static void decodeTo(
+                                InputStream in, BiConsumer<String, String> adder, Charset charset, int maxLength, int maxKeys)
         throws IOException
     {
-        //no charset present, use the configured default
+        // no charset present, use the configured default
         if (charset == null)
             charset = ENCODING;
 
@@ -1011,10 +1017,7 @@ public class UrlEncoded
                 noEncode = false;
                 encoded[n++] = (byte)'+';
             }
-            else if (b >= 'a' && b <= 'z' ||
-                b >= 'A' && b <= 'Z' ||
-                b >= '0' && b <= '9' ||
-                b == '-' || b == '.' || b == '_' || b == '~')
+            else if (b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9' || b == '-' || b == '.' || b == '_' || b == '~')
             {
                 encoded[n++] = b;
             }

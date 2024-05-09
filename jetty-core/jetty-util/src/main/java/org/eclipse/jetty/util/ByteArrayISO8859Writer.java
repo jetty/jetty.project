@@ -89,14 +89,12 @@ public class ByteArrayISO8859Writer extends Writer
         return _buf;
     }
 
-    public void writeTo(OutputStream out)
-        throws IOException
+    public void writeTo(OutputStream out) throws IOException
     {
         out.write(_buf, 0, _size);
     }
 
-    public void write(char c)
-        throws IOException
+    public void write(char c) throws IOException
     {
         ensureSpareCapacity(1);
         if (c >= 0 && c <= 0x7f)
@@ -109,8 +107,7 @@ public class ByteArrayISO8859Writer extends Writer
     }
 
     @Override
-    public void write(char[] ca)
-        throws IOException
+    public void write(char[] ca) throws IOException
     {
         ensureSpareCapacity(ca.length);
         for (int i = 0; i < ca.length; i++)
@@ -127,8 +124,7 @@ public class ByteArrayISO8859Writer extends Writer
     }
 
     @Override
-    public void write(char[] ca, int offset, int length)
-        throws IOException
+    public void write(char[] ca, int offset, int length) throws IOException
     {
         ensureSpareCapacity(length);
         for (int i = 0; i < length; i++)
@@ -145,8 +141,7 @@ public class ByteArrayISO8859Writer extends Writer
     }
 
     @Override
-    public void write(String s)
-        throws IOException
+    public void write(String s) throws IOException
     {
         if (s == null)
         {
@@ -170,8 +165,7 @@ public class ByteArrayISO8859Writer extends Writer
     }
 
     @Override
-    public void write(String s, int offset, int length)
-        throws IOException
+    public void write(String s, int offset, int length) throws IOException
     {
         ensureSpareCapacity(length);
         for (int i = 0; i < length; i++)
@@ -187,8 +181,7 @@ public class ByteArrayISO8859Writer extends Writer
         }
     }
 
-    private void writeEncoded(char[] ca, int offset, int length)
-        throws IOException
+    private void writeEncoded(char[] ca, int offset, int length) throws IOException
     {
         if (_bout == null)
         {
@@ -224,8 +217,7 @@ public class ByteArrayISO8859Writer extends Writer
         _buf = null;
     }
 
-    public void ensureSpareCapacity(int n)
-        throws IOException
+    public void ensureSpareCapacity(int n) throws IOException
     {
         if (_size + n > _buf.length)
         {
@@ -240,5 +232,3 @@ public class ByteArrayISO8859Writer extends Writer
         return Arrays.copyOf(_buf, _size);
     }
 }
-    
-    

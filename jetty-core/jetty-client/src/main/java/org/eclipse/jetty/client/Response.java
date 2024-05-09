@@ -16,7 +16,6 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -282,7 +281,14 @@ public interface Response
     /**
      * Listener for all response events.
      */
-    interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
+    interface Listener
+        extends BeginListener,
+        HeaderListener,
+        HeadersListener,
+        ContentListener,
+        SuccessListener,
+        FailureListener,
+        CompleteListener
     {
         @Override
         public default void onBegin(Response response)

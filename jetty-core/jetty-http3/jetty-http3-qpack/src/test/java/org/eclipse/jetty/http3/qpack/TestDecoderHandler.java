@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.qpack;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.eclipse.jetty.http.MetaData;
 
 public class TestDecoderHandler implements QpackDecoder.Handler, Instruction.Handler

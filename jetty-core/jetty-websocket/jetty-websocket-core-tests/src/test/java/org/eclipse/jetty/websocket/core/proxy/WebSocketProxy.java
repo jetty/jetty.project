@@ -18,7 +18,6 @@ import java.net.URI;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -191,7 +190,9 @@ class WebSocketProxy
                             // the callback is saved until a close response comes in sendFrame from Proxy2Server
                             // if the callback was completed here then core would send its own close response
                             closeCallback = callback;
-                            sendCallback = Callback.from(() -> {}, callback::failed);
+                            sendCallback = Callback.from(() ->
+                            {
+                            }, callback::failed);
                         }
                         else
                         {
@@ -223,11 +224,15 @@ class WebSocketProxy
                 if (demand)
                 {
                     Callback c = sendCallback;
-                    proxy2Server.send(frame, Callback.from(() ->
-                    {
-                        c.succeeded();
-                        client2ProxySession.demand();
-                    }, c::failed));
+                    proxy2Server.send(
+                        frame,
+                        Callback.from(
+                            () ->
+                            {
+                                c.succeeded();
+                                client2ProxySession.demand();
+                            },
+                            c::failed));
                 }
                 else
                 {
@@ -556,7 +561,9 @@ class WebSocketProxy
                         {
                             state = State.ISHUT;
                             closeCallback = callback;
-                            sendCallback = Callback.from(() -> {}, callback::failed);
+                            sendCallback = Callback.from(() ->
+                            {
+                            }, callback::failed);
                         }
                         else
                         {
@@ -588,11 +595,15 @@ class WebSocketProxy
                 if (demand)
                 {
                     Callback c = sendCallback;
-                    client2Proxy.send(frame, Callback.from(() ->
-                    {
-                        c.succeeded();
-                        proxy2ServerSession.demand();
-                    }, c::failed));
+                    client2Proxy.send(
+                        frame,
+                        Callback.from(
+                            () ->
+                            {
+                                c.succeeded();
+                                proxy2ServerSession.demand();
+                            },
+                            c::failed));
                 }
                 else
                 {

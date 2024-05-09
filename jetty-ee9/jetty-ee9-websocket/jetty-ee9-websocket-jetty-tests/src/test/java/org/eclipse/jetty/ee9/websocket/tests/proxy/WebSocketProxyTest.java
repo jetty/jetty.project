@@ -13,13 +13,19 @@
 
 package org.eclipse.jetty.ee9.websocket.tests.proxy;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Frame;
@@ -42,13 +48,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketProxyTest
 {
@@ -243,7 +242,8 @@ public class WebSocketProxyTest
         clientSocket.session.getRemote().sendString("test echo message");
         assertThat(clientSocket.textMessages.poll(clientSessionIdleTimeout, TimeUnit.SECONDS), is("test echo message"));
 
-        // Wait more than the idleTimeout period, the clientToProxy connection should fail which should fail the proxyToServer.
+        // Wait more than the idleTimeout period, the clientToProxy connection should fail which should fail the
+        // proxyToServer.
         assertTrue(clientSocket.closeLatch.await(clientSessionIdleTimeout * 2, TimeUnit.MILLISECONDS));
         assertTrue(serverSocket.closeLatch.await(clientSessionIdleTimeout * 2, TimeUnit.MILLISECONDS));
 
@@ -270,12 +270,16 @@ public class WebSocketProxyTest
         // Test unsolicited pong from client.
         clientSocket.session.getRemote().sendPong(BufferUtil.toBuffer("unsolicited pong from client"));
         assertThat(serverEndpoint.pingMessages.size(), is(0));
-        assertThat(serverEndpoint.pongMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("unsolicited pong from client")));
+        assertThat(
+            serverEndpoint.pongMessages.poll(5, TimeUnit.SECONDS),
+            is(BufferUtil.toBuffer("unsolicited pong from client")));
 
         // Test unsolicited pong from server.
         serverEndpoint.session.getRemote().sendPong(BufferUtil.toBuffer("unsolicited pong from server"));
         assertThat(clientSocket.pingMessages.size(), is(0));
-        assertThat(clientSocket.pongMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("unsolicited pong from server")));
+        assertThat(
+            clientSocket.pongMessages.poll(5, TimeUnit.SECONDS),
+            is(BufferUtil.toBuffer("unsolicited pong from server")));
 
         // Test pings from client.
         for (int i = 0; i < 15; i++)

@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.ee9.websocket.servlet;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.EnumSet;
-import java.util.Objects;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -26,6 +21,10 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.EnumSet;
+import java.util.Objects;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
@@ -155,7 +154,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     private WebSocketMappings mappings;
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+        throws IOException, ServletException
     {
         HttpChannel httpChannel = (HttpChannel)request.getAttribute(HttpChannel.class.getName());
         Request baseRequest = httpChannel.getCoreRequest();
@@ -205,7 +205,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(config.getServletContext()));
+        ContextHandler contextHandler =
+            Objects.requireNonNull(ContextHandler.getContextHandler(config.getServletContext()));
         mappings = WebSocketMappings.ensureMappings(contextHandler.getCoreContextHandler());
 
         String max = config.getInitParameter("idleTimeout");

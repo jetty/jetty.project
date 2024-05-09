@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee10.servlets;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +34,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.io.ManagedSelector;
@@ -43,9 +45,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled // TODO
 public class ThreadStarvationTest
@@ -72,7 +71,8 @@ public class ThreadStarvationTest
         Files.createDirectories(directory.toPath());
         String resourceName = "resource.bin";
         Path resourcePath = Paths.get(directory.getPath(), resourceName);
-        try (OutputStream output = Files.newOutputStream(resourcePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE))
+        try (OutputStream output =
+            Files.newOutputStream(resourcePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE))
         {
             byte[] chunk = new byte[256 * 1024];
             Arrays.fill(chunk, (byte)'X');
@@ -88,7 +88,8 @@ public class ThreadStarvationTest
         ServerConnector connector = new ServerConnector(_server, 0, 1)
         {
             @Override
-            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+            protected SocketChannelEndPoint newEndPoint(
+                                                        SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
             {
                 return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
@@ -106,8 +107,8 @@ public class ThreadStarvationTest
 
         ServletContextHandler context = new ServletContextHandler("/");
         context.setBaseResourceAsPath(directory.toPath());
-        
-        //TODO: Uses DefaultServlet, currently all commented out
+
+        // TODO: Uses DefaultServlet, currently all commented out
         context.addServlet(DefaultServlet.class, "/*").setAsyncSupported(false);
         _server.setHandler(context);
 
@@ -119,10 +120,7 @@ public class ThreadStarvationTest
             Socket socket = new Socket("localhost", connector.getLocalPort());
             sockets.add(socket);
             OutputStream output = socket.getOutputStream();
-            String request =
-                "GET /" + resourceName + " HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request = "GET /" + resourceName + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
         }
@@ -223,7 +221,7 @@ public class ThreadStarvationTest
         }
     }
 
-    //TODO needs visibility of server.internal.HttpChannelState
+    // TODO needs visibility of server.internal.HttpChannelState
     /* @Test
     public void testFailureStarvation() throws Exception
     {
@@ -283,7 +281,7 @@ public class ThreadStarvationTest
                     return true;
                 }
             }
-            
+    
             _server.setHandler(new TheHandler());
     
             _server.start();

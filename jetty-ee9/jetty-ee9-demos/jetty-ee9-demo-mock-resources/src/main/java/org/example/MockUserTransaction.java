@@ -13,14 +13,13 @@
 
 package org.example;
 
-import javax.naming.Reference;
-
 import jakarta.transaction.HeuristicMixedException;
 import jakarta.transaction.HeuristicRollbackException;
 import jakarta.transaction.NotSupportedException;
 import jakarta.transaction.RollbackException;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.UserTransaction;
+import javax.naming.Reference;
 
 /**
  * MockUserTransaction
@@ -39,9 +38,9 @@ public class MockUserTransaction extends Reference implements UserTransaction
     }
 
     @Override
-    public void commit() throws HeuristicMixedException,
-        HeuristicRollbackException, IllegalStateException,
-        RollbackException, SecurityException, SystemException
+    public void commit()
+        throws HeuristicMixedException, HeuristicRollbackException, IllegalStateException, RollbackException,
+        SecurityException, SystemException
     {
     }
 
@@ -52,8 +51,7 @@ public class MockUserTransaction extends Reference implements UserTransaction
     }
 
     @Override
-    public void rollback() throws IllegalStateException, SecurityException,
-        SystemException
+    public void rollback() throws IllegalStateException, SecurityException, SystemException
     {
     }
 

@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.ee10.plus.jndi;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -27,7 +35,6 @@ import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
-
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.Link;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
@@ -37,14 +44,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @Isolated("jndi entries")
 public class TestNamingEntries
@@ -110,7 +109,8 @@ public class TestNamingEntries
         public Reference getReference() throws NamingException
         {
             RefAddr refAddr = new StringRefAddr("val", String.valueOf(getValue()));
-            return new Reference(SomeOtherObject.class.getName(), refAddr, SomeOtherObjectFactory.class.getName(), null);
+            return new Reference(
+                SomeOtherObject.class.getName(), refAddr, SomeOtherObjectFactory.class.getName(), null);
         }
     }
 
@@ -263,7 +263,7 @@ public class TestNamingEntries
         }
         catch (NamingException e)
         {
-            //expected
+            // expected
         }
     }
 

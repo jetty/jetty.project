@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class HostHeaderCustomizerTest
 {
@@ -70,9 +69,7 @@ public class HostHeaderCustomizerTest
             {
                 try (OutputStream output = socket.getOutputStream())
                 {
-                    String request =
-                        "GET / HTTP/1.0\r\n" +
-                            "\r\n";
+                    String request = "GET / HTTP/1.0\r\n" + "\r\n";
                     output.write(request.getBytes(StandardCharsets.UTF_8));
                     output.flush();
 
@@ -112,7 +109,9 @@ public class HostHeaderCustomizerTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Test "Host" header
-                assertEquals(serverName + ":" + connector.getLocalPort(), request.getHeaders().get(HttpHeader.HOST));
+                assertEquals(
+                    serverName + ":" + connector.getLocalPort(),
+                    request.getHeaders().get(HttpHeader.HOST));
 
                 // Test "getHttpURI()"
                 HttpURI httpURI = request.getHttpURI();
@@ -137,9 +136,7 @@ public class HostHeaderCustomizerTest
             {
                 try (OutputStream output = socket.getOutputStream())
                 {
-                    String request =
-                        "GET / HTTP/1.0\r\n" +
-                            "\r\n";
+                    String request = "GET / HTTP/1.0\r\n" + "\r\n";
                     output.write(request.getBytes(StandardCharsets.UTF_8));
                     output.flush();
 

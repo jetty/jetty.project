@@ -18,7 +18,6 @@ module org.eclipse.jetty.ee9.plus
 {
     requires org.eclipse.jetty.util;
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.ee9.webapp;
     requires transitive org.eclipse.jetty.plus;
 

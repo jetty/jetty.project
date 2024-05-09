@@ -13,14 +13,17 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.HandlerCollection;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -39,10 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Deploy various {@link ServerEndpoint} annotated classes with invalid signatures,
@@ -102,7 +101,8 @@ public class DeploymentExceptionTest
         try
         {
             context.start();
-            ServerContainer serverContainer = (ServerContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
+            ServerContainer serverContainer =
+                (ServerContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
             Exception e = assertThrows(DeploymentException.class, () -> serverContainer.addEndpoint(pojo));
             assertThat(e.getCause(), instanceOf(InvalidSignatureException.class));
         }
@@ -123,13 +123,16 @@ public class DeploymentExceptionTest
         try
         {
             context.start();
-            ServerContainer serverContainer = (ServerContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
+            ServerContainer serverContainer =
+                (ServerContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
 
-            // We cannot deploy this because it does not extend Endpoint and has no @ServerEndpoint/@ClientEndpoint annotation.
-            assertThrows(DeploymentException.class, () ->
-                serverContainer.addEndpoint(BadEndpoint.class));
-            assertThrows(DeploymentException.class, () ->
-                serverContainer.addEndpoint(ServerEndpointConfig.Builder.create(BadEndpoint.class, "/ws").build()));
+            // We cannot deploy this because it does not extend Endpoint and has no @ServerEndpoint/@ClientEndpoint
+            // annotation.
+            assertThrows(DeploymentException.class, () -> serverContainer.addEndpoint(BadEndpoint.class));
+            assertThrows(
+                DeploymentException.class,
+                () -> serverContainer.addEndpoint(ServerEndpointConfig.Builder.create(BadEndpoint.class, "/ws")
+                    .build()));
         }
         finally
         {

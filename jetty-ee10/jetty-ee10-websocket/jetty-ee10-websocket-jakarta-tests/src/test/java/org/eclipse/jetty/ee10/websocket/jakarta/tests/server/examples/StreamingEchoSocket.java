@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server.examples;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import org.eclipse.jetty.util.IO;
 
 @ServerEndpoint("/echo")

@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.requestlog.jmh;
 
+import static java.lang.invoke.MethodHandles.dropArguments;
+import static java.lang.invoke.MethodHandles.foldArguments;
+import static java.lang.invoke.MethodType.methodType;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.TypeUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -33,10 +36,6 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-
-import static java.lang.invoke.MethodHandles.dropArguments;
-import static java.lang.invoke.MethodHandles.foldArguments;
-import static java.lang.invoke.MethodType.methodType;
 
 @State(Scope.Benchmark)
 @Threads(4)
@@ -83,21 +82,14 @@ public class RequestLogBenchmark
             MethodType logType = methodType(Void.TYPE, StringBuilder.class, String.class);
 
             MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodHandle append = lookup.findStatic(RequestLogBenchmark.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
+            MethodHandle append = lookup.findStatic(
+                RequestLogBenchmark.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
             MethodHandle logURI = lookup.findStatic(RequestLogBenchmark.class, "logURI", logType);
             MethodHandle logAddr = lookup.findStatic(RequestLogBenchmark.class, "logAddr", logType);
             MethodHandle logLength = lookup.findStatic(RequestLogBenchmark.class, "logLength", logType);
 
             // setup iteration
-            iteratedLog = new Object[]
-            {
-                logURI,
-                " - ",
-                logAddr,
-                " ",
-                logLength,
-                "\n"
-            };
+            iteratedLog = new Object[]{logURI, " - ", logAddr, " ", logLength, "\n"};
 
             // setup methodHandle
             logHandle = dropArguments(append.bindTo("\n"), 1, String.class);
@@ -167,25 +159,24 @@ public class RequestLogBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public String testFixed()
     {
         return logFixed(Long.toString(ThreadLocalRandom.current().nextLong()));
-    }
-
-    ;
+    };
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public String testIterate()
     {
         return logIterate(Long.toString(ThreadLocalRandom.current().nextLong()));
-    }
-
-    ;
+    };
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public String testHandle()
     {
         return logMethodHandle(Long.toString(ThreadLocalRandom.current().nextLong()));

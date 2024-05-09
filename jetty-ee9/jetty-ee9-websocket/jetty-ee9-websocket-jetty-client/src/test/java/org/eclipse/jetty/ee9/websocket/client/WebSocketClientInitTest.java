@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.ee9.websocket.client;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test various init techniques for WebSocketClient
@@ -52,7 +52,10 @@ public class WebSocketClientInitTest
 
                 HttpClient httpBean = ws.getBean(HttpClient.class);
                 assertThat("HttpClient bean is managed", ws.isManaged(httpBean), is(false));
-                assertThat("WebSocketClient should not be found in HttpClient", http.getBean(WebSocketClient.class), nullValue());
+                assertThat(
+                    "WebSocketClient should not be found in HttpClient",
+                    http.getBean(WebSocketClient.class),
+                    nullValue());
             }
             finally
             {
@@ -92,7 +95,10 @@ public class WebSocketClientInitTest
             HttpClient httpBean = coreClient.getBean(HttpClient.class);
             assertThat("HttpClient bean found in WebSocketClient", httpBean, is(http));
             assertThat("HttpClient bean is managed", coreClient.isManaged(httpBean), is(true));
-            assertThat("WebSocketClient should not be found in HttpClient", http.getBean(WebSocketClient.class), nullValue());
+            assertThat(
+                "WebSocketClient should not be found in HttpClient",
+                http.getBean(WebSocketClient.class),
+                nullValue());
         }
         finally
         {

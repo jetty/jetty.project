@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import java.nio.ByteBuffer;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -27,11 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class HpackEncoderTest
 {
     @Test
@@ -40,20 +39,19 @@ public class HpackEncoderTest
         HpackEncoder encoder = newHpackEncoder(38 * 5);
         HttpFields.Mutable fields = HttpFields.build();
 
-        HttpField[] field =
-            {
-                new HttpField("fo0", "b0r"),
-                new HttpField("fo1", "b1r"),
-                new HttpField("fo2", "b2r"),
-                new HttpField("fo3", "b3r"),
-                new HttpField("fo4", "b4r"),
-                new HttpField("fo5", "b5r"),
-                new HttpField("fo6", "b6r"),
-                new HttpField("fo7", "b7r"),
-                new HttpField("fo8", "b8r"),
-                new HttpField("fo9", "b9r"),
-                new HttpField("foA", "bAr"),
-            };
+        HttpField[] field = {
+            new HttpField("fo0", "b0r"),
+            new HttpField("fo1", "b1r"),
+            new HttpField("fo2", "b2r"),
+            new HttpField("fo3", "b3r"),
+            new HttpField("fo4", "b4r"),
+            new HttpField("fo5", "b5r"),
+            new HttpField("fo6", "b6r"),
+            new HttpField("fo7", "b7r"),
+            new HttpField("fo8", "b8r"),
+            new HttpField("fo9", "b9r"),
+            new HttpField("foA", "bAr"),
+        };
 
         // Add 4 entries
         for (int i = 0; i <= 3; i++)
@@ -201,8 +199,7 @@ public class HpackEncoderTest
         HpackEncoder encoder = newHpackEncoder(38 * 5);
         ByteBuffer buffer = BufferUtil.allocate(4096);
 
-        HttpFields.Mutable fields = HttpFields.build()
-            .put("set-cookie", "some cookie value");
+        HttpFields.Mutable fields = HttpFields.build().put("set-cookie", "some cookie value");
 
         // encode
         BufferUtil.clearToFill(buffer);
@@ -247,11 +244,11 @@ public class HpackEncoderTest
 
         encoder = newHpackEncoder(128);
         encoder.setValidateEncoding(false);
-        fields.add(new HttpField(":path",
-            "This is a very large field, whose size is larger than the dynamic table so it should not be indexed as it will not fit in the table ever!" +
-                "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX " +
-                "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY " +
-                "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ "));
+        fields.add(
+            new HttpField(
+                ":path",
+                "This is a very large field, whose size is larger than the dynamic table so it should not be indexed as it will not fit in the table ever!" + "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX " + "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY " +
+                    "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ "));
         ByteBuffer buffer2 = BufferUtil.allocate(4096);
         pos = BufferUtil.flipToFill(buffer2);
         encoder.encode(buffer2, new MetaData(HttpVersion.HTTP_2, fields));
@@ -265,10 +262,10 @@ public class HpackEncoderTest
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, fields));
         BufferUtil.flipToFlush(buffer, pos);
 
-        //System.err.println(BufferUtil.toHexString(buffer0));
-        //System.err.println(BufferUtil.toHexString(buffer1));
-        //System.err.println(BufferUtil.toHexString(buffer2));
-        //System.err.println(BufferUtil.toHexString(buffer));
+        // System.err.println(BufferUtil.toHexString(buffer0));
+        // System.err.println(BufferUtil.toHexString(buffer1));
+        // System.err.println(BufferUtil.toHexString(buffer2));
+        // System.err.println(BufferUtil.toHexString(buffer));
 
         // something was encoded!
         assertThat(buffer.remaining(), Matchers.greaterThan(0));
@@ -287,16 +284,15 @@ public class HpackEncoderTest
         assertThat(context.size(), equalTo(2));
         assertThat(context.get(HpackContext.STATIC_SIZE + 1).getHttpField().getName(), equalTo("host"));
         assertThat(context.get(HpackContext.STATIC_SIZE + 2).getHttpField().getName(), equalTo("user-agent"));
-        assertThat(context.getDynamicTableSize(), equalTo(
-            context.get(HpackContext.STATIC_SIZE + 1).getSize() + context.get(HpackContext.STATIC_SIZE + 2).getSize()));
+        assertThat(
+            context.getDynamicTableSize(),
+            equalTo(context.get(HpackContext.STATIC_SIZE + 1).getSize() + context.get(HpackContext.STATIC_SIZE + 2).getSize()));
     }
 
     @Test
     public void testResize() throws Exception
     {
-        HttpFields fields = HttpFields.build()
-            .add("host", "localhost0")
-            .add("cookie", "abcdefghij");
+        HttpFields fields = HttpFields.build().add("host", "localhost0").add("cookie", "abcdefghij");
 
         HpackEncoder encoder = newHpackEncoder(4096);
 
@@ -322,7 +318,8 @@ public class HpackEncoderTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 1, HpackContext.DEFAULT_MAX_TABLE_CAPACITY})
+    @ValueSource(ints =
+    {0, 1, HpackContext.DEFAULT_MAX_TABLE_CAPACITY})
     public void testAlwaysSendInitialSize(int size) throws Exception
     {
         HpackEncoder encoder = newHpackEncoder(size);

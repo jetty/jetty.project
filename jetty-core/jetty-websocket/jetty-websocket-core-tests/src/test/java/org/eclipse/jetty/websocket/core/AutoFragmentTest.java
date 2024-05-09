@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -21,7 +28,6 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.Deflater;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
@@ -29,13 +35,6 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AutoFragmentTest
 {
@@ -134,7 +133,9 @@ public class AutoFragmentTest
         int size = maxFrameSize * 2;
         byte[] message = new byte[size];
         Arrays.fill(message, 0, size, (byte)'X');
-        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.BINARY, BufferUtil.toBuffer(message)), Callback.NOOP, false);
+        clientHandler
+            .getCoreSession()
+            .sendFrame(new Frame(OpCode.BINARY, BufferUtil.toBuffer(message)), Callback.NOOP, false);
 
         // We should not receive any frames larger than the max frame size.
         // So our message should be split into two frames.
@@ -187,7 +188,9 @@ public class AutoFragmentTest
         BufferUtil.flipToFlush(payload, 0);
 
         // Send the large random payload which should be fragmented on the server.
-        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+        clientHandler
+            .getCoreSession()
+            .sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
         ByteBuffer message = BufferUtil.allocate(payloadSize * 2);
@@ -234,7 +237,9 @@ public class AutoFragmentTest
         ByteBuffer payload = ByteBuffer.wrap(data);
 
         // Send the payload which should be fragmented on the server.
-        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+        clientHandler
+            .getCoreSession()
+            .sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
         ByteBuffer message = BufferUtil.allocate(payload.remaining() * 2);

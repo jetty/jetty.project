@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.docs.programming.server.http;
 
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -24,11 +32,6 @@ import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
-
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.ContentResponse;
@@ -96,10 +99,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
-import static java.lang.System.Logger.Level.ERROR;
-import static java.lang.System.Logger.Level.INFO;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @SuppressWarnings("unused")
 public class HTTPServerDocs
@@ -206,7 +205,8 @@ public class HTTPServerDocs
         int selectors = 1;
 
         // Create a ServerConnector instance.
-        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, acceptors, selectors, new HttpConnectionFactory());
+        UnixDomainServerConnector connector =
+            new UnixDomainServerConnector(server, acceptors, selectors, new HttpConnectionFactory());
 
         // Configure Unix-Domain parameters.
 
@@ -234,7 +234,8 @@ public class HTTPServerDocs
         // Create a QuicServerConnector instance.
         Path pemWorkDir = Path.of("/path/to/pem/dir");
         ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
-        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
+        QuicServerConnector connector =
+            new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
 
         // The port to listen to.
         connector.setPort(8080);
@@ -264,7 +265,8 @@ public class HTTPServerDocs
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
-        ContentResponse response = httpClient.newRequest("http://localhost/")
+        ContentResponse response = httpClient
+            .newRequest("http://localhost/")
             // Use the memory Transport to communicate with the server-side.
             .transport(new MemoryTransport(connector))
             .send();
@@ -326,7 +328,8 @@ public class HTTPServerDocs
         // Third, create the connector for HTTP/3.
         Path pemWorkDir = Path.of("/path/to/pem/dir");
         ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
-        QuicServerConnector http3Connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
+        QuicServerConnector http3Connector =
+            new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         server.addConnector(http3Connector);
 
         // Set up a listener so that when the secure connector starts,
@@ -560,7 +563,8 @@ public class HTTPServerDocs
         // It is mandatory to configure the PEM directory.
         Path pemWorkDir = Path.of("/path/to/pem/dir");
         ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
-        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
+        QuicServerConnector connector =
+            new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         connector.setPort(843);
 
         server.addConnector(connector);
@@ -655,17 +659,21 @@ public class HTTPServerDocs
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=UTF-8");
 
                 // Write a Hello World response.
-                Content.Sink.write(response, true, """
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                      <title>Jetty Hello World Handler</title>
-                    </head>
-                    <body>
-                      <p>Hello World</p>
-                    </body>
-                    </html>
-                    """, callback);
+                Content.Sink.write(
+                    response,
+                    true,
+                    """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <title>Jetty Hello World Handler</title>
+                        </head>
+                        <body>
+                          <p>Hello World</p>
+                        </body>
+                        </html>
+                        """,
+                    callback);
                 return true;
             }
         }
@@ -751,22 +759,23 @@ public class HTTPServerDocs
                     CompletableFuture<Fields> completableFields = FormFields.from(request); // <1>
 
                     // When all the request content has arrived, process the fields.
-                    completableFields.whenComplete((fields, failure) -> // <2>
-                    {
-                        if (failure == null)
+                    completableFields.whenComplete(
+                        (fields, failure) -> // <2>
                         {
-                            processFields(fields);
-                            // Send a simple 200 response, completing the callback.
-                            response.setStatus(HttpStatus.OK_200);
-                            callback.succeeded();
-                        }
-                        else
-                        {
-                            // Reading the request content failed.
-                            // Send an error response, completing the callback.
-                            Response.writeError(request, response, callback, failure);
-                        }
-                    });
+                            if (failure == null)
+                            {
+                                processFields(fields);
+                                // Send a simple 200 response, completing the callback.
+                                response.setStatus(HttpStatus.OK_200);
+                                callback.succeeded();
+                            }
+                            else
+                            {
+                                // Reading the request content failed.
+                                // Send an error response, completing the callback.
+                                Response.writeError(request, response, callback, failure);
+                            }
+                        });
 
                     // The callback will be eventually completed in all cases, return true.
                     return true;
@@ -809,23 +818,24 @@ public class HTTPServerDocs
                     CompletableFuture<MultiPartFormData.Parts> completableParts = parser.parse(request); // <1>
 
                     // When all the request content has arrived, process the parts.
-                    completableParts.whenComplete((parts, failure) -> // <2>
-                    {
-                        if (failure == null)
+                    completableParts.whenComplete(
+                        (parts, failure) -> // <2>
                         {
-                            // Use the Parts API to process the parts.
-                            processParts(parts);
-                            // Send a simple 200 response, completing the callback.
-                            response.setStatus(HttpStatus.OK_200);
-                            callback.succeeded();
-                        }
-                        else
-                        {
-                            // Reading the request content failed.
-                            // Send an error response, completing the callback.
-                            Response.writeError(request, response, callback, failure);
-                        }
-                    });
+                            if (failure == null)
+                            {
+                                // Use the Parts API to process the parts.
+                                processParts(parts);
+                                // Send a simple 200 response, completing the callback.
+                                response.setStatus(HttpStatus.OK_200);
+                                callback.succeeded();
+                            }
+                            else
+                            {
+                                // Reading the request content failed.
+                                // Send an error response, completing the callback.
+                                Response.writeError(request, response, callback, failure);
+                            }
+                        });
 
                     // The callback will be eventually completed in all cases, return true.
                     return true;
@@ -887,14 +897,15 @@ public class HTTPServerDocs
                 // Set the response status code.
                 response.setStatus(HttpStatus.OK_200);
 
-                String content = """
-                    {
-                      "result": 0,
-                      "advice": {
-                        "message": "Jetty Rocks!"
-                      }
-                    }
-                    """;
+                String content =
+                    """
+                        {
+                          "result": 0,
+                          "advice": {
+                            "message": "Jetty Rocks!"
+                          }
+                        }
+                        """;
                 // Must count the bytes, not the characters!
                 byte[] bytes = content.getBytes(UTF_8);
                 long contentLength = bytes.length;
@@ -938,9 +949,11 @@ public class HTTPServerDocs
                     {
                         // Small request content, ask to send it by
                         // sending a 100 Continue interim response.
-                        CompletableFuture<Void> processing = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY) // <1>
+                        CompletableFuture<Void> processing = response.writeInterim(
+                            HttpStatus.CONTINUE_100, HttpFields.EMPTY) // <1>
                             // Then read the request content into a ByteBuffer.
-                            .thenCompose(ignored -> Promise.Completable.<ByteBuffer>with(p -> Content.Source.asByteBuffer(request, p)))
+                            .thenCompose(ignored -> Promise.Completable.<ByteBuffer>with(
+                                p -> Content.Source.asByteBuffer(request, p)))
                             // Then store the ByteBuffer somewhere.
                             .thenCompose(byteBuffer -> store(byteBuffer));
 
@@ -993,34 +1006,36 @@ public class HTTPServerDocs
                 {
                     // Tell the client that a Link is coming
                     // sending a 103 Early Hints interim response.
-                    HttpFields.Mutable interimHeaders = HttpFields.build()
-                        .put(HttpHeader.LINK, "</style.css>; rel=preload; as=style");
+                    HttpFields.Mutable interimHeaders =
+                        HttpFields.build().put(HttpHeader.LINK, "</style.css>; rel=preload; as=style");
 
                     response.writeInterim(HttpStatus.EARLY_HINTS_103, interimHeaders) // <1>
-                        .whenComplete((ignored, failure) -> // <2>
-                        {
-                            if (failure == null)
+                        .whenComplete(
+                            (ignored, failure) -> // <2>
                             {
-                                try
+                                if (failure == null)
                                 {
-                                    // Delegate the handling to the child Handler.
-                                    boolean handled = super.handle(request, response, callback);
-                                    if (!handled)
+                                    try
                                     {
-                                        // The child Handler did not produce a final response, do it here.
-                                        Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+                                        // Delegate the handling to the child Handler.
+                                        boolean handled = super.handle(request, response, callback);
+                                        if (!handled)
+                                        {
+                                            // The child Handler did not produce a final response, do it here.
+                                            Response.writeError(
+                                                request, response, callback, HttpStatus.NOT_FOUND_404);
+                                        }
+                                    }
+                                    catch (Throwable x)
+                                    {
+                                        callback.failed(x);
                                     }
                                 }
-                                catch (Throwable x)
+                                else
                                 {
-                                    callback.failed(x);
+                                    callback.failed(failure);
                                 }
-                            }
-                            else
-                            {
-                                callback.failed(failure);
-                            }
-                        });
+                            });
 
                     // This Handler sent an interim response, so this Handler
                     // (or its descendants) must produce a final response, so return true.
@@ -1203,8 +1218,7 @@ public class HTTPServerDocs
         // For multiple directories, use ResourceFactory.combine().
         Resource resource = ResourceFactory.combine(
             ResourceFactory.of(handler).newResource("/path/to/static/resources/"),
-            ResourceFactory.of(handler).newResource("/another/path/to/static/resources/")
-        );
+            ResourceFactory.of(handler).newResource("/another/path/to/static/resources/"));
         handler.setBaseResource(resource);
         // end::multipleResourcesHandler[]
     }
@@ -1355,7 +1369,8 @@ public class HTTPServerDocs
 
         // Create and link the MinimumDataRateHandler to the Server.
         // Create the MinimumDataRateHandler with a minimum read rate of 1KB per second and no minimum write rate.
-        StatisticsHandler.MinimumDataRateHandler dataRateHandler = new StatisticsHandler.MinimumDataRateHandler(1024L, 0L);
+        StatisticsHandler.MinimumDataRateHandler dataRateHandler =
+            new StatisticsHandler.MinimumDataRateHandler(1024L, 0L);
         server.setHandler(dataRateHandler);
 
         // Create a ContextHandlerCollection to hold contexts.
@@ -1389,7 +1404,13 @@ public class HTTPServerDocs
 
                 // Record the request processing time and the status that was sent back to the client.
                 long processingTime = NanoTime.millisSince(beforeHandlingNanoTime);
-                System.getLogger("trackTime").log(INFO, "processing request %s took %d ms and ended with status code %d", request, processingTime, status);
+                System.getLogger("trackTime")
+                    .log(
+                        INFO,
+                        "processing request %s took %d ms and ended with status code %d",
+                        request,
+                        processingTime,
+                        status);
             }
         }
 

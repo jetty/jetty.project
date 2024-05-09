@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
+import jakarta.websocket.EndpointConfig;
 import java.util.HashMap;
 import java.util.Map;
-
-import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.AvailableDecoders;

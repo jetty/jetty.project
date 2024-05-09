@@ -37,7 +37,7 @@ public class LoginCallbackImpl implements LoginCallback
 
     private String[] roles = new String[0];
 
-    //TODO could use Credential instance instead of Object if Basic/Form create a Password object
+    // TODO could use Credential instance instead of Object if Basic/Form create a Password object
     public LoginCallbackImpl(Subject subject, String userName, Object credential)
     {
         this.subject = subject;

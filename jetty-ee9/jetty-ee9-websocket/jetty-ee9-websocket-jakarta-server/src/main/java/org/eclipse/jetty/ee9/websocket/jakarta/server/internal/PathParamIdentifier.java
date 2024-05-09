@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
 
+import jakarta.websocket.server.PathParam;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-
-import jakarta.websocket.server.PathParam;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 
@@ -51,23 +50,8 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
      */
     public static void validateType(Class<?> type)
     {
-        if (!String.class.isAssignableFrom(type) &&
-            !Integer.class.isAssignableFrom(type) &&
-            !Integer.TYPE.isAssignableFrom(type) &&
-            !Long.class.isAssignableFrom(type) &&
-            !Long.TYPE.isAssignableFrom(type) &&
-            !Short.class.isAssignableFrom(type) &&
-            !Short.TYPE.isAssignableFrom(type) &&
-            !Float.class.isAssignableFrom(type) &&
-            !Float.TYPE.isAssignableFrom(type) &&
-            !Double.class.isAssignableFrom(type) &&
-            !Double.TYPE.isAssignableFrom(type) &&
-            !Boolean.class.isAssignableFrom(type) &&
-            !Boolean.TYPE.isAssignableFrom(type) &&
-            !Character.class.isAssignableFrom(type) &&
-            !Character.TYPE.isAssignableFrom(type) &&
-            !Byte.class.isAssignableFrom(type) &&
-            !Byte.TYPE.isAssignableFrom(type))
+        if (!String.class.isAssignableFrom(type) && !Integer.class.isAssignableFrom(type) && !Integer.TYPE.isAssignableFrom(type) && !Long.class.isAssignableFrom(type) && !Long.TYPE.isAssignableFrom(type) && !Short.class.isAssignableFrom(type) && !Short.TYPE.isAssignableFrom(type) && !Float.class.isAssignableFrom(type) && !Float.TYPE.isAssignableFrom(type) && !Double.class.isAssignableFrom(type) && !Double.TYPE.isAssignableFrom(type) && !Boolean.class.isAssignableFrom(type) && !Boolean.TYPE
+            .isAssignableFrom(type) && !Character.class.isAssignableFrom(type) && !Character.TYPE.isAssignableFrom(type) && !Byte.class.isAssignableFrom(type) && !Byte.TYPE.isAssignableFrom(type))
             throw new InvalidSignatureException("Unsupported PathParam Type: " + type);
     }
 }

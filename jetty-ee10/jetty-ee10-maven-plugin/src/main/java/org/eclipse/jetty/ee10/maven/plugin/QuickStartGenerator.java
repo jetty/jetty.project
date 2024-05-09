@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.nio.file.Path;
-
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration.Mode;
@@ -67,7 +66,7 @@ public class QuickStartGenerator
     {
         return quickstartXml;
     }
-    
+
     /**
      * Get the server.
      * @return the server
@@ -99,7 +98,7 @@ public class QuickStartGenerator
     {
         this.webAppProps = webAppProps;
     }
-    
+
     public String getContextXml()
     {
         return contextXml;
@@ -113,13 +112,13 @@ public class QuickStartGenerator
     {
         this.contextXml = contextXml;
     }
-    
+
     /**
      * Configure the webapp in preparation for quickstart generation.
      */
     private void prepareWebApp()
     {
-        //set the webapp up to do very little other than generate the quickstart-web.xml
+        // set the webapp up to do very little other than generate the quickstart-web.xml
         webApp.addConfiguration(new MavenQuickStartConfiguration());
         webApp.setAttribute(QuickStartConfiguration.MODE, Mode.GENERATE);
         webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, quickstartXml);
@@ -129,9 +128,9 @@ public class QuickStartGenerator
     }
 
     /**
-     * Run enough of jetty to generate a full quickstart xml file for the 
+     * Run enough of jetty to generate a full quickstart xml file for the
      * webapp. The tmp directory is persisted.
-     * 
+     *
      * @throws Exception if there is an unspecified problem
      */
     public void generate() throws Exception
@@ -143,24 +142,24 @@ public class QuickStartGenerator
         {
             prepared = true;
             prepareWebApp();
-            
+
             if (server == null)
                 server = new Server();
 
-            //ensure handler structure enabled
+            // ensure handler structure enabled
             ServerSupport.configureHandlers(server, null, null);
 
             Configurations.setServerDefault(server);
-            
-            //if our server has a thread pool associated we can do annotation scanning multithreaded,
-            //otherwise scanning will be single threaded
+
+            // if our server has a thread pool associated we can do annotation scanning multithreaded,
+            // otherwise scanning will be single threaded
             if (tpool == null)
                 tpool = server.getBean(QueuedThreadPool.class);
 
-            //add webapp to our fake server instance
+            // add webapp to our fake server instance
             ServerSupport.addWebApplication(server, webApp);
 
-            //leave everything unpacked for the forked process to use
+            // leave everything unpacked for the forked process to use
             webApp.setTempDirectoryPersistent(true);
         }
 
@@ -171,15 +170,15 @@ public class QuickStartGenerator
             else
                 webApp.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE.toString());
 
-            webApp.start(); //just enough to generate the quickstart
+            webApp.start(); // just enough to generate the quickstart
 
-            //save config of the webapp BEFORE we stop
+            // save config of the webapp BEFORE we stop
             if (webAppProps != null)
                 WebAppPropertyConverter.toProperties(webApp, webAppProps.toFile(), contextXml);
         }
         finally
         {
-            webApp.stop();        
+            webApp.stop();
             if (tpool != null)
                 tpool.stop();
         }

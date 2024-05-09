@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -32,8 +33,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 public abstract class AbstractHttpClientServerTest
 {
     private ArrayByteBufferPool.Tracking serverBufferPool;
@@ -50,8 +49,14 @@ public abstract class AbstractHttpClientServerTest
         server = new Server(serverThreads);
         ServerFCGIConnectionFactory fcgiConnectionFactory = new ServerFCGIConnectionFactory(new HttpConfiguration());
         serverBufferPool = new ArrayByteBufferPool.Tracking();
-        connector = new ServerConnector(server, null, null, serverBufferPool,
-            1, Math.max(1, ProcessorUtils.availableProcessors() / 2), fcgiConnectionFactory);
+        connector = new ServerConnector(
+            server,
+            null,
+            null,
+            serverBufferPool,
+            1,
+            Math.max(1, ProcessorUtils.availableProcessors() / 2),
+            fcgiConnectionFactory);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
@@ -90,7 +95,9 @@ public abstract class AbstractHttpClientServerTest
     {
         try
         {
-            Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
+            Awaitility.await()
+                .atMost(3, TimeUnit.SECONDS)
+                .until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
         }
         catch (Exception e)
         {

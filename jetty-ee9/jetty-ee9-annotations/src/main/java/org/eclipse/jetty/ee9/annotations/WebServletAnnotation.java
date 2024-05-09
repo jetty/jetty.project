@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import jakarta.servlet.Servlet;
 import jakarta.servlet.annotation.WebInitParam;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.servlet.ServletMapping;
 import org.eclipse.jetty.ee9.servlet.Source;
@@ -55,7 +54,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
     @Override
     public void apply()
     {
-        //TODO check this algorithm with new rules for applying descriptors and annotations in order
+        // TODO check this algorithm with new rules for applying descriptors and annotations in order
         Class<? extends Servlet> clazz = (Class<? extends Servlet>)getTargetClass();
 
         if (clazz == null)
@@ -64,7 +63,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             return;
         }
 
-        //Servlet Spec 8.1.1
+        // Servlet Spec 8.1.1
         if (!HttpServlet.class.isAssignableFrom(clazz))
         {
             LOG.warn("{} is not assignable from jakarta.servlet.http.HttpServlet", clazz.getName());
@@ -89,7 +88,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             return;
         }
 
-        //canonicalize the patterns
+        // canonicalize the patterns
         ArrayList<String> urlPatternList = new ArrayList<String>();
         for (String p : urlPatterns)
         {
@@ -99,9 +98,9 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         String servletName = (annotation.name().isEmpty() ? clazz.getName() : annotation.name());
 
         MetaData metaData = _context.getMetaData();
-        ServletMapping mapping = null; //the new mapping
+        ServletMapping mapping = null; // the new mapping
 
-        //Find out if a <servlet> already exists with this name
+        // Find out if a <servlet> already exists with this name
         ServletHolder[] holders = _context.getServletHandler().getServlets();
 
         ServletHolder holder = null;
@@ -117,11 +116,11 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             }
         }
 
-        //handle creation/completion of a servlet
+        // handle creation/completion of a servlet
         if (holder == null)
         {
-            //No servlet of this name has already been defined, either by a descriptor
-            //or another annotation (which would be impossible).
+            // No servlet of this name has already been defined, either by a descriptor
+            // or another annotation (which would be impossible).
             Source source = new Source(Source.Origin.ANNOTATION, clazz);
 
             holder = _context.getServletHandler().newServletHolder(source);
@@ -149,21 +148,25 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             mapping = new ServletMapping(source);
             mapping.setServletName(holder.getName());
             mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
-            _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + Long.toHexString(mapping.hashCode()), annotation, clazz);
+            _context.getMetaData()
+                .setOrigin(
+                    servletName + ".servlet.mapping." + Long.toHexString(mapping.hashCode()),
+                    annotation,
+                    clazz);
         }
         else
         {
-            //set the class according to the servlet that is annotated, if it wasn't already
-            //NOTE: this may be considered as "completing" an incomplete servlet registration, and it is
-            //not clear from servlet 3.0 spec whether this is intended, or if only a ServletContext.addServlet() call
-            //can complete it, see http://java.net/jira/browse/SERVLET_SPEC-42
+            // set the class according to the servlet that is annotated, if it wasn't already
+            // NOTE: this may be considered as "completing" an incomplete servlet registration, and it is
+            // not clear from servlet 3.0 spec whether this is intended, or if only a ServletContext.addServlet() call
+            // can complete it, see http://java.net/jira/browse/SERVLET_SPEC-42
             if (holder.getClassName() == null)
                 holder.setClassName(clazz.getName());
             if (holder.getHeldClass() == null)
                 holder.setHeldClass(clazz);
 
-            //check if the existing servlet has each init-param from the annotation
-            //if not, add it
+            // check if the existing servlet has each init-param from the annotation
+            // if not, add it
             for (WebInitParam ip : annotation.initParams())
             {
                 if (metaData.getOrigin(servletName + ".servlet.init-param." + ip.name()) == Origin.NotSet)
@@ -173,36 +176,41 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                 }
             }
 
-            //check the url-patterns
-            //ServletSpec 3.0 p81 If a servlet already has url mappings from a
-            //webxml or fragment descriptor the annotation is ignored.
-            //However, we want to be able to replace mappings that were given in webdefault-ee9.xml
+            // check the url-patterns
+            // ServletSpec 3.0 p81 If a servlet already has url mappings from a
+            // webxml or fragment descriptor the annotation is ignored.
+            // However, we want to be able to replace mappings that were given in webdefault-ee9.xml
             List<ServletMapping> existingMappings = getServletMappingsForServlet(servletName);
 
-            //if any mappings for this servlet already set by a descriptor that is not webdefault-ee9.xml forget
-            //about processing these url mappings
+            // if any mappings for this servlet already set by a descriptor that is not webdefault-ee9.xml forget
+            // about processing these url mappings
             if (existingMappings.isEmpty() || !containsNonDefaultMappings(existingMappings))
             {
                 mapping = new ServletMapping(new Source(Source.Origin.ANNOTATION, clazz));
                 mapping.setServletName(servletName);
                 mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
-                _context.getMetaData().setOrigin(servletName + ".servlet.mapping." + Long.toHexString(mapping.hashCode()), annotation, clazz);
+                _context.getMetaData()
+                    .setOrigin(
+                        servletName + ".servlet.mapping." + Long.toHexString(mapping.hashCode()),
+                        annotation,
+                        clazz);
             }
         }
 
-        //We also want to be able to replace mappings that were defined in webdefault-ee9.xml
-        //that were for a different servlet eg a mapping in webdefault-ee9.xml for / to the jetty
-        //default servlet should be able to be replaced by an annotation for / to a different
-        //servlet
+        // We also want to be able to replace mappings that were defined in webdefault-ee9.xml
+        // that were for a different servlet eg a mapping in webdefault-ee9.xml for / to the jetty
+        // default servlet should be able to be replaced by an annotation for / to a different
+        // servlet
         if (mapping != null)
         {
-            //url mapping was permitted by annotation processing rules
+            // url mapping was permitted by annotation processing rules
 
-            //take a copy of the existing servlet mappings that we can iterate over and remove from. This is
-            //because the ServletHandler interface does not support removal of individual mappings.
-            List<ServletMapping> allMappings = ArrayUtil.asMutableList(_context.getServletHandler().getServletMappings());
+            // take a copy of the existing servlet mappings that we can iterate over and remove from. This is
+            // because the ServletHandler interface does not support removal of individual mappings.
+            List<ServletMapping> allMappings =
+                ArrayUtil.asMutableList(_context.getServletHandler().getServletMappings());
 
-            //for each of the urls in the annotation, check if a mapping to same/different servlet exists
+            // for each of the urls in the annotation, check if a mapping to same/different servlet exists
             //  if mapping exists and is from a default descriptor, it can be replaced. NOTE: we do not
             //  guard against duplicate path mapping here: that is the job of the ServletHandler
             for (String p : urlPatternList)
@@ -211,12 +219,15 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                 if (existingMapping != null && existingMapping.isFromDefaultDescriptor())
                 {
                     String[] updatedPaths = ArrayUtil.removeFromArray(existingMapping.getPathSpecs(), p);
-                    //if we removed the last path from a servletmapping, delete the servletmapping
+                    // if we removed the last path from a servletmapping, delete the servletmapping
                     if (updatedPaths == null || updatedPaths.length == 0)
                     {
                         boolean success = allMappings.remove(existingMapping);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Removed empty mapping {} from defaults descriptor success:{}", existingMapping, success);
+                            LOG.debug(
+                                "Removed empty mapping {} from defaults descriptor success:{}",
+                                existingMapping,
+                                success);
                     }
                     else
                     {
@@ -228,7 +239,8 @@ public class WebServletAnnotation extends DiscoveredAnnotation
                 _context.getMetaData().setOrigin(servletName + ".servlet.mapping.url" + p, annotation, clazz);
             }
             allMappings.add(mapping);
-            _context.getServletHandler().setServletMappings(allMappings.toArray(new ServletMapping[allMappings.size()]));
+            _context.getServletHandler()
+                .setServletMappings(allMappings.toArray(new ServletMapping[allMappings.size()]));
         }
     }
 

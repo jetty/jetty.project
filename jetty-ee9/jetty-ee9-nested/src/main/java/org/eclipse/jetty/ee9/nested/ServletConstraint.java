@@ -30,7 +30,7 @@ public class ServletConstraint implements Cloneable, Serializable
     public static final String NONE = "NONE";
 
     public static final String ANY_ROLE = "*";
-    public static final String ANY_AUTH = "**"; //Servlet Spec 3.1 pg 140
+    public static final String ANY_AUTH = "**"; // Servlet Spec 3.1 pg 140
 
     private String _name;
 
@@ -90,7 +90,7 @@ public class ServletConstraint implements Cloneable, Serializable
         _anyAuth = false;
         if (roles != null)
         {
-            for (int i = roles.length; i-- > 0; )
+            for (int i = roles.length; i-- > 0;)
             {
                 _anyRole |= ANY_ROLE.equals(roles[i]);
                 _anyAuth |= ANY_AUTH.equals(roles[i]);
@@ -171,8 +171,6 @@ public class ServletConstraint implements Cloneable, Serializable
     @Override
     public String toString()
     {
-        return "SC{" + _name +
-            "," + (_anyRole ? "*" : (_roles == null ? "-" : Arrays.asList(_roles).toString())) +
-            "," + (_dataConstraint == -1 ? "UNSET}" : (_dataConstraint == DC_NONE ? "NONE}" : (_dataConstraint == DC_INTEGRAL ? "INTEGRAL}" : "CONFIDENTIAL}")));
+        return "SC{" + _name + "," + (_anyRole ? "*" : (_roles == null ? "-" : Arrays.asList(_roles).toString())) + "," + (_dataConstraint == -1 ? "UNSET}" : (_dataConstraint == DC_NONE ? "NONE}" : (_dataConstraint == DC_INTEGRAL ? "INTEGRAL}" : "CONFIDENTIAL}")));
     }
 }

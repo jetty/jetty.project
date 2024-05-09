@@ -13,7 +13,7 @@
 
 module org.eclipse.jetty.ee10.proxy
 {
-    requires  jakarta.servlet;
+    requires jakarta.servlet;
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.slf4j;

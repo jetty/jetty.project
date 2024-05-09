@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
-import java.util.concurrent.LinkedBlockingQueue;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.util.concurrent.LinkedBlockingQueue;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
@@ -23,14 +24,13 @@ import org.eclipse.jetty.websocket.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.WebSocketCreator;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 public class ServerCloseCreator implements WebSocketCreator
 {
     private final LinkedBlockingQueue<AbstractCloseEndpoint> createdSocketQueue = new LinkedBlockingQueue<>();
 
     @Override
-    public Object createWebSocket(ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse, Callback callback)
+    public Object createWebSocket(
+                                  ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse, Callback callback)
     {
         AbstractCloseEndpoint closeSocket = null;
 

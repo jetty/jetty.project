@@ -16,7 +16,6 @@ package org.eclipse.jetty.client.transport.internal;
 import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpResponseException;
@@ -149,11 +148,15 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     @Override
     public void failAndClose(Throwable failure)
     {
-        responseFailure(failure, Promise.from((failed) ->
-        {
-            if (failed)
-                getHttpConnection().close(failure);
-        }, x -> getHttpConnection().close(failure)));
+        responseFailure(
+            failure,
+            Promise.from(
+                (failed) ->
+                {
+                    if (failed)
+                        getHttpConnection().close(failure);
+                },
+                x -> getHttpConnection().close(failure)));
     }
 
     @Override
@@ -353,7 +356,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 if (!HttpStatus.isInformational(status))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Discarding unexpected content after response {}: {} in {}", status, networkBuffer, this);
+                        LOG.debug(
+                            "Discarding unexpected content after response {}: {} in {}",
+                            status,
+                            networkBuffer,
+                            this);
                     networkBuffer.clear();
                 }
                 return false;
@@ -428,7 +435,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             return false;
 
         // Store the EndPoint is case of upgrades, tunnels, etc.
-        exchange.getRequest().getConversation().setAttribute(EndPoint.class.getName(), getHttpConnection().getEndPoint());
+        exchange.getRequest()
+            .getConversation()
+            .setAttribute(EndPoint.class.getName(), getHttpConnection().getEndPoint());
         getHttpConnection().onResponseHeaders(exchange);
         if (LOG.isDebugEnabled())
             LOG.debug("Setting action to responseHeaders(exchange, boolean) on {}", this);
@@ -550,7 +559,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             HttpResponse response = exchange.getResponse();
             response.status(failure.getCode()).reason(failure.getReason());
-            failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response, (Throwable)failure));
+            failAndClose(new HttpResponseException(
+                "HTTP protocol violation: bad response on " + getHttpConnection(), response, (Throwable)failure));
         }
     }
 

@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.decoders;
 
-import java.io.IOException;
-import java.io.Reader;
-
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
+import java.io.IOException;
+import java.io.Reader;
 
 public class ReaderDecoder implements Decoder.TextStream<Reader>
 {

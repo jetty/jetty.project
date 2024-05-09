@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.QuotedCSV;
@@ -42,7 +41,8 @@ public abstract class WebSocketNegotiation
     private List<String> offeredProtocols;
     private String protocol;
 
-    public WebSocketNegotiation(Request request, Response response, Callback callback, WebSocketComponents webSocketComponents)
+    public WebSocketNegotiation(
+                                Request request, Response response, Callback callback, WebSocketComponents webSocketComponents)
     {
         this.request = new ServerUpgradeRequestImpl(this, request);
         this.response = new ServerUpgradeResponseImpl(this, response);
@@ -117,25 +117,23 @@ public abstract class WebSocketNegotiation
         }
 
         Set<String> available = components.getExtensionRegistry().getAvailableExtensionNames();
-        offeredExtensions = extensions == null
-            ? Collections.emptyList()
-            : extensions.getValues().stream()
-            .map(ExtensionConfig::parse)
-            .filter(ec -> available.contains(ec.getName()) && !ec.getName().startsWith("@"))
-            .collect(Collectors.toList());
+        offeredExtensions = extensions == null ? Collections.emptyList() :
+            extensions.getValues().stream()
+                .map(ExtensionConfig::parse)
+                .filter(ec -> available.contains(ec.getName()) && !ec.getName().startsWith("@"))
+                .collect(Collectors.toList());
 
         // Remove any parameters starting with "@", these are not to be negotiated by client (internal parameters).
         offeredExtensions.forEach(ExtensionConfig::removeInternalParameters);
 
-        offeredProtocols = protocols == null
-            ? Collections.emptyList()
-            : protocols.getValues();
+        offeredProtocols = protocols == null ? Collections.emptyList() : protocols.getValues();
 
         negotiatedExtensions = new ArrayList<>();
         for (ExtensionConfig config : offeredExtensions)
         {
             long matches = negotiatedExtensions.stream()
-                .filter(negotiatedConfig -> negotiatedConfig.getName().equals(config.getName())).count();
+                .filter(negotiatedConfig -> negotiatedConfig.getName().equals(config.getName()))
+                .count();
             if (matches == 0)
                 negotiatedExtensions.add(new ExtensionConfig(config));
         }
@@ -183,7 +181,8 @@ public abstract class WebSocketNegotiation
     @Override
     public String toString()
     {
-        return String.format("%s@%x{uri=%s,oe=%s,op=%s}",
+        return String.format(
+            "%s@%x{uri=%s,oe=%s,op=%s}",
             getClass().getSimpleName(),
             hashCode(),
             getRequest().getHttpURI(),

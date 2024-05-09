@@ -13,12 +13,6 @@
 
 package org.eclipse.jetty.ee10.security.jaspi;
 
-import java.io.IOException;
-import javax.security.auth.Subject;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.UnsupportedCallbackException;
-
 import jakarta.security.auth.message.callback.CallerPrincipalCallback;
 import jakarta.security.auth.message.callback.CertStoreCallback;
 import jakarta.security.auth.message.callback.GroupPrincipalCallback;
@@ -26,6 +20,11 @@ import jakarta.security.auth.message.callback.PasswordValidationCallback;
 import jakarta.security.auth.message.callback.PrivateKeyCallback;
 import jakarta.security.auth.message.callback.SecretKeyCallback;
 import jakarta.security.auth.message.callback.TrustStoreCallback;
+import java.io.IOException;
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.UnsupportedCallbackException;
 import org.eclipse.jetty.ee10.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.ee10.servlet.security.authentication.LoginCallback;
 import org.eclipse.jetty.ee10.servlet.security.authentication.LoginCallbackImpl;
@@ -65,31 +64,52 @@ public class ServletCallbackHandler implements CallbackHandler
                 @SuppressWarnings("unused")
                 Subject subject = passwordValidationCallback.getSubject();
 
-                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null, null);
+                UserIdentity user = _loginService.login(
+                    passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null, null);
 
                 if (user != null)
                 {
                     passwordValidationCallback.setResult(true);
-                    passwordValidationCallback.getSubject().getPrincipals().addAll(user.getSubject().getPrincipals());
-                    passwordValidationCallback.getSubject().getPrivateCredentials().add(user);
+                    passwordValidationCallback
+                        .getSubject()
+                        .getPrincipals()
+                        .addAll(user.getSubject().getPrincipals());
+                    passwordValidationCallback
+                        .getSubject()
+                        .getPrivateCredentials()
+                        .add(user);
                 }
             }
             else if (callback instanceof CredentialValidationCallback credentialValidationCallback)
             {
                 Subject subject = credentialValidationCallback.getSubject();
-                LoginCallback loginCallback = new LoginCallbackImpl(subject,
+                LoginCallback loginCallback = new LoginCallbackImpl(
+                    subject,
                     credentialValidationCallback.getUsername(),
                     credentialValidationCallback.getCredential());
 
-                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(), credentialValidationCallback.getCredential(), null, null);
+                UserIdentity user = _loginService.login(
+                    credentialValidationCallback.getUsername(),
+                    credentialValidationCallback.getCredential(),
+                    null,
+                    null);
 
                 if (user != null)
                 {
                     loginCallback.setUserPrincipal(user.getUserPrincipal());
-                    credentialValidationCallback.getSubject().getPrivateCredentials().add(loginCallback);
+                    credentialValidationCallback
+                        .getSubject()
+                        .getPrivateCredentials()
+                        .add(loginCallback);
                     credentialValidationCallback.setResult(true);
-                    credentialValidationCallback.getSubject().getPrincipals().addAll(user.getSubject().getPrincipals());
-                    credentialValidationCallback.getSubject().getPrivateCredentials().add(user);
+                    credentialValidationCallback
+                        .getSubject()
+                        .getPrincipals()
+                        .addAll(user.getSubject().getPrincipals());
+                    credentialValidationCallback
+                        .getSubject()
+                        .getPrivateCredentials()
+                        .add(user);
                 }
             }
             // server to jaspi communication

@@ -15,4 +15,3 @@
  * Jetty Servlet : Servlet JMX Integration
  */
 package org.eclipse.jetty.ee9.servlet.jmx;
-

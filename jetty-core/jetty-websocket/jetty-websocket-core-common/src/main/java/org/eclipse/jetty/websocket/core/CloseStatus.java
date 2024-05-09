@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
@@ -109,7 +108,8 @@ public class CloseStatus
 
         if (reasonPhrase != null)
         {
-            byte[] reasonBytes = truncateToFit(reasonPhrase.getBytes(StandardCharsets.UTF_8), CloseStatus.MAX_REASON_PHRASE);
+            byte[] reasonBytes =
+                truncateToFit(reasonPhrase.getBytes(StandardCharsets.UTF_8), CloseStatus.MAX_REASON_PHRASE);
             this.reason = new String(reasonBytes, StandardCharsets.UTF_8);
         }
         else

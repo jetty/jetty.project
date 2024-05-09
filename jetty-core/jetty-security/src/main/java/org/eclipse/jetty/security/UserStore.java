@@ -19,43 +19,40 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.security.Credential;
 
 /**
  * Store of user authentication and authorization information.
- * 
+ *
  */
 public class UserStore extends ContainerLifeCycle
 {
     protected final Map<String, User> _users = new ConcurrentHashMap<>();
-    
+
     protected class User
     {
         protected UserPrincipal _userPrincipal;
         protected List<RolePrincipal> _rolePrincipals;
-        
+
         protected User(String username, Credential credential, String[] roles)
         {
             _userPrincipal = new UserPrincipal(username, credential);
 
-            _rolePrincipals = (roles == null || roles.length == 0)
-                ? Collections.emptyList()
-                : Arrays.stream(roles).map(RolePrincipal::new).collect(Collectors.toList());
+            _rolePrincipals = (roles == null || roles.length == 0) ? Collections.emptyList() : Arrays.stream(roles).map(RolePrincipal::new).collect(Collectors.toList());
         }
-        
+
         protected UserPrincipal getUserPrincipal()
         {
             return _userPrincipal;
         }
-        
+
         protected List<RolePrincipal> getRolePrincipals()
         {
             return _rolePrincipals;
         }
     }
-    
+
     public void addUser(String username, Credential credential, String[] roles)
     {
         _users.put(username, new User(username, credential, roles));
@@ -65,13 +62,13 @@ public class UserStore extends ContainerLifeCycle
     {
         _users.remove(username);
     }
-    
+
     public UserPrincipal getUserPrincipal(String username)
     {
         User user = _users.get(username);
         return (user == null ? null : user.getUserPrincipal());
     }
-    
+
     public List<RolePrincipal> getRolePrincipals(String username)
     {
         User user = _users.get(username);

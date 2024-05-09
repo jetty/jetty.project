@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.ee9.session.jdbc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.DatabaseAdaptor;
@@ -30,10 +33,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test the SessionTableSchema behaviour when the database treats "" as a NULL,
@@ -51,14 +50,14 @@ public class SessionTableSchemaTest
     public void setUp() throws Exception
     {
         this.sessionTableName = getClass().getSimpleName() + "_" + System.nanoTime();
-        //pretend to be an Oracle-like database that treats "" as NULL
+        // pretend to be an Oracle-like database that treats "" as NULL
         _da = new DatabaseAdaptor()
         {
 
             @Override
             public boolean isEmptyStringNull()
             {
-                return true; //test special handling for oracle
+                return true; // test special handling for oracle
             }
         };
         _da.setDriverInfo(JdbcTestHelper.DRIVER_CLASS, JdbcTestHelper.DEFAULT_CONNECTION_URL);
@@ -76,22 +75,17 @@ public class SessionTableSchemaTest
      * This inserts a session into the db that does not set the session attributes MAP column. As such
      * this results in a row that is unreadable by the JDBCSessionDataStore, but is readable by using
      * only jdbc api, which is what this test does.
-     * 
+     *
      * @param id id of session
      * @param contextPath the context path of the session
-     * @param vhost the virtual host of the session 
+     * @param vhost the virtual host of the session
      * @throws Exception if there is an unspecified problem
      */
-    public void insertSessionWithoutAttributes(String id, String contextPath, String vhost)
-        throws Exception
+    public void insertSessionWithoutAttributes(String id, String contextPath, String vhost) throws Exception
     {
         try (Connection con = JdbcTestHelper.getConnection())
         {
-            PreparedStatement statement = con.prepareStatement("insert into " + sessionTableName +
-                " (" + JdbcTestHelper.ID_COL + ", " + JdbcTestHelper.CONTEXT_COL + ", virtualHost, " + JdbcTestHelper.LAST_NODE_COL +
-                ", " + JdbcTestHelper.ACCESS_COL + ", " + JdbcTestHelper.LAST_ACCESS_COL + ", " + JdbcTestHelper.CREATE_COL + ", " + JdbcTestHelper.COOKIE_COL +
-                ", " + JdbcTestHelper.LAST_SAVE_COL + ", " + JdbcTestHelper.EXPIRY_COL + " " + ") " +
-                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            PreparedStatement statement = con.prepareStatement("insert into " + sessionTableName + " (" + JdbcTestHelper.ID_COL + ", " + JdbcTestHelper.CONTEXT_COL + ", virtualHost, " + JdbcTestHelper.LAST_NODE_COL + ", " + JdbcTestHelper.ACCESS_COL + ", " + JdbcTestHelper.LAST_ACCESS_COL + ", " + JdbcTestHelper.CREATE_COL + ", " + JdbcTestHelper.COOKIE_COL + ", " + JdbcTestHelper.LAST_SAVE_COL + ", " + JdbcTestHelper.EXPIRY_COL + " " + ") " + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             statement.setString(1, id);
             statement.setString(2, contextPath);
@@ -110,29 +104,30 @@ public class SessionTableSchemaTest
             assertEquals(1, statement.getUpdateCount());
         }
     }
-    
+
     @Test
-    public void testLoad()
-        throws Exception
+    public void testLoad() throws Exception
     {
-        //set up the db
+        // set up the db
         _da.initialize();
         _tableSchema.prepareTables();
 
         String id = Long.toString(NanoTime.now());
 
-        //insert a fake session at the root context
+        // insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
-        //test if it can be seen
+        // test if it can be seen
         try (Connection con = JdbcTestHelper.getConnection(_da))
         {
-            //make a root context
+            // make a root context
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
-            handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
+            handler.getSessionHandler()
+                .getSessionManager()
+                .setSessionIdManager(new DefaultSessionIdManager(new Server()));
             handler.setContextPath("/");
             SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
-            //test the load statement
+            // test the load statement
             PreparedStatement s = _tableSchema.getLoadStatement(con, id, sc);
             ResultSet rs = s.executeQuery();
             assertTrue(rs.next());
@@ -140,23 +135,24 @@ public class SessionTableSchemaTest
     }
 
     @Test
-    public void testExists()
-        throws Exception
+    public void testExists() throws Exception
     {
-        //set up the db
+        // set up the db
         _da.initialize();
         _tableSchema.prepareTables();
 
         String id = Long.toString(NanoTime.now());
 
-        //insert a fake session at the root context
+        // insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
-        //test if it can be seen
+        // test if it can be seen
         try (Connection con = JdbcTestHelper.getConnection(_da))
         {
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
-            handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
+            handler.getSessionHandler()
+                .getSessionManager()
+                .setSessionIdManager(new DefaultSessionIdManager(new Server()));
             handler.setContextPath("/");
             SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
             PreparedStatement s = _tableSchema.getCheckSessionExistsStatement(con, sc);
@@ -167,23 +163,24 @@ public class SessionTableSchemaTest
     }
 
     @Test
-    public void testDelete()
-        throws Exception
+    public void testDelete() throws Exception
     {
-        //set up the db
+        // set up the db
         _da.initialize();
         _tableSchema.prepareTables();
 
         String id = Long.toString(NanoTime.now());
 
-        //insert a fake session at the root context
+        // insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
-        //test if it can be deleted
+        // test if it can be deleted
         try (Connection con = JdbcTestHelper.getConnection(_da))
         {
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
-            handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
+            handler.getSessionHandler()
+                .getSessionManager()
+                .setSessionIdManager(new DefaultSessionIdManager(new Server()));
             handler.setContextPath("/");
             SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
             PreparedStatement s = _tableSchema.getDeleteStatement(con, id, sc);
@@ -194,28 +191,27 @@ public class SessionTableSchemaTest
     }
 
     @Test
-    public void testExpired()
-        throws Exception
+    public void testExpired() throws Exception
     {
-        //set up the db
+        // set up the db
         _da.initialize();
         _tableSchema.prepareTables();
 
         String id = Long.toString(NanoTime.now());
 
-        //insert a fake session at the root context
+        // insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
         try (Connection con = JdbcTestHelper.getConnection(_da))
         {
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
-            handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
+            handler.getSessionHandler()
+                .getSessionManager()
+                .setSessionIdManager(new DefaultSessionIdManager(new Server()));
             handler.setContextPath("/");
             SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
-            PreparedStatement s = _tableSchema.getExpiredSessionsStatement(con,
-                sc.getCanonicalContextPath(),
-                sc.getVhost(),
-                (System.currentTimeMillis() + 100L));
+            PreparedStatement s = _tableSchema.getExpiredSessionsStatement(
+                con, sc.getCanonicalContextPath(), sc.getVhost(), (System.currentTimeMillis() + 100L));
             ResultSet rs = s.executeQuery();
             assertTrue(rs.next());
             assertEquals(id, rs.getString(1));
@@ -223,16 +219,15 @@ public class SessionTableSchemaTest
     }
 
     @Test
-    public void testMyExpiredSessions()
-        throws Exception
+    public void testMyExpiredSessions() throws Exception
     {
-        //set up the db
+        // set up the db
         _da.initialize();
         _tableSchema.prepareTables();
 
         String id = Long.toString(NanoTime.now());
 
-        //insert a fake session at the root context
+        // insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
         try (Connection con = JdbcTestHelper.getConnection(_da))
@@ -243,9 +238,8 @@ public class SessionTableSchemaTest
             handler.getSessionHandler().getSessionManager().setSessionIdManager(idMgr);
             handler.setContextPath("/");
             SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
-            PreparedStatement s = _tableSchema.getMyExpiredSessionsStatement(con,
-                sc,
-                (System.currentTimeMillis() + 100L));
+            PreparedStatement s =
+                _tableSchema.getMyExpiredSessionsStatement(con, sc, (System.currentTimeMillis() + 100L));
             ResultSet rs = s.executeQuery();
             assertTrue(rs.next());
             assertEquals(id, rs.getString(1));
@@ -253,29 +247,28 @@ public class SessionTableSchemaTest
     }
 
     @Test
-    public void testUpdate()
-        throws Exception
+    public void testUpdate() throws Exception
     {
-        //set up the db
+        // set up the db
         _da.initialize();
         _tableSchema.prepareTables();
 
         String id = Long.toString(NanoTime.now());
 
-        //insert a fake session at the root context
+        // insert a fake session at the root context
         insertSessionWithoutAttributes(id, "/", "0.0.0.0");
 
         try (Connection con = JdbcTestHelper.getConnection(_da))
         {
             ServletContextHandler handler = new ServletContextHandler(ServletContextHandler.SESSIONS);
-            handler.getSessionHandler().getSessionManager().setSessionIdManager(new DefaultSessionIdManager(new Server()));
+            handler.getSessionHandler()
+                .getSessionManager()
+                .setSessionIdManager(new DefaultSessionIdManager(new Server()));
             handler.setContextPath("/");
             SessionContext sc = new SessionContext(handler.getSessionHandler().getSessionManager());
-            PreparedStatement s = _tableSchema.getUpdateStatement(con,
-                id,
-                sc);
+            PreparedStatement s = _tableSchema.getUpdateStatement(con, id, sc);
 
-            s.setString(1, "0"); //should be my node id
+            s.setString(1, "0"); // should be my node id
             s.setLong(2, System.currentTimeMillis());
             s.setLong(3, System.currentTimeMillis());
             s.setLong(4, System.currentTimeMillis());
@@ -284,7 +277,7 @@ public class SessionTableSchemaTest
 
             byte[] bytes = new byte[3];
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            s.setBinaryStream(7, bais, bytes.length); //attribute map as blob
+            s.setBinaryStream(7, bais, bytes.length); // attribute map as blob
 
             assertEquals(1, s.executeUpdate());
         }

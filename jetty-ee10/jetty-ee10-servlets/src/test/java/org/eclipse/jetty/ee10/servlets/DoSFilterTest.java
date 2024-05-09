@@ -23,7 +23,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
 {
     /* TODO
     public WorkDir workDir;
-
+    
     private static class RemoteAddressRequest extends Request
     {
         public RemoteAddressRequest(String remoteHost, int remotePort)
@@ -32,7 +32,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
             setRemoteAddr(new InetSocketAddress(remoteHost, remotePort));
         }
     }
-
+    
     private static class NoOpFilterConfig implements FilterConfig
     {
         @Override
@@ -40,32 +40,32 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         {
             return "noop";
         }
-
+    
         @Override
         public ServletContext getServletContext()
         {
             return null;
         }
-
+    
         @Override
         public String getInitParameter(String name)
         {
             return null;
         }
-
+    
         @Override
         public Enumeration<String> getInitParameterNames()
         {
             return Collections.emptyEnumeration();
         }
     }
-
+    
     @BeforeEach
     public void setUp() throws Exception
     {
         startServer(workDir, DoSFilter.class);
     }
-
+    
     @Test
     public void testRemotePortLoadIdCreationIpv6() throws ServletException
     {
@@ -73,7 +73,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         DoSFilter doSFilter = new DoSFilter();
         doSFilter.init(new NoOpFilterConfig());
         doSFilter.setRemotePort(true);
-
+    
         try
         {
             RateTracker tracker = doSFilter.getRateTracker(request);
@@ -88,7 +88,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
             doSFilter.stopScheduler();
         }
     }
-
+    
     @Test
     public void testRemotePortLoadIdCreationIpv4() throws ServletException
     {
@@ -96,7 +96,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         DoSFilter doSFilter = new DoSFilter();
         doSFilter.init(new NoOpFilterConfig());
         doSFilter.setRemotePort(true);
-
+    
         try
         {
             RateTracker tracker = doSFilter.getRateTracker(request);
@@ -107,7 +107,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
             doSFilter.stopScheduler();
         }
     }
-
+    
     @Test
     public void testRateIsRateExceeded() throws InterruptedException
     {
@@ -115,12 +115,12 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         doSFilter.setName("foo");
         boolean exceeded = hitRateTracker(doSFilter, 0);
         assertTrue(exceeded, "Last hit should have exceeded");
-
+    
         int sleep = 250;
         exceeded = hitRateTracker(doSFilter, sleep);
         assertFalse(exceeded, "Should not exceed as we sleep 300s for each hit and thus do less than 4 hits/s");
     }
-
+    
     @Test
     public void testWhitelist() throws Exception
     {
@@ -137,7 +137,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         assertTrue(filter.checkWhitelist("4d8:0:a:1234:ABc:1F:b18:0"));
         assertFalse(filter.checkWhitelist("4d8:0:a:1234:ABc:1D:0:0"));
     }
-
+    
     @Test
     public void testUnresponsiveServer() throws Exception
     {
@@ -145,13 +145,13 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         String responses = doRequests("", 0, 0, 0, last);
         assertThat(responses, Matchers.containsString(" 503 "));
     }
-
+    
     private boolean hitRateTracker(DoSFilter doSFilter, int sleep) throws InterruptedException
     {
         boolean exceeded = false;
         ServletContext context = new ContextHandler.StaticContext();
         RateTracker rateTracker = new RateTracker(context, doSFilter.getName(), "test2", 4);
-
+    
         for (int i = 0; i < 5; i++)
         {
             Thread.sleep(sleep);
@@ -160,6 +160,6 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         }
         return exceeded;
     }
-
+    
      */
 }

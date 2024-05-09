@@ -18,11 +18,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
@@ -57,8 +55,7 @@ public class PackageAdminServiceTracker implements ServiceListener
 
     public static PackageAdminServiceTracker INSTANCE = null;
 
-    public PackageAdminServiceTracker(BundleContext context)
-        throws Exception
+    public PackageAdminServiceTracker(BundleContext context) throws Exception
     {
         INSTANCE = this;
         _context = context;
@@ -71,8 +68,7 @@ public class PackageAdminServiceTracker implements ServiceListener
     /**
      * @return true if the fragments were activated by this method.
      */
-    private boolean setup()
-    throws Exception
+    private boolean setup() throws Exception
     {
         ServiceReference sr = _context.getServiceReference(PackageAdmin.class.getName());
         _fragmentsWereActivated = sr != null;
@@ -175,7 +171,8 @@ public class PackageAdminServiceTracker implements ServiceListener
      * transitively if and only if the directive visibility is
      * reexport.
      */
-    protected void collectFragmentsAndRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
+    protected void collectFragmentsAndRequiredBundles(
+                                                      Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
     {
         Bundle[] fragments = admin.getFragments(bundle);
         if (fragments != null)
@@ -207,7 +204,8 @@ public class PackageAdminServiceTracker implements ServiceListener
      * transitively if and only if the directive visibility is
      * reexport.
      */
-    protected void collectRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
+    protected void collectRequiredBundles(
+                                          Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
     {
         String requiredBundleHeader = (String)bundle.getHeaders().get("Require-Bundle");
         if (requiredBundleHeader == null)
@@ -275,8 +273,7 @@ public class PackageAdminServiceTracker implements ServiceListener
         }
     }
 
-    private void invokeFragmentActivators(ServiceReference sr)
-    throws Exception
+    private void invokeFragmentActivators(ServiceReference sr) throws Exception
     {
         PackageAdmin admin = (PackageAdmin)_context.getService(sr);
         Bundle[] fragments = admin.getFragments(_context.getBundle());
@@ -291,7 +288,8 @@ public class PackageAdminServiceTracker implements ServiceListener
             Class<?> c = Class.forName(fragmentActivator);
             if (c != null)
             {
-                BundleActivator bActivator = (BundleActivator)c.getDeclaredConstructor().newInstance();
+                BundleActivator bActivator =
+                    (BundleActivator)c.getDeclaredConstructor().newInstance();
                 bActivator.start(_context);
                 _activatedFragments.add(bActivator);
             }
@@ -387,4 +385,3 @@ public class PackageAdminServiceTracker implements ServiceListener
         }
     }
 }
-

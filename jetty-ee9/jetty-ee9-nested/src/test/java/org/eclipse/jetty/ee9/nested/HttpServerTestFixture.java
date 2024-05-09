@@ -18,7 +18,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Connector;
@@ -66,7 +65,8 @@ public class HttpServerTestFixture
     protected void initServer(ServerConnector connector) throws Exception
     {
         _connector = connector;
-        _httpConfiguration = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
+        _httpConfiguration =
+            _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _httpConfiguration.setSendDateHeader(false);
         _server.addConnector(_connector);
         _context = new ContextHandler(_server);
@@ -90,7 +90,10 @@ public class HttpServerTestFixture
     protected static class OptionsHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+        public boolean handle(
+                              org.eclipse.jetty.server.Request request,
+                              org.eclipse.jetty.server.Response response,
+                              Callback callback)
         {
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
@@ -105,7 +108,9 @@ public class HttpServerTestFixture
     protected static class HelloWorldHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean handle(
+                              org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            throws Exception
         {
             response.setStatus(200);
             Content.Sink.write(response, true, "Hello world\r\n", callback);
@@ -125,7 +130,10 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+        public boolean handle(
+                              org.eclipse.jetty.server.Request request,
+                              org.eclipse.jetty.server.Response response,
+                              Callback callback)
         {
             org.eclipse.jetty.server.Response.writeError(request, response, callback, code, message);
             return true;
@@ -147,7 +155,9 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean handle(
+                              org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            throws Exception
         {
             long len = expected < 0 ? request.getLength() : expected;
             if (len < 0)
@@ -188,13 +198,18 @@ public class HttpServerTestFixture
     protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+        public boolean handle(
+                              org.eclipse.jetty.server.Request request,
+                              org.eclipse.jetty.server.Response response,
+                              Callback callback)
         {
             response.setStatus(200);
-            Content.Source.asString(request, StandardCharsets.UTF_8, Promise.from(
-                s -> Content.Sink.write(response, true, "read %d%n" + s.length(), callback),
-                t -> Content.Sink.write(response, true, String.format("caught %s%n", t), callback)
-            ));
+            Content.Source.asString(
+                request,
+                StandardCharsets.UTF_8,
+                Promise.from(
+                    s -> Content.Sink.write(response, true, "read %d%n" + s.length(), callback),
+                    t -> Content.Sink.write(response, true, String.format("caught %s%n", t), callback)));
             return true;
         }
     }
@@ -202,7 +217,8 @@ public class HttpServerTestFixture
     protected static class DataHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+        public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
+            throws Exception
         {
             response.setStatus(200);
 
@@ -218,7 +234,8 @@ public class HttpServerTestFixture
             if (chars != null)
                 throw new IllegalStateException("chars no longer supported"); // TODO remove
 
-            String data = "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            String data =
+                "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             while (data.length() < block)
             {
                 data += data;

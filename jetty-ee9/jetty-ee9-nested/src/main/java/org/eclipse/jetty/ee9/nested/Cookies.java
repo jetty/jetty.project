@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.http.Cookie;
 import java.util.ArrayList;
 import java.util.List;
-
-import jakarta.servlet.http.Cookie;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
@@ -142,8 +141,15 @@ public class Cookies implements CookieParser.Handler
         }
         catch (Exception e)
         {
-            LOG.debug("Unable to add Cookie name={}, value={}, domain={}, path={}, version={}, comment={}",
-                name, value, domain, path, version, comment, e);
+            LOG.debug(
+                "Unable to add Cookie name={}, value={}, domain={}, path={}, version={}, comment={}",
+                name,
+                value,
+                domain,
+                path,
+                version,
+                comment,
+                e);
         }
     }
 }

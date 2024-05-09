@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.logging;
 
+import static java.time.ZoneOffset.UTC;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Properties;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
-
-import static java.time.ZoneOffset.UTC;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Tests for JettyLogger and StdErrAppender
@@ -654,7 +653,6 @@ public class JettyLoggerTest
 
     private void assertLevel(JettyLogger log, JettyLevel expectedLevel)
     {
-        assertThat("Log[" + log.getName() + "].level",
-            log.getLevel(), is(expectedLevel));
+        assertThat("Log[" + log.getName() + "].level", log.getLevel(), is(expectedLevel));
     }
 }

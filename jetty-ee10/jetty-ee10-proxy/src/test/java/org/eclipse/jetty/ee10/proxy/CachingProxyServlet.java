@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.proxy;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.util.Callback;
@@ -37,7 +36,8 @@ public class CachingProxyServlet extends ProxyServlet
     private Map<String, ByteArrayOutputStream> temp = new HashMap<>();
 
     @Override
-    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void service(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         ContentResponse cachedResponse = cache.get(request.getRequestURI());
         if (cachedResponse != null)
@@ -54,7 +54,14 @@ public class CachingProxyServlet extends ProxyServlet
     }
 
     @Override
-    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length, Callback callback)
+    protected void onResponseContent(
+                                     HttpServletRequest request,
+                                     HttpServletResponse response,
+                                     Response proxyResponse,
+                                     byte[] buffer,
+                                     int offset,
+                                     int length,
+                                     Callback callback)
     {
         // Accumulate the response content
         ByteArrayOutputStream baos = temp.get(request.getRequestURI());
@@ -68,7 +75,8 @@ public class CachingProxyServlet extends ProxyServlet
     }
 
     @Override
-    protected void onProxyResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
+    protected void onProxyResponseSuccess(
+                                          HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
         byte[] content = temp.remove(request.getRequestURI()).toByteArray();
         ContentResponse cached = ContentResponse.from(proxyResponse, content, null, null);

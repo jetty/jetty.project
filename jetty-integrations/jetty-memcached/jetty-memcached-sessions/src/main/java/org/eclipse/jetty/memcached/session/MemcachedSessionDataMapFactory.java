@@ -16,7 +16,6 @@ package org.eclipse.jetty.memcached.session;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.session.SessionDataMap;
 import org.eclipse.jetty.session.SessionDataMapFactory;
 

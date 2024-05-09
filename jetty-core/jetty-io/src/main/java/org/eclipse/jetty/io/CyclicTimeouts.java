@@ -16,7 +16,6 @@ package org.eclipse.jetty.io;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.Scheduler;

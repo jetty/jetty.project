@@ -18,7 +18,6 @@ import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.Promise;
@@ -69,7 +68,9 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, destination.getClientConnectionFactory());
         @SuppressWarnings("unchecked")
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection ->
+        {
+        }, promise::failed));
         context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, connector);
         destination.getOrigin().getTransport().connect(address, context);
     }

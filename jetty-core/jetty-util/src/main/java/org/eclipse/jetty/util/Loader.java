@@ -51,8 +51,7 @@ public class Loader
      * @throws ClassNotFoundException if not able to find the class
      */
     @SuppressWarnings("rawtypes")
-    public static Class loadClass(String name)
-        throws ClassNotFoundException
+    public static Class loadClass(String name) throws ClassNotFoundException
     {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         return (loader == null) ? Class.forName(name) : loader.loadClass(name);
@@ -69,8 +68,7 @@ public class Loader
      * @throws ClassNotFoundException if not able to find the class
      */
     @SuppressWarnings("rawtypes")
-    public static Class loadClass(Class loaderClass, String name)
-        throws ClassNotFoundException
+    public static Class loadClass(Class loaderClass, String name) throws ClassNotFoundException
     {
         if (loaderClass != null && loaderClass.getClassLoader() != null)
             return loaderClass.getClassLoader().loadClass(name);

@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
 
 public class ReflectUtils
@@ -69,11 +68,7 @@ public class ReflectUtils
         @Override
         public String toString()
         {
-            return "GenericRef [baseClass=" + baseClass +
-                ", ifaceClass=" + ifaceClass +
-                ", genericType=" + genericType +
-                ", genericClass=" + genericClass +
-                "]";
+            return "GenericRef [baseClass=" + baseClass + ", ifaceClass=" + ifaceClass + ", genericType=" + genericType + ", genericClass=" + genericClass + "]";
         }
     }
 
@@ -249,7 +244,8 @@ public class ReflectUtils
 
         if (type instanceof Class<?> clazz)
         {
-            // Prevent spinning off into Serialization and other parts of the standard tree that we couldn't care less about.
+            // Prevent spinning off into Serialization and other parts of the standard tree that we couldn't care less
+            // about.
             if (JAKARTA_CLASSNAME_PATTERN.matcher(clazz.getName()).matches() || JAVAX_CLASSNAME_PATTERN.matcher(clazz.getName()).matches())
                 return false;
 

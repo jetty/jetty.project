@@ -30,7 +30,11 @@ public class ServletsConfiguration extends AbstractConfiguration
     public ServletsConfiguration()
     {
         super(new Builder()
-            .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, WebAppConfiguration.class)
+            .addDependencies(
+                WebXmlConfiguration.class,
+                MetaInfConfiguration.class,
+                WebInfConfiguration.class,
+                WebAppConfiguration.class)
             .addDependents(JettyWebXmlConfiguration.class)
             .protectAndExpose()
             .expose("org.eclipse.jetty.ee10.servlets.")); // don't hide jetty servlets

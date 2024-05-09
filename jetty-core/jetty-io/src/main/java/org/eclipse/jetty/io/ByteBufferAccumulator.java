@@ -18,7 +18,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.util.BufferUtil;
 
 /**

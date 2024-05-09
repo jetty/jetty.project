@@ -13,12 +13,18 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MetaData;
@@ -30,13 +36,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReadWriteFailuresTest
 {
@@ -89,12 +88,13 @@ public class ReadWriteFailuresTest
         });
         connector.setIdleTimeout(idleTimeout);
 
-        String request = """
-            POST / HTTP/1.1
-            Host: localhost
-            Content-Length: 1
-                        
-            """;
+        String request =
+            """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Length: 1
+
+                """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.ACCEPTED_202, response.getStatus());
@@ -115,7 +115,12 @@ public class ReadWriteFailuresTest
                 request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
                 {
                     @Override
-                    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+                    public void send(
+                                     MetaData.Request request,
+                                     MetaData.Response response,
+                                     boolean last,
+                                     ByteBuffer content,
+                                     Callback callback)
                     {
                         callback.failed(writeFailure);
                     }
@@ -124,13 +129,17 @@ public class ReadWriteFailuresTest
                 // First write must fail.
                 Callback.Completable completable1 = new Callback.Completable();
                 Content.Sink.write(response, false, "first_write", completable1);
-                Throwable writeFailure1 = assertThrows(ExecutionException.class, () -> completable1.get(5, TimeUnit.SECONDS)).getCause();
+                Throwable writeFailure1 = assertThrows(
+                    ExecutionException.class, () -> completable1.get(5, TimeUnit.SECONDS))
+                    .getCause();
                 assertSame(writeFailure, writeFailure1);
 
                 // Try a second write, it should fail.
                 Callback.Completable completable2 = new Callback.Completable();
                 Content.Sink.write(response, false, "second_write", completable2);
-                Throwable writeFailure2 = assertThrows(ExecutionException.class, () -> completable2.get(5, TimeUnit.SECONDS)).getCause();
+                Throwable writeFailure2 = assertThrows(
+                    ExecutionException.class, () -> completable2.get(5, TimeUnit.SECONDS))
+                    .getCause();
                 assertSame(writeFailure1, writeFailure2);
 
                 // Now try to read.
@@ -144,13 +153,15 @@ public class ReadWriteFailuresTest
             }
         });
 
-        String request = """
-            POST / HTTP/1.1
-            Host: localhost
-            Content-Length: %d
-            
-            %s
-            """.formatted(content.length(), content);
+        String request =
+            """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Length: %d
+
+                %s
+                """
+                .formatted(content.length(), content);
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(request))
         {
             endPoint.waitUntilClosedOrIdleFor(5, TimeUnit.SECONDS);
@@ -159,7 +170,8 @@ public class ReadWriteFailuresTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @ValueSource(booleans =
+    {false, true})
     public void testFailureFailsPendingWrite(boolean fatal) throws Exception
     {
         long idleTimeout = 1000;
@@ -172,7 +184,12 @@ public class ReadWriteFailuresTest
                 request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
                 {
                     @Override
-                    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+                    public void send(
+                                     MetaData.Request request,
+                                     MetaData.Response response,
+                                     boolean last,
+                                     ByteBuffer content,
+                                     Callback callback)
                     {
                         // Do nothing to make the write pending.
                     }
@@ -182,12 +199,17 @@ public class ReadWriteFailuresTest
 
                 Callback.Completable completable1 = new Callback.Completable();
                 Content.Sink.write(response, true, "hello world", completable1);
-                Throwable writeFailure1 = assertThrows(ExecutionException.class, () -> completable1.get(2 * idleTimeout, TimeUnit.MILLISECONDS)).getCause();
+                Throwable writeFailure1 = assertThrows(
+                    ExecutionException.class,
+                    () -> completable1.get(2 * idleTimeout, TimeUnit.MILLISECONDS))
+                    .getCause();
 
                 // Verify that further writes are failed.
                 Callback.Completable completable2 = new Callback.Completable();
                 Content.Sink.write(response, true, "hello world", completable2);
-                Throwable writeFailure2 = assertThrows(ExecutionException.class, () -> completable2.get(5, TimeUnit.SECONDS)).getCause();
+                Throwable writeFailure2 = assertThrows(
+                    ExecutionException.class, () -> completable2.get(5, TimeUnit.SECONDS))
+                    .getCause();
                 assertSame(writeFailure1, writeFailure2);
 
                 latch.countDown();
@@ -198,12 +220,13 @@ public class ReadWriteFailuresTest
         });
         connector.setIdleTimeout(idleTimeout);
 
-        String request = """
-            POST / HTTP/1.1
-            Host: localhost
-            Content-Length: 1
-                        
-            """;
+        String request =
+            """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Length: 1
+
+                """;
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(request))
         {
             endPoint.waitUntilClosedOrIdleFor(5, TimeUnit.SECONDS);
@@ -230,13 +253,15 @@ public class ReadWriteFailuresTest
         });
 
         String content = "hello world";
-        String request = """
-            POST / HTTP/1.1
-            Host: localhost
-            Content-Length: %d
-                        
-            %s
-            """.formatted(content.length(), content);
+        String request =
+            """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Length: %d
+
+                %s
+                """
+                .formatted(content.length(), content);
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());

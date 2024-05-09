@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.ContainerProvider;
@@ -28,6 +26,11 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.EventSocket;
@@ -37,10 +40,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebAppClassLoaderTest
 {
@@ -107,7 +106,8 @@ public class WebAppClassLoaderTest
     {
         ClassLoader webAppClassLoader = webapp.getClassLoader();
         Class<?> mySocketClass = webAppClassLoader.loadClass(MySocket.class.getName());
-        CountDownLatch closeLatch = (CountDownLatch)mySocketClass.getDeclaredField("closeLatch").get(null);
+        CountDownLatch closeLatch =
+            (CountDownLatch)mySocketClass.getDeclaredField("closeLatch").get(null);
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -115,12 +115,14 @@ public class WebAppClassLoaderTest
     {
         ClassLoader webAppClassLoader = webapp.getClassLoader();
         Class<?> mySocketClass = webAppClassLoader.loadClass(MySocket.class.getName());
-        Map<String, ClassLoader> classLoaderMap = (Map)mySocketClass.getDeclaredField("classLoaders").get(null);
+        Map<String, ClassLoader> classLoaderMap =
+            (Map)mySocketClass.getDeclaredField("classLoaders").get(null);
         return classLoaderMap.get(event);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"constructor", "onOpen", "onMessage", "onError", "onClose"})
+    @ValueSource(strings =
+    {"constructor", "onOpen", "onMessage", "onError", "onClose"})
     public void testForWebAppClassLoader(String event) throws Exception
     {
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();

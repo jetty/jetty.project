@@ -16,7 +16,6 @@ package org.eclipse.jetty.security.authentication;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -99,7 +98,8 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, Request request, Response response)
     {
-        RoleDelegateUserIdentity user = (RoleDelegateUserIdentity)_loginService.login(username, password, request, request::getSession);
+        RoleDelegateUserIdentity user =
+            (RoleDelegateUserIdentity)_loginService.login(username, password, request, request::getSession);
         if (user != null && user.isEstablished())
         {
             updateSession(request, response);
@@ -108,7 +108,8 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request req, Response res, Callback callback)
+        throws ServerAuthException
     {
         String header = req.getHeaders().get(HttpHeader.AUTHORIZATION);
         String spnegoToken = getSpnegoToken(header);
@@ -163,7 +164,8 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
                     Duration authnDuration = getAuthenticationDuration();
                     if (!authnDuration.isNegative())
                     {
-                        boolean expired = !authnDuration.isZero() && Instant.now().isAfter(holder._validFrom.plus(authnDuration));
+                        boolean expired =
+                            !authnDuration.isZero() && Instant.now().isAfter(holder._validFrom.plus(authnDuration));
                         // Allow non-GET requests even if they're expired, so that
                         // the client does not need to send the request content again.
                         if (!expired || !HttpMethod.GET.is(req.getMethod()))

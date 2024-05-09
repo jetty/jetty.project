@@ -13,13 +13,22 @@
 
 package org.eclipse.jetty.client.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.EOFException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -46,16 +55,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HttpReceiverOverHTTPTest
 {
     private HttpClient client;
@@ -70,8 +69,8 @@ public class HttpReceiverOverHTTPTest
             HttpCompliance.RFC2616,
             HttpCompliance.LEGACY,
             HttpCompliance.RFC2616_LEGACY,
-            HttpCompliance.RFC7230_LEGACY
-        ).map(Arguments::of);
+            HttpCompliance.RFC7230_LEGACY)
+            .map(Arguments::of);
     }
 
     public void init(HttpCompliance compliance) throws Exception
@@ -104,7 +103,8 @@ public class HttpReceiverOverHTTPTest
                 if (result.isFailed())
                     completable.completeExceptionally(result.getFailure());
                 else
-                    completable.complete(new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()));
+                    completable.complete(
+                        new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()));
             }
         };
         request.getResponseListeners().addListener(listener);
@@ -124,7 +124,7 @@ public class HttpReceiverOverHTTPTest
         endPoint.addInput("""
             HTTP/1.1 200 OK
             Content-length: 0
-                                
+
             """);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
@@ -146,11 +146,7 @@ public class HttpReceiverOverHTTPTest
     {
         init(compliance);
         String content = "0123456789ABCDEF";
-        endPoint.addInput(
-            "HTTP/1.1 200 OK\r\n" +
-            "Content-length: " + content.length() + "\r\n" +
-            "\r\n" +
-            content);
+        endPoint.addInput("HTTP/1.1 200 OK\r\n" + "Content-length: " + content.length() + "\r\n" + "\r\n" + content);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
 
@@ -174,11 +170,7 @@ public class HttpReceiverOverHTTPTest
         init(compliance);
         String content1 = "0123456789";
         String content2 = "ABCDEF";
-        endPoint.addInput(
-            "HTTP/1.1 200 OK\r\n" +
-            "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
-            "\r\n" +
-            content1);
+        endPoint.addInput("HTTP/1.1 200 OK\r\n" + "Content-length: " + (content1.length() + content2.length()) + "\r\n" + "\r\n" + content1);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
         endPoint.addInputEOF();
@@ -196,7 +188,7 @@ public class HttpReceiverOverHTTPTest
         endPoint.addInput("""
             HTTP/1.1 200 OK
             Content-length: 1
-                            
+
             """);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
@@ -219,7 +211,7 @@ public class HttpReceiverOverHTTPTest
         endPoint.addInput("""
             HTTP/1.1 200 OK
             Content-length: A
-                            
+
             """);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
@@ -274,7 +266,7 @@ public class HttpReceiverOverHTTPTest
         endPoint.addInput("""
             HTTP/1.1 200 OK
             Content-Length: 1
-                                
+
             """);
 
         CompletableFuture<ContentResponse> completable = startExchange();

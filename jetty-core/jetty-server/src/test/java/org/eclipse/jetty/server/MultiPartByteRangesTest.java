@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
 import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -39,10 +42,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPartByteRangesTest
 {
@@ -86,16 +85,24 @@ public class MultiPartByteRangesTest
                 assertTrue(request.getHeaders().contains(HttpHeader.ACCEPT_RANGES));
                 assertTrue(request.getHeaders().contains(HttpHeader.RANGE));
 
-                List<ByteRange> ranges = ByteRange.parse(request.getHeaders().getValuesList(HttpHeader.RANGE), resourceChars.length());
+                List<ByteRange> ranges =
+                    ByteRange.parse(request.getHeaders().getValuesList(HttpHeader.RANGE), resourceChars.length());
 
                 String boundary = "boundary";
                 try (MultiPartByteRanges.ContentSource content = new MultiPartByteRanges.ContentSource(boundary))
                 {
-                    ranges.forEach(range -> content.addPart(new MultiPartByteRanges.Part("text/plain", ResourceFactory.of(this).newResource(resourcePath), range, content.getLength())));
+                    ranges.forEach(range -> content.addPart(new MultiPartByteRanges.Part(
+                        "text/plain",
+                        ResourceFactory.of(this).newResource(resourcePath),
+                        range,
+                        content.getLength())));
                     content.close();
 
                     response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
-                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/byteranges; boundary=" + HttpField.NAME_VALUE_TOKENIZER.quote(boundary));
+                    response.getHeaders()
+                        .put(
+                            HttpHeader.CONTENT_TYPE,
+                            "multipart/byteranges; boundary=" + HttpField.NAME_VALUE_TOKENIZER.quote(boundary));
                     Content.copy(content, response, callback);
                 }
                 return true;
@@ -119,7 +126,9 @@ public class MultiPartByteRangesTest
 
             String boundary = MultiPart.extractBoundary(contentType);
             MultiPartByteRanges.Parser byteRanges = new MultiPartByteRanges.Parser(boundary);
-            MultiPartByteRanges.Parts parts = byteRanges.parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes()))).join();
+            MultiPartByteRanges.Parts parts = byteRanges
+                .parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes())))
+                .join();
 
             assertEquals(3, parts.size());
             MultiPart.Part part1 = parts.get(0);

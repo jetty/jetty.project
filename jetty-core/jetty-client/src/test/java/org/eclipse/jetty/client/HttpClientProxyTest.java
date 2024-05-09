@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -27,8 +28,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HttpClientProxyTest extends AbstractHttpClientServerTest
 {
@@ -70,7 +69,8 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
     {
         final String user = "foo";
         final String password = "bar";
-        final String credentials = Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
+        final String credentials =
+            Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
         final String serverHost = "server";
         final String realm = "test_realm";
         final int status = HttpStatus.NO_CONTENT_204;
@@ -142,7 +142,8 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
     {
         String user = "foo";
         String password = "bar";
-        String credentials = Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
+        String credentials =
+            Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
         String proxyHost = "localhost";
         String serverHost = "server";
         int serverPort = HttpScheme.HTTP.is(scenario.getScheme()) ? 80 : 443;
@@ -172,7 +173,11 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                             if (credentials.equals(attempt))
                             {
                                 // Change also the host, to verify that proxy authentication works in this case too.
-                                Response.sendRedirect(request, response, callback, scenario.getScheme() + "://127.0.0.1:" + serverPort + "/server");
+                                Response.sendRedirect(
+                                    request,
+                                    response,
+                                    callback,
+                                    scenario.getScheme() + "://127.0.0.1:" + serverPort + "/server");
                                 return true;
                             }
                         }
@@ -271,9 +276,11 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         String serverHost = "server";
         int serverPort = proxyPort + 1;
         URI proxyURI = URI.create(scenario.getScheme() + "://" + proxyHost + ":" + proxyPort);
-        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
+        client.getAuthenticationStore()
+            .addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
         URI serverURI = URI.create(scenario.getScheme() + "://" + serverHost + ":" + serverPort);
-        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(serverURI, serverRealm, "serverUser", "serverPassword"));
+        client.getAuthenticationStore()
+            .addAuthentication(new BasicAuthentication(serverURI, serverRealm, "serverUser", "serverPassword"));
         client.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
         final AtomicInteger requests = new AtomicInteger();
         client.getRequestListeners().addSuccessListener(request -> requests.incrementAndGet());
@@ -336,7 +343,8 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         String serverHost = "server";
         int serverPort = proxyPort + 1;
         URI proxyURI = URI.create(scenario.getScheme() + "://" + proxyHost + ":" + proxyPort);
-        client.getAuthenticationStore().addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
+        client.getAuthenticationStore()
+            .addAuthentication(new BasicAuthentication(proxyURI, proxyRealm, "proxyUser", "proxyPassword"));
         client.getProxyConfiguration().addProxy(new HttpProxy(proxyHost, proxyPort));
         final AtomicInteger requests = new AtomicInteger();
         client.getRequestListeners().addSuccessListener(request -> requests.incrementAndGet());

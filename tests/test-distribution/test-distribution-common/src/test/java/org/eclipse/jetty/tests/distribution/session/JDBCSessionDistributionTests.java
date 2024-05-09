@@ -17,7 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MariaDBContainer;
@@ -35,28 +34,30 @@ public class JDBCSessionDistributionTests extends AbstractSessionDistributionTes
     private String jdbcUrl;
     private String driverClassName;
 
-    private MariaDBContainer mariaDBContainer = new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
-            .withUsername(MARIA_DB_USER)
-            .withPassword(MARIA_DB_PASSWORD)
-            .withDatabaseName("sessions");
+    private MariaDBContainer mariaDBContainer = new MariaDBContainer(
+        "mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
+        .withUsername(MARIA_DB_USER)
+        .withPassword(MARIA_DB_PASSWORD)
+        .withDatabaseName("sessions");
 
     @Override
     public void startExternalSessionStorage() throws Exception
     {
         mariaDBContainer.start();
-        jdbcUrl = mariaDBContainer.getJdbcUrl() + "?user=" + MARIA_DB_USER +
-                "&password=" + MARIA_DB_PASSWORD;
+        jdbcUrl = mariaDBContainer.getJdbcUrl() + "?user=" + MARIA_DB_USER + "&password=" + MARIA_DB_PASSWORD;
         driverClassName = mariaDBContainer.getDriverClassName();
 
         // prepare mariadb driver mod file
         String mariaDBVersion = System.getProperty("mariadb.version");
         StringBuilder modFileContent = new StringBuilder();
         modFileContent.append("[lib]").append(System.lineSeparator());
-        modFileContent.append("lib/mariadb-java-client-" + mariaDBVersion + ".jar").append(System.lineSeparator());
+        modFileContent
+            .append("lib/mariadb-java-client-" + mariaDBVersion + ".jar")
+            .append(System.lineSeparator());
         modFileContent.append("[files]").append(System.lineSeparator());
-        modFileContent.append("maven://org.mariadb.jdbc/mariadb-java-client/" + mariaDBVersion +
-                "|lib/mariadb-java-client-" + mariaDBVersion + ".jar")
-                .append(System.lineSeparator());
+        modFileContent
+            .append("maven://org.mariadb.jdbc/mariadb-java-client/" + mariaDBVersion + "|lib/mariadb-java-client-" + mariaDBVersion + ".jar")
+            .append(System.lineSeparator());
 
         Path modulesDirectory = Path.of(jettyHomeTester.getJettyBase().toString(), "modules");
         if (Files.notExists(modulesDirectory))
@@ -75,7 +76,7 @@ public class JDBCSessionDistributionTests extends AbstractSessionDistributionTes
     {
         mariaDBContainer.stop();
     }
-    
+
     @Override
     public void configureExternalSessionStorage(Path jettyBase) throws Exception
     {
@@ -86,10 +87,9 @@ public class JDBCSessionDistributionTests extends AbstractSessionDistributionTes
     public List<String> getFirstStartExtraArgs()
     {
         return Arrays.asList(
-                "jetty.session.jdbc.driverUrl=" + jdbcUrl,
-                "db-connection-type=driver",
-                "jetty.session.jdbc.driverClass=" + driverClassName
-        );
+            "jetty.session.jdbc.driverUrl=" + jdbcUrl,
+            "db-connection-type=driver",
+            "jetty.session.jdbc.driverClass=" + driverClassName);
     }
 
     @Override
@@ -102,10 +102,8 @@ public class JDBCSessionDistributionTests extends AbstractSessionDistributionTes
     public List<String> getSecondStartExtraArgs()
     {
         return Arrays.asList(
-                "jetty.session.jdbc.driverUrl=" + jdbcUrl,
-                "db-connection-type=driver",
-                "jetty.session.jdbc.driverClass=" + driverClassName
-            );
+            "jetty.session.jdbc.driverUrl=" + jdbcUrl,
+            "db-connection-type=driver",
+            "jetty.session.jdbc.driverClass=" + driverClassName);
     }
-
 }

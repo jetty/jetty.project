@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.client;
 
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.Extension;
+import jakarta.websocket.Session;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
@@ -24,14 +31,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-
-import jakarta.websocket.ClientEndpoint;
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.DeploymentException;
-import jakarta.websocket.Endpoint;
-import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.Extension;
-import jakarta.websocket.Session;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.internal.AnnotatedClientEndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.internal.BasicClientEndpointConfig;
@@ -60,7 +59,8 @@ import org.slf4j.LoggerFactory;
  * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
  */
 @ManagedObject("JSR356 Client Container")
-public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer implements jakarta.websocket.WebSocketContainer
+public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer
+    implements jakarta.websocket.WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketClientContainer.class);
     private static final Map<ClassLoader, ContainerLifeCycle> SHUTDOWN_MAP = new ConcurrentHashMap<>();
@@ -99,7 +99,8 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         this(components, WebSocketCoreClient::new);
     }
 
-    public JakartaWebSocketClientContainer(WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory)
+    public JakartaWebSocketClientContainer(
+                                           WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory)
     {
         super(components);
         this.coreClientFactory = coreClientFactory;
@@ -144,7 +145,8 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
                     return;
                 }
 
-                JakartaWebSocketFrameHandler frameHandler = (JakartaWebSocketFrameHandler)upgradeRequest.getFrameHandler();
+                JakartaWebSocketFrameHandler frameHandler =
+                    (JakartaWebSocketFrameHandler)upgradeRequest.getFrameHandler();
                 futureSession.complete(frameHandler.getSession());
             });
         }
@@ -158,8 +160,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
 
     public static Throwable convertCause(Throwable error)
     {
-        if (error instanceof UpgradeException ||
-            error instanceof WebSocketTimeoutException)
+        if (error instanceof UpgradeException || error instanceof WebSocketTimeoutException)
             return new IOException(error);
 
         if (error instanceof InvalidWebSocketException)
@@ -168,14 +169,16 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         return error;
     }
 
-    private Session connect(ConfiguredEndpoint configuredEndpoint, URI destURI) throws IOException, DeploymentException
+    private Session connect(ConfiguredEndpoint configuredEndpoint, URI destURI)
+        throws IOException, DeploymentException
     {
         if (configuredEndpoint == null)
             throw new DeploymentException("WebSocket configured endpoint cannot be null");
         if (destURI == null)
             throw new DeploymentException("Destination URI cannot be null");
 
-        JakartaClientUpgradeRequest upgradeRequest = new JakartaClientUpgradeRequest(this, getWebSocketCoreClient(), destURI, configuredEndpoint);
+        JakartaClientUpgradeRequest upgradeRequest =
+            new JakartaClientUpgradeRequest(this, getWebSocketCoreClient(), destURI, configuredEndpoint);
 
         EndpointConfig config = configuredEndpoint.getConfig();
         if (config instanceof ClientEndpointConfig clientEndpointConfig)
@@ -220,19 +223,23 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
     }
 
     @Override
-    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig providedConfig, URI path) throws DeploymentException, IOException
+    public Session connectToServer(
+                                   final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig providedConfig, URI path)
+        throws DeploymentException, IOException
     {
         return connectToServer(newEndpoint(endpointClass), providedConfig, path);
     }
 
     @Override
-    public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path)
+        throws DeploymentException, IOException
     {
         return connectToServer(newEndpoint(annotatedEndpointClass), path);
     }
 
     @Override
-    public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig providedConfig, final URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig providedConfig, final URI path)
+        throws DeploymentException, IOException
     {
         ClientEndpointConfig config;
         if (providedConfig == null)
@@ -384,7 +391,8 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
     {
         try
         {
-            return getClass().getClassLoader()
+            return getClass()
+                .getClassLoader()
                 .loadClass("org.eclipse.jetty.server.handler.ContextHandler")
                 .getMethod("getCurrentContextHandler")
                 .invoke(null);

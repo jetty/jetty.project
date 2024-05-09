@@ -13,13 +13,7 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -28,14 +22,19 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Disabled // TODO
 public class AsyncContextListenersTest
@@ -70,7 +69,8 @@ public class AsyncContextListenersTest
         prepare(path, new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 AsyncContext asyncContext = request.startAsync(request, response);
                 asyncContext.addListener(new AsyncListener()
@@ -104,10 +104,7 @@ public class AsyncContextListenersTest
         {
             OutputStream output = socket.getOutputStream();
 
-            String request =
-                "GET " + path + " HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request = "GET " + path + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -136,7 +133,8 @@ public class AsyncContextListenersTest
         prepare(path, new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 AsyncContext asyncContext = request.startAsync(request, response);
                 asyncContext.addListener(new AsyncListener()
@@ -175,10 +173,7 @@ public class AsyncContextListenersTest
         {
             OutputStream output = socket.getOutputStream();
 
-            String request =
-                "GET " + path + " HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request = "GET " + path + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -206,7 +201,8 @@ public class AsyncContextListenersTest
         prepare(path + "/*", new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 String requestURI = request.getRequestURI();
                 if (requestURI.endsWith("/one"))
@@ -253,10 +249,7 @@ public class AsyncContextListenersTest
         {
             OutputStream output = socket.getOutputStream();
 
-            String request =
-                "GET " + path + "/one HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request = "GET " + path + "/one HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 

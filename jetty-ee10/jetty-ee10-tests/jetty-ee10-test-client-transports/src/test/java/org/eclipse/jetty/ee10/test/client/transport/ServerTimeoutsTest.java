@@ -13,16 +13,12 @@
 
 package org.eclipse.jetty.ee10.test.client.transport;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.nio.ByteBuffer;
-import java.util.Random;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ReadListener;
@@ -33,6 +29,16 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.nio.ByteBuffer;
+import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Response;
@@ -49,18 +55,12 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 public class ServerTimeoutsTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBlockingReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(Transport transport) throws Exception
+    public void testBlockingReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(Transport transport)
+        throws Exception
     {
         assumeTrue(transport != Transport.H3 && transport != Transport.H2C && transport != Transport.H2); // TODO Fix
         testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transport, false);
@@ -68,7 +68,8 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testBlockingReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(Transport transport) throws Exception
+    public void testBlockingReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(Transport transport)
+        throws Exception
     {
         assumeTrue(transport != Transport.H3 && transport != Transport.H2C && transport != Transport.H2); // TODO Fix
         testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transport, true);
@@ -76,74 +77,88 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(Transport transport) throws Exception
+    public void testAsyncReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(Transport transport)
+        throws Exception
     {
         testAsyncReadWithDelayedFirstContentIdleTimeoutFires(transport, false);
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(Transport transport) throws Exception
+    public void testAsyncReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(Transport transport)
+        throws Exception
     {
         testAsyncReadWithDelayedFirstContentIdleTimeoutFires(transport, true);
     }
 
-    private void testBlockingReadWithDelayedFirstContentIdleTimeoutFires(Transport transport, boolean delayDispatch) throws Exception
+    private void testBlockingReadWithDelayedFirstContentIdleTimeoutFires(Transport transport, boolean delayDispatch)
+        throws Exception
     {
-        testReadWithDelayedFirstContentIdleTimeoutFires(transport, new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+        testReadWithDelayedFirstContentIdleTimeoutFires(
+            transport,
+            new HttpServlet()
             {
-                // The client did not send the content,
-                // idle timeout should result in IOException.
-                request.getInputStream().read();
-            }
-        }, delayDispatch);
-    }
-
-    private void testAsyncReadWithDelayedFirstContentIdleTimeoutFires(Transport transport, boolean delayDispatch) throws Exception
-    {
-        testReadWithDelayedFirstContentIdleTimeoutFires(transport, new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(0);
-                request.getInputStream().setReadListener(new ReadListener()
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response)
+                    throws IOException
                 {
-                    @Override
-                    public void onDataAvailable()
-                    {
-                    }
-
-                    @Override
-                    public void onAllDataRead()
-                    {
-                    }
-
-                    @Override
-                    public void onError(Throwable t)
-                    {
-                        if (t instanceof TimeoutException)
-                            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-
-                        asyncContext.complete();
-                    }
-                });
-            }
-        }, delayDispatch);
+                    // The client did not send the content,
+                    // idle timeout should result in IOException.
+                    request.getInputStream().read();
+                }
+            },
+            delayDispatch);
     }
 
-    private void testReadWithDelayedFirstContentIdleTimeoutFires(Transport transport, HttpServlet servlet, boolean delayDispatch) throws Exception
+    private void testAsyncReadWithDelayedFirstContentIdleTimeoutFires(Transport transport, boolean delayDispatch)
+        throws Exception
+    {
+        testReadWithDelayedFirstContentIdleTimeoutFires(
+            transport,
+            new HttpServlet()
+            {
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response)
+                    throws IOException
+                {
+                    AsyncContext asyncContext = request.startAsync();
+                    asyncContext.setTimeout(0);
+                    request.getInputStream().setReadListener(new ReadListener()
+                    {
+                        @Override
+                        public void onDataAvailable()
+                        {
+                        }
+
+                        @Override
+                        public void onAllDataRead()
+                        {
+                        }
+
+                        @Override
+                        public void onError(Throwable t)
+                        {
+                            if (t instanceof TimeoutException)
+                                response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+
+                            asyncContext.complete();
+                        }
+                    });
+                }
+            },
+            delayDispatch);
+    }
+
+    private void testReadWithDelayedFirstContentIdleTimeoutFires(
+                                                                 Transport transport, HttpServlet servlet, boolean delayDispatch) throws Exception
     {
         httpConfig.setDelayDispatchUntilContent(delayDispatch);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         start(transport, new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 try
                 {
@@ -222,13 +237,11 @@ public class ServerTimeoutsTest extends AbstractTest
 
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.POST(newURI(transport))
-            .body(content)
-            .send(result ->
-            {
-                if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                    resultLatch.countDown();
-            });
+        client.POST(newURI(transport)).body(content).send(result ->
+        {
+            if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                resultLatch.countDown();
+        });
 
         // Async read should timeout.
         assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -391,13 +404,11 @@ public class ServerTimeoutsTest extends AbstractTest
 
         AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
-            .body(content)
-            .send(result ->
-            {
-                if (result.getResponse().getStatus() == HttpStatus.OK_200)
-                    resultLatch.countDown();
-            });
+        client.newRequest(newURI(transport)).body(content).send(result ->
+        {
+            if (result.getResponse().getStatus() == HttpStatus.OK_200)
+                resultLatch.countDown();
+        });
 
         for (int i = 0; i < 3; ++i)
         {
@@ -425,13 +436,11 @@ public class ServerTimeoutsTest extends AbstractTest
         {
             AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
             CountDownLatch resultLatch = new CountDownLatch(1);
-            client.POST(newURI(transport))
-                .body(content)
-                .send(result ->
-                {
-                    if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
-                        resultLatch.countDown();
-                });
+            client.POST(newURI(transport)).body(content).send(result ->
+            {
+                if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                    resultLatch.countDown();
+            });
 
             // Blocking read should timeout.
             assertTrue(handlerLatch.await(2 * httpIdleTimeout, TimeUnit.MILLISECONDS));
@@ -455,7 +464,8 @@ public class ServerTimeoutsTest extends AbstractTest
         testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(transport, false);
     }
 
-    private void testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(Transport transport, boolean isReadyFirst) throws Exception
+    private void testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(Transport transport, boolean isReadyFirst)
+        throws Exception
     {
         long httpIdleTimeout = 2000;
         long idleTimeout = 3 * httpIdleTimeout;
@@ -503,13 +513,11 @@ public class ServerTimeoutsTest extends AbstractTest
 
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.POST(newURI(transport))
-            .body(content)
-            .send(result ->
-            {
-                if (result.getResponse().getStatus() == HttpStatus.GATEWAY_TIMEOUT_504)
-                    resultLatch.countDown();
-            });
+        client.POST(newURI(transport)).body(content).send(result ->
+        {
+            if (result.getResponse().getStatus() == HttpStatus.GATEWAY_TIMEOUT_504)
+                resultLatch.countDown();
+        });
 
         // Async read should timeout.
         assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -550,19 +558,17 @@ public class ServerTimeoutsTest extends AbstractTest
         System.arraycopy(data, data1.length, data2, 0, data2.length);
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.wrap(data1));
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
-            .body(content)
-            .send(new BufferingResponseListener()
+        client.newRequest(newURI(transport)).body(content).send(new BufferingResponseListener()
+        {
+            @Override
+            public void onComplete(Result result)
             {
-                @Override
-                public void onComplete(Result result)
-                {
-                    assertTrue(result.isSucceeded());
-                    assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
-                    assertArrayEquals(data, getContent());
-                    latch.countDown();
-                }
-            });
+                assertTrue(result.isSucceeded());
+                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                assertArrayEquals(data, getContent());
+                latch.countDown();
+            }
+        });
 
         // Wait for the server application to block reading.
         Thread.sleep(2 * idleTimeout);
@@ -609,7 +615,9 @@ public class ServerTimeoutsTest extends AbstractTest
                 }
             }
         });
-        ((HttpClientTransportOverHTTP2)client.getTransport()).getHTTP2Client().setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        ((HttpClientTransportOverHTTP2)client.getTransport())
+            .getHTTP2Client()
+            .setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
 
         // Setup the client to read slower than the min data rate.
         BlockingQueue<Object> objects = new LinkedBlockingQueue<>();
@@ -623,7 +631,9 @@ public class ServerTimeoutsTest extends AbstractTest
             .send(result ->
             {
                 objects.offer(-1);
-                objects.offer((Runnable)() -> {});
+                objects.offer((Runnable)() ->
+                {
+                });
                 if (result.isFailed())
                     clientLatch.countDown();
             });

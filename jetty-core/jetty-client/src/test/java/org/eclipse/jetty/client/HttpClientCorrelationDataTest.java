@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.client;
 
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Response;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HttpClientCorrelationDataTest extends AbstractHttpClientServerTest
 {
@@ -39,8 +38,9 @@ public class HttpClientCorrelationDataTest extends AbstractHttpClientServerTest
                 assertEquals(correlationData, request.getHeaders().get(correlationName));
             }
         });
-        client.getRequestListeners().addQueuedListener(request ->
-            request.headers(headers -> headers.put(correlationName, correlation.get())));
+        client.getRequestListeners()
+            .addQueuedListener(
+                request -> request.headers(headers -> headers.put(correlationName, correlation.get())));
 
         correlation.set(correlationData);
 

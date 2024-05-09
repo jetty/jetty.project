@@ -17,14 +17,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.IntrospectionUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * LifeCycleCallback
- * 
+ *
  * Holds information about a class and method
  * that has either been configured in web.xml to have postconstruct or
  * predestroy callbacks, or has the equivalent annotations.
@@ -33,7 +32,7 @@ public abstract class LifeCycleCallback
 {
     public static final Object[] __EMPTY_ARGS = new Object[]{};
     private Method _target;
-    private Class<?> _targetClass; //Not final so we can do lazy load
+    private Class<?> _targetClass; // Not final so we can do lazy load
     private final String _className;
     private final String _methodName;
 
@@ -88,9 +87,10 @@ public abstract class LifeCycleCallback
     }
 
     public void callback(Object instance)
-        throws SecurityException, NoSuchMethodException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException
+        throws SecurityException, NoSuchMethodException, ClassNotFoundException, IllegalArgumentException,
+        IllegalAccessException, InvocationTargetException
     {
-        if (_target == null) //lazy load the target class
+        if (_target == null) // lazy load the target class
         {
             if (_targetClass == null)
                 _targetClass = Loader.loadClass(_className);

@@ -19,7 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,9 +78,9 @@ public class JettyDemos
             try (Stream<String> lineStream = Files.lines(pomFile))
             {
                 String versionLine = lineStream
-                        .filter((line) -> line.contains("<version>"))
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("Unable to find <version> in " + pomFile));
+                    .filter((line) -> line.contains("<version>"))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Unable to find <version> in " + pomFile));
 
                 version = versionLine.replaceAll("<[^>]*>", "").trim();
             }
@@ -147,17 +146,17 @@ public class JettyDemos
         }
         catch (FileNotFoundException e)
         {
-            //could be not in the target directory if restored from build cache
+            // could be not in the target directory if restored from build cache
             // but as the build always runs install the artifact should be there in local repository
         }
-        //.repository/org/eclipse/jetty/ee9/demos/jetty-ee9-demo-jndi-webapp/12.0.0-SNAPSHOT/jetty-ee9-demo-jndi-webapp-12.0.0-SNAPSHOT.war
+        // .repository/org/eclipse/jetty/ee9/demos/jetty-ee9-demo-jndi-webapp/12.0.0-SNAPSHOT/jetty-ee9-demo-jndi-webapp-12.0.0-SNAPSHOT.war
         String version = mavenCoordinate.version().isEmpty() ? VERSION : mavenCoordinate.version();
-        Path result = Paths.get(System.getProperty("mavenRepoPath", System.getProperty("user.home") + "/.m2/repository"),
-                mavenCoordinate.groupId().replaceAll("\\.", "/"),
-                mavenCoordinate.artifactId(),
-                version,
-                mavenCoordinate.artifactId() + "-" + version + "." + mavenCoordinate.packaging()
-        );
+        Path result = Paths.get(
+            System.getProperty("mavenRepoPath", System.getProperty("user.home") + "/.m2/repository"),
+            mavenCoordinate.groupId().replaceAll("\\.", "/"),
+            mavenCoordinate.artifactId(),
+            version,
+            mavenCoordinate.artifactId() + "-" + version + "." + mavenCoordinate.packaging());
         if (!Files.exists(result))
         {
             throw new FileNotFoundException(result.toString());
@@ -177,11 +176,11 @@ public class JettyDemos
         return result;
     }
 
-    public record MavenCoordinate(String groupId, String artifactId, String version, String packaging){}
+    public record MavenCoordinate(String groupId, String artifactId, String version, String packaging) {
+    }
 
     public static void main(String... arg)
     {
         System.err.println("Jetty Demos Dir is " + JETTY_DEMOS_DIR);
     }
 }
-

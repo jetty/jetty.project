@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.ee9.session;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
@@ -25,6 +29,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -43,13 +49,6 @@ import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * CreationTest
@@ -75,23 +74,27 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-      
+
         ListenerHolder h = contextHandler.getServletHandler().newListenerHolder(Source.EMBEDDED);
         h.setListener(new MySessionListener());
         contextHandler.getServletHandler().addListener(h);
         contextHandler.addServlet(holder, servletMapping);
-        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
+        servlet.setStore(contextHandler
+            .getSessionHandler()
+            .getSessionManager()
+            .getSessionCache()
+            .getSessionDataStore());
         server1.start();
         int port1 = server1.getPort();
         try (StacklessLogging stackless = new StacklessLogging(CreationTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();
-            
-            //make a session
+
+            // make a session
             String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=create&check=false";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
@@ -102,10 +105,8 @@ public class CreationTest
         {
             server1.stop();
         }
-
     }
-    
-    
+
     /**
      * Test creating a session when the cache is set to
      * evict after the request exits.
@@ -126,7 +127,11 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
+        servlet.setStore(contextHandler
+            .getSessionHandler()
+            .getSessionManager()
+            .getSessionCache()
+            .getSessionDataStore());
         server1.start();
         int port1 = server1.getPort();
 
@@ -136,25 +141,39 @@ public class CreationTest
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=create&check=false";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertNotNull(sessionCookie);
 
-            //session should now be evicted from the cache
+            // session should now be evicted from the cache
             String id = SessionTestSupport.extractSessionId(sessionCookie);
-            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
-            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertTrue(contextHandler
+                .getSessionHandler()
+                .getSessionManager()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler
+                .getSessionHandler()
+                .getSessionManager()
+                .getSessionCache()
+                .contains(id));
 
-            //make another request for the same session
-            Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=test");
+            // make another request for the same session
+            Request request =
+                client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=test");
             response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-            
-            //session should now be evicted from the cache again
-            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+
+            // session should now be evicted from the cache again
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler
+                .getSessionHandler()
+                .getSessionManager()
+                .getSessionCache()
+                .contains(id));
         }
         finally
         {
@@ -177,12 +196,17 @@ public class CreationTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 =
+            new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
+        servlet.setStore(contextHandler
+            .getSessionHandler()
+            .getSessionManager()
+            .getSessionCache()
+            .getSessionDataStore());
         server1.start();
         int port1 = server1.getPort();
 
@@ -192,12 +216,17 @@ public class CreationTest
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=createinv&check=false";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //check that the session does not exist
-            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+            // check that the session does not exist
+            assertFalse(contextHandler
+                .getSessionHandler()
+                .getSessionManager()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(servlet._id));
         }
         finally
         {
@@ -221,12 +250,17 @@ public class CreationTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cacheFactory.setSaveOnCreate(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 =
+            new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
+        servlet.setStore(contextHandler
+            .getSessionHandler()
+            .getSessionManager()
+            .getSessionCache()
+            .getSessionDataStore());
         server1.start();
         int port1 = server1.getPort();
 
@@ -236,12 +270,17 @@ public class CreationTest
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=createinv&check=true";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //check that the session does not exist
-            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+            // check that the session does not exist
+            assertFalse(contextHandler
+                .getSessionHandler()
+                .getSessionManager()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(servlet._id));
         }
         finally
         {
@@ -261,15 +300,20 @@ public class CreationTest
         int scavengePeriod = 3;
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        cacheFactory.setSaveOnCreate(false); //don't immediately save a new session
-        cacheFactory.setFlushOnResponseCommit(true); //ensure session saved before response returned
+        cacheFactory.setSaveOnCreate(false); // don't immediately save a new session
+        cacheFactory.setFlushOnResponseCommit(true); // ensure session saved before response returned
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 =
+            new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
+        servlet.setStore(contextHandler
+            .getSessionHandler()
+            .getSessionManager()
+            .getSessionCache()
+            .getSessionDataStore());
         server1.start();
         int port1 = server1.getPort();
 
@@ -277,15 +321,22 @@ public class CreationTest
         {
             HttpClient client = new HttpClient();
             client.start();
-            String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=createinvcreate&check=false";
+            String url =
+                "http://localhost:" + port1 + contextPath + servletMapping + "?action=createinvcreate&check=false";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //check that the session does not exist
-            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertThat(response.getHeaders().getValuesList(HttpHeader.SET_COOKIE).size(), Matchers.is(1));
+            // check that the session does not exist
+            assertTrue(contextHandler
+                .getSessionHandler()
+                .getSessionManager()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(servlet._id));
+            assertThat(
+                response.getHeaders().getValuesList(HttpHeader.SET_COOKIE).size(), Matchers.is(1));
         }
         finally
         {
@@ -310,7 +361,8 @@ public class CreationTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 =
+            new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
@@ -328,13 +380,22 @@ public class CreationTest
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url + "?action=forward");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //check that the sessions exist persisted
-            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertTrue(ctxB.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+            // check that the sessions exist persisted
+            assertTrue(contextHandler
+                .getSessionHandler()
+                .getSessionManager()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(servlet._id));
+            assertTrue(ctxB.getSessionHandler()
+                .getSessionManager()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(servlet._id));
         }
         finally
         {
@@ -360,7 +421,8 @@ public class CreationTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 =
+            new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
@@ -381,9 +443,18 @@ public class CreationTest
             ContentResponse response = client.GET(url + "?action=forwardinv");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //check that the session does not exist 
-            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertFalse(ctxB.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+            // check that the session does not exist
+            assertFalse(contextHandler
+                .getSessionHandler()
+                .getSessionManager()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(servlet._id));
+            assertFalse(ctxB.getSessionHandler()
+                .getSessionManager()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(servlet._id));
         }
         finally
         {
@@ -404,7 +475,7 @@ public class CreationTest
         {
         }
     }
-    
+
     public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
@@ -417,14 +488,15 @@ public class CreationTest
         }
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
 
             if (action != null && action.startsWith("forward"))
             {
                 HttpSession session = request.getSession(true);
-                
+
                 _id = session.getId();
                 session.setAttribute("value", 1);
 
@@ -442,7 +514,7 @@ public class CreationTest
                     assertNotNull(session);
                     assertEquals(_id, session.getId());
                     assertNotNull(session.getAttribute("value"));
-                    assertNull(session.getAttribute("B")); //check we don't see stuff from other context
+                    assertNull(session.getAttribute("B")); // check we don't see stuff from other context
                 }
                 return;
             }
@@ -501,7 +573,8 @@ public class CreationTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse)
+            throws ServletException, IOException
         {
             HttpSession session = request.getSession(false);
             assertNull(session);

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -97,7 +96,11 @@ public class ByteBufferAggregator
     private void tryExpandBufferCapacity(int remaining)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("tryExpandBufferCapacity remaining: {} _currentSize: {} _accumulatedSize={}", remaining, _currentSize, _aggregatedSize);
+            LOG.debug(
+                "tryExpandBufferCapacity remaining: {} _currentSize: {} _accumulatedSize={}",
+                remaining,
+                _currentSize,
+                _aggregatedSize);
         if (_currentSize == _maxSize)
             return;
         int capacityLeft = _currentSize - _aggregatedSize;
@@ -137,6 +140,13 @@ public class ByteBufferAggregator
     @Override
     public String toString()
     {
-        return "%s@%x{a=%d c=%d m=%d b=%s}".formatted(getClass().getSimpleName(), hashCode(), _aggregatedSize, _currentSize, _maxSize, _retainableByteBuffer);
+        return "%s@%x{a=%d c=%d m=%d b=%s}"
+            .formatted(
+                getClass().getSimpleName(),
+                hashCode(),
+                _aggregatedSize,
+                _currentSize,
+                _maxSize,
+                _retainableByteBuffer);
     }
 }

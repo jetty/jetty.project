@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
@@ -31,13 +33,11 @@ import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class DynamicTableTest extends AbstractTest
 {
     @ParameterizedTest
-    @CsvSource({"0,-1", "-1,0", "0,0"})
+    @CsvSource(
+    {"0,-1", "-1,0", "0,0"})
     public void testMaxEncoderTableCapacityZero(int clientMaxCapacity, int serverMaxCapacity) throws Exception
     {
         start(new Handler.Abstract()
@@ -53,7 +53,9 @@ public class DynamicTableTest extends AbstractTest
         if (clientMaxCapacity >= 0)
             http2Client.setMaxEncoderTableCapacity(0);
         if (serverMaxCapacity >= 0)
-            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).setMaxEncoderTableCapacity(serverMaxCapacity);
+            connector
+                .getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class)
+                .setMaxEncoderTableCapacity(serverMaxCapacity);
 
         CountDownLatch serverPreface = new CountDownLatch(1);
         Session session = newClientSession(new Session.Listener()
@@ -84,7 +86,8 @@ public class DynamicTableTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @CsvSource({"0,-1", "-1,0", "0,0"})
+    @CsvSource(
+    {"0,-1", "-1,0", "0,0"})
     public void testMaxDecoderTableCapacityZero(int clientMaxCapacity, int serverMaxCapacity) throws Exception
     {
         start(new Handler.Abstract()
@@ -100,7 +103,9 @@ public class DynamicTableTest extends AbstractTest
         if (clientMaxCapacity >= 0)
             http2Client.setMaxDecoderTableCapacity(0);
         if (serverMaxCapacity >= 0)
-            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).setMaxDecoderTableCapacity(serverMaxCapacity);
+            connector
+                .getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class)
+                .setMaxDecoderTableCapacity(serverMaxCapacity);
 
         CountDownLatch serverPreface = new CountDownLatch(1);
         Session session = newClientSession(new Session.Listener()
@@ -131,7 +136,8 @@ public class DynamicTableTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @CsvSource({"0,-1", "-1,0", "0,0"})
+    @CsvSource(
+    {"0,-1", "-1,0", "0,0"})
     public void testMaxTableCapacityZero(int clientMaxCapacity, int serverMaxCapacity) throws Exception
     {
         start(new Handler.Abstract()
@@ -151,8 +157,12 @@ public class DynamicTableTest extends AbstractTest
         }
         if (serverMaxCapacity >= 0)
         {
-            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).setMaxEncoderTableCapacity(serverMaxCapacity);
-            connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class).setMaxDecoderTableCapacity(serverMaxCapacity);
+            connector
+                .getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class)
+                .setMaxEncoderTableCapacity(serverMaxCapacity);
+            connector
+                .getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class)
+                .setMaxDecoderTableCapacity(serverMaxCapacity);
         }
 
         CountDownLatch serverPreface = new CountDownLatch(1);

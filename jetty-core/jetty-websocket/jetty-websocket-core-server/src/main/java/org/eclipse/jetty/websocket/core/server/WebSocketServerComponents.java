@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -41,7 +40,12 @@ public class WebSocketServerComponents extends WebSocketComponents
     public static final String WEBSOCKET_DEFLATER_POOL_ATTRIBUTE = "jetty.websocket.deflater";
     public static final String WEBSOCKET_BUFFER_POOL_ATTRIBUTE = "jetty.websocket.bufferPool";
 
-    WebSocketServerComponents(InflaterPool inflaterPool, DeflaterPool deflaterPool, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory, Executor executor)
+    WebSocketServerComponents(
+                              InflaterPool inflaterPool,
+                              DeflaterPool deflaterPool,
+                              ByteBufferPool bufferPool,
+                              DecoratedObjectFactory objectFactory,
+                              Executor executor)
     {
         super(null, objectFactory, bufferPool, inflaterPool, deflaterPool, executor);
     }
@@ -93,7 +97,8 @@ public class WebSocketServerComponents extends WebSocketComponents
      * @param container the container to manage the lifecycle of the WebSocketComponents instance.
      * @return the WebSocketComponents that was created or found.
      */
-    private static WebSocketComponents ensureWebSocketComponents(Server server, Attributes attributes, ContainerLifeCycle container)
+    private static WebSocketComponents ensureWebSocketComponents(
+                                                                 Server server, Attributes attributes, ContainerLifeCycle container)
     {
         WebSocketComponents components = (WebSocketComponents)attributes.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
         if (components != null)
@@ -115,8 +120,10 @@ public class WebSocketServerComponents extends WebSocketComponents
         if (executor == null)
             executor = server.getThreadPool();
 
-        DecoratedObjectFactory objectFactory = (DecoratedObjectFactory)attributes.getAttribute(DecoratedObjectFactory.ATTR);
-        WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, objectFactory, executor);
+        DecoratedObjectFactory objectFactory =
+            (DecoratedObjectFactory)attributes.getAttribute(DecoratedObjectFactory.ATTR);
+        WebSocketComponents serverComponents =
+            new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, objectFactory, executor);
         if (objectFactory != null)
             serverComponents.unmanage(objectFactory);
 

@@ -22,7 +22,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.client.internal.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
@@ -66,7 +65,8 @@ public class HttpRedirector
     private static final String PATH_REGEXP = "([^?#]*)";
     private static final String QUERY_REGEXP = "([^#]*)";
     private static final String FRAGMENT_REGEXP = "(.*)";
-    private static final Pattern URI_PATTERN = Pattern.compile(DESTINATION_REGEXP + PATH_REGEXP + QUERY_REGEXP + FRAGMENT_REGEXP);
+    private static final Pattern URI_PATTERN =
+        Pattern.compile(DESTINATION_REGEXP + PATH_REGEXP + QUERY_REGEXP + FRAGMENT_REGEXP);
     private static final String ATTRIBUTE = HttpRedirector.class.getName() + ".redirects";
 
     private final HttpClient client;
@@ -112,7 +112,8 @@ public class HttpRedirector
             @Override
             public void onComplete(Result result)
             {
-                resultRef.set(new Result(result.getRequest(),
+                resultRef.set(new Result(
+                    result.getRequest(),
                     result.getRequestFailure(),
                     new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()),
                     result.getResponseFailure()));
@@ -195,7 +196,11 @@ public class HttpRedirector
                     return redirect(request, response, listener, newURI, method);
                 else if (HttpMethod.POST.is(method))
                     return redirect(request, response, listener, newURI, HttpMethod.GET.asString());
-                fail(request, response, new HttpResponseException("HTTP protocol violation: received 301 for non GET/HEAD/POST/PUT request", response));
+                fail(
+                    request,
+                    response,
+                    new HttpResponseException(
+                        "HTTP protocol violation: received 301 for non GET/HEAD/POST/PUT request", response));
                 return null;
             }
             case HttpStatus.MOVED_TEMPORARILY_302:
@@ -228,7 +233,8 @@ public class HttpRedirector
         }
     }
 
-    private Request redirect(Request request, Response response, Response.CompleteListener listener, URI location, String method)
+    private Request redirect(
+                             Request request, Response response, Response.CompleteListener listener, URI location, String method)
     {
         HttpRequest httpRequest = (HttpRequest)request;
         HttpConversation conversation = httpRequest.getConversation();
@@ -301,7 +307,12 @@ public class HttpRedirector
         }
     }
 
-    private Request sendRedirect(HttpRequest httpRequest, Response response, Response.CompleteListener listener, URI location, String method)
+    private Request sendRedirect(
+                                 HttpRequest httpRequest,
+                                 Response response,
+                                 Response.CompleteListener listener,
+                                 URI location,
+                                 String method)
     {
         try
         {
@@ -347,7 +358,8 @@ public class HttpRedirector
                 }
                 else
                 {
-                    TimeoutException failure = new TimeoutException("Total timeout " + httpRequest.getConversation().getTimeout() + " ms elapsed");
+                    TimeoutException failure = new TimeoutException(
+                        "Total timeout " + httpRequest.getConversation().getTimeout() + " ms elapsed");
                     fail(httpRequest, failure, response);
                     return null;
                 }
@@ -377,6 +389,8 @@ public class HttpRedirector
     {
         HttpConversation conversation = ((HttpRequest)request).getConversation();
         conversation.updateResponseListeners(null);
-        conversation.getResponseListeners().emitFailureComplete(new Result(request, requestFailure, response, responseFailure));
+        conversation
+            .getResponseListeners()
+            .emitFailureComplete(new Result(request, requestFailure, response, responseFailure));
     }
 }

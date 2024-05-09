@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
+import jakarta.annotation.PostConstruct;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-
-import jakarta.annotation.PostConstruct;
 import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.ee9.webapp.MetaData;
 import org.eclipse.jetty.ee9.webapp.Origin;
@@ -34,7 +33,7 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
     @Override
     public void doHandle(Class clazz)
     {
-        //Check that the PostConstruct is on a class that we're interested in
+        // Check that the PostConstruct is on a class that we're interested in
         if (supportsPostConstruct(clazz))
         {
             Method[] methods = clazz.getDeclaredMethods();
@@ -52,14 +51,11 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
                     if (Modifier.isStatic(m.getModifiers()))
                         throw new IllegalStateException(m + " is static");
 
-                    //ServletSpec 3.0 p80 If web.xml declares even one post-construct then all post-constructs
-                    //in fragments must be ignored. Otherwise, they are additive.
+                    // ServletSpec 3.0 p80 If web.xml declares even one post-construct then all post-constructs
+                    // in fragments must be ignored. Otherwise, they are additive.
                     MetaData metaData = _context.getMetaData();
                     Origin origin = metaData.getOrigin("post-construct");
-                    if (origin != null &&
-                        (origin == Origin.WebXml ||
-                            origin == Origin.WebDefaults ||
-                            origin == Origin.WebOverride))
+                    if (origin != null && (origin == Origin.WebXml || origin == Origin.WebDefaults || origin == Origin.WebOverride))
                         return;
 
                     PostConstructCallback callback = new PostConstructCallback(clazz, m.getName());
@@ -83,17 +79,8 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
      */
     public boolean supportsPostConstruct(Class c)
     {
-        if (jakarta.servlet.Servlet.class.isAssignableFrom(c) ||
-            jakarta.servlet.Filter.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletContextListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.AsyncListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
+        if (jakarta.servlet.Servlet.class.isAssignableFrom(c) || jakarta.servlet.Filter.class.isAssignableFrom(c) || jakarta.servlet.ServletContextListener.class.isAssignableFrom(c) || jakarta.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) || jakarta.servlet.ServletRequestListener.class.isAssignableFrom(c) || jakarta.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) || jakarta.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) || jakarta.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) || jakarta.servlet.AsyncListener.class.isAssignableFrom(c) || jakarta.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
             return true;
 
         return false;

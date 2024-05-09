@@ -17,7 +17,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicMarkableReference;
-
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -29,7 +28,8 @@ import org.eclipse.jetty.util.Promise;
 
 public class SessionClientListener implements Session.Client.Listener
 {
-    private final AtomicMarkableReference<HttpConnectionOverHTTP3> connection = new AtomicMarkableReference<>(null, false);
+    private final AtomicMarkableReference<HttpConnectionOverHTTP3> connection =
+        new AtomicMarkableReference<>(null, false);
     private final Map<String, Object> context;
 
     public SessionClientListener(Map<String, Object> context)
@@ -51,13 +51,15 @@ public class SessionClientListener implements Session.Client.Listener
     @Override
     public void onSettings(Session session, SettingsFrame frame)
     {
-        HttpConnectionOverHTTP3 connection = (HttpConnectionOverHTTP3)newConnection(destination(), (HTTP3SessionClient)session);
+        HttpConnectionOverHTTP3 connection =
+            (HttpConnectionOverHTTP3)newConnection(destination(), (HTTP3SessionClient)session);
         if (this.connection.compareAndSet(null, connection, false, true))
         {
             // Execute rather than invoking, because this method is invoked from
             // the read side and succeeding the promise will likely send a request,
             // which may block, and we want to be able to read the response concurrently.
-            destination().getHttpClient().getExecutor().execute(() -> httpConnectionPromise().succeeded(connection));
+            destination().getHttpClient().getExecutor().execute(() -> httpConnectionPromise()
+                .succeeded(connection));
         }
     }
 

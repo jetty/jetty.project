@@ -18,7 +18,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -29,7 +28,8 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class SslConnectionFactory extends AbstractConnectionFactory implements ConnectionFactory.Detecting, ConnectionFactory.Configuring
+public class SslConnectionFactory extends AbstractConnectionFactory
+    implements ConnectionFactory.Detecting, ConnectionFactory.Configuring
 {
     private static final int TLS_ALERT_FRAME_TYPE = 0x15;
     private static final int TLS_HANDSHAKE_FRAME_TYPE = 0x16;
@@ -51,7 +51,8 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
         this(null, nextProtocol);
     }
 
-    public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory.Server factory, @Name("next") String nextProtocol)
+    public SslConnectionFactory(
+                                @Name("sslContextFactory") SslContextFactory.Server factory, @Name("next") String nextProtocol)
     {
         super("SSL");
         _sslContextFactory = factory == null ? new SslContextFactory.Server() : factory;
@@ -145,9 +146,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         SocketAddress remoteSocketAddress = endPoint.getRemoteSocketAddress();
-        SSLEngine engine = remoteSocketAddress instanceof InetSocketAddress
-            ? _sslContextFactory.newSSLEngine((InetSocketAddress)remoteSocketAddress)
-            : _sslContextFactory.newSSLEngine();
+        SSLEngine engine = remoteSocketAddress instanceof InetSocketAddress ? _sslContextFactory.newSSLEngine((InetSocketAddress)remoteSocketAddress) : _sslContextFactory.newSSLEngine();
         engine.setUseClientMode(false);
 
         SslConnection sslConnection = newSslConnection(connector, endPoint, engine);
@@ -165,7 +164,14 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
 
     protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
     {
-        return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
+        return new SslConnection(
+            connector.getByteBufferPool(),
+            connector.getExecutor(),
+            getSslContextFactory(),
+            endPoint,
+            engine,
+            isDirectBuffersForEncryption(),
+            isDirectBuffersForDecryption());
     }
 
     @Override
@@ -183,6 +189,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s->%s}", this.getClass().getSimpleName(), hashCode(), getProtocol(), _nextProtocol);
+        return String.format(
+            "%s@%x{%s->%s}", this.getClass().getSimpleName(), hashCode(), getProtocol(), _nextProtocol);
     }
 }

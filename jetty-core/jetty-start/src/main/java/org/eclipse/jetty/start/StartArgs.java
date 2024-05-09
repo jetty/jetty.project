@@ -38,7 +38,6 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
@@ -147,6 +146,7 @@ public class StartArgs
      * List of all active [jpms] sections for enabled modules
      */
     private final Set<String> _jmodAdds = new LinkedHashSet<>();
+
     private final Map<String, Set<String>> _jmodPatch = new LinkedHashMap<>();
     private final Map<String, Set<String>> _jmodOpens = new LinkedHashMap<>();
     private final Map<String, Set<String>> _jmodExports = new LinkedHashMap<>();
@@ -172,6 +172,7 @@ public class StartArgs
      * Files related args
      */
     private boolean createFiles = false;
+
     private boolean licenseCheckRequired = false;
     private boolean testingMode = false;
 
@@ -568,22 +569,23 @@ public class StartArgs
                 //       ee9 may use jakarta.annotation 2.0.0
                 //       but ee10 use jakarta.annotation 2.1.0
                 //       and both having different module-info.
-                getEnvironments().stream().filter(environment -> !environment.getName().equals(jettyEnvironment.getName()))
-                        .forEach(environment ->
+                getEnvironments().stream()
+                    .filter(environment -> !environment.getName().equals(jettyEnvironment.getName()))
+                    .forEach(environment ->
+                    {
+                        Map<Boolean, List<Path>> dirsAndFilesModules = StreamSupport.stream(
+                            environment.getClasspath().spliterator(), false)
+                            .collect(Collectors.groupingBy(Files::isDirectory));
+                        dirsAndFiles.putAll(dirsAndFilesModules);
+                        if (dirsAndFilesModules.containsKey(false))
                         {
-                            Map<Boolean, List<Path>> dirsAndFilesModules = StreamSupport.stream(environment.getClasspath().spliterator(), false)
-                                    .collect(Collectors.groupingBy(Files::isDirectory));
-                            dirsAndFiles.putAll(dirsAndFilesModules);
-                            if (dirsAndFilesModules.containsKey(false))
-                            {
-                                files.addAll(dirsAndFilesModules.get(false));
-                            }
-                            else
-                            {
-                                System.out.println("null dirsAndFilesModules");
-                            }
-                });
-
+                            files.addAll(dirsAndFilesModules.get(false));
+                        }
+                        else
+                        {
+                            System.out.println("null dirsAndFilesModules");
+                        }
+                    });
 
                 if (!files.isEmpty())
                 {
@@ -730,21 +732,26 @@ public class StartArgs
                 }
                 else
                 {
-                    throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
+                    throw new IllegalArgumentException(
+                        "Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
                 }
             }
         }
         _jmodAdds.add("ALL-MODULE-PATH");
-        StartLog.debug("Expanded JPMS directives:%n  add-modules: %s%n  patch-modules: %s%n  add-opens: %s%n  add-exports: %s%n  add-reads: %s",
+        StartLog.debug(
+            "Expanded JPMS directives:%n  add-modules: %s%n  patch-modules: %s%n  add-opens: %s%n  add-exports: %s%n  add-reads: %s",
             _jmodAdds, _jmodPatch, _jmodOpens, _jmodExports, _jmodReads);
     }
 
-    private void parseJPMSKeyValue(Module module, String line, String directive, boolean valueIsFile, Map<String, Set<String>> output) throws IOException
+    private void parseJPMSKeyValue(
+                                   Module module, String line, String directive, boolean valueIsFile, Map<String, Set<String>> output)
+        throws IOException
     {
         String valueString = line.substring(directive.length());
         int equals = valueString.indexOf('=');
         if (equals <= 0)
-            throw new IllegalArgumentException("Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
+            throw new IllegalArgumentException(
+                "Invalid [jpms] directive " + directive + " in module " + module.getName() + ": " + line);
         String delimiter = valueIsFile ? FS.pathSeparator() : ",";
         String key = valueString.substring(0, equals).trim();
         String[] values = valueString.substring(equals + 1).split(delimiter);
@@ -755,7 +762,10 @@ public class StartArgs
             if (valueIsFile)
             {
                 List<Path> paths = baseHome.getPaths(value);
-                paths.stream().map(Path::toAbsolutePath).map(Path::toString).collect(Collectors.toCollection(() -> result));
+                paths.stream()
+                    .map(Path::toAbsolutePath)
+                    .map(Path::toString)
+                    .collect(Collectors.toCollection(() -> result));
             }
             else
             {
@@ -1156,7 +1166,8 @@ public class StartArgs
                 }
 
                 if (!ALL_PARTS.contains(part))
-                    throw new UsageException(UsageException.ERR_BAD_ARG, "Unrecognized --dry-run=\"%s\" in %s", part, source);
+                    throw new UsageException(
+                        UsageException.ERR_BAD_ARG, "Unrecognized --dry-run=\"%s\" in %s", part, source);
 
                 dryRunParts.add(part);
             }
@@ -1177,7 +1188,10 @@ public class StartArgs
         {
             execProperties = Props.getValue(arg);
             if (!execProperties.endsWith(".properties"))
-                throw new UsageException(UsageException.ERR_BAD_ARG, "--exec-properties filename must have .properties suffix: %s", execProperties);
+                throw new UsageException(
+                    UsageException.ERR_BAD_ARG,
+                    "--exec-properties filename must have .properties suffix: %s",
+                    execProperties);
             return environment;
         }
 
@@ -1471,11 +1485,16 @@ public class StartArgs
                 properties.setProperty("java.version.micro", Integer.toString(ver.getMicro()), "Deprecated");
 
                 // ALPN feature exists
-                properties.setProperty("runtime.feature.alpn", Boolean.toString(isMethodAvailable(javax.net.ssl.SSLParameters.class, "getApplicationProtocols", null)), source);
+                properties.setProperty(
+                    "runtime.feature.alpn",
+                    Boolean.toString(
+                        isMethodAvailable(javax.net.ssl.SSLParameters.class, "getApplicationProtocols", null)),
+                    source);
             }
             catch (Throwable x)
             {
-                UsageException ue = new UsageException(UsageException.ERR_BAD_ARG, x.getMessage() == null ? x.toString() : x.getMessage());
+                UsageException ue = new UsageException(
+                    UsageException.ERR_BAD_ARG, x.getMessage() == null ? x.toString() : x.getMessage());
                 ue.initCause(x);
                 throw ue;
             }
@@ -1509,7 +1528,12 @@ public class StartArgs
     @Override
     public String toString()
     {
-        return String.format("%s[enabledModules=%s, xml=%s, properties=%s, jvmArgs=%s]",
-            getClass().getSimpleName(), modules, getJettyEnvironment().getXmlFiles(), getJettyEnvironment().getProperties(), jvmArgSources.keySet());
+        return String.format(
+            "%s[enabledModules=%s, xml=%s, properties=%s, jvmArgs=%s]",
+            getClass().getSimpleName(),
+            modules,
+            getJettyEnvironment().getXmlFiles(),
+            getJettyEnvironment().getProperties(),
+            jvmArgSources.keySet());
     }
 }

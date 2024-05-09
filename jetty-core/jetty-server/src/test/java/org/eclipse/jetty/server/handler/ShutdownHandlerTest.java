@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -23,7 +26,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -39,9 +41,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShutdownHandlerTest
 {
@@ -64,7 +63,8 @@ public class ShutdownHandlerTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"abcdefg", "a token with space", "euro-€-token"})
+    @ValueSource(strings =
+    {"abcdefg", "a token with space", "euro-€-token"})
     public void testShutdownServerWithCorrectTokenAndFromLocalhost(String shutdownToken) throws Exception
     {
         ShutdownHandler shutdownHandler = new ShutdownHandler(shutdownToken);
@@ -134,18 +134,25 @@ public class ShutdownHandlerTest
 
     private HttpTester.Response sendShutdownRequest(String shutdownToken) throws Exception
     {
-        URI shutdownUri = server.getURI().resolve("/shutdown?token=" + URLEncoder.encode(shutdownToken, StandardCharsets.UTF_8));
+        URI shutdownUri =
+            server.getURI().resolve("/shutdown?token=" + URLEncoder.encode(shutdownToken, StandardCharsets.UTF_8));
         try (Socket client = new Socket(shutdownUri.getHost(), shutdownUri.getPort());
              OutputStream output = client.getOutputStream();
              InputStream input = client.getInputStream())
         {
-            String rawRequest = """
-                POST %s?%s HTTP/1.1
-                Host: %s:%d
-                Connection: close
-                Content-Length: 0
-                                
-                """.formatted(shutdownUri.getRawPath(), shutdownUri.getRawQuery(), shutdownUri.getHost(), shutdownUri.getPort());
+            String rawRequest =
+                """
+                    POST %s?%s HTTP/1.1
+                    Host: %s:%d
+                    Connection: close
+                    Content-Length: 0
+
+                    """
+                    .formatted(
+                        shutdownUri.getRawPath(),
+                        shutdownUri.getRawQuery(),
+                        shutdownUri.getHost(),
+                        shutdownUri.getPort());
 
             output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -196,7 +203,8 @@ public class ShutdownHandlerTest
 
         public static Request from(Request request, InetSocketAddress fakeRemoteAddress)
         {
-            ConnectionMetaData fakeRemoteConnectionMetadata = new FakeRemoteAddressConnectionMetadata(request.getConnectionMetaData(), fakeRemoteAddress);
+            ConnectionMetaData fakeRemoteConnectionMetadata =
+                new FakeRemoteAddressConnectionMetadata(request.getConnectionMetaData(), fakeRemoteAddress);
             return new FakeRemoteAddressRequest(request, fakeRemoteConnectionMetadata);
         }
 

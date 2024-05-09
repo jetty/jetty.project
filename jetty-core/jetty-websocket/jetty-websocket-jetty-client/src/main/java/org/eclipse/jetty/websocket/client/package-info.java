@@ -15,4 +15,3 @@
  * Jetty WebSocket API :: Client
  */
 package org.eclipse.jetty.websocket.client;
-

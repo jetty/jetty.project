@@ -17,7 +17,6 @@ import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Objects;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -53,16 +52,17 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request req, Response res, Callback callback)
+        throws ServerAuthException
     {
         if (!(req.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData sslSessionData))
         {
             Response.writeError(req, res, callback, HttpStatus.FORBIDDEN_403);
             return AuthenticationState.SEND_FAILURE;
         }
-        
+
         X509Certificate[] certs = sslSessionData.peerCertificates();
-        
+
         try
         {
             // Need certificates.
@@ -96,7 +96,9 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
                         return new UserAuthenticationSucceeded(getAuthenticationType(), user);
                     }
                     // try with certs sig against login service as previous behaviour
-                    final char[] credential = Base64.getEncoder().encodeToString(cert.getSignature()).toCharArray();
+                    final char[] credential = Base64.getEncoder()
+                        .encodeToString(cert.getSignature())
+                        .toCharArray();
                     user = login(username, credential, req, res);
                     if (user != null)
                     {

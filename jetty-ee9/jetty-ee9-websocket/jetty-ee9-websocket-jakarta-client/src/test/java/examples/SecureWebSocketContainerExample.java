@@ -13,14 +13,13 @@
 
 package examples;
 
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.WebSocketContainer;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.ContainerProvider;
-import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 public class SecureWebSocketContainerExample
@@ -75,8 +74,8 @@ public class SecureWebSocketContainerExample
      */
     public static WebSocketContainer getConfiguredWebSocketContainer() throws Exception
     {
-        URL jettyHttpClientConfigUrl = Thread.currentThread().getContextClassLoader()
-            .getResource("jetty-websocket-httpclient.xml");
+        URL jettyHttpClientConfigUrl =
+            Thread.currentThread().getContextClassLoader().getResource("jetty-websocket-httpclient.xml");
 
         if (jettyHttpClientConfigUrl == null)
         {

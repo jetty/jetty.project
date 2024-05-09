@@ -17,7 +17,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
@@ -46,7 +45,12 @@ public class ThreadPoolBenchmark
 {
     public enum Type
     {
-        QTP, ETP, LQTP, LETP, AQTP, AETP;
+        QTP,
+        ETP,
+        LQTP,
+        LETP,
+        AQTP,
+        AETP;
     }
 
     @Param({"QTP", "ETP" /*, "LQTP", "LETP", "AQTP", "AETP" */})

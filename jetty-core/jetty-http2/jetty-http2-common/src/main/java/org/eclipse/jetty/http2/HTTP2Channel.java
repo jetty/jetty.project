@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2;
 
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
-
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;

@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.http3.qpack.internal.parser;
 
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.compression.EncodingException;
@@ -29,8 +30,6 @@ import org.eclipse.jetty.http3.qpack.internal.metadata.MetaDataBuilder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
 
 public class EncodedFieldSection
 {
@@ -46,7 +45,14 @@ public class EncodedFieldSection
     private final QpackDecoder.Handler _handler;
     private final long _beginNanoTime;
 
-    public EncodedFieldSection(long streamId, QpackDecoder.Handler handler, int requiredInsertCount, int base, ByteBuffer content, long beginNanoTime) throws QpackException
+    public EncodedFieldSection(
+                               long streamId,
+                               QpackDecoder.Handler handler,
+                               int requiredInsertCount,
+                               int base,
+                               ByteBuffer content,
+                               long beginNanoTime)
+        throws QpackException
     {
         _streamId = streamId;
         _requiredInsertCount = requiredInsertCount;
@@ -296,7 +302,8 @@ public class EncodedFieldSection
         @Override
         public HttpField decode(QpackContext context)
         {
-            HttpField field = context.getDynamicTable().getPostBase(_base, _nameIndex).getHttpField();
+            HttpField field =
+                context.getDynamicTable().getPostBase(_base, _nameIndex).getHttpField();
             return new HttpField(field.getHeader(), field.getName(), _value);
         }
     }

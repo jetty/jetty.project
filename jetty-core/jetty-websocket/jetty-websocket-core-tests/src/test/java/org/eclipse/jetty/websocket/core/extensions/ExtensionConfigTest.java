@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
+import org.junit.jupiter.api.Test;
 
 public class ExtensionConfigTest
 {
@@ -125,9 +124,7 @@ public class ExtensionConfigTest
     public void testParseListSimple()
     {
         String[] rawHeaders = new String[]{
-            "permessage-compress; client_max_window_bits",
-            "capture; output=\"wscapture.log\"",
-            "identity"
+            "permessage-compress; client_max_window_bits", "capture; output=\"wscapture.log\"", "identity"
         };
 
         List<ExtensionConfig> configs = ExtensionConfig.parseList(rawHeaders);
@@ -145,8 +142,7 @@ public class ExtensionConfigTest
     public void testParseListUnsplit()
     {
         String[] rawHeaders = new String[]{
-            "permessage-compress; client_max_window_bits, identity",
-            "capture; output=\"wscapture.log\""
+            "permessage-compress; client_max_window_bits, identity", "capture; output=\"wscapture.log\""
         };
 
         List<ExtensionConfig> configs = ExtensionConfig.parseList(rawHeaders);
@@ -159,24 +155,24 @@ public class ExtensionConfigTest
     @Test
     public void testParseNoExtensions()
     {
-        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-            () -> ExtensionConfig.parse("=params"));
+        IllegalArgumentException error =
+            assertThrows(IllegalArgumentException.class, () -> ExtensionConfig.parse("=params"));
         assertThat(error.getMessage(), containsString("contains no ExtensionConfigs"));
     }
 
     @Test
     public void testParseMultipleExtensions()
     {
-        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-            () -> ExtensionConfig.parse("ext1;param1, ext2;param2"));
+        IllegalArgumentException error =
+            assertThrows(IllegalArgumentException.class, () -> ExtensionConfig.parse("ext1;param1, ext2;param2"));
         assertThat(error.getMessage(), containsString("contains multiple ExtensionConfigs"));
     }
 
     @Test
     public void testParseMultipleExtensionsSameName()
     {
-        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-            () -> ExtensionConfig.parse("ext1;paramOption1, ext1;paramOption2"));
+        IllegalArgumentException error = assertThrows(
+            IllegalArgumentException.class, () -> ExtensionConfig.parse("ext1;paramOption1, ext1;paramOption2"));
         assertThat(error.getMessage(), containsString("contains multiple ExtensionConfigs"));
     }
 }

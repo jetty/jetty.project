@@ -16,7 +16,6 @@ package org.eclipse.jetty.util;
 import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 

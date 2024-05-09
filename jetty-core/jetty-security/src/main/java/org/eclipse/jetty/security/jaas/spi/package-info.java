@@ -15,4 +15,3 @@
  * Jetty Jaas : Various Jaas Implementations for Jetty
  */
 package org.eclipse.jetty.security.jaas.spi;
-

@@ -74,7 +74,6 @@ public interface Container
      */
     <T> T getBean(Class<T> clazz);
 
-
     /**
      * Removes the given bean.
      * If the bean is-a {@link EventListener}, then also do an implicit {@link #removeEventListener(EventListener)}.

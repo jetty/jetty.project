@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -50,9 +49,11 @@ public abstract class FrameGenerator
         return headerGenerator.isUseDirectByteBuffers();
     }
 
-    protected RetainableByteBuffer encode(HpackEncoder encoder, MetaData metaData, int maxFrameSize) throws HpackException
+    protected RetainableByteBuffer encode(HpackEncoder encoder, MetaData metaData, int maxFrameSize)
+        throws HpackException
     {
-        RetainableByteBuffer hpacked = headerGenerator.getByteBufferPool().acquire(maxFrameSize, isUseDirectByteBuffers());
+        RetainableByteBuffer hpacked =
+            headerGenerator.getByteBufferPool().acquire(maxFrameSize, isUseDirectByteBuffers());
         try
         {
             ByteBuffer byteBuffer = hpacked.getByteBuffer();

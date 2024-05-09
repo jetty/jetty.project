@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
-import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ContainerProvider;
@@ -24,14 +22,15 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
+import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class AnnotatedEchoTest
 {
@@ -115,7 +114,8 @@ public class AnnotatedEchoTest
         server.stop();
     }
 
-    private void assertEchoWorks(Session session, EchoSocketBase socketBase, String text) throws IOException, InterruptedException
+    private void assertEchoWorks(Session session, EchoSocketBase socketBase, String text)
+        throws IOException, InterruptedException
     {
         session.getBasicRemote().sendText("echo|" + text);
         String msg = socketBase.messageQueue.poll(5, TimeUnit.SECONDS);

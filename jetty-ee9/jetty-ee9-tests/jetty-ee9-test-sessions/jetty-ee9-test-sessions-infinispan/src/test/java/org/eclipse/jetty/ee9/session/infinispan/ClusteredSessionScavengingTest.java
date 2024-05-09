@@ -54,8 +54,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
 
     @Override
     @Test
-    public void testClusteredScavenge()
-        throws Exception
+    public void testClusteredScavenge() throws Exception
     {
         super.testClusteredScavenge();
     }

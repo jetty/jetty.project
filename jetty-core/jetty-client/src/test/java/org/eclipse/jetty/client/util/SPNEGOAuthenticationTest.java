@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.client.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +26,6 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.apache.kerby.kerberos.kerb.server.SimpleKdcServer;
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
 import org.eclipse.jetty.client.Authentication;
@@ -54,10 +57,6 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 @Isolated("SimpleKdcServer running on a specific port")
 public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 {
@@ -74,7 +73,8 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         }
     }
 
-    private final Path testDirPath = MavenTestingUtils.getTargetTestingPath(SPNEGOAuthenticationTest.class.getSimpleName());
+    private final Path testDirPath =
+        MavenTestingUtils.getTargetTestingPath(SPNEGOAuthenticationTest.class.getSimpleName());
     private final String clientName = "spnego_client";
     private final String clientPassword = "spnego_client_pwd";
     private final String serviceName = "srvc";
@@ -91,7 +91,8 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
     {
         IO.delete(testDirPath.toFile());
         Files.createDirectories(testDirPath);
-        System.setProperty("java.security.krb5.conf", testDirPath.toAbsolutePath().toString());
+        System.setProperty(
+            "java.security.krb5.conf", testDirPath.toAbsolutePath().toString());
 
         kdc = new SimpleKdcServer();
         kdc.setAllowUdp(false);
@@ -125,14 +126,17 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
     private void startSPNEGO(Scenario scenario, Handler handler) throws Exception
     {
         server = new Server();
-        HashLoginService hashLoginService = new HashLoginService(realm, ResourceFactory.of(server).newResource(realmPropsPath));
+        HashLoginService hashLoginService =
+            new HashLoginService(realm, ResourceFactory.of(server).newResource(realmPropsPath));
         SPNEGOLoginService spnegoLoginService = new SPNEGOLoginService(realm, hashLoginService);
         spnegoLoginService.setKeyTabPath(serviceKeyTabPath);
         spnegoLoginService.setServiceName(serviceName);
         spnegoLoginService.setHostName(serviceHost);
 
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
-        Constraint constraint = new Constraint.Builder().authorization(Constraint.Authorization.ANY_USER).build();
+        Constraint constraint = new Constraint.Builder()
+            .authorization(Constraint.Authorization.ANY_USER)
+            .build();
         securityHandler.put("/secure", constraint);
 
         authenticator = new SPNEGOAuthenticator();
@@ -218,7 +222,11 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
         startSPNEGO(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(
+                                  org.eclipse.jetty.server.Request request,
+                                  org.eclipse.jetty.server.Response response,
+                                  Callback callback)
+                throws Exception
             {
                 Content.Source.consumeAll(request, callback);
                 return true;

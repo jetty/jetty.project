@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -380,7 +379,10 @@ public class ConnectionStatistics extends AbstractLifeCycle implements Connectio
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            Dumpable.dumpObjects(out, indent, this,
+            Dumpable.dumpObjects(
+                out,
+                indent,
+                this,
                 String.format("connections=%s", _connections),
                 String.format("durations=%s", _connectionsDuration),
                 String.format("bytes in/out=%s/%s", getReceivedBytes(), getSentBytes()),

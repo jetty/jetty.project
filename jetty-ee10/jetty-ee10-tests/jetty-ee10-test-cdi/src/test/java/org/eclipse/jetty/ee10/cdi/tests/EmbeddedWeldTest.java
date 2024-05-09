@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.ee10.cdi.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
+import jakarta.servlet.DispatcherType;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.EnumSet;
-
-import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.cdi.CdiConfiguration;
 import org.eclipse.jetty.ee10.cdi.CdiDecoratingListener;
@@ -32,9 +34,6 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 public class EmbeddedWeldTest
 {
@@ -81,51 +80,65 @@ public class EmbeddedWeldTest
         switch (mode)
         {
             case "none": // Do nothing, let weld work it out.
-                // Expect:INFO: WELD-ENV-001201: Jetty 7.2+ detected, CDI injection will be available in Servlets and Filters. Injection into Listeners is not supported.
-                context.getServletHandler().addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
+                // Expect:INFO: WELD-ENV-001201: Jetty 7.2+ detected, CDI injection will be available in Servlets and
+                // Filters. Injection into Listeners is not supported.
+                context.getServletHandler()
+                    .addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
                 break;
 
             case "DecoratingListener+Listener":
-                // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters.
+                // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be
+                // available in Listeners, Servlets and Filters.
                 context.addEventListener(new org.eclipse.jetty.ee10.webapp.DecoratingListener(context));
-                context.getServletHandler().addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
+                context.getServletHandler()
+                    .addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
                 break;
 
             case "CdiDecoratingListener+Listener":
-                // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters.
+                // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be
+                // available in Listeners, Servlets and Filters.
                 context.addEventListener(new CdiDecoratingListener(context));
                 context.addEventListener(new org.jboss.weld.environment.servlet.Listener());
                 break;
 
             case "CdiSpiDecorator+Listener":
-                // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
+                // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in
+                // Listeners, Servlets and Filters.
                 context.getObjectFactory().addDecorator(new CdiSpiDecorator(context));
-                context.getServletHandler().addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
+                context.getServletHandler()
+                    .addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
                 break;
 
             case "CdiServletContainerInitializer+Listener":
-                // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
+                // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in
+                // Listeners, Servlets and Filters.
                 context.addServletContainerInitializer(new CdiServletContainerInitializer());
-                context.getServletHandler().addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
+                context.getServletHandler()
+                    .addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
                 break;
 
             case "CdiServletContainerInitializer(CdiDecoratingListener)+Listener":
-                // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters
-                context.setInitParameter(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, CdiDecoratingListener.MODE);
+                // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be
+                // available in Listeners, Servlets and Filters
+                context.setInitParameter(
+                    CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, CdiDecoratingListener.MODE);
                 context.addServletContainerInitializer(new CdiServletContainerInitializer());
                 context.addEventListener(new org.jboss.weld.environment.servlet.Listener());
                 break;
 
             case "CdiServletContainerInitializer+EnhancedListener":
-                // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
+                // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in
+                // Listeners, Servlets and Filters.
                 context.addServletContainerInitializer(new CdiServletContainerInitializer());
                 context.addServletContainerInitializer(new org.jboss.weld.environment.servlet.EnhancedListener());
                 break;
 
             // NOTE: This is the preferred mode from the Weld team.
             case "CdiServletContainerInitializer(CdiDecoratingListener)+EnhancedListener":
-                // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters
-                context.setInitParameter(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, CdiDecoratingListener.MODE);
+                // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be
+                // available in Listeners, Servlets and Filters
+                context.setInitParameter(
+                    CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, CdiDecoratingListener.MODE);
                 context.addServletContainerInitializer(new CdiServletContainerInitializer());
                 context.addServletContainerInitializer(new org.jboss.weld.environment.servlet.EnhancedListener());
                 break;
@@ -136,23 +149,25 @@ public class EmbeddedWeldTest
 
     @ParameterizedTest()
     @ValueSource(strings =
-        {
-            "none",
-            "DecoratingListener+Listener",
-            "CdiDecoratingListener+Listener",
-            "CdiSpiDecorator+Listener",
-            "CdiServletContainerInitializer+Listener",
-            "CdiServletContainerInitializer(CdiDecoratingListener)+Listener",
-            "CdiServletContainerInitializer+EnhancedListener",
-            "CdiServletContainerInitializer(CdiDecoratingListener)+EnhancedListener"
-        })
+    {
+        "none",
+        "DecoratingListener+Listener",
+        "CdiDecoratingListener+Listener",
+        "CdiSpiDecorator+Listener",
+        "CdiServletContainerInitializer+Listener",
+        "CdiServletContainerInitializer(CdiDecoratingListener)+Listener",
+        "CdiServletContainerInitializer+EnhancedListener",
+        "CdiServletContainerInitializer(CdiDecoratingListener)+EnhancedListener"
+    })
     public void testServletContext(String mode) throws Exception
     {
-        //Mode "none" is incompatible with jetty-12. This mode delegates to Weld to work out how to
-        //instantiate injection capabilities into jetty, but as of Weld 5.1.1 this relied on pre jetty-12 classes.
-        //Mode "DecoratingListener+Listener is incompatible with jetty-12. The name of the attribute that communicates
-        //the injector decorator between Weld and jetty-12 relies on the classname of the DecoratingListener class, which
-        //in pre jetty-12 was org.eclipse.jetty.webapp.DecoratingListener, but is now org.eclipse.jetty.ee10.webapp.DecoratingListener.
+        // Mode "none" is incompatible with jetty-12. This mode delegates to Weld to work out how to
+        // instantiate injection capabilities into jetty, but as of Weld 5.1.1 this relied on pre jetty-12 classes.
+        // Mode "DecoratingListener+Listener is incompatible with jetty-12. The name of the attribute that communicates
+        // the injector decorator between Weld and jetty-12 relies on the classname of the DecoratingListener class,
+        // which
+        // in pre jetty-12 was org.eclipse.jetty.webapp.DecoratingListener, but is now
+        // org.eclipse.jetty.ee10.webapp.DecoratingListener.
         Assumptions.assumeFalse(mode.equals("none") || mode.equals("DecoratingListener+Listener"));
 
         Server server = createServerWithServletContext(mode);
@@ -198,7 +213,9 @@ public class EmbeddedWeldTest
         webapp.setBaseResourceAsPath(Paths.get("src", "test", "weldtest"));
         server.setHandler(webapp);
 
-        webapp.setInitParameter(org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.ee10.cdi.CdiDecoratingListener.MODE);
+        webapp.setInitParameter(
+            org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE,
+            org.eclipse.jetty.ee10.cdi.CdiDecoratingListener.MODE);
         webapp.addServletContainerInitializer(new org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer());
         webapp.addServletContainerInitializer(new org.jboss.weld.environment.servlet.EnhancedListener());
 
@@ -234,8 +251,10 @@ public class EmbeddedWeldTest
         // Need to expose our SCI.
         webapp.addConfiguration(new CdiConfiguration());
 
-        //ensure our CDI SCI is run first so the decorator is set up before Weld runs
-        webapp.setAttribute(AnnotationConfiguration.SERVLET_CONTAINER_INITIALIZER_ORDER, "org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer, *");
+        // ensure our CDI SCI is run first so the decorator is set up before Weld runs
+        webapp.setAttribute(
+            AnnotationConfiguration.SERVLET_CONTAINER_INITIALIZER_ORDER,
+            "org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer, *");
 
         // This is ugly but needed for maven for testing in a overlaid war pom
         String pkg = EmbeddedWeldTest.class.getPackage().getName();

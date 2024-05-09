@@ -13,13 +13,15 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP;
@@ -35,9 +37,6 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientUploadDuringServerShutdownTest
 {
@@ -114,8 +113,8 @@ public class HttpClientUploadDuringServerShutdownTest
                 {
                     int length = 16 * 1024 * 1024 + random.nextInt(16 * 1024 * 1024);
                     client.newRequest("localhost", 8888)
-                            .body(new BytesRequestContent(new byte[length]))
-                            .send(result -> latch.countDown());
+                        .body(new BytesRequestContent(new byte[length]))
+                        .send(result -> latch.countDown());
                     long sleep = 1 + random.nextInt(10);
                     TimeUnit.MILLISECONDS.sleep(sleep);
                 }

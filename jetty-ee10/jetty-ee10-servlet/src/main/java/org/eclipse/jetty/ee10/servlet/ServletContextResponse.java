@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Locale;
-import java.util.Map;
-import java.util.function.Supplier;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -50,7 +49,9 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
 {
     protected enum OutputType
     {
-        NONE, STREAM, WRITER
+        NONE,
+        STREAM,
+        WRITER
     }
 
     private final ServletChannel _servletChannel;
@@ -70,16 +71,23 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     public static ServletContextResponse getServletContextResponse(ServletResponse response)
     {
         if (response instanceof ServletApiResponse servletApiResponse)
-            return servletApiResponse.getServletRequestInfo().getServletChannel().getServletContextResponse();
+            return servletApiResponse
+                .getServletRequestInfo()
+                .getServletChannel()
+                .getServletContextResponse();
 
         while (response instanceof ServletResponseWrapper)
         {
             response = ((ServletResponseWrapper)response).getResponse();
             if (response instanceof ServletApiResponse servletApiResponse)
-                return servletApiResponse.getServletRequestInfo().getServletChannel().getServletContextResponse();
+                return servletApiResponse
+                    .getServletRequestInfo()
+                    .getServletChannel()
+                    .getServletContextResponse();
         }
 
-        throw new IllegalStateException("could not find %s for %s".formatted(ServletContextResponse.class.getSimpleName(), response));
+        throw new IllegalStateException(
+            "could not find %s for %s".formatted(ServletContextResponse.class.getSimpleName(), response));
     }
 
     public ServletContextResponse(ServletChannel servletChannel, ServletContextRequest request, Response response)
@@ -336,13 +344,14 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                     case CLOSE -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
                     case KEEP_ALIVE ->
                     {
-                        if (HttpVersion.HTTP_1_0.is(getRequest().getConnectionMetaData().getProtocol()))
+                        if (HttpVersion.HTTP_1_0.is(
+                            getRequest().getConnectionMetaData().getProtocol()))
                             headers.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.toString());
                     }
                     case TE -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
                     default ->
-                    {
-                    }
+                        {
+                        }
                 }
             }
         }
@@ -357,7 +366,8 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                 ManagedSession managedSession = SessionHandler.ServletSessionApi.getSession(session);
                 if (managedSession != null)
                 {
-                    HttpCookie c = sh.getSessionCookie(managedSession, getRequest().isSecure());
+                    HttpCookie c =
+                        sh.getSessionCookie(managedSession, getRequest().isSecure());
                     if (c != null)
                         Response.putCookie(getWrapped(), c);
                 }
@@ -382,7 +392,9 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         _encodingFrom = EncodingFrom.NOT_SET;
 
         // remove the content related response headers and keep all others
-        getHeaders().remove(getStatus() == HttpStatus.NOT_MODIFIED_304 ? HttpHeader.CONTENT_HEADERS_304 : HttpHeader.CONTENT_HEADERS);
+        getHeaders()
+            .remove(
+                getStatus() == HttpStatus.NOT_MODIFIED_304 ? HttpHeader.CONTENT_HEADERS_304 : HttpHeader.CONTENT_HEADERS);
     }
 
     /**
@@ -411,7 +423,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         // Try charset from mime type.
         if (_mimeType != null && _mimeType.isCharsetAssumed())
             return _mimeType.getCharsetString();
-        
+
         // Try charset assumed from content type (assumed charsets are not added to content type header).
         MimeTypes mimeTypes = getRequest().getContext().getMimeTypes();
         encoding = mimeTypes.getCharsetAssumedFromContentType(_contentType);
@@ -428,7 +440,8 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         }
 
         // Try any default char encoding for the context.
-        ServletContext context = _servletChannel.getServletContextRequest().getServletContext().getServletContext();
+        ServletContext context =
+            _servletChannel.getServletContextRequest().getServletContext().getServletContext();
         if (context != null)
         {
             encoding = context.getResponseCharacterEncoding();

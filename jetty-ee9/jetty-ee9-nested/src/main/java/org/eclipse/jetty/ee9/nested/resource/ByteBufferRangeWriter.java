@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.nested.resource;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.BufferUtil;
 
 /**

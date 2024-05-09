@@ -15,4 +15,3 @@
  * Jetty Jndi : Java Naming Directory Interface
  */
 package org.eclipse.jetty.jndi;
-

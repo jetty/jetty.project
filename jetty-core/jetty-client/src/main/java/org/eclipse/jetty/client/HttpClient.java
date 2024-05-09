@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
 import org.eclipse.jetty.client.internal.NotifyingRequestListeners;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -150,7 +149,8 @@ public class HttpClient extends ContainerLifeCycle
     {
         this.transport = Objects.requireNonNull(transport);
         installBean(transport);
-        this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
+        this.connector = ((AbstractHttpClientTransport)transport)
+            .getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
         installBean(requestListeners);
         installBean(handlers);
         installBean(decoderFactories);
@@ -189,9 +189,7 @@ public class HttpClient extends ContainerLifeCycle
             executor = threadPool;
             setExecutor(executor);
         }
-        int maxBucketSize = executor instanceof ThreadPool.SizedThreadPool
-            ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
-            : ProcessorUtils.availableProcessors() * 2;
+        int maxBucketSize = executor instanceof ThreadPool.SizedThreadPool ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2 : ProcessorUtils.availableProcessors() * 2;
         ByteBufferPool byteBufferPool = getByteBufferPool();
         if (byteBufferPool == null)
             setByteBufferPool(new ArrayByteBufferPool(0, 2048, 65536, maxBucketSize));
@@ -203,7 +201,8 @@ public class HttpClient extends ContainerLifeCycle
         }
 
         if (resolver == null)
-            setSocketAddressResolver(new SocketAddressResolver.Async(getExecutor(), scheduler, getAddressResolutionTimeout()));
+            setSocketAddressResolver(
+                new SocketAddressResolver.Async(getExecutor(), scheduler, getAddressResolutionTimeout()));
 
         handlers.put(new ContinueProtocolHandler());
         handlers.put(new ProcessingProtocolHandler());
@@ -359,7 +358,8 @@ public class HttpClient extends ContainerLifeCycle
      * @throws ExecutionException the execution failed
      * @throws TimeoutException the send timed out
      */
-    public ContentResponse FORM(String uri, Fields fields) throws InterruptedException, ExecutionException, TimeoutException
+    public ContentResponse FORM(String uri, Fields fields)
+        throws InterruptedException, ExecutionException, TimeoutException
     {
         return FORM(URI.create(uri), fields);
     }
@@ -374,7 +374,8 @@ public class HttpClient extends ContainerLifeCycle
      * @throws ExecutionException the execution failed
      * @throws TimeoutException the send timed out
      */
-    public ContentResponse FORM(URI uri, Fields fields) throws InterruptedException, ExecutionException, TimeoutException
+    public ContentResponse FORM(URI uri, Fields fields)
+        throws InterruptedException, ExecutionException, TimeoutException
     {
         return POST(uri).body(new FormRequestContent(fields)).send();
     }
@@ -461,8 +462,7 @@ public class HttpClient extends ContainerLifeCycle
     public Origin createOrigin(Request request, Origin.Protocol protocol)
     {
         String scheme = request.getScheme();
-        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme) &&
-            !HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
+        if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme) && !HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
         scheme = scheme.toLowerCase(Locale.ENGLISH);
         String host = request.getHost();
@@ -493,7 +493,8 @@ public class HttpClient extends ContainerLifeCycle
         {
             if (v == null || v.stale())
             {
-                HttpDestination newDestination = (HttpDestination)getTransport().newDestination(k);
+                HttpDestination newDestination =
+                    (HttpDestination)getTransport().newDestination(k);
                 // Start the destination before it's published to other threads.
                 addManaged(newDestination);
                 if (destinationSweeper != null)
@@ -563,18 +564,19 @@ public class HttpClient extends ContainerLifeCycle
 
                 private void connect(List<InetSocketAddress> socketAddresses, int index, Map<String, Object> context)
                 {
-                    context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise)
-                    {
-                        @Override
-                        public void failed(Throwable x)
+                    context.put(
+                        HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise)
                         {
-                            int nextIndex = index + 1;
-                            if (nextIndex == socketAddresses.size())
-                                super.failed(x);
-                            else
-                                connect(socketAddresses, nextIndex, context);
-                        }
-                    });
+                            @Override
+                            public void failed(Throwable x)
+                            {
+                                int nextIndex = index + 1;
+                                if (nextIndex == socketAddresses.size())
+                                    super.failed(x);
+                                else
+                                    connect(socketAddresses, nextIndex, context);
+                            }
+                        });
                     HttpClient.this.transport.connect((SocketAddress)socketAddresses.get(index), context);
                 }
             });
@@ -1135,7 +1137,8 @@ public class HttpClient extends ContainerLifeCycle
         return URIUtil.getDefaultPortForScheme(scheme);
     }
 
-    public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+    public ClientConnectionFactory newSslClientConnectionFactory(
+                                                                 SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
     {
         if (sslContextFactory == null)
             sslContextFactory = getSslContextFactory();

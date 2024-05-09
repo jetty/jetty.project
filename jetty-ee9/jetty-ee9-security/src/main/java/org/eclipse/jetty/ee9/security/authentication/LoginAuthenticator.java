@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.ee9.security.authentication;
 
-import java.util.function.Function;
+import static org.eclipse.jetty.ee9.nested.SessionHandler.ServletSessionApi.getOrCreateSession;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.util.function.Function;
 import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.security.Authenticator;
@@ -29,8 +30,6 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.ManagedSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.ee9.nested.SessionHandler.ServletSessionApi.getOrCreateSession;
 
 public abstract class LoginAuthenticator implements Authenticator
 {
@@ -48,7 +47,7 @@ public abstract class LoginAuthenticator implements Authenticator
     @Override
     public void prepareRequest(ServletRequest request)
     {
-        //empty implementation as the default
+        // empty implementation as the default
     }
 
     /**
@@ -68,7 +67,8 @@ public abstract class LoginAuthenticator implements Authenticator
         Request baseRequest = Request.getBaseRequest(servletRequest);
         if (baseRequest == null)
             return null;
-        UserIdentity user = _loginService.login(username, password, baseRequest.getCoreRequest(), getOrCreateSession(servletRequest));
+        UserIdentity user = _loginService.login(
+            username, password, baseRequest.getCoreRequest(), getOrCreateSession(servletRequest));
         if (user != null)
         {
             Request request = Request.getBaseRequest(servletRequest);
@@ -128,11 +128,13 @@ public abstract class LoginAuthenticator implements Authenticator
             synchronized (httpSession)
             {
                 if (_sessionMaxInactiveIntervalOnAuthentication != 0)
-                    httpSession.setMaxInactiveInterval(_sessionMaxInactiveIntervalOnAuthentication < 0 ? -1 : _sessionMaxInactiveIntervalOnAuthentication);
+                    httpSession.setMaxInactiveInterval(
+                        _sessionMaxInactiveIntervalOnAuthentication < 0 ? -1 : _sessionMaxInactiveIntervalOnAuthentication);
                 if (_sessionRenewedOnAuthentication)
                 {
-                    //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
-                    //(indicated by SESSION_SECURED not being set on the session) then we should change id
+                    // if we should renew sessions, and there is an existing session that may have been seen by
+                    // non-authenticated users
+                    // (indicated by SESSION_SECURED not being set on the session) then we should change id
                     if (httpSession.getAttribute(ManagedSession.SESSION_CREATED_SECURE) != Boolean.TRUE)
                     {
                         if (httpSession instanceof Session.API api)

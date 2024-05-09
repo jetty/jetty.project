@@ -34,7 +34,11 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
 
     public JettyWebSocketConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
+        addDependencies(
+            WebXmlConfiguration.class,
+            MetaInfConfiguration.class,
+            WebInfConfiguration.class,
+            FragmentConfiguration.class);
         addDependents("org.eclipse.jetty.ee9.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
 
         protectAndExpose("org.eclipse.jetty.ee9.websocket.api.");

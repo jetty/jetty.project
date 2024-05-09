@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.quic.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
 import java.io.InputStream;
 import java.security.KeyStore;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
@@ -47,9 +49,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-
 @ExtendWith(WorkDirExtension.class)
 public class End2EndClientTest
 {
@@ -58,13 +57,14 @@ public class End2EndClientTest
     private Server server;
     private QuicServerConnector connector;
     private HttpClient client;
-    private final String responseContent = """
-        <html>
-          <body>
-            Request served
-          </body>
-        </html>
-        """;
+    private final String responseContent =
+        """
+            <html>
+              <body>
+                Request served
+              </body>
+            </html>
+            """;
 
     @BeforeEach
     public void setUp() throws Exception
@@ -105,7 +105,8 @@ public class End2EndClientTest
         SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client(true);
         clientConnector.setSslContextFactory(clientSslContextFactory);
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
-        ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2Info =
+            new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));
         HttpClientTransportDynamic transport = new HttpClientTransportDynamic(clientConnector, http1Info, http2Info);
         client = new HttpClient(transport);
         client.start();
@@ -180,8 +181,6 @@ public class End2EndClientTest
                 }
             });
         }
-        CompletableFuture.allOf(futures)
-            .orTimeout(15, TimeUnit.SECONDS)
-            .join();
+        CompletableFuture.allOf(futures).orTimeout(15, TimeUnit.SECONDS).join();
     }
 }

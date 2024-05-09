@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.cdi;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,7 +20,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Decorator;
 import org.slf4j.Logger;
@@ -62,7 +60,8 @@ public class CdiSpiDecorator implements Decorator
     private final Method _inject;
     private final Method _dispose;
     private final Method _release;
-    private final Set<String> _undecorated = new HashSet<>(List.of("org.jboss.weld.environment.servlet.Listener", "org.jboss.weld.environment.servlet.EnhancedListener"));
+    private final Set<String> _undecorated = new HashSet<>(List.of(
+        "org.jboss.weld.environment.servlet.Listener", "org.jboss.weld.environment.servlet.EnhancedListener"));
 
     public CdiSpiDecorator(ServletContextHandler context) throws UnsupportedOperationException
     {
@@ -79,13 +78,16 @@ public class CdiSpiDecorator implements Decorator
             Class<?> beanManagerClass = classLoader.loadClass("jakarta.enterprise.inject.spi.BeanManager");
             Class<?> annotatedTypeClass = classLoader.loadClass("jakarta.enterprise.inject.spi.AnnotatedType");
             Class<?> injectionTargetClass = classLoader.loadClass("jakarta.enterprise.inject.spi.InjectionTarget");
-            Class<?> injectionTargetFactoryClass = classLoader.loadClass("jakarta.enterprise.inject.spi.InjectionTargetFactory");
+            Class<?> injectionTargetFactoryClass =
+                classLoader.loadClass("jakarta.enterprise.inject.spi.InjectionTargetFactory");
             Class<?> creationalContextClass = classLoader.loadClass("jakarta.enterprise.context.spi.CreationalContext");
             Class<?> contextualClass = classLoader.loadClass("jakarta.enterprise.context.spi.Contextual");
-            
-            //Use reflection rather than MethodHandles. Reflection respects the classloader that loaded the class, which means
-            //that as it's a WebAppClassLoader it will do hiding of the cdi spi classes that are on the server classpath. MethodHandles
-            //see both the cdi api classes from the server classpath and the webapp classpath and throws an exception.
+
+            // Use reflection rather than MethodHandles. Reflection respects the classloader that loaded the class,
+            // which means
+            // that as it's a WebAppClassLoader it will do hiding of the cdi spi classes that are on the server
+            // classpath. MethodHandles
+            // see both the cdi api classes from the server classpath and the webapp classpath and throws an exception.
             _current = cdiClass.getMethod("current", null);
             _getBeanManager = cdiClass.getMethod("getBeanManager", null);
             _createAnnotatedType = beanManagerClass.getMethod("createAnnotatedType", Class.class);
@@ -210,7 +212,7 @@ public class CdiSpiDecorator implements Decorator
             Object annotatedType = _createAnnotatedType.invoke(manager, o.getClass());
             // CreationalContext creationalContext = manager.createCreationalContext(null);
             _creationalContext = _createCreationalContext.invoke(manager, NULL_SINGLETON_ARG);
-            //InjectionTargetFactory injectionTargetFactory = manager.getInjectionTargetFactory(AnnotatedType<T)
+            // InjectionTargetFactory injectionTargetFactory = manager.getInjectionTargetFactory(AnnotatedType<T)
             Object injectionTargetFactory = _getInjectionTargetFactory.invoke(manager, annotatedType);
             // InjectionTarget injectionTarget = injectionTargetFactory.createInjectionTarget();
             _injectionTarget = _createInjectionTarget.invoke(injectionTargetFactory, NULL_ARRAY_ARG);

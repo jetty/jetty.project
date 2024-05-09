@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;

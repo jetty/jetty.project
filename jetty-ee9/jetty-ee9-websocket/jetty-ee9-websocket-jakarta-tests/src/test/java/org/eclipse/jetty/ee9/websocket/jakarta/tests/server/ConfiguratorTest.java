@@ -13,6 +13,20 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.websocket.DecodeException;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.Extension;
+import jakarta.websocket.HandshakeResponse;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.HandshakeRequest;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
@@ -32,18 +46,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.Decoder;
-import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.Extension;
-import jakarta.websocket.HandshakeResponse;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.Session;
-import jakarta.websocket.server.HandshakeRequest;
-import jakarta.websocket.server.ServerContainer;
-import jakarta.websocket.server.ServerEndpoint;
-import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.internal.JakartaWebSocketCreator;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.Timeouts;
@@ -63,9 +65,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class ConfiguratorTest
 {
@@ -137,7 +136,8 @@ public class ConfiguratorTest
 
             response.append("Request Header [").append(headerKey).append("]: ");
             @SuppressWarnings("unchecked")
-            Map<String, List<String>> headers = (Map<String, List<String>>)session.getUserProperties().get("request-headers");
+            Map<String, List<String>> headers =
+                (Map<String, List<String>>)session.getUserProperties().get("request-headers");
             if (headers == null)
             {
                 response.append("<no headers found in session.getUserProperties()>");
@@ -186,7 +186,9 @@ public class ConfiguratorTest
         public String onMessage(Session session, String msg)
         {
             StringBuilder response = new StringBuilder();
-            response.append("Requested Protocols: [").append(ProtocolsConfigurator.seenProtocols.get()).append("]");
+            response.append("Requested Protocols: [")
+                .append(ProtocolsConfigurator.seenProtocols.get())
+                .append("]");
             return response.toString();
         }
     }
@@ -248,8 +250,10 @@ public class ConfiguratorTest
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
-            InetSocketAddress local = (InetSocketAddress)sec.getUserProperties().get(JakartaWebSocketCreator.PROP_LOCAL_ADDRESS);
-            InetSocketAddress remote = (InetSocketAddress)sec.getUserProperties().get(JakartaWebSocketCreator.PROP_REMOTE_ADDRESS);
+            InetSocketAddress local =
+                (InetSocketAddress)sec.getUserProperties().get(JakartaWebSocketCreator.PROP_LOCAL_ADDRESS);
+            InetSocketAddress remote =
+                (InetSocketAddress)sec.getUserProperties().get(JakartaWebSocketCreator.PROP_REMOTE_ADDRESS);
 
             sec.getUserProperties().put("found.local", local);
             sec.getUserProperties().put("found.remote", remote);
@@ -275,7 +279,8 @@ public class ConfiguratorTest
 
         private void appendPropValue(Session session, StringBuilder response, String key)
         {
-            InetSocketAddress value = (InetSocketAddress)session.getUserProperties().get(key);
+            InetSocketAddress value =
+                (InetSocketAddress)session.getUserProperties().get(key);
 
             response.append("[").append(key).append("] = ");
             response.append(toSafeAddr(value));
@@ -340,10 +345,8 @@ public class ConfiguratorTest
     }
 
     @SuppressWarnings("unused")
-    @ServerEndpoint(value = "/timedecoder",
-        subprotocols = {"time", "gmt"},
-        configurator = SelectedProtocolConfigurator.class,
-        decoders = {GmtTimeDecoder.class})
+    @ServerEndpoint(value = "/timedecoder", subprotocols =
+    {"time", "gmt"}, configurator = SelectedProtocolConfigurator.class, decoders = {GmtTimeDecoder.class})
     public static class TimeDecoderSocket
     {
         private final TimeZone tz = TimeZone.getTimeZone("GMT+0");
@@ -432,10 +435,16 @@ public class ConfiguratorTest
         CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()), Callback.NOOP, false);
+            coreSession.sendFrame(
+                new Frame(OpCode.TEXT).setPayload(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()),
+                Callback.NOOP,
+                false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Incoming Message", incomingMessage, is("Request Header [" + HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString() + "]: identity"));
+            assertThat(
+                "Incoming Message",
+                incomingMessage,
+                is("Request Header [" + HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString() + "]: identity"));
         }
         finally
         {
@@ -508,7 +517,8 @@ public class ConfiguratorTest
             coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, false);
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = \"fruit from tree\""));
+            assertThat(
+                "Incoming Message", incomingMessage, is("Requested User Property: [apple] = \"fruit from tree\""));
         }
         finally
         {
@@ -531,7 +541,10 @@ public class ConfiguratorTest
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = <null>"));
             incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Incoming Message", incomingMessage, is("Requested User Property: [blueberry] = \"fruit from bush\""));
+            assertThat(
+                "Incoming Message",
+                incomingMessage,
+                is("Requested User Property: [blueberry] = \"fruit from bush\""));
         }
         finally
         {
@@ -650,8 +663,10 @@ public class ConfiguratorTest
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
     }
 
-    protected void assertProtocols(FrameHandlerTracker clientSocket, Future<CoreSession> clientConnectFuture, Matcher<String> responseMatcher)
-        throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException
+    protected void assertProtocols(
+                                   FrameHandlerTracker clientSocket, Future<CoreSession> clientConnectFuture, Matcher<String> responseMatcher)
+        throws InterruptedException, java.util.concurrent.ExecutionException,
+        java.util.concurrent.TimeoutException
     {
         CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try

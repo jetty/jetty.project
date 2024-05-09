@@ -13,13 +13,15 @@
 
 package org.eclipse.jetty.ee10.session.nosql.mongodb;
 
-import java.io.IOException;
-import java.io.PrintWriter;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -36,9 +38,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  * AttributeNameTest
  *
@@ -52,7 +51,8 @@ public class AttributeNameTest
 
     private static final String DB_NAME = "DB" + AttributeNameTest.class.getSimpleName() + System.nanoTime();
 
-    private static final String COLLECTION_NAME = "COLLECTION" + AttributeNameTest.class.getSimpleName() + System.nanoTime();
+    private static final String COLLECTION_NAME =
+        "COLLECTION" + AttributeNameTest.class.getSimpleName() + System.nanoTime();
 
     @BeforeAll
     public static void beforeClass() throws Exception
@@ -79,15 +79,18 @@ public class AttributeNameTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cacheFactory.setSaveOnCreate(true);
 
-        MongoSessionDataStoreFactory storeFactory = MongoTestHelper.newSessionDataStoreFactory(DB_NAME, COLLECTION_NAME);
+        MongoSessionDataStoreFactory storeFactory =
+            MongoTestHelper.newSessionDataStoreFactory(DB_NAME, COLLECTION_NAME);
         storeFactory.setGracePeriodSec(scavengePeriod);
 
-        SessionTestSupport server1 = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 =
+            new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server1.start();
         int port1 = server1.getPort();
 
-        SessionTestSupport server2 = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server2 =
+            new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server2.start();
         int port2 = server2.getPort();
@@ -101,7 +104,8 @@ public class AttributeNameTest
             {
 
                 // Perform one request to server1 to create a session with attribute with dotted name
-                ContentResponse response = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
+                ContentResponse response =
+                    client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
 
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
@@ -113,12 +117,13 @@ public class AttributeNameTest
                 String sessionCookie = response.getHeaders().get(HttpHeader.SET_COOKIE);
 
                 assertNotNull(sessionCookie);
-                //Mangle the cookie, replacing Path with $Path, etc.
+                // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)([Pp])ath=", "$1\\$Path=");
 
-                //Make a request to the 2nd server which will do a refresh, use TestServlet to ensure that the
-                //session attribute with dotted name is not removed
-                Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
+                // Make a request to the 2nd server which will do a refresh, use TestServlet to ensure that the
+                // session attribute with dotted name is not removed
+                Request request2 =
+                    client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
                 HttpField cookie = new HttpField("Cookie", sessionCookie);
                 request2.headers(headers -> headers.put(cookie));
                 ContentResponse response2 = request2.send();

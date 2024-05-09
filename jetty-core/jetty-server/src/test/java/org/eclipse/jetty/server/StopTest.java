@@ -13,6 +13,20 @@
 
 package org.eclipse.jetty.server;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.Socket;
@@ -22,7 +36,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -43,20 +56,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class StopTest
 {
@@ -101,11 +100,8 @@ public class StopTest
         final int port = connector.getLocalPort();
         try (Socket client = new Socket("127.0.0.1", port))
         {
-            client.getOutputStream().write((
-                "GET / HTTP/1.1\r\n" +
-                    "Host: localhost:" + port + "\r\n" +
-                    "\r\n"
-            ).getBytes());
+            client.getOutputStream()
+                .write(("GET / HTTP/1.1\r\n" + "Host: localhost:" + port + "\r\n" + "\r\n").getBytes());
             client.getOutputStream().flush();
 
             await().atMost(10, TimeUnit.SECONDS).until(connector::isShutdown);
@@ -170,7 +166,8 @@ public class StopTest
                             {
                                 super.close();
                             }
-                        }).start();
+                        })
+                            .start();
                     }
                 };
                 return configure(conn, con, endPoint);
@@ -186,17 +183,15 @@ public class StopTest
         final int port = connector.getLocalPort();
         Socket client = new Socket("127.0.0.1", port);
         client.setSoTimeout(10000);
-        client.getOutputStream().write((
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost:" + port + "\r\n" +
-                "Content-Type: plain/text\r\n" +
-                "\r\n"
-        ).getBytes());
+        client.getOutputStream()
+            .write(("GET / HTTP/1.1\r\n" + "Host: localhost:" + port + "\r\n" + "Content-Type: plain/text\r\n" + "\r\n")
+                .getBytes());
         client.getOutputStream().flush();
         handler.latch.await();
 
         // look for a response
-        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.ISO_8859_1));
+        BufferedReader in =
+            new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.ISO_8859_1));
         while (true)
         {
             String line = in.readLine();
@@ -306,7 +301,6 @@ public class StopTest
             }
         });
 
-
         server.setStopTimeout(1000);
         server.start();
 
@@ -315,8 +309,7 @@ public class StopTest
                 GET / HTTP/1.1\r
                 Host: localhost\r
                 \r
-                """
-        ))
+                """))
         {
             exchanger0.exchange(null);
             exchanger1.exchange(null);
@@ -341,12 +334,15 @@ public class StopTest
                 {
                     stopped.failed(e);
                 }
-            }).start();
+            })
+                .start();
 
             await().atMost(10, TimeUnit.SECONDS).until(connector::isShutdown);
 
             // Check new connections rejected!
-            assertThrows(IllegalStateException.class, () -> connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
+            assertThrows(
+                IllegalStateException.class,
+                () -> connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
 
             // Check completed 200 has close
             exchanger1.exchange(null);
@@ -400,8 +396,7 @@ public class StopTest
                 GET / HTTP/1.1\r
                 Host: localhost\r
                 \r
-                """
-        ))
+                """))
         {
             exchanger0.exchange(null);
             exchanger1.exchange(null);
@@ -425,7 +420,8 @@ public class StopTest
                 {
                     e.printStackTrace();
                 }
-            }).start();
+            })
+                .start();
 
             await().atMost(10, TimeUnit.SECONDS).until(context::isStopped);
 

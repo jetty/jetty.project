@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
@@ -51,7 +50,7 @@ import org.slf4j.LoggerFactory;
 public abstract class EventsHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(EventsHandler.class);
-    
+
     public EventsHandler()
     {
         this(null);
@@ -132,7 +131,8 @@ public abstract class EventsHandler extends Handler.Wrapper
         {
             if (!response.notifiedOnResponseBegin)
             {
-                onResponseBegin(request, response.getStatus(), response.getHeaders().asImmutable());
+                onResponseBegin(
+                    request, response.getStatus(), response.getHeaders().asImmutable());
                 response.notifiedOnResponseBegin = true;
             }
         }
@@ -350,7 +350,8 @@ public abstract class EventsHandler extends Handler.Wrapper
         {
             notifyOnResponseBegin(getRequest(), this);
             notifyOnResponseWrite(getRequest(), last, byteBuffer);
-            super.write(last, byteBuffer, Callback.from(callback, (x) -> notifyOnResponseWriteComplete(getRequest(), x)));
+            super.write(
+                last, byteBuffer, Callback.from(callback, (x) -> notifyOnResponseWriteComplete(getRequest(), x)));
         }
 
         @Override

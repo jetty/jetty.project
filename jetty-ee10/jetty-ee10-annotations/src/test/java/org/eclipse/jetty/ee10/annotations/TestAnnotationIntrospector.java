@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
-import java.nio.file.Path;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.Source;
 import org.eclipse.jetty.ee10.webapp.FragmentDescriptor;
@@ -25,9 +27,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class TestAnnotationIntrospector
 {
     @Test
@@ -37,38 +36,39 @@ public class TestAnnotationIntrospector
         {
             WebAppContext wac = new WebAppContext();
             AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
-            //can't introspect nothing
+            // can't introspect nothing
             assertFalse(introspector.isIntrospectable(null, null));
 
-            //can introspect if no metadata to say otherwise
+            // can introspect if no metadata to say otherwise
             assertTrue(introspector.isIntrospectable(new Object(), null));
 
-            //can introspect if metdata isn't a BaseHolder
+            // can introspect if metdata isn't a BaseHolder
             assertTrue(introspector.isIntrospectable(new Object(), new Object()));
 
-            //an EMBEDDED sourced servlet can be introspected
+            // an EMBEDDED sourced servlet can be introspected
             ServletHolder holder = new ServletHolder();
             holder.setHeldClass(ServletE.class);
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
-            //a JAKARTA API sourced servlet can be introspected
+            // a JAKARTA API sourced servlet can be introspected
             holder = new ServletHolder(Source.JAKARTA_API);
             holder.setHeldClass(ServletE.class);
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
-            //an ANNOTATION sourced servlet can be introspected
+            // an ANNOTATION sourced servlet can be introspected
             holder = new ServletHolder(new Source(Source.Origin.ANNOTATION, ServletE.class));
             holder.setHeldClass(ServletE.class);
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
-            //a DESCRIPTOR sourced servlet can be introspected if web.xml metdata-complete==false
+            // a DESCRIPTOR sourced servlet can be introspected if web.xml metdata-complete==false
             Path xml = MavenTestingUtils.getTestResourcePathFile("web31false.xml");
             Resource xmlResource = wac.getResourceFactory().newResource(xml);
             wac.getMetaData().setWebDescriptor(new WebDescriptor(xmlResource));
             holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xmlResource));
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
-            //a DESCRIPTOR sourced servlet can be introspected if web-fragment.xml medata-complete==false && web.xml metadata-complete==false
+            // a DESCRIPTOR sourced servlet can be introspected if web-fragment.xml medata-complete==false && web.xml
+            // metadata-complete==false
             xml = MavenTestingUtils.getTestResourcePathFile("web-fragment4false.xml");
             xmlResource = wac.getResourceFactory().newResource(xml);
             Resource parent = wac.getResourceFactory().newResource(xml.getParent());
@@ -76,7 +76,8 @@ public class TestAnnotationIntrospector
             holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xmlResource));
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
-            //a DESCRIPTOR sourced servlet cannot be introspected if web-fragment.xml medata-complete==true (&& web.xml metadata-complete==false)
+            // a DESCRIPTOR sourced servlet cannot be introspected if web-fragment.xml medata-complete==true (&& web.xml
+            // metadata-complete==false)
             xml = MavenTestingUtils.getTestResourcePathFile("web-fragment4true.xml");
             xmlResource = wac.getResourceFactory().newResource(xml);
             parent = wac.getResourceFactory().newResource(xml.getParent());
@@ -84,7 +85,7 @@ public class TestAnnotationIntrospector
             holder = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, xmlResource));
             assertFalse(introspector.isIntrospectable(new ServletE(), holder));
 
-            //a DESCRIPTOR sourced servlet cannot be introspected if web.xml medata-complete==true
+            // a DESCRIPTOR sourced servlet cannot be introspected if web.xml medata-complete==true
             xml = MavenTestingUtils.getTestResourcePathFile("web31true.xml");
             xmlResource = wac.getResourceFactory().newResource(xml);
             wac.getMetaData().setWebDescriptor(new WebDescriptor(xmlResource));

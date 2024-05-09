@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
@@ -22,8 +23,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -72,7 +71,8 @@ public class ServletCoreResponse implements Response
                     String name = field == null ? null : field.getName();
                     if (!StringUtil.isBlank(name) && name.startsWith(Dispatcher.JETTY_INCLUDE_HEADER_PREFIX))
                     {
-                        return new HttpField(name.substring(Dispatcher.JETTY_INCLUDE_HEADER_PREFIX.length()), field.getValue());
+                        return new HttpField(
+                            name.substring(Dispatcher.JETTY_INCLUDE_HEADER_PREFIX.length()), field.getValue());
                     }
 
                     return null;
@@ -219,7 +219,8 @@ public class ServletCoreResponse implements Response
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _httpServletResponse);
+        return "%s@%x{%s,%s}"
+            .formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _httpServletResponse);
     }
 
     private static class HttpServletResponseHttpFields implements HttpFields.Mutable

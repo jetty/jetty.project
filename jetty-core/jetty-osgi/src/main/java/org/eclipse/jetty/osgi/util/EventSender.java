@@ -15,7 +15,6 @@ package org.eclipse.jetty.osgi.util;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
-
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.service.event.Event;
@@ -27,7 +26,7 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class EventSender
 {
-    //OSGi Event Admin events for webapps
+    // OSGi Event Admin events for webapps
     public static final String DEPLOYING_EVENT = "org/osgi/service/web/DEPLOYING";
     public static final String DEPLOYED_EVENT = "org/osgi/service/web/DEPLOYED";
     public static final String UNDEPLOYING_EVENT = "org/osgi/service/web/UNDEPLOYING";

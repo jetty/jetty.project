@@ -84,7 +84,8 @@ public class Licensing
         {
             if (Boolean.getBoolean("org.eclipse.jetty.start.testing"))
             {
-                throw new RuntimeException("Test Configuration Missing - Pre-specify answer to (" + PROP_ACK_LICENSES + ") in test case");
+                throw new RuntimeException(
+                    "Test Configuration Missing - Pre-specify answer to (" + PROP_ACK_LICENSES + ") in test case");
             }
 
             BufferedReader input = new BufferedReader(new InputStreamReader(System.in));

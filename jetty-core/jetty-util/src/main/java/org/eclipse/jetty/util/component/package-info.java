@@ -15,4 +15,3 @@
  * Jetty Util : Jetty Lifecycle Management
  */
 package org.eclipse.jetty.util.component;
-

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.common.endpoints.adapters;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 

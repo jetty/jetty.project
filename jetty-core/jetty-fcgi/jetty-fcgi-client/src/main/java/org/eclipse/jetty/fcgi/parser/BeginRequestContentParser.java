@@ -14,7 +14,6 @@
 package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.util.NanoTime;
 
@@ -135,6 +134,10 @@ public class BeginRequestContentParser extends ContentParser
 
     private enum State
     {
-        ROLE, ROLE_BYTES, FLAGS, RESERVED, RESERVED_BYTES
+        ROLE,
+        ROLE_BYTES,
+        FLAGS,
+        RESERVED,
+        RESERVED_BYTES
     }
 }

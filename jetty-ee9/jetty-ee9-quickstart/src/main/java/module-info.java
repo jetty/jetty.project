@@ -15,7 +15,6 @@ module org.eclipse.jetty.ee9.quickstart
 {
     requires jetty.servlet.api;
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.ee9.annotations;
 
     exports org.eclipse.jetty.ee9.quickstart;

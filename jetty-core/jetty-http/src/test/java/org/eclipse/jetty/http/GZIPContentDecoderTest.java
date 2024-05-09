@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.http;
 
+import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -22,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -31,13 +37,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GZIPContentDecoderTest
 {
@@ -79,7 +78,8 @@ public class GZIPContentDecoderTest
     {
         assertThat(GZIP.stripSuffixes("12345"), is("12345"));
         assertThat(GZIP.stripSuffixes("12345, 666" + GZIP.getEtagSuffix()), is("12345, 666"));
-        assertThat(GZIP.stripSuffixes("12345, 666" + GZIP.getEtagSuffix() + ",W/\"9999" + GZIP.getEtagSuffix() + "\""),
+        assertThat(
+            GZIP.stripSuffixes("12345, 666" + GZIP.getEtagSuffix() + ",W/\"9999" + GZIP.getEtagSuffix() + "\""),
             is("12345, 666,W/\"9999\""));
     }
 
@@ -147,7 +147,8 @@ public class GZIPContentDecoderTest
 
         GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         RetainableByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
+        assertEquals(
+            data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
         decoded.release();
     }
 
@@ -173,7 +174,8 @@ public class GZIPContentDecoderTest
         assertEquals(0, decoded.remaining());
         decoded.release();
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
+        assertEquals(
+            data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
         decoded.release();
     }
 
@@ -196,7 +198,8 @@ public class GZIPContentDecoderTest
 
         GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         RetainableByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
+        assertEquals(
+            data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
         assertFalse(decoder.isFinished());
         decoded.release();
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
@@ -227,7 +230,8 @@ public class GZIPContentDecoderTest
         assertEquals(0, decoded.remaining());
         decoded.release();
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
+        assertEquals(
+            data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
         decoded.release();
     }
 
@@ -255,12 +259,14 @@ public class GZIPContentDecoderTest
         GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         RetainableByteBuffer decoded = decoder.decode(buffer);
-        assertEquals(data1, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
+        assertEquals(
+            data1, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
         assertTrue(decoder.isFinished());
         assertTrue(buffer.hasRemaining());
         decoded.release();
         decoded = decoder.decode(buffer);
-        assertEquals(data2, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
+        assertEquals(
+            data2, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
         assertTrue(decoder.isFinished());
         assertFalse(buffer.hasRemaining());
         decoded.release();
@@ -365,7 +371,8 @@ public class GZIPContentDecoderTest
     static final long UINT_MAX = 0xFFFFFFFFL;
 
     @ParameterizedTest
-    @ValueSource(longs = {INT_MAX, INT_MAX + 1 /* TODO too slow , UINT_MAX, UINT_MAX + 1 */ })
+    @ValueSource(longs =
+    {INT_MAX, INT_MAX + 1 /* TODO too slow , UINT_MAX, UINT_MAX + 1 */})
     public void testLargeGzipStream(long origSize) throws IOException
     {
         // Size chosen for trade off between speed of I/O vs speed of Gzip
@@ -374,7 +381,7 @@ public class GZIPContentDecoderTest
         // Create a buffer to use over and over again to produce the uncompressed input
         byte[] cbuf = "0123456789ABCDEFGHIJKLMOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
         byte[] buf = new byte[BUFSIZE];
-        for (int off = 0; off < buf.length; )
+        for (int off = 0; off < buf.length;)
         {
             int len = Math.min(cbuf.length, buf.length - off);
             System.arraycopy(cbuf, 0, buf, off, len);
@@ -384,7 +391,7 @@ public class GZIPContentDecoderTest
         GZIPDecoderOutputStream out = new GZIPDecoderOutputStream(new GZIPContentDecoder(BUFSIZE));
         GZIPOutputStream outputStream = new GZIPOutputStream(out, BUFSIZE);
 
-        for (long bytesLeft = origSize; bytesLeft > 0; )
+        for (long bytesLeft = origSize; bytesLeft > 0;)
         {
             int len = buf.length;
             if (bytesLeft < buf.length)

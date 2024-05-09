@@ -13,6 +13,26 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -23,21 +43,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.UnavailableException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.Dispatcher;
 import org.eclipse.jetty.ee9.nested.HandlerWrapper;
 import org.eclipse.jetty.ee9.nested.HttpChannel;
@@ -52,19 +57,11 @@ import org.eclipse.jetty.server.Server;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-//@Disabled // TODO
+// @Disabled // TODO
 public class ErrorPageTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ErrorPageTest.class);
@@ -109,7 +106,9 @@ public class ErrorPageTest
         HandlerWrapper noopHandler = new HandlerWrapper()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 if (target.startsWith("/noop"))
                     return;
@@ -172,7 +171,10 @@ public class ErrorPageTest
         assertThat(body, containsString("ERROR_CODE: 595"));
         assertThat(body, containsString("ERROR_EXCEPTION: null"));
         assertThat(body, containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(body, containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$ErrorContentTypeCharsetWriterInitializedServlet-"));
+        assertThat(
+            body,
+            containsString(
+                "ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$ErrorContentTypeCharsetWriterInitializedServlet-"));
         assertThat(body, containsString("ERROR_REQUEST_URI: /error-mime-charset-writer/"));
     }
 
@@ -186,7 +188,10 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 594"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$ErrorAndStatusServlet-"));
+        assertThat(
+            response,
+            Matchers.containsString(
+                "ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$ErrorAndStatusServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /error-and-status/anything"));
     }
 
@@ -241,8 +246,8 @@ public class ErrorPageTest
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
 
         // even when text/html is not the 1st content type, a html error page should still be generated
-        String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n" +
-            "Accept: application/bytes,text/html\r\n\r\n");
+        String response = _connector.getResponse(
+            "GET /fail/code?code=598 HTTP/1.0\r\n" + "Accept: application/bytes,text/html\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
         assertThat(response, Matchers.containsString("<title>Error 598"));
         assertThat(response, Matchers.containsString("<h2>HTTP ERROR 598"));
@@ -255,8 +260,8 @@ public class ErrorPageTest
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
 
-        String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n" +
-            "Accept: application/bytes\r\n\r\n");
+        String response =
+            _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n" + "Accept: application/bytes\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
         assertThat(response, not(Matchers.containsString("<title>Error 598")));
         assertThat(response, not(Matchers.containsString("<h2>HTTP ERROR 598")));
@@ -281,7 +286,10 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailClosedServlet-"));
+        assertThat(
+            response,
+            Matchers.containsString(
+                "ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailClosedServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-closed/"));
 
         assertThat(response, not(containsString("This shouldn't be seen")));
@@ -296,7 +304,9 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
+        assertThat(
+            response,
+            Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/code"));
     }
 
@@ -310,17 +320,30 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_EXCEPTION: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
+            assertThat(
+                response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
+            assertThat(
+                response,
+                Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
             response = _connector.getResponse("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: jakarta.servlet.ServletException: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServletDoubleWrap-"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_EXCEPTION: jakarta.servlet.ServletException: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
+            assertThat(
+                response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServletDoubleWrap-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-double-wrap/exception"));
         }
 
@@ -331,17 +354,28 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
+            assertThat(
+                response,
+                Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
+            assertThat(
+                response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
+            assertThat(
+                response,
+                Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
             response = _connector.getResponse("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServletDoubleWrap-"));
+            assertThat(
+                response,
+                Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
+            assertThat(
+                response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServletDoubleWrap-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-double-wrap/exception"));
         }
     }
@@ -355,7 +389,9 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 598"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
+        assertThat(
+            response,
+            Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/global"));
     }
 
@@ -368,9 +404,15 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: java.lang.NumberFormatException: For input string: \"NAN\""));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.NumberFormatException"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_EXCEPTION: java.lang.NumberFormatException: For input string: \"NAN\""));
+            assertThat(
+                response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.NumberFormatException"));
+            assertThat(
+                response,
+                Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/global"));
         }
     }
@@ -385,9 +427,16 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
             assertThat(response, Matchers.containsString("ERROR_MESSAGE: Bad query encoding"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 400"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Bad query encoding"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AppServlet-"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Bad query encoding"));
+            assertThat(
+                response,
+                Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
+            assertThat(
+                response,
+                Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AppServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /app"));
             assertThat(response, Matchers.containsString("getParameterMap()= {}"));
         }
@@ -404,7 +453,10 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
             assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
         }
@@ -421,7 +473,10 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
             assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
         }
@@ -438,7 +493,10 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
             assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
         }
@@ -468,7 +526,10 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$NotEnoughServlet-"));
+        assertThat(
+            response,
+            Matchers.containsString(
+                "ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$NotEnoughServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /notenough/info"));
     }
 
@@ -529,15 +590,22 @@ public class ErrorPageTest
         {
             String response = _connector.getResponse("GET /exception-servlet HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.ee9.servlet.ErrorPageTest$TestServletException"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee9.servlet.ErrorPageTest$TestServletException"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_EXCEPTION: org.eclipse.jetty.ee9.servlet.ErrorPageTest$TestServletException"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee9.servlet.ErrorPageTest$TestServletException"));
         }
     }
 
     public static class AppServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             request.getRequestDispatcher("/longer.app/").forward(request, response);
         }
@@ -546,7 +614,8 @@ public class ErrorPageTest
     public static class LongerAppServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             PrintWriter writer = response.getWriter();
             writer.println(request.getRequestURI());
@@ -558,7 +627,8 @@ public class ErrorPageTest
         public static final AtomicInteger COUNTER = new AtomicInteger();
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             int count = COUNTER.incrementAndGet();
 
@@ -571,7 +641,8 @@ public class ErrorPageTest
     public static class AsyncSendErrorServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             try
             {
@@ -610,7 +681,9 @@ public class ErrorPageTest
                         hold.countDown();
 
                         // Wait until request async waiting
-                        while (Request.getBaseRequest(request).getHttpChannelState().getState() == HttpChannelState.State.HANDLING)
+                        while (Request.getBaseRequest(request)
+                            .getHttpChannelState()
+                            .getState() == HttpChannelState.State.HANDLING)
                         {
                             try
                             {
@@ -662,7 +735,8 @@ public class ErrorPageTest
     public static class FailServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String code = request.getParameter("code");
             if (code != null)
@@ -675,7 +749,8 @@ public class ErrorPageTest
     public static class FailServletDoubleWrap extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String code = request.getParameter("code");
             if (code != null)
@@ -688,7 +763,8 @@ public class ErrorPageTest
     public static class FailClosedServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.sendError(599);
             // The below should result in no operation, as response should be closed.
@@ -707,7 +783,8 @@ public class ErrorPageTest
     public static class ErrorContentTypeCharsetWriterInitializedServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.setContentType("text/html; charset=US-ASCII");
             PrintWriter writer = response.getWriter();
@@ -719,7 +796,8 @@ public class ErrorPageTest
     public static class ErrorAndStatusServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.sendError(594, "custom get error");
             response.setStatus(200);
@@ -729,7 +807,8 @@ public class ErrorPageTest
     public static class DeleteServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doDelete(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.getWriter().append("This shouldn't be seen");
             response.sendError(595, "custom delete");
@@ -739,7 +818,8 @@ public class ErrorPageTest
     public static class NotEnoughServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.setContentLength(1000);
             response.getOutputStream().write("SomeBytes".getBytes(StandardCharsets.UTF_8));
@@ -751,7 +831,8 @@ public class ErrorPageTest
     public static class ErrorServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             if (request.getDispatcherType() != DispatcherType.ERROR && request.getDispatcherType() != DispatcherType.ASYNC)
                 throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
@@ -772,7 +853,8 @@ public class ErrorPageTest
     public static class UnavailableServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String ok = request.getParameter("ok");
             if (Boolean.parseBoolean(ok))
@@ -804,11 +886,11 @@ public class ErrorPageTest
         @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
-
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             final Integer key = request.hashCode();
             Thread current = Thread.currentThread();
@@ -850,7 +932,8 @@ public class ErrorPageTest
     public static class ExceptionServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             throw new TestServletException(new TestException("error page invoked"));
         }

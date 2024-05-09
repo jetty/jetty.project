@@ -1,4 +1,3 @@
-
 //
 // ========================================================================
 // Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
@@ -15,7 +14,6 @@
 package org.eclipse.jetty.security.jaas;
 
 import java.util.List;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
@@ -31,7 +29,7 @@ public class TestHandler extends Handler.Abstract
 {
     private List<String> _hasRoles;
     private List<String> _hasntRoles;
-    
+
     public TestHandler(List<String> hasRoles, List<String> hasntRoles)
     {
         _hasRoles = hasRoles;
@@ -66,7 +64,7 @@ public class TestHandler extends Handler.Abstract
             }
         }
     }
-    
+
     private void testHasntRoles(Request request, Response response)
     {
         if (_hasntRoles != null)

@@ -13,12 +13,18 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
@@ -41,13 +47,6 @@ import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PerMessageDeflaterBufferSizeTest
 {
@@ -230,7 +229,8 @@ public class PerMessageDeflaterBufferSizeTest
 
         // Make sure the internal parameter was not sent from the server.
         HttpFields responseHeaders = futureResponseHeaders.get();
-        assertThat(responseHeaders.getFields(HttpHeader.SEC_WEBSOCKET_EXTENSIONS).size(), is(1));
+        assertThat(
+            responseHeaders.getFields(HttpHeader.SEC_WEBSOCKET_EXTENSIONS).size(), is(1));
         assertThat(responseHeaders.get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS), is("permessage-deflate"));
 
         // We should now only be able to send this message in multiple frames as it exceeds deflate_buffer_size.
@@ -285,7 +285,8 @@ public class PerMessageDeflaterBufferSizeTest
 
         // Make sure the internal parameter was not sent from the server.
         HttpFields responseHeaders = futureResponseHeaders.get();
-        assertThat(responseHeaders.getFields(HttpHeader.SEC_WEBSOCKET_EXTENSIONS).size(), is(1));
+        assertThat(
+            responseHeaders.getFields(HttpHeader.SEC_WEBSOCKET_EXTENSIONS).size(), is(1));
         assertThat(responseHeaders.get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS), is("permessage-deflate"));
 
         // We should now only be able to send this message in multiple frames as it exceeds deflate_buffer_size.

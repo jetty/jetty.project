@@ -13,9 +13,13 @@
 
 package org.eclipse.jetty.ee9.demos;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.util.Base64;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -24,11 +28,6 @@ import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class SecuredHelloHandlerTest extends AbstractEmbeddedTest
 {
@@ -51,9 +50,7 @@ public class SecuredHelloHandlerTest extends AbstractEmbeddedTest
     public void testGetWithoutAuth() throws Exception
     {
         URI uri = server.getURI().resolve("/hello");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.UNAUTHORIZED_401));
 
         // dumpResponseHeaders(response);

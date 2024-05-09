@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.sockets;
 
+import jakarta.websocket.CloseReason;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
-
-import jakarta.websocket.CloseReason;
 
 public abstract class TrackingSocket
 {

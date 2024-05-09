@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.ee10.cdi.tests.websocket;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
-import jakarta.inject.Inject;
 import org.eclipse.jetty.ee10.cdi.CdiDecoratingListener;
 import org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -40,11 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@Disabled //TODO mismatch weld and cdi api version?
+@Disabled // TODO mismatch weld and cdi api version?
 public class JettyWebSocketCdiTest
 {
     private Server _server;
@@ -67,8 +66,8 @@ public class JettyWebSocketCdiTest
         context.addServletContainerInitializer(new org.jboss.weld.environment.servlet.EnhancedListener());
 
         // Add WebSocket endpoints
-        JettyWebSocketServletContainerInitializer.configure(context, (servletContext, wsContainer) ->
-            wsContainer.addMapping("/echo", CdiEchoSocket.class));
+        JettyWebSocketServletContainerInitializer.configure(
+            context, (servletContext, wsContainer) -> wsContainer.addMapping("/echo", CdiEchoSocket.class));
 
         // Add to Server
         _server.setHandler(context);
@@ -109,7 +108,8 @@ public class JettyWebSocketCdiTest
     @Test
     public void testBasicEcho() throws Exception
     {
-        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there was no NPE.
+        // If we can get an echo from the websocket endpoint we know that CDI injection of the logger worked as there
+        // was no NPE.
         TestClientEndpoint clientEndpoint = new TestClientEndpoint();
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
         Session session = _client.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);

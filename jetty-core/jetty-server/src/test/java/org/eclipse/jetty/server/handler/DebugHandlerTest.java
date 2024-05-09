@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +30,6 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
@@ -40,11 +44,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 @Disabled // TODO
 public class DebugHandlerTest
@@ -67,7 +66,8 @@ public class DebugHandlerTest
         server = new Server();
 
         httpTrackingBufferPool = new ArrayByteBufferPool.Tracking();
-        ServerConnector httpConnector = new ServerConnector(server, null, null, httpTrackingBufferPool, 1, 1, new HttpConnectionFactory());
+        ServerConnector httpConnector =
+            new ServerConnector(server, null, null, httpTrackingBufferPool, 1, 1, new HttpConnectionFactory());
         httpConnector.setPort(0);
         server.addConnector(httpConnector);
 
@@ -76,7 +76,13 @@ public class DebugHandlerTest
         sslContextFactory.setKeyStorePath(keystorePath.toAbsolutePath().toString());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslTrackingBufferPool = new ArrayByteBufferPool.Tracking();
-        ServerConnector sslConnector = new ServerConnector(server, null, null, sslTrackingBufferPool, 1, 1,
+        ServerConnector sslConnector = new ServerConnector(
+            server,
+            null,
+            null,
+            sslTrackingBufferPool,
+            1,
+            1,
             AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
 
         server.addConnector(sslConnector);
@@ -95,7 +101,7 @@ public class DebugHandlerTest
             }
         });
         server.setHandler(debugHandler);
-
+        
          */
         server.start();
 
@@ -111,7 +117,8 @@ public class DebugHandlerTest
         {
             keystore.load(stream, "storepwd".toCharArray());
         }
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        TrustManagerFactory trustManagerFactory =
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         sslContext = SSLContext.getInstance("TLS");
         sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
@@ -135,8 +142,14 @@ public class DebugHandlerTest
     {
         try
         {
-            assertThat("Server HTTP Leaks: " + httpTrackingBufferPool.dumpLeaks(), httpTrackingBufferPool.getLeaks().size(), Matchers.is(0));
-            assertThat("Server SSL Leaks: " + sslTrackingBufferPool.dumpLeaks(), sslTrackingBufferPool.getLeaks().size(), Matchers.is(0));
+            assertThat(
+                "Server HTTP Leaks: " + httpTrackingBufferPool.dumpLeaks(),
+                httpTrackingBufferPool.getLeaks().size(),
+                Matchers.is(0));
+            assertThat(
+                "Server SSL Leaks: " + sslTrackingBufferPool.dumpLeaks(),
+                sslTrackingBufferPool.getLeaks().size(),
+                Matchers.is(0));
         }
         finally
         {
@@ -147,7 +160,8 @@ public class DebugHandlerTest
     @Test
     public void testThreadName() throws IOException
     {
-        HttpURLConnection http = (HttpURLConnection)serverURI.resolve("/foo/bar?a=b").toURL().openConnection();
+        HttpURLConnection http =
+            (HttpURLConnection)serverURI.resolve("/foo/bar?a=b").toURL().openConnection();
         assertThat("Response Code", http.getResponseCode(), is(200));
 
         String log = capturedLog.toString(StandardCharsets.UTF_8.name());

@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.component.Environment;
  * within the server instance.
  * </p>
  * <p>
- * Ultimately, the configurations set by this class only affects the defaults applied to each web application 
+ * Ultimately, the configurations set by this class only affects the defaults applied to each web application
  * {@link org.eclipse.jetty.server.handler.ContextHandler Context} and the {@link ClassMatcher} fields of the web applications
  * can be directly access to configure a specific context.
  * </p>
@@ -58,11 +58,11 @@ public class WebAppClassLoading
      * by {@link #getProtectedClasses(Environment)}.
      */
     public static final ClassMatcher DEFAULT_PROTECTED_CLASSES = new ClassMatcher(
-        "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
-        "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
-        "jakarta.",                         // Jakarta classes (per servlet spec v5.0 / Section 15.2.1)
-        "org.xml.",                         // javax.xml
-        "org.w3c."                          // javax.xml
+        "java.", // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
+        "javax.", // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
+        "jakarta.", // Jakarta classes (per servlet spec v5.0 / Section 15.2.1)
+        "org.xml.", // javax.xml
+        "org.w3c." // javax.xml
     );
 
     /**
@@ -70,7 +70,7 @@ public class WebAppClassLoading
      * by {@link #getHiddenClasses(Environment)}.
      */
     public static final ClassMatcher DEFAULT_HIDDEN_CLASSES = new ClassMatcher(
-        "org.eclipse.jetty."                // hide jetty classes
+        "org.eclipse.jetty." // hide jetty classes
     );
 
     /**
@@ -132,9 +132,10 @@ public class WebAppClassLoading
     public static void addProtectedClasses(Environment environment, String... patterns)
     {
         if (patterns != null && patterns.length > 0)
-            getClassMatcher(environment, PROTECTED_CLASSES_ATTRIBUTE, DEFAULT_PROTECTED_CLASSES).add(patterns);
+            getClassMatcher(environment, PROTECTED_CLASSES_ATTRIBUTE, DEFAULT_PROTECTED_CLASSES)
+                .add(patterns);
     }
-    
+
     /**
      * Get the default hidden (server) classes for a {@link Server}
      * @param server The {@link Server} for the defaults
@@ -171,7 +172,7 @@ public class WebAppClassLoading
      * @param patterns the patterns to use
      * @deprecated use {@link #addHiddenClasses(Server, String...)} instead
      */
-    @Deprecated (since = "12.0.9", forRemoval = true)
+    @Deprecated(since = "12.0.9", forRemoval = true)
     public static void addHiddenClasses(Attributes attributes, String... patterns)
     {
         if (patterns != null && patterns.length > 0)
@@ -197,7 +198,8 @@ public class WebAppClassLoading
     public static void addHiddenClasses(Environment environment, String... patterns)
     {
         if (patterns != null && patterns.length > 0)
-            getClassMatcher(environment, HIDDEN_CLASSES_ATTRIBUTE, DEFAULT_HIDDEN_CLASSES).add(patterns);
+            getClassMatcher(environment, HIDDEN_CLASSES_ATTRIBUTE, DEFAULT_HIDDEN_CLASSES)
+                .add(patterns);
     }
 
     private static ClassMatcher getClassMatcher(Attributes attributes, String attribute, ClassMatcher defaultPatterns)
@@ -206,10 +208,8 @@ public class WebAppClassLoading
         if (existing instanceof ClassMatcher cm)
             return cm;
 
-        ClassMatcher classMatcher = (existing instanceof String[] stringArray)
-            ? new ClassMatcher(stringArray) : new ClassMatcher(defaultPatterns);
+        ClassMatcher classMatcher = (existing instanceof String[] stringArray) ? new ClassMatcher(stringArray) : new ClassMatcher(defaultPatterns);
         attributes.setAttribute(attribute, classMatcher);
         return classMatcher;
     }
-
 }

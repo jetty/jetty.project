@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -32,8 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Unable to create all of the streams")
 public class ConcurrentStreamCreationTest extends AbstractTest
 {
@@ -45,20 +44,25 @@ public class ConcurrentStreamCreationTest extends AbstractTest
         int iterations = 1024;
         int total = threads * runs * iterations;
         CountDownLatch serverLatch = new CountDownLatch(total);
-        start(new ServerSessionListener()
-        {
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+        start(
+            new ServerSessionListener()
             {
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
-                stream.headers(responseFrame, Callback.NOOP);
-                serverLatch.countDown();
-                return null;
-            }
-        }, h2 -> h2.setMaxConcurrentStreams(total));
+                @Override
+                public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+                {
+                    MetaData.Response response =
+                        new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
+                    stream.headers(responseFrame, Callback.NOOP);
+                    serverLatch.countDown();
+                    return null;
+                }
+            },
+            h2 -> h2.setMaxConcurrentStreams(total));
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
 
         CyclicBarrier barrier = new CyclicBarrier(threads);
         CountDownLatch clientLatch = new CountDownLatch(total);
@@ -76,31 +80,38 @@ public class ConcurrentStreamCreationTest extends AbstractTest
             try
             {
                 barrier.await();
-                IntStream.range(0, runs).forEach(j ->
-                        IntStream.range(0, iterations).forEach(k ->
+                IntStream.range(0, runs)
+                    .forEach(j -> IntStream.range(0, iterations).forEach(k ->
+                    {
+                        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+                        HeadersFrame requestFrame = new HeadersFrame(request, null, true);
+                        session.newStream(requestFrame, promise, new Stream.Listener()
                         {
-                            MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
-                            HeadersFrame requestFrame = new HeadersFrame(request, null, true);
-                            session.newStream(requestFrame, promise, new Stream.Listener()
+                            @Override
+                            public void onHeaders(Stream stream, HeadersFrame frame)
                             {
-                                @Override
-                                public void onHeaders(Stream stream, HeadersFrame frame)
-                                {
-                                    int status = ((MetaData.Response)frame.getMetaData()).getStatus();
-                                    if (status == HttpStatus.OK_200 && frame.isEndStream())
-                                        responseLatch.countDown();
-                                }
-                            });
-                        }));
+                                int status = ((MetaData.Response)frame.getMetaData()).getStatus();
+                                if (status == HttpStatus.OK_200 && frame.isEndStream())
+                                    responseLatch.countDown();
+                            }
+                        });
+                    }));
             }
             catch (Throwable x)
             {
                 x.printStackTrace();
             }
-        }).start());
+        })
+            .start());
 
-        assertTrue(clientLatch.await(total, TimeUnit.MILLISECONDS), String.format("Missing streams on client: %d/%d", clientLatch.getCount(), total));
-        assertTrue(serverLatch.await(total, TimeUnit.MILLISECONDS), String.format("Missing streams on server: %d/%d", serverLatch.getCount(), total));
-        assertTrue(responseLatch.await(total, TimeUnit.MILLISECONDS), String.format("Missing response on client: %d/%d", clientLatch.getCount(), total));
+        assertTrue(
+            clientLatch.await(total, TimeUnit.MILLISECONDS),
+            String.format("Missing streams on client: %d/%d", clientLatch.getCount(), total));
+        assertTrue(
+            serverLatch.await(total, TimeUnit.MILLISECONDS),
+            String.format("Missing streams on server: %d/%d", serverLatch.getCount(), total));
+        assertTrue(
+            responseLatch.await(total, TimeUnit.MILLISECONDS),
+            String.format("Missing response on client: %d/%d", clientLatch.getCount(), total));
     }
 }

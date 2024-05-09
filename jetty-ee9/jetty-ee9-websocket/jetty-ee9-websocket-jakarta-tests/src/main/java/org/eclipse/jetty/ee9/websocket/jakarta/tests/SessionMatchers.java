@@ -26,7 +26,8 @@ public final class SessionMatchers
         return IsMessageHandlerTypeRegistered.isMessageHandlerTypeRegistered(messageType);
     }
 
-    public static Matcher<MessageHandler> isMessageHandlerType(JakartaWebSocketSession session, MessageType messageType)
+    public static Matcher<MessageHandler> isMessageHandlerType(
+                                                               JakartaWebSocketSession session, MessageType messageType)
     {
         return IsMessageHandlerType.isMessageHandlerType(session, messageType);
     }

@@ -23,7 +23,6 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -47,7 +46,11 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     private boolean _directBuffersForDecryption = true;
     private boolean _requireCloseMessage;
 
-    public SslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
+    public SslClientConnectionFactory(
+                                      SslContextFactory.Client sslContextFactory,
+                                      ByteBufferPool byteBufferPool,
+                                      Executor executor,
+                                      ClientConnectionFactory connectionFactory)
     {
         _sslContextFactory = Objects.requireNonNull(sslContextFactory, "Missing SslContextFactory");
         _byteBufferPool = byteBufferPool;
@@ -114,7 +117,8 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     }
 
     @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+        throws IOException
     {
         SSLEngine engine;
         SocketAddress remote = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
@@ -123,9 +127,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             InetSocketAddress inetRemote = (InetSocketAddress)remote;
             String host = inetRemote.getHostString();
             int port = inetRemote.getPort();
-            engine = _sslContextFactory instanceof SslEngineFactory
-                ? ((SslEngineFactory)_sslContextFactory).newSslEngine(host, port, context)
-                : _sslContextFactory.newSSLEngine(host, port);
+            engine = _sslContextFactory instanceof SslEngineFactory ? ((SslEngineFactory)_sslContextFactory).newSslEngine(host, port, context) : _sslContextFactory.newSSLEngine(host, port);
         }
         else
         {
@@ -147,7 +149,14 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
 
     protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
     {
-        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
+        return new SslConnection(
+            getByteBufferPool(),
+            getExecutor(),
+            getSslContextFactory(),
+            endPoint,
+            engine,
+            isDirectBuffersForEncryption(),
+            isDirectBuffersForDecryption());
     }
 
     @Override
@@ -215,7 +224,8 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
                     }
                     catch (Throwable x)
                     {
-                        throw (SSLException)new SSLPeerUnverifiedException("Host name verification failed for host: " + host).initCause(x);
+                        throw (SSLException)new SSLPeerUnverifiedException("Host name verification failed for host: " + host)
+                            .initCause(x);
                     }
                 }
             }

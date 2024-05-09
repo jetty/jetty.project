@@ -13,24 +13,23 @@
 
 package org.eclipse.jetty.ee10.test.client.transport;
 
-import java.io.IOException;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PushedResourcesTest extends AbstractTest
 {
@@ -64,12 +63,8 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    request.newPushBuilder()
-                        .path(path1)
-                        .push();
-                    request.newPushBuilder()
-                        .path(path2)
-                        .push();
+                    request.newPushBuilder().path(path1).push();
+                    request.newPushBuilder().path(path2).push();
                     response.getOutputStream().write(bytes);
                 }
             }

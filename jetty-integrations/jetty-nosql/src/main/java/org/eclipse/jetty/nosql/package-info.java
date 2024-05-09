@@ -15,4 +15,3 @@
  * Jetty NoSql : Generic Nosql Session Management
  */
 package org.eclipse.jetty.nosql;
-

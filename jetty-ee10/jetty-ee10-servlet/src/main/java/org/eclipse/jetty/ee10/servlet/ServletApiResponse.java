@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
@@ -21,10 +24,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletRequestInfo;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletResponseInfo;
 import org.eclipse.jetty.http.HttpCookie;
@@ -53,8 +52,7 @@ public class ServletApiResponse implements HttpServletResponse
         ServletContextResponse.EncodingFrom.NOT_SET,
         ServletContextResponse.EncodingFrom.DEFAULT,
         ServletContextResponse.EncodingFrom.INFERRED,
-        ServletContextResponse.EncodingFrom.SET_LOCALE
-    );
+        ServletContextResponse.EncodingFrom.SET_LOCALE);
 
     private final ServletChannel _servletChannel;
     private final ServletContextHandler.ServletRequestInfo _servletRequestInfo;
@@ -120,11 +118,17 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public String encodeURL(String url)
     {
-        SessionManager sessionManager = getServletChannel().getServletContextHandler().getSessionHandler();
+        SessionManager sessionManager =
+            getServletChannel().getServletContextHandler().getSessionHandler();
         if (sessionManager == null)
             return url;
-        return sessionManager.encodeURI(getServletChannel().getRequest(), url,
-            getServletChannel().getServletContextRequest().getServletApiRequest().isRequestedSessionIdFromCookie());
+        return sessionManager.encodeURI(
+            getServletChannel().getRequest(),
+            url,
+            getServletChannel()
+                .getServletContextRequest()
+                .getServletApiRequest()
+                .isRequestedSessionIdFromCookie());
     }
 
     @Override
@@ -145,7 +149,9 @@ public class ServletApiResponse implements HttpServletResponse
                 {
                     try (Blocker.Callback blocker = Blocker.callback())
                     {
-                        CompletableFuture<Void> completable = getServletChannel().getServletContextResponse().writeInterim(sc, getResponse().getHeaders().asImmutable());
+                        CompletableFuture<Void> completable = getServletChannel()
+                            .getServletContextResponse()
+                            .writeInterim(sc, getResponse().getHeaders().asImmutable());
                         blocker.completeWith(completable);
                         blocker.block();
                     }
@@ -314,11 +320,12 @@ public class ServletApiResponse implements HttpServletResponse
                 writer.reopen();
             else
             {
-                // We must use an implementation of AbstractOutputStreamWriter here as we rely on the non cached characters
+                // We must use an implementation of AbstractOutputStreamWriter here as we rely on the non cached
+                // characters
                 // in the writer implementation for flush and completion operations.
-                WriteThroughWriter outputStreamWriter = WriteThroughWriter.newWriter(getServletChannel().getHttpOutput(), encoding);
-                getServletResponseInfo().setWriter(writer = new ResponseWriter(
-                    outputStreamWriter, locale, encoding));
+                WriteThroughWriter outputStreamWriter =
+                    WriteThroughWriter.newWriter(getServletChannel().getHttpOutput(), encoding);
+                getServletResponseInfo().setWriter(writer = new ResponseWriter(outputStreamWriter, locale, encoding));
             }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
@@ -330,7 +337,8 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public void setCharacterEncoding(String encoding)
     {
-        getServletResponseInfo().setCharacterEncoding(encoding, ServletContextResponse.EncodingFrom.SET_CHARACTER_ENCODING);
+        getServletResponseInfo()
+            .setCharacterEncoding(encoding, ServletContextResponse.EncodingFrom.SET_CHARACTER_ENCODING);
     }
 
     @Override
@@ -386,7 +394,8 @@ public class ServletApiResponse implements HttpServletResponse
         if (isCommitted())
             throw new IllegalStateException("cannot set buffer size after response is in committed state");
         if (getContentCount() > 0)
-            throw new IllegalStateException("cannot set buffer size after response has " + getContentCount() + " bytes already written");
+            throw new IllegalStateException(
+                "cannot set buffer size after response has " + getContentCount() + " bytes already written");
         if (size < MIN_BUFFER_SIZE)
             size = MIN_BUFFER_SIZE;
         getServletChannel().getHttpOutput().setBufferSize(size);
@@ -431,14 +440,17 @@ public class ServletApiResponse implements HttpServletResponse
 
         getResponse().reset();
 
-        ServletApiRequest servletApiRequest = getServletChannel().getServletContextRequest().getServletApiRequest();
+        ServletApiRequest servletApiRequest =
+            getServletChannel().getServletContextRequest().getServletApiRequest();
         ManagedSession session = servletApiRequest.getServletRequestInfo().getManagedSession();
         if (session != null && session.isNew())
         {
-            SessionManager sessionManager = servletApiRequest.getServletRequestInfo().getSessionManager();
+            SessionManager sessionManager =
+                servletApiRequest.getServletRequestInfo().getSessionManager();
             if (sessionManager != null)
             {
-                HttpCookie cookie = sessionManager.getSessionCookie(session, servletApiRequest.getServletConnection().isSecure());
+                HttpCookie cookie = sessionManager.getSessionCookie(
+                    session, servletApiRequest.getServletConnection().isSecure());
                 if (cookie != null)
                     addCookie(cookie);
             }
@@ -461,12 +473,15 @@ public class ServletApiResponse implements HttpServletResponse
         else
         {
             getServletResponseInfo().setLocale(locale);
-            getResponse().getHeaders().put(HttpHeader.CONTENT_LANGUAGE, StringUtil.replace(locale.toString(), '_', '-'));
+            getResponse()
+                .getHeaders()
+                .put(HttpHeader.CONTENT_LANGUAGE, StringUtil.replace(locale.toString(), '_', '-'));
 
             if (getServletResponseInfo().getOutputType() != ServletContextResponse.OutputType.NONE)
                 return;
 
-            ServletContextHandler.ServletScopedContext context = getServletChannel().getContext();
+            ServletContextHandler.ServletScopedContext context =
+                getServletChannel().getContext();
             if (context == null)
                 return;
 
@@ -495,7 +510,8 @@ public class ServletApiResponse implements HttpServletResponse
     {
         if (isCommitted())
             throw new IllegalStateException("Committed");
-        HttpVersion version = HttpVersion.fromString(getServletRequestInfo().getRequest().getConnectionMetaData().getProtocol());
+        HttpVersion version = HttpVersion.fromString(
+            getServletRequestInfo().getRequest().getConnectionMetaData().getProtocol());
         if (version == null || version.compareTo(HttpVersion.HTTP_1_1) < 0)
             throw new IllegalStateException("Trailers not supported in " + version);
 
@@ -517,7 +533,8 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getResponse(), getServletResponseInfo());
+        return "%s@%x{%s,%s}"
+            .formatted(this.getClass().getSimpleName(), hashCode(), getResponse(), getServletResponseInfo());
     }
 
     static class HttpCookieFacade implements HttpCookie

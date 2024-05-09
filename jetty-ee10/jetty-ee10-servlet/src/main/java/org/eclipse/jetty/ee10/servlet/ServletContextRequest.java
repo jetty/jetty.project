@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EventListener;
-import java.util.List;
-import java.util.Set;
-
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EventListener;
+import java.util.List;
+import java.util.Set;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -55,7 +54,8 @@ import org.eclipse.jetty.util.URIUtil;
  * This class is single use only.
  * </p>
  */
-public class ServletContextRequest extends ContextRequest implements ServletContextHandler.ServletRequestInfo, Request.ServeAs
+public class ServletContextRequest extends ContextRequest
+    implements ServletContextHandler.ServletRequestInfo, Request.ServeAs
 {
     public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
     public static final String SSL_CIPHER_SUITE = "jakarta.servlet.request.cipher_suite";
@@ -81,8 +81,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
 
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {
-        if (request instanceof ServletApiRequest servletApiRequest &&
-            servletApiRequest.getServletRequestInfo() instanceof ServletContextRequest servletContextRequest)
+        if (request instanceof ServletApiRequest servletApiRequest && servletApiRequest.getServletRequestInfo() instanceof ServletContextRequest servletContextRequest)
             return servletContextRequest;
 
         if (request.getAttribute(ServletChannel.class.getName()) instanceof ServletChannel servletChannel)
@@ -92,12 +91,12 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         {
             request = wrapper.getRequest();
 
-            if (request instanceof ServletApiRequest servletApiRequest &&
-                servletApiRequest.getServletRequestInfo() instanceof  ServletContextRequest servletContextRequest)
+            if (request instanceof ServletApiRequest servletApiRequest && servletApiRequest.getServletRequestInfo() instanceof ServletContextRequest servletContextRequest)
                 return servletContextRequest;
         }
 
-        throw new IllegalStateException("could not find %s for %s".formatted(ServletContextRequest.class.getSimpleName(), request));
+        throw new IllegalStateException(
+            "could not find %s for %s".formatted(ServletContextRequest.class.getSimpleName(), request));
     }
 
     private final ServletApiRequest _servletApiRequest;
@@ -116,13 +115,13 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     AbstractSessionManager.RequestedSession _requestedSession;
 
     protected ServletContextRequest(
-        ServletContextHandler.ServletContextApi servletContextApi,
-        ServletChannel servletChannel,
-        Request request,
-        Response response,
-        String decodedPathInContext,
-        MatchedResource<ServletHandler.MappedServlet> matchedResource,
-        SessionManager sessionManager)
+                                    ServletContextHandler.ServletContextApi servletContextApi,
+                                    ServletChannel servletChannel,
+                                    Request request,
+                                    Response response,
+                                    String decodedPathInContext,
+                                    MatchedResource<ServletHandler.MappedServlet> matchedResource,
+                                    SessionManager sessionManager)
     {
         super(servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
@@ -131,7 +130,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         _decodedPathInContext = decodedPathInContext;
         _sessionManager = sessionManager;
         _servletApiRequest = newServletApiRequest();
-        _response =  newServletContextResponse(response);
+        _response = newServletContextResponse(response);
         _attributes = new Attributes.Synthetic(request)
         {
             @Override
@@ -143,9 +142,16 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                     case SSL_KEY_SIZE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.keySize() : null;
                     case SSL_SESSION_ID -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.sslSessionId() : null;
                     case PEER_CERTIFICATES -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.peerCertificates() : null;
-                    case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();
-                    case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormKeys();
-                    case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormContentSize();
+                    case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource
+                        .getResource()
+                        .getServletHolder()
+                        .getMultipartConfigElement();
+                    case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext()
+                        .getServletContextHandler()
+                        .getMaxFormKeys();
+                    case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext()
+                        .getServletContextHandler()
+                        .getMaxFormContentSize();
                     default -> null;
                 };
             }
@@ -164,9 +170,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     public Request wrap(Request request, HttpURI uri)
     {
         String decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(uri.getCanonicalPath()));
-        MatchedResource<ServletHandler.MappedServlet> matchedResource = getServletContextHandler()
-            .getServletHandler()
-            .getMatchedServlet(decodedPathInContext);
+        MatchedResource<ServletHandler.MappedServlet> matchedResource =
+            getServletContextHandler().getServletHandler().getMatchedServlet(decodedPathInContext);
 
         if (matchedResource == null)
             return null;
@@ -176,27 +181,30 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             return null;
 
         ServletChannel servletChannel = getServletChannel();
-        ServletContextRequest servletContextRequest = getServletContextHandler().newServletContextRequest(
-            servletChannel,
-            new Request.Wrapper(request)
-            {
-                @Override
-                public HttpURI getHttpURI()
+        ServletContextRequest servletContextRequest = getServletContextHandler()
+            .newServletContextRequest(
+                servletChannel,
+                new Request.Wrapper(request)
                 {
-                    return uri;
-                }
-            },
-            _response,
-            decodedPathInContext,
-            matchedResource
-        );
+                    @Override
+                    public HttpURI getHttpURI()
+                    {
+                        return uri;
+                    }
+                },
+                _response,
+                decodedPathInContext,
+                matchedResource);
         servletChannel.associate(servletContextRequest);
         return servletContextRequest;
     }
 
     protected ServletApiRequest newServletApiRequest()
     {
-        if (getHttpURI().hasViolations() && !getServletChannel().getServletContextHandler().getServletHandler().isDecodeAmbiguousURIs())
+        if (getHttpURI().hasViolations() && !getServletChannel()
+            .getServletContextHandler()
+            .getServletHandler()
+            .isDecodeAmbiguousURIs())
         {
             // TODO we should check if current compliance mode allows all the violations?
             StringBuilder msg = null;
@@ -231,7 +239,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                 return new ServletApiRequest(this);
         }
         else
-           return new ServletApiRequest(this);
+            return new ServletApiRequest(this);
     }
 
     protected ServletContextResponse newServletContextResponse(Response response)

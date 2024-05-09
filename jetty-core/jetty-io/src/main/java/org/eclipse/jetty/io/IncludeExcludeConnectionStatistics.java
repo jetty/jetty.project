@@ -18,12 +18,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.util.IncludeExcludeSet;
 
 public class IncludeExcludeConnectionStatistics extends ConnectionStatistics
 {
-    private final IncludeExcludeSet<Class<? extends Connection>, Connection> _set = new IncludeExcludeSet<>(ConnectionSet.class);
+    private final IncludeExcludeSet<Class<? extends Connection>, Connection> _set =
+        new IncludeExcludeSet<>(ConnectionSet.class);
 
     public void include(String className) throws ClassNotFoundException
     {
@@ -70,7 +70,8 @@ public class IncludeExcludeConnectionStatistics extends ConnectionStatistics
             super.onClosed(connection);
     }
 
-    public static class ConnectionSet extends AbstractSet<Class<? extends Connection>> implements Predicate<Connection>
+    public static class ConnectionSet extends AbstractSet<Class<? extends Connection>>
+        implements Predicate<Connection>
     {
         private final Set<Class<? extends Connection>> set = new HashSet<>();
 

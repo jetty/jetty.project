@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.session;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -31,15 +34,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * JdbcTestHelper
@@ -76,20 +75,22 @@ public class JdbcTestHelper
         try
         {
             long start = System.currentTimeMillis();
-            MARIAD_DB =
-                new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
-                    .withUsername(MARIA_DB_USER)
-                    .withPassword(MARIA_DB_PASSWORD)
-                    .withDatabaseName("sessions");
+            MARIAD_DB = new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
+                .withUsername(MARIA_DB_USER)
+                .withPassword(MARIA_DB_PASSWORD)
+                .withDatabaseName("sessions");
             MARIAD_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG)).start();
-            String containerIpAddress =  MARIAD_DB.getContainerIpAddress();
+            String containerIpAddress = MARIAD_DB.getContainerIpAddress();
             int mariadbPort = MARIAD_DB.getMappedPort(3306);
             DEFAULT_CONNECTION_URL = MARIAD_DB.getJdbcUrl();
             DRIVER_CLASS = MARIAD_DB.getDriverClassName();
-            LOG.info("Mariadb container started for {}:{} - {}ms", containerIpAddress, mariadbPort,
-                     System.currentTimeMillis() - start);
-            DEFAULT_CONNECTION_URL = DEFAULT_CONNECTION_URL + "?user=" + MARIA_DB_USER +
-                "&password=" + MARIA_DB_PASSWORD;
+            LOG.info(
+                "Mariadb container started for {}:{} - {}ms",
+                containerIpAddress,
+                mariadbPort,
+                System.currentTimeMillis() - start);
+            DEFAULT_CONNECTION_URL =
+                DEFAULT_CONNECTION_URL + "?user=" + MARIA_DB_USER + "&password=" + MARIA_DB_PASSWORD;
             LOG.info("DEFAULT_CONNECTION_URL: {}", DEFAULT_CONNECTION_URL);
         }
         catch (Exception e)
@@ -99,8 +100,7 @@ public class JdbcTestHelper
         }
     }
 
-    public static void shutdown(String sessionTableName)
-        throws Exception
+    public static void shutdown(String sessionTableName) throws Exception
     {
         try (Connection connection = getConnection())
         {
@@ -115,14 +115,14 @@ public class JdbcTestHelper
         return da;
     }
 
-    public static Connection getConnection()
-        throws Exception
+    public static Connection getConnection() throws Exception
     {
         Class.forName(DRIVER_CLASS);
         return DriverManager.getConnection(DEFAULT_CONNECTION_URL);
     }
 
-    public static void setDatabaseAdaptor(JDBCSessionDataStore.SessionTableSchema sessionTableSchema, DatabaseAdaptor databaseAdaptor)
+    public static void setDatabaseAdaptor(
+                                          JDBCSessionDataStore.SessionTableSchema sessionTableSchema, DatabaseAdaptor databaseAdaptor)
     {
         sessionTableSchema.setDatabaseAdaptor(databaseAdaptor);
     }
@@ -176,7 +176,8 @@ public class JdbcTestHelper
         return new ClassLoadingObjectInputStream(gis);
     }
 
-    public static SessionDataStoreFactory newSessionDataStoreFactory(DatabaseAdaptor da, String sessionTableName, boolean compress)
+    public static SessionDataStoreFactory newSessionDataStoreFactory(
+                                                                     DatabaseAdaptor da, String sessionTableName, boolean compress)
     {
         JDBCSessionDataStoreFactory factory = new JDBCSessionDataStoreFactory()
         {
@@ -235,7 +236,7 @@ public class JdbcTestHelper
         sessionTableSchema.setDatabaseAdaptor(da);
         sessionTableSchema.prepareTables();
     }
-    
+
     public static void dumpRow(ResultSet row) throws SQLException
     {
         if (row != null)
@@ -251,28 +252,18 @@ public class JdbcTestHelper
             long lastSaved = row.getLong(LAST_SAVE_COL);
             String context = row.getString(CONTEXT_COL);
             Blob blob = row.getBlob(MAP_COL);
-            
-            String dump = "id=" + id +
-                          " ctxt=" + context +
-                          " node=" + node +
-                          " exp=" + expires +
-                          " acc=" + accessed +
-                          " lacc=" + lastAccessed +
-                          " ck=" + cookieSet +
-                          " lsv=" + lastSaved +
-                          " blob length=" + blob.length();
+
+            String dump = "id=" + id + " ctxt=" + context + " node=" + node + " exp=" + expires + " acc=" + accessed + " lacc=" + lastAccessed + " ck=" + cookieSet + " lsv=" + lastSaved + " blob length=" + blob.length();
             System.err.println(dump);
         }
     }
 
-    public static boolean existsInSessionTable(String id, boolean verbose, String sessionTableName)
-        throws Exception
+    public static boolean existsInSessionTable(String id, boolean verbose, String sessionTableName) throws Exception
     {
         try (Connection con = getConnection())
         {
-            PreparedStatement statement = con.prepareStatement("select * from " +
-                sessionTableName +
-                " where " + ID_COL + " = ?");
+            PreparedStatement statement =
+                con.prepareStatement("select * from " + sessionTableName + " where " + ID_COL + " = ?");
             statement.setString(1, id);
             ResultSet result = statement.executeQuery();
             if (verbose)
@@ -298,10 +289,7 @@ public class JdbcTestHelper
         ResultSet result = null;
         try (Connection con = getConnection())
         {
-            statement = con.prepareStatement(
-                "select * from " + sessionTableName +
-                    " where " + ID_COL + " = ? and " + CONTEXT_COL +
-                    " = ? and virtualHost = ?");
+            statement = con.prepareStatement("select * from " + sessionTableName + " where " + ID_COL + " = ? and " + CONTEXT_COL + " = ? and virtualHost = ?");
             statement.setString(1, data.getId());
             statement.setString(2, data.getContextPath());
             statement.setString(3, data.getVhost());
@@ -325,10 +313,14 @@ public class JdbcTestHelper
 
             Blob blob = result.getBlob(MAP_COL);
 
-            SessionData tmp =
-                new SessionData(data.getId(), data.getContextPath(), data.getVhost(), result.getLong(CREATE_COL),
-                    result.getLong(ACCESS_COL), result.getLong(LAST_ACCESS_COL),
-                    result.getLong(MAX_IDLE_COL));
+            SessionData tmp = new SessionData(
+                data.getId(),
+                data.getContextPath(),
+                data.getVhost(),
+                result.getLong(CREATE_COL),
+                result.getLong(ACCESS_COL),
+                result.getLong(LAST_ACCESS_COL),
+                result.getLong(MAX_IDLE_COL));
 
             if (blob.length() > 0)
             {
@@ -339,11 +331,11 @@ public class JdbcTestHelper
                     ois.close();
                 }
             }
-            //same number of attributes
+            // same number of attributes
             assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
-            //same keys
+            // same keys
             assertTrue(data.getKeys().equals(tmp.getAllAttributes().keySet()));
-            //same values
+            // same values
             for (String name : data.getKeys())
             {
                 assertTrue(data.getAttribute(name).equals(tmp.getAttribute(name)));
@@ -359,16 +351,12 @@ public class JdbcTestHelper
 
         return true;
     }
-    
+
     public static void insertSession(SessionData data, String sessionTableName, boolean compress) throws Exception
     {
         try (Connection con = getConnection())
         {
-            PreparedStatement statement = con.prepareStatement("insert into " + sessionTableName +
-                " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
-                ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL +
-                ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + ", " + MAX_IDLE_COL + "," + MAP_COL + " ) " +
-                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            PreparedStatement statement = con.prepareStatement("insert into " + sessionTableName + " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL + ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL + ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + ", " + MAX_IDLE_COL + "," + MAP_COL + " ) " + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             statement.setString(1, data.getId());
             statement.setString(2, data.getContextPath());
@@ -383,9 +371,9 @@ public class JdbcTestHelper
             statement.setLong(9, data.getLastSaved());
             statement.setLong(10, data.getExpiry());
             statement.setLong(11, data.getMaxInactiveMs());
-            
+
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = newObjectOutputStream(baos, compress);)
+                 ObjectOutputStream oos = newObjectOutputStream(baos, compress);)
             {
                 SessionData.serializeAttributes(data, oos);
                 oos.close();
@@ -401,19 +389,24 @@ public class JdbcTestHelper
         }
     }
 
-    public static void insertUnreadableSession(String id, String contextPath, String vhost,
-                                     String lastNode, long created, long accessed,
-                                     long lastAccessed, long maxIdle, long expiry,
-                                     long cookieSet, long lastSaved, String sessionTableName)
+    public static void insertUnreadableSession(
+                                               String id,
+                                               String contextPath,
+                                               String vhost,
+                                               String lastNode,
+                                               long created,
+                                               long accessed,
+                                               long lastAccessed,
+                                               long maxIdle,
+                                               long expiry,
+                                               long cookieSet,
+                                               long lastSaved,
+                                               String sessionTableName)
         throws Exception
     {
         try (Connection con = getConnection())
         {
-            PreparedStatement statement = con.prepareStatement("insert into " + sessionTableName +
-                " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
-                ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL +
-                ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + ", " + MAX_IDLE_COL + "," + MAP_COL + " ) " +
-                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            PreparedStatement statement = con.prepareStatement("insert into " + sessionTableName + " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL + ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL + ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + ", " + MAX_IDLE_COL + "," + MAP_COL + " ) " + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             statement.setString(1, id);
             statement.setString(2, contextPath);
@@ -436,8 +429,7 @@ public class JdbcTestHelper
         }
     }
 
-    public static Set<String> getSessionIds(String sessionTableName)
-        throws Exception
+    public static Set<String> getSessionIds(String sessionTableName) throws Exception
     {
         HashSet<String> ids = new HashSet<>();
         try (Connection con = getConnection())

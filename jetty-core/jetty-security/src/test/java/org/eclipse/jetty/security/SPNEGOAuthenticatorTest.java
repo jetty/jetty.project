@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.security;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -25,9 +28,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class SPNEGOAuthenticatorTest
 {
@@ -57,7 +57,8 @@ public class SPNEGOAuthenticatorTest
         securityHandler.setAuthenticator(new SPNEGOAuthenticator());
         securityHandler.setHandler(new AuthenticationTestHandler());
 
-        LoginService loginService = new AuthenticationTestHandler.CustomLoginService(new AuthenticationTestHandler.TestIdentityService());
+        LoginService loginService =
+            new AuthenticationTestHandler.CustomLoginService(new AuthenticationTestHandler.TestIdentityService());
         securityHandler.setLoginService(loginService);
         _server.start();
     }
@@ -75,7 +76,8 @@ public class SPNEGOAuthenticatorTest
     @Test
     public void testChallengeSentWithNoAuthorization() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/any/thing HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response =
+            HttpTester.parseResponse(_connector.getResponse("GET /ctx/any/thing HTTP/1.0\r\n\r\n"));
 
         assertThat(response.getStatus(), is(HttpStatus.UNAUTHORIZED_401));
         assertThat(response.get(HttpHeader.WWW_AUTHENTICATE), is(HttpHeader.NEGOTIATE.asString()));
@@ -84,11 +86,13 @@ public class SPNEGOAuthenticatorTest
     @Test
     public void testChallengeSentWithUnhandledAuthorization() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
-            GET /ctx/any/thing HTTP/1.0\r
-            %s: Basic asdf\r
-            \r
-            """.formatted(HttpHeader.AUTHORIZATION)));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(
+            """
+                GET /ctx/any/thing HTTP/1.0\r
+                %s: Basic asdf\r
+                \r
+                """
+                .formatted(HttpHeader.AUTHORIZATION)));
 
         assertThat(response.getStatus(), is(HttpStatus.UNAUTHORIZED_401));
         assertThat(response.get(HttpHeader.WWW_AUTHENTICATE), is(HttpHeader.NEGOTIATE.asString()));
@@ -98,14 +102,15 @@ public class SPNEGOAuthenticatorTest
     @Disabled // TODO this test needs a lot of work
     public void testChallengeBadResponse() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
-            GET /ctx/any/thing HTTP/1.0\r
-            %s: %s badtokenT\r
-            \r
-            """.formatted(HttpHeader.AUTHORIZATION, HttpHeader.NEGOTIATE)));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(
+            """
+                GET /ctx/any/thing HTTP/1.0\r
+                %s: %s badtokenT\r
+                \r
+                """
+                .formatted(HttpHeader.AUTHORIZATION, HttpHeader.NEGOTIATE)));
 
         assertThat(response.getStatus(), is(HttpStatus.UNAUTHORIZED_401));
         assertThat(response.get(HttpHeader.WWW_AUTHENTICATE), is(HttpHeader.NEGOTIATE.asString()));
     }
 }
-

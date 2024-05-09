@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.SessionCookieConfig;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.descriptor.JspConfigDescriptor;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -24,17 +34,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterRegistration;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRegistration;
-import jakarta.servlet.SessionCookieConfig;
-import jakarta.servlet.SessionTrackingMode;
-import jakarta.servlet.descriptor.JspConfigDescriptor;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
@@ -53,7 +52,8 @@ class CrossContextServletContext implements ServletContext
     private final ContextHandler _servletContextHandler;
     private final ContextHandler.ScopedContext _targetContext;
 
-    protected CrossContextServletContext(ContextHandler servletContextHandler, ContextHandler.ScopedContext targetContext)
+    protected CrossContextServletContext(
+                                         ContextHandler servletContextHandler, ContextHandler.ScopedContext targetContext)
     {
         _servletContextHandler = servletContextHandler;
         _targetContext = Objects.requireNonNull(targetContext);
@@ -134,7 +134,11 @@ class CrossContextServletContext implements ServletContext
     {
         Resource resource = _targetContext.getBaseResource().resolve(path);
         if (resource != null && resource.isDirectory())
-            return resource.list().stream().map(Resource::getPath).map(Path::getFileName).map(Path::toString).collect(Collectors.toSet());
+            return resource.list().stream()
+                .map(Resource::getPath)
+                .map(Path::getFileName)
+                .map(Path::toString)
+                .collect(Collectors.toSet());
         return null;
     }
 

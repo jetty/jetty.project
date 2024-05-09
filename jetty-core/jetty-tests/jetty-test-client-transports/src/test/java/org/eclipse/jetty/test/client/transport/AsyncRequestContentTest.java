@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -20,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
@@ -33,9 +35,6 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class AsyncRequestContentTest extends AbstractTest
 {
     @ParameterizedTest
@@ -46,14 +45,11 @@ public class AsyncRequestContentTest extends AbstractTest
 
         AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
-            .body(content)
-            .send(result ->
-            {
-                if (result.isSucceeded() &&
-                    result.getResponse().getStatus() == HttpStatus.OK_200)
-                    latch.countDown();
-            });
+        client.POST(newURI(transport)).body(content).send(result ->
+        {
+            if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                latch.countDown();
+        });
         content.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -67,14 +63,11 @@ public class AsyncRequestContentTest extends AbstractTest
 
         AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
-            .body(content)
-            .send(result ->
-            {
-                if (result.isSucceeded() &&
-                    result.getResponse().getStatus() == HttpStatus.OK_200)
-                    latch.countDown();
-            });
+        client.POST(newURI(transport)).body(content).send(result ->
+        {
+            if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                latch.countDown();
+        });
         content.write(ByteBuffer.wrap(new byte[1]), Callback.NOOP);
         content.close();
 
@@ -87,17 +80,13 @@ public class AsyncRequestContentTest extends AbstractTest
     {
         start(transport, new ConsumeInputHandler());
 
-        InputStreamRequestContent content =
-            new InputStreamRequestContent(new ByteArrayInputStream(new byte[0]));
+        InputStreamRequestContent content = new InputStreamRequestContent(new ByteArrayInputStream(new byte[0]));
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
-            .body(content)
-            .send(result ->
-            {
-                if (result.isSucceeded() &&
-                    result.getResponse().getStatus() == HttpStatus.OK_200)
-                    latch.countDown();
-            });
+        client.POST(newURI(transport)).body(content).send(result ->
+        {
+            if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                latch.countDown();
+        });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -108,17 +97,13 @@ public class AsyncRequestContentTest extends AbstractTest
     {
         start(transport, new ConsumeInputHandler());
 
-        InputStreamRequestContent content =
-            new InputStreamRequestContent(new ByteArrayInputStream(new byte[1]));
+        InputStreamRequestContent content = new InputStreamRequestContent(new ByteArrayInputStream(new byte[1]));
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
-            .body(content)
-            .send(result ->
-            {
-                if (result.isSucceeded() &&
-                    result.getResponse().getStatus() == HttpStatus.OK_200)
-                    latch.countDown();
-            });
+        client.POST(newURI(transport)).body(content).send(result ->
+        {
+            if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                latch.countDown();
+        });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -131,14 +116,11 @@ public class AsyncRequestContentTest extends AbstractTest
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
-            .body(content)
-            .send(result ->
-            {
-                if (result.isSucceeded() &&
-                    result.getResponse().getStatus() == HttpStatus.OK_200)
-                    latch.countDown();
-            });
+        client.POST(newURI(transport)).body(content).send(result ->
+        {
+            if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                latch.countDown();
+        });
         content.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -152,14 +134,11 @@ public class AsyncRequestContentTest extends AbstractTest
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
-        client.POST(newURI(transport))
-            .body(content)
-            .send(result ->
-            {
-                if (result.isSucceeded() &&
-                    result.getResponse().getStatus() == HttpStatus.OK_200)
-                    latch.countDown();
-            });
+        client.POST(newURI(transport)).body(content).send(result ->
+        {
+            if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                latch.countDown();
+        });
         OutputStream output = content.getOutputStream();
         output.write(new byte[1]);
         output.flush();
@@ -183,8 +162,7 @@ public class AsyncRequestContentTest extends AbstractTest
             .body(content)
             .send(result ->
             {
-                if (result.isSucceeded() &&
-                    result.getResponse().getStatus() == HttpStatus.OK_200)
+                if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
 

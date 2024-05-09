@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.function.Consumer;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -31,6 +29,11 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.function.Consumer;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
@@ -43,10 +46,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
 
 public class ServletRequestListenerTest
 {
@@ -90,7 +89,8 @@ public class ServletRequestListenerTest
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());
                 _events.add(req.getDispatcherType() + " " + pathInContext);
@@ -108,7 +108,8 @@ public class ServletRequestListenerTest
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), equalTo("success"));
 
-        assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "doFilter /", "FORWARD /", "requestDestroyed /");
+        assertEvents(
+            "requestInitialized /", "doFilter /", "REQUEST /", "doFilter /", "FORWARD /", "requestDestroyed /");
     }
 
     @Test
@@ -117,7 +118,8 @@ public class ServletRequestListenerTest
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());
                 _events.add(req.getDispatcherType() + " " + pathInContext);
@@ -135,7 +137,8 @@ public class ServletRequestListenerTest
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), equalTo("success"));
 
-        assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "doFilter /", "INCLUDE /", "requestDestroyed /");
+        assertEvents(
+            "requestInitialized /", "doFilter /", "REQUEST /", "doFilter /", "INCLUDE /", "requestDestroyed /");
     }
 
     @Test
@@ -144,7 +147,8 @@ public class ServletRequestListenerTest
         start(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());
                 _events.add(req.getDispatcherType() + " " + pathInContext);
@@ -165,8 +169,15 @@ public class ServletRequestListenerTest
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), equalTo("success"));
 
-        assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "requestDestroyed /",
-            "requestInitialized /", "doFilter /", "ASYNC /", "requestDestroyed /");
+        assertEvents(
+            "requestInitialized /",
+            "doFilter /",
+            "REQUEST /",
+            "requestDestroyed /",
+            "requestInitialized /",
+            "doFilter /",
+            "ASYNC /",
+            "requestDestroyed /");
     }
 
     @Test
@@ -178,31 +189,40 @@ public class ServletRequestListenerTest
             errorHandler.addErrorPage(500, "/error");
             contextHandler.setErrorHandler(errorHandler);
 
-            contextHandler.addServlet(new HttpServlet()
-            {
-                @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            contextHandler.addServlet(
+                new HttpServlet()
                 {
-                    String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());
-                    _events.add(req.getDispatcherType() + " " + pathInContext);
-                    if (req.getDispatcherType() == DispatcherType.REQUEST)
+                    @Override
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
                     {
-                        resp.sendError(500);
-                        return;
-                    }
+                        String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());
+                        _events.add(req.getDispatcherType() + " " + pathInContext);
+                        if (req.getDispatcherType() == DispatcherType.REQUEST)
+                        {
+                            resp.sendError(500);
+                            return;
+                        }
 
-                    resp.setStatus(500);
-                    resp.getWriter().print("error handled");
-                }
-            }, "/");
+                        resp.setStatus(500);
+                        resp.getWriter().print("error handled");
+                    }
+                },
+                "/");
         });
 
         ContentResponse response = _httpClient.GET("http://localhost:" + _connector.getLocalPort());
         assertThat(response.getStatus(), equalTo(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContentAsString(), equalTo("error handled"));
 
-        assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "requestDestroyed /",
-            "requestInitialized /", "doFilter /error", "ERROR /error", "requestDestroyed /");
+        assertEvents(
+            "requestInitialized /",
+            "doFilter /",
+            "REQUEST /",
+            "requestDestroyed /",
+            "requestInitialized /",
+            "doFilter /error",
+            "ERROR /error",
+            "requestDestroyed /");
     }
 
     @Test
@@ -218,22 +238,24 @@ public class ServletRequestListenerTest
                 return true;
             });
 
-            contextHandler.addServlet(new HttpServlet()
-            {
-                @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            contextHandler.addServlet(
+                new HttpServlet()
                 {
-                    String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());
-                    _events.add(req.getDispatcherType() + " " + pathInContext);
-                    if (req.getDispatcherType() == DispatcherType.REQUEST)
+                    @Override
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
                     {
-                        resp.sendError(500);
-                        return;
-                    }
+                        String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());
+                        _events.add(req.getDispatcherType() + " " + pathInContext);
+                        if (req.getDispatcherType() == DispatcherType.REQUEST)
+                        {
+                            resp.sendError(500);
+                            return;
+                        }
 
-                    throw new IllegalStateException("should not reach here");
-                }
-            }, "/");
+                        throw new IllegalStateException("should not reach here");
+                    }
+                },
+                "/");
         });
 
         ContentResponse response = _httpClient.GET("http://localhost:" + _connector.getLocalPort());
@@ -254,17 +276,19 @@ public class ServletRequestListenerTest
             constraintMapping.setConstraint(Constraint.FORBIDDEN);
             securityHandler.addConstraintMapping(constraintMapping);
             contextHandler.setSecurityHandler(securityHandler);
-            contextHandler.addServlet(new HttpServlet()
-            {
-                @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            contextHandler.addServlet(
+                new HttpServlet()
                 {
-                    String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());
-                    _events.add(req.getDispatcherType() + " " + pathInContext);
-                    resp.setStatus(200);
-                    resp.getWriter().print("from servlet");
-                }
-            }, "/");
+                    @Override
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+                    {
+                        String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());
+                        _events.add(req.getDispatcherType() + " " + pathInContext);
+                        resp.setStatus(200);
+                        resp.getWriter().print("from servlet");
+                    }
+                },
+                "/");
         });
 
         ContentResponse response = _httpClient.GET("http://localhost:" + _connector.getLocalPort());
@@ -299,7 +323,8 @@ public class ServletRequestListenerTest
     public class TestFilter implements Filter
     {
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             HttpServletRequest req = (HttpServletRequest)request;
             String pathInContext = URIUtil.addPaths(req.getContextPath(), req.getServletPath());

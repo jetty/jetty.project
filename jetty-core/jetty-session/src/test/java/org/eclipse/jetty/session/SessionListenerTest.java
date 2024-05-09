@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.session;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * SessionListenerTest
@@ -55,22 +55,46 @@ public class SessionListenerTest
 
         try
         {
-            //create the session, test that creation listener is called
+            // create the session, test that creation listener is called
             TestableSessionConsumer consumer = new TestableSessionConsumer();
             sessionManager.newSession(null, "1234", consumer);
             Session session = consumer.getSession();
             session.setAttribute("a", "one");
-            assertEquals(1L, sessionManager._sessionCreatedListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
-            assertEquals(1L, sessionManager._sessionBoundListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
-            assertEquals(1L, sessionManager._sessionAttributeListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
-            
+            assertEquals(
+                1L,
+                sessionManager._sessionCreatedListenersCalled.stream()
+                    .filter(s -> s.equals(session.getId()))
+                    .count());
+            assertEquals(
+                1L,
+                sessionManager._sessionBoundListenersCalled.stream()
+                    .filter(s -> s.equals(session.getId()))
+                    .count());
+            assertEquals(
+                1L,
+                sessionManager._sessionAttributeListenersCalled.stream()
+                    .filter(s -> s.equals(session.getId()))
+                    .count());
+
             sessionManager.clear();
 
-            //invalidate the session, test that destroy listener is called, and unbinding listener called
+            // invalidate the session, test that destroy listener is called, and unbinding listener called
             session.invalidate();
-            assertEquals(1L, sessionManager._sessionDestroyedListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
-            assertEquals(1L, sessionManager._sessionUnboundListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
-            assertEquals(1L, sessionManager._sessionAttributeListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
+            assertEquals(
+                1L,
+                sessionManager._sessionDestroyedListenersCalled.stream()
+                    .filter(s -> s.equals(session.getId()))
+                    .count());
+            assertEquals(
+                1L,
+                sessionManager._sessionUnboundListenersCalled.stream()
+                    .filter(s -> s.equals(session.getId()))
+                    .count());
+            assertEquals(
+                1L,
+                sessionManager._sessionAttributeListenersCalled.stream()
+                    .filter(s -> s.equals(session.getId()))
+                    .count());
         }
         finally
         {
@@ -105,19 +129,31 @@ public class SessionListenerTest
         try
         {
 
-            //save a session that has already expired
+            // save a session that has already expired
             long now = System.currentTimeMillis();
             SessionData data = store.newSessionData("1234", now - 10, now - 5, now - 10, 30000);
             data.setAttribute("a", "one");
-            data.setExpiry(100); //make it expired a long time ago
+            data.setExpiry(100); // make it expired a long time ago
             store.store("1234", data);
 
-            //try to get the expired session, ensure that it wasn't used and that listeners were called for its expiry
+            // try to get the expired session, ensure that it wasn't used and that listeners were called for its expiry
             Session session = sessionManager.getManagedSession("1234");
             assertNull(session);
-            assertEquals(1L, sessionManager._sessionDestroyedListenersCalled.stream().filter(s -> s.equals("1234")).count());
-            assertEquals(1L, sessionManager._sessionUnboundListenersCalled.stream().filter(s -> s.equals("1234")).count());
-            assertEquals(1L, sessionManager._sessionAttributeListenersCalled.stream().filter(s -> s.equals("1234")).count());
+            assertEquals(
+                1L,
+                sessionManager._sessionDestroyedListenersCalled.stream()
+                    .filter(s -> s.equals("1234"))
+                    .count());
+            assertEquals(
+                1L,
+                sessionManager._sessionUnboundListenersCalled.stream()
+                    .filter(s -> s.equals("1234"))
+                    .count());
+            assertEquals(
+                1L,
+                sessionManager._sessionAttributeListenersCalled.stream()
+                    .filter(s -> s.equals("1234"))
+                    .count());
         }
         finally
         {

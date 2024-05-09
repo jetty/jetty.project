@@ -13,18 +13,6 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.util.Collections;
-import java.util.Set;
-
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletRegistration;
-import jakarta.servlet.UnavailableException;
-import jakarta.servlet.http.HttpServlet;
-import org.eclipse.jetty.ee9.nested.ContextHandler;
-import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Server;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,6 +22,17 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServlet;
+import java.util.Collections;
+import java.util.Set;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Server;
+import org.junit.jupiter.api.Test;
 
 public class ServletHolderTest
 {
@@ -57,12 +56,19 @@ public class ServletHolderTest
         Set<String> clash = reg.setInitParameters(Collections.singletonMap("foo", "bax"));
         assertTrue(clash != null && clash.size() == 1, "should be one clash");
 
-        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameters(Collections.singletonMap((String)null, "bax")));
-        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameters(Collections.singletonMap("foo", (String)null)));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> reg.setInitParameters(Collections.singletonMap((String)null, "bax")));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> reg.setInitParameters(Collections.singletonMap("foo", (String)null)));
 
         Set<String> clash2 = reg.setInitParameters(Collections.singletonMap("FOO", "bax"));
         assertTrue(clash2.isEmpty(), "should be no clash");
-        assertEquals(2, reg.getInitParameters().size(), "setInitParameters should not replace existing non-clashing init parameters");
+        assertEquals(
+            2,
+            reg.getInitParameters().size(),
+            "setInitParameters should not replace existing non-clashing init parameters");
     }
 
     @Test
@@ -114,16 +120,17 @@ public class ServletHolderTest
     @Test
     public void testCreateInstance() throws Exception
     {
-        try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        try (StacklessLogging ignore =
+            new StacklessLogging(ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
-            //test without a ServletContextHandler or current ContextHandler
+            // test without a ServletContextHandler or current ContextHandler
             ServletHolder holder = new ServletHolder();
             holder.setName("foo");
             holder.setHeldClass(FakeServlet.class);
             Servlet servlet = holder.createInstance();
             assertNotNull(servlet);
 
-            //test with a ServletContextHandler
+            // test with a ServletContextHandler
             Server server = new Server();
             ServletContextHandler context = new ServletContextHandler();
             server.setHandler(context);
@@ -138,7 +145,8 @@ public class ServletHolderTest
     @Test
     public void testNoClassName() throws Exception
     {
-        try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        try (StacklessLogging ignore =
+            new StacklessLogging(ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
             ServletContextHandler context = new ServletContextHandler();
             ServletHandler handler = context.getServletHandler();
@@ -158,8 +166,9 @@ public class ServletHolderTest
     @Test
     public void testWithClass() throws Exception
     {
-        //Test adding servlet by class
-        try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        // Test adding servlet by class
+        try (StacklessLogging stackless = new StacklessLogging(
+            BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
             ServletContextHandler context = new ServletContextHandler();
             ServletHandler handler = context.getServletHandler();
@@ -176,8 +185,9 @@ public class ServletHolderTest
     @Test
     public void testWithClassName() throws Exception
     {
-        //Test adding servlet by classname
-        try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        // Test adding servlet by classname
+        try (StacklessLogging stackless = new StacklessLogging(
+            BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
             ServletContextHandler context = new ServletContextHandler();
             ServletHandler handler = context.getServletHandler();
@@ -194,7 +204,8 @@ public class ServletHolderTest
     @Test
     public void testUnloadableClassName() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        try (StacklessLogging stackless = new StacklessLogging(
+            BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
             ServletContextHandler context = new ServletContextHandler();
             ServletHandler handler = context.getServletHandler();

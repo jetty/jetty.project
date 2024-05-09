@@ -110,7 +110,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     {
         super(caseSensitive);
         if (capacity > MAX_CAPACITY)
-            throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
+            throw new IllegalArgumentException(
+                "ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
         _value = (V[])new Object[capacity + 1];
         _tree = new char[(capacity + 1) * ROW_SIZE];
         _key = new String[capacity + 1];
@@ -195,7 +196,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     public V get(String s, int offset, int len)
     {
         int t = 0;
-        for (int i = 0; i < len; )
+        for (int i = 0; i < len;)
         {
             char c = s.charAt(offset + i++);
             if (isCaseInsensitive() && c < 128)
@@ -230,7 +231,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         int t = 0;
         offset += b.position();
 
-        for (int i = 0; i < len; )
+        for (int i = 0; i < len;)
         {
             byte c = (byte)(b.get(offset + i++) & 0x7f);
             if (isCaseInsensitive())
@@ -496,7 +497,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         for (int r = 0; r < _rows; r++)
         {
             char c = _tree[r * ROW_SIZE + 0];
-            System.err.printf("%4d [%s,%d,%d,%d] '%s':%s%n",
+            System.err.printf(
+                "%4d [%s,%d,%d,%d] '%s':%s%n",
                 r,
                 (c < ' ' || c > 127) ? ("" + (int)c) : "'" + c + "'",
                 (int)_tree[r * ROW_SIZE + LO],

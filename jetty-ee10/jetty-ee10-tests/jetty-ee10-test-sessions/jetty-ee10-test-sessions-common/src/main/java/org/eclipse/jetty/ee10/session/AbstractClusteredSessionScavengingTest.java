@@ -13,12 +13,10 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.Serial;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -27,6 +25,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Serial;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -42,11 +46,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.session.test.AbstractSessionTestBase;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * AbstractClusteredSessionScavengingTest
@@ -74,7 +73,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
             return doGet(id);
         }
     }
-    
+
     public class TestSessionCacheFactory extends DefaultSessionCacheFactory
     {
         @Override
@@ -89,17 +88,18 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
     {
         String contextPath = "/";
         String servletMapping = "/server";
-        int maxInactivePeriod = 5; //session will timeout after 5 seconds
-        int scavengePeriod = 1; //scavenging occurs every 1 seconds
+        int maxInactivePeriod = 5; // session will timeout after 5 seconds
+        int scavengePeriod = 1; // scavenging occurs every 1 seconds
 
         TestSessionCacheFactory cacheFactory1 = new TestSessionCacheFactory();
-        cacheFactory1.setEvictionPolicy(SessionCache.NEVER_EVICT); //don't evict sessions
+        cacheFactory1.setEvictionPolicy(SessionCache.NEVER_EVICT); // don't evict sessions
         cacheFactory1.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory1 = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(scavengePeriod);
-        ((AbstractSessionDataStoreFactory)storeFactory1).setSavePeriodSec(0); //always save when the session exits
+        ((AbstractSessionDataStoreFactory)storeFactory1).setSavePeriodSec(0); // always save when the session exits
 
-        SessionTestSupport server1 = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory1, storeFactory1);
+        SessionTestSupport server1 =
+            new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory1, storeFactory1);
         TestServlet servlet1 = new TestServlet();
         ServletHolder holder1 = new ServletHolder(servlet1);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -114,12 +114,13 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
             int port1 = server1.getPort();
 
             DefaultSessionCacheFactory cacheFactory2 = new DefaultSessionCacheFactory();
-            cacheFactory2.setEvictionPolicy(SessionCache.NEVER_EVICT); //don't evict sessions
+            cacheFactory2.setEvictionPolicy(SessionCache.NEVER_EVICT); // don't evict sessions
             cacheFactory2.setFlushOnResponseCommit(true);
             SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
             ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(scavengePeriod);
-            ((AbstractSessionDataStoreFactory)storeFactory2).setSavePeriodSec(0); //always save when the session exits
-            SessionTestSupport server2 = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
+            ((AbstractSessionDataStoreFactory)storeFactory2).setSavePeriodSec(0); // always save when the session exits
+            SessionTestSupport server2 =
+                new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
             SessionHandler m2 = context2.getSessionHandler();
@@ -133,7 +134,8 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
                 try
                 {
                     // Perform one request to server1 to create a session
-                    ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
+                    ContentResponse response1 = client.GET(
+                        "http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     assertTrue(response1.getContentAsString().startsWith("init"));
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
@@ -143,19 +145,19 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsMax());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsTotal());
 
-                    
-                    //Peek at the contents of the cache without doing all the reference counting etc
+                    // Peek at the contents of the cache without doing all the reference counting etc
                     ManagedSession s1 = ((TestSessionCache)m1.getSessionCache()).peek(id);
                     assertNotNull(s1);
                     long expiry = s1.getSessionData().getExpiry();
 
-                    //Now do requests for the session to node2. This will update the expiry time on the session.
-                    //Send requests for the next maxInactiveInterval, pausing a little between each request. 
-                    int requestInterval = 500; //ms pause between requests
+                    // Now do requests for the session to node2. This will update the expiry time on the session.
+                    // Send requests for the next maxInactiveInterval, pausing a little between each request.
+                    int requestInterval = 500; // ms pause between requests
                     long time = System.currentTimeMillis();
                     while (time < expiry)
                     {
-                        Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1));
+                        Request request = client.newRequest(
+                            "http://localhost:" + port2 + contextPath + servletMapping.substring(1));
                         ContentResponse response2 = request.send();
                         assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
                         assertTrue(response2.getContentAsString().startsWith("test"));
@@ -164,11 +166,12 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
                         time = System.currentTimeMillis();
                     }
 
-                    //session on node1 should be eligible for scavenge
-                    //ensure scavenger has run on node1
-                    Thread.sleep(TimeUnit.SECONDS.toMillis(scavengePeriod)); // wait until just after the original expiry time has passed
+                    // session on node1 should be eligible for scavenge
+                    // ensure scavenger has run on node1
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(
+                        scavengePeriod)); // wait until just after the original expiry time has passed
 
-                    //check that the session wasn't in fact scavenged because it was in use on node1
+                    // check that the session wasn't in fact scavenged because it was in use on node1
                     assertFalse(listener1._destroys.contains(SessionTestSupport.extractSessionId(sessionCookie)));
                     assertAfterScavenge(m1);
                 }
@@ -229,7 +232,8 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
             if ("init".equals(action))
@@ -242,15 +246,13 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
             {
                 HttpSession session = request.getSession(false);
 
-
                 if (session != null)
                 {
                     session.setAttribute("test", "test");
                 }
-                
+
                 // if we node hopped we should get the session and test should already be present
                 sendResult(session, httpServletResponse.getWriter());
-
             }
         }
 

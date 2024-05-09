@@ -25,7 +25,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.NanoTime;
@@ -77,7 +76,8 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 @ManagedObject("A thread pool")
-public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
+public class QueuedThreadPool extends ContainerLifeCycle
+    implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
 {
     private static final Logger LOG = LoggerFactory.getLogger(QueuedThreadPool.class);
     private static final Runnable NOOP = () ->
@@ -94,6 +94,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
+
     private final AtomicLong _evictThreshold = new AtomicLong();
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
@@ -130,40 +131,64 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         this(maxThreads, minThreads, 60000);
     }
 
-    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("queue") BlockingQueue<Runnable> queue)
+    public QueuedThreadPool(
+                            @Name("maxThreads") int maxThreads,
+                            @Name("minThreads") int minThreads,
+                            @Name("queue") BlockingQueue<Runnable> queue)
     {
         this(maxThreads, minThreads, 60000, -1, queue, null);
     }
 
-    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout)
+    public QueuedThreadPool(
+                            @Name("maxThreads") int maxThreads,
+                            @Name("minThreads") int minThreads,
+                            @Name("idleTimeout") int idleTimeout)
     {
         this(maxThreads, minThreads, idleTimeout, null);
     }
 
-    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue)
+    public QueuedThreadPool(
+                            @Name("maxThreads") int maxThreads,
+                            @Name("minThreads") int minThreads,
+                            @Name("idleTimeout") int idleTimeout,
+                            @Name("queue") BlockingQueue<Runnable> queue)
     {
         this(maxThreads, minThreads, idleTimeout, queue, null);
     }
 
-    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
+    public QueuedThreadPool(
+                            @Name("maxThreads") int maxThreads,
+                            @Name("minThreads") int minThreads,
+                            @Name("idleTimeout") int idleTimeout,
+                            @Name("queue") BlockingQueue<Runnable> queue,
+                            @Name("threadGroup") ThreadGroup threadGroup)
     {
         this(maxThreads, minThreads, idleTimeout, -1, queue, threadGroup);
     }
 
-    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads,
-                            @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads,
-                            @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
+    public QueuedThreadPool(
+                            @Name("maxThreads") int maxThreads,
+                            @Name("minThreads") int minThreads,
+                            @Name("idleTimeout") int idleTimeout,
+                            @Name("reservedThreads") int reservedThreads,
+                            @Name("queue") BlockingQueue<Runnable> queue,
+                            @Name("threadGroup") ThreadGroup threadGroup)
     {
         this(maxThreads, minThreads, idleTimeout, reservedThreads, queue, threadGroup, null);
     }
 
-    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads,
-                            @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads,
-                            @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup,
+    public QueuedThreadPool(
+                            @Name("maxThreads") int maxThreads,
+                            @Name("minThreads") int minThreads,
+                            @Name("idleTimeout") int idleTimeout,
+                            @Name("reservedThreads") int reservedThreads,
+                            @Name("queue") BlockingQueue<Runnable> queue,
+                            @Name("threadGroup") ThreadGroup threadGroup,
                             @Name("threadFactory") ThreadFactory threadFactory)
     {
         if (maxThreads < minThreads)
-            throw new IllegalArgumentException("max threads (" + maxThreads + ") less than min threads (" + minThreads + ")");
+            throw new IllegalArgumentException(
+                "max threads (" + maxThreads + ") less than min threads (" + minThreads + ")");
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);
@@ -328,7 +353,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
     private void joinThreads(long stopByNanos)
     {
-        loop : while (true)
+        loop:
+        while (true)
         {
             for (Thread thread : _threads)
             {
@@ -933,7 +959,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         {
             StackTraceElement[] trace = thread.getStackTrace();
             String stackTag = getCompressedStackTag(trace);
-            String baseThreadInfo = String.format("%s %s tid=%d prio=%d", thread.getName(), thread.getState(), thread.getId(), thread.getPriority());
+            String baseThreadInfo = String.format(
+                "%s %s tid=%d prio=%d", thread.getName(), thread.getState(), thread.getId(), thread.getPriority());
 
             if (!StringUtil.isBlank(stackTag))
                 threads.add(baseThreadInfo + " " + stackTag);
@@ -961,7 +988,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             if ("select".equals(t.getMethodName()) && t.getClassName().endsWith("SelectorProducer"))
                 return "SELECTING";
             if ("accept".equals(t.getMethodName()) && t.getClassName().contains("ServerConnector"))
-                return  "ACCEPTING";
+                return "ACCEPTING";
         }
         return "";
     }
@@ -1030,7 +1057,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 {
                     // Yes - we cannot evict yet, so continue looking for jobs.
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Evict skipped, threshold={}ms in the future {}", NanoTime.millisElapsed(now, threshold), this);
+                        LOG.debug(
+                            "Evict skipped, threshold={}ms in the future {}",
+                            NanoTime.millisElapsed(now, threshold),
+                            this);
                     return false;
                 }
 
@@ -1038,7 +1068,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 if (_evictThreshold.compareAndSet(evictThreshold, threshold))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Evicted, threshold={}ms in the past {}", NanoTime.millisElapsed(threshold, now), this);
+                        LOG.debug(
+                            "Evicted, threshold={}ms in the past {}", NanoTime.millisElapsed(threshold, now), this);
                     return true;
                 }
                 else
@@ -1115,7 +1146,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         int idle = Math.max(0, AtomicBiInteger.getLo(count));
         int queue = getQueueSize();
 
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,t=%dms,q=%d}[%s]",
+        return String.format(
+            "%s[%s]@%x{%s,%d<=%d<=%d,i=%d,r=%d,t=%dms,q=%d}[%s]",
             getClass().getSimpleName(),
             _name,
             hashCode(),

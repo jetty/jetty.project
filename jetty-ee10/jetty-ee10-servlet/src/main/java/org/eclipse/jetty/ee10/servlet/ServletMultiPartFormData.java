@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,10 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.http.Part;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -73,7 +72,8 @@ public class ServletMultiPartFormData
     {
         // Look for an existing future (we use the future here rather than the parts as it can remember any failure).
         @SuppressWarnings("unchecked")
-        CompletableFuture<Parts> futureServletParts = (CompletableFuture<Parts>)servletRequest.getAttribute(ServletMultiPartFormData.class.getName());
+        CompletableFuture<Parts> futureServletParts =
+            (CompletableFuture<Parts>)servletRequest.getAttribute(ServletMultiPartFormData.class.getName());
         if (futureServletParts == null)
         {
             // No existing parts, so we need to try to read them ourselves
@@ -90,65 +90,75 @@ public class ServletMultiPartFormData
             // Do we have a boundary?
             String boundary = MultiPart.extractBoundary(servletRequest.getContentType());
             if (boundary == null)
-                return CompletableFuture.failedFuture(new IllegalStateException("No multipart boundary parameter in Content-Type"));
+                return CompletableFuture.failedFuture(
+                    new IllegalStateException("No multipart boundary parameter in Content-Type"));
 
             // Can we access the core request, needed for components (eg buffer pools, temp directory, etc.) as well
             // as IO optimization
-            ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(servletRequest);
+            ServletContextRequest servletContextRequest =
+                ServletContextRequest.getServletContextRequest(servletRequest);
             if (servletContextRequest == null)
                 return CompletableFuture.failedFuture(new IllegalStateException("No core request"));
 
             // Get a temporary directory for larger parts.
-            File filesDirectory = StringUtil.isBlank(config.getLocation())
-                ? servletContextRequest.getContext().getTempDirectory()
-                : new File(config.getLocation());
+            File filesDirectory = StringUtil.isBlank(config.getLocation()) ? servletContextRequest.getContext().getTempDirectory() : new File(config.getLocation());
 
             HttpChannel httpChannel = HttpChannel.from(servletContextRequest);
             ComplianceViolation.Listener complianceViolationListener = httpChannel.getComplianceViolationListener();
-            MultiPartCompliance compliance = servletContextRequest.getConnectionMetaData().getHttpConfiguration().getMultiPartCompliance();
+            MultiPartCompliance compliance = servletContextRequest
+                .getConnectionMetaData()
+                .getHttpConfiguration()
+                .getMultiPartCompliance();
 
             // Look for an existing future MultiPartFormData.Parts
-            CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.from(servletContextRequest, compliance, complianceViolationListener, boundary, parser ->
-            {
-                try
+            CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.from(
+                servletContextRequest, compliance, complianceViolationListener, boundary, parser ->
                 {
-                    // No existing core parts, so we need to configure the parser.
-                    ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
-                    ByteBufferPool byteBufferPool = servletContextRequest.getComponents().getByteBufferPool();
-                    ConnectionMetaData connectionMetaData = servletContextRequest.getConnectionMetaData();
-                    Connection connection = connectionMetaData.getConnection();
-
-                    Content.Source source;
-                    if (servletRequest instanceof ServletApiRequest servletApiRequest)
+                    try
                     {
-                        source = servletApiRequest.getRequest();
+                        // No existing core parts, so we need to configure the parser.
+                        ServletContextHandler contextHandler =
+                            servletContextRequest.getServletContext().getServletContextHandler();
+                        ByteBufferPool byteBufferPool =
+                            servletContextRequest.getComponents().getByteBufferPool();
+                        ConnectionMetaData connectionMetaData = servletContextRequest.getConnectionMetaData();
+                        Connection connection = connectionMetaData.getConnection();
+
+                        Content.Source source;
+                        if (servletRequest instanceof ServletApiRequest servletApiRequest)
+                        {
+                            source = servletApiRequest.getRequest();
+                        }
+                        else
+                        {
+                            int bufferSize =
+                                connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
+                            InputStreamContentSource iscs =
+                                new InputStreamContentSource(servletRequest.getInputStream(), byteBufferPool);
+                            iscs.setBufferSize(bufferSize);
+                            source = iscs;
+                        }
+
+                        parser.setMaxParts(contextHandler.getMaxFormKeys());
+                        parser.setFilesDirectory(filesDirectory.toPath());
+                        parser.setMaxMemoryFileSize(config.getFileSizeThreshold());
+                        parser.setMaxFileSize(config.getMaxFileSize());
+                        parser.setMaxLength(config.getMaxRequestSize());
+                        parser.setPartHeadersMaxLength(
+                            connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
+
+                        // parse the core parts.
+                        return parser.parse(source);
                     }
-                    else
+                    catch (Throwable failure)
                     {
-                        int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
-                        InputStreamContentSource iscs = new InputStreamContentSource(servletRequest.getInputStream(), byteBufferPool);
-                        iscs.setBufferSize(bufferSize);
-                        source = iscs;
+                        return CompletableFuture.failedFuture(failure);
                     }
-
-                    parser.setMaxParts(contextHandler.getMaxFormKeys());
-                    parser.setFilesDirectory(filesDirectory.toPath());
-                    parser.setMaxMemoryFileSize(config.getFileSizeThreshold());
-                    parser.setMaxFileSize(config.getMaxFileSize());
-                    parser.setMaxLength(config.getMaxRequestSize());
-                    parser.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
-
-                    // parse the core parts.
-                    return parser.parse(source);
-                }
-                catch (Throwable failure)
-                {
-                    return CompletableFuture.failedFuture(failure);
-                }
-            });
+                });
 
             // When available, convert the core parts to servlet parts
-            futureServletParts = futureFormData.thenApply(formDataParts -> new Parts(filesDirectory.toPath(), formDataParts));
+            futureServletParts =
+                futureFormData.thenApply(formDataParts -> new Parts(filesDirectory.toPath(), formDataParts));
 
             // cache the result in attributes.
             servletRequest.setAttribute(ServletMultiPartFormData.class.getName(), futureServletParts);
@@ -259,11 +269,7 @@ public class ServletMultiPartFormData
         @Override
         public String toString()
         {
-            return "%s@%x[part=%s]".formatted(
-                getClass().getSimpleName(),
-                hashCode(),
-                _part
-            );
+            return "%s@%x[part=%s]".formatted(getClass().getSimpleName(), hashCode(), _part);
         }
     }
 }

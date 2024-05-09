@@ -52,10 +52,16 @@ public abstract class InetAddressPattern implements Predicate<InetAddress>
         try
         {
             if (slash >= 0)
-                return new CidrInetAddressRange(pattern, InetAddress.getByName(pattern.substring(0, slash).trim()), StringUtil.toInt(pattern, slash + 1));
+                return new CidrInetAddressRange(
+                    pattern,
+                    InetAddress.getByName(pattern.substring(0, slash).trim()),
+                    StringUtil.toInt(pattern, slash + 1));
 
             if (dash >= 0)
-                return new MinMaxInetAddressRange(pattern, InetAddress.getByName(pattern.substring(0, dash).trim()), InetAddress.getByName(pattern.substring(dash + 1).trim()));
+                return new MinMaxInetAddressRange(
+                    pattern,
+                    InetAddress.getByName(pattern.substring(0, dash).trim()),
+                    InetAddress.getByName(pattern.substring(dash + 1).trim()));
 
             return new SingletonInetAddressRange(pattern, InetAddress.getByName(pattern));
         }

@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -35,7 +34,8 @@ public abstract class InstructionStreamConnection extends AbstractConnection imp
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
 
-    public InstructionStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ParserListener listener)
+    public InstructionStreamConnection(
+                                       EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ParserListener listener)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;

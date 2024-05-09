@@ -14,7 +14,6 @@
 module org.eclipse.jetty.io
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.util;
 
     // Only required if using JMX.

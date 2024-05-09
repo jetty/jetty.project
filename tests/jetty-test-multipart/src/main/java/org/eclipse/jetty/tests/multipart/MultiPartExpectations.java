@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.tests.multipart;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,20 +34,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPartExpectations
 {
@@ -50,8 +49,13 @@ public class MultiPartExpectations
     private final List<NameValue> partContainsContents;
     private final List<NameValue> partContainsHex;
 
-    public MultiPartExpectations(String contentType, int partCount, List<NameValue> partFilenames, List<NameValue> partSha1Sums,
-                                 List<NameValue> partContainsContents, List<NameValue> partContainsHex)
+    public MultiPartExpectations(
+                                 String contentType,
+                                 int partCount,
+                                 List<NameValue> partFilenames,
+                                 List<NameValue> partSha1Sums,
+                                 List<NameValue> partContainsContents,
+                                 List<NameValue> partContainsHex)
     {
         this.contentType = contentType;
         this.partCount = partCount;
@@ -61,7 +65,8 @@ public class MultiPartExpectations
         this.partContainsHex = partContainsHex;
     }
 
-    public static MultiPartExpectations parse(BufferedReader reader, MultiPartRequest multiPartRequest) throws IOException
+    public static MultiPartExpectations parse(BufferedReader reader, MultiPartRequest multiPartRequest)
+        throws IOException
     {
         String parsedContentType = null;
         String parsedPartCount = "-1";
@@ -164,7 +169,10 @@ public class MultiPartExpectations
             ByteBuffer partBuffer = part.asByteBuffer();
             assertThat("part[" + expected.name + "].newContentSource", partBuffer, is(notNullValue()));
             String partBufferAsString = BufferUtil.toString(partBuffer, charset);
-            assertThat("Part[" + expected.name + "].newContentSource > ByteBuffer > String", partBufferAsString, containsString(expected.value));
+            assertThat(
+                "Part[" + expected.name + "].newContentSource > ByteBuffer > String",
+                partBufferAsString,
+                containsString(expected.value));
             String partContent = part.asString(charset);
             assertThat("Part[" + expected.name + "].asString", partContent, containsString(expected.value));
         }
@@ -247,8 +255,11 @@ public class MultiPartExpectations
         if (StringUtil.isBlank(contentType))
             return defaultCharset;
 
-        QuotedStringTokenizer tok = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().build();
-        for (Iterator<String> i = tok.tokenize(contentType); i.hasNext(); )
+        QuotedStringTokenizer tok = QuotedStringTokenizer.builder()
+            .delimiters(";")
+            .ignoreOptionalWhiteSpace()
+            .build();
+        for (Iterator<String> i = tok.tokenize(contentType); i.hasNext();)
         {
             String str = i.next().trim();
             if (str.startsWith("charset="))
@@ -260,5 +271,6 @@ public class MultiPartExpectations
         return defaultCharset;
     }
 
-    record NameValue(String name, String value) {}
+    record NameValue(String name, String value) {
+    }
 }

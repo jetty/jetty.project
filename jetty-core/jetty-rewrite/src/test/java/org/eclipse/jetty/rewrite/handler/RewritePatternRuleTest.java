@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.util.stream.Stream;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
@@ -25,8 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RewritePatternRuleTest extends AbstractRuleTest
 {
@@ -39,8 +38,7 @@ public class RewritePatternRuleTest extends AbstractRuleTest
             Arguments.of("/foo/bar", "/replace", "/foo/bar", "/replace"),
             Arguments.of("*.txt", "/replace", "/foo/bar.txt", "/replace"),
             Arguments.of("/foo/*", "/replace", "/foo/bar/%20x", "/replace/bar/%20x"),
-            Arguments.of("/old/context", "/replace?given=param", "/old/context", "/replace?given=param")
-        );
+            Arguments.of("/old/context", "/replace?given=param", "/old/context", "/replace?given=param"));
     }
 
     private void start(RewritePatternRule rule) throws Exception
@@ -60,17 +58,20 @@ public class RewritePatternRuleTest extends AbstractRuleTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testRewritePatternRule(String pattern, String replacement, String inputURI, String expectURI) throws Exception
+    public void testRewritePatternRule(String pattern, String replacement, String inputURI, String expectURI)
+        throws Exception
     {
         RewritePatternRule rule = new RewritePatternRule(pattern, replacement);
         start(rule);
 
-        String request = """
-            GET $U HTTP/1.1
-            Host: localhost
-            Connection: close
-                        
-            """.replace("$U", inputURI);
+        String request =
+            """
+                GET $U HTTP/1.1
+                Host: localhost
+                Connection: close
+
+                """
+                .replace("$U", inputURI);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -88,8 +89,9 @@ public class RewritePatternRuleTest extends AbstractRuleTest
         String request = """
             GET /context?$Q HTTP/1.1
             Host: localhost
-                        
-            """.replace("$Q", query);
+
+            """
+            .replace("$Q", query);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -108,8 +110,9 @@ public class RewritePatternRuleTest extends AbstractRuleTest
         String request = """
             GET /context?$Q HTTP/1.1
             Host: localhost
-                        
-            """.replace("$Q", query);
+
+            """
+            .replace("$Q", query);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());

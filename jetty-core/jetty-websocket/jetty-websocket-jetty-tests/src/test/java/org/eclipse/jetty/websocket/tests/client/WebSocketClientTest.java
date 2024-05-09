@@ -13,6 +13,17 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -26,7 +37,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -55,17 +65,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WebSocketClientTest
 {
@@ -122,7 +121,8 @@ public class WebSocketClientTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
+    @ValueSource(booleans =
+    {false, true})
     public void testCustomizeExecutorDirectly(boolean startHttpClient) throws Exception
     {
         Executor executor = Executors.newFixedThreadPool(50);
@@ -393,7 +393,8 @@ public class WebSocketClientTest
             assertThat("Local Socket Address", local, notNullValue());
             assertThat("Remote Socket Address", remote, notNullValue());
 
-            // Hard to validate (in a portable unit test) the local address that was used/bound in the low level Jetty Endpoint
+            // Hard to validate (in a portable unit test) the local address that was used/bound in the low level Jetty
+            // Endpoint
             assertThat("Local Socket Address / Host", local.getAddress().getHostAddress(), notNullValue());
             assertThat("Local Socket Address / Port", local.getPort(), greaterThan(0));
 

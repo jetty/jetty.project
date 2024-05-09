@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
@@ -91,7 +90,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             Request request = _httpChannel.getRequest();
             listener.onRequestBegin(request);
             // Note UriCompliance is done by HandlerInvoker
-            HttpCompliance httpCompliance = _httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
+            HttpCompliance httpCompliance =
+                _httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
             HttpCompliance.checkHttpCompliance(_requestMetaData, httpCompliance, listener);
 
             if (frame.isEndStream())
@@ -109,10 +109,15 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("HTTP2 request #{}/{}, {} {} {}{}{}",
-                    _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                    _requestMetaData.getMethod(), _requestMetaData.getHttpURI(), _requestMetaData.getHttpVersion(),
-                    System.lineSeparator(), fields);
+                LOG.debug(
+                    "HTTP2 request #{}/{}, {} {} {}{}{}",
+                    _stream.getId(),
+                    Integer.toHexString(_stream.getSession().hashCode()),
+                    _requestMetaData.getMethod(),
+                    _requestMetaData.getHttpURI(),
+                    _requestMetaData.getHttpVersion(),
+                    System.lineSeparator(),
+                    fields);
             }
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
@@ -124,8 +129,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     if (_stream.isClosed())
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("HTTP2 request #{}/{} skipped handling, stream already closed {}",
-                                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                            LOG.debug(
+                                "HTTP2 request #{}/{} skipped handling, stream already closed {}",
+                                _stream.getId(),
+                                Integer.toHexString(_stream.getSession().hashCode()),
                                 _stream);
                     }
                     else
@@ -234,7 +241,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Request #{}/{}: data available",
+            LOG.debug(
+                "HTTP2 Request #{}/{}: data available",
                 _stream.getId(),
                 Integer.toHexString(_stream.getSession().hashCode()));
         }
@@ -253,9 +261,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Request #{}/{}, trailer:{}{}",
-                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                System.lineSeparator(), trailers);
+            LOG.debug(
+                "HTTP2 Request #{}/{}, trailer:{}{}",
+                _stream.getId(),
+                Integer.toHexString(_stream.getSession().hashCode()),
+                System.lineSeparator(),
+                trailers);
         }
 
         return _httpChannel.onContentAvailable();
@@ -279,7 +290,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void send(
+                     MetaData.Request request,
+                     MetaData.Response response,
+                     boolean last,
+                     ByteBuffer byteBuffer,
+                     Callback callback)
     {
         ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
         if (response != null)
@@ -288,7 +304,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             sendContent(request, content, last, callback);
     }
 
-    private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
+    private void sendHeaders(
+                             MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
     {
         _responseMetaData = response;
 
@@ -321,15 +338,18 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 if (contentLength < 0)
                 {
                     _responseMetaData = new MetaData.Response(
-                        response.getStatus(), response.getReason(), response.getHttpVersion(),
+                        response.getStatus(),
+                        response.getReason(),
+                        response.getHttpVersion(),
                         response.getHttpFields(),
                         realContentLength,
-                        response.getTrailersSupplier()
-                    );
+                        response.getTrailersSupplier());
                 }
                 else if (hasContent && contentLength != realContentLength)
                 {
-                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                    callback.failed(new HttpException.RuntimeException(
+                        HttpStatus.INTERNAL_SERVER_ERROR_500,
+                        String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
                     return;
                 }
             }
@@ -347,7 +367,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     else
                     {
                         dataFrame = new DataFrame(streamId, content, false);
-                        trailersFrame = new HeadersFrame(streamId, new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+                        trailersFrame =
+                            new HeadersFrame(streamId, new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                     }
                 }
                 else
@@ -373,7 +394,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                         else
                         {
                             headersFrame = new HeadersFrame(streamId, response, null, false);
-                            trailersFrame = new HeadersFrame(streamId, new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+                            trailersFrame =
+                                new HeadersFrame(streamId, new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                         }
                     }
                 }
@@ -386,10 +408,15 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Response #{}/{}:{}{} {}{}{}",
-                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                System.lineSeparator(), HttpVersion.HTTP_2, response.getStatus(),
-                System.lineSeparator(), response.getHttpFields());
+            LOG.debug(
+                "HTTP2 Response #{}/{}:{}{} {}{}{}",
+                _stream.getId(),
+                Integer.toHexString(_stream.getSession().hashCode()),
+                System.lineSeparator(),
+                HttpVersion.HTTP_2,
+                response.getStatus(),
+                System.lineSeparator(),
+                response.getHttpFields());
         }
 
         _stream.send(new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
@@ -475,21 +502,24 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP/2 push {}", resource);
 
-        _stream.push(new PushPromiseFrame(_stream.getId(), resource), new Promise<>()
-        {
-            @Override
-            public void succeeded(Stream pushStream)
+        _stream.push(
+            new PushPromiseFrame(_stream.getId(), resource),
+            new Promise<>()
             {
-                _connection.push((HTTP2Stream)pushStream, resource);
-            }
+                @Override
+                public void succeeded(Stream pushStream)
+                {
+                    _connection.push((HTTP2Stream)pushStream, resource);
+                }
 
-            @Override
-            public void failed(Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Could not HTTP/2 push {}", resource, x);
-            }
-        }, null); // TODO: handle reset from the client ?
+                @Override
+                public void failed(Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Could not HTTP/2 push {}", resource, x);
+                }
+            },
+            null); // TODO: handle reset from the client ?
     }
 
     public Runnable onPushRequest(MetaData.Request request)
@@ -502,10 +532,16 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("HTTP/2 push request #{}/{}:{}{} {} {}{}{}",
-                    _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), System.lineSeparator(),
-                    request.getMethod(), request.getHttpURI(), request.getHttpVersion(),
-                    System.lineSeparator(), request.getHttpFields());
+                LOG.debug(
+                    "HTTP/2 push request #{}/{}:{}{} {} {}{}{}",
+                    _stream.getId(),
+                    Integer.toHexString(_stream.getSession().hashCode()),
+                    System.lineSeparator(),
+                    request.getMethod(),
+                    request.getHttpURI(),
+                    request.getHttpVersion(),
+                    System.lineSeparator(),
+                    request.getHttpFields());
             }
 
             return task;
@@ -521,9 +557,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Response #{}/{}: {} content bytes{}",
-                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                content.remaining(), lastContent ? " (last chunk)" : "");
+            LOG.debug(
+                "HTTP2 Response #{}/{}: {} content bytes{}",
+                _stream.getId(),
+                Integer.toHexString(_stream.getSession().hashCode()),
+                content.remaining(),
+                lastContent ? " (last chunk)" : "");
         }
         DataFrame frame = new DataFrame(_stream.getId(), content, endStream);
         _stream.data(frame, callback);
@@ -533,8 +572,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Response #{}/{}: trailers",
-                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+            LOG.debug(
+                "HTTP2 Response #{}/{}: trailers",
+                _stream.getId(),
+                Integer.toHexString(_stream.getSession().hashCode()));
         }
 
         HeadersFrame frame = new HeadersFrame(_stream.getId(), metaData, null, true);
@@ -565,7 +606,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         if (tunnelSupport != null)
             return null;
-        Throwable result = HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
+        Throwable result = HttpStream.consumeAvailable(
+            this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
         if (result != null)
         {
             _trailer = null;
@@ -603,11 +645,15 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             if (isTunnel(_requestMetaData, _responseMetaData))
             {
-                Connection connection = (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
+                Connection connection =
+                    (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
                 if (connection == null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("HTTP2 response #{}/{}: no upgrade connection, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+                        LOG.debug(
+                            "HTTP2 response #{}/{}: no upgrade connection, resetting stream",
+                            _stream.getId(),
+                            Integer.toHexString(_stream.getSession().hashCode()));
                     _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
                 }
                 else
@@ -622,7 +668,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 // If the stream is not closed, it is still reading the request content.
                 // Send a reset to the other end so that it stops sending data.
                 if (LOG.isDebugEnabled())
-                    LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+                    LOG.debug(
+                        "HTTP2 response #{}/{}: unconsumed request content, resetting stream",
+                        _stream.getId(),
+                        Integer.toHexString(_stream.getSession().hashCode()));
                 _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.NO_ERROR.code), Callback.NOOP);
             }
         }
@@ -635,7 +684,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? ErrorCode.NO_ERROR : ErrorCode.CANCEL_STREAM_ERROR;
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 response #{}/{} failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode, x);
+            LOG.debug(
+                "HTTP2 response #{}/{} failed {}",
+                _stream.getId(),
+                Integer.toHexString(_stream.getSession().hashCode()),
+                errorCode,
+                x);
         _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
     }
 

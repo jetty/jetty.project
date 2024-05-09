@@ -13,11 +13,6 @@
 
 package org.example;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnMessage;
@@ -25,6 +20,10 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @ServerEndpoint(value = "/jakarta.websocket/", subprotocols = {"chat"})
 public class JakartaWebSocketChat

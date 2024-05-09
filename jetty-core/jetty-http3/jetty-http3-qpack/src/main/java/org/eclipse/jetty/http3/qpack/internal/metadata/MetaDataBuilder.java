@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http3.qpack.internal.metadata;
 
+import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
+
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -23,8 +25,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.util.NanoTime;
-
-import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
 
 public class MetaDataBuilder
 {
@@ -88,7 +88,8 @@ public class MetaDataBuilder
         int fieldSize = name.length() + (value == null ? 0 : value.length());
         _size += fieldSize + 32;
         if (_maxSize > 0 && _size > _maxSize)
-            throw new QpackException.SessionException(QpackException.QPACK_DECOMPRESSION_FAILED, String.format("Header size %d > %d", _size, _maxSize));
+            throw new QpackException.SessionException(
+                QpackException.QPACK_DECOMPRESSION_FAILED, String.format("Header size %d > %d", _size, _maxSize));
 
         if (field instanceof StaticTableHttpField)
         {
@@ -209,7 +210,8 @@ public class MetaDataBuilder
 
     protected void streamException(String messageFormat, Object... args)
     {
-        QpackException.StreamException stream = new QpackException.StreamException(QpackException.QPACK_DECOMPRESSION_FAILED, String.format(messageFormat, args));
+        QpackException.StreamException stream = new QpackException.StreamException(
+            QpackException.QPACK_DECOMPRESSION_FAILED, String.format(messageFormat, args));
         if (_streamException == null)
             _streamException = stream;
         else

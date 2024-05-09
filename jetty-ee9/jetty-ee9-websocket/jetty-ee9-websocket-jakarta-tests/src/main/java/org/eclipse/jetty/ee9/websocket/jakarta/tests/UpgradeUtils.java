@@ -23,8 +23,11 @@ public class UpgradeUtils
         upgradeRequest.append("GET ");
         upgradeRequest.append(requestPath == null ? "/" : requestPath);
         upgradeRequest.append(" HTTP/1.1\r\n");
-        headers.entrySet().forEach(e ->
-            upgradeRequest.append(e.getKey()).append(": ").append(e.getValue()).append("\r\n"));
+        headers.entrySet().forEach(e -> upgradeRequest
+            .append(e.getKey())
+            .append(": ")
+            .append(e.getValue())
+            .append("\r\n"));
         upgradeRequest.append("\r\n");
         return upgradeRequest.toString();
     }

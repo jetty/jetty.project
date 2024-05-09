@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -21,7 +27,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.ContentResponse;
@@ -47,12 +52,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 // Sibling of ConnectionPoolTest, but using H2 to multiplex connections.
 public class MultiplexedConnectionPoolTest
 {
@@ -70,7 +69,8 @@ public class MultiplexedConnectionPoolTest
     private void startServer(Handler handler, int maxConcurrentStreams, long streamIdleTimeout) throws Exception
     {
         server = new Server();
-        HTTP2ServerConnectionFactory http2ServerConnectionFactory = new HTTP2ServerConnectionFactory(new HttpConfiguration());
+        HTTP2ServerConnectionFactory http2ServerConnectionFactory =
+            new HTTP2ServerConnectionFactory(new HttpConfiguration());
         http2ServerConnectionFactory.setMaxConcurrentStreams(maxConcurrentStreams);
         if (streamIdleTimeout > 0)
             http2ServerConnectionFactory.setStreamIdleTimeout(streamIdleTimeout);
@@ -108,35 +108,49 @@ public class MultiplexedConnectionPoolTest
         AtomicInteger poolCreateCounter = new AtomicInteger();
         AtomicInteger poolRemoveCounter = new AtomicInteger();
         AtomicReference<Pool<Connection>> poolRef = new AtomicReference<>();
-        ConnectionPoolFactory factory = new ConnectionPoolFactory("MaxDurationConnectionsWithMultiplexedPoolLifecycle", destination ->
-        {
-            int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            int initialMaxMultiplex = 10;
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, MultiplexConnectionPool.newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex)
+        ConnectionPoolFactory factory =
+            new ConnectionPoolFactory("MaxDurationConnectionsWithMultiplexedPoolLifecycle", destination ->
             {
-                @Override
-                protected void onCreated(Connection connection)
-                {
-                    poolCreateCounter.incrementAndGet();
-                }
+                int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
+                int initialMaxMultiplex = 10;
+                MultiplexConnectionPool connectionPool =
+                    new MultiplexConnectionPool(
+                        destination,
+                        () -> new ConcurrentPool<>(
+                            ConcurrentPool.StrategyType.FIRST,
+                            maxConnections,
+                            MultiplexConnectionPool.newMaxMultiplexer(initialMaxMultiplex)),
+                        initialMaxMultiplex)
+                    {
+                        @Override
+                        protected void onCreated(Connection connection)
+                        {
+                            poolCreateCounter.incrementAndGet();
+                        }
 
-                @Override
-                protected void onRemoved(Connection connection)
-                {
-                    poolRemoveCounter.incrementAndGet();
-                }
-            };
-            connectionPool.setMaxDuration(maxDuration);
-            LifeCycle.start(connectionPool);
-            @SuppressWarnings("unchecked")
-            Pool<Connection> pool = connectionPool.getBean(Pool.class);
-            poolRef.set(pool);
-            return connectionPool;
-        });
+                        @Override
+                        protected void onRemoved(Connection connection)
+                        {
+                            poolRemoveCounter.incrementAndGet();
+                        }
+                    };
+                connectionPool.setMaxDuration(maxDuration);
+                LifeCycle.start(connectionPool);
+                @SuppressWarnings("unchecked")
+                Pool<Connection> pool = connectionPool.getBean(Pool.class);
+                poolRef.set(pool);
+                return connectionPool;
+            });
 
-        CountDownLatch[] reqExecutingLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
-        CountDownLatch[] reqExecutedLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
-        CountDownLatch[] reqFinishingLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
+        CountDownLatch[] reqExecutingLatches =
+            new CountDownLatch[]
+            {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
+        CountDownLatch[] reqExecutedLatches =
+            new CountDownLatch[]
+            {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
+        CountDownLatch[] reqFinishingLatches =
+            new CountDownLatch[]
+            {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
         startServer(new Handler.Abstract()
         {
             @Override
@@ -160,7 +174,9 @@ public class MultiplexedConnectionPoolTest
         client = new HttpClient(transport);
         client.start();
 
-        CountDownLatch[] reqClientSuccessLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
+        CountDownLatch[] reqClientSuccessLatches =
+            new CountDownLatch[]
+            {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
 
         sendRequest(reqClientSuccessLatches, 0);
         // wait until handler is executing
@@ -217,20 +233,27 @@ public class MultiplexedConnectionPoolTest
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
             int initialMaxMultiplex = 10;
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, MultiplexConnectionPool.newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex)
-            {
-                @Override
-                protected void onCreated(Connection connection)
+            MultiplexConnectionPool connectionPool =
+                new MultiplexConnectionPool(
+                    destination,
+                    () -> new ConcurrentPool<>(
+                        ConcurrentPool.StrategyType.FIRST,
+                        maxConnections,
+                        MultiplexConnectionPool.newMaxMultiplexer(initialMaxMultiplex)),
+                    initialMaxMultiplex)
                 {
-                    poolCreateCounter.incrementAndGet();
-                }
+                    @Override
+                    protected void onCreated(Connection connection)
+                    {
+                        poolCreateCounter.incrementAndGet();
+                    }
 
-                @Override
-                protected void onRemoved(Connection connection)
-                {
-                    poolRemoveCounter.incrementAndGet();
-                }
-            };
+                    @Override
+                    protected void onRemoved(Connection connection)
+                    {
+                        poolRemoveCounter.incrementAndGet();
+                    }
+                };
             LifeCycle.start(connectionPool);
             @SuppressWarnings("unchecked")
             Pool<Connection> pool = connectionPool.getBean(Pool.class);
@@ -238,16 +261,20 @@ public class MultiplexedConnectionPoolTest
             return connectionPool;
         });
 
-        startServer(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
+        startServer(
+            new Handler.Abstract()
             {
-                int req = Integer.parseInt(Request.getPathInContext(request).substring(1));
-                Content.Sink.write(response, true, "req " + req + " executed", callback);
-                return true;
-            }
-        }, 64, 1L);
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    int req = Integer.parseInt(
+                        Request.getPathInContext(request).substring(1));
+                    Content.Sink.write(response, true, "req " + req + " executed", callback);
+                    return true;
+                }
+            },
+            64,
+            1L);
 
         ClientConnector clientConnector = new ClientConnector();
         HttpClientTransport transport = new HttpClientTransportOverHTTP2(new HTTP2Client(clientConnector));
@@ -279,7 +306,10 @@ public class MultiplexedConnectionPoolTest
         assertThat(counter.get(), is(100));
 
         // All remaining pooled connections should be in IDLE state.
-        await().atMost(5, TimeUnit.SECONDS).until(() -> poolRef.get().stream().filter(e -> !e.isIdle()).findAny().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> poolRef.get().stream()
+            .filter(e -> !e.isIdle())
+            .findAny()
+            .isEmpty());
     }
 
     @Test
@@ -289,30 +319,38 @@ public class MultiplexedConnectionPoolTest
         AtomicInteger poolCreateCounter = new AtomicInteger();
         AtomicInteger poolRemoveCounter = new AtomicInteger();
         AtomicReference<Pool<Connection>> poolRef = new AtomicReference<>();
-        ConnectionPoolFactory factory = new ConnectionPoolFactory("maxDurationConnectionsWithMultiplexedPool", destination ->
-        {
-            int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, MultiplexConnectionPool.newMaxMultiplexer(MAX_MULTIPLEX)), MAX_MULTIPLEX)
+        ConnectionPoolFactory factory =
+            new ConnectionPoolFactory("maxDurationConnectionsWithMultiplexedPool", destination ->
             {
-                @Override
-                protected void onCreated(Connection connection)
-                {
-                    poolCreateCounter.incrementAndGet();
-                }
+                int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
+                MultiplexConnectionPool connectionPool =
+                    new MultiplexConnectionPool(
+                        destination,
+                        () -> new ConcurrentPool<>(
+                            ConcurrentPool.StrategyType.FIRST,
+                            maxConnections,
+                            MultiplexConnectionPool.newMaxMultiplexer(MAX_MULTIPLEX)),
+                        MAX_MULTIPLEX)
+                    {
+                        @Override
+                        protected void onCreated(Connection connection)
+                        {
+                            poolCreateCounter.incrementAndGet();
+                        }
 
-                @Override
-                protected void onRemoved(Connection connection)
-                {
-                    poolRemoveCounter.incrementAndGet();
-                }
-            };
-            connectionPool.setMaxDuration(maxDuration);
-            LifeCycle.start(connectionPool);
-            @SuppressWarnings("unchecked")
-            Pool<Connection> pool = connectionPool.getBean(Pool.class);
-            poolRef.set(pool);
-            return connectionPool;
-        });
+                        @Override
+                        protected void onRemoved(Connection connection)
+                        {
+                            poolRemoveCounter.incrementAndGet();
+                        }
+                    };
+                connectionPool.setMaxDuration(maxDuration);
+                LifeCycle.start(connectionPool);
+                @SuppressWarnings("unchecked")
+                Pool<Connection> pool = connectionPool.getBean(Pool.class);
+                poolRef.set(pool);
+                return connectionPool;
+            });
 
         startServer(new Handler.Abstract()
         {
@@ -363,20 +401,27 @@ public class MultiplexedConnectionPoolTest
         ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
-            MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, MultiplexConnectionPool.newMaxMultiplexer(MAX_MULTIPLEX)), MAX_MULTIPLEX)
-            {
-                @Override
-                protected void onCreated(Connection connection)
+            MultiplexConnectionPool connectionPool =
+                new MultiplexConnectionPool(
+                    destination,
+                    () -> new ConcurrentPool<>(
+                        ConcurrentPool.StrategyType.FIRST,
+                        maxConnections,
+                        MultiplexConnectionPool.newMaxMultiplexer(MAX_MULTIPLEX)),
+                    MAX_MULTIPLEX)
                 {
-                    poolCreateCounter.incrementAndGet();
-                }
+                    @Override
+                    protected void onCreated(Connection connection)
+                    {
+                        poolCreateCounter.incrementAndGet();
+                    }
 
-                @Override
-                protected void onRemoved(Connection connection)
-                {
-                    poolRemoveCounter.incrementAndGet();
-                }
-            };
+                    @Override
+                    protected void onRemoved(Connection connection)
+                    {
+                        poolRemoveCounter.incrementAndGet();
+                    }
+                };
             connectionPool.setMaxDuration(maxDuration);
             LifeCycle.start(connectionPool);
             @SuppressWarnings("unchecked")
@@ -470,7 +515,7 @@ public class MultiplexedConnectionPoolTest
 
         // unblock 2nd request
         handlerWaitingSemaphore.release();
-        //wait until 2nd request finished
+        // wait until 2nd request finished
         assertTrue(latch2.await(5, TimeUnit.SECONDS));
 
         assertThat(poolRef.get().getInUseCount(), is(0));

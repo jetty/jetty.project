@@ -52,13 +52,11 @@ public class HotSwapHandler extends Handler.AbstractContainer implements Handler
     {
         // check state
         Server server1 = ((Singleton)this).getServer();
-        if (server1 != null && server1.isStarted() && handler != null &&
-            server1.getInvocationType() != Invocable.combine(server1.getInvocationType(), handler.getInvocationType()))
+        if (server1 != null && server1.isStarted() && handler != null && server1.getInvocationType() != Invocable.combine(server1.getInvocationType(), handler.getInvocationType()))
             throw new IllegalArgumentException("Cannot change invocation type of started server");
 
         // Check for loops.
-        if (handler == this || (handler instanceof Container container &&
-            container.getDescendants().contains(this)))
+        if (handler == this || (handler instanceof Container container && container.getDescendants().contains(this)))
             throw new IllegalStateException("setHandler loop");
 
         try

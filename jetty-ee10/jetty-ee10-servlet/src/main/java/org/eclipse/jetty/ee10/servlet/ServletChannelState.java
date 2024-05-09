@@ -13,15 +13,21 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION;
+import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
+import static jakarta.servlet.RequestDispatcher.ERROR_MESSAGE;
+import static jakarta.servlet.RequestDispatcher.ERROR_REQUEST_URI;
+import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
+import static jakarta.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
@@ -34,13 +40,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
-import static jakarta.servlet.RequestDispatcher.ERROR_MESSAGE;
-import static jakarta.servlet.RequestDispatcher.ERROR_REQUEST_URI;
-import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
-import static jakarta.servlet.RequestDispatcher.ERROR_STATUS_CODE;
-
 /**
  * holder of the state of request-response cycle.
  */
@@ -48,7 +47,8 @@ public class ServletChannelState
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannelState.class);
 
-    private static final long DEFAULT_TIMEOUT = Long.getLong("%s.DEFAULT_TIMEOUT".formatted(ServletChannelState.class.getName()), 30000L);
+    private static final long DEFAULT_TIMEOUT =
+        Long.getLong("%s.DEFAULT_TIMEOUT".formatted(ServletChannelState.class.getName()), 30000L);
 
     /*
      * The state of the ServletChannel,used to control the overall lifecycle.
@@ -62,11 +62,11 @@ public class ServletChannelState
      */
     public enum State
     {
-        IDLE,        // Idle request
-        HANDLING,    // Request dispatched to filter/servlet or Async IO callback
-        WAITING,     // Suspended and waiting
-        WOKEN,       // Dispatch to handle from ASYNC_WAIT
-        UPGRADED     // Request upgraded the connection
+        IDLE, // Idle request
+        HANDLING, // Request dispatched to filter/servlet or Async IO callback
+        WAITING, // Suspended and waiting
+        WOKEN, // Dispatch to handle from ASYNC_WAIT
+        UPGRADED // Request upgraded the connection
     }
 
     /*
@@ -90,15 +90,15 @@ public class ServletChannelState
      */
     private enum RequestState
     {
-        BLOCKING,    // Blocking request dispatched
-        ERRORING,    // Request passed to ErrorHandler (may execute Servlets)
-        ASYNC,       // AsyncContext.startAsync() has been called
-        DISPATCH,    // AsyncContext.dispatch() has been called
-        EXPIRE,      // AsyncContext timeout has happened
-        EXPIRING,    // AsyncListeners are being called
-        COMPLETE,    // AsyncContext.complete() has been called
-        COMPLETING,  // Request is being closed (maybe asynchronously)
-        COMPLETED    // Response is completed
+        BLOCKING, // Blocking request dispatched
+        ERRORING, // Request passed to ErrorHandler (may execute Servlets)
+        ASYNC, // AsyncContext.startAsync() has been called
+        DISPATCH, // AsyncContext.dispatch() has been called
+        EXPIRE, // AsyncContext timeout has happened
+        EXPIRING, // AsyncListeners are being called
+        COMPLETE, // AsyncContext.complete() has been called
+        COMPLETING, // Request is being closed (maybe asynchronously)
+        COMPLETED // Response is completed
     }
 
     /*
@@ -166,16 +166,16 @@ public class ServletChannelState
      */
     public enum Action
     {
-        DISPATCH,         // handle a normal request dispatch
-        ASYNC_DISPATCH,   // handle an async request dispatch
-        SEND_ERROR,       // Generate an error page or error dispatch
-        ASYNC_ERROR,      // handle an async error
-        ASYNC_TIMEOUT,    // call asyncContext onTimeout
-        WRITE_CALLBACK,   // handle an IO write callback
-        READ_CALLBACK,    // handle an IO read callback
-        COMPLETE,         // Complete the response by closing output
-        TERMINATED,       // No further actions
-        WAIT,             // Wait for further events
+        DISPATCH, // handle a normal request dispatch
+        ASYNC_DISPATCH, // handle an async request dispatch
+        SEND_ERROR, // Generate an error page or error dispatch
+        ASYNC_ERROR, // handle an async error
+        ASYNC_TIMEOUT, // call asyncContext onTimeout
+        WRITE_CALLBACK, // handle an IO write callback
+        READ_CALLBACK, // handle an IO read callback
+        COMPLETE, // Complete the response by closing output
+        TERMINATED, // No further actions
+        WAIT, // Wait for further events
     }
 
     private final AutoLock _lock = new AutoLock();
@@ -307,15 +307,13 @@ public class ServletChannelState
 
     private String toStringLocked()
     {
-        return String.format("%s@%x{%s}",
-            getClass().getSimpleName(),
-            hashCode(),
-            getStatusStringLocked());
+        return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), getStatusStringLocked());
     }
 
     private String getStatusStringLocked()
     {
-        return String.format("s=%s rs=%s os=%s is=%s awp=%b se=%b i=%b al=%d",
+        return String.format(
+            "s=%s rs=%s os=%s is=%s awp=%b se=%b i=%b al=%d",
             _state,
             _requestState,
             _outputState,
@@ -516,8 +514,11 @@ public class ServletChannelState
                     return Action.WRITE_CALLBACK;
                 }
 
-                Scheduler scheduler = _servletChannel.getServletContextRequest()
-                    .getConnectionMetaData().getConnector().getScheduler();
+                Scheduler scheduler = _servletChannel
+                    .getServletContextRequest()
+                    .getConnectionMetaData()
+                    .getConnector()
+                    .getScheduler();
                 if (scheduler != null && _timeoutMs > 0 && !_event.hasTimeoutTask())
                     _event.setTimeoutTask(scheduler.schedule(_event, _timeoutMs, TimeUnit.MILLISECONDS));
                 _state = State.WAITING;
@@ -1003,7 +1004,8 @@ public class ServletChannelState
 
     public void sendError(int code, String message)
     {
-        // This method is called by Response.sendError to organise for an error page to be generated when it is possible:
+        // This method is called by Response.sendError to organise for an error page to be generated when it is
+        // possible:
         //  + The response is reset and temporarily closed.
         //  + The details of the error are saved as request attributes
         //  + The _sendError boolean is set to true so that an ERROR_DISPATCH action will be generated:
@@ -1039,7 +1041,8 @@ public class ServletChannelState
             response.setStatus(code);
             servletContextRequest.errorClose();
 
-            request.setAttribute(org.eclipse.jetty.ee10.servlet.ErrorHandler.ERROR_CONTEXT, servletContextRequest.getErrorContext());
+            request.setAttribute(
+                org.eclipse.jetty.ee10.servlet.ErrorHandler.ERROR_CONTEXT, servletContextRequest.getErrorContext());
             request.setAttribute(ERROR_REQUEST_URI, httpServletRequest.getRequestURI());
             request.setAttribute(ERROR_SERVLET_NAME, servletContextRequest.getServletName());
             request.setAttribute(ERROR_STATUS_CODE, code);

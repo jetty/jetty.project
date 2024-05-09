@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -24,9 +27,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class TerminatingPatternRuleTest extends AbstractRuleTest
 {
@@ -56,7 +56,7 @@ public class TerminatingPatternRuleTest extends AbstractRuleTest
         String request = """
             GET /login.jsp HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -65,14 +65,16 @@ public class TerminatingPatternRuleTest extends AbstractRuleTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/login.do", "/login/"})
+    @ValueSource(strings =
+    {"/login.do", "/login/"})
     public void testNonTerminating(String uri) throws Exception
     {
-        String request = """
-            GET $U HTTP/1.1
-            Host: localhost
-                        
-            """.replace("$U", uri);
+        String request =
+            """
+                GET $U HTTP/1.1
+                Host: localhost
+
+                """.replace("$U", uri);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());

@@ -14,7 +14,6 @@
 module org.eclipse.jetty.alpn.server
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.server;
 
     exports org.eclipse.jetty.alpn.server;

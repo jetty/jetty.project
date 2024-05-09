@@ -13,11 +13,10 @@
 
 package examples;
 
+import jakarta.websocket.ClientEndpointConfig;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.websocket.ClientEndpointConfig;
 
 /**
  * Provide a means to set the `Origin` header for outgoing WebSocket upgrade requests

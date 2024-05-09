@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.Extension;
+import jakarta.websocket.MessageHandler;
+import jakarta.websocket.RemoteEndpoint.Async;
+import jakarta.websocket.RemoteEndpoint.Basic;
+import jakarta.websocket.Session;
+import jakarta.websocket.WebSocketContainer;
 import java.net.URI;
 import java.security.Principal;
 import java.time.Duration;
@@ -24,15 +32,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import jakarta.websocket.CloseReason;
-import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.Extension;
-import jakarta.websocket.MessageHandler;
-import jakarta.websocket.RemoteEndpoint.Async;
-import jakarta.websocket.RemoteEndpoint.Basic;
-import jakarta.websocket.Session;
-import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.util.Callback;
@@ -62,7 +61,8 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
     private JakartaWebSocketAsyncRemote asyncRemote;
     private JakartaWebSocketBasicRemote basicRemote;
 
-    public JakartaWebSocketSession(JakartaWebSocketContainer container,
+    public JakartaWebSocketSession(
+                                   JakartaWebSocketContainer container,
                                    CoreSession coreSession,
                                    JakartaWebSocketFrameHandler frameHandler,
                                    EndpointConfig endpointConfig)
@@ -161,7 +161,8 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
         if (!added)
         {
             // Should not be possible
-            throw new IllegalStateException("Not a recognized " + MessageHandler.class.getName() + " type: " + handler.getClass());
+            throw new IllegalStateException(
+                "Not a recognized " + MessageHandler.class.getName() + " type: " + handler.getClass());
         }
     }
 
@@ -412,7 +413,8 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
 
         if ((negotiatedExtensions == null) && extensions != null)
         {
-            negotiatedExtensions = extensions.stream().map(JakartaWebSocketExtension::new).collect(Collectors.toList());
+            negotiatedExtensions =
+                extensions.stream().map(JakartaWebSocketExtension::new).collect(Collectors.toList());
         }
         return negotiatedExtensions;
     }
@@ -564,7 +566,8 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s,%s]", this.getClass().getSimpleName(), this.hashCode(),
-            coreSession.getBehavior(), frameHandler);
+        return String.format(
+            "%s@%x[%s,%s]",
+            this.getClass().getSimpleName(), this.hashCode(), coreSession.getBehavior(), frameHandler);
     }
 }

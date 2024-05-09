@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.webapp;
 
 import java.util.Map;
-
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -37,7 +36,7 @@ public class FragmentConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
-        //add all discovered web-fragment.xmls
+        // add all discovered web-fragment.xmls
         addWebFragments(context, context.getMetaData());
     }
 

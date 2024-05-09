@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test behavior of Parser when encountering good / valid close status codes (per RFC6455)
@@ -51,8 +50,7 @@ public class ParserGoodCloseStatusCodesTest
             Arguments.of(3000, "Autobahn Server Testcase 7.7.10"),
             Arguments.of(3099, "Autobahn Server Testcase 7.7.11"),
             Arguments.of(4000, "Autobahn Server Testcase 7.7.12"),
-            Arguments.of(4099, "Autobahn Server Testcase 7.7.13")
-        );
+            Arguments.of(4099, "Autobahn Server Testcase 7.7.13"));
     }
 
     @ParameterizedTest(name = "closeCode={0} {1}")

@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.generator;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;

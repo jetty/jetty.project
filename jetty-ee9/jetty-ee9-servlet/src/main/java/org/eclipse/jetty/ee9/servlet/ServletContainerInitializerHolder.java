@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -20,10 +23,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import jakarta.servlet.ServletContainerInitializer;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.NanoTime;
@@ -39,13 +38,14 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
     private static final Logger LOG = LoggerFactory.getLogger(ServletContainerInitializerHolder.class);
     protected Set<String> _startupClassNames = new HashSet<>();
     protected Set<Class<?>> _startupClasses = new HashSet<>();
-    public static final Pattern __pattern = Pattern.compile("ContainerInitializer\\{([^,]*),interested=(\\[[^\\]]*\\])(,applicable=(\\[[^\\]]*\\]))?(,annotated=(\\[[^\\]]*\\]))?\\}");
+    public static final Pattern __pattern = Pattern.compile(
+        "ContainerInitializer\\{([^,]*),interested=(\\[[^\\]]*\\])(,applicable=(\\[[^\\]]*\\]))?(,annotated=(\\[[^\\]]*\\]))?\\}");
 
     protected ServletContainerInitializerHolder(Source source)
     {
         super(source);
     }
-    
+
     public ServletContainerInitializerHolder()
     {
         this(Source.EMBEDDED);
@@ -56,20 +56,22 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         super(Source.EMBEDDED);
         setHeldClass(sciClass);
     }
-    
-    public ServletContainerInitializerHolder(Class<? extends ServletContainerInitializer> sciClass, Class<?>... startupClasses)
+
+    public ServletContainerInitializerHolder(
+                                             Class<? extends ServletContainerInitializer> sciClass, Class<?>... startupClasses)
     {
         super(Source.EMBEDDED);
         setHeldClass(sciClass);
         _startupClasses.addAll(Arrays.asList(startupClasses));
     }
-    
+
     public ServletContainerInitializerHolder(ServletContainerInitializer sci, Class<?>... startupClasses)
     {
         this(Source.EMBEDDED, sci, startupClasses);
     }
 
-    public ServletContainerInitializerHolder(Source source, ServletContainerInitializer sci, Class<?>... startupClasses)
+    public ServletContainerInitializerHolder(
+                                             Source source, ServletContainerInitializer sci, Class<?>... startupClasses)
     {
         super(source);
         setInstance(sci);
@@ -100,7 +102,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         Set<Class<?>> classes = new HashSet<>();
         for (String name : _startupClassNames)
         {
-            classes.add(Loader.loadClass(name)); //TODO catch CNFE?
+            classes.add(Loader.loadClass(name)); // TODO catch CNFE?
         }
         return classes;
     }
@@ -108,30 +110,30 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
     @Override
     public void doStart() throws Exception
     {
-        //Ensure all startup classes are also loaded     
+        // Ensure all startup classes are also loaded
         Set<Class<?>> classes = new HashSet<>(_startupClasses);
 
-        //Ensure SCI class is loaded
+        // Ensure SCI class is loaded
         super.doStart();
 
-        //load all classnames
+        // load all classnames
         classes.addAll(resolveStartupClasses());
 
         ContextHandler.APIContext ctx = null;
         if (getServletHandler() != null)
         {
-            ctx = getServletHandler().getServletContextHandler().getServletContext();    
+            ctx = getServletHandler().getServletContextHandler().getServletContext();
         }
-        
+
         if (ctx == null && ContextHandler.getCurrentContext() != null)
             ctx = ContextHandler.getCurrentContext();
         if (ctx == null)
             throw new IllegalStateException("No Context");
-        
+
         ServletContainerInitializer initializer = getInstance();
         if (initializer == null)
         {
-            //create an instance of the SCI
+            // create an instance of the SCI
             initializer = createInstance();
             initializer = wrap(initializer, WrapFunction.class, WrapFunction::wrapServletContainerInitializer);
         }
@@ -154,13 +156,13 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
             ctx.setExtendedListenerTypes(false);
         }
     }
-    
+
     /**
      * Re-inflate a stringified ServletContainerInitializerHolder.
-     * 
+     *
      * @param loader the classloader to use to load the startup classes
      * @param string the stringified representation of the ServletContainerInitializerHolder
-     * 
+     *
      * @return a new ServletContainerInitializerHolder instance populated by the info in the string
      */
     public static ServletContainerInitializerHolder fromString(ClassLoader loader, String string)
@@ -172,28 +174,29 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
 
         try
         {
-            //load the ServletContainerInitializer and create an instance
+            // load the ServletContainerInitializer and create an instance
             String sciClassname = m.group(1);
             ServletContainerInitializer sci = (ServletContainerInitializer)loader.loadClass(sciClassname).getDeclaredConstructor().newInstance();
-            ServletContainerInitializerHolder holder = new ServletContainerInitializerHolder(new Source(Source.Origin.ANNOTATION, sciClassname));
+            ServletContainerInitializerHolder holder =
+                new ServletContainerInitializerHolder(new Source(Source.Origin.ANNOTATION, sciClassname));
             holder.setInstance(sci);
-            
-            //ensure all classes to be passed to onStartup are resolved
+
+            // ensure all classes to be passed to onStartup are resolved
             Set<Class<?>> classes = new HashSet<>();
             String[] classnames = StringUtil.arrayFromString(m.group(2));
-            for (String name:classnames)
+            for (String name : classnames)
                 classes.add(loader.loadClass(name));
-            
+
             classnames = StringUtil.arrayFromString(m.group(4));
-            for (String name:classnames)
+            for (String name : classnames)
                 classes.add(loader.loadClass(name));
 
             classnames = StringUtil.arrayFromString(m.group(6));
-            for (String name:classnames)
+            for (String name : classnames)
                 classes.add(loader.loadClass(name));
-            
+
             holder.addStartupClasses(classes.toArray(new Class<?>[0]));
-            
+
             return holder;
         }
         catch (Exception e)
@@ -201,14 +204,16 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
             throw new IllegalArgumentException(string, e);
         }
     }
-    
+
     @Override
     public String toString()
     {
         Set<String> interested = new HashSet<>(_startupClassNames);
         _startupClasses.forEach((c) -> interested.add(c.getName()));
-        //for backward compatibility the old output format must be retained
-        return String.format("ContainerInitializer{%s,interested=%s,applicable=%s,annotated=%s}", getClassName(), interested, Collections.emptySet(), Collections.emptySet());
+        // for backward compatibility the old output format must be retained
+        return String.format(
+            "ContainerInitializer{%s,interested=%s,applicable=%s,annotated=%s}",
+            getClassName(), interested, Collections.emptySet(), Collections.emptySet());
     }
 
     /**
@@ -229,7 +234,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
          */
         ServletContainerInitializer wrapServletContainerInitializer(ServletContainerInitializer sci);
     }
-    
+
     public static class Wrapper implements ServletContainerInitializer, Wrapped<ServletContainerInitializer>
     {
         private final ServletContainerInitializer _wrappedSCI;
@@ -250,7 +255,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         {
             _wrappedSCI.onStartup(c, ctx);
         }
-        
+
         @Override
         public String toString()
         {

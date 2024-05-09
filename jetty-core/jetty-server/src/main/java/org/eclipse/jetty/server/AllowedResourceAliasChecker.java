@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -96,7 +95,11 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         }
         catch (Throwable t)
         {
-            LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _baseResource, t);
+            LOG.warn(
+                "Base resource failure ({} is disabled): {}",
+                this.getClass().getName(),
+                _baseResource,
+                t);
             _baseResource = null;
         }
     }
@@ -110,7 +113,8 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
     @Override
     protected void doStart() throws Exception
     {
-        // We can only initialize if ContextHandler in started state, the baseResource can be changed even in starting state.
+        // We can only initialize if ContextHandler in started state, the baseResource can be changed even in starting
+        // state.
         // If the ContextHandler is not started add a listener to delay initialization until fully started.
         if (_contextHandler.isStarted())
             initialize();
@@ -266,7 +270,8 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
     public String toString()
     {
         String[] protectedTargets = getProtectedTargets();
-        return String.format("%s@%x{base=%s,protected=%s}",
+        return String.format(
+            "%s@%x{base=%s,protected=%s}",
             this.getClass().getSimpleName(),
             hashCode(),
             _baseResource,

@@ -13,11 +13,17 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.ServletContext;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
@@ -28,13 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class TempDirTest
@@ -48,7 +47,8 @@ public class TempDirTest
      * Test ServletContext.TEMPDIR as valid directory with types File, String and Path.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"File", "String", "Path"})
+    @ValueSource(strings =
+    {"File", "String", "Path"})
     public void attributeWithValidDirectory(String type, WorkDir workDir) throws Exception
     {
         Path jettyBase = workDir.getEmptyPathDir();
@@ -74,7 +74,8 @@ public class TempDirTest
      * ServletContext.TEMPDIR as File to a non existent directory.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"File", "String", "Path"})
+    @ValueSource(strings =
+    {"File", "String", "Path"})
     public void attributeWithNonExistentDirectory(String type, WorkDir workDir) throws Exception
     {
         Path jettyBase = workDir.getEmptyPathDir();

@@ -13,12 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.Locale;
-
-import org.eclipse.jetty.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ATTRIBUTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ATTRIBUTE_VALUES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
@@ -28,6 +22,11 @@ import static org.eclipse.jetty.http.CookieCompliance.Violation.INVALID_COOKIES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.OPTIONAL_WHITE_SPACE;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.SPACE_IN_VALUES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN_QUOTES;
+
+import java.util.Locale;
+import org.eclipse.jetty.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Cookie parser
@@ -40,7 +39,10 @@ public class RFC6265CookieParser implements CookieParser
     private final CookieCompliance _complianceMode;
     private final ComplianceViolation.Listener _complianceListener;
 
-    protected RFC6265CookieParser(CookieParser.Handler handler, CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    protected RFC6265CookieParser(
+                                  CookieParser.Handler handler,
+                                  CookieCompliance compliance,
+                                  ComplianceViolation.Listener complianceListener)
     {
         _handler = handler;
         _complianceMode = compliance;
@@ -88,7 +90,7 @@ public class RFC6265CookieParser implements CookieParser
             if (token == null)
             {
                 if (!_complianceMode.allows(INVALID_COOKIES))
-                     throw new InvalidCookieException("Invalid Cookie character");
+                    throw new InvalidCookieException("Invalid Cookie character");
                 state = State.INVALID_COOKIE;
                 continue;
             }
@@ -105,7 +107,8 @@ public class RFC6265CookieParser implements CookieParser
                     {
                         if (!StringUtil.isBlank(cookieName) && !(c == '$' && (_complianceMode.allows(ATTRIBUTES) || _complianceMode.allows(ATTRIBUTE_VALUES))))
                         {
-                            _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
+                            _handler.addCookie(
+                                cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
                             cookieName = null;
                             cookieValue = null;
                             cookieDomain = null;
@@ -444,7 +447,7 @@ public class RFC6265CookieParser implements CookieParser
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
         if (_complianceListener != null)
-            _complianceListener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
+            _complianceListener.onComplianceViolation(
+                new ComplianceViolation.Event(_complianceMode, violation, reason));
     }
-
 }

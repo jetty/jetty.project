@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.BooleanSupplier;
 import java.util.function.UnaryOperator;
-
 import org.eclipse.jetty.http3.Grease;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.FrameType;
@@ -61,7 +60,8 @@ public class MessageParser
     {
         ParserListener listener = wrapper.apply(this.listener);
         this.bodyParsers[FrameType.DATA.type()] = new DataBodyParser(headerParser, listener, streamId, isLast);
-        this.bodyParsers[FrameType.HEADERS.type()] = new HeadersBodyParser(headerParser, listener, decoder, streamId, isLast);
+        this.bodyParsers[FrameType.HEADERS.type()] =
+            new HeadersBodyParser(headerParser, listener, decoder, streamId, isLast);
         this.bodyParsers[FrameType.PUSH_PROMISE.type()] = new PushPromiseBodyParser(headerParser, listener);
         this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
     }
@@ -146,14 +146,23 @@ public class MessageParser
                             {
                                 // SPEC: control frames on a message stream are invalid.
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("invalid control frame type {} on message stream", Long.toHexString(frameType));
-                                sessionFailure(buffer, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type", new IOException("invalid control frame in message stream"));
+                                    LOG.debug(
+                                        "invalid control frame type {} on message stream",
+                                        Long.toHexString(frameType));
+                                sessionFailure(
+                                    buffer,
+                                    HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(),
+                                    "invalid_frame_type",
+                                    new IOException("invalid control frame in message stream"));
                                 return Result.NO_FRAME;
                             }
 
                             // SPEC: grease and unknown frame types are ignored.
                             if (LOG.isDebugEnabled())
-                                LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
+                                LOG.debug(
+                                    "ignoring {} frame type {}",
+                                    Grease.isGreaseValue(frameType) ? "grease" : "unknown",
+                                    Long.toHexString(frameType));
 
                             BodyParser.Result result = unknownBodyParser.parse(buffer);
                             if (result == BodyParser.Result.NO_FRAME)
@@ -169,7 +178,10 @@ public class MessageParser
                             {
                                 bodyParser.emptyBody(buffer);
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+                                    LOG.debug(
+                                        "parsed {} empty frame body from {}",
+                                        FrameType.from(frameType),
+                                        BufferUtil.toDetailString(buffer));
                                 reset();
                                 return Result.FRAME;
                             }
@@ -177,7 +189,11 @@ public class MessageParser
                             {
                                 BodyParser.Result result = bodyParser.parse(buffer);
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("parsed {} {} body from {}", result, FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+                                    LOG.debug(
+                                        "parsed {} {} body from {}",
+                                        result,
+                                        FrameType.from(frameType),
+                                        BufferUtil.toDetailString(buffer));
 
                                 // Not enough bytes, there is no frame.
                                 if (result == BodyParser.Result.NO_FRAME)
@@ -240,6 +256,7 @@ public class MessageParser
 
     private enum State
     {
-        HEADER, BODY
+        HEADER,
+        BODY
     }
 }

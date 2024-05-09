@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.demos;
 
 import java.lang.management.ManagementFactory;
-
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -29,8 +28,7 @@ public class ManyServletContexts
         Server server = new Server(port);
 
         // Setup JMX
-        MBeanContainer mbContainer = new MBeanContainer(
-            ManagementFactory.getPlatformMBeanServer());
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer, true);
 
         // Declare server handler collection
@@ -38,8 +36,7 @@ public class ManyServletContexts
         server.setHandler(contexts);
 
         // Configure context "/" (root) for servlets
-        ServletContextHandler root = new ServletContextHandler("/",
-            ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
         contexts.addHandler(root);
         // Add servlets to root context
         root.addServlet(new ServletHolder(new HelloServlet("Hello")), "/");

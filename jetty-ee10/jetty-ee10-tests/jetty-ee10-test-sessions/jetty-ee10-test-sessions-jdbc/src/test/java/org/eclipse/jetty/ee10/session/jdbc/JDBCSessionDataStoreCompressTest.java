@@ -61,8 +61,7 @@ public class JDBCSessionDataStoreCompressTest extends AbstractSessionDataStoreTe
     }
 
     @Override
-    public void persistSession(SessionData data)
-        throws Exception
+    public void persistSession(SessionData data) throws Exception
     {
         JdbcTestHelper.insertSession(data, sessionTableName, COMPRESS);
     }
@@ -70,12 +69,21 @@ public class JDBCSessionDataStoreCompressTest extends AbstractSessionDataStoreTe
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        JdbcTestHelper.insertUnreadableSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(),
-            data.getCreated(), data.getAccessed(), data.getLastAccessed(),
-            data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(),
-            data.getLastSaved(), sessionTableName);
+        JdbcTestHelper.insertUnreadableSession(
+            data.getId(),
+            data.getContextPath(),
+            data.getVhost(),
+            data.getLastNode(),
+            data.getCreated(),
+            data.getAccessed(),
+            data.getLastAccessed(),
+            data.getMaxInactiveMs(),
+            data.getExpiry(),
+            data.getCookieSet(),
+            data.getLastSaved(),
+            sessionTableName);
     }
-    
+
     @Test
     public void testCleanOrphans() throws Exception
     {
@@ -111,9 +119,9 @@ public class JDBCSessionDataStoreCompressTest extends AbstractSessionDataStoreTe
 
         SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
-        //persist a session that has an unserializable attribute
+        // persist a session that has an unserializable attribute
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("xxx999", 100, now, now - 1, -1); //never expires
+        SessionData data = store.newSessionData("xxx999", 100, now, now - 1, -1); // never expires
         data.setLastNode(_sessionIdManager.getWorkerName());
         data.setAttribute("bad", new NonSerializable());
 

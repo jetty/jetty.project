@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.http3.qpack;
 
+import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECODER_STREAM_ERROR;
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_ERROR;
+
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -21,7 +25,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MetaData;
@@ -44,48 +47,39 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
-import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECODER_STREAM_ERROR;
-import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_ERROR;
-
 public class QpackEncoder implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(QpackEncoder.class);
 
-    public static final EnumSet<HttpHeader> DO_NOT_HUFFMAN =
-        EnumSet.of(
-            HttpHeader.AUTHORIZATION,
-            HttpHeader.CONTENT_MD5,
-            HttpHeader.PROXY_AUTHENTICATE,
-            HttpHeader.PROXY_AUTHORIZATION);
+    public static final EnumSet<HttpHeader> DO_NOT_HUFFMAN = EnumSet.of(
+        HttpHeader.AUTHORIZATION,
+        HttpHeader.CONTENT_MD5,
+        HttpHeader.PROXY_AUTHENTICATE,
+        HttpHeader.PROXY_AUTHORIZATION);
 
-    public static final EnumSet<HttpHeader> DO_NOT_INDEX =
-        EnumSet.of(
-            // HttpHeader.C_PATH,  // TODO more data needed
-            // HttpHeader.DATE,    // TODO more data needed
-            HttpHeader.AUTHORIZATION,
-            HttpHeader.CONTENT_MD5,
-            HttpHeader.CONTENT_RANGE,
-            HttpHeader.ETAG,
-            HttpHeader.IF_MODIFIED_SINCE,
-            HttpHeader.IF_UNMODIFIED_SINCE,
-            HttpHeader.IF_NONE_MATCH,
-            HttpHeader.IF_RANGE,
-            HttpHeader.IF_MATCH,
-            HttpHeader.LOCATION,
-            HttpHeader.RANGE,
-            HttpHeader.RETRY_AFTER,
-            // HttpHeader.EXPIRES,
-            HttpHeader.LAST_MODIFIED,
-            HttpHeader.SET_COOKIE,
-            HttpHeader.SET_COOKIE2);
+    public static final EnumSet<HttpHeader> DO_NOT_INDEX = EnumSet.of(
+        // HttpHeader.C_PATH,  // TODO more data needed
+        // HttpHeader.DATE,    // TODO more data needed
+        HttpHeader.AUTHORIZATION,
+        HttpHeader.CONTENT_MD5,
+        HttpHeader.CONTENT_RANGE,
+        HttpHeader.ETAG,
+        HttpHeader.IF_MODIFIED_SINCE,
+        HttpHeader.IF_UNMODIFIED_SINCE,
+        HttpHeader.IF_NONE_MATCH,
+        HttpHeader.IF_RANGE,
+        HttpHeader.IF_MATCH,
+        HttpHeader.LOCATION,
+        HttpHeader.RANGE,
+        HttpHeader.RETRY_AFTER,
+        // HttpHeader.EXPIRES,
+        HttpHeader.LAST_MODIFIED,
+        HttpHeader.SET_COOKIE,
+        HttpHeader.SET_COOKIE2);
 
     // TODO: why do we need this?
     public static final EnumSet<HttpHeader> NEVER_INDEX =
-        EnumSet.of(
-            HttpHeader.AUTHORIZATION,
-            HttpHeader.SET_COOKIE,
-            HttpHeader.SET_COOKIE2);
+        EnumSet.of(HttpHeader.AUTHORIZATION, HttpHeader.SET_COOKIE, HttpHeader.SET_COOKIE2);
 
     private final AutoLock lock = new AutoLock();
     private final List<Instruction> _instructions = new ArrayList<>();
@@ -201,7 +195,8 @@ public class QpackEncoder implements Dumpable
                     String name = field.getName();
                     char firstChar = name.charAt(0);
                     if (firstChar <= ' ')
-                        throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, String.format("Invalid header name: '%s'", name));
+                        throw new QpackException.StreamException(
+                            H3_GENERAL_PROTOCOL_ERROR, String.format("Invalid header name: '%s'", name));
                 }
             }
 
@@ -209,8 +204,10 @@ public class QpackEncoder implements Dumpable
             DynamicTable dynamicTable = _context.getDynamicTable();
 
             // We need to remember what fields were referenced for each stream for multiple reasons:
-            //  1. We can only (potentially) block up to SETTINGS_QPACK_BLOCKED_STREAMS by referencing entries which may not have arrived.
-            //  2. We need to remember reference counts to each entry which are then acknowledged by the remote decoder, this
+            //  1. We can only (potentially) block up to SETTINGS_QPACK_BLOCKED_STREAMS by referencing entries which may
+            // not have arrived.
+            //  2. We need to remember reference counts to each entry which are then acknowledged by the remote decoder,
+            // this
             //     allows us to know when we can evict an entry (when it has no un-acknowledged references).
             StreamInfo streamInfo = _streamInfoMap.get(streamId);
             if (streamInfo == null)
@@ -264,7 +261,8 @@ public class QpackEncoder implements Dumpable
             }
             catch (BufferOverflowException e)
             {
-                // TODO: We have already added to the dynamic table so we need to send the instructions to maintain correct state.
+                // TODO: We have already added to the dynamic table so we need to send the instructions to maintain
+                // correct state.
                 //  Can we prevent adding to the table until we know the buffer has enough space?
                 notifyInstructionHandler();
                 streamInfo.remove(sectionInfo);
@@ -345,7 +343,8 @@ public class QpackEncoder implements Dumpable
             {
                 int index = _context.indexOf(nameEntry);
                 dynamicTable.add(new Entry(field));
-                _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
+                _instructions.add(
+                    new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
                 notifyInstructionHandler();
                 return true;
             }
@@ -427,7 +426,8 @@ public class QpackEncoder implements Dumpable
                 int index = _context.indexOf(nameEntry);
                 Entry newEntry = new Entry(field);
                 dynamicTable.add(newEntry);
-                _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
+                _instructions.add(
+                    new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
 
                 // Should we reference this entry and risk blocking.
                 if (referenceEntry(newEntry, streamInfo))
@@ -568,7 +568,8 @@ public class QpackEncoder implements Dumpable
 
             int insertCount = _context.getDynamicTable().getInsertCount();
             if (_knownInsertCount + increment > insertCount)
-                throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "KnownInsertCount incremented over InsertCount");
+                throw new QpackException.SessionException(
+                    QPACK_ENCODER_STREAM_ERROR, "KnownInsertCount incremented over InsertCount");
             _knownInsertCount += increment;
         }
     }

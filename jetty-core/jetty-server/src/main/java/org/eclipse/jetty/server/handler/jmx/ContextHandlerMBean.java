@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler.jmx;
 
 import java.util.Map;
 import java.util.TreeMap;
-
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.jmx.Handler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -48,13 +47,17 @@ public class ContextHandlerMBean extends Handler.AbstractMBean
     }
 
     @ManagedOperation(value = "Set context attribute", impact = "ACTION")
-    public void setContextAttribute(@Name(value = "name", description = "attribute name") String name, @Name(value = "value", description = "attribute value") Object value)
+    public void setContextAttribute(
+                                    @Name(value = "name", description = "attribute name") String name,
+                                    @Name(value = "value", description = "attribute value") Object value)
     {
         getManagedObject().getContext().setAttribute(name, value);
     }
 
     @ManagedOperation(value = "Set context attribute", impact = "ACTION")
-    public void setContextAttribute(@Name(value = "name", description = "attribute name") String name, @Name(value = "value", description = "attribute value") String value)
+    public void setContextAttribute(
+                                    @Name(value = "name", description = "attribute name") String name,
+                                    @Name(value = "value", description = "attribute value") String value)
     {
         getManagedObject().getContext().setAttribute(name, value);
     }

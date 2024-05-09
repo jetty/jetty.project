@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,7 +179,8 @@ public class RegexPathSpec extends AbstractPathSpec
                             String forbiddenReason = FORBIDDEN_ESCAPED.get(c);
                             if (forbiddenReason != null)
                             {
-                                throw new IllegalArgumentException(String.format("%s does not support \\%c (%s) for \"%s\"",
+                                throw new IllegalArgumentException(String.format(
+                                    "%s does not support \\%c (%s) for \"%s\"",
                                     this.getClass().getSimpleName(), c, forbiddenReason, declaration));
                             }
                             switch (c)
@@ -229,8 +229,7 @@ public class RegexPathSpec extends AbstractPathSpec
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Creating RegexPathSpec[{}] (signature: [{}], group: {})",
-                _declaration, sig, _group);
+            LOG.debug("Creating RegexPathSpec[{}] (signature: [{}], group: {})", _declaration, sig, _group);
         }
     }
 
@@ -344,7 +343,6 @@ public class RegexPathSpec extends AbstractPathSpec
         {
             int groupCount = matcher.groupCount();
 
-
             if (groupCount == 0)
             {
                 pathMatch = path;
@@ -363,8 +361,7 @@ public class RegexPathSpec extends AbstractPathSpec
 
                     // If split on pathMatch ends with '/'
                     // AND pathInfo doesn't have one, move the slash to pathInfo only move 1 level
-                    if (pathMatch.length() > 0 && pathMatch.charAt(pathMatch.length() - 1) == '/' &&
-                        !pathInfo.startsWith("/"))
+                    if (pathMatch.length() > 0 && pathMatch.charAt(pathMatch.length() - 1) == '/' && !pathInfo.startsWith("/"))
                     {
                         pathMatch = pathMatch.substring(0, pathMatch.length() - 1);
                         pathInfo = '/' + pathInfo;
@@ -379,8 +376,7 @@ public class RegexPathSpec extends AbstractPathSpec
                     pathMatch = path.substring(0, idx);
                     pathInfo = path.substring(idx);
 
-                    if (pathMatch.length() > 0 && pathMatch.charAt(pathMatch.length() - 1) == '/' &&
-                        !pathInfo.startsWith("/"))
+                    if (pathMatch.length() > 0 && pathMatch.charAt(pathMatch.length() - 1) == '/' && !pathInfo.startsWith("/"))
                     {
                         pathMatch = pathMatch.substring(0, pathMatch.length() - 1);
                         pathInfo = '/' + pathInfo;
@@ -445,10 +441,7 @@ public class RegexPathSpec extends AbstractPathSpec
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[" +
-                "pathSpec=" + pathSpec +
-                ", path=\"" + path + "\"" +
-                ']';
+            return getClass().getSimpleName() + "[" + "pathSpec=" + pathSpec + ", path=\"" + path + "\"" + ']';
         }
     }
 }

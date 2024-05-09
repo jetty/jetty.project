@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.EventListener;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
@@ -64,12 +63,14 @@ public class QuicServerConnector extends AbstractNetworkConnector
      * @deprecated use {@link #QuicServerConnector(Server, ServerQuicConfiguration, ConnectionFactory...)} instead
      */
     @Deprecated(since = "12.0.7", forRemoval = true)
-    public QuicServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    public QuicServerConnector(
+                               Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
         this(server, new ServerQuicConfiguration(sslContextFactory, null), factories);
     }
 
-    public QuicServerConnector(Server server, ServerQuicConfiguration quicConfiguration, ConnectionFactory... factories)
+    public QuicServerConnector(
+                               Server server, ServerQuicConfiguration quicConfiguration, ConnectionFactory... factories)
     {
         this(server, null, null, null, quicConfiguration, factories);
     }
@@ -84,12 +85,24 @@ public class QuicServerConnector extends AbstractNetworkConnector
      * @deprecated use {@link #QuicServerConnector(Server, Executor, Scheduler, ByteBufferPool, ServerQuicConfiguration, ConnectionFactory...)} instead
      */
     @Deprecated(since = "12.0.7", forRemoval = true)
-    public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    public QuicServerConnector(
+                               Server server,
+                               Executor executor,
+                               Scheduler scheduler,
+                               ByteBufferPool bufferPool,
+                               SslContextFactory.Server sslContextFactory,
+                               ConnectionFactory... factories)
     {
         this(server, executor, scheduler, bufferPool, new ServerQuicConfiguration(sslContextFactory, null), factories);
     }
 
-    public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, ServerQuicConfiguration quicConfiguration, ConnectionFactory... factories)
+    public QuicServerConnector(
+                               Server server,
+                               Executor executor,
+                               Scheduler scheduler,
+                               ByteBufferPool bufferPool,
+                               ServerQuicConfiguration quicConfiguration,
+                               ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, 0, factories);
         this.selectorManager = new ServerDatagramSelectorManager(getExecutor(), getScheduler(), 1);
@@ -203,7 +216,8 @@ public class QuicServerConnector extends AbstractNetworkConnector
 
     protected DatagramChannel openDatagramChannel() throws IOException
     {
-        InetSocketAddress bindAddress = getHost() == null ? new InetSocketAddress(getPort()) : new InetSocketAddress(getHost(), getPort());
+        InetSocketAddress bindAddress =
+            getHost() == null ? new InetSocketAddress(getPort()) : new InetSocketAddress(getHost(), getPort());
         DatagramChannel datagramChannel = DatagramChannel.open();
         try
         {

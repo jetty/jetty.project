@@ -13,6 +13,20 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +53,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ByteBufferRequestContent;
@@ -74,20 +87,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HttpClientStreamTest extends AbstractTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpClientStreamTest.class);
@@ -112,7 +111,8 @@ public class HttpClientStreamTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
@@ -159,8 +159,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
+        client.newRequest(newURI(transport)).send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -200,8 +199,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
+        client.newRequest(newURI(transport)).send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -236,7 +234,8 @@ public class HttpClientStreamTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 // Say we want to send this much...
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2 * data.length);
@@ -250,8 +249,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
+        client.newRequest(newURI(transport)).send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -298,7 +296,8 @@ public class HttpClientStreamTest extends AbstractTest
         stream.close();
 
         client.newRequest(newURI(transport))
-            .body(new BytesRequestContent(new byte[]{0, 1, 2, 3}))
+            .body(new BytesRequestContent(new byte[]
+            {0, 1, 2, 3}))
             .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(200, response.getStatus());
@@ -318,7 +317,8 @@ public class HttpClientStreamTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 contextRef.set(new HandlerContext(request, response, callback));
                 Content.Sink.write(response, false, null);
@@ -336,8 +336,7 @@ public class HttpClientStreamTest extends AbstractTest
                 latch.countDown();
             }
         };
-        client.newRequest(newURI(transport))
-            .send(listener);
+        client.newRequest(newURI(transport)).send(listener);
 
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -363,7 +362,8 @@ public class HttpClientStreamTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, chunk1.length + chunk2.length);
                 Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
@@ -390,8 +390,7 @@ public class HttpClientStreamTest extends AbstractTest
                 failedLatch.countDown();
             }
         };
-        client.newRequest(newURI(transport))
-            .send(listener);
+        client.newRequest(newURI(transport)).send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
@@ -444,8 +443,7 @@ public class HttpClientStreamTest extends AbstractTest
                 failedLatch.countDown();
             }
         };
-        client.newRequest(newURI(transport))
-            .send(listener);
+        client.newRequest(newURI(transport)).send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
@@ -473,8 +471,7 @@ public class HttpClientStreamTest extends AbstractTest
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         // Connect to the wrong port
-        client.newRequest(uri)
-            .send(listener);
+        client.newRequest(uri).send(listener);
         Result result = listener.await(5, TimeUnit.SECONDS);
         assertNotNull(result);
     }
@@ -495,9 +492,9 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         byte[] data = new byte[]{0, 1, 2, 3};
-        ExecutionException e = assertThrows(ExecutionException.class, () ->
-            client.newRequest(newURI(transport))
-                .body(new InputStreamRequestContent(new InputStream()
+        ExecutionException e = assertThrows(ExecutionException.class, () -> client.newRequest(newURI(transport))
+            .body(new InputStreamRequestContent(
+                new InputStream()
                 {
                     private int index = 0;
 
@@ -507,9 +504,10 @@ public class HttpClientStreamTest extends AbstractTest
                         // Will eventually throw ArrayIndexOutOfBounds
                         return data[index++] & 0xFF;
                     }
-                }, data.length / 2))
-                .timeout(5, TimeUnit.SECONDS)
-                .send());
+                },
+                data.length / 2))
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
         assertThat(e.getCause(), instanceOf(ArrayIndexOutOfBoundsException.class));
     }
 
@@ -530,7 +528,8 @@ public class HttpClientStreamTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 Content.Sink.write(response, false, null);
 
@@ -549,8 +548,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
+        client.newRequest(newURI(transport)).send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -582,7 +580,8 @@ public class HttpClientStreamTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 Content.Sink.write(response, false, ByteBuffer.wrap(data1));
 
@@ -601,8 +600,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
+        client.newRequest(newURI(transport)).send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -638,8 +636,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .send(listener);
+        client.newRequest(newURI(transport)).send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -732,13 +729,11 @@ public class HttpClientStreamTest extends AbstractTest
                 }
             });
 
-            client.newRequest(newURI(transport))
-                .body(content)
-                .send(result ->
-                {
-                    if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                        latch.countDown();
-                });
+            client.newRequest(newURI(transport)).body(content).send(result ->
+            {
+                if (result.isSucceeded() && result.getResponse().getStatus() == 200)
+                    latch.countDown();
+            });
         }
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(1, succeeds.get());
@@ -772,19 +767,15 @@ public class HttpClientStreamTest extends AbstractTest
             }
         };
 
-        client.newRequest(newURI(transport))
-            .body(content)
-            .send(new BufferingResponseListener()
+        client.newRequest(newURI(transport)).body(content).send(new BufferingResponseListener()
+        {
+            @Override
+            public void onComplete(Result result)
             {
-                @Override
-                public void onComplete(Result result)
-                {
-                    if (result.isSucceeded() &&
-                        result.getResponse().getStatus() == 200 &&
-                        Arrays.equals(data, getContent()))
-                        latch.countDown();
-                }
-            });
+                if (result.isSucceeded() && result.getResponse().getStatus() == 200 && Arrays.equals(data, getContent()))
+                    latch.countDown();
+            }
+        });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -806,19 +797,15 @@ public class HttpClientStreamTest extends AbstractTest
         byte[] data = new byte[512];
         CountDownLatch latch = new CountDownLatch(1);
         OutputStreamRequestContent content = new OutputStreamRequestContent();
-        client.newRequest(newURI(transport))
-            .body(content)
-            .send(new BufferingResponseListener()
+        client.newRequest(newURI(transport)).body(content).send(new BufferingResponseListener()
+        {
+            @Override
+            public void onComplete(Result result)
             {
-                @Override
-                public void onComplete(Result result)
-                {
-                    if (result.isSucceeded() &&
-                        result.getResponse().getStatus() == 200 &&
-                        Arrays.equals(data, getContent()))
-                        latch.countDown();
-                }
-            });
+                if (result.isSucceeded() && result.getResponse().getStatus() == 200 && Arrays.equals(data, getContent()))
+                    latch.countDown();
+            }
+        });
 
         // Make sure we provide the content *after* the request has been "sent".
         Thread.sleep(1000);
@@ -849,19 +836,17 @@ public class HttpClientStreamTest extends AbstractTest
         new Random().nextBytes(data);
         CountDownLatch latch = new CountDownLatch(1);
         OutputStreamRequestContent content = new OutputStreamRequestContent();
-        client.newRequest(newURI(transport))
-            .body(content)
-            .send(new BufferingResponseListener(data.length)
+        client.newRequest(newURI(transport)).body(content).send(new BufferingResponseListener(data.length)
+        {
+            @Override
+            public void onComplete(Result result)
             {
-                @Override
-                public void onComplete(Result result)
-                {
-                    assertTrue(result.isSucceeded());
-                    assertEquals(200, result.getResponse().getStatus());
-                    assertArrayEquals(data, getContent());
-                    latch.countDown();
-                }
-            });
+                assertTrue(result.isSucceeded());
+                assertEquals(200, result.getResponse().getStatus());
+                assertArrayEquals(data, getContent());
+                latch.countDown();
+            }
+        });
 
         // Make sure we provide the content *after* the request has been "sent".
         Thread.sleep(1000);
@@ -886,13 +871,11 @@ public class HttpClientStreamTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(1);
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         String uri = "http://0.0.0.1";
-        client.newRequest(uri)
-            .body(content)
-            .send(result ->
-            {
-                if (result.isFailed())
-                    latch.countDown();
-            });
+        client.newRequest(uri).body(content).send(result ->
+        {
+            if (result.isFailed())
+                latch.countDown();
+        });
 
         assertThrows(IOException.class, () ->
         {
@@ -975,13 +958,11 @@ public class HttpClientStreamTest extends AbstractTest
         CountDownLatch completeLatch = new CountDownLatch(1);
         // TODO: fix scheme
         String uri = "http://0.0.0.1";
-        client.newRequest(uri)
-            .body(content)
-            .send(result ->
-            {
-                Assertions.assertTrue(result.isFailed());
-                completeLatch.countDown();
-            });
+        client.newRequest(uri).body(content).send(result ->
+        {
+            Assertions.assertTrue(result.isFailed());
+            completeLatch.countDown();
+        });
 
         assertTrue(completeLatch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
@@ -1074,8 +1055,10 @@ public class HttpClientStreamTest extends AbstractTest
                     @Override
                     public void run()
                     {
-                        // With H2, once the connector is stopping, there is no guarantee that the demand will be serviced
-                        // as the execution strategy is busy shutting down but is needed to run the dispatched thread that
+                        // With H2, once the connector is stopping, there is no guarantee that the demand will be
+                        // serviced
+                        // as the execution strategy is busy shutting down but is needed to run the dispatched thread
+                        // that
                         // services the demand; so we cannot expect that a last chunk will be read here.
                         Content.Chunk chunk = request.read();
                         if (chunk != null)
@@ -1165,9 +1148,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .timeout(5, TimeUnit.SECONDS)
-            .send(listener);
+        client.newRequest(newURI(transport)).timeout(5, TimeUnit.SECONDS).send(listener);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -1215,10 +1196,7 @@ public class HttpClientStreamTest extends AbstractTest
         });
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
-        client.newRequest(newURI(transport))
-            .path("/303")
-            .followRedirects(true)
-            .send(listener);
+        client.newRequest(newURI(transport)).path("/303").followRedirects(true).send(listener);
 
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -1239,7 +1217,8 @@ public class HttpClientStreamTest extends AbstractTest
         startServer(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 processCount.incrementAndGet();
                 if (processLatch.await(timeoutInSeconds * 2, TimeUnit.SECONDS))
@@ -1340,9 +1319,7 @@ public class HttpClientStreamTest extends AbstractTest
                             }
                         }
                     }
-                }
-                .start()
-                .whenComplete((result, failure) ->
+                }.start().whenComplete((result, failure) ->
                 {
                     if (failure == null)
                         callback.succeeded();
@@ -1357,8 +1334,7 @@ public class HttpClientStreamTest extends AbstractTest
         new Random().nextBytes(data);
         ByteBufferRequestContent content = new ByteBufferRequestContent(ByteBuffer.wrap(data));
 
-        var request = client.newRequest(newURI(transport))
-            .body(content);
+        var request = client.newRequest(newURI(transport)).body(content);
         clientRequestRef.set(request);
         Throwable throwable = new CompletableResponseListener(request)
             .send()
@@ -1384,52 +1360,54 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                callback.completeWith(new CompletableTask<>()
-                {
-                    @Override
-                    public void run()
+                callback.completeWith(
+                    new CompletableTask<>()
                     {
-                        while (true)
+                        @Override
+                        public void run()
                         {
-                            Content.Chunk chunk = request.read();
-                            if (chunk == null)
+                            while (true)
                             {
-                                request.demand(this);
-                                return;
-                            }
-
-                            if (Content.Chunk.isFailure(chunk))
-                            {
-                                completeExceptionally(chunk.getFailure());
-                                return;
-                            }
-
-                            if (chunk.hasRemaining())
-                            {
-                                ByteBuffer byteBuffer = chunk.getByteBuffer();
-                                if (chunk.canRetain())
+                                Content.Chunk chunk = request.read();
+                                if (chunk == null)
                                 {
-                                    chunk.retain();
-                                    chunks.add(Content.Chunk.asChunk(byteBuffer.slice(), chunk.isLast(), chunk));
+                                    request.demand(this);
+                                    return;
                                 }
-                                else
-                                {
-                                    chunks.add(Content.Chunk.from(BufferUtil.copy(byteBuffer), chunk.isLast()));
-                                }
-                                if (chunks.size() % 100 == 0)
-                                    dumpChunks(chunks);
-                                BufferUtil.clear(byteBuffer);
-                            }
-                            chunk.release();
 
-                            if (chunk.isLast())
-                            {
-                                complete(null);
-                                return;
+                                if (Content.Chunk.isFailure(chunk))
+                                {
+                                    completeExceptionally(chunk.getFailure());
+                                    return;
+                                }
+
+                                if (chunk.hasRemaining())
+                                {
+                                    ByteBuffer byteBuffer = chunk.getByteBuffer();
+                                    if (chunk.canRetain())
+                                    {
+                                        chunk.retain();
+                                        chunks.add(
+                                            Content.Chunk.asChunk(byteBuffer.slice(), chunk.isLast(), chunk));
+                                    }
+                                    else
+                                    {
+                                        chunks.add(Content.Chunk.from(BufferUtil.copy(byteBuffer), chunk.isLast()));
+                                    }
+                                    if (chunks.size() % 100 == 0)
+                                        dumpChunks(chunks);
+                                    BufferUtil.clear(byteBuffer);
+                                }
+                                chunk.release();
+
+                                if (chunk.isLast())
+                                {
+                                    complete(null);
+                                    return;
+                                }
                             }
                         }
-                    }
-                }.start());
+                    }.start());
                 return true;
             }
         });
@@ -1446,7 +1424,7 @@ public class HttpClientStreamTest extends AbstractTest
                 if (t != null)
                     t.printStackTrace();
                 else if (r.getStatus() == 200)
-                   latch.countDown();
+                    latch.countDown();
             });
 
         assertTrue(latch.await(30, TimeUnit.SECONDS));
@@ -1474,7 +1452,6 @@ public class HttpClientStreamTest extends AbstractTest
         LOG.info("Accumulated {} chunks totalling {} bytes", chunks.size(), accumulated);
     }
 
-    private record HandlerContext(Request request, org.eclipse.jetty.server.Response response, Callback callback)
-    {
+    private record HandlerContext(Request request, org.eclipse.jetty.server.Response response, Callback callback) {
     }
 }

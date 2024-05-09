@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.annotation.WebInitParam;
+import java.util.ArrayList;
+import java.util.EnumSet;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
 import org.eclipse.jetty.ee10.servlet.Source;
@@ -61,7 +60,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             return;
         }
 
-        //Servlet Spec 8.1.2
+        // Servlet Spec 8.1.2
         if (!Filter.class.isAssignableFrom(clazz))
         {
             LOG.warn("{} is not assignable from jakarta.servlet.Filter", clazz.getName());
@@ -85,7 +84,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         FilterHolder holder = _context.getServletHandler().getFilter(name);
         if (holder == null)
         {
-            //Filter with this name does not already exist, so add it
+            // Filter with this name does not already exist, so add it
             holder = _context.getServletHandler().newFilterHolder(new Source(Source.Origin.ANNOTATION, clazz));
             holder.setName(name);
 
@@ -103,7 +102,8 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
 
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
-            metaData.setOrigin(name + ".filter.mapping." + Long.toHexString(mapping.hashCode()), filterAnnotation, clazz);
+            metaData.setOrigin(
+                name + ".filter.mapping." + Long.toHexString(mapping.hashCode()), filterAnnotation, clazz);
             if (urlPatterns.length > 0)
             {
                 ArrayList<String> paths = new ArrayList<String>();
@@ -140,14 +140,14 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         }
         else
         {
-            //A Filter definition for the same name already exists from web.xml
-            //ServletSpec 3.0 p81 if the Filter is already defined and has mappings,
-            //they override the annotation. If it already has DispatcherType set, that
-            //also overrides the annotation. Init-params are additive, but web.xml overrides
-            //init-params of the same name.
+            // A Filter definition for the same name already exists from web.xml
+            // ServletSpec 3.0 p81 if the Filter is already defined and has mappings,
+            // they override the annotation. If it already has DispatcherType set, that
+            // also overrides the annotation. Init-params are additive, but web.xml overrides
+            // init-params of the same name.
             for (WebInitParam ip : filterAnnotation.initParams())
             {
-                //if (holder.getInitParameter(ip.name()) == null)
+                // if (holder.getInitParameter(ip.name()) == null)
                 if (metaData.getOrigin(name + ".filter.init-param." + ip.name()) == Origin.NotSet)
                 {
                     holder.setInitParameter(ip.name(), ip.value());
@@ -168,13 +168,17 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                     }
                 }
             }
-            //if a descriptor didn't specify at least one mapping, use the mappings from the annotation and the DispatcherTypes
-            //from the annotation
+            // if a descriptor didn't specify at least one mapping, use the mappings from the annotation and the
+            // DispatcherTypes
+            // from the annotation
             if (!mappingExists)
             {
                 FilterMapping mapping = new FilterMapping();
                 mapping.setFilterName(holder.getName());
-                metaData.setOrigin(holder.getName() + ".filter.mapping." + Long.toHexString(mapping.hashCode()), filterAnnotation, clazz);
+                metaData.setOrigin(
+                    holder.getName() + ".filter.mapping." + Long.toHexString(mapping.hashCode()),
+                    filterAnnotation,
+                    clazz);
                 if (urlPatterns.length > 0)
                 {
                     ArrayList<String> paths = new ArrayList<String>();

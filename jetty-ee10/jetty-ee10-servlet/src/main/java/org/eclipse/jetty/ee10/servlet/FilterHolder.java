@@ -13,14 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Objects;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -34,6 +26,13 @@ import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -90,8 +89,7 @@ public class FilterHolder extends Holder<Filter>
     }
 
     @Override
-    public void doStart()
-        throws Exception
+    public void doStart() throws Exception
     {
         super.doStart();
 
@@ -154,8 +152,7 @@ public class FilterHolder extends Holder<Filter>
     }
 
     @Override
-    public void doStop()
-        throws Exception
+    public void doStop() throws Exception
     {
         super.doStop();
         _config = null;
@@ -199,44 +196,53 @@ public class FilterHolder extends Holder<Filter>
         return _filter;
     }
 
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+        throws IOException, ServletException
     {
         if (isAsyncSupported() || !request.isAsyncSupported())
             getFilter().doFilter(request, response, chain);
         else if (request instanceof HttpServletRequest httpServletRequest)
         {
-            getFilter().doFilter(new HttpServletRequestWrapper(httpServletRequest)
-            {
-                @Override
-                public boolean isAsyncSupported()
-                {
-                    return false;
-                }
+            getFilter()
+                .doFilter(
+                    new HttpServletRequestWrapper(httpServletRequest)
+                    {
+                        @Override
+                        public boolean isAsyncSupported()
+                        {
+                            return false;
+                        }
 
-                @Override
-                public AsyncContext startAsync() throws IllegalStateException
-                {
-                    throw new IllegalStateException("Async Not Supported");
-                }
-            }, response, chain);
+                        @Override
+                        public AsyncContext startAsync() throws IllegalStateException
+                        {
+                            throw new IllegalStateException("Async Not Supported");
+                        }
+                    },
+                    response,
+                    chain);
         }
         else
         {
-            //TODO necessary to support non http?
-            getFilter().doFilter(new ServletRequestWrapper(request)
-            {
-                @Override
-                public boolean isAsyncSupported()
-                {
-                    return false;
-                }
+            // TODO necessary to support non http?
+            getFilter()
+                .doFilter(
+                    new ServletRequestWrapper(request)
+                    {
+                        @Override
+                        public boolean isAsyncSupported()
+                        {
+                            return false;
+                        }
 
-                @Override
-                public AsyncContext startAsync() throws IllegalStateException
-                {
-                    throw new IllegalStateException("Async Not Supported");
-                }
-            }, response, chain);
+                        @Override
+                        public AsyncContext startAsync() throws IllegalStateException
+                        {
+                            throw new IllegalStateException("Async Not Supported");
+                        }
+                    },
+                    response,
+                    chain);
         }
     }
 
@@ -244,10 +250,12 @@ public class FilterHolder extends Holder<Filter>
     public void dump(Appendable out, String indent) throws IOException
     {
         if (getInitParameters().isEmpty())
-            Dumpable.dumpObjects(out, indent, this,
-                _filter == null ? getHeldClass() : _filter);
+            Dumpable.dumpObjects(out, indent, this, _filter == null ? getHeldClass() : _filter);
         else
-            Dumpable.dumpObjects(out, indent, this,
+            Dumpable.dumpObjects(
+                out,
+                indent,
+                this,
                 _filter == null ? getHeldClass() : _filter,
                 new DumpableCollection("initParams", getInitParameters().entrySet()));
     }
@@ -255,7 +263,8 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public String toString()
     {
-        return String.format("%s==%s@%x{inst=%b,async=%b,src=%s}",
+        return String.format(
+            "%s==%s@%x{inst=%b,async=%b,src=%s}",
             getName(), getClassName(), hashCode(), _filter != null, isAsyncSupported(), getSource());
     }
 
@@ -269,7 +278,8 @@ public class FilterHolder extends Holder<Filter>
     protected class Registration extends HolderRegistration implements FilterRegistration.Dynamic
     {
         @Override
-        public void addMappingForServletNames(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
+        public void addMappingForServletNames(
+                                              EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
         {
             illegalStateIfContextStarted();
             FilterMapping mapping = new FilterMapping();
@@ -283,7 +293,8 @@ public class FilterHolder extends Holder<Filter>
         }
 
         @Override
-        public void addMappingForUrlPatterns(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns)
+        public void addMappingForUrlPatterns(
+                                             EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns)
         {
             illegalStateIfContextStarted();
             FilterMapping mapping = new FilterMapping();
@@ -378,7 +389,8 @@ public class FilterHolder extends Holder<Filter>
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             _filter.doFilter(request, response, chain);
         }

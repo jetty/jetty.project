@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.component;
 
 import java.util.EventListener;
-
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
@@ -36,8 +35,7 @@ public interface LifeCycle
      * @see #isFailed()
      */
     @ManagedOperation(value = "Starts the instance", impact = "ACTION")
-    void start()
-        throws Exception;
+    void start() throws Exception;
 
     /**
      * Utility to start an object if it is a LifeCycle and to convert
@@ -72,8 +70,7 @@ public interface LifeCycle
      * @see #isFailed()
      */
     @ManagedOperation(value = "Stops the instance", impact = "ACTION")
-    void stop()
-        throws Exception;
+    void stop() throws Exception;
 
     /**
      * Utility to stop an object if it is a LifeCycle and to convert

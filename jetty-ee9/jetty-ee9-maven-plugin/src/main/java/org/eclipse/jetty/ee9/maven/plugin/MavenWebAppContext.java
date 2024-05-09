@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
@@ -60,7 +59,8 @@ public class MavenWebAppContext extends WebAppContext
 {
     private static final Logger LOG = LoggerFactory.getLogger(MavenWebAppContext.class);
 
-    private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/jakarta.servlet-[^/]*\\.jar$|.*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-[^/]*\\.jar$";
+    private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN =
+        ".*/jakarta.servlet-[^/]*\\.jar$|.*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-[^/]*\\.jar$";
 
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
 
@@ -107,7 +107,7 @@ public class MavenWebAppContext extends WebAppContext
     {
         super();
         // Turn off copyWebInf option as it is not applicable for plugin.
-        super.setCopyWebInf(false);        
+        super.setCopyWebInf(false);
     }
 
     public void setContainerIncludeJarPattern(String pattern)
@@ -232,9 +232,7 @@ public class MavenWebAppContext extends WebAppContext
 
             // This is a user provided list of configurations.
             // We have to assume that mounting can happen.
-            List<URI> uris = Stream.of(resourceBases)
-                .map(URI::create)
-                .toList();
+            List<URI> uris = Stream.of(resourceBases).map(URI::create).toList();
             Resource r = ResourceFactory.of(this).newResource(uris);
 
             setBaseResource(r);
@@ -324,7 +322,8 @@ public class MavenWebAppContext extends WebAppContext
             for (Configuration c : configurations)
             {
                 if (c instanceof EnvConfiguration)
-                    ((EnvConfiguration)c).setJettyEnvResource(ResourceFactory.of(this).newResource(getJettyEnvXml()));
+                    ((EnvConfiguration)c)
+                        .setJettyEnvResource(ResourceFactory.of(this).newResource(getJettyEnvXml()));
             }
         }
 
@@ -399,7 +398,10 @@ public class MavenWebAppContext extends WebAppContext
                     int i = 0;
                     while (Resources.missing(res) && (i < _webInfClasses.size()))
                     {
-                        String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
+                        String newPath = StringUtil.replace(
+                            uri,
+                            WEB_INF_CLASSES_PREFIX,
+                            _webInfClasses.get(i).getPath());
                         res = ResourceFactory.of(this).newResource(newPath);
                         if (Resources.missing(res))
                         {
@@ -456,7 +458,8 @@ public class MavenWebAppContext extends WebAppContext
 
                 while (i < _webInfClasses.size())
                 {
-                    String newPath = StringUtil.replace(path, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
+                    String newPath = StringUtil.replace(
+                        path, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
                     allPaths.addAll(super.getResourcePaths(newPath));
                     i++;
                 }
@@ -488,7 +491,9 @@ public class MavenWebAppContext extends WebAppContext
         Class<?> cdiInitializer = null;
         try
         {
-            cdiInitializer = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.ee9.cdi.servlet.JettyWeldInitializer");
+            cdiInitializer = Thread.currentThread()
+                .getContextClassLoader()
+                .loadClass("org.eclipse.jetty.ee9.cdi.servlet.JettyWeldInitializer");
             Method initWebAppMethod = cdiInitializer.getMethod("initWebApp", new Class[]{WebAppContext.class});
             initWebAppMethod.invoke(null, new Object[]{this});
         }
@@ -511,5 +516,4 @@ public class MavenWebAppContext extends WebAppContext
     {
         super.setExtraClasspath(extraClasspath);
     }
-
 }

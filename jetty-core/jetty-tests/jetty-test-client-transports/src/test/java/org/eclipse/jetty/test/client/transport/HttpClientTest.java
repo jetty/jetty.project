@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -30,7 +42,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
@@ -62,18 +73,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class HttpClientTest extends AbstractTest
 {
@@ -130,8 +129,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        var request = client.newRequest(newURI(transport))
-            .timeout(10, TimeUnit.SECONDS);
+        var request = client.newRequest(newURI(transport)).timeout(10, TimeUnit.SECONDS);
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, length).send();
         ContentResponse response = completable.get();
 
@@ -166,7 +164,8 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
                 response.write(true, ByteBuffer.wrap(chunk2), callback);
@@ -174,8 +173,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        var request = client.newRequest(newURI(transport))
-            .timeout(10, TimeUnit.SECONDS);
+        var request = client.newRequest(newURI(transport)).timeout(10, TimeUnit.SECONDS);
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, 2 * length).send();
         ContentResponse response = completable.get();
 
@@ -211,7 +209,8 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 InputStream input = Request.asInputStream(request);
                 for (byte b : bytes)
@@ -241,7 +240,8 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 long sleep = 1024;
                 long total = 0;
@@ -277,7 +277,8 @@ public class HttpClientTest extends AbstractTest
 
         int chunks = 256;
         int chunkSize = 16;
-        byte[][] bytes = IntStream.range(0, chunks).mapToObj(x -> new byte[chunkSize]).toArray(byte[][]::new);
+        byte[][] bytes =
+            IntStream.range(0, chunks).mapToObj(x -> new byte[chunkSize]).toArray(byte[][]::new);
         BytesRequestContent content = new BytesRequestContent("application/octet-stream", bytes);
         ContentResponse response = client.newRequest(newURI(transport))
             .method(HttpMethod.POST)
@@ -354,7 +355,8 @@ public class HttpClientTest extends AbstractTest
         client.start();
 
         // H3 times out b/c it is QUIC's way of figuring out a connection cannot be established.
-        Class<? extends Exception> expectedType = transport == Transport.H3 ? TimeoutException.class : ExecutionException.class;
+        Class<? extends Exception> expectedType =
+            transport == Transport.H3 ? TimeoutException.class : ExecutionException.class;
         assertThrows(expectedType, () ->
         {
             // Use an IP address not present in the certificate.
@@ -546,8 +548,7 @@ public class HttpClientTest extends AbstractTest
         });
 
         AtomicInteger completes = new AtomicInteger();
-        client.newRequest(newURI(transport))
-            .send(result -> completes.incrementAndGet());
+        client.newRequest(newURI(transport)).send(result -> completes.incrementAndGet());
 
         sleep(1000);
 
@@ -635,8 +636,7 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        var request = client.newRequest(newURI(transport))
-            .method(HttpMethod.HEAD);
+        var request = client.newRequest(newURI(transport)).method(HttpMethod.HEAD);
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, length / 2).send();
         ContentResponse response = completable.get(5, TimeUnit.SECONDS);
 
@@ -655,9 +655,8 @@ public class HttpClientTest extends AbstractTest
         {
             for (int j = 0; j < users; ++j)
             {
-                ContentResponse response = client.newRequest(newURI(transport))
-                    .tag(j)
-                    .send();
+                ContentResponse response =
+                    client.newRequest(newURI(transport)).tag(j).send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
             }
         }
@@ -772,7 +771,8 @@ public class HttpClientTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 String target = Request.getPathInContext(request);
                 if (target.equals("/1"))
@@ -786,12 +786,11 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        assertThrows(TimeoutException.class, () ->
-            client.newRequest(newURI(transport))
-                .path("/1")
-                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-                .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send());
+        assertThrows(TimeoutException.class, () -> client.newRequest(newURI(transport))
+            .path("/1")
+            .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+            .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
+            .send());
         latch.countDown();
 
         // Make another request without specifying the idle timeout, should not fail
@@ -820,9 +819,7 @@ public class HttpClientTest extends AbstractTest
                 accumulateChunks(contentSource, chunks);
             }
         };
-        client.newRequest(newURI(transport))
-            .path("/")
-            .send(listener);
+        client.newRequest(newURI(transport)).path("/").send(listener);
         listener.await(5, TimeUnit.SECONDS);
 
         assertThat(listener.result.getResponse().getStatus(), is(200));
@@ -847,9 +844,7 @@ public class HttpClientTest extends AbstractTest
                 contentSource.fail(new Exception("Synthetic Failure"));
             }
         };
-        client.newRequest(newURI(transport))
-            .path("/")
-            .send(listener);
+        client.newRequest(newURI(transport)).path("/").send(listener);
         listener.await(5, TimeUnit.SECONDS);
 
         assertThat(listener.result.isFailed(), is(true));
@@ -869,13 +864,10 @@ public class HttpClientTest extends AbstractTest
             @Override
             public void onContentSource(Response response, Content.Source contentSource)
             {
-                new Thread(() -> accumulateChunksInSpawnedThread(contentSource, chunks))
-                    .start();
+                new Thread(() -> accumulateChunksInSpawnedThread(contentSource, chunks)).start();
             }
         };
-        client.newRequest(newURI(transport))
-            .path("/")
-            .send(listener);
+        client.newRequest(newURI(transport)).path("/").send(listener);
         listener.await(5, TimeUnit.SECONDS);
 
         assertThat(listener.result.getResponse().getStatus(), is(200));
@@ -961,16 +953,16 @@ public class HttpClientTest extends AbstractTest
             .path("/")
             .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks1))
             .onResponseContentSource((response, contentSource) -> accumulateChunks(contentSource, chunks2))
-            .onResponseContentSource((response, contentSource) ->
-                new Thread(() ->
+            .onResponseContentSource((response, contentSource) -> new Thread(() ->
+            {
+                contentSource.fail(new Exception("Synthetic Failure"));
+                contentSource.demand(() ->
                 {
-                    contentSource.fail(new Exception("Synthetic Failure"));
-                    contentSource.demand(() ->
-                    {
-                        chunks3.add(contentSource.read());
-                        chunks3Latch.countDown();
-                    });
-                }).start())
+                    chunks3.add(contentSource.read());
+                    chunks3Latch.countDown();
+                });
+            })
+                .start())
             .send();
         assertThat(contentResponse.getStatus(), is(200));
         assertThat(contentResponse.getContent().length, is(totalBytes));
@@ -1006,8 +998,10 @@ public class HttpClientTest extends AbstractTest
         };
         client.newRequest(newURI(transport))
             .path("/")
-            .onResponseContentSource((response, contentSource) -> contentSource.fail(new Exception("Synthetic Failure")))
-            .onResponseContentSource((response, contentSource) -> contentSource.fail(new Exception("Synthetic Failure")))
+            .onResponseContentSource(
+                (response, contentSource) -> contentSource.fail(new Exception("Synthetic Failure")))
+            .onResponseContentSource(
+                (response, contentSource) -> contentSource.fail(new Exception("Synthetic Failure")))
             .send(listener);
         assertThat(listener.await(5, TimeUnit.SECONDS), is(true));
 
@@ -1109,6 +1103,7 @@ public class HttpClientTest extends AbstractTest
             IteratingCallback iteratingCallback = new IteratingNestedCallback(callback)
             {
                 int count = 0;
+
                 @Override
                 protected Action process()
                 {
@@ -1124,7 +1119,8 @@ public class HttpClientTest extends AbstractTest
         }
     }
 
-    private abstract static class CompleteContentSourceListener implements Response.CompleteListener, Response.ContentSourceListener
+    private abstract static class CompleteContentSourceListener
+        implements Response.CompleteListener, Response.ContentSourceListener
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private Result result;

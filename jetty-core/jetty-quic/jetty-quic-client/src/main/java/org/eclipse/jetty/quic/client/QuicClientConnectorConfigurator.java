@@ -22,7 +22,6 @@ import java.nio.channels.SocketChannel;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
@@ -109,7 +108,8 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     }
 
     @Override
-    public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
+    public ChannelWithAddress newChannelWithAddress(
+                                                    ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
     {
         context.put(QuicConfiguration.CONTEXT_KEY, initQuicConfig);
 
@@ -123,13 +123,20 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     }
 
     @Override
-    public EndPoint newEndPoint(ClientConnector clientConnector, SocketAddress address, SelectableChannel selectable, ManagedSelector selector, SelectionKey selectionKey)
+    public EndPoint newEndPoint(
+                                ClientConnector clientConnector,
+                                SocketAddress address,
+                                SelectableChannel selectable,
+                                ManagedSelector selector,
+                                SelectionKey selectionKey)
     {
-        return new DatagramChannelEndPoint((DatagramChannel)selectable, selector, selectionKey, clientConnector.getScheduler());
+        return new DatagramChannelEndPoint(
+            (DatagramChannel)selectable, selector, selectionKey, clientConnector.getScheduler());
     }
 
     @Override
-    public Connection newConnection(ClientConnector clientConnector, SocketAddress address, EndPoint endPoint, Map<String, Object> context)
+    public Connection newConnection(
+                                    ClientConnector clientConnector, SocketAddress address, EndPoint endPoint, Map<String, Object> context)
     {
         return configurator.apply(new ClientQuicConnection(clientConnector, endPoint, context));
     }

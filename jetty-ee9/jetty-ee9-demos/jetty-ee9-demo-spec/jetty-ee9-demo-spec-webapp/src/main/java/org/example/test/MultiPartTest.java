@@ -13,9 +13,6 @@
 
 package org.example.test;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
@@ -24,13 +21,14 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import java.io.IOException;
+import java.util.Collection;
 
 /**
  * MultiPartTest
  *
  * Test Servlet 3.0 MultiPart Mime handling.
  */
-
 @MultipartConfig(location = "foo/bar", maxFileSize = 10240, maxRequestSize = -1, fileSizeThreshold = 2048)
 public class MultiPartTest extends HttpServlet
 {

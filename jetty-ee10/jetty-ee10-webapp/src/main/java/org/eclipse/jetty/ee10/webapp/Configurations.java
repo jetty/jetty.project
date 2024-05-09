@@ -27,7 +27,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TopologicalSort;
@@ -73,26 +72,27 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         {
             if (__known.isEmpty())
             {
-                TypeUtil.serviceProviderStream(ServiceLoader.load(Configuration.class)).forEach(provider ->
-                {
-                    try
+                TypeUtil.serviceProviderStream(ServiceLoader.load(Configuration.class))
+                    .forEach(provider ->
                     {
-                        Configuration configuration = provider.get();
-                        if (!configuration.isAvailable())
+                        try
                         {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Configuration unavailable: {}", configuration);
-                            __unavailable.add(configuration);
-                            return;
+                            Configuration configuration = provider.get();
+                            if (!configuration.isAvailable())
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Configuration unavailable: {}", configuration);
+                                __unavailable.add(configuration);
+                                return;
+                            }
+                            __known.add(configuration);
+                            __knownByClassName.add(configuration.getClass().getName());
                         }
-                        __known.add(configuration);
-                        __knownByClassName.add(configuration.getClass().getName());
-                    }
-                    catch (Throwable e)
-                    {
-                        LOG.warn("Unable to get known Configuration", e);
-                    }
-                });
+                        catch (Throwable e)
+                        {
+                            LOG.warn("Unable to get known Configuration", e);
+                        }
+                    });
                 sort(__known);
                 if (LOG.isDebugEnabled())
                 {
@@ -232,7 +232,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     public Configurations(List<Configuration> configurations)
     {
         _configurations = new ArrayList<>();
-        //ensure replacements are processed
+        // ensure replacements are processed
         if (configurations != null)
             configurations.forEach(this::add);
     }
@@ -244,7 +244,9 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
 
     public Configurations(String... configurationClassNames)
     {
-        this(Arrays.stream(configurationClassNames).map(Configurations::newConfiguration).toList());
+        this(Arrays.stream(configurationClassNames)
+            .map(Configurations::newConfiguration)
+            .toList());
     }
 
     protected static Configuration newConfiguration(String classname)
@@ -329,21 +331,25 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
 
     public void remove(Configuration... configurations)
     {
-        List<String> names = Arrays.stream(configurations).map(c -> c.getClass().getName()).toList();
-        _configurations.removeIf(configuration -> names.contains(configuration.getClass().getName()));
+        List<String> names =
+            Arrays.stream(configurations).map(c -> c.getClass().getName()).toList();
+        _configurations.removeIf(
+            configuration -> names.contains(configuration.getClass().getName()));
     }
 
     @SafeVarargs
     public final void remove(Class<? extends Configuration>... configClass)
     {
         List<String> names = Arrays.stream(configClass).map(Class::getName).toList();
-        _configurations.removeIf(configuration -> names.contains(configuration.getClass().getName()));
+        _configurations.removeIf(
+            configuration -> names.contains(configuration.getClass().getName()));
     }
 
     public void remove(@Name("configClass") String... configClass)
     {
         List<String> names = Arrays.asList(configClass);
-        _configurations.removeIf(configuration -> names.contains(configuration.getClass().getName()));
+        _configurations.removeIf(
+            configuration -> names.contains(configuration.getClass().getName()));
     }
 
     public int size()
@@ -358,7 +364,10 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
 
     public String[] toStringArray()
     {
-        return _configurations.stream().map(Configuration::getClass).map(Class::getName).toArray(String[]::new);
+        return _configurations.stream()
+            .map(Configuration::getClass)
+            .map(Class::getName)
+            .toArray(String[]::new);
     }
 
     public void sort()
@@ -384,7 +393,9 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         {
             byName.put(c.getClass().getName(), c);
             if (c.replaces() != null)
-                replacedBy.computeIfAbsent(c.replaces().getName(), key -> new ArrayList<>()).add(c);
+                replacedBy
+                    .computeIfAbsent(c.replaces().getName(), key -> new ArrayList<>())
+                    .add(c);
         }
 
         for (Configuration c : configurations)
@@ -440,11 +451,10 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         Class<? extends Configuration> replaces = configuration.replaces();
         if (replaces != null)
         {
-            for (ListIterator<Configuration> i = _configurations.listIterator(); i.hasNext(); )
+            for (ListIterator<Configuration> i = _configurations.listIterator(); i.hasNext();)
             {
                 Configuration c = i.next();
-                if (c.getClass().getName().equals(replaces.getName()) ||
-                    c.replaces() != null && c.replaces().getName().equals(replaces.getName()))
+                if (c.getClass().getName().equals(replaces.getName()) || c.replaces() != null && c.replaces().getName().equals(replaces.getName()))
                 {
                     i.remove();
                     break;
@@ -452,18 +462,18 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
             }
         }
 
-        //check if any existing configurations replace the one we're adding
+        // check if any existing configurations replace the one we're adding
         for (Configuration c : _configurations)
         {
             Class<? extends Configuration> r = c.replaces();
             if (r != null)
             {
                 if (r.getName().equals(configuration.getClass().getName()))
-                    return false; //skip the addition, a replacement is already present
+                    return false; // skip the addition, a replacement is already present
             }
 
             if (c.getClass().getName().equals(configuration.getClass().getName()))
-                return false; //don't add same one twice
+                return false; // don't add same one twice
         }
 
         return _configurations.add(configuration);
@@ -528,7 +538,10 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this,
+        Dumpable.dumpObjects(
+            out,
+            indent,
+            this,
             new DumpableCollection("Known", Configurations.getKnown()),
             new DumpableCollection("Unavailable", Configurations.__unavailable));
     }

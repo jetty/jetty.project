@@ -106,11 +106,6 @@ public class Bar
     @Override
     public String toString()
     {
-        return "\n=== " + getClass().getSimpleName() + " ===" +
-            "\ntitle: " + getTitle() +
-            "\nboolean1: " + isBoolean1() +
-            "\nnullTest: " + getNullTest() +
-            "\nbaz: " + getBaz() +
-            "\ncolor: " + getColor();
+        return "\n=== " + getClass().getSimpleName() + " ===" + "\ntitle: " + getTitle() + "\nboolean1: " + isBoolean1() + "\nnullTest: " + getNullTest() + "\nbaz: " + getBaz() + "\ncolor: " + getColor();
     }
 }

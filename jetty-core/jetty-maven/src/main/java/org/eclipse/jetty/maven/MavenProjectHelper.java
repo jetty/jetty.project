@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -64,16 +63,20 @@ public class MavenProjectHelper
      * @param remoteRepositories repositories from which to resolve artifacts
      * @param session the current maven build session
      */
-    public MavenProjectHelper(MavenProject project, RepositorySystem repositorySystem, List<ArtifactRepository> remoteRepositories, MavenSession session)
+    public MavenProjectHelper(
+                              MavenProject project,
+                              RepositorySystem repositorySystem,
+                              List<ArtifactRepository> remoteRepositories,
+                              MavenSession session)
     {
         this.project = project;
         this.repositorySystem = repositorySystem;
         this.remoteRepositories = remoteRepositories;
         this.session = session;
-        //work out which dependent projects are in the reactor
+        // work out which dependent projects are in the reactor
         Set<MavenProject> mavenProjects = findDependenciesInReactor(project, new HashSet<>());
-        artifactToReactorProjectMap = mavenProjects.stream()
-            .collect(Collectors.toMap(MavenProject::getId, Function.identity()));
+        artifactToReactorProjectMap =
+            mavenProjects.stream().collect(Collectors.toMap(MavenProject::getId, Function.identity()));
         artifactToReactorProjectMap.put(project.getArtifact().getId(), project);
         warPluginInfo = new WarPluginInfo(project);
         overlayManager = new OverlayManager(warPluginInfo);
@@ -166,7 +169,8 @@ public class MavenProjectHelper
      * @param visitedProjects the set of projects already seen
      * @return unified set of all related projects in the reactor
      */
-    private static Set<MavenProject> findDependenciesInReactor(MavenProject project, Set<MavenProject> visitedProjects)
+    private static Set<MavenProject> findDependenciesInReactor(
+                                                               MavenProject project, Set<MavenProject> visitedProjects)
     {
         if (visitedProjects.contains(project))
             return Collections.emptySet();

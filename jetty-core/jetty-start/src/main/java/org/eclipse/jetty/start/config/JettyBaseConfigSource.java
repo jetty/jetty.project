@@ -21,7 +21,7 @@ import java.nio.file.Path;
  */
 public class JettyBaseConfigSource extends DirConfigSource
 {
-    // Standard weight for ${jetty.base}, so that it comes after command line, and before everything else 
+    // Standard weight for ${jetty.base}, so that it comes after command line, and before everything else
     private static final int WEIGHT = 0;
 
     public JettyBaseConfigSource(Path dir) throws IOException

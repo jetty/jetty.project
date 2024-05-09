@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
-import java.io.Serializable;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
+import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * WebAppObjectInSessionServlet
@@ -31,7 +30,8 @@ import static org.hamcrest.Matchers.instanceOf;
 public class WebAppObjectInSessionServlet extends HttpServlet
 {
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse)
+        throws ServletException, IOException
     {
         try
         {
@@ -44,12 +44,12 @@ public class WebAppObjectInSessionServlet extends HttpServlet
                 Object staticAttribute = session.getAttribute("staticAttribute");
                 assertThat(staticAttribute, instanceOf(TestSharedStatic.class));
 
-//                session.setAttribute("objectAttribute", new TestSharedNonStatic());
+                //                session.setAttribute("objectAttribute", new TestSharedNonStatic());
 
                 // The session itself is not shareable, since the implementation class
                 // refers to the session manager via the hidden field this$0, and
                 // it seems there is no way to mark the hidden field as transient.
-//                session.setAttribute("sessionAttribute", session);
+                //                session.setAttribute("sessionAttribute", session);
             }
             else if ("get".equals(action))
             {
@@ -57,11 +57,11 @@ public class WebAppObjectInSessionServlet extends HttpServlet
                 Object staticAttribute = session.getAttribute("staticAttribute");
                 assertThat(staticAttribute, instanceOf(TestSharedStatic.class));
 
-//                Object objectAttribute = session.getAttribute("objectAttribute");
-//                assertTrue(objectAttribute instanceof TestSharedNonStatic);
+                //                Object objectAttribute = session.getAttribute("objectAttribute");
+                //                assertTrue(objectAttribute instanceof TestSharedNonStatic);
 
-//                Object sessionAttribute = session.getAttribute("sessionAttribute");
-//                assertTrue(sessionAttribute instanceof HttpSession);
+                //                Object sessionAttribute = session.getAttribute("sessionAttribute");
+                //                assertTrue(sessionAttribute instanceof HttpSession);
             }
         }
         catch (Exception e)

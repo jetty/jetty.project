@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -255,7 +254,11 @@ public class ConnectHandler extends Handler.Wrapper
                 @Override
                 public void succeeded(SocketChannel channel)
                 {
-                    ConnectContext connectContext = new ConnectContext(request, response, callback, request.getTunnelSupport().getEndPoint());
+                    ConnectContext connectContext = new ConnectContext(
+                        request,
+                        response,
+                        callback,
+                        request.getTunnelSupport().getEndPoint());
                     if (channel.isConnected())
                         selector.accept(channel, connectContext);
                     else
@@ -362,7 +365,10 @@ public class ConnectHandler extends Handler.Wrapper
                 callback.succeeded();
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("CONNECT response sent {} {}", request.getConnectionMetaData().getProtocol(), statusCode);
+                LOG.debug(
+                    "CONNECT response sent {} {}",
+                    request.getConnectionMetaData().getProtocol(),
+                    statusCode);
         }
         catch (Throwable x)
         {
@@ -431,7 +437,8 @@ public class ConnectHandler extends Handler.Wrapper
      * @param callback the completion callback to invoke
      * @param context the context information related to the connection
      */
-    protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
+    protected void write(
+                         EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
     {
         endPoint.write(callback, buffer);
     }
@@ -487,13 +494,15 @@ public class ConnectHandler extends Handler.Wrapper
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
         {
-            SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
+            SocketChannelEndPoint endPoint =
+                new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
             endPoint.setIdleTimeout(getIdleTimeout());
             return endPoint;
         }
 
         @Override
-        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
+        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
+            throws IOException
         {
             if (ConnectHandler.LOG.isDebugEnabled())
                 ConnectHandler.LOG.debug("Connected to {}", ((SocketChannel)channel).getRemoteAddress());
@@ -558,7 +567,8 @@ public class ConnectHandler extends Handler.Wrapper
     {
         private final ConnectContext connectContext;
 
-        public UpstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConnectContext connectContext)
+        public UpstreamConnection(
+                                  EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConnectContext connectContext)
         {
             super(endPoint, executor, bufferPool, connectContext.getContext());
             this.connectContext = connectContext;
@@ -594,7 +604,11 @@ public class ConnectHandler extends Handler.Wrapper
     {
         private ByteBuffer buffer;
 
-        public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
+        public DownstreamConnection(
+                                    EndPoint endPoint,
+                                    Executor executor,
+                                    ByteBufferPool bufferPool,
+                                    ConcurrentMap<String, Object> context)
         {
             super(endPoint, executor, bufferPool, context);
         }
@@ -633,7 +647,11 @@ public class ConnectHandler extends Handler.Wrapper
                 {
                     buffer = null;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Failed to write initial {} bytes to server {}", remaining, DownstreamConnection.this, x);
+                        LOG.debug(
+                            "Failed to write initial {} bytes to server {}",
+                            remaining,
+                            DownstreamConnection.this,
+                            x);
                     close();
                     getConnection().close();
                 }
@@ -665,7 +683,11 @@ public class ConnectHandler extends Handler.Wrapper
         private final ConcurrentMap<String, Object> context;
         private TunnelConnection connection;
 
-        protected TunnelConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
+        protected TunnelConnection(
+                                   EndPoint endPoint,
+                                   Executor executor,
+                                   ByteBufferPool bufferPool,
+                                   ConcurrentMap<String, Object> context)
         {
             super(endPoint, executor);
             this.bufferPool = bufferPool;
@@ -711,7 +733,8 @@ public class ConnectHandler extends Handler.Wrapper
         public String toConnectionString()
         {
             EndPoint endPoint = getEndPoint();
-            return String.format("%s@%x[l:%s<=>r:%s]",
+            return String.format(
+                "%s@%x[l:%s<=>r:%s]",
                 getClass().getSimpleName(),
                 hashCode(),
                 endPoint.getLocalSocketAddress(),

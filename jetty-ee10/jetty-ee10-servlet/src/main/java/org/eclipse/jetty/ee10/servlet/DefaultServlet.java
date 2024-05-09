@@ -13,16 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.InvalidPathException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.StringTokenizer;
+import static org.eclipse.jetty.util.URIUtil.encodePath;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -34,6 +25,16 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.MappingMatch;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.StringTokenizer;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -61,8 +62,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.util.URIUtil.encodePath;
 
 /**
  * <p>The default Servlet, normally mapped to {@code /}, that handles static resources.</p>
@@ -189,7 +188,7 @@ public class DefaultServlet extends HttpServlet
         {
             try
             {
-                baseResource = URIUtil.isRelative(rb) ? _contextHandler.getBaseResource().resolve(rb) :  _contextHandler.newResource(rb);
+                baseResource = URIUtil.isRelative(rb) ? _contextHandler.getBaseResource().resolve(rb) : _contextHandler.newResource(rb);
             }
             catch (Exception e)
             {
@@ -200,11 +199,12 @@ public class DefaultServlet extends HttpServlet
         if (baseResource != null && !(baseResource.isDirectory() && baseResource.isReadable()))
             LOG.warn("baseResource {} is not a readable directory", baseResource);
 
-        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
-            getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
+        List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(
+            getInitParameter("precompressed"), getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());
 
         // Try to get factory from ServletContext attribute.
-        HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
+        HttpContent.Factory contentFactory =
+            (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
         if (contentFactory == null)
         {
             MimeTypes mimeTypes = _contextHandler.getMimeTypes();
@@ -246,8 +246,10 @@ public class DefaultServlet extends HttpServlet
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
                 ByteBufferPool bufferPool = getByteBufferPool(_contextHandler);
-                ValidatingCachingHttpContentFactory cached = new ValidatingCachingHttpContentFactory(contentFactory,
-                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
+                ValidatingCachingHttpContentFactory cached = new ValidatingCachingHttpContentFactory(
+                    contentFactory,
+                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(),
+                    bufferPool);
                 contentFactory = cached;
                 if (maxCacheSize >= 0)
                     cached.setMaxCacheSize(maxCacheSize);
@@ -265,7 +267,8 @@ public class DefaultServlet extends HttpServlet
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
         boolean redirectWelcome = getInitBoolean("redirectWelcome", false);
-        _resourceService.setWelcomeMode(redirectWelcome ? ResourceService.WelcomeMode.REDIRECT : ResourceService.WelcomeMode.SERVE);
+        _resourceService.setWelcomeMode(
+            redirectWelcome ? ResourceService.WelcomeMode.REDIRECT : ResourceService.WelcomeMode.SERVE);
         _resourceService.setPrecompressedFormats(precompressedFormats);
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
 
@@ -294,7 +297,7 @@ public class DefaultServlet extends HttpServlet
         String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
         if (otherGzipExtensions != null)
         {
-            //comma separated list
+            // comma separated list
             StringTokenizer tok = new StringTokenizer(otherGzipExtensions, ",", false);
             while (tok.hasMoreTokens())
             {
@@ -346,7 +349,8 @@ public class DefaultServlet extends HttpServlet
         return null;
     }
 
-    private List<CompressedContentFormat> parsePrecompressedFormats(String precompressed, Boolean gzip, List<CompressedContentFormat> dft)
+    private List<CompressedContentFormat> parsePrecompressedFormats(
+                                                                    String precompressed, Boolean gzip, List<CompressedContentFormat> dft)
     {
         if (precompressed == null && gzip == null)
         {
@@ -409,11 +413,7 @@ public class DefaultServlet extends HttpServlet
         String value = getInitParameter(name);
         if (value == null || value.length() == 0)
             return null;
-        return (value.startsWith("t") ||
-            value.startsWith("T") ||
-            value.startsWith("y") ||
-            value.startsWith("Y") ||
-            value.startsWith("1"));
+        return (value.startsWith("t") || value.startsWith("T") || value.startsWith("y") || value.startsWith("Y") || value.startsWith("1"));
     }
 
     private boolean getInitBoolean(String name, boolean dft)
@@ -438,23 +438,29 @@ public class DefaultServlet extends HttpServlet
         if (context instanceof ContextHandler.ScopedContext scopedContext)
             return scopedContext.getContextHandler();
 
-        throw new IllegalArgumentException("The servletContext " + servletContext + " " +
-            servletContext.getClass().getName() + " is not " + ContextHandler.ScopedContext.class.getName());
+        throw new IllegalArgumentException("The servletContext " + servletContext + " " + servletContext.getClass().getName() + " is not " + ContextHandler.ScopedContext.class.getName());
     }
 
     @Override
-    protected void doGet(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws ServletException, IOException
+    protected void doGet(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
+        throws ServletException, IOException
     {
         String includedServletPath = (String)httpServletRequest.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
         String encodedPathInContext = getEncodedPathInContext(httpServletRequest, includedServletPath);
         boolean included = includedServletPath != null;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("doGet(hsReq={}, hsResp={}) pathInContext={}, included={}", httpServletRequest, httpServletResponse, encodedPathInContext, included);
+            LOG.debug(
+                "doGet(hsReq={}, hsResp={}) pathInContext={}, included={}",
+                httpServletRequest,
+                httpServletResponse,
+                encodedPathInContext,
+                included);
 
         try
         {
-            HttpContent content = _resourceService.getContent(encodedPathInContext, ServletContextRequest.getServletContextRequest(httpServletRequest));
+            HttpContent content = _resourceService.getContent(
+                encodedPathInContext, ServletContextRequest.getServletContextRequest(httpServletRequest));
             if (LOG.isDebugEnabled())
                 LOG.debug("content = {}", content);
 
@@ -477,24 +483,21 @@ public class DefaultServlet extends HttpServlet
             else
             {
                 // lookup the core request and response as wrapped by the ServletContextHandler
-                ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(httpServletRequest);
+                ServletContextRequest servletContextRequest =
+                    ServletContextRequest.getServletContextRequest(httpServletRequest);
                 ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
                 ServletChannel servletChannel = servletContextRequest.getServletChannel();
 
                 // If the servlet request has not been wrapped,
                 // we can use the core request directly,
                 // otherwise wrap the servlet request as a core request
-                Request coreRequest = httpServletRequest instanceof ServletApiRequest
-                    ? servletChannel.getRequest()
-                    : ServletCoreRequest.wrap(httpServletRequest);
+                Request coreRequest = httpServletRequest instanceof ServletApiRequest ? servletChannel.getRequest() : ServletCoreRequest.wrap(httpServletRequest);
 
                 // If the servlet response has been wrapped and has been written to,
                 // then the servlet response must be wrapped as a core response
                 // otherwise we can use the core response directly.
                 boolean useServletResponse = !(httpServletResponse instanceof ServletApiResponse) || servletContextResponse.isWritingOrStreaming();
-                Response coreResponse = useServletResponse
-                    ? new ServletCoreResponse(coreRequest, httpServletResponse, included)
-                    : servletChannel.getResponse();
+                Response coreResponse = useServletResponse ? new ServletCoreResponse(coreRequest, httpServletResponse, included) : servletChannel.getResponse();
 
                 // If the core response is already committed then do nothing more
                 if (coreResponse.isCommitted())
@@ -517,8 +520,10 @@ public class DefaultServlet extends HttpServlet
                     content = new ForcedCharacterEncodingHttpContent(content, characterEncoding);
 
                 // If async is supported and the unwrapped content is larger than an output buffer
-                if (httpServletRequest.isAsyncSupported() &&
-                    (contentLength < 0 || contentLength > coreRequest.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize()))
+                if (httpServletRequest.isAsyncSupported() && (contentLength < 0 || contentLength > coreRequest
+                    .getConnectionMetaData()
+                    .getHttpConfiguration()
+                    .getOutputBufferSize()))
                 {
                     // send the content asynchronously
                     AsyncContext asyncContext = httpServletRequest.startAsync();
@@ -557,7 +562,8 @@ public class DefaultServlet extends HttpServlet
         else if (!isDefaultMapping(req))
             return encodePath(req.getPathInfo());
         else if (req instanceof ServletApiRequest apiRequest)
-            return Context.getPathInContext(req.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
+            return Context.getPathInContext(
+                req.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
         else
             return Context.getPathInContext(req.getContextPath(), URIUtil.canonicalPath(req.getRequestURI()));
     }
@@ -618,9 +624,11 @@ public class DefaultServlet extends HttpServlet
                     if (_welcomeServletMode != WelcomeServletMode.NONE && welcomeTarget == null)
                     {
                         if (!isDefaultMapping(getServletRequest(coreRequest)) && !isIncluded(getServletRequest(coreRequest)))
-                            welcomeTarget = URIUtil.addPaths(getServletRequest(coreRequest).getPathInfo(), welcome);
+                            welcomeTarget = URIUtil.addPaths(
+                                getServletRequest(coreRequest).getPathInfo(), welcome);
 
-                        ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
+                        ServletHandler.MappedServlet entry =
+                            _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
                         // Is there a different Servlet that may serve the welcome resource?
                         if (entry != null && entry.getServletHolder().getServletInstance() != DefaultServlet.this)
                         {
@@ -638,7 +646,8 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
+        protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget)
+            throws IOException
         {
             HttpServletRequest servletRequest = getServletRequest(request);
             HttpServletResponse servletResponse = getServletResponse(response);
@@ -673,7 +682,8 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
+        protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget)
+            throws IOException
         {
             serveWelcome(request, response, callback, welcomeTarget);
         }
@@ -682,7 +692,12 @@ public class DefaultServlet extends HttpServlet
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={})", coreRequest, coreResponse, callback, statusCode);
+                LOG.debug(
+                    "writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={})",
+                    coreRequest,
+                    coreResponse,
+                    callback,
+                    statusCode);
             writeHttpError(coreRequest, coreResponse, callback, statusCode, null, null);
         }
 
@@ -690,7 +705,13 @@ public class DefaultServlet extends HttpServlet
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, cause={})", coreRequest, coreResponse, callback, cause, cause);
+                LOG.debug(
+                    "writeHttpError(coreRequest={}, coreResponse={}, callback={}, cause={})",
+                    coreRequest,
+                    coreResponse,
+                    callback,
+                    cause,
+                    cause);
 
             int statusCode = HttpStatus.INTERNAL_SERVER_ERROR_500;
             String reason = null;
@@ -703,10 +724,24 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode, String reason, Throwable cause)
+        protected void writeHttpError(
+                                      Request coreRequest,
+                                      Response coreResponse,
+                                      Callback callback,
+                                      int statusCode,
+                                      String reason,
+                                      Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={}, reason={}, cause={})", coreRequest, coreResponse, callback, statusCode, reason, cause, cause);
+                LOG.debug(
+                    "writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={}, reason={}, cause={})",
+                    coreRequest,
+                    coreResponse,
+                    callback,
+                    statusCode,
+                    reason,
+                    cause,
+                    cause);
             HttpServletRequest request = getServletRequest(coreRequest);
             HttpServletResponse response = getServletResponse(coreResponse);
             try
@@ -729,7 +764,8 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
+        protected boolean passConditionalHeaders(
+                                                 Request request, Response response, HttpContent content, Callback callback) throws IOException
         {
             boolean included = isIncluded(getServletRequest(request));
             if (included)
@@ -764,7 +800,8 @@ public class DefaultServlet extends HttpServlet
         }
     }
 
-    static String getIncludedPathInContext(HttpServletRequest request, String includedServletPath, boolean isPathInfoOnly)
+    static String getIncludedPathInContext(
+                                           HttpServletRequest request, String includedServletPath, boolean isPathInfoOnly)
     {
         String servletPath = isPathInfoOnly ? "/" : includedServletPath;
         String pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);

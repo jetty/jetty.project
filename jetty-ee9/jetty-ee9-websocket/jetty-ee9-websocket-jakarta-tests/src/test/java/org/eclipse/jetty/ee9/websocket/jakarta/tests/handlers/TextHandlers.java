@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.handlers;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.util.stream.Stream;
-
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.stream.Stream;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.provider.Arguments;
 
@@ -35,8 +34,8 @@ public class TextHandlers
             AnnotatedStringWholeHandler.class,
             AnnotatedStringPartialHandler.class,
             AnnotatedReaderHandler.class,
-            AnnotatedReverseArgumentsPartialHandler.class
-        ).map(Arguments::of);
+            AnnotatedReverseArgumentsPartialHandler.class)
+            .map(Arguments::of);
     }
 
     public static class StringWholeHandler extends AbstractHandler implements MessageHandler.Whole<String>

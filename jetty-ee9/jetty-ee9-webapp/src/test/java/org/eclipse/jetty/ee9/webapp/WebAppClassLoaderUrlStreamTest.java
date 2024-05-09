@@ -17,7 +17,6 @@ import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -30,9 +29,7 @@ public class WebAppClassLoaderUrlStreamTest extends WebAppClassLoaderTest
         static
         {
             STREAM_HANDLER_PREFIXES = new String[]{
-                "sun.net.www.protocol",
-                "org.apache.harmony.luni.internal.net.www.protocol",
-                "javax.net.ssl"
+                "sun.net.www.protocol", "org.apache.harmony.luni.internal.net.www.protocol", "javax.net.ssl"
             };
         }
 

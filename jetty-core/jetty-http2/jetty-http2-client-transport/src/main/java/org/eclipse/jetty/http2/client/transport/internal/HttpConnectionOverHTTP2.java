@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpUpgrader;
@@ -49,7 +48,8 @@ import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable, ConnectionPool.MaxMultiplexable
+public class HttpConnectionOverHTTP2 extends HttpConnection
+    implements Sweeper.Sweepable, ConnectionPool.MaxMultiplexable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP2.class);
 
@@ -142,7 +142,8 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         http2Channel.associate(newExchange);
 
         // Create the implicit stream#1 so that it can receive the HTTP/2 response.
-        MetaData.Request metaData = new MetaData.Request(request.getMethod(), HttpURI.from(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
+        MetaData.Request metaData = new MetaData.Request(
+            request.getMethod(), HttpURI.from(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
         // We do not support upgrade requests with content, so endStream=true.
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         Stream stream = ((HTTP2Session)session).newUpgradeStream(frame, http2Channel.getStreamListener(), failure ->
@@ -166,7 +167,8 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     protected void normalizeRequest(HttpRequest request)
     {
         super.normalizeRequest(request);
-        HttpUpgrader.Factory upgraderFactory = (HttpUpgrader.Factory)request.getAttributes().get(HttpUpgrader.Factory.class.getName());
+        HttpUpgrader.Factory upgraderFactory =
+            (HttpUpgrader.Factory)request.getAttributes().get(HttpUpgrader.Factory.class.getName());
         if (upgraderFactory != null)
         {
             HttpUpgrader upgrader = upgraderFactory.newHttpUpgrader(HttpVersion.HTTP_2);
@@ -289,10 +291,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     @Override
     public String toString()
     {
-        return String.format("%s@%x(closed=%b)[%s]",
-            getClass().getSimpleName(),
-            hashCode(),
-            isClosed(),
-            session);
+        return String.format("%s@%x(closed=%b)[%s]", getClass().getSimpleName(), hashCode(), isClosed(), session);
     }
 }

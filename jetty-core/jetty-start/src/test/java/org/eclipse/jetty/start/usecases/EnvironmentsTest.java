@@ -13,23 +13,22 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.eclipse.jetty.start.StartEnvironment;
-import org.eclipse.jetty.toolchain.test.FS;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.eclipse.jetty.start.StartEnvironment;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.junit.jupiter.api.Test;
 
 public class EnvironmentsTest extends AbstractUseCase
 {
@@ -44,7 +43,8 @@ public class EnvironmentsTest extends AbstractUseCase
 
         FS.touch(baseDir.resolve("lib/envA.jar"));
         FS.touch(baseDir.resolve("etc/envA.xml"));
-        Files.write(baseDir.resolve("modules/feature-envA.mod"),
+        Files.write(
+            baseDir.resolve("modules/feature-envA.mod"),
             Arrays.asList(
                 "[provides]",
                 "feature-envA",
@@ -57,13 +57,13 @@ public class EnvironmentsTest extends AbstractUseCase
                 "[lib]",
                 "lib/envA.jar",
                 "[ini]",
-                "feature.option=envA"
-            ),
+                "feature.option=envA"),
             StandardCharsets.UTF_8);
 
         FS.touch(baseDir.resolve("lib/envB.jar"));
         FS.touch(baseDir.resolve("etc/envB.xml"));
-        Files.write(baseDir.resolve("modules/feature-envB.mod"),
+        Files.write(
+            baseDir.resolve("modules/feature-envB.mod"),
             Arrays.asList(
                 "[provides]",
                 "feature-envB",
@@ -76,31 +76,21 @@ public class EnvironmentsTest extends AbstractUseCase
                 "[lib]",
                 "lib/envB.jar",
                 "[ini]",
-                "feature.option=envB"
-            ),
+                "feature.option=envB"),
             StandardCharsets.UTF_8);
 
         // === Execute Main
-        List<String> runArgs = List.of(
-            "--modules=feature-envA,feature-envB"
-        );
+        List<String> runArgs = List.of("--modules=feature-envA,feature-envB");
         ExecResults results = exec(runArgs, false);
 
-
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml"
-        );
+        List<String> expectedXmls = Arrays.asList("${jetty.home}/etc/base.xml", "${jetty.home}/etc/main.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/base.jar", "${jetty.home}/lib/main.jar", "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 

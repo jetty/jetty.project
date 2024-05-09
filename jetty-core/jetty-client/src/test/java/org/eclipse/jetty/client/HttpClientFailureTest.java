@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -20,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
@@ -32,10 +35,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientFailureTest
 {
@@ -92,7 +91,8 @@ public class HttpClientFailureTest
         client = new HttpClient(new HttpClientTransportOverHTTP(1)
         {
             @Override
-            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+                throws IOException
             {
                 HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)super.newConnection(endPoint, context);
                 connectionRef.set(connection);
@@ -137,7 +137,8 @@ public class HttpClientFailureTest
         assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
 
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)connectionRef.get().getHttpDestination().getConnectionPool();
+        DuplexConnectionPool connectionPool =
+            (DuplexConnectionPool)connectionRef.get().getHttpDestination().getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
         assertEquals(0, connectionPool.getIdleConnections().size());

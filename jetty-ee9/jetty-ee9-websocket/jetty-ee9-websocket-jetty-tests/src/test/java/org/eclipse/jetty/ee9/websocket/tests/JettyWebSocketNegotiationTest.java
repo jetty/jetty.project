@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -35,11 +39,6 @@ import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JettyWebSocketNegotiationTest
 {
@@ -74,7 +73,8 @@ public class JettyWebSocketNegotiationTest
     @Test
     public void testBadRequest() throws Exception
     {
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
+        JettyWebSocketServerContainer container =
+            JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
         container.addMapping("/", (req, resp) -> new EchoSocket());
 
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
@@ -92,7 +92,8 @@ public class JettyWebSocketNegotiationTest
     @Test
     public void testServerError() throws Exception
     {
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
+        JettyWebSocketServerContainer container =
+            JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
         container.addMapping("/", (req, resp) ->
         {
             resp.setAcceptedSubProtocol("errorSubProtocol");
@@ -114,7 +115,8 @@ public class JettyWebSocketNegotiationTest
     @Test
     public void testManualNegotiationInCreator() throws Exception
     {
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
+        JettyWebSocketServerContainer container =
+            JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
         container.addMapping("/", (req, resp) ->
         {
             long matchedExts = req.getExtensions().stream()

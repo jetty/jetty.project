@@ -27,7 +27,6 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;

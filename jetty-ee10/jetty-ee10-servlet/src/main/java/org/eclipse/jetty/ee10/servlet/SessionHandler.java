@@ -13,18 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Enumeration;
-import java.util.EventListener;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.SessionTrackingMode;
@@ -36,6 +24,17 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Enumeration;
+import java.util.EventListener;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.server.Handler;
@@ -52,7 +51,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 {
     public static final EnumSet<SessionTrackingMode> DEFAULT_SESSION_TRACKING_MODES =
         EnumSet.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
-    
+
     final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<>();
     final List<HttpSessionListener> _sessionListeners = new CopyOnWriteArrayList<>();
     final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
@@ -253,13 +252,12 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
         private void checkState()
         {
-            //It is allowable to call the CookieConfig.setXX methods after the SessionHandler has started,
-            //but before the context has fully started. Ie it is allowable for ServletContextListeners
-            //to call these methods in contextInitialized().
+            // It is allowable to call the CookieConfig.setXX methods after the SessionHandler has started,
+            // but before the context has fully started. Ie it is allowable for ServletContextListeners
+            // to call these methods in contextInitialized().
             ServletContextHandler handler = ServletContextHandler.getCurrentServletContextHandler();
             if (handler != null && handler.isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-
         }
     }
 
@@ -269,19 +267,19 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         {
             return new ServletSessionApi(session);
         }
-        
+
         public static ManagedSession getSession(HttpSession httpSession)
         {
             if (httpSession instanceof ServletSessionApi apiSession)
                 return apiSession.getSession();
             return null;
         }
-        
+
         private final ManagedSession _session;
-        
+
         private ServletSessionApi(ManagedSession session)
         {
-            _session = session;           
+            _session = session;
         }
 
         @Override
@@ -311,7 +309,8 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         @Override
         public ServletContext getServletContext()
         {
-            return ServletContextHandler.getServletContext(_session.getSessionManager().getContext());
+            return ServletContextHandler.getServletContext(
+                _session.getSessionManager().getContext());
         }
 
         @Override
@@ -426,7 +425,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             return true;
         }
         return false;
-    }    
+    }
 
     @Override
     public boolean removeEventListener(EventListener listener)
@@ -443,7 +442,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         }
         return false;
     }
-    
+
     @Override
     public void doStart() throws Exception
     {
@@ -460,32 +459,32 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         if (contextHandler == null)
             return;
 
-        //configure the name of the session cookie set by an init param
+        // configure the name of the session cookie set by an init param
         String tmp = contextHandler.getInitParameter(SessionConfig.__SessionCookieProperty);
         if (tmp != null)
             setSessionCookie(tmp);
 
-        //configure the name of the session id path param set by an init param
+        // configure the name of the session id path param set by an init param
         tmp = contextHandler.getInitParameter(SessionConfig.__SessionIdPathParameterNameProperty);
         if (tmp != null)
             setSessionIdPathParameterName(tmp);
 
-        //configure checkRemoteSessionEncoding set by an init param
+        // configure checkRemoteSessionEncoding set by an init param
         tmp = contextHandler.getInitParameter(SessionConfig.__CheckRemoteSessionEncodingProperty);
         if (tmp != null)
             setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(tmp));
 
-        //configure the domain of the session cookie set by an init param
+        // configure the domain of the session cookie set by an init param
         tmp = contextHandler.getInitParameter(SessionConfig.__SessionDomainProperty);
         if (tmp != null)
             setSessionDomain(tmp);
 
-        //configure the path of the session cookie set by an init param
+        // configure the path of the session cookie set by an init param
         tmp = contextHandler.getInitParameter(SessionConfig.__SessionPathProperty);
         if (tmp != null)
             setSessionPath(tmp);
 
-        //configure the max age of the session cookie set by an init param
+        // configure the max age of the session cookie set by an init param
         tmp = contextHandler.getInitParameter(SessionConfig.__MaxAgeProperty);
         if (tmp != null)
             setMaxCookieAge(Integer.parseInt(tmp.trim()));
@@ -506,7 +505,8 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
         if (!_sessionAttributeListeners.isEmpty())
         {
-            HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
+            HttpSessionBindingEvent event =
+                new HttpSessionBindingEvent(session.getApi(), name, old == null ? value : old);
 
             for (HttpSessionAttributeListener l : _sessionAttributeListeners)
             {
@@ -519,7 +519,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             }
         }
     }
-    
+
     /**
      * Call the session lifecycle listeners in the order
      * they were added.
@@ -533,12 +533,12 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             return;
         super.onSessionCreated(session);
         HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-        for (HttpSessionListener  l : _sessionListeners)
+        for (HttpSessionListener l : _sessionListeners)
         {
             l.sessionCreated(event);
         }
     }
- 
+
     /**
      * Call the session lifecycle listeners in
      * the reverse order they were added.
@@ -551,9 +551,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         if (session == null)
             return;
         super.onSessionDestroyed(session);
-        //We annoint the calling thread with
-        //the webapp's classloader because the calling thread may
-        //come from the scavenger, rather than a request thread
+        // We annoint the calling thread with
+        // the webapp's classloader because the calling thread may
+        // come from the scavenger, rather than a request thread
         getSessionContext().run(() ->
         {
             HttpSessionEvent event = new HttpSessionEvent(session.getApi());
@@ -567,7 +567,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     @Override
     public void onSessionIdChanged(Session session, String oldId)
     {
-        //inform the listeners
+        // inform the listeners
         super.onSessionIdChanged(session, oldId);
         if (!_sessionIdListeners.isEmpty())
         {
@@ -578,13 +578,13 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             }
         }
     }
-    
+
     protected void callUnboundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
             ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getApi(), name));
     }
-    
+
     protected void callBoundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
@@ -618,12 +618,12 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             }
         }
     }
-    
+
     public SessionCookieConfig getSessionCookieConfig()
     {
         return _cookieConfig;
     }
-    
+
     public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
     {
         return DEFAULT_SESSION_TRACKING_MODES;
@@ -643,7 +643,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
         return Collections.emptySet();
     }
-    
+
     @Override
     public HttpCookie.SameSite getSameSite()
     {
@@ -652,7 +652,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             return null;
         return SameSite.valueOf(sameSite.toUpperCase(Locale.ENGLISH));
     }
-    
+
     /**
      * Set Session cookie sameSite mode.
      * In ee10 this is set as a generic session cookie attribute.
@@ -664,14 +664,13 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     {
         setSessionCookieAttribute("SameSite", sameSite.getAttributeValue());
     }
-    
+
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
     {
-        if (sessionTrackingModes != null &&
-            sessionTrackingModes.size() > 1 &&
-            sessionTrackingModes.contains(SessionTrackingMode.SSL))
+        if (sessionTrackingModes != null && sessionTrackingModes.size() > 1 && sessionTrackingModes.contains(SessionTrackingMode.SSL))
         {
-            throw new IllegalArgumentException("sessionTrackingModes specifies a combination of SessionTrackingMode.SSL with a session tracking mode other than SessionTrackingMode.SSL");
+            throw new IllegalArgumentException(
+                "sessionTrackingModes specifies a combination of SessionTrackingMode.SSL with a session tracking mode other than SessionTrackingMode.SSL");
         }
         setUsingCookies(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.COOKIE));
         setUsingUriParameters(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
@@ -696,7 +695,8 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             servletContextRequest.setRequestedSession(requestedSession);
 
         // Handle changed ID or max-age refresh, but only if this is not a redispatched request
-        HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
+        HttpCookie cookie = access(
+            requestedSession.session(), request.getConnectionMetaData().isSecure());
         if (cookie != null)
             Response.putCookie(response, cookie);
 
@@ -723,8 +723,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             if (session != null || !create)
                 return session;
 
-            newSession(getWrapped(), _session.sessionId(), ms ->
-                _session = new RequestedSession(ms, _session.sessionId(), true));
+            newSession(
+                getWrapped(),
+                _session.sessionId(),
+                ms -> _session = new RequestedSession(ms, _session.sessionId(), true));
 
             session = _session.session();
             if (session == null)

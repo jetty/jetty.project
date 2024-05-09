@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
-
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -282,7 +281,8 @@ public abstract class IteratingCallback implements Callback
                                 }
                                 case SCHEDULED:
                                 {
-                                    // we won the race against the callback, so the callback has to process and we can break processing
+                                    // we won the race against the callback, so the callback has to process and we can
+                                    // break processing
                                     _state = State.PENDING;
                                     break processing;
                                 }

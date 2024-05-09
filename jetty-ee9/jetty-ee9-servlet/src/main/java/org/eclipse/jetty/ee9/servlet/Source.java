@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.servlet;
 
 import java.util.Objects;
-
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -30,7 +29,9 @@ public class Source
     public enum Origin
     {
         EMBEDDED,
-        JAKARTA_API, DESCRIPTOR, ANNOTATION
+        JAKARTA_API,
+        DESCRIPTOR,
+        ANNOTATION
     }
 
     public final Origin _origin;

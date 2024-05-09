@@ -30,7 +30,6 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.eclipse.jetty.start.StartLog;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -53,8 +52,7 @@ public class MavenMetadata
 
     private final Map<String, Snapshot> snapshots = new HashMap<>();
 
-    public MavenMetadata(Path metadataXml)
-        throws IOException, ParserConfigurationException, SAXException
+    public MavenMetadata(Path metadataXml) throws IOException, ParserConfigurationException, SAXException
     {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
@@ -107,9 +105,8 @@ public class MavenMetadata
         if (snapshot == null)
         {
             snapshot = new Snapshot();
-            snapshot.value = String.format("%s-%s-%s",
-                getVersion().replaceFirst("-SNAPSHOT$", ""),
-                snapshotTimestamp, snapshotBuildNumber);
+            snapshot.value = String.format(
+                "%s-%s-%s", getVersion().replaceFirst("-SNAPSHOT$", ""), snapshotTimestamp, snapshotBuildNumber);
         }
         return snapshot;
     }
@@ -128,11 +125,13 @@ public class MavenMetadata
     {
         ZoneId utc = ZoneId.of("UTC");
         LocalDate today = LocalDate.now(utc);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(utc);
+        DateTimeFormatter formatter =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(utc);
 
         try
         {
-            LocalDate lastUpdatedDate = LocalDate.parse(lastUpdated, formatter).atStartOfDay().toLocalDate();
+            LocalDate lastUpdatedDate =
+                LocalDate.parse(lastUpdated, formatter).atStartOfDay().toLocalDate();
             return today.isAfter(lastUpdatedDate);
         }
         catch (DateTimeParseException e)

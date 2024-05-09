@@ -16,7 +16,6 @@ package org.eclipse.jetty.fcgi.server.internal;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
@@ -63,7 +62,8 @@ public class HttpStreamOverFCGI implements HttpStream
     private boolean _shutdown;
     private boolean _aborted;
 
-    public HttpStreamOverFCGI(ServerFCGIConnection connection, ServerGenerator generator, HttpChannel httpChannel, int id)
+    public HttpStreamOverFCGI(
+                              ServerFCGIConnection connection, ServerGenerator generator, HttpChannel httpChannel, int id)
     {
         _connection = connection;
         _generator = generator;
@@ -105,7 +105,15 @@ public class HttpStreamOverFCGI implements HttpStream
     {
         String pathQuery = URIUtil.addPathQuery(_path, _query);
         HttpScheme scheme = StringUtil.isEmpty(_secure) ? HttpScheme.HTTP : HttpScheme.HTTPS;
-        MetaData.Request request = new MetaData.Request(_connection.getBeginNanoTime(), _method, scheme.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, -1);
+        MetaData.Request request = new MetaData.Request(
+            _connection.getBeginNanoTime(),
+            _method,
+            scheme.asString(),
+            hostPort,
+            pathQuery,
+            HttpVersion.fromString(_version),
+            _headers,
+            -1);
         Runnable task = _httpChannel.onRequest(request);
         _allHeaders.forEach(field -> _httpChannel.getRequest().setAttribute(field.getName(), field.getValue()));
         // TODO: here we just execute the task.
@@ -209,7 +217,12 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void send(
+                     MetaData.Request request,
+                     MetaData.Response response,
+                     boolean last,
+                     ByteBuffer byteBuffer,
+                     Callback callback)
     {
         ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
 
@@ -256,7 +269,8 @@ public class HttpStreamOverFCGI implements HttpStream
 
         _committed = true;
 
-        boolean shutdown = _shutdown = info.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        boolean shutdown =
+            _shutdown = info.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         Flusher flusher = _connection.getFlusher();
@@ -316,7 +330,8 @@ public class HttpStreamOverFCGI implements HttpStream
     @Override
     public Throwable consumeAvailable()
     {
-        Throwable result = HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
+        Throwable result = HttpStream.consumeAvailable(
+            this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
         if (result != null)
         {
             if (_chunk != null)

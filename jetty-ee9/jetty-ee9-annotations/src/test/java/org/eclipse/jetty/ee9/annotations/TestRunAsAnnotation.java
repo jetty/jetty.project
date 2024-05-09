@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
@@ -24,26 +26,23 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 @ExtendWith(WorkDirExtension.class)
 public class TestRunAsAnnotation
 {
 
     @Test
-    public void testRunAsAnnotation(WorkDir workDir)  throws Exception
+    public void testRunAsAnnotation(WorkDir workDir) throws Exception
     {
         WebAppContext wac = new WebAppContext();
-        
-        //pre-add a servlet but not by descriptor
+
+        // pre-add a servlet but not by descriptor
         ServletHolder holder = new ServletHolder();
         holder.setName("foo1");
         holder.setHeldClass(ServletC.class);
-        holder.setInitOrder(1); //load on startup
+        holder.setInitOrder(1); // load on startup
         wac.getServletHandler().addServletWithMapping(holder, "/foo/*");
-        
-        //add another servlet of the same class, but as if by descriptor
+
+        // add another servlet of the same class, but as if by descriptor
         ServletHolder holder2 = new ServletHolder();
         holder2.setName("foo2");
         holder2.setHeldClass(ServletC.class);
@@ -52,13 +51,16 @@ public class TestRunAsAnnotation
         Path tmpPath = workDir.getEmptyPathDir();
         Path fakeXml = tmpPath.resolve("fake.xml");
         Files.createFile(fakeXml);
-        wac.getMetaData().setOrigin(holder2.getName() + ".servlet.run-as", new WebDescriptor(wac.getResourceFactory().newResource(fakeXml)));
-        
+        wac.getMetaData()
+            .setOrigin(
+                holder2.getName() + ".servlet.run-as",
+                new WebDescriptor(wac.getResourceFactory().newResource(fakeXml)));
+
         AnnotationIntrospector parser = new AnnotationIntrospector(wac);
         RunAsAnnotationHandler handler = new RunAsAnnotationHandler(wac);
         parser.registerHandler(handler);
         parser.introspect(new ServletC(), null);
-        
+
         assertEquals("admin", holder.getRunAsRole());
         assertNull(holder2.getRunAsRole());
     }

@@ -13,15 +13,17 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.server.PathParam;
+import jakarta.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.server.PathParam;
-import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.UpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.UpgradeRequestAdapter;
@@ -36,10 +38,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
-public class JakartaWebSocketFrameHandlerOnMessageTextStreamTest extends AbstractJakartaWebSocketServerFrameHandlerTest
+public class JakartaWebSocketFrameHandlerOnMessageTextStreamTest
+    extends AbstractJakartaWebSocketServerFrameHandlerTest
 {
     private static final WebSocketComponents components = new WebSocketComponents();
 
@@ -56,21 +56,24 @@ public class JakartaWebSocketFrameHandlerOnMessageTextStreamTest extends Abstrac
     }
 
     @SuppressWarnings("Duplicates")
-    private <T extends WSEventTracker> T performOnMessageInvocation(T socket, Consumer<JakartaWebSocketFrameHandler> func) throws Exception
+    private <T extends WSEventTracker> T performOnMessageInvocation(
+                                                                    T socket, Consumer<JakartaWebSocketFrameHandler> func) throws Exception
     {
         URI uri = URI.create("http://localhost:8080/msg/foo");
         UpgradeRequest request = new UpgradeRequestAdapter(uri, uri.getPath());
 
         // Establish endpoint function
         JakartaWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, request);
-        frameHandler.onOpen(new CoreSession.Empty()
-        {
-            @Override
-            public WebSocketComponents getWebSocketComponents()
+        frameHandler.onOpen(
+            new CoreSession.Empty()
             {
-                return components;
-            }
-        }, Callback.NOOP);
+                @Override
+                public WebSocketComponents getWebSocketComponents()
+                {
+                    return components;
+                }
+            },
+            Callback.NOOP);
         func.accept(frameHandler);
         return socket;
     }
@@ -100,7 +103,8 @@ public class JakartaWebSocketFrameHandlerOnMessageTextStreamTest extends Abstrac
         {
             try
             {
-                endpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(
+                    new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
             }
             catch (Exception e)
             {
@@ -138,7 +142,8 @@ public class JakartaWebSocketFrameHandlerOnMessageTextStreamTest extends Abstrac
         {
             try
             {
-                endpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(
+                    new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
             }
             catch (Exception e)
             {

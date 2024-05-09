@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -41,7 +40,7 @@ import org.eclipse.jetty.util.StringUtil;
  *
  *     ByteBuffer output = request.generate();
  *     channel.write(output);
-
+ *
  *     HttpTester.Response response = HttpTester.parseResponse(channel);
  *     System.err.printf("%s %s %s%n", response.getVersion(), response.getStatus(), response.getReason());
  *     for (HttpField field : response)
@@ -121,7 +120,8 @@ public class HttpTester
             public int fillBuffer() throws IOException
             {
                 BufferUtil.compact(_buffer);
-                int len = stream.read(_buffer.array(), _buffer.arrayOffset() + _buffer.limit(), BufferUtil.space(_buffer));
+                int len = stream.read(
+                    _buffer.array(), _buffer.arrayOffset() + _buffer.limit(), BufferUtil.space(_buffer));
                 if (len < 0)
                     _eof = true;
                 else
@@ -471,9 +471,7 @@ public class HttpTester
                 loop:
                 while (!generator.isEnd())
                 {
-                    HttpGenerator.Result result = info instanceof MetaData.Request
-                        ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true)
-                        : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
+                    HttpGenerator.Result result = info instanceof MetaData.Request ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true) : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
                     switch (result)
                     {
                         case NEED_HEADER:
@@ -570,7 +568,8 @@ public class HttpTester
         @Override
         public MetaData.Request getMetaData()
         {
-            return new MetaData.Request(_method, HttpURI.from(_uri), _version, this, _content == null ? 0 : _content.size());
+            return new MetaData.Request(
+                _method, HttpURI.from(_uri), _version, this, _content == null ? 0 : _content.size());
         }
 
         @Override

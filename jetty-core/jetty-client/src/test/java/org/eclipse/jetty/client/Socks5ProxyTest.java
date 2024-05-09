@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
@@ -29,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
-
 import org.eclipse.jetty.client.Socks5.UsernamePasswordAuthenticationFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
@@ -40,13 +46,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Socks5ProxyTest
 {
@@ -132,9 +131,9 @@ public class Socks5ProxyTest
             assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
             // Write connect response.
-            channel.write(ByteBuffer.wrap(new byte[]{
-                Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 2, 13, 13
-            }));
+            channel.write(ByteBuffer.wrap(
+                new byte[]
+                {Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 2, 13, 13}));
 
             // Parse the HTTP request.
             HttpTester.Request request = HttpTester.parseRequest(channel);
@@ -143,12 +142,13 @@ public class Socks5ProxyTest
             assertEquals(path, request.getURI());
 
             // Write the HTTP response.
-            String response = """
-                HTTP/1.1 200 OK\r
-                Content-Length: 0\r
-                Connection: close\r
-                \r
-                """;
+            String response =
+                """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 0\r
+                    Connection: close\r
+                    \r
+                    """;
             channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -211,9 +211,9 @@ public class Socks5ProxyTest
             assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
             // Write connect response.
-            channel.write(ByteBuffer.wrap(new byte[]{
-                Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 3, 11, 11
-            }));
+            channel.write(ByteBuffer.wrap(
+                new byte[]
+                {Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 3, 11, 11}));
 
             // Parse the HTTP request.
             HttpTester.Request request = HttpTester.parseRequest(channel);
@@ -222,12 +222,13 @@ public class Socks5ProxyTest
             assertEquals(path, request.getURI());
 
             // Write the HTTP response.
-            String response = """
-                HTTP/1.1 200 OK\r
-                Content-Length: 0\r
-                Connection: close\r
-                \r
-                """;
+            String response =
+                """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 0\r
+                    Connection: close\r
+                    \r
+                    """;
             channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -323,9 +324,9 @@ public class Socks5ProxyTest
             assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
             // Write connect response.
-            channel.write(ByteBuffer.wrap(new byte[]{
-                Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 4, 17, 17
-            }));
+            channel.write(ByteBuffer.wrap(
+                new byte[]
+                {Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 4, 17, 17}));
 
             // Parse the HTTP request.
             HttpTester.Request request = HttpTester.parseRequest(channel);
@@ -334,12 +335,13 @@ public class Socks5ProxyTest
             assertEquals(path, request.getURI());
 
             // Write the HTTP response.
-            String response = """
-                HTTP/1.1 200 OK\r
-                Content-Length: 0\r
-                Connection: close\r
-                \r
-                """;
+            String response =
+                """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 0\r
+                    Connection: close\r
+                    \r
+                    """;
             channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -375,7 +377,8 @@ public class Socks5ProxyTest
             byte notAcceptable = -1;
             channel.write(ByteBuffer.wrap(new byte[]{Socks5.VERSION, notAcceptable}));
 
-            ExecutionException x = assertThrows(ExecutionException.class, () -> completable.get(2 * timeout, TimeUnit.MILLISECONDS));
+            ExecutionException x =
+                assertThrows(ExecutionException.class, () -> completable.get(2 * timeout, TimeUnit.MILLISECONDS));
             assertThat(x.getCause(), instanceOf(IOException.class));
         }
     }
@@ -445,7 +448,8 @@ public class Socks5ProxyTest
             byte authenticationFailed = 1; // Any non-zero.
             channel.write(ByteBuffer.wrap(new byte[]{1, authenticationFailed}));
 
-            ExecutionException x = assertThrows(ExecutionException.class, () -> completable.get(2 * timeout, TimeUnit.MILLISECONDS));
+            ExecutionException x =
+                assertThrows(ExecutionException.class, () -> completable.get(2 * timeout, TimeUnit.MILLISECONDS));
             assertThat(x.getCause(), instanceOf(IOException.class));
         }
     }
@@ -537,9 +541,9 @@ public class Socks5ProxyTest
             assertEquals(serverPort, buffer.getShort() & 0xFFFF);
 
             // Write connect response.
-            channel.write(ByteBuffer.wrap(new byte[]{
-                Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 5, 19, 19
-            }));
+            channel.write(ByteBuffer.wrap(
+                new byte[]
+                {Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 5, 19, 19}));
 
             // Parse the HTTP request.
             HttpTester.Request request = HttpTester.parseRequest(channel);
@@ -548,12 +552,13 @@ public class Socks5ProxyTest
             assertEquals(path, request.getURI());
 
             // Write the HTTP response.
-            String response = """
-                HTTP/1.1 200 OK\r
-                Content-Length: 0\r
-                Connection: close\r
-                \r
-                """;
+            String response =
+                """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 0\r
+                    Connection: close\r
+                    \r
+                    """;
             channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -661,12 +666,13 @@ public class Socks5ProxyTest
             assertEquals(path, request.getURI());
 
             // Write the HTTP response.
-            String response = """
-                HTTP/1.1 200 OK\r
-                Content-Length: 0\r
-                Connection: close\r
-                \r
-                """;
+            String response =
+                """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 0\r
+                    Connection: close\r
+                    \r
+                    """;
             channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -729,9 +735,9 @@ public class Socks5ProxyTest
             assertEquals(addrLen, read);
 
             // Write connect response.
-            channel.write(ByteBuffer.wrap(new byte[]{
-                Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 7, 23, 23
-            }));
+            channel.write(ByteBuffer.wrap(
+                new byte[]
+                {Socks5.VERSION, 0, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 7, 23, 23}));
 
             // Wrap the socket with TLS.
             SslContextFactory.Server serverTLS = new SslContextFactory.Server();
@@ -749,12 +755,13 @@ public class Socks5ProxyTest
             assertEquals(path, request.getURI());
 
             // Write the HTTP response.
-            String response = """
-                HTTP/1.1 200 OK\r
-                Content-Length: 0\r
-                Connection: close\r
-                \r
-                """;
+            String response =
+                """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 0\r
+                    Connection: close\r
+                    \r
+                    """;
             OutputStream output = sslSocket.getOutputStream();
             output.write(response.getBytes(StandardCharsets.US_ASCII));
             output.flush();
@@ -774,15 +781,15 @@ public class Socks5ProxyTest
         // Use an address to avoid resolution of "localhost" to multiple addresses.
         String serverHost = "127.0.0.13";
         int serverPort = proxyPort + 1; // Any port will do
-        Request request = client.newRequest(serverHost, serverPort)
-            .timeout(timeout, TimeUnit.MILLISECONDS);
+        Request request = client.newRequest(serverHost, serverPort).timeout(timeout, TimeUnit.MILLISECONDS);
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         try (SocketChannel ignored = proxy.accept())
         {
             // Accept the connection, but do not reply and don't close.
 
-            ExecutionException x = assertThrows(ExecutionException.class, () -> completable.get(2 * timeout, TimeUnit.MILLISECONDS));
+            ExecutionException x =
+                assertThrows(ExecutionException.class, () -> completable.get(2 * timeout, TimeUnit.MILLISECONDS));
             assertThat(x.getCause(), instanceOf(TimeoutException.class));
         }
     }
@@ -963,9 +970,9 @@ public class Socks5ProxyTest
             assertEquals(addrLen, read);
 
             // Write connect response failure.
-            channel.write(ByteBuffer.wrap(new byte[]{
-                Socks5.VERSION, 1, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 8, 29, 29
-            }));
+            channel.write(ByteBuffer.wrap(
+                new byte[]
+                {Socks5.VERSION, 1, Socks5.RESERVED, Socks5.ADDRESS_TYPE_IPV4, 127, 0, 0, 8, 29, 29}));
 
             ExecutionException x = assertThrows(ExecutionException.class, () -> completable.get(5, TimeUnit.SECONDS));
             assertThat(x.getCause(), instanceOf(IOException.class));
@@ -1046,12 +1053,13 @@ public class Socks5ProxyTest
             assertEquals(path, request.getURI());
 
             // Write the HTTP response.
-            String response = """
-                HTTP/1.1 200 OK\r
-                Content-Length: 0\r
-                Connection: close\r
-                \r
-                """;
+            String response =
+                """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 0\r
+                    Connection: close\r
+                    \r
+                    """;
             channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));

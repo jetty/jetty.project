@@ -15,7 +15,6 @@ package org.eclipse.jetty.util.statistic;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.util.NanoTime;
 
 /**

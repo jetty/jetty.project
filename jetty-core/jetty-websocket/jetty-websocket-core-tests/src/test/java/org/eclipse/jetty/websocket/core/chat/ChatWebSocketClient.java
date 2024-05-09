@@ -21,7 +21,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -36,7 +35,8 @@ public class ChatWebSocketClient
     private final URI baseWebsocketUri;
     private final WebSocketCoreClient client;
     private final MessageHandler handler;
-    private String name = String.format("unknown@%x", ThreadLocalRandom.current().nextInt());
+    private String name =
+        String.format("unknown@%x", ThreadLocalRandom.current().nextInt());
 
     public ChatWebSocketClient(String hostname, int port) throws Exception
     {
@@ -57,7 +57,8 @@ public class ChatWebSocketClient
         System.out.println(message);
     }
 
-    private static final Pattern COMMAND_PATTERN = Pattern.compile("/([^\\s]+)(\\s+([^\\s]+))?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern COMMAND_PATTERN =
+        Pattern.compile("/([^\\s]+)(\\s+([^\\s]+))?", Pattern.CASE_INSENSITIVE);
 
     private void chat(String line)
     {
@@ -82,8 +83,10 @@ public class ChatWebSocketClient
                         break;
 
                     case "exit":
-                        handler.sendText("[" + name + ": has left the " +
-                            ("elvis".equalsIgnoreCase(name) ? "building!]" : "room]"), Callback.NOOP, false);
+                        handler.sendText(
+                            "[" + name + ": has left the " + ("elvis".equalsIgnoreCase(name) ? "building!]" : "room]"),
+                            Callback.NOOP,
+                            false);
                         handler.getCoreSession().close(Callback.from(() -> System.exit(0), x ->
                         {
                             x.printStackTrace();
@@ -97,7 +100,12 @@ public class ChatWebSocketClient
         }
         LOG.debug("sending {}...", line);
 
-        handler.sendText(Callback.from(() -> LOG.debug("message sent"), (cause) -> LOG.warn("message send failure", cause)), false, name, ": ", line);
+        handler.sendText(
+            Callback.from(() -> LOG.debug("message sent"), (cause) -> LOG.warn("message send failure", cause)),
+            false,
+            name,
+            ": ",
+            line);
     }
 
     public static void main(String[] args)

@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
@@ -31,10 +34,6 @@ import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LargeDeflateTest
 {
@@ -79,7 +78,9 @@ public class LargeDeflateTest
         upgradeRequest.addExtensions("permessage-deflate");
 
         EventSocket clientSocket = new EventSocket();
-        Session session = _client.connect(clientSocket, URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"), upgradeRequest).get();
+        Session session = _client.connect(
+            clientSocket, URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"), upgradeRequest)
+            .get();
         ByteBuffer sentMessage = largePayloads();
         session.sendBinary(sentMessage, Callback.NOOP);
         session.close(StatusCode.NORMAL, "close from test", Callback.NOOP);

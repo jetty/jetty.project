@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core.messages;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -47,7 +46,8 @@ public class ByteBufferMessageSink extends AbstractMessageSink
         this(session, methodHandle, autoDemand, true);
     }
 
-    protected ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand, boolean validateSignature)
+    protected ByteBufferMessageSink(
+                                    CoreSession session, MethodHandle methodHandle, boolean autoDemand, boolean validateSignature)
     {
         super(session, methodHandle, autoDemand);
 
@@ -68,7 +68,8 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             long maxSize = getCoreSession().getMaxBinaryMessageSize();
             if (maxSize > 0 && size > maxSize)
             {
-                callback.failed(new MessageTooLargeException(String.format("Binary message too large: %,d > %,d", size, maxSize)));
+                callback.failed(new MessageTooLargeException(
+                    String.format("Binary message too large: %,d > %,d", size, maxSize)));
                 return;
             }
 

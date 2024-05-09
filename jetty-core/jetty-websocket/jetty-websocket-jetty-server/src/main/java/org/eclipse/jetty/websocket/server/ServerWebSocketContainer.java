@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
@@ -54,7 +53,8 @@ import org.slf4j.LoggerFactory;
  * <p>Direct WebSocket upgrades not mapped to URI paths are possible via
  * {@link #upgrade(WebSocketCreator, Request, Response, Callback)}.</p>
  */
-public class ServerWebSocketContainer extends ContainerLifeCycle implements WebSocketContainer, Configurable, Invocable, Request.Handler
+public class ServerWebSocketContainer extends ContainerLifeCycle
+    implements WebSocketContainer, Configurable, Invocable, Request.Handler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerWebSocketContainer.class);
 
@@ -77,9 +77,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         ServerWebSocketContainer container = get(context);
         if (container == null)
         {
-            WebSocketComponents components = (contextHandler == null)
-                ? WebSocketServerComponents.ensureWebSocketComponents(server)
-                : WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
+            WebSocketComponents components = (contextHandler == null) ? WebSocketServerComponents.ensureWebSocketComponents(server) : WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
             WebSocketMappings mappings = new WebSocketMappings(components);
             container = new ServerWebSocketContainer(mappings);
             container.addBean(mappings);
@@ -346,7 +344,8 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      * @throws WebSocketException there is an error during the upgrade
      * @see #handle(Request, Response, Callback)
      */
-    public boolean upgrade(WebSocketCreator creator, Request request, Response response, Callback callback) throws WebSocketException
+    public boolean upgrade(WebSocketCreator creator, Request request, Response response, Callback callback)
+        throws WebSocketException
     {
         var coreCreator = newWebSocketCreator(creator);
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, factory);
@@ -359,7 +358,8 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         {
             try
             {
-                Object webSocket = creator.createWebSocket(new ServerUpgradeRequestDelegate(rq), new ServerUpgradeResponseDelegate(rq, rs), cb);
+                Object webSocket = creator.createWebSocket(
+                    new ServerUpgradeRequestDelegate(rq), new ServerUpgradeResponseDelegate(rq, rs), cb);
                 if (webSocket == null)
                     cb.succeeded();
                 return webSocket;
@@ -399,7 +399,8 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         this.invocationType = invocationType;
     }
 
-    private static class Configuration extends org.eclipse.jetty.websocket.core.Configuration.ConfigurationCustomizer implements Configurable
+    private static class Configuration extends org.eclipse.jetty.websocket.core.Configuration.ConfigurationCustomizer
+        implements Configurable
     {
     }
 }

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +31,12 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
     private String protocol;
     private volatile boolean completed;
 
-    protected NegotiatingClientConnection(EndPoint endPoint, Executor executor, SSLEngine sslEngine, ClientConnectionFactory connectionFactory, Map<String, Object> context)
+    protected NegotiatingClientConnection(
+                                          EndPoint endPoint,
+                                          Executor executor,
+                                          SSLEngine sslEngine,
+                                          ClientConnectionFactory connectionFactory,
+                                          Map<String, Object> context)
     {
         super(endPoint, executor);
         this.engine = sslEngine;

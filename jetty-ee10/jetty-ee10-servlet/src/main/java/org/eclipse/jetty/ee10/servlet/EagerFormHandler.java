@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.util.concurrent.CompletableFuture;
-
 import jakarta.servlet.ServletRequest;
+import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.FormFields;
@@ -43,7 +42,8 @@ public class EagerFormHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+    public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+        throws Exception
     {
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (contentType == null)
@@ -53,12 +53,14 @@ public class EagerFormHandler extends Handler.Wrapper
         if (mimeType == null)
             return super.handle(request, response, callback);
 
-        CompletableFuture<?> future =  switch (mimeType)
-        {
-            case FORM_ENCODED -> FormFields.from(request);
-            case MULTIPART_FORM_DATA -> ServletMultiPartFormData.from(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType);
-            default -> null;
-        };
+        CompletableFuture<?> future =
+            switch (mimeType)
+            {
+                case FORM_ENCODED -> FormFields.from(request);
+                case MULTIPART_FORM_DATA -> ServletMultiPartFormData.from(
+                    Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType);
+                default -> null;
+            };
 
         if (future == null)
             return super.handle(request, response, callback);

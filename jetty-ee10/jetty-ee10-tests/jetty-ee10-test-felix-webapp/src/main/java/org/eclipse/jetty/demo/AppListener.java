@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.demo;
 
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.annotation.WebListener;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
-
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
-import jakarta.servlet.annotation.WebListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
@@ -43,7 +42,8 @@ public class AppListener implements ServletContextListener
         try
         {
             Path cacheDir = Files.createTempDirectory("felix-cache");
-            properties.put(Constants.FRAMEWORK_STORAGE, cacheDir.toAbsolutePath().toString());
+            properties.put(
+                Constants.FRAMEWORK_STORAGE, cacheDir.toAbsolutePath().toString());
             properties.put(Constants.FRAMEWORK_STORAGE_CLEAN, Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT);
             properties.put(Constants.FRAMEWORK_BUNDLE_PARENT, Constants.FRAMEWORK_BUNDLE_PARENT_FRAMEWORK);
             properties.put(Constants.FRAMEWORK_BOOTDELEGATION, "*");
@@ -53,7 +53,8 @@ public class AppListener implements ServletContextListener
             throw new RuntimeException("Unable to configure Felix", e);
         }
 
-        Framework framework = ServiceLoader.load(FrameworkFactory.class).iterator().next().newFramework(properties);
+        Framework framework =
+            ServiceLoader.load(FrameworkFactory.class).iterator().next().newFramework(properties);
 
         try
         {

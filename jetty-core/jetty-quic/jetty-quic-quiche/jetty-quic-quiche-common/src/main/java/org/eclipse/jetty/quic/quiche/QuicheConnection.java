@@ -21,7 +21,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -48,15 +47,20 @@ public abstract class QuicheConnection
             .min(Comparator.comparingInt(QuicheBinding::priority))
             .orElseThrow(() -> new IllegalStateException("no quiche binding implementation found"));
         if (LOG.isDebugEnabled())
-            LOG.debug("using quiche binding implementation: {}", QUICHE_BINDING.getClass().getName());
+            LOG.debug(
+                "using quiche binding implementation: {}",
+                QUICHE_BINDING.getClass().getName());
     }
 
-    public static QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer) throws IOException
+    public static QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer)
+        throws IOException
     {
         return connect(quicheConfig, local, peer, Quiche.QUICHE_MAX_CONN_ID_LEN);
     }
 
-    public static QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
+    public static QuicheConnection connect(
+                                           QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength)
+        throws IOException
     {
         return QUICHE_BINDING.connect(quicheConfig, local, peer, connectionIdLength);
     }
@@ -66,7 +70,8 @@ public abstract class QuicheConnection
      * @return true if a negotiation packet was written to the {@code packetToSend} buffer, false if negotiation failed
      * and the {@code packetRead} buffer can be dropped.
      */
-    public static boolean negotiate(TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
+    public static boolean negotiate(TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend)
+        throws IOException
     {
         return QUICHE_BINDING.negotiate(tokenMinter, packetRead, packetToSend);
     }
@@ -75,7 +80,13 @@ public abstract class QuicheConnection
      * Fully consumes the {@code packetRead} buffer if the connection was accepted.
      * @return an established connection if accept succeeded, null if accept failed and negotiation should be tried.
      */
-    public static QuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
+    public static QuicheConnection tryAccept(
+                                             QuicheConfig quicheConfig,
+                                             TokenValidator tokenValidator,
+                                             ByteBuffer packetRead,
+                                             SocketAddress local,
+                                             SocketAddress peer)
+        throws IOException
     {
         return QUICHE_BINDING.tryAccept(quicheConfig, tokenValidator, packetRead, local, peer);
     }
@@ -177,6 +188,7 @@ public abstract class QuicheConnection
     public interface TokenMinter
     {
         int MAX_TOKEN_LENGTH = 48;
+
         byte[] mint(byte[] dcid, int len);
     }
 

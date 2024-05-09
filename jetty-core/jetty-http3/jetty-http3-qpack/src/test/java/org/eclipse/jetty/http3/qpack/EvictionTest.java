@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.http3.qpack;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.Random;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -23,9 +25,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EvictionTest
 {
@@ -77,14 +76,14 @@ public class EvictionTest
             MetaData result = _decoderHandler.getMetaData();
             assertNotNull(result);
 
-//            System.err.println("encoder: ");
-//            System.err.println(_encoder.dump());
-//            System.err.println();
-//            System.err.println("decoder: ");
-//            System.err.println(_decoder.dump());
-//            System.err.println();
-//            System.err.println("====================");
-//            System.err.println();
+            //            System.err.println("encoder: ");
+            //            System.err.println(_encoder.dump());
+            //            System.err.println();
+            //            System.err.println("decoder: ");
+            //            System.err.println(_decoder.dump());
+            //            System.err.println();
+            //            System.err.println("====================");
+            //            System.err.println();
 
             assertTrue(result.getHttpFields().isEqualTo(httpFields));
             encodedFields.clear();

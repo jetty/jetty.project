@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets;
 
-import java.io.IOException;
-import java.util.Date;
-
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.util.Date;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.coders.DateDecoder;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.coders.DateEncoder;
 import org.eclipse.jetty.toolchain.test.StackUtils;

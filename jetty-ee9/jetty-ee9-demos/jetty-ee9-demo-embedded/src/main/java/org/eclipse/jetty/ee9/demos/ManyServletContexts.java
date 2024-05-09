@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.demos;
 
 import java.lang.management.ManagementFactory;
-
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
@@ -29,8 +28,7 @@ public class ManyServletContexts
         Server server = new Server(port);
 
         // Setup JMX
-        MBeanContainer mbContainer = new MBeanContainer(
-            ManagementFactory.getPlatformMBeanServer());
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer, true);
 
         // Declare server handler collection
@@ -38,16 +36,14 @@ public class ManyServletContexts
         server.setHandler(contexts);
 
         // Configure context "/" (root) for servlets
-        ServletContextHandler root = new ServletContextHandler(contexts, "/",
-            ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
         // Add servlets to root context
         root.addServlet(new ServletHolder(new HelloServlet("Hello")), "/");
         root.addServlet(new ServletHolder(new HelloServlet("Ciao")), "/it/*");
         root.addServlet(new ServletHolder(new HelloServlet("Bonjour")), "/fr/*");
 
         // Configure context "/other" for servlets
-        ServletContextHandler other = new ServletContextHandler(contexts,
-            "/other", ServletContextHandler.SESSIONS);
+        ServletContextHandler other = new ServletContextHandler(contexts, "/other", ServletContextHandler.SESSIONS);
         // Add servlets to /other context
         other.addServlet(DefaultServlet.class.getCanonicalName(), "/");
         other.addServlet(new ServletHolder(new HelloServlet("YO!")), "*.yo");

@@ -13,12 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -27,6 +21,11 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.io.IOException;
+import java.util.Arrays;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 
 public class ExceptionUtilTest
 {
@@ -73,10 +72,13 @@ public class ExceptionUtilTest
 
         assertThrows(Error.class, () -> ExceptionUtil.ifExceptionThrowAs(IOException.class, new Error()));
 
-        assertThrows(RuntimeException.class, () -> ExceptionUtil.ifExceptionThrowAs(IOException.class, new RuntimeException()));
+        assertThrows(
+            RuntimeException.class,
+            () -> ExceptionUtil.ifExceptionThrowAs(IOException.class, new RuntimeException()));
 
         assertThrows(IOException.class, () -> ExceptionUtil.ifExceptionThrowAs(IOException.class, new IOException()));
-        IOException ex = assertThrows(IOException.class, () -> ExceptionUtil.ifExceptionThrowAs(IOException.class, new Exception("cause")));
+        IOException ex = assertThrows(
+            IOException.class, () -> ExceptionUtil.ifExceptionThrowAs(IOException.class, new Exception("cause")));
         assertThat(ex.getCause(), instanceOf(Exception.class));
         assertThat(ex.getCause().getMessage(), is("cause"));
     }
@@ -86,16 +88,22 @@ public class ExceptionUtilTest
     {
         ExceptionUtil.ifExceptionThrowAllAs(IOException.class, null);
 
-        IOException ex = assertThrows(IOException.class, () -> ExceptionUtil.ifExceptionThrowAllAs(IOException.class, new Error()));
+        IOException ex = assertThrows(
+            IOException.class, () -> ExceptionUtil.ifExceptionThrowAllAs(IOException.class, new Error()));
         assertThat(ex.getCause(), instanceOf(Error.class));
 
-        ex = assertThrows(IOException.class, () -> ExceptionUtil.ifExceptionThrowAllAs(IOException.class, new RuntimeException()));
+        ex = assertThrows(
+            IOException.class,
+            () -> ExceptionUtil.ifExceptionThrowAllAs(IOException.class, new RuntimeException()));
         assertThat(ex.getCause(), instanceOf(RuntimeException.class));
 
-        ex = assertThrows(IOException.class, () -> ExceptionUtil.ifExceptionThrowAllAs(IOException.class, new IOException()));
+        ex = assertThrows(
+            IOException.class, () -> ExceptionUtil.ifExceptionThrowAllAs(IOException.class, new IOException()));
         assertThat(ex.getCause(), nullValue());
 
-        ex = assertThrows(IOException.class, () -> ExceptionUtil.ifExceptionThrowAllAs(IOException.class, new Exception("cause")));
+        ex = assertThrows(
+            IOException.class,
+            () -> ExceptionUtil.ifExceptionThrowAllAs(IOException.class, new Exception("cause")));
         assertThat(ex.getCause(), instanceOf(Exception.class));
         assertThat(ex.getCause().getMessage(), is("cause"));
     }

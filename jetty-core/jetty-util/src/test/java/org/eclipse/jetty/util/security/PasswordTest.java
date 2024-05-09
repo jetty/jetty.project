@@ -13,16 +13,6 @@
 
 package org.eclipse.jetty.util.security;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -30,6 +20,15 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.jupiter.api.Test;
 
 public class PasswordTest
 {
@@ -64,10 +63,13 @@ public class PasswordTest
     {
         ProcessBuilder passwordBuilder = new ProcessBuilder()
             .directory(MavenPaths.targetDir().toFile())
-            .command("java",
-                "-cp", MavenTestingUtils.getTargetPath("classes").toString(),
+            .command(
+                "java",
+                "-cp",
+                MavenTestingUtils.getTargetPath("classes").toString(),
                 Password.class.getName(),
-                "user", "password")
+                "user",
+                "password")
             .redirectErrorStream(true);
 
         Process passwordProcess = passwordBuilder.start();
@@ -79,11 +81,10 @@ public class PasswordTest
                 int exitCode = passwordProcess.exitValue();
                 assertThat("Non-error exit code: " + output, exitCode, is(0));
                 assertThat("Output", output, not(containsString("Exception")));
-                assertThat("Output", output, allOf(
-                    containsString("OBF:"),
-                    containsString("MD5:"),
-                    containsString("CRYPT:")
-                ));
+                assertThat(
+                    "Output",
+                    output,
+                    allOf(containsString("OBF:"), containsString("MD5:"), containsString("CRYPT:")));
             }
             else
             {

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.util.List;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 

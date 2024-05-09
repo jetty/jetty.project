@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.maven.plugin;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -52,8 +51,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
      * @return the list of jars found
      */
     @Override
-    protected List<Resource> findJars(WebAppContext context)
-        throws Exception
+    protected List<Resource> findJars(WebAppContext context) throws Exception
     {
         List<Resource> list = new ArrayList<>();
         MavenWebAppContext jwac = (MavenWebAppContext)context;

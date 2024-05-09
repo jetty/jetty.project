@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -21,13 +30,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.stream.Stream;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.WriteListener;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -37,9 +39,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SSLAsyncIOServletTest
 {
@@ -129,11 +128,7 @@ public class SSLAsyncIOServletTest
 
         try (Socket client = scenario.newClient())
         {
-            String request =
-                "GET " + scenario.getServletPath() + " HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+            String request = "GET " + scenario.getServletPath() + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();
@@ -235,7 +230,10 @@ public class SSLAsyncIOServletTest
         @Override
         public Socket newClient() throws IOException
         {
-            return sslContextFactory.getSslContext().getSocketFactory().createSocket("localhost", connector.getLocalPort());
+            return sslContextFactory
+                .getSslContext()
+                .getSocketFactory()
+                .createSocket("localhost", connector.getLocalPort());
         }
 
         @Override

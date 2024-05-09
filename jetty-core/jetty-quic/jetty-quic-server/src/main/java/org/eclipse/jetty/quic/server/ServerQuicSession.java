@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeouts;
@@ -46,7 +45,14 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     private final Connector connector;
     private long expireNanoTime = Long.MAX_VALUE;
 
-    public ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress, Connector connector)
+    public ServerQuicSession(
+                             Executor executor,
+                             Scheduler scheduler,
+                             ByteBufferPool bufferPool,
+                             QuicheConnection quicheConnection,
+                             QuicConnection connection,
+                             SocketAddress remoteAddress,
+                             Connector connector)
     {
         super(executor, scheduler, bufferPool, quicheConnection, connection, remoteAddress);
         this.connector = connector;
@@ -85,7 +91,8 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         if (connectionFactory == null)
             connectionFactory = connector.getDefaultConnectionFactory();
         if (connectionFactory == null)
-            throw new RuntimeIOException("No configured connection factory can handle protocol '" + negotiatedProtocol + "'");
+            throw new RuntimeIOException(
+                "No configured connection factory can handle protocol '" + negotiatedProtocol + "'");
         return connectionFactory;
     }
 

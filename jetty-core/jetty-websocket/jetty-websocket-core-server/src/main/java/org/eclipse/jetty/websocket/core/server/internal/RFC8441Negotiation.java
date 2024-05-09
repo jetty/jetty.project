@@ -22,7 +22,8 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 public class RFC8441Negotiation extends WebSocketNegotiation
 {
-    public RFC8441Negotiation(Request request, Response response, Callback callback, WebSocketComponents components) throws BadMessageException
+    public RFC8441Negotiation(Request request, Response response, Callback callback, WebSocketComponents components)
+        throws BadMessageException
     {
         super(request, response, callback, components);
     }

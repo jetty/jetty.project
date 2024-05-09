@@ -18,7 +18,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -170,7 +169,8 @@ public class PackageAdminServiceTracker implements ServiceListener
      * transitively if and only if the directive visibility is
      * reexport.
      */
-    protected void collectFragmentsAndRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
+    protected void collectFragmentsAndRequiredBundles(
+                                                      Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
     {
         Bundle[] fragments = admin.getFragments(bundle);
         if (fragments != null)
@@ -202,7 +202,8 @@ public class PackageAdminServiceTracker implements ServiceListener
      * transitively if and only if the directive visibility is
      * reexport.
      */
-    protected void collectRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
+    protected void collectRequiredBundles(
+                                          Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
     {
         String requiredBundleHeader = (String)bundle.getHeaders().get("Require-Bundle");
         if (requiredBundleHeader == null)
@@ -287,7 +288,8 @@ public class PackageAdminServiceTracker implements ServiceListener
                 Class<?> c = Class.forName(fragmentActivator);
                 if (c != null)
                 {
-                    BundleActivator bActivator = (BundleActivator)c.getDeclaredConstructor().newInstance();
+                    BundleActivator bActivator =
+                        (BundleActivator)c.getDeclaredConstructor().newInstance();
                     bActivator.start(_context);
                     _activatedFragments.add(bActivator);
                 }
@@ -388,4 +390,3 @@ public class PackageAdminServiceTracker implements ServiceListener
         }
     }
 }
-

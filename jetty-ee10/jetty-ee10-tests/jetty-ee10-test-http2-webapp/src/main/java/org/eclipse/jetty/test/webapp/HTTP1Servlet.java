@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.test.webapp;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -71,77 +70,85 @@ public class HTTP1Servlet extends HttpServlet
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         String host = "localhost";
         int port = request.getServerPort();
         String contextPath = request.getContextPath();
         ServletOutputStream output = response.getOutputStream();
         AsyncContext asyncContext = request.startAsync();
-        http2Client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener() {}, new Promise<>()
-        {
-            @Override
-            public void succeeded(Session session)
+        http2Client.connect(
+            sslContextFactory, new InetSocketAddress(host, port), new Session.Listener()
             {
-                HttpURI uri = HttpURI.from(request.getScheme(), host, port, contextPath + "/h2");
-                MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                HeadersFrame frame = new HeadersFrame(metaData, null, true);
-                session.newStream(frame, new Promise.Adapter<Stream>()
+            }, new Promise<>()
+            {
+                @Override
+                public void succeeded(Session session)
                 {
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                        response.setHeader("X-Failure", "stream");
-                        asyncContext.complete();
-                    }
-                }, new Stream.Listener()
-                {
-                    @Override
-                    public void onDataAvailable(Stream stream)
-                    {
-                        try
+                    HttpURI uri = HttpURI.from(request.getScheme(), host, port, contextPath + "/h2");
+                    MetaData.Request metaData = new MetaData.Request(
+                        HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    HeadersFrame frame = new HeadersFrame(metaData, null, true);
+                    session.newStream(
+                        frame,
+                        new Promise.Adapter<Stream>()
                         {
-                            // Read a chunk of the content.
-                            Stream.Data data = stream.readData();
-                            if (data == null)
+                            @Override
+                            public void failed(Throwable x)
                             {
-                                // No data available now, demand to be called back.
-                                stream.demand();
+                                response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                                response.setHeader("X-Failure", "stream");
+                                asyncContext.complete();
                             }
-                            else
+                        },
+                        new Stream.Listener()
+                        {
+                            @Override
+                            public void onDataAvailable(Stream stream)
                             {
-                                // Process the content.
-                                ByteBuffer buffer = data.frame().getByteBuffer();
-                                byte[] bytes = new byte[buffer.remaining()];
-                                buffer.get(bytes);
-                                output.write(bytes);
-                                // Notify that the content has been consumed.
-                                data.release();
-                                if (!data.frame().isEndStream())
+                                try
                                 {
-                                    // Demand to be called back.
-                                    stream.demand();
+                                    // Read a chunk of the content.
+                                    Stream.Data data = stream.readData();
+                                    if (data == null)
+                                    {
+                                        // No data available now, demand to be called back.
+                                        stream.demand();
+                                    }
+                                    else
+                                    {
+                                        // Process the content.
+                                        ByteBuffer buffer = data.frame().getByteBuffer();
+                                        byte[] bytes = new byte[buffer.remaining()];
+                                        buffer.get(bytes);
+                                        output.write(bytes);
+                                        // Notify that the content has been consumed.
+                                        data.release();
+                                        if (!data.frame().isEndStream())
+                                        {
+                                            // Demand to be called back.
+                                            stream.demand();
+                                        }
+                                        else
+                                            asyncContext.complete();
+                                    }
                                 }
-                                else
+                                catch (IOException x)
+                                {
                                     asyncContext.complete();
+                                }
                             }
-                        }
-                        catch (IOException x)
-                        {
-                            asyncContext.complete();
-                        }
-                    }
-                });
-            }
+                        });
+                }
 
-            @Override
-            public void failed(Throwable x)
-            {
-                response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                response.setHeader("X-Failure", "session");
-                asyncContext.complete();
-            }
-        });
+                @Override
+                public void failed(Throwable x)
+                {
+                    response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                    response.setHeader("X-Failure", "session");
+                    asyncContext.complete();
+                }
+            });
     }
 }

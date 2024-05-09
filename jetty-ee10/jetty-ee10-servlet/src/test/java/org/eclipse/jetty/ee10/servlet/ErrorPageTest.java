@@ -13,19 +13,15 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -40,6 +36,19 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -63,16 +72,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class ErrorPageTest
@@ -105,13 +104,15 @@ public class ErrorPageTest
     @Test
     public void testErrorOverridesMimeTypeAndCharset() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet errorContentServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setContentType("text/html; charset=US-ASCII");
                 PrintWriter writer = response.getWriter();
@@ -152,20 +153,25 @@ public class ErrorPageTest
         assertThat(body, containsString("ERROR_CODE: 595"));
         assertThat(body, containsString("ERROR_EXCEPTION: null"));
         assertThat(body, containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(body, containsString("ERROR_SERVLET: " + errorContentServlet.getClass().getName()));
+        assertThat(
+            body,
+            containsString(
+                "ERROR_SERVLET: " + errorContentServlet.getClass().getName()));
         assertThat(body, containsString("ERROR_REQUEST_URI: /error-mime-charset-writer/"));
     }
 
     @Test
     public void testErrorOverridesStatus() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet errorAndStatusServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(594, "custom get error");
                 response.setStatus(200);
@@ -174,7 +180,6 @@ public class ErrorPageTest
 
         contextHandler.addServlet(errorAndStatusServlet, "/error-and-status/*");
         contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
-
 
         ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
         contextHandler.setErrorHandler(errorPageErrorHandler);
@@ -203,7 +208,10 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_CODE: 594"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + errorAndStatusServlet.getClass().getName()));
+        assertThat(
+            responseBody,
+            Matchers.containsString(
+                "ERROR_SERVLET: " + errorAndStatusServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /error-and-status/anything"));
     }
 
@@ -215,13 +223,15 @@ public class ErrorPageTest
     @Test
     public void testHttp204CannotHaveBody() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(204);
             }
@@ -262,13 +272,15 @@ public class ErrorPageTest
     @Test
     public void testDeleteCannotHaveBody() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet deleteServlet = new HttpServlet()
         {
             @Override
-            protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doDelete(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.getWriter().append("This shouldn't be seen");
                 response.sendError(595, "custom delete");
@@ -305,13 +317,15 @@ public class ErrorPageTest
     @Test
     public void testGenerateAcceptableResponseNoAcceptHeader() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(598);
             }
@@ -348,13 +362,15 @@ public class ErrorPageTest
     @Test
     public void testGenerateAcceptableResponseHtmlAcceptHeader() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(598);
             }
@@ -392,13 +408,15 @@ public class ErrorPageTest
     @Test
     public void testGenerateAcceptableResponseNoHtmlAcceptHeader() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(598);
             }
@@ -416,7 +434,8 @@ public class ErrorPageTest
         rawRequest.append("GET /fail/598 HTTP/1.1\r\n");
         rawRequest.append("Host: test\r\n");
         rawRequest.append("Connection: close\r\n");
-        rawRequest.append("Accept: application/bytes\r\n"); // has an accept header, but not one supported by default in Jetty
+        rawRequest.append(
+            "Accept: application/bytes\r\n"); // has an accept header, but not one supported by default in Jetty
         rawRequest.append("\r\n");
 
         String rawResponse = _connector.getResponse(rawRequest.toString());
@@ -426,13 +445,17 @@ public class ErrorPageTest
         assertThat(response.get(HttpHeader.DATE), notNullValue());
 
         String responseBody = response.getContent();
-        assertThat("No acceptable response capable of being generated, should result in no body", responseBody.length(), is(0));
+        assertThat(
+            "No acceptable response capable of being generated, should result in no body",
+            responseBody.length(),
+            is(0));
     }
 
     @Test
     public void testNestedSendErrorDoesNotLoop() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet syncSendErrorServlet = new HttpServlet()
@@ -440,7 +463,8 @@ public class ErrorPageTest
             public static final AtomicInteger COUNTER = new AtomicInteger();
 
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 int count = COUNTER.incrementAndGet();
 
@@ -453,7 +477,8 @@ public class ErrorPageTest
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(597);
             }
@@ -488,13 +513,15 @@ public class ErrorPageTest
     @Test
     public void testSendErrorClosedResponse() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(599);
                 // The below should result in no operation, as response should be closed.
@@ -540,7 +567,10 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_CODE: 599"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(
+            responseBody,
+            Matchers.containsString(
+                "ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail-closed/"));
 
         assertThat(responseBody, not(containsString("This shouldn't be seen")));
@@ -550,18 +580,21 @@ public class ErrorPageTest
     @Test
     public void testFailResetBufferAfterCommit() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.getWriter().println("Some content");
-                response.flushBuffer(); //cause a commit
+                response.flushBuffer(); // cause a commit
 
-                assertThrows(IllegalStateException.class,
+                assertThrows(
+                    IllegalStateException.class,
                     () -> response.resetBuffer(), // this should throw
                     "Reset after response committed");
             }
@@ -594,18 +627,21 @@ public class ErrorPageTest
     @Test
     public void testCommitSendError() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.getWriter().append("Response committed");
                 response.flushBuffer();
 
-                assertThrows(IllegalStateException.class,
+                assertThrows(
+                    IllegalStateException.class,
                     () -> response.sendError(599), // this should throw
                     "Cannot sendError after commit");
             }
@@ -637,13 +673,15 @@ public class ErrorPageTest
     @Test
     public void testErrorCodeWithParameter() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(599);
             }
@@ -676,7 +714,10 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_CODE: 599"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(
+            responseBody,
+            Matchers.containsString(
+                "ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
         assertThat(responseBody, Matchers.containsString("getQueryString()=[code=param]"));
         assertThat(responseBody, Matchers.containsString("getRequestURL()=[http://test/error/599?code=param]"));
@@ -688,13 +729,15 @@ public class ErrorPageTest
     @Test
     public void testErrorCodeWithWhiteSpaceOnlyQuery() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(599);
             }
@@ -727,7 +770,10 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_CODE: 599"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(
+            responseBody,
+            Matchers.containsString(
+                "ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
         assertThat(responseBody, Matchers.containsString("getQueryString()=[++++]"));
         assertThat(responseBody, Matchers.containsString("getParameterMap().size=1"));
@@ -737,13 +783,15 @@ public class ErrorPageTest
     @Test
     public void testErrorCode() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(599);
             }
@@ -776,21 +824,26 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_CODE: 599"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(
+            responseBody,
+            Matchers.containsString(
+                "ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
     }
 
     @Test
     public void testErrorCodeNoDefaultServletNonExistentErrorLocation() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.getServletHandler().setEnsureDefaultServlet(false);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(599);
             }
@@ -804,7 +857,9 @@ public class ErrorPageTest
         contextHandler.setErrorHandler(errorPageErrorHandler);
 
         startServer(contextHandler);
-        assertNull(contextHandler.getServletHandler().getMatchedServlet("/doesnotexist"), "Context should not have a default servlet");
+        assertNull(
+            contextHandler.getServletHandler().getMatchedServlet("/doesnotexist"),
+            "Context should not have a default servlet");
 
         StringBuilder rawRequest = new StringBuilder();
         rawRequest.append("GET /fail/599 HTTP/1.1\r\n");
@@ -821,19 +876,24 @@ public class ErrorPageTest
         String responseBody = response.getContent();
 
         assertThat(responseBody, Matchers.containsString("<h2>HTTP ERROR 599</h2>"));
-        assertThat(responseBody, Matchers.containsString("<th>SERVLET:</th><td>%s".formatted(failServlet.getClass().getName())));
+        assertThat(
+            responseBody,
+            Matchers.containsString("<th>SERVLET:</th><td>%s"
+                .formatted(failServlet.getClass().getName())));
     }
 
     @Test
     public void testErrorMessage() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(599, "FiveNineNine");
             }
@@ -867,12 +927,16 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: FiveNineNine"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(
+            responseBody,
+            Matchers.containsString(
+                "ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
     }
 
     @ParameterizedTest
-    @CsvSource({
+    @CsvSource(
+    {
         "true,/fail/exception",
         "true,/fail-double-wrap/exception",
         "false,/fail/exception",
@@ -880,13 +944,15 @@ public class ErrorPageTest
     })
     public void testErrorException(boolean unwrapServletException, String path) throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 throw new ServletException(new IllegalStateException("Test Exception"));
             }
@@ -895,7 +961,8 @@ public class ErrorPageTest
         HttpServlet failDoubleWrapServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 throw new ServletException(new ServletException(new IllegalStateException("Test Exception")));
             }
@@ -938,28 +1005,41 @@ public class ErrorPageTest
             if (unwrapServletException)
             {
                 // with unwrap exceptions turned on
-                assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
-                assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
+                assertThat(
+                    responseBody,
+                    Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
+                assertThat(
+                    responseBody,
+                    Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
             }
             else
             {
                 // with unwrap exceptions turned off
-                String expectedException = "jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception";
+                String expectedException =
+                    "jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception";
                 if (isDoubleWrapped)
                     expectedException = "jakarta.servlet.ServletException: " + expectedException;
                 assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: " + expectedException));
-                assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
+                assertThat(
+                    responseBody,
+                    Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
             }
 
             if (isDoubleWrapped)
             {
                 // double wrapped throwable expectations
-                assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: jakarta.servlet.ServletException: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
+                assertThat(
+                    responseBody,
+                    Matchers.containsString(
+                        "ERROR_MESSAGE: jakarta.servlet.ServletException: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
             }
             else
             {
                 // single throwable expectations
-                assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
+                assertThat(
+                    responseBody,
+                    Matchers.containsString(
+                        "ERROR_MESSAGE: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
             }
         }
     }
@@ -967,13 +1047,15 @@ public class ErrorPageTest
     @Test
     public void testGlobalErrorCode() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.sendError(598);
             }
@@ -1006,20 +1088,25 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_CODE: 598"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(
+            responseBody,
+            Matchers.containsString(
+                "ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/global"));
     }
 
     @Test
     public void testGlobalErrorException() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet failServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 int nan = Integer.parseInt("NAN"); // should trigger java.lang.NumberFormatException
             }
@@ -1052,9 +1139,17 @@ public class ErrorPageTest
 
             assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
             assertThat(responseBody, Matchers.containsString("ERROR_CODE: 500"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: java.lang.NumberFormatException: For input string: \"NAN\""));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.NumberFormatException"));
-            assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+            assertThat(
+                responseBody,
+                Matchers.containsString(
+                    "ERROR_EXCEPTION: java.lang.NumberFormatException: For input string: \"NAN\""));
+            assertThat(
+                responseBody,
+                Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.NumberFormatException"));
+            assertThat(
+                responseBody,
+                Matchers.containsString(
+                    "ERROR_SERVLET: " + failServlet.getClass().getName()));
             assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/global"));
         }
     }
@@ -1062,13 +1157,15 @@ public class ErrorPageTest
     @Test
     public void testBadMessage() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet appServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 request.getRequestDispatcher("/longer.app/").forward(request, response);
             }
@@ -1077,7 +1174,8 @@ public class ErrorPageTest
         HttpServlet longerAppServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 request.getParameterMap(); // should trigger a BadMessageException
                 PrintWriter writer = response.getWriter();
@@ -1113,9 +1211,17 @@ public class ErrorPageTest
             assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
             assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: Unable to parse URI query"));
             assertThat(responseBody, Matchers.containsString("ERROR_CODE: 400"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Unable to parse URI query"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
-            assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + appServlet.getClass().getName()));
+            assertThat(
+                responseBody,
+                Matchers.containsString(
+                    "ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Unable to parse URI query"));
+            assertThat(
+                responseBody,
+                Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
+            assertThat(
+                responseBody,
+                Matchers.containsString(
+                    "ERROR_SERVLET: " + appServlet.getClass().getName()));
             assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /app"));
             assertThat(responseBody, Matchers.containsString("getQueryString()=[baa=%88%A4]"));
             assertThat(responseBody, Matchers.containsString("getParameterMap().size=0"));
@@ -1123,12 +1229,12 @@ public class ErrorPageTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "DSC", "SDC", "SCD"
-    })
+    @ValueSource(strings =
+    {"DSC", "SDC", "SCD"})
     public void testAsyncErrorPage(String mode) throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         final CountDownLatch asyncSendErrorCompleted = new CountDownLatch(1);
@@ -1136,7 +1242,8 @@ public class ErrorPageTest
         HttpServlet asyncServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 try
                 {
@@ -1175,7 +1282,9 @@ public class ErrorPageTest
                             hold.countDown();
 
                             // Wait until request async waiting
-                            while (ServletContextRequest.getServletContextRequest(request).getServletRequestState().getState() == ServletChannelState.State.HANDLING)
+                            while (ServletContextRequest.getServletContextRequest(request)
+                                .getServletRequestState()
+                                .getState() == ServletChannelState.State.HANDLING)
                             {
                                 try
                                 {
@@ -1253,7 +1362,10 @@ public class ErrorPageTest
             assertThat(responseBody, Matchers.containsString("ERROR_CODE: 599"));
             assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
             assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-            assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + asyncServlet.getClass().getName()));
+            assertThat(
+                responseBody,
+                Matchers.containsString(
+                    "ERROR_SERVLET: " + asyncServlet.getClass().getName()));
             assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
             assertTrue(asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
         }
@@ -1262,13 +1374,15 @@ public class ErrorPageTest
     @Test
     public void testNoop() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet appServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.getWriter().println("Got to the App");
             }
@@ -1314,20 +1428,24 @@ public class ErrorPageTest
         assertThat(responseBody, not(Matchers.containsString("ERROR_CODE: 404")));
         assertThat(responseBody, not(Matchers.containsString("ERROR_EXCEPTION: null")));
         assertThat(responseBody, not(Matchers.containsString("ERROR_EXCEPTION_TYPE: null")));
-        assertThat(responseBody, not(Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee10.servlet.DefaultServlet-")));
+        assertThat(
+            responseBody,
+            not(Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee10.servlet.DefaultServlet-")));
         assertThat(responseBody, not(Matchers.containsString("ERROR_REQUEST_URI: /noop/info")));
     }
 
     @Test
     public void testNotEnough() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet notEnoughServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setContentLength(1000);
                 response.getOutputStream().write("SomeBytes".getBytes(StandardCharsets.UTF_8));
@@ -1361,20 +1479,25 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_CODE: 500"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
-        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + notEnoughServlet.getClass().getName()));
+        assertThat(
+            responseBody,
+            Matchers.containsString(
+                "ERROR_SERVLET: " + notEnoughServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /notenough/info"));
     }
 
     @Test
     public void testNotEnoughCommitted() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet notEnoughServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setContentLength(1000);
                 response.getOutputStream().write("SomeBytes".getBytes(StandardCharsets.UTF_8));
@@ -1411,7 +1534,8 @@ public class ErrorPageTest
     @Test
     public void testPermanentlyUnavailable() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         AtomicBoolean destroyed = new AtomicBoolean(false);
@@ -1419,7 +1543,8 @@ public class ErrorPageTest
         HttpServlet unavailableServlet = new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 throw new UnavailableException("testing permanent");
             }
@@ -1440,7 +1565,8 @@ public class ErrorPageTest
 
         startServer(contextHandler);
 
-        try (StacklessLogging ignore = new StacklessLogging(contextHandler.getLogger(), LoggerFactory.getLogger(ServletChannel.class)))
+        try (StacklessLogging ignore =
+            new StacklessLogging(contextHandler.getLogger(), LoggerFactory.getLogger(ServletChannel.class)))
         {
             StringBuilder rawRequest = new StringBuilder();
             rawRequest.append("GET /unavailable/info HTTP/1.1\r\n");
@@ -1461,7 +1587,8 @@ public class ErrorPageTest
     @Test
     public void testUnavailable() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         AtomicBoolean destroyed = new AtomicBoolean(false);
@@ -1469,7 +1596,8 @@ public class ErrorPageTest
         HttpServlet unavailableServlet = new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 String ok = request.getParameter("ok");
                 if (Boolean.parseBoolean(ok))
@@ -1502,7 +1630,8 @@ public class ErrorPageTest
 
         startServer(contextHandler);
 
-        try (StacklessLogging ignore = new StacklessLogging(contextHandler.getLogger(), LoggerFactory.getLogger(ServletChannel.class)))
+        try (StacklessLogging ignore =
+            new StacklessLogging(contextHandler.getLogger(), LoggerFactory.getLogger(ServletChannel.class)))
         {
             String request = "GET /unavailable/info?for=1 HTTP/1.0\r\n\r\n";
             HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -1526,13 +1655,15 @@ public class ErrorPageTest
     @Test
     public void testNonUnwrappedMatchExceptionWithErrorPage() throws Exception
     {
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         contextHandler.setContextPath("/");
 
         HttpServlet exceptionServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 throw new TestServletException(new TestException("error page invoked"));
             }
@@ -1563,8 +1694,14 @@ public class ErrorPageTest
             assertThat(response.get(HttpHeader.DATE), notNullValue());
 
             String responseBody = response.getContent();
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.ee10.servlet.ErrorPageTest$TestServletException"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee10.servlet.ErrorPageTest$TestServletException"));
+            assertThat(
+                responseBody,
+                Matchers.containsString(
+                    "ERROR_EXCEPTION: org.eclipse.jetty.ee10.servlet.ErrorPageTest$TestServletException"));
+            assertThat(
+                responseBody,
+                Matchers.containsString(
+                    "ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee10.servlet.ErrorPageTest$TestServletException"));
         }
     }
 
@@ -1578,7 +1715,8 @@ public class ErrorPageTest
         Path html500 = docroot.resolve("500.html");
         Files.writeString(html500, "<h1>This is the 500 HTML</h1>");
 
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler contextHandler =
+            new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
         ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
         contextHandler.setContextPath("/");
         contextHandler.setBaseResource(resourceFactory.newResource(docroot));
@@ -1588,9 +1726,11 @@ public class ErrorPageTest
         HttpServlet exceptionServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
-                throw new ServletException("This exception was thrown for testing purposes by testErrorPage test. It is not a bug!");
+                throw new ServletException(
+                    "This exception was thrown for testing purposes by testErrorPage test. It is not a bug!");
             }
         };
 
@@ -1669,7 +1809,7 @@ public class ErrorPageTest
         String request = """
             GET /async/ HTTP/1.1
             Host: localhost
-            
+
             """;
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
 
@@ -1723,7 +1863,7 @@ public class ErrorPageTest
         String request = """
             GET /async/ HTTP/1.1
             Host: localhost
-            
+
             """;
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
 
@@ -1733,7 +1873,8 @@ public class ErrorPageTest
     public static class ErrorDumpServlet extends HttpServlet
     {
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             if (request.getDispatcherType() != DispatcherType.ERROR && request.getDispatcherType() != DispatcherType.ASYNC)
                 throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
@@ -1789,11 +1930,11 @@ public class ErrorPageTest
         @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
-
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             final Integer key = request.hashCode();
             Thread current = Thread.currentThread();

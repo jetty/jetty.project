@@ -19,7 +19,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -166,7 +165,8 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+    public void send(
+                     MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
     {
         if (response != null)
         {
@@ -180,8 +180,7 @@ public class MockHttpStream implements HttpStream
                 return;
             }
 
-            if (response.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()) &&
-                _channel.getConnectionMetaData() instanceof MockConnectionMetaData mock)
+            if (response.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()) && _channel.getConnectionMetaData() instanceof MockConnectionMetaData mock)
                 mock.notPersistent();
         }
 
@@ -198,7 +197,8 @@ public class MockHttpStream implements HttpStream
                     _responseTrailers = HttpFields.build(trailers);
             }
 
-            if (!_out.compareAndSet(null, _accumulator.takeRetainableByteBuffer().getByteBuffer()))
+            if (!_out.compareAndSet(
+                null, _accumulator.takeRetainableByteBuffer().getByteBuffer()))
             {
                 if (response != null || content != null)
                 {

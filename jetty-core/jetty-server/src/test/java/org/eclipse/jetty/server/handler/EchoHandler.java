@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;

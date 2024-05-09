@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.stream.Stream;
-
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class HostPortTest
 {
@@ -40,7 +39,10 @@ public class HostPortTest
             Arguments.of("::1", "[::1]", -1),
             Arguments.of("[::1]:443", "[::1]", 443),
             // Examples from https://tools.ietf.org/html/rfc2732#section-2
-            Arguments.of("[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:80", "[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]", 80),
+            Arguments.of(
+                "[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:80",
+                "[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]",
+                80),
             Arguments.of("[1080:0:0:0:8:800:200C:417A]", "[1080:0:0:0:8:800:200C:417A]", -1),
             Arguments.of("[3ffe:2a00:100:7031::1]", "[3ffe:2a00:100:7031::1]", -1),
             Arguments.of("[1080::8:800:200C:417A]", "[1080::8:800:200C:417A]", -1),
@@ -48,14 +50,14 @@ public class HostPortTest
             Arguments.of("[::FFFF:129.144.52.38]:80", "[::FFFF:129.144.52.38]", 80),
             Arguments.of("[2010:836B:4179::836B:4179]", "[2010:836B:4179::836B:4179]", -1),
             // Modified Examples from above, not using square brackets (valid, but should never have a port)
-            Arguments.of("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210", "[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]", -1),
+            Arguments.of(
+                "FEDC:BA98:7654:3210:FEDC:BA98:7654:3210", "[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]", -1),
             Arguments.of("1080:0:0:0:8:800:200C:417A", "[1080:0:0:0:8:800:200C:417A]", -1),
             Arguments.of("3ffe:2a00:100:7031::1", "[3ffe:2a00:100:7031::1]", -1),
             Arguments.of("1080::8:800:200C:417A", "[1080::8:800:200C:417A]", -1),
             Arguments.of("::192.9.5.5", "[::192.9.5.5]", -1),
             Arguments.of("::FFFF:129.144.52.38", "[::FFFF:129.144.52.38]", -1),
-            Arguments.of("2010:836B:4179::836B:4179", "[2010:836B:4179::836B:4179]", -1)
-        );
+            Arguments.of("2010:836B:4179::836B:4179", "[2010:836B:4179::836B:4179]", -1));
     }
 
     @ParameterizedTest
@@ -106,22 +108,43 @@ public class HostPortTest
             Arguments.of("127.0.0.1:-80", "127.0.0.1:-80", -1), // ipv4 + invalid port
             Arguments.of("[0::0::0::0::1]:-80", "[0::0::0::0::1]:-80", -1), // ipv6 + invalid port
             Arguments.of("127.0.0.1:65536", "127.0.0.1:65536", -1), // ipv4 + port value too high
-            Arguments.of("example.org:112233445566778899", "example.org:112233445566778899", -1), // ipv4 + port value too high
+            Arguments.of(
+                "example.org:112233445566778899",
+                "example.org:112233445566778899",
+                -1), // ipv4 + port value too high
             // Examples of bad Host header values (usually client bugs that shouldn't allow them to be sent)
             Arguments.of("Group - Machine", "Group - Machine", -1), // spaces
-            Arguments.of("<calculated when request is sent>", "<calculated when request is sent>", -1), // spaces and forbidden characters in reg-name
-            Arguments.of("[link](https://example.org/)", "[link](https://example.org/)", -1), // forbidden characters in reg-name
+            Arguments.of(
+                "<calculated when request is sent>",
+                "<calculated when request is sent>",
+                -1), // spaces and forbidden characters in reg-name
+            Arguments.of(
+                "[link](https://example.org/)",
+                "[link](https://example.org/)",
+                -1), // forbidden characters in reg-name
             Arguments.of("example.org/zed", "example.org/zed", -1), // forbidden character in reg-name (slash)
             // common hacking attempts, seen as values on the `Host:` request header
-            Arguments.of("| ping 127.0.0.1 -n 10", "| ping 127.0.0.1 -n 10", -1), // forbidden characters in reg-name
+            Arguments.of(
+                "| ping 127.0.0.1 -n 10", "| ping 127.0.0.1 -n 10", -1), // forbidden characters in reg-name
             Arguments.of("%uf%80%ff%xx%uffff", "%uf%80%ff%xx%uffff", -1), // (invalid encoding)
-            Arguments.of("[${jndi${:-:}ldap${:-:}]", "[${jndi${:-:}ldap${:-:}]", -1), // log4j hacking (forbidden chars in reg-name)
-            Arguments.of("[${jndi:ldap://example.org:59377/nessus}]", "[${jndi:ldap://example.org:59377/nessus}]", -1), // log4j hacking (forbidden chars in reg-name)
+            Arguments.of(
+                "[${jndi${:-:}ldap${:-:}]",
+                "[${jndi${:-:}ldap${:-:}]",
+                -1), // log4j hacking (forbidden chars in reg-name)
+            Arguments.of(
+                "[${jndi:ldap://example.org:59377/nessus}]",
+                "[${jndi:ldap://example.org:59377/nessus}]",
+                -1), // log4j hacking (forbidden chars in reg-name)
             Arguments.of("${ip}", "${ip}", -1), // variation of log4j hack (forbidden chars in reg-name)
-            Arguments.of("' *; host xyz.hacking.pro; '", "' *; host xyz.hacking.pro; '", -1), // forbidden chars in reg-name
+            Arguments.of(
+                "' *; host xyz.hacking.pro; '",
+                "' *; host xyz.hacking.pro; '",
+                -1), // forbidden chars in reg-name
             Arguments.of("'/**/OR/**/1/**/=/**/1", "'/**/OR/**/1/**/=/**/1", -1), // forbidden chars in reg-name
-            Arguments.of("AND (SELECT 1 FROM(SELECT COUNT(*),CONCAT('x',(SELECT (ELT(1=1,1))),'x',FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.CHARACTER_SETS GROUP BY x)a)", "AND (SELECT 1 FROM(SELECT COUNT(*),CONCAT('x',(SELECT (ELT(1=1,1))),'x',FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.CHARACTER_SETS GROUP BY x)a)", -1)
-        );
+            Arguments.of(
+                "AND (SELECT 1 FROM(SELECT COUNT(*),CONCAT('x',(SELECT (ELT(1=1,1))),'x',FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.CHARACTER_SETS GROUP BY x)a)",
+                "AND (SELECT 1 FROM(SELECT COUNT(*),CONCAT('x',(SELECT (ELT(1=1,1))),'x',FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.CHARACTER_SETS GROUP BY x)a)",
+                -1));
     }
 
     @ParameterizedTest

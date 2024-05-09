@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -41,7 +40,8 @@ import org.slf4j.LoggerFactory;
  * @param <E> the type of mapping endpoint
  */
 @ManagedObject("Path Mappings")
-public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterable<MappedResource<E>>, Dumpable, Predicate<String>
+public class PathMappings<E> extends AbstractMap<PathSpec, E>
+    implements Iterable<MappedResource<E>>, Dumpable, Predicate<String>
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathMappings.class);
     // In prefix matches, this is the length ("/*".length() + 1) - used for the best prefix match loop
@@ -53,18 +53,15 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
      * tried against each mapping (ordered by group then add order) to find the first that matches.
      */
     private boolean _orderIsSignificant;
+
     private boolean _optimizedExact = true;
     private final Map<String, MappedResource<E>> _exactMap = new HashMap<>();
     private boolean _optimizedPrefix = true;
-    private final Index.Mutable<MappedResource<E>> _prefixMap = new Index.Builder<MappedResource<E>>()
-        .caseSensitive(true)
-        .mutable()
-        .build();
+    private final Index.Mutable<MappedResource<E>> _prefixMap =
+        new Index.Builder<MappedResource<E>>().caseSensitive(true).mutable().build();
     private boolean _optimizedSuffix = true;
-    private final Index.Mutable<MappedResource<E>> _suffixMap = new Index.Builder<MappedResource<E>>()
-        .caseSensitive(true)
-        .mutable()
-        .build();
+    private final Index.Mutable<MappedResource<E>> _suffixMap =
+        new Index.Builder<MappedResource<E>>().caseSensitive(true).mutable().build();
 
     private MappedResource<E> _servletRoot;
     private MappedResource<E> _servletDefault;
@@ -73,7 +70,8 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
     public Set<Entry<PathSpec, E>> entrySet()
     {
         @SuppressWarnings("unchecked")
-        Set<Map.Entry<PathSpec, E>> entries = (Set<Map.Entry<PathSpec, E>>)(Set<? extends Map.Entry<PathSpec, E>>)_mappings;
+        Set<Map.Entry<PathSpec, E>> entries =
+            (Set<Map.Entry<PathSpec, E>>)(Set<? extends Map.Entry<PathSpec, E>>)_mappings;
         return entries;
     }
 
@@ -324,7 +322,10 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
         }
 
         if (_servletDefault != null)
-            return new MatchedResource<>(_servletDefault.getResource(), _servletDefault.getPathSpec(), _servletDefault.getPathSpec().matched(path));
+            return new MatchedResource<>(
+                _servletDefault.getResource(),
+                _servletDefault.getPathSpec(),
+                _servletDefault.getPathSpec().matched(path));
 
         return null;
     }
@@ -411,7 +412,8 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
 
                                 matchedPath = suffix.getPathSpec().matched(path);
                                 if (matchedPath != null)
-                                    return new MatchedResource<>(suffix.getResource(), suffix.getPathSpec(), matchedPath);
+                                    return new MatchedResource<>(
+                                        suffix.getResource(), suffix.getPathSpec(), matchedPath);
                             }
                             // If we reached here, there's NO optimized SUFFIX Match possible, skip simple match below
                             skipRestOfGroup = true;
@@ -485,7 +487,8 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
                 {
                     // This is not a Servlet mapping, turn off optimization on Exact
                     // TODO: see if we can optimize all Regex / UriTemplate versions here too.
-                    // Note: Example exact in Regex that can cause problems `^/a\Q/b\E/` (which is only ever matching `/a/b/`)
+                    // Note: Example exact in Regex that can cause problems `^/a\Q/b\E/` (which is only ever matching
+                    // `/a/b/`)
                     // Note: UriTemplate can handle exact easily enough
                     _optimizedExact = false;
                     _orderIsSignificant = true;
@@ -502,7 +505,8 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
                 {
                     // This is not a Servlet mapping, turn off optimization on Prefix
                     // TODO: see if we can optimize all Regex / UriTemplate versions here too.
-                    // Note: Example Prefix in Regex that can cause problems `^/a/b+` or `^/a/bb*` ('b' one or more times)
+                    // Note: Example Prefix in Regex that can cause problems `^/a/b+` or `^/a/bb*` ('b' one or more
+                    // times)
                     // Note: Example Prefix in UriTemplate that might cause problems `/a/{b}/{c}`
                     _optimizedPrefix = false;
                     _orderIsSignificant = true;
@@ -621,14 +625,16 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
                     _servletRoot = _mappings.stream()
                         .filter(mapping -> mapping.getPathSpec().getGroup() == PathSpecGroup.ROOT)
                         .filter(mapping -> mapping.getPathSpec() instanceof ServletPathSpec)
-                        .findFirst().orElse(null);
+                        .findFirst()
+                        .orElse(null);
                     _orderIsSignificant = nonServletPathSpec();
                     break;
                 case DEFAULT:
                     _servletDefault = _mappings.stream()
                         .filter(mapping -> mapping.getPathSpec().getGroup() == PathSpecGroup.DEFAULT)
                         .filter(mapping -> mapping.getPathSpec() instanceof ServletPathSpec)
-                        .findFirst().orElse(null);
+                        .findFirst()
+                        .orElse(null);
                     _orderIsSignificant = nonServletPathSpec();
                     break;
             }
@@ -646,8 +652,7 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
 
     private boolean nonServletPathSpec()
     {
-        return _mappings.stream()
-            .allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
+        return _mappings.stream().allMatch((mapping) -> mapping.getPathSpec() instanceof ServletPathSpec);
     }
 
     @Override

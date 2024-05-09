@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -20,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -47,8 +48,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class IdleTimeoutTest
@@ -83,20 +82,21 @@ public class IdleTimeoutTest
 
         AtomicBoolean established = new AtomicBoolean();
         CountDownLatch disconnectLatch = new CountDownLatch(1);
-        RawHTTP3ServerConnectionFactory h3 = new RawHTTP3ServerConnectionFactory(serverQuicConfig, new Session.Server.Listener()
-        {
-            @Override
-            public void onAccept(Session session)
+        RawHTTP3ServerConnectionFactory h3 =
+            new RawHTTP3ServerConnectionFactory(serverQuicConfig, new Session.Server.Listener()
             {
-                established.set(true);
-            }
+                @Override
+                public void onAccept(Session session)
+                {
+                    established.set(true);
+                }
 
-            @Override
-            public void onDisconnect(Session session, long error, String reason)
-            {
-                disconnectLatch.countDown();
-            }
-        });
+                @Override
+                public void onDisconnect(Session session, long error, String reason)
+                {
+                    disconnectLatch.countDown();
+                }
+            });
 
         CountDownLatch closeLatch = new CountDownLatch(1);
         QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, h3)
@@ -107,9 +107,17 @@ public class IdleTimeoutTest
                 return new ServerQuicConnection(this, getQuicConfiguration(), endpoint)
                 {
                     @Override
-                    protected ServerQuicSession newQuicSession(SocketAddress remoteAddress, QuicheConnection quicheConnection)
+                    protected ServerQuicSession newQuicSession(
+                                                               SocketAddress remoteAddress, QuicheConnection quicheConnection)
                     {
-                        return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector())
+                        return new ServerQuicSession(
+                            getExecutor(),
+                            getScheduler(),
+                            getByteBufferPool(),
+                            quicheConnection,
+                            this,
+                            remoteAddress,
+                            getQuicServerConnector())
                         {
                             @Override
                             public int flush(long streamId, ByteBuffer buffer, boolean last) throws IOException
@@ -139,12 +147,21 @@ public class IdleTimeoutTest
         http3Client.getClientConnector().setSslContextFactory(sslClient);
         http3Client.start();
 
-        Session.Client session = http3Client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
+        Session.Client session = http3Client
+            .connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener()
+            {
+            })
             .get(5, TimeUnit.SECONDS);
 
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:" + connector.getLocalPort() + "/path"), HttpVersion.HTTP_3, HttpFields.EMPTY);
+        MetaData.Request request = new MetaData.Request(
+            "GET",
+            HttpURI.from("http://localhost:" + connector.getLocalPort() + "/path"),
+            HttpVersion.HTTP_3,
+            HttpFields.EMPTY);
         // The request will complete exceptionally.
-        session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener() {});
+        session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener()
+        {
+        });
 
         assertTrue(closeLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
         assertTrue(disconnectLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));

@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
@@ -20,10 +24,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ResponsePatternRuleTest extends AbstractRuleTest
 {
@@ -50,7 +50,7 @@ public class ResponsePatternRuleTest extends AbstractRuleTest
         String request = """
             GET /test HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -67,7 +67,7 @@ public class ResponsePatternRuleTest extends AbstractRuleTest
         String request = """
             GET /test HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));

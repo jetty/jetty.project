@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.streaming;
 
-import java.io.IOException;
-import java.io.Reader;
-
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.io.Reader;
 import org.eclipse.jetty.toolchain.test.StackUtils;
 import org.eclipse.jetty.util.IO;
 import org.slf4j.Logger;

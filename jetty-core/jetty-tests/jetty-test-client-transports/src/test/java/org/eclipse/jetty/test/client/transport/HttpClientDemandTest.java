@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.InterruptedIOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -26,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
-
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
@@ -46,18 +57,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class HttpClientDemandTest extends AbstractTest
 {
     @ParameterizedTest
@@ -71,7 +70,8 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 try
                 {
@@ -89,31 +89,30 @@ public class HttpClientDemandTest extends AbstractTest
         });
 
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
-            .send(new BufferingResponseListener()
+        client.newRequest(newURI(transport)).send(new BufferingResponseListener()
+        {
+            private final AtomicInteger chunks = new AtomicInteger();
+
+            @Override
+            public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                private final AtomicInteger chunks = new AtomicInteger();
+                if (chunks.incrementAndGet() == 1)
+                    contentLatch.countDown();
+                // Need to demand also after the second
+                // chunk to allow the parser to proceed
+                // and complete the response.
+                demander.run();
+            }
 
-                @Override
-                public void onContent(Response response, Content.Chunk chunk, Runnable demander)
-                {
-                    if (chunks.incrementAndGet() == 1)
-                        contentLatch.countDown();
-                    // Need to demand also after the second
-                    // chunk to allow the parser to proceed
-                    // and complete the response.
-                    demander.run();
-                }
-
-                @Override
-                public void onComplete(Result result)
-                {
-                    assertTrue(result.isSucceeded());
-                    Response response = result.getResponse();
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-                    resultLatch.countDown();
-                }
-            });
+            @Override
+            public void onComplete(Result result)
+            {
+                assertTrue(result.isSucceeded());
+                Response response = result.getResponse();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                resultLatch.countDown();
+            }
+        });
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
@@ -146,27 +145,26 @@ public class HttpClientDemandTest extends AbstractTest
         Queue<Runnable> demanderQueue = new ConcurrentLinkedQueue<>();
         Queue<Content.Chunk> contentQueue = new ConcurrentLinkedQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest(newURI(transport))
-            .send(new BufferingResponseListener()
+        client.newRequest(newURI(transport)).send(new BufferingResponseListener()
+        {
+            @Override
+            public void onContent(Response response, Content.Chunk chunk, Runnable demander)
             {
-                @Override
-                public void onContent(Response response, Content.Chunk chunk, Runnable demander)
-                {
-                    // Store the chunk and don't demand.
-                    chunk.retain();
-                    contentQueue.offer(chunk);
-                    demanderQueue.offer(demander);
-                }
+                // Store the chunk and don't demand.
+                chunk.retain();
+                contentQueue.offer(chunk);
+                demanderQueue.offer(demander);
+            }
 
-                @Override
-                public void onComplete(Result result)
-                {
-                    assertTrue(result.isSucceeded());
-                    Response response = result.getResponse();
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-                    resultLatch.countDown();
-                }
-            });
+            @Override
+            public void onComplete(Result result)
+            {
+                assertTrue(result.isSucceeded());
+                Response response = result.getResponse();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                resultLatch.countDown();
+            }
+        });
 
         // Wait for the client to receive data from the server.
         // Wait a bit more to be sure it only receives 1 buffer.
@@ -188,7 +186,10 @@ public class HttpClientDemandTest extends AbstractTest
         assertNotNull(demander);
         long begin = NanoTime.now();
         // Spin on demand until content.length bytes have been read.
-        while (content.length > contentQueue.stream().map(Content.Chunk::getByteBuffer).mapToInt(Buffer::remaining).sum())
+        while (content.length > contentQueue.stream()
+            .map(Content.Chunk::getByteBuffer)
+            .mapToInt(Buffer::remaining)
+            .sum())
         {
             if (NanoTime.millisSince(begin) > 5000L)
                 fail("Failed to demand all content");
@@ -217,7 +218,8 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 try
                 {
@@ -386,7 +388,8 @@ public class HttpClientDemandTest extends AbstractTest
         start(transport, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP);
                 try (GZIPOutputStream gzip = new GZIPOutputStream(Content.Sink.asOutputStream(response)))
@@ -416,7 +419,8 @@ public class HttpClientDemandTest extends AbstractTest
             .send(result ->
             {
                 Assertions.assertTrue(result.isSucceeded());
-                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                Assertions.assertEquals(
+                    HttpStatus.OK_200, result.getResponse().getStatus());
                 resultLatch.countDown();
             });
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
@@ -481,7 +485,8 @@ public class HttpClientDemandTest extends AbstractTest
             .send(result ->
             {
                 Assertions.assertTrue(result.isSucceeded());
-                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                Assertions.assertEquals(
+                    HttpStatus.OK_200, result.getResponse().getStatus());
                 resultLatch.countDown();
             });
 
@@ -541,7 +546,8 @@ public class HttpClientDemandTest extends AbstractTest
             .send(result ->
             {
                 Assertions.assertTrue(result.isSucceeded());
-                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                Assertions.assertEquals(
+                    HttpStatus.OK_200, result.getResponse().getStatus());
                 resultLatch.countDown();
             });
 
@@ -573,7 +579,8 @@ public class HttpClientDemandTest extends AbstractTest
             .send(result ->
             {
                 Assertions.assertTrue(result.isSucceeded());
-                Assertions.assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                Assertions.assertEquals(
+                    HttpStatus.OK_200, result.getResponse().getStatus());
                 resultLatch.countDown();
             });
 
@@ -581,12 +588,14 @@ public class HttpClientDemandTest extends AbstractTest
 
         Content.Chunk lastChunk = chunks.get(chunks.size() - 1);
         assertThat(lastChunk.isLast(), is(true));
-        int accumulatedSize = chunks.stream().mapToInt(chunk ->
-        {
-            int remaining = chunk.remaining();
-            chunk.release();
-            return remaining;
-        }).sum();
+        int accumulatedSize = chunks.stream()
+            .mapToInt(chunk ->
+            {
+                int remaining = chunk.remaining();
+                chunk.release();
+                return remaining;
+            })
+            .sum();
         assertThat(accumulatedSize, is(totalBytes));
     }
 
@@ -626,13 +635,15 @@ public class HttpClientDemandTest extends AbstractTest
         }
 
         @Override
-        public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
             IteratingCallback iteratingCallback = new IteratingNestedCallback(callback)
             {
                 int count = 0;
+
                 @Override
                 protected Action process()
                 {

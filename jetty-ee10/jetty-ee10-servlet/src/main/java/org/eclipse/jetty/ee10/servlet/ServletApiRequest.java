@@ -13,6 +13,25 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletConnection;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestAttributeEvent;
+import jakarta.servlet.ServletRequestAttributeListener;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletMapping;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpUpgradeHandler;
+import jakarta.servlet.http.Part;
+import jakarta.servlet.http.PushBuilder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,26 +54,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletConnection;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletRequestAttributeEvent;
-import jakarta.servlet.ServletRequestAttributeListener;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletMapping;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpUpgradeHandler;
-import jakarta.servlet.http.Part;
-import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletRequestInfo;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
@@ -125,15 +124,24 @@ public class ServletApiRequest implements HttpServletRequest
                     else
                     {
                         _queryParameters = new Fields(true);
-                        UrlEncoded.decodeTo(forwardQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                        UrlEncoded.decodeTo(
+                            forwardQueryString,
+                            _queryParameters::add,
+                            getServletRequestInfo().getQueryEncoding());
                     }
                 }
                 else
                 {
                     _queryParameters = new Fields(true);
                     if (!StringUtil.isBlank(originalQueryString))
-                        UrlEncoded.decodeTo(originalQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
-                    UrlEncoded.decodeTo(forwardQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                        UrlEncoded.decodeTo(
+                            originalQueryString,
+                            _queryParameters::add,
+                            getServletRequestInfo().getQueryEncoding());
+                    UrlEncoded.decodeTo(
+                        forwardQueryString,
+                        _queryParameters::add,
+                        getServletRequestInfo().getQueryEncoding());
                 }
             }
         }
@@ -148,28 +156,39 @@ public class ServletApiRequest implements HttpServletRequest
             super(servletContextRequest);
             Request dispatchedRequest = servletContextRequest.getWrapped();
 
-            _originalMapping = ServletPathMapping.from(dispatchedRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING));
+            _originalMapping = ServletPathMapping.from(
+                dispatchedRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING));
 
-            //ensure the request is set up with the correct INCLUDE attributes now we know the matchedResource
+            // ensure the request is set up with the correct INCLUDE attributes now we know the matchedResource
             MatchedResource<ServletHandler.MappedServlet> matchedResource = servletContextRequest.getMatchedResource();
-            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, matchedResource.getResource().getServletPathMapping(getServletRequestInfo().getDecodedPathInContext()));
-            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, matchedResource.getMatchedPath().getPathMatch());
-            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, matchedResource.getMatchedPath().getPathInfo());
-            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, servletContextRequest.getContext().getContextPath());
+            dispatchedRequest.setAttribute(
+                RequestDispatcher.INCLUDE_MAPPING,
+                matchedResource
+                    .getResource()
+                    .getServletPathMapping(getServletRequestInfo().getDecodedPathInContext()));
+            dispatchedRequest.setAttribute(
+                RequestDispatcher.INCLUDE_SERVLET_PATH,
+                matchedResource.getMatchedPath().getPathMatch());
+            dispatchedRequest.setAttribute(
+                RequestDispatcher.INCLUDE_PATH_INFO,
+                matchedResource.getMatchedPath().getPathInfo());
+            dispatchedRequest.setAttribute(
+                RequestDispatcher.INCLUDE_CONTEXT_PATH,
+                servletContextRequest.getContext().getContextPath());
         }
-        
+
         @Override
         public String getPathInfo()
         {
             return _originalMapping == null ? null : _originalMapping.getPathInfo();
         }
-        
+
         @Override
         public String getContextPath()
         {
             return (String)getAttribute(CrossContextDispatcher.ORIGINAL_CONTEXT_PATH);
         }
-        
+
         @Override
         public String getQueryString()
         {
@@ -212,15 +231,24 @@ public class ServletApiRequest implements HttpServletRequest
                     else
                     {
                         _queryParameters = new Fields(true);
-                        UrlEncoded.decodeTo(includedQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                        UrlEncoded.decodeTo(
+                            includedQueryString,
+                            _queryParameters::add,
+                            getServletRequestInfo().getQueryEncoding());
                     }
                 }
                 else
                 {
                     _queryParameters = new Fields(true);
                     if (!StringUtil.isBlank(originalQueryString))
-                        UrlEncoded.decodeTo(originalQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
-                    UrlEncoded.decodeTo(includedQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                        UrlEncoded.decodeTo(
+                            originalQueryString,
+                            _queryParameters::add,
+                            getServletRequestInfo().getQueryEncoding());
+                    UrlEncoded.decodeTo(
+                        includedQueryString,
+                        _queryParameters::add,
+                        getServletRequestInfo().getQueryEncoding());
                 }
             }
         }
@@ -373,9 +401,10 @@ public class ServletApiRequest implements HttpServletRequest
 
     private Cookie convertCookie(HttpCookie cookie)
     {
-        CookieCompliance compliance = getRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance();
+        CookieCompliance compliance =
+            getRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance();
         Cookie result = new Cookie(cookie.getName(), cookie.getValue());
-        //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
+        // RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
         if (CookieCompliance.RFC2965.equals(compliance))
         {
             result.setPath(cookie.getPath());
@@ -442,7 +471,10 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getContextPath()
     {
-        return getServletRequestInfo().getServletContext().getServletContextHandler().getRequestContextPath();
+        return getServletRequestInfo()
+            .getServletContext()
+            .getServletContextHandler()
+            .getRequestContextPath();
     }
 
     @Override
@@ -463,8 +495,12 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean isUserInRole(String role)
     {
-        //obtain any substituted role name from the destination servlet
-        String linkedRole = getServletRequestInfo().getMatchedResource().getResource().getServletHolder().getUserRoleLink(role);
+        // obtain any substituted role name from the destination servlet
+        String linkedRole = getServletRequestInfo()
+            .getMatchedResource()
+            .getResource()
+            .getServletHolder()
+            .getUserRoleLink(role);
         AuthenticationState authenticationState = getUndeferredAuthentication();
 
         if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
@@ -489,7 +525,8 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getRequestedSessionId()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        AbstractSessionManager.RequestedSession requestedSession =
+            getServletRequestInfo().getRequestedSession();
         return requestedSession == null ? null : requestedSession.sessionId();
     }
 
@@ -503,8 +540,10 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public StringBuffer getRequestURL()
     {
-        // Use the ServletContextRequest here as even if changed in the Request, it must match the servletPath and pathInfo
-        return new StringBuffer(HttpURI.build(getRequest().getHttpURI()).query(null).asString());
+        // Use the ServletContextRequest here as even if changed in the Request, it must match the servletPath and
+        // pathInfo
+        return new StringBuffer(
+            HttpURI.build(getRequest().getHttpURI()).query(null).asString());
     }
 
     @Override
@@ -548,55 +587,55 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        AbstractSessionManager.RequestedSession requestedSession =
+            getServletRequestInfo().getRequestedSession();
         HttpSession session = getSession(false);
         SessionManager manager = getServletRequestInfo().getSessionManager();
-        return requestedSession != null &&
-            requestedSession.sessionId() != null &&
-            requestedSession.session() != null &&
-            requestedSession.session().isValid() &&
-            manager != null &&
-            manager.getSessionIdManager().getId(requestedSession.sessionId()).equals(session.getId());
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.session() != null && requestedSession.session().isValid() && manager != null && manager.getSessionIdManager()
+            .getId(requestedSession.sessionId())
+            .equals(session.getId());
     }
 
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        AbstractSessionManager.RequestedSession requestedSession =
+            getServletRequestInfo().getRequestedSession();
         return requestedSession != null && requestedSession.sessionId() != null && requestedSession.sessionIdFromCookie();
     }
 
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        AbstractSessionManager.RequestedSession requestedSession =
+            getServletRequestInfo().getRequestedSession();
         return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
     }
 
     @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
-        //TODO: if authentication is deferred, we could authenticate first, otherwise we
-        //are re-authenticating for each of getUserPrincipal, getRemoteUser and getAuthType
+        // TODO: if authentication is deferred, we could authenticate first, otherwise we
+        // are re-authenticating for each of getUserPrincipal, getRemoteUser and getAuthType
 
-        //if already authenticated, return true
+        // if already authenticated, return true
         if (getUserPrincipal() != null && getRemoteUser() != null && getAuthType() != null)
             return true;
 
-        //do the authentication
+        // do the authentication
         AuthenticationState authenticationState = getUndeferredAuthentication();
 
-        //if the authentication did not succeed
+        // if the authentication did not succeed
         if (authenticationState instanceof AuthenticationState.Deferred)
             response.sendError(HttpStatus.UNAUTHORIZED_401);
 
-        //if the authentication is incomplete, return false
+        // if the authentication is incomplete, return false
         if (!(authenticationState instanceof AuthenticationState.ResponseSent))
             return false;
 
-        //TODO: this should only be returned IFF the authenticator has NOT set the response,
-        //and the BasicAuthenticator at least will have set the response to SC_UNAUTHENTICATED
-        //something has gone wrong
+        // TODO: this should only be returned IFF the authenticator has NOT set the response,
+        // and the BasicAuthenticator at least will have set the response to SC_UNAUTHENTICATED
+        // something has gone wrong
         throw new ServletException("Authentication failed");
     }
 
@@ -607,7 +646,10 @@ public class ServletApiRequest implements HttpServletRequest
         {
             ServletRequestInfo servletRequestInfo = getServletRequestInfo();
             AuthenticationState.Succeeded succeededAuthentication = AuthenticationState.login(
-                username, password, getRequest(), servletRequestInfo.getServletChannel().getServletContextResponse());
+                username,
+                password,
+                getRequest(),
+                servletRequestInfo.getServletChannel().getServletContextResponse());
 
             if (succeededAuthentication == null)
                 throw new QuietException.Exception("Authentication failed for username '" + username + "'");
@@ -622,19 +664,21 @@ public class ServletApiRequest implements HttpServletRequest
     public void logout() throws ServletException
     {
         ServletRequestInfo servletRequestInfo = getServletRequestInfo();
-        if (!AuthenticationState.logout(getRequest(), servletRequestInfo.getServletChannel().getServletContextResponse()))
+        if (!AuthenticationState.logout(
+            getRequest(), servletRequestInfo.getServletChannel().getServletContextResponse()))
             throw new ServletException("logout failed");
     }
 
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
-        //TODO support parts read during a cross context dispatch to environment other than EE10
+        // TODO support parts read during a cross context dispatch to environment other than EE10
         if (_parts == null)
         {
             try
             {
-                CompletableFuture<ServletMultiPartFormData.Parts> futureServletMultiPartFormData = ServletMultiPartFormData.from(this);
+                CompletableFuture<ServletMultiPartFormData.Parts> futureServletMultiPartFormData =
+                    ServletMultiPartFormData.from(this);
 
                 _parts = futureServletMultiPartFormData.get();
 
@@ -669,7 +713,8 @@ public class ServletApiRequest implements HttpServletRequest
                     defaultCharset = StandardCharsets.UTF_8;
 
                 // Recheck some constraints here, just in case the preloaded parts were not properly configured.
-                ServletContextHandler servletContextHandler = getServletRequestInfo().getServletContext().getServletContextHandler();
+                ServletContextHandler servletContextHandler =
+                    getServletRequestInfo().getServletContext().getServletContextHandler();
                 long maxFormContentSize = servletContextHandler.getMaxFormContentSize();
                 int maxFormKeys = servletContextHandler.getMaxFormKeys();
 
@@ -693,7 +738,8 @@ public class ServletApiRequest implements HttpServletRequest
 
                         try (InputStream is = p.getInputStream())
                         {
-                            String content = IO.toString(is, charset == null ? defaultCharset : Charset.forName(charset));
+                            String content =
+                                IO.toString(is, charset == null ? defaultCharset : Charset.forName(charset));
                             if (_contentParameters == null || _contentParameters.isEmpty())
                                 _contentParameters = new Fields(true);
                             _contentParameters.add(p.getName(), content);
@@ -744,15 +790,16 @@ public class ServletApiRequest implements HttpServletRequest
         if (!getRequest().getConnectionMetaData().isPushSupported())
             return null;
 
-        HttpFields.Mutable pushHeaders = HttpFields.build(getRequest().getHeaders(), EnumSet.of(
-            HttpHeader.IF_MATCH,
-            HttpHeader.IF_RANGE,
-            HttpHeader.IF_UNMODIFIED_SINCE,
-            HttpHeader.RANGE,
-            HttpHeader.EXPECT,
-            HttpHeader.IF_NONE_MATCH,
-            HttpHeader.IF_MODIFIED_SINCE)
-        );
+        HttpFields.Mutable pushHeaders = HttpFields.build(
+            getRequest().getHeaders(),
+            EnumSet.of(
+                HttpHeader.IF_MATCH,
+                HttpHeader.IF_RANGE,
+                HttpHeader.IF_UNMODIFIED_SINCE,
+                HttpHeader.RANGE,
+                HttpHeader.EXPECT,
+                HttpHeader.IF_NONE_MATCH,
+                HttpHeader.IF_MODIFIED_SINCE));
 
         String referrer = getRequestURL().toString();
         String query = getQueryString();
@@ -871,7 +918,10 @@ public class ServletApiRequest implements HttpServletRequest
         }
 
         if (_charset == null)
-            return getServletRequestInfo().getServletContext().getServletContext().getRequestCharacterEncoding();
+            return getServletRequestInfo()
+                .getServletContext()
+                .getServletContext()
+                .getRequestCharacterEncoding();
 
         return _charset.name();
     }
@@ -990,25 +1040,30 @@ public class ServletApiRequest implements HttpServletRequest
                 if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
                 {
                     String baseType = HttpField.getValueParameters(getContentType(), null);
-                    if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
-                        getRequest().getConnectionMetaData().getHttpConfiguration().isFormEncodedMethod(getMethod()))
+                    if (MimeTypes.Type.FORM_ENCODED.is(baseType) && getRequest()
+                        .getConnectionMetaData()
+                        .getHttpConfiguration()
+                        .isFormEncodedMethod(getMethod()))
                     {
                         try
                         {
-                            ServletContextHandler contextHandler = getServletRequestInfo().getServletContextHandler();
+                            ServletContextHandler contextHandler =
+                                getServletRequestInfo().getServletContextHandler();
                             int maxKeys = contextHandler.getMaxFormKeys();
                             int maxContentSize = contextHandler.getMaxFormContentSize();
-                            _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
+                            _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize)
+                                .get();
                         }
-                        catch (IllegalStateException | IllegalArgumentException | ExecutionException |
-                               InterruptedException e)
+                        catch (IllegalStateException
+                            | IllegalArgumentException
+                            | ExecutionException
+                            | InterruptedException e)
                         {
                             LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
-                    else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
-                        getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) != null)
+                    else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) && getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) != null)
                     {
                         try
                         {
@@ -1039,8 +1094,10 @@ public class ServletApiRequest implements HttpServletRequest
                         {
                             _contentParameters = FormFields.get(getRequest()).get();
                         }
-                        catch (IllegalStateException | IllegalArgumentException | ExecutionException |
-                               InterruptedException e)
+                        catch (IllegalStateException
+                            | IllegalArgumentException
+                            | ExecutionException
+                            | InterruptedException e)
                         {
                             LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
@@ -1072,7 +1129,8 @@ public class ServletApiRequest implements HttpServletRequest
             {
                 try
                 {
-                    _queryParameters = Request.extractQueryParameters(getRequest(), getServletRequestInfo().getQueryEncoding());
+                    _queryParameters = Request.extractQueryParameters(
+                        getRequest(), getServletRequestInfo().getQueryEncoding());
                 }
                 catch (IllegalStateException | IllegalArgumentException e)
                 {
@@ -1244,7 +1302,11 @@ public class ServletApiRequest implements HttpServletRequest
 
         if (!getServletRequestInfo().getRequestAttributeListeners().isEmpty())
         {
-            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(getServletRequestInfo().getServletContext().getServletContext(), this, name, oldValue == null ? attribute : oldValue);
+            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(
+                getServletRequestInfo().getServletContext().getServletContext(),
+                this,
+                name,
+                oldValue == null ? attribute : oldValue);
             for (ServletRequestAttributeListener l : getServletRequestInfo().getRequestAttributeListeners())
             {
                 if (oldValue == null)
@@ -1264,7 +1326,8 @@ public class ServletApiRequest implements HttpServletRequest
 
         if (oldValue != null && !getServletRequestInfo().getRequestAttributeListeners().isEmpty())
         {
-            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(getServletRequestInfo().getServletContext().getServletContext(), this, name, oldValue);
+            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(
+                getServletRequestInfo().getServletContext().getServletContext(), this, name, oldValue);
             for (ServletRequestAttributeListener listener : getServletRequestInfo().getRequestAttributeListeners())
             {
                 listener.attributeRemoved(event);
@@ -1293,7 +1356,8 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public RequestDispatcher getRequestDispatcher(String path)
     {
-        ServletContextHandler.ServletScopedContext context = getServletRequestInfo().getServletContext();
+        ServletContextHandler.ServletScopedContext context =
+            getServletRequestInfo().getServletContext();
         if (path == null || context == null)
             return null;
 
@@ -1358,20 +1422,30 @@ public class ServletApiRequest implements HttpServletRequest
         if (_async == null)
             _async = new AsyncContextState(state);
         ServletRequestInfo servletRequestInfo = getServletRequestInfo();
-        AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, this, servletRequestInfo.getServletChannel().getServletContextResponse().getServletApiResponse());
+        AsyncContextEvent event = new AsyncContextEvent(
+            getServletRequestInfo().getServletContext(),
+            _async,
+            state,
+            this,
+            servletRequestInfo
+                .getServletChannel()
+                .getServletContextResponse()
+                .getServletApiResponse());
         state.startAsync(event);
         return _async;
     }
 
     @Override
-    public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException
+    public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse)
+        throws IllegalStateException
     {
         if (!isAsyncSupported())
             throw new IllegalStateException("Async Not Supported");
         ServletChannelState state = getServletRequestInfo().getState();
         if (_async == null)
             _async = new AsyncContextState(state);
-        AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, servletRequest, servletResponse);
+        AsyncContextEvent event = new AsyncContextEvent(
+            getServletRequestInfo().getServletContext(), _async, state, servletRequest, servletResponse);
         state.startAsync(event);
         return _async;
     }
@@ -1379,7 +1453,10 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return getServletRequestInfo().getMatchedResource().getResource().getServletPathMapping(getServletRequestInfo().getDecodedPathInContext());
+        return getServletRequestInfo()
+            .getMatchedResource()
+            .getResource()
+            .getServletPathMapping(getServletRequestInfo().getDecodedPathInContext());
     }
 
     @Override

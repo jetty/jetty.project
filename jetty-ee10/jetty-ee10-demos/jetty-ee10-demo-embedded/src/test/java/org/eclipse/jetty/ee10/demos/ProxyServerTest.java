@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.ee10.demos;
 
-import java.net.URI;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
+import java.net.URI;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.http.HttpMethod;
@@ -26,11 +29,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-
-@Disabled //TODO
+@Disabled // TODO
 public class ProxyServerTest extends AbstractEmbeddedTest
 {
     private Server server;
@@ -57,15 +56,16 @@ public class ProxyServerTest extends AbstractEmbeddedTest
     {
         URI uri = URI.create("https://tools.ietf.org/rfc/rfc7230.txt");
 
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
 
         // test response content
         String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody, containsString("Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing"));
+        assertThat(
+            "Response Content",
+            responseBody,
+            containsString("Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing"));
     }
 }

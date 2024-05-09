@@ -13,14 +13,18 @@
 
 package org.eclipse.jetty.ee10.servlets;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+
+import jakarta.servlet.Servlet;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
-import jakarta.servlet.Servlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -38,11 +42,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-
 /**
  * Test the {@code GzipHandler} support for the various ways that an App can set {@code Content-Length}.
  */
@@ -51,7 +50,8 @@ public class GzipContentLengthTest extends AbstractGzipTest
 {
     enum GzipMode
     {
-        INTERNAL, EXTERNAL
+        INTERNAL,
+        EXTERNAL
     }
 
     public static Stream<Arguments> scenarios()
@@ -130,7 +130,8 @@ public class GzipContentLengthTest extends AbstractGzipTest
             {
                 // Not compressible (not large enough)
                 scenarios.add(Arguments.of(gzipMode, servlet, 0, "empty.txt", false));
-                scenarios.add(Arguments.of(gzipMode, servlet, GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2, "file-tiny.txt", false));
+                scenarios.add(
+                    Arguments.of(gzipMode, servlet, GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2, "file-tiny.txt", false));
 
                 // Compressible.
                 scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE / 2, "file-small.txt", true));
@@ -157,7 +158,13 @@ public class GzipContentLengthTest extends AbstractGzipTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void executeScenario(GzipMode gzipMode, Class<? extends Servlet> contentServlet, int fileSize, String fileName, boolean compressible) throws Exception
+    public void executeScenario(
+                                GzipMode gzipMode,
+                                Class<? extends Servlet> contentServlet,
+                                int fileSize,
+                                String fileName,
+                                boolean compressible)
+        throws Exception
     {
         server = new Server();
         LocalConnector localConnector = new LocalConnector(server);

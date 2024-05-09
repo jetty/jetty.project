@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.ee9.security;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ResourceHandler;
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
@@ -34,11 +38,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Some requests for static data that is served by ResourceHandler, but some is secured.
@@ -71,7 +70,8 @@ public class AliasedConstraintTest
         loginService.putUser("user3", new Password("password"), new String[]{"foo"});
 
         context.setContextPath("/ctx");
-        context.setResourceBase(MavenTestingUtils.getTargetFile("test-classes/docroot").getAbsolutePath());
+        context.setResourceBase(
+            MavenTestingUtils.getTargetFile("test-classes/docroot").getAbsolutePath());
 
         server.setHandler(context);
 

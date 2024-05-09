@@ -21,7 +21,6 @@ import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.Reference;
 import javax.naming.StringRefAddr;
-
 import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
 import org.slf4j.Logger;
@@ -56,12 +55,11 @@ public class javaRootURLContext implements Context
             __javaNameParser = new javaNameParser();
             __nameRoot = new NamingContext(null, null, null, __javaNameParser);
 
-            StringRefAddr parserAddr = new StringRefAddr("parser", __javaNameParser.getClass().getName());
+            StringRefAddr parserAddr =
+                new StringRefAddr("parser", __javaNameParser.getClass().getName());
 
-            Reference ref = new Reference("javax.naming.Context",
-                parserAddr,
-                ContextFactory.class.getName(),
-                (String)null);
+            Reference ref =
+                new Reference("javax.naming.Context", parserAddr, ContextFactory.class.getName(), (String)null);
 
             // bind special object factory at comp
             __nameRoot.bind("comp", ref);
@@ -83,199 +81,168 @@ public class javaRootURLContext implements Context
     }
 
     @Override
-    public Object lookup(Name name)
-        throws NamingException
+    public Object lookup(Name name) throws NamingException
     {
         return getRoot().lookup(stripProtocol(name));
     }
 
     @Override
-    public Object lookup(String name)
-        throws NamingException
+    public Object lookup(String name) throws NamingException
     {
         return getRoot().lookup(stripProtocol(name));
     }
 
     @Override
-    public void bind(Name name, Object obj)
-        throws NamingException
+    public void bind(Name name, Object obj) throws NamingException
     {
         getRoot().bind(stripProtocol(name), obj);
     }
 
     @Override
-    public void bind(String name, Object obj)
-        throws NamingException
+    public void bind(String name, Object obj) throws NamingException
     {
         getRoot().bind(stripProtocol(name), obj);
     }
 
     @Override
-    public void unbind(String name)
-        throws NamingException
+    public void unbind(String name) throws NamingException
     {
         getRoot().unbind(stripProtocol(name));
     }
 
     @Override
-    public void unbind(Name name)
-        throws NamingException
+    public void unbind(Name name) throws NamingException
     {
         getRoot().unbind(stripProtocol(name));
     }
 
     @Override
-    public void rename(String oldStr, String newStr)
-        throws NamingException
+    public void rename(String oldStr, String newStr) throws NamingException
     {
         getRoot().rename(stripProtocol(oldStr), stripProtocol(newStr));
     }
 
     @Override
-    public void rename(Name oldName, Name newName)
-        throws NamingException
+    public void rename(Name oldName, Name newName) throws NamingException
     {
         getRoot().rename(stripProtocol(oldName), stripProtocol(newName));
     }
 
     @Override
-    public void rebind(Name name, Object obj)
-        throws NamingException
+    public void rebind(Name name, Object obj) throws NamingException
     {
         getRoot().rebind(stripProtocol(name), obj);
     }
 
     @Override
-    public void rebind(String name, Object obj)
-        throws NamingException
+    public void rebind(String name, Object obj) throws NamingException
     {
         getRoot().rebind(stripProtocol(name), obj);
     }
 
     @Override
-    public Object lookupLink(Name name)
-        throws NamingException
+    public Object lookupLink(Name name) throws NamingException
     {
         return getRoot().lookupLink(stripProtocol(name));
     }
 
     @Override
-    public Object lookupLink(String name)
-        throws NamingException
+    public Object lookupLink(String name) throws NamingException
     {
         return getRoot().lookupLink(stripProtocol(name));
     }
 
     @Override
-    public Context createSubcontext(Name name)
-        throws NamingException
+    public Context createSubcontext(Name name) throws NamingException
     {
         return getRoot().createSubcontext(stripProtocol(name));
     }
 
     @Override
-    public Context createSubcontext(String name)
-        throws NamingException
+    public Context createSubcontext(String name) throws NamingException
     {
         return getRoot().createSubcontext(stripProtocol(name));
     }
 
     @Override
-    public void destroySubcontext(Name name)
-        throws NamingException
+    public void destroySubcontext(Name name) throws NamingException
     {
         getRoot().destroySubcontext(stripProtocol(name));
     }
 
     @Override
-    public void destroySubcontext(String name)
-        throws NamingException
+    public void destroySubcontext(String name) throws NamingException
     {
         getRoot().destroySubcontext(stripProtocol(name));
     }
 
     @Override
-    public NamingEnumeration list(Name name)
-        throws NamingException
+    public NamingEnumeration list(Name name) throws NamingException
     {
         return getRoot().list(stripProtocol(name));
     }
 
     @Override
-    public NamingEnumeration list(String name)
-        throws NamingException
+    public NamingEnumeration list(String name) throws NamingException
     {
         return getRoot().list(stripProtocol(name));
     }
 
     @Override
-    public NamingEnumeration listBindings(Name name)
-        throws NamingException
+    public NamingEnumeration listBindings(Name name) throws NamingException
     {
         return getRoot().listBindings(stripProtocol(name));
     }
 
     @Override
-    public NamingEnumeration listBindings(String name)
-        throws NamingException
+    public NamingEnumeration listBindings(String name) throws NamingException
     {
         return getRoot().listBindings(stripProtocol(name));
     }
 
     @Override
-    public Name composeName(Name name,
-                            Name prefix)
-        throws NamingException
+    public Name composeName(Name name, Name prefix) throws NamingException
     {
         return getRoot().composeName(name, prefix);
     }
 
     @Override
-    public String composeName(String name,
-                              String prefix)
-        throws NamingException
+    public String composeName(String name, String prefix) throws NamingException
     {
         return getRoot().composeName(name, prefix);
     }
 
     @Override
-    public void close()
-        throws NamingException
+    public void close() throws NamingException
     {
     }
 
     @Override
-    public String getNameInNamespace()
-        throws NamingException
+    public String getNameInNamespace() throws NamingException
     {
         return URL_PREFIX;
     }
 
     @Override
-    public NameParser getNameParser(Name name)
-        throws NamingException
+    public NameParser getNameParser(Name name) throws NamingException
     {
         return __javaNameParser;
     }
 
     @Override
-    public NameParser getNameParser(String name)
-        throws NamingException
+    public NameParser getNameParser(String name) throws NamingException
     {
         return __javaNameParser;
     }
 
     @Override
-    public Object addToEnvironment(String propName,
-                                   Object propVal)
-        throws NamingException
+    public Object addToEnvironment(String propName, Object propVal) throws NamingException
     {
         return _env.put(propName, propVal);
     }
 
     @Override
-    public Object removeFromEnvironment(String propName)
-        throws NamingException
+    public Object removeFromEnvironment(String propName) throws NamingException
     {
         return _env.remove(propName);
     }
@@ -291,8 +258,7 @@ public class javaRootURLContext implements Context
         return __nameRoot;
     }
 
-    protected Name stripProtocol(Name name)
-        throws NamingException
+    protected Name stripProtocol(Name name) throws NamingException
     {
         if ((name != null) && (name.size() > 0))
         {

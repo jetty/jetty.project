@@ -19,12 +19,16 @@ import org.eclipse.jetty.server.HttpConfiguration;
 
 public class RawHTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionFactory
 {
-    public RawHTTP3ServerConnectionFactory(ServerQuicConfiguration quicConfiguration, Session.Server.Listener listener)
+    public RawHTTP3ServerConnectionFactory(
+                                           ServerQuicConfiguration quicConfiguration, Session.Server.Listener listener)
     {
         this(quicConfiguration, new HttpConfiguration(), listener);
     }
 
-    public RawHTTP3ServerConnectionFactory(ServerQuicConfiguration quicConfiguration, HttpConfiguration httpConfiguration, Session.Server.Listener listener)
+    public RawHTTP3ServerConnectionFactory(
+                                           ServerQuicConfiguration quicConfiguration,
+                                           HttpConfiguration httpConfiguration,
+                                           Session.Server.Listener listener)
     {
         super(quicConfiguration, httpConfiguration, listener);
     }

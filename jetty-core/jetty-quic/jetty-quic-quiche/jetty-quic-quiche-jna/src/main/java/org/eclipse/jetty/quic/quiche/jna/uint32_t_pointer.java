@@ -21,6 +21,7 @@ public class uint32_t_pointer extends ByReference
     {
         this(0);
     }
+
     public uint32_t_pointer(int v)
     {
         super(4);

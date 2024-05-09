@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.ee9.security;
 
-import java.util.Collection;
-
 import jakarta.servlet.ServletContext;
+import java.util.Collection;
 import org.eclipse.jetty.ee9.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.ConfigurableSpnegoAuthenticator;
@@ -58,7 +57,12 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
     private LoginService _loginService;
 
     @Override
-    public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
+    public Authenticator getAuthenticator(
+                                          Server server,
+                                          ServletContext context,
+                                          AuthConfiguration configuration,
+                                          IdentityService identityService,
+                                          LoginService loginService)
     {
         String auth = configuration.getAuthMethod();
         Authenticator authenticator = null;
@@ -79,13 +83,16 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
             if (sslContextFactories.size() != 1)
             {
                 if (sslContextFactories.size() > 1)
-                    LOG.info("Multiple SslContextFactory.Server instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
+                    LOG.info(
+                        "Multiple SslContextFactory.Server instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
                 else
-                    LOG.debug("No SslContextFactory.Server instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
+                    LOG.debug(
+                        "No SslContextFactory.Server instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
             }
             else
             {
-                authenticator = new SslClientCertAuthenticator(sslContextFactories.iterator().next());
+                authenticator = new SslClientCertAuthenticator(
+                    sslContextFactories.iterator().next());
             }
         }
 

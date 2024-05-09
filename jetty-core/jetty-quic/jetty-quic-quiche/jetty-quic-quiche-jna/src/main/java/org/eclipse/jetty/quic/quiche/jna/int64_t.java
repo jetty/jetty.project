@@ -21,6 +21,7 @@ public class int64_t extends IntegerType
     {
         this(0);
     }
+
     public int64_t(long v)
     {
         super(8, v, false);

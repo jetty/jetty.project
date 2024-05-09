@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HeaderPatternRuleTest extends AbstractRuleTest
 {
@@ -51,7 +50,7 @@ public class HeaderPatternRuleTest extends AbstractRuleTest
         String request = """
             GET / HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -73,7 +72,7 @@ public class HeaderPatternRuleTest extends AbstractRuleTest
             String request = """
                 GET / HTTP/1.1
                 Host: localhost
-                            
+
                 """;
 
             HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));

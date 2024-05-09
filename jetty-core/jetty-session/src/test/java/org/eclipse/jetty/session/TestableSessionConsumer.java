@@ -18,13 +18,13 @@ import java.util.function.Consumer;
 public class TestableSessionConsumer implements Consumer<ManagedSession>
 {
     private ManagedSession _session;
-    
+
     @Override
     public void accept(ManagedSession s)
     {
         _session = s;
     }
-    
+
     public ManagedSession getSession()
     {
         return _session;

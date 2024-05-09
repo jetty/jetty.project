@@ -13,92 +13,159 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Iterator;
 import java.util.stream.Stream;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class QuotedStringTokenizerTest
 {
     public static Stream<Arguments> tokenizerTests()
     {
-        QuotedStringTokenizer commaList = QuotedStringTokenizer.builder().delimiters(",").build();
-        QuotedStringTokenizer commaListOws = QuotedStringTokenizer.builder().delimiters(",").ignoreOptionalWhiteSpace().build();
-        QuotedStringTokenizer commaListOwsEmbedded = QuotedStringTokenizer.builder().delimiters(",").ignoreOptionalWhiteSpace().allowEmbeddedQuotes().build();
-        QuotedStringTokenizer commaListDelimiters = QuotedStringTokenizer.builder().delimiters(",").returnDelimiters().build();
-        QuotedStringTokenizer commaListOwsDelimiters = QuotedStringTokenizer.builder().delimiters(",").ignoreOptionalWhiteSpace().returnDelimiters().build();
-        QuotedStringTokenizer commaListOwsEmbeddedQuotes = QuotedStringTokenizer.builder().delimiters(",").ignoreOptionalWhiteSpace().returnQuotes().allowEmbeddedQuotes().build();
-        QuotedStringTokenizer commaListEscapeOQ = QuotedStringTokenizer.builder().delimiters(",").allowEscapeOnlyForQuotes().build();
+        QuotedStringTokenizer commaList =
+            QuotedStringTokenizer.builder().delimiters(",").build();
+        QuotedStringTokenizer commaListOws = QuotedStringTokenizer.builder()
+            .delimiters(",")
+            .ignoreOptionalWhiteSpace()
+            .build();
+        QuotedStringTokenizer commaListOwsEmbedded = QuotedStringTokenizer.builder()
+            .delimiters(",")
+            .ignoreOptionalWhiteSpace()
+            .allowEmbeddedQuotes()
+            .build();
+        QuotedStringTokenizer commaListDelimiters = QuotedStringTokenizer.builder()
+            .delimiters(",")
+            .returnDelimiters()
+            .build();
+        QuotedStringTokenizer commaListOwsDelimiters = QuotedStringTokenizer.builder()
+            .delimiters(",")
+            .ignoreOptionalWhiteSpace()
+            .returnDelimiters()
+            .build();
+        QuotedStringTokenizer commaListOwsEmbeddedQuotes = QuotedStringTokenizer.builder()
+            .delimiters(",")
+            .ignoreOptionalWhiteSpace()
+            .returnQuotes()
+            .allowEmbeddedQuotes()
+            .build();
+        QuotedStringTokenizer commaListEscapeOQ = QuotedStringTokenizer.builder()
+            .delimiters(",")
+            .allowEscapeOnlyForQuotes()
+            .build();
 
         return Stream.of(
-            Arguments.of(commaList, "", new String[] {}),
-            Arguments.of(commaList, "a,b,c", new String[] {"a", "b", "c"}),
-            Arguments.of(commaList, " a ,  b  ,   c   ", new String[] {" a ", "  b  ", "   c   "}),
-            Arguments.of(commaList, "a a,b  b, c c ", new String[] {"a a", "b  b", " c c "}),
-            Arguments.of(commaList, "\"a,a\",\"b,b\",c", new String[] {"a,a", "b,b", "c"}),
-            Arguments.of(commaList, "\"a,a\", b\",\"b ,c", new String[] {"a,a", " b\"", null}),
-            Arguments.of(commaList, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", "b\\b", "c,c"}),
-
-            Arguments.of(commaListOws, "", new String[] {}),
-            Arguments.of(commaListOws, "a,b,c", new String[] {"a", "b", "c"}),
-            Arguments.of(commaListOws, " a ,  b  ,   c   ", new String[] {"a", "b", "c"}),
-            Arguments.of(commaListOws, "a a,b  b, c c ", new String[] {"a a", "b  b", "c c"}),
-            Arguments.of(commaListOws, "\"a,a\",\"b,b\",c", new String[] {"a,a", "b,b", "c"}),
-            Arguments.of(commaListOws, "\"a,a\", b\",\"b ,c", new String[] {"a,a", "b\"", null}),
-            Arguments.of(commaListOws, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", "b\\b", "c,c"}),
-
-            Arguments.of(commaListOwsEmbedded, "", new String[] {}),
-            Arguments.of(commaListOwsEmbedded, "a,b,c", new String[] {"a", "b", "c"}),
-            Arguments.of(commaListOwsEmbedded, " a ,  b  ,   c   ", new String[] {"a", "b", "c"}),
-            Arguments.of(commaListOwsEmbedded, "a a,b  b, c c ", new String[] {"a a", "b  b", "c c"}),
-            Arguments.of(commaListOwsEmbedded, "\"a,a\",\"b,b\",c", new String[] {"a,a", "b,b", "c"}),
-            Arguments.of(commaListOwsEmbedded, "\"a,a\", b\",\"b ,c", new String[] {"a,a", "b,b", "c"}),
-            Arguments.of(commaListOwsEmbedded, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", "b\\b", "c,c"}),
-
-            Arguments.of(commaListDelimiters, "", new String[] {}),
-            Arguments.of(commaListDelimiters, "a,b,c", new String[] {"a", ",", "b", ",", "c"}),
-            Arguments.of(commaListDelimiters, " a ,  b  ,   c   ", new String[] {" a ", ",", "  b  ", ",", "   c   "}),
-            Arguments.of(commaListDelimiters, "a a,b  b, c c ", new String[] {"a a", ",", "b  b", ",", " c c "}),
-            Arguments.of(commaListDelimiters, "\"a,a\",\"b,b\",c", new String[] {"a,a", ",", "b,b", ",", "c"}),
-            Arguments.of(commaListDelimiters, "\"a,a\", b\",\"b ,c", new String[] {"a,a", ",", " b\"", ",", null}),
-            Arguments.of(commaListDelimiters, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", ",", "b\\b", ",", "c,c"}),
-
-            Arguments.of(commaListOwsDelimiters, "", new String[] {}),
-            Arguments.of(commaListOwsDelimiters, "a,b,c", new String[] {"a", ",", "b", ",", "c"}),
-            Arguments.of(commaListOwsDelimiters, " a ,  b  ,   c   ", new String[] {"a", ",", "b", ",", "c"}),
-            Arguments.of(commaListOwsDelimiters, "a a,b  b, c c ", new String[] {"a a", ",", "b  b", ",", "c c"}),
-            Arguments.of(commaListOwsDelimiters, "\"a,a\",\"b,b\",c", new String[] {"a,a", ",", "b,b", ",", "c"}),
-            Arguments.of(commaListOwsDelimiters, "\"a,a\", b\",\"b ,c", new String[] {"a,a", ",", "b\"", ",", null}),
-            Arguments.of(commaListOwsDelimiters, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", ",", "b\\b", ",", "c,c"}),
-
-            Arguments.of(commaListOwsEmbeddedQuotes, "", new String[] {}),
-            Arguments.of(commaListOwsEmbeddedQuotes, "a,b,c", new String[] {"a", "b", "c"}),
-            Arguments.of(commaListOwsEmbeddedQuotes, " a ,  b  ,   c   ", new String[] {"a", "b", "c"}),
-            Arguments.of(commaListOwsEmbeddedQuotes, "a a,b  b, c c ", new String[] {"a a", "b  b", "c c"}),
-            Arguments.of(commaListOwsEmbeddedQuotes, "\"a,a\",\"b,b\",c", new String[] {"\"a,a\"", "\"b,b\"", "c"}),
-            Arguments.of(commaListOwsEmbeddedQuotes, "\"a,a\", b\",\"b ,c", new String[] {"\"a,a\"", "b\",\"b", "c"}),
-            Arguments.of(commaListOwsEmbeddedQuotes, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"\"a\\\"a\"", "\"b\\\\b\"", "\"c\\,c\""}),
-
-            Arguments.of(commaListEscapeOQ, "", new String[] {}),
-            Arguments.of(commaListEscapeOQ, "a,b,c", new String[] {"a", "b", "c"}),
-            Arguments.of(commaListEscapeOQ, " a ,  b  ,   c   ", new String[] {" a ", "  b  ", "   c   "}),
-            Arguments.of(commaListEscapeOQ, "a a,b  b, c c ", new String[] {"a a", "b  b", " c c "}),
-            Arguments.of(commaListEscapeOQ, "\"a,a\",\"b,b\",c", new String[] {"a,a", "b,b", "c"}),
-            Arguments.of(commaListEscapeOQ, "\"a,a\", b\",\"b ,c", new String[] {"a,a", " b\"", null}),
-            Arguments.of(commaListEscapeOQ, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[] {"a\"a", "b\\\\b", "c\\,c"}),
-
-            Arguments.of(commaList, null, null)
-        );
+            Arguments.of(commaList, "", new String[]{}),
+            Arguments.of(commaList, "a,b,c", new String[]
+            {"a", "b", "c"}),
+            Arguments.of(commaList, " a ,  b  ,   c   ", new String[]
+            {" a ", "  b  ", "   c   "}),
+            Arguments.of(commaList, "a a,b  b, c c ", new String[]
+            {"a a", "b  b", " c c "}),
+            Arguments.of(commaList, "\"a,a\",\"b,b\",c", new String[]
+            {"a,a", "b,b", "c"}),
+            Arguments.of(commaList, "\"a,a\", b\",\"b ,c", new String[]
+            {"a,a", " b\"", null}),
+            Arguments.of(commaList, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[]
+            {"a\"a", "b\\b", "c,c"}),
+            Arguments.of(commaListOws, "", new String[]{}),
+            Arguments.of(commaListOws, "a,b,c", new String[]
+            {"a", "b", "c"}),
+            Arguments.of(commaListOws, " a ,  b  ,   c   ", new String[]
+            {"a", "b", "c"}),
+            Arguments.of(commaListOws, "a a,b  b, c c ", new String[]
+            {"a a", "b  b", "c c"}),
+            Arguments.of(commaListOws, "\"a,a\",\"b,b\",c", new String[]
+            {"a,a", "b,b", "c"}),
+            Arguments.of(commaListOws, "\"a,a\", b\",\"b ,c", new String[]
+            {"a,a", "b\"", null}),
+            Arguments.of(commaListOws, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[]
+            {"a\"a", "b\\b", "c,c"}),
+            Arguments.of(commaListOwsEmbedded, "", new String[]{}),
+            Arguments.of(commaListOwsEmbedded, "a,b,c", new String[]
+            {"a", "b", "c"}),
+            Arguments.of(commaListOwsEmbedded, " a ,  b  ,   c   ", new String[]
+            {"a", "b", "c"}),
+            Arguments.of(commaListOwsEmbedded, "a a,b  b, c c ", new String[]
+            {"a a", "b  b", "c c"}),
+            Arguments.of(commaListOwsEmbedded, "\"a,a\",\"b,b\",c", new String[]
+            {"a,a", "b,b", "c"}),
+            Arguments.of(commaListOwsEmbedded, "\"a,a\", b\",\"b ,c", new String[]
+            {"a,a", "b,b", "c"}),
+            Arguments.of(
+                commaListOwsEmbedded, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[]
+                {"a\"a", "b\\b", "c,c"}),
+            Arguments.of(commaListDelimiters, "", new String[]{}),
+            Arguments.of(commaListDelimiters, "a,b,c", new String[]
+            {"a", ",", "b", ",", "c"}),
+            Arguments.of(
+                commaListDelimiters, " a ,  b  ,   c   ", new String[]
+                {" a ", ",", "  b  ", ",", "   c   "}),
+            Arguments.of(commaListDelimiters, "a a,b  b, c c ", new String[]
+            {"a a", ",", "b  b", ",", " c c "}),
+            Arguments.of(commaListDelimiters, "\"a,a\",\"b,b\",c", new String[]
+            {"a,a", ",", "b,b", ",", "c"}),
+            Arguments.of(commaListDelimiters, "\"a,a\", b\",\"b ,c", new String[]
+            {"a,a", ",", " b\"", ",", null}),
+            Arguments.of(commaListDelimiters, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[]
+            {
+                "a\"a", ",", "b\\b", ",", "c,c"
+            }),
+            Arguments.of(commaListOwsDelimiters, "", new String[]{}),
+            Arguments.of(commaListOwsDelimiters, "a,b,c", new String[]
+            {"a", ",", "b", ",", "c"}),
+            Arguments.of(commaListOwsDelimiters, " a ,  b  ,   c   ", new String[]
+            {"a", ",", "b", ",", "c"}),
+            Arguments.of(commaListOwsDelimiters, "a a,b  b, c c ", new String[]
+            {"a a", ",", "b  b", ",", "c c"}),
+            Arguments.of(commaListOwsDelimiters, "\"a,a\",\"b,b\",c", new String[]
+            {"a,a", ",", "b,b", ",", "c"}),
+            Arguments.of(
+                commaListOwsDelimiters, "\"a,a\", b\",\"b ,c", new String[]
+                {"a,a", ",", "b\"", ",", null}),
+            Arguments.of(commaListOwsDelimiters, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[]
+            {
+                "a\"a", ",", "b\\b", ",", "c,c"
+            }),
+            Arguments.of(commaListOwsEmbeddedQuotes, "", new String[]{}),
+            Arguments.of(commaListOwsEmbeddedQuotes, "a,b,c", new String[]
+            {"a", "b", "c"}),
+            Arguments.of(commaListOwsEmbeddedQuotes, " a ,  b  ,   c   ", new String[]
+            {"a", "b", "c"}),
+            Arguments.of(commaListOwsEmbeddedQuotes, "a a,b  b, c c ", new String[]
+            {"a a", "b  b", "c c"}),
+            Arguments.of(commaListOwsEmbeddedQuotes, "\"a,a\",\"b,b\",c", new String[]
+            {"\"a,a\"", "\"b,b\"", "c"}),
+            Arguments.of(
+                commaListOwsEmbeddedQuotes, "\"a,a\", b\",\"b ,c", new String[]
+                {"\"a,a\"", "b\",\"b", "c"}),
+            Arguments.of(commaListOwsEmbeddedQuotes, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[]
+            {
+                "\"a\\\"a\"", "\"b\\\\b\"", "\"c\\,c\""
+            }),
+            Arguments.of(commaListEscapeOQ, "", new String[]{}),
+            Arguments.of(commaListEscapeOQ, "a,b,c", new String[]
+            {"a", "b", "c"}),
+            Arguments.of(commaListEscapeOQ, " a ,  b  ,   c   ", new String[]
+            {" a ", "  b  ", "   c   "}),
+            Arguments.of(commaListEscapeOQ, "a a,b  b, c c ", new String[]
+            {"a a", "b  b", " c c "}),
+            Arguments.of(commaListEscapeOQ, "\"a,a\",\"b,b\",c", new String[]
+            {"a,a", "b,b", "c"}),
+            Arguments.of(commaListEscapeOQ, "\"a,a\", b\",\"b ,c", new String[]
+            {"a,a", " b\"", null}),
+            Arguments.of(
+                commaListEscapeOQ, "\"a\\\"a\",\"b\\\\b\",\"c\\,c\"", new String[]
+                {"a\"a", "b\\\\b", "c\\,c"}),
+            Arguments.of(commaList, null, null));
     }
 
     @ParameterizedTest
@@ -152,7 +219,8 @@ public class QuotedStringTokenizerTest
         QuotedStringTokenizer tokenizer = QuotedStringTokenizer.CSV; // OWS
         assertEquals("abc", tokenizer.quoteIfNeeded("abc"));
         assertEquals("\"a c\"", tokenizer.quoteIfNeeded("a c"));
-        assertEquals("a c", QuotedStringTokenizer.builder().delimiters(",").build().quoteIfNeeded("a c")); // No OWS
+        assertEquals(
+            "a c", QuotedStringTokenizer.builder().delimiters(",").build().quoteIfNeeded("a c")); // No OWS
         assertEquals("a'c", tokenizer.quoteIfNeeded("a'c"));
         assertEquals("\"a\\\"c\"", tokenizer.quoteIfNeeded("a\"c"));
         assertEquals("\"a\n\r\t\"", tokenizer.quoteIfNeeded("a\n\r\t"));
@@ -184,7 +252,13 @@ public class QuotedStringTokenizerTest
     {
         String contentDisposition = "form-data; name=\"fileup\"; filename=\"C:\\Pictures\\20120504.jpg\"";
 
-        QuotedStringTokenizer tok = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().returnQuotes().allowEmbeddedQuotes().allowEscapeOnlyForQuotes().build();
+        QuotedStringTokenizer tok = QuotedStringTokenizer.builder()
+            .delimiters(";")
+            .ignoreOptionalWhiteSpace()
+            .returnQuotes()
+            .allowEmbeddedQuotes()
+            .allowEscapeOnlyForQuotes()
+            .build();
         Iterator<String> iter = tok.tokenize(contentDisposition);
 
         assertEquals("form-data", iter.next());

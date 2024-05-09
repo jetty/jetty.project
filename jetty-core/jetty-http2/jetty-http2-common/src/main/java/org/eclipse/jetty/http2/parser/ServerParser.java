@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.RateControl;
@@ -183,6 +182,8 @@ public class ServerParser extends Parser
 
     private enum State
     {
-        PREFACE, SETTINGS, FRAMES
+        PREFACE,
+        SETTINGS,
+        FRAMES
     }
 }

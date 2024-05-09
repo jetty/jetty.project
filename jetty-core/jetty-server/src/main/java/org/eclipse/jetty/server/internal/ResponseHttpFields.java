@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.server.internal;
 
+import static org.eclipse.jetty.server.internal.ResponseHttpFields.Persistent.isPersistent;
+
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.server.internal.ResponseHttpFields.Persistent.isPersistent;
 
 public class ResponseHttpFields implements HttpFields.Mutable
 {
@@ -232,9 +231,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
                         throw new UnsupportedOperationException("Persistent field");
 
                     // new field must also be persistent and clear back to the previous value
-                    field = (field instanceof PreEncodedHttpField)
-                        ? new PersistentPreEncodedHttpField(_current.getHeader(), field.getValue(), persistent.getOriginal())
-                        : new PersistentHttpField(field, persistent.getOriginal());
+                    field = (field instanceof PreEncodedHttpField) ? new PersistentPreEncodedHttpField(
+                        _current.getHeader(), field.getValue(), persistent.getOriginal()) : new PersistentHttpField(field, persistent.getOriginal());
                 }
                 if (_current == null)
                     throw new IllegalStateException("No current field");

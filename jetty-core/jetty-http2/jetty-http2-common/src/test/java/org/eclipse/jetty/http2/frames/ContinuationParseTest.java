@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -32,12 +37,6 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContinuationParseTest
 {
@@ -68,10 +67,15 @@ public class ContinuationParseTest
         for (int i = 0; i < 2; ++i)
         {
             int streamId = 13;
-            HttpFields fields = HttpFields.build()
-                .put("Accept", "text/html")
-                .put("User-Agent", "Jetty");
-            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
+            HttpFields fields = HttpFields.build().put("Accept", "text/html").put("User-Agent", "Jetty");
+            MetaData.Request metaData = new MetaData.Request(
+                "GET",
+                HttpScheme.HTTP.asString(),
+                new HostPortHttpField("localhost:8080"),
+                "/path",
+                HttpVersion.HTTP_2,
+                fields,
+                -1);
 
             ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generateHeaders(accumulator, streamId, metaData, null, true);
@@ -185,10 +189,15 @@ public class ContinuationParseTest
         });
 
         int streamId = 13;
-        HttpFields fields = HttpFields.build()
-            .put("Accept", "text/html")
-            .put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
+        HttpFields fields = HttpFields.build().put("Accept", "text/html").put("User-Agent", "Jetty");
+        MetaData.Request metaData = new MetaData.Request(
+            "GET",
+            HttpScheme.HTTP.asString(),
+            new HostPortHttpField("localhost:8080"),
+            "/path",
+            HttpVersion.HTTP_2,
+            fields,
+            -1);
 
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateHeaders(accumulator, streamId, metaData, null, true);
@@ -272,14 +281,22 @@ public class ContinuationParseTest
         Parser parser = new Parser(bufferPool, maxHeadersSize);
         // Specify headers block size to generate CONTINUATION frames.
         int maxHeadersBlockFragment = 128;
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder(), maxHeadersBlockFragment);
+        HeadersGenerator generator =
+            new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder(), maxHeadersBlockFragment);
 
         int streamId = 13;
         HttpFields fields = HttpFields.build()
             .put("Accept", "text/html")
             // Large header that generates a large headers block.
             .put("User-Agent", "Jetty".repeat(256));
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
+        MetaData.Request metaData = new MetaData.Request(
+            "GET",
+            HttpScheme.HTTP.asString(),
+            new HostPortHttpField("localhost:8080"),
+            "/path",
+            HttpVersion.HTTP_2,
+            fields,
+            -1);
 
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateHeaders(accumulator, streamId, metaData, null, true);

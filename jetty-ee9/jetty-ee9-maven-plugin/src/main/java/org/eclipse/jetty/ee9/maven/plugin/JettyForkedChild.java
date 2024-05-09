@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 /**
  * JettyForkedChild
  *
- * This is the class that is executed when the jetty maven plugin 
+ * This is the class that is executed when the jetty maven plugin
  * forks a process when DeploymentMode=FORKED.
  */
 public class JettyForkedChild extends AbstractForkedChild
@@ -32,10 +32,9 @@ public class JettyForkedChild extends AbstractForkedChild
      * @param args arguments that were passed to main
      * @throws Exception if unable to configure
      */
-    public JettyForkedChild(String[] args)
-        throws Exception
+    public JettyForkedChild(String[] args) throws Exception
     {
-       super(args);
+        super(args);
     }
 
     @Override
@@ -44,8 +43,7 @@ public class JettyForkedChild extends AbstractForkedChild
         return new JettyEmbedder();
     }
 
-    public static void main(String[] args)
-        throws Exception
+    public static void main(String[] args) throws Exception
     {
         if (args == null)
             System.exit(1);

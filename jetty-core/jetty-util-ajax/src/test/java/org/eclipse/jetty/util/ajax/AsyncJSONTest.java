@@ -13,20 +13,6 @@
 
 package org.eclipse.jetty.util.ajax;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +21,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class AsyncJSONTest
 {
@@ -46,7 +45,8 @@ public class AsyncJSONTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"|", "}", "]", "{]", "[}", "+", ".", "{} []"})
+    @ValueSource(strings =
+    {"|", "}", "]", "{]", "[}", "+", ".", "{} []"})
     public void testParseInvalidJSON(String json)
     {
         byte[] bytes = json.getBytes(UTF_8);
@@ -102,13 +102,14 @@ public class AsyncJSONTest
         result.add(new Object[]{"\\u20AC", "\u20AC"}); // euro symbol
         result.add(new Object[]{"/foo", "/foo"});
         result.add(new Object[]{"123E+01", "123E+01"});
-        result.add(new Object[]{"A\\u20AC/foo\\t\\n", "A\u20AC/foo\t\n"});  // euro symbol
+        result.add(new Object[]{"A\\u20AC/foo\\t\\n", "A\u20AC/foo\t\n"}); // euro symbol
         result.add(new Object[]{" ABC ", " ABC "});
         return result;
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\\u", "\\u0", "\\x"})
+    @ValueSource(strings =
+    {"\\u", "\\u0", "\\x"})
     public void testParseInvalidString(String value)
     {
         String json = "\"${value}\"".replace("${value}", value);
@@ -184,7 +185,8 @@ public class AsyncJSONTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"[", "]", "[[,]", " [ 1,2,[ "})
+    @ValueSource(strings =
+    {"[", "]", "[[,]", " [ 1,2,[ "})
     public void testParseInvalidArray(String json)
     {
         byte[] bytes = json.getBytes(UTF_8);
@@ -267,7 +269,8 @@ public class AsyncJSONTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"{", "}", "{{,}", "{:\"s\"}", "{[]:0}", "{1:0}", " {\": 0} ", "{\"a: \"b\"}"})
+    @ValueSource(strings =
+    {"{", "}", "{{,}", "{:\"s\"}", "{[]:0}", "{1:0}", " {\": 0} ", "{\"a: \"b\"}"})
     public void testParseInvalidObject(String json)
     {
         byte[] bytes = json.getBytes(UTF_8);
@@ -338,7 +341,8 @@ public class AsyncJSONTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"--", "--1", ".5", "e0", "1a1", "3-7", "1+2", "1e0e1", "1.2.3"})
+    @ValueSource(strings =
+    {"--", "--1", ".5", "e0", "1a1", "3-7", "1+2", "1e0e1", "1.2.3"})
     public void testParseInvalidNumber(String json)
     {
         byte[] bytes = json.getBytes(UTF_8);
@@ -371,10 +375,7 @@ public class AsyncJSONTest
         CustomConvertor convertor = new CustomConvertor();
         factory.putConvertor(CustomConvertor.class.getName(), convertor);
 
-        String json = "{" +
-            "\"f1\": {\"class\":\"" + CustomConvertible.class.getName() + "\", \"field\": \"value\"}," +
-            "\"f2\": {\"class\":\"" + CustomConvertor.class.getName() + "\"}" +
-            "}";
+        String json = "{" + "\"f1\": {\"class\":\"" + CustomConvertible.class.getName() + "\", \"field\": \"value\"}," + "\"f2\": {\"class\":\"" + CustomConvertor.class.getName() + "\"}" + "}";
 
         AsyncJSON parser = factory.newAsyncJSON();
         assertTrue(parser.parse(UTF_8.encode(json)));
@@ -458,12 +459,7 @@ public class AsyncJSONTest
         };
         AsyncJSON parser = factory.newAsyncJSON();
 
-        String json = "[{" +
-            "\"channel\": \"/meta/handshake\"," +
-            "\"version\": \"1.0\"," +
-            "\"supportedConnectionTypes\": [\"long-polling\"]," +
-            "\"advice\": {\"timeout\": 0}" +
-            "}]";
+        String json = "[{" + "\"channel\": \"/meta/handshake\"," + "\"version\": \"1.0\"," + "\"supportedConnectionTypes\": [\"long-polling\"]," + "\"advice\": {\"timeout\": 0}" + "}]";
 
         assertTrue(parser.parse(UTF_8.encode(json)));
         List<CustomMap> messages = parser.complete();

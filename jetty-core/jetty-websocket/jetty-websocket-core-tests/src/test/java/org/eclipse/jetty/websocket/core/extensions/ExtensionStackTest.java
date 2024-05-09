@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -30,10 +33,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExtensionStackTest
 {
@@ -53,7 +52,8 @@ public class ExtensionStackTest
         {
             return (T)obj;
         }
-        assertEquals("Expected " + msg + " class", clazz.getName(), obj.getClass().getName());
+        assertEquals(
+            "Expected " + msg + " class", clazz.getName(), obj.getClass().getName());
         return null;
     }
 
@@ -74,8 +74,10 @@ public class ExtensionStackTest
         LOG.debug("{}", stack.dump());
 
         // Should be no change to handlers
-        Extension actualIncomingExtension = assertIsExtension("Incoming", stack.getNextIncoming(), IdentityExtension.class);
-        Extension actualOutgoingExtension = assertIsExtension("Outgoing", stack.getNextOutgoing(), IdentityExtension.class);
+        Extension actualIncomingExtension =
+            assertIsExtension("Incoming", stack.getNextIncoming(), IdentityExtension.class);
+        Extension actualOutgoingExtension =
+            assertIsExtension("Outgoing", stack.getNextOutgoing(), IdentityExtension.class);
         assertEquals(actualIncomingExtension, actualOutgoingExtension);
     }
 
@@ -97,8 +99,10 @@ public class ExtensionStackTest
         LOG.debug("{}", stack.dump());
 
         // Should be no change to handlers
-        IdentityExtension actualIncomingExtension = assertIsExtension("Incoming", stack.getNextIncoming(), IdentityExtension.class);
-        IdentityExtension actualOutgoingExtension = assertIsExtension("Outgoing", stack.getNextOutgoing(), IdentityExtension.class);
+        IdentityExtension actualIncomingExtension =
+            assertIsExtension("Incoming", stack.getNextIncoming(), IdentityExtension.class);
+        IdentityExtension actualOutgoingExtension =
+            assertIsExtension("Outgoing", stack.getNextOutgoing(), IdentityExtension.class);
 
         assertThat("Incoming[identity].id", actualIncomingExtension.getParam("id"), is("A"));
         assertThat("Outgoing[identity].id", actualOutgoingExtension.getParam("id"), is("B"));

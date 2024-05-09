@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.framehandlers;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.internal.MessageHandler;
 

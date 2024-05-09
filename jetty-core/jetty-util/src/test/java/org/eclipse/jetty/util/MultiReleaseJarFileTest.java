@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -30,16 +33,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
 public class MultiReleaseJarFileTest
@@ -54,23 +53,33 @@ public class MultiReleaseJarFileTest
         {
             Path root = zipfs.getPath("/");
 
-            writeString(root.resolve("META-INF/MANIFEST.MF"), """
-                Manifest-Version: 1.0
-                Multi-Release: true
-                Created-By: MultiReleaseJarFileTest
-                """);
+            writeString(
+                root.resolve("META-INF/MANIFEST.MF"),
+                """
+                    Manifest-Version: 1.0
+                    Multi-Release: true
+                    Created-By: MultiReleaseJarFileTest
+                    """);
 
             writeString(root.resolve("META-INF/versions/10/org/example/In10Only.class"), "In10Only (versions/10)");
             writeString(root.resolve("META-INF/versions/10/org/example/InBoth.class"), "InBoth (versions/10)");
 
-            writeString(root.resolve("META-INF/versions/9/org/example/Nowhere$NoOuter.class"), "Nowhere$NoOuter (versions/9)");
-            writeString(root.resolve("META-INF/versions/9/org/example/InBoth$Inner9.class"), "InBoth$Inner9 (versions/9)");
-            writeString(root.resolve("META-INF/versions/9/org/example/InBoth$InnerBoth.class"), "InBoth$Inner9 (versions/9)");
+            writeString(
+                root.resolve("META-INF/versions/9/org/example/Nowhere$NoOuter.class"),
+                "Nowhere$NoOuter (versions/9)");
+            writeString(
+                root.resolve("META-INF/versions/9/org/example/InBoth$Inner9.class"), "InBoth$Inner9 (versions/9)");
+            writeString(
+                root.resolve("META-INF/versions/9/org/example/InBoth$InnerBoth.class"),
+                "InBoth$Inner9 (versions/9)");
             writeString(root.resolve("META-INF/versions/9/org/example/OnlyIn9.class"), "OnlyIn9 (versions/9)");
             writeString(root.resolve("META-INF/versions/9/org/example/InBoth.class"), "InBoth (versions/9)");
             writeString(root.resolve("META-INF/versions/9/org/example/onlyIn9/OnlyIn9.class"), "OnlyIn9 (versions/9)");
-            writeString(root.resolve("META-INF/versions/9/WEB-INF/classes/App.class"), "WEB-INF/classes/App.class (versions/9)");
-            writeString(root.resolve("META-INF/versions/9/WEB-INF/lib/depend.jar"), "WEB-INF/lib/depend.jar (versions/9)");
+            writeString(
+                root.resolve("META-INF/versions/9/WEB-INF/classes/App.class"),
+                "WEB-INF/classes/App.class (versions/9)");
+            writeString(
+                root.resolve("META-INF/versions/9/WEB-INF/lib/depend.jar"), "WEB-INF/lib/depend.jar (versions/9)");
             writeString(root.resolve("META-INF/versions/9/WEB-INF/web.xml"), "WEB-INF/web.xml (versions/9)");
 
             writeString(root.resolve("WEB-INF/classes/App.class"), "WEB-INF/classes/App.class (base)");
@@ -100,7 +109,8 @@ public class MultiReleaseJarFileTest
         {
             Set<String> actual = jarFile.stream()
                 .filter(Files::isRegularFile)
-                .map(Path::toString).collect(Collectors.toSet());
+                .map(Path::toString)
+                .collect(Collectors.toSet());
             String[] expected = {
                 // exists in base only
                 "/org/example/OnlyInBase.class",
@@ -131,14 +141,19 @@ public class MultiReleaseJarFileTest
         Path exampleJar = workDir.getEmptyPathDir().resolve("multirelease.jar");
         createExampleJar(exampleJar);
 
-        try (URLClassLoader loader = new URLClassLoader(new URL[]{exampleJar.toUri().toURL()}))
+        try (URLClassLoader loader =
+            new URLClassLoader(new URL[]
+            {exampleJar.toUri().toURL()}))
         {
             assertThat(readFile(loader.getResource("org/example/OnlyInBase.class")), is("OnlyInBase (base)"));
             assertThat(readFile(loader.getResource("org/example/OnlyIn9.class")), is("OnlyIn9 (versions/9)"));
             assertThat(readFile(loader.getResource("org/example/InBoth.class")), is("InBoth (versions/10)"));
             assertThat(readFile(loader.getResource("WEB-INF/web.xml")), is("WEB-INF/web.xml (versions/9)"));
-            assertThat(readFile(loader.getResource("WEB-INF/classes/App.class")), is("WEB-INF/classes/App.class (versions/9)"));
-            assertThat(readFile(loader.getResource("WEB-INF/lib/depend.jar")), is("WEB-INF/lib/depend.jar (versions/9)"));
+            assertThat(
+                readFile(loader.getResource("WEB-INF/classes/App.class")),
+                is("WEB-INF/classes/App.class (versions/9)"));
+            assertThat(
+                readFile(loader.getResource("WEB-INF/lib/depend.jar")), is("WEB-INF/lib/depend.jar (versions/9)"));
         }
     }
 
@@ -159,11 +174,9 @@ public class MultiReleaseJarFileTest
         createExampleJar(exampleJar);
 
         try (MultiReleaseJarFile jarFile = new MultiReleaseJarFile(exampleJar);
-             Stream<Path> jarEntryStream = jarFile.stream()
-                 .filter(Files::isRegularFile))
+             Stream<Path> jarEntryStream = jarFile.stream().filter(Files::isRegularFile))
         {
-            jarEntryStream.forEach(e ->
-                entries.add(e.toString()));
+            jarEntryStream.forEach(e -> entries.add(e.toString()));
         }
 
         String[] expected = {

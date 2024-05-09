@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -21,17 +27,10 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HttpDateTimeTest
 {
@@ -173,9 +172,8 @@ public class HttpDateTimeTest
     @MethodSource("dateTimeInvalid")
     public void testParseInvalid(String input, String expectedMsg)
     {
-        IllegalArgumentException syntaxException = assertThrows(
-            IllegalArgumentException.class, () -> HttpDateTime.parse(input)
-        );
+        IllegalArgumentException syntaxException =
+            assertThrows(IllegalArgumentException.class, () -> HttpDateTime.parse(input));
         assertThat(syntaxException.getMessage(), containsString(expectedMsg));
     }
 

@@ -13,13 +13,20 @@
 
 package org.eclipse.jetty.fcgi.proxy;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -46,14 +53,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FastCGIProxyHandlerTest
 {
@@ -89,14 +88,16 @@ public class FastCGIProxyHandlerTest
         proxyContext = new ContextHandler("/ctx");
 
         String appContextPath = "/app";
-        fcgiHandler = new FastCGIProxyHandler(request ->
-        {
-            HttpURI httpURI = request.getHttpURI();
-            HttpURI.Mutable newHttpURI = HttpURI.build(httpURI)
-                .path(appContextPath + Request.getPathInContext(request));
-            newHttpURI.port(unixDomainPath == null ? ((ServerConnector)serverConnector).getLocalPort() : 0);
-            return newHttpURI;
-        }, "/scriptRoot");
+        fcgiHandler = new FastCGIProxyHandler(
+            request ->
+            {
+                HttpURI httpURI = request.getHttpURI();
+                HttpURI.Mutable newHttpURI =
+                    HttpURI.build(httpURI).path(appContextPath + Request.getPathInContext(request));
+                newHttpURI.port(unixDomainPath == null ? ((ServerConnector)serverConnector).getLocalPort() : 0);
+                return newHttpURI;
+            },
+            "/scriptRoot");
         fcgiHandler.setUnixDomainPath(unixDomainPath);
         proxyContext.setHandler(fcgiHandler);
 
@@ -122,21 +123,24 @@ public class FastCGIProxyHandlerTest
     }
 
     @ParameterizedTest(name = "[{index}] sendStatus200={0}")
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testGETWithSmallResponseContent(boolean sendStatus200) throws Exception
     {
         testGETWithResponseContent(sendStatus200, 1024, 0);
     }
 
     @ParameterizedTest(name = "[{index}] sendStatus200={0}")
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testGETWithLargeResponseContent(boolean sendStatus200) throws Exception
     {
         testGETWithResponseContent(sendStatus200, 16 * 1024 * 1024, 0);
     }
 
     @ParameterizedTest(name = "[{index}] sendStatus200={0}")
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testGETWithLargeResponseContentWithSlowClient(boolean sendStatus200) throws Exception
     {
         testGETWithResponseContent(sendStatus200, 16 * 1024 * 1024, 1);
@@ -153,7 +157,8 @@ public class FastCGIProxyHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                assertNotEquals(proxyContext.getContextPath(), request.getContext().getContextPath());
+                assertNotEquals(
+                    proxyContext.getContextPath(), request.getContext().getContextPath());
                 assertEquals(path, Request.getPathInContext(request));
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
                 response.write(true, ByteBuffer.wrap(data), callback);
@@ -185,7 +190,8 @@ public class FastCGIProxyHandlerTest
     }
 
     @ParameterizedTest(name = "[{index}] sendStatus200={0}")
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testURIRewrite(boolean sendStatus200) throws Exception
     {
         String originalPath = "/original/index.php";

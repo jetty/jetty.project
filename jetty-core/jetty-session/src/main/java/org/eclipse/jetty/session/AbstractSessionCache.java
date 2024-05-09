@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -88,13 +87,13 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * deleted from the SessionDataStore.
      */
     protected boolean _removeUnloadableSessions;
-    
+
     /**
      * If true, when a response is about to be committed back to the client,
      * a dirty session will be flushed to the session store.
      */
     protected boolean _flushOnResponseCommit;
-    
+
     /**
      * If true, when the server shuts down, all sessions in the
      * cache will be invalidated before being removed.
@@ -127,13 +126,13 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @return null if the session wasn't already in the map, or the existing entry otherwise
      */
     protected abstract Session doPutIfAbsent(String id, ManagedSession session);
-    
+
     /**
-     * Compute the mappingFunction to create a Session object iff the session 
+     * Compute the mappingFunction to create a Session object iff the session
      * with the given id isn't already in the map, otherwise return the existing Session.
-     * This method is expected to have precisely the same behaviour as 
+     * This method is expected to have precisely the same behaviour as
      * {@link java.util.concurrent.ConcurrentHashMap#computeIfAbsent}
-     * 
+     *
      * @param id the session id
      * @param mappingFunction the function to load the data for the session
      * @return an existing Session from the cache
@@ -307,7 +306,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * If the session object is not in this session store, try getting
      * the data for it from a SessionDataStore associated with the
      * session manager.
-     * 
+     *
      * @param id The session to retrieve
      * @param enter if true, the usage count of the session will be incremented
      * @return the session if it exists, null otherwise
@@ -330,7 +329,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 {
                     try (AutoLock lock = s.lock())
                     {
-                        s.setResident(true); //ensure freshly loaded session is resident
+                        s.setResident(true); // ensure freshly loaded session is resident
                     }
                 }
                 else
@@ -350,12 +349,12 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         Exception ex = exception.get();
         if (ex != null)
             throw ex;
-            
+
         if (session != null)
         {
             try (AutoLock lock = session.lock())
             {
-                if (!session.isResident()) //session isn't marked as resident in cache
+                if (!session.isResident()) // session isn't marked as resident in cache
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Non-resident session {} in cache", id);
@@ -377,29 +376,28 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param id the id
      * @return a Session object filled with data or null if the session doesn't exist
      */
-    private ManagedSession loadSession(String id)
-        throws Exception
+    private ManagedSession loadSession(String id) throws Exception
     {
         SessionData data = null;
         ManagedSession session = null;
 
         if (_sessionDataStore == null)
-            return null; //can't load it
+            return null; // can't load it
 
         try
         {
             data = _sessionDataStore.load(id);
 
-            if (data == null) //session doesn't exist
+            if (data == null) // session doesn't exist
                 return null;
 
-            data.setLastNode(_context.getWorkerName()); //we are going to manage the node
+            data.setLastNode(_context.getWorkerName()); // we are going to manage the node
             session = newSession(data);
             return session;
         }
         catch (UnreadableSessionDataException e)
         {
-            //can't load the session, delete it
+            // can't load the session, delete it
             if (isRemoveUnloadableSessions())
                 _sessionDataStore.delete(id);
             throw e;
@@ -409,7 +407,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /**
      * Add an entirely new session (created by the application calling Request.getSession(true))
      * to the cache. The usage count of the fresh session is incremented.
-     * 
+     *
      * @param id the id
      * @param session the session
      */
@@ -417,7 +415,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public void add(String id, ManagedSession session) throws Exception
     {
         if (id == null || session == null)
-            throw new IllegalArgumentException("Add key=" + id + " session=" + (session == null ? "null" : session.getId()));
+            throw new IllegalArgumentException(
+                "Add key=" + id + " session=" + (session == null ? "null" : session.getId()));
 
         try (AutoLock lock = session.lock())
         {
@@ -429,8 +428,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
             if (doPutIfAbsent(id, session) == null)
             {
-                session.setResident(true); //its in the cache
-                session.use(); //the request is using it
+                session.setResident(true); // its in the cache
+                session.use(); // the request is using it
             }
             else
                 throw new IllegalStateException("Session " + id + " already in cache");
@@ -452,13 +451,13 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
         try (AutoLock lock = session.lock())
         {
-            //only write the session out at this point if the attributes changed. If only
-            //the lastAccess/expiry time changed defer the write until the last request exits
+            // only write the session out at this point if the attributes changed. If only
+            // the lastAccess/expiry time changed defer the write until the last request exits
             if (session.isValid() && session.getSessionData().isDirty() && _flushOnResponseCommit)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Flush session {} on response commit", session);
-                //save the session
+                // save the session
                 if (!_sessionDataStore.isPassivating())
                 {
                     _sessionDataStore.store(session.getId(), session.getSessionData());
@@ -494,7 +493,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             throw new IllegalArgumentException((session == null ? "Null session" : "Null session id"));
 
         String id = session.getId();
-        
+
         try (AutoLock lock = session.lock())
         {
             if (session.getSessionManager() == null)
@@ -505,15 +504,15 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
             session.release();
 
-            //don't do anything with the session until the last request for it has finished
+            // don't do anything with the session until the last request for it has finished
             if ((session.getRequests() <= 0))
             {
-                //save the session
+                // save the session
                 if (!_sessionDataStore.isPassivating())
                 {
-                    //if our backing datastore isn't the passivating kind, just save the session
+                    // if our backing datastore isn't the passivating kind, just save the session
                     _sessionDataStore.store(id, session.getSessionData());
-                    //if we evict on session exit, boot it from the cache
+                    // if we evict on session exit, boot it from the cache
                     if (getEvictionPolicy() == EVICT_ON_SESSION_EXIT)
                     {
                         if (LOG.isDebugEnabled())
@@ -524,14 +523,14 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                     else
                     {
                         session.setResident(true);
-                        doPutIfAbsent(id, session); //ensure it is in our map
+                        doPutIfAbsent(id, session); // ensure it is in our map
                         if (LOG.isDebugEnabled())
                             LOG.debug("Non passivating SessionDataStore, session in SessionCache only id={}", id);
                     }
                 }
                 else
                 {
-                    //backing store supports passivation, call the listeners
+                    // backing store supports passivation, call the listeners
                     session.onSessionPassivation();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session passivating id={}", id);
@@ -539,7 +538,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
                     if (getEvictionPolicy() == EVICT_ON_SESSION_EXIT)
                     {
-                        //throw out the passivated session object from the map
+                        // throw out the passivated session object from the map
                         doDelete(id);
                         session.setResident(false);
                         if (LOG.isDebugEnabled())
@@ -547,10 +546,10 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                     }
                     else
                     {
-                        //reactivate the session
+                        // reactivate the session
                         session.onSessionActivation();
                         session.setResident(true);
-                        doPutIfAbsent(id, session); //ensure it is in our map
+                        doPutIfAbsent(id, session); // ensure it is in our map
                         if (LOG.isDebugEnabled())
                             LOG.debug("Session reactivated id={}", id);
                     }
@@ -561,7 +560,10 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 if (LOG.isDebugEnabled())
                     LOG.debug("Req count={} for id={}", session.getRequests(), id);
                 session.setResident(true);
-                doPutIfAbsent(id, session); //ensure it is the map, but don't save it to the backing store until the last request exists
+                doPutIfAbsent(
+                    id,
+                    session); // ensure it is the map, but don't save it to the backing store until the last request
+                // exists
             }
         }
     }
@@ -578,18 +580,18 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     @Override
     public boolean exists(String id) throws Exception
     {
-        //try the object store first
+        // try the object store first
         ManagedSession s = doGet(id);
         if (s != null)
         {
             try (AutoLock lock = s.lock())
             {
-                //wait for the lock and check the validity of the session
+                // wait for the lock and check the validity of the session
                 return s.isValid();
             }
         }
 
-        //not there, so find out if session data exists for it
+        // not there, so find out if session data exists for it
         return _sessionDataStore.exists(id);
     }
 
@@ -601,7 +603,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     @Override
     public boolean contains(String id) throws Exception
     {
-        //just ask our object cache, not the store
+        // just ask our object cache, not the store
         return (doGet(id) != null);
     }
 
@@ -612,10 +614,10 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     @Override
     public ManagedSession delete(String id) throws Exception
     {
-        //get the session, if its not in memory, this will load it
+        // get the session, if its not in memory, this will load it
         ManagedSession session = getAndEnter(id, false);
 
-        //Always delete it from the backing data store
+        // Always delete it from the backing data store
         if (_sessionDataStore != null)
         {
             boolean dsdel = _sessionDataStore.delete(id);
@@ -623,7 +625,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 LOG.debug("Session id={} deleted in session data store {}", id, dsdel);
         }
 
-        //delete it from the session object store
+        // delete it from the session object store
         if (session != null)
         {
             session.setResident(false);
@@ -647,7 +649,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             for (String c : allCandidates)
             {
                 ManagedSession s = doGet(c);
-                if (s != null && s.getRequests() > 0) //if the session is in my cache, check its not in use first
+                if (s != null && s.getRequests() > 0) // if the session is in my cache, check its not in use first
                     sessionsInUse.add(c);
             }
             try
@@ -681,28 +683,27 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             LOG.debug("Checking for idle {}", session.getId());
         try (AutoLock s = session.lock())
         {
-            if (getEvictionPolicy() > 0 && session.isIdleLongerThan(getEvictionPolicy()) &&
-                    session.isValid() && session.isResident() && session.getRequests() <= 0)
+            if (getEvictionPolicy() > 0 && session.isIdleLongerThan(getEvictionPolicy()) && session.isValid() && session.isResident() && session.getRequests() <= 0)
             {
-                //Be careful with saveOnInactiveEviction - you may be able to re-animate a session that was
-                //being managed on another node and has expired.
+                // Be careful with saveOnInactiveEviction - you may be able to re-animate a session that was
+                // being managed on another node and has expired.
                 try
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Evicting idle session {}", session.getId());
 
-                    //save before evicting
+                    // save before evicting
                     if (isSaveOnInactiveEviction() && _sessionDataStore != null)
                     {
                         if (_sessionDataStore.isPassivating())
                             session.onSessionPassivation();
 
-                        //Fake being dirty to force the write
+                        // Fake being dirty to force the write
                         session.getSessionData().setDirty(true);
                         _sessionDataStore.store(session.getId(), session.getSessionData());
                     }
 
-                    doDelete(session.getId()); //detach from this cache
+                    doDelete(session.getId()); // detach from this cache
                     session.setResident(false);
                 }
                 catch (Exception e)
@@ -736,8 +737,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param newExtendedId the full id plus node id
      * @throws Exception if there was a failure saving the change
      */
-    protected void renewSessionId(ManagedSession session, String newId, String newExtendedId)
-        throws Exception
+    protected void renewSessionId(ManagedSession session, String newId, String newExtendedId) throws Exception
     {
         if (session == null)
             return;
@@ -745,20 +745,21 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         try (AutoLock lock = session.lock())
         {
             String oldId = session.getId();
-            session.checkValidForWrite(); //can't change id on invalid session
+            session.checkValidForWrite(); // can't change id on invalid session
             session.getSessionData().setId(newId);
-            session.getSessionData().setLastSaved(0); //pretend that the session has never been saved before to get a full save
-            session.getSessionData().setDirty(true);  //ensure we will try to write the session out    
-            session.setExtendedId(newExtendedId); //remember the new extended id
-            session.onIdChanged(); //session id changed
+            session.getSessionData()
+                .setLastSaved(0); // pretend that the session has never been saved before to get a full save
+            session.getSessionData().setDirty(true); // ensure we will try to write the session out
+            session.setExtendedId(newExtendedId); // remember the new extended id
+            session.onIdChanged(); // session id changed
 
-            doPutIfAbsent(newId, session); //put the new id into our map
-            doDelete(oldId); //take old out of map
+            doPutIfAbsent(newId, session); // put the new id into our map
+            doDelete(oldId); // take old out of map
 
             if (_sessionDataStore != null)
             {
-                _sessionDataStore.delete(oldId);  //delete the session data with the old id
-                _sessionDataStore.store(newId, session.getSessionData()); //save the session data with the new id
+                _sessionDataStore.delete(oldId); // delete the session data with the old id
+                _sessionDataStore.store(newId, session.getSessionData()); // save the session data with the new id
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("Session id={} swapped for new id={}", oldId, newId);
@@ -818,8 +819,13 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     @Override
     public String toString()
     {
-        return String.format("%s@%x[evict=%d,removeUnloadable=%b,saveOnCreate=%b,saveOnInactiveEvict=%b]",
-            this.getClass().getName(), this.hashCode(), _evictionPolicy,
-            _removeUnloadableSessions, _saveOnCreate, _saveOnInactiveEviction);
+        return String.format(
+            "%s@%x[evict=%d,removeUnloadable=%b,saveOnCreate=%b,saveOnInactiveEvict=%b]",
+            this.getClass().getName(),
+            this.hashCode(),
+            _evictionPolicy,
+            _removeUnloadableSessions,
+            _saveOnCreate,
+            _saveOnInactiveEviction);
     }
 }

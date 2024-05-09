@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.logging;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -23,8 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Tool to help identify maven projects that need to be updated.
@@ -65,8 +65,7 @@ public class Slf4jEffort
             .filter(pom ->
             {
                 String fullpath = pom.toString();
-                return !((fullpath.contains("/jetty-osgi") ||
-                    fullpath.contains("/jetty-slf4j-impl/")));
+                return !((fullpath.contains("/jetty-osgi") || fullpath.contains("/jetty-slf4j-impl/")));
             })
             .forEach((pom) ->
             {
@@ -75,8 +74,10 @@ public class Slf4jEffort
                 {
                     Path testLoggingProps = project.resolve("src/test/resources/jetty-logging.properties");
 
-                    boolean isMainSrcUsingLogging = getSources(project.resolve("src/main/java")).anyMatch(Slf4jEffort::isUsingLogging);
-                    boolean isTestSrcUsingLogging = getSources(project.resolve("src/test/java")).anyMatch(Slf4jEffort::isUsingLogging);
+                    boolean isMainSrcUsingLogging =
+                        getSources(project.resolve("src/main/java")).anyMatch(Slf4jEffort::isUsingLogging);
+                    boolean isTestSrcUsingLogging =
+                        getSources(project.resolve("src/test/java")).anyMatch(Slf4jEffort::isUsingLogging);
 
                     if (isMainSrcUsingLogging || isTestSrcUsingLogging)
                     {
@@ -187,9 +188,7 @@ public class Slf4jEffort
             String line;
             while ((line = reader.readLine()) != null)
             {
-                if (line.contains("requires org.slf4j;") ||
-                    line.contains("requires transitive org.slf4j;") ||
-                    line.contains("requires static org.slf4j;"))
+                if (line.contains("requires org.slf4j;") || line.contains("requires transitive org.slf4j;") || line.contains("requires static org.slf4j;"))
                 {
                     return true;
                 }
@@ -209,9 +208,7 @@ public class Slf4jEffort
             String line;
             while ((line = reader.readLine()) != null)
             {
-                if (line.startsWith("import org.eclipse.jetty.util.log.") ||
-                    line.startsWith("import org.slf4j.") ||
-                    line.startsWith("import org.eclipse.jetty.logging."))
+                if (line.startsWith("import org.eclipse.jetty.util.log.") || line.startsWith("import org.slf4j.") || line.startsWith("import org.eclipse.jetty.logging."))
                 {
                     return true;
                 }

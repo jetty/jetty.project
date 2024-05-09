@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -22,7 +28,6 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
@@ -49,12 +54,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class PermessageDeflateBufferTest
 {
     private Server server;
@@ -78,8 +77,7 @@ public class PermessageDeflateBufferTest
         "\uD83C\uDFC2",
         "\uD83C\uDFC3",
         "\uD83C\uDFC4",
-        "\uD83C\uDFC5"
-    );
+        "\uD83C\uDFC5");
 
     private static String randomText()
     {
@@ -201,10 +199,12 @@ public class PermessageDeflateBufferTest
 
         server.getContainedBeans(InflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
+            .forEach(pool -> assertEquals(
+                0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
         server.getContainedBeans(DeflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
+            .forEach(pool -> assertEquals(
+                0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
     }
 
     @Test
@@ -222,17 +222,22 @@ public class PermessageDeflateBufferTest
         assertThat(socket.partialMessages.poll(5, TimeUnit.SECONDS), equalTo("partial" + "last=true"));
 
         // Abruptly close the connection from the client.
-        ((WebSocketCoreSession)((WebSocketSession)session).getCoreSession()).getConnection().getEndPoint().close();
+        ((WebSocketCoreSession)((WebSocketSession)session).getCoreSession())
+            .getConnection()
+            .getEndPoint()
+            .close();
 
         // Wait for the server to process the close.
         assertTrue(incomingFailEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         server.getContainedBeans(InflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
+            .forEach(pool -> assertEquals(
+                0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
         server.getContainedBeans(DeflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
+            .forEach(pool -> assertEquals(
+                0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
     }
 
     @Test
@@ -255,10 +260,12 @@ public class PermessageDeflateBufferTest
 
         server.getContainedBeans(InflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
+            .forEach(pool -> assertEquals(
+                0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
         server.getContainedBeans(DeflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
+            .forEach(pool -> assertEquals(
+                0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
     }
 
     @Test
@@ -276,17 +283,22 @@ public class PermessageDeflateBufferTest
         assertThat(socket.partialMessages.poll(5, TimeUnit.SECONDS), equalTo("hello" + "last=false"));
 
         // Abruptly close the connection from the client.
-        ((WebSocketCoreSession)((WebSocketSession)session).getCoreSession()).getConnection().getEndPoint().close();
+        ((WebSocketCoreSession)((WebSocketSession)session).getCoreSession())
+            .getConnection()
+            .getEndPoint()
+            .close();
 
         // Wait for the server to process the close.
         assertTrue(outgoingFailEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
 
         server.getContainedBeans(InflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
+            .forEach(pool -> assertEquals(
+                0, pool.getInUseCount(), "unreleased inflater pool entries: " + ((Dumpable)pool).dump()));
         server.getContainedBeans(DeflaterPool.class).stream()
             .map(CompressionPool::getPool)
-            .forEach(pool -> assertEquals(0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
+            .forEach(pool -> assertEquals(
+                0, pool.getInUseCount(), "unreleased deflater pool entries: " + ((Dumpable)pool).dump()));
     }
 
     @WebSocket

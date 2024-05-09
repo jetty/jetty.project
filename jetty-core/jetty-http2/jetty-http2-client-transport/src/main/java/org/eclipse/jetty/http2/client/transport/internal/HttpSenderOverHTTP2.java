@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.nio.ByteBuffer;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
@@ -50,7 +49,8 @@ public class HttpSenderOverHTTP2 extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendHeaders(
+                               HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         HttpRequest request = exchange.getRequest();
         boolean isTunnel = HttpMethod.CONNECT.is(request.getMethod());
@@ -60,13 +60,15 @@ public class HttpSenderOverHTTP2 extends HttpSender
             String upgradeProtocol = (String)request.getAttributes().get(HttpUpgrader.PROTOCOL_ATTRIBUTE);
             if (upgradeProtocol == null)
             {
-                metaData = new MetaData.ConnectRequest((String)null, new HostPortHttpField(request.getPath()), null, request.getHeaders(), null);
+                metaData = new MetaData.ConnectRequest(
+                    (String)null, new HostPortHttpField(request.getPath()), null, request.getHeaders(), null);
             }
             else
             {
                 HostPortHttpField authority = new HostPortHttpField(request.getHost(), request.getPort());
                 String pathQuery = URIUtil.addPathQuery(request.getPath(), request.getQuery());
-                metaData = new MetaData.ConnectRequest(request.getScheme(), authority, pathQuery, request.getHeaders(), upgradeProtocol);
+                metaData = new MetaData.ConnectRequest(
+                    request.getScheme(), authority, pathQuery, request.getHeaders(), upgradeProtocol);
             }
         }
         else
@@ -78,7 +80,13 @@ public class HttpSenderOverHTTP2 extends HttpSender
                 .port(request.getPort())
                 .path(path)
                 .query(request.getQuery());
-            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders(), -1, request.getTrailersSupplier());
+            metaData = new MetaData.Request(
+                request.getMethod(),
+                uri,
+                HttpVersion.HTTP_2,
+                request.getHeaders(),
+                -1,
+                request.getTrailersSupplier());
         }
 
         HeadersFrame headersFrame;
@@ -127,7 +135,8 @@ public class HttpSenderOverHTTP2 extends HttpSender
 
         HttpChannelOverHTTP2 channel = getHttpChannel();
         HTTP2Stream.FrameList frameList = new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame);
-        ((HTTP2Session)channel.getSession()).newStream(frameList, new HeadersPromise(request, callback), channel.getStreamListener());
+        ((HTTP2Session)channel.getSession())
+            .newStream(frameList, new HeadersPromise(request, callback), channel.getStreamListener());
     }
 
     private HttpFields retrieveTrailers(HttpRequest request)
@@ -138,7 +147,8 @@ public class HttpSenderOverHTTP2 extends HttpSender
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendContent(
+                               HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Stream stream = getHttpChannel().getStream();
         boolean hasContent = contentBuffer.hasRemaining();
@@ -151,7 +161,8 @@ public class HttpSenderOverHTTP2 extends HttpSender
             {
                 DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, !hasTrailers);
                 if (hasTrailers)
-                    stream.data(dataFrame, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
+                    stream.data(
+                        dataFrame, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
                 else
                     stream.data(dataFrame, callback);
             }

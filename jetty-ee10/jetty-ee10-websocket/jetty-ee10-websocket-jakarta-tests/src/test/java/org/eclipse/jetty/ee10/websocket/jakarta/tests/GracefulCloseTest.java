@@ -13,14 +13,18 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
-import java.net.URI;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.net.URI;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
@@ -31,11 +35,6 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GracefulCloseTest
 {
@@ -54,8 +53,8 @@ public class GracefulCloseTest
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
-        JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addEndpoint(ServerSocket.class));
+        JakartaWebSocketServletContainerInitializer.configure(
+            contextHandler, (context, container) -> container.addEndpoint(ServerSocket.class));
         server.start();
         serverUri = WSURI.toWebsocket(server.getURI());
 

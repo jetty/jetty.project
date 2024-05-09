@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.coders;
 
-import java.io.IOException;
-import java.io.Writer;
-
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
+import java.io.IOException;
+import java.io.Writer;
 
 /**
  * Intentionally bad example of attempting to encode the same object for different message types.

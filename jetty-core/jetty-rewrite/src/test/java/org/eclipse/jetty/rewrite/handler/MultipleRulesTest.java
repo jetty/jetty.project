@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
@@ -22,8 +23,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MultipleRulesTest extends AbstractRuleTest
 {
@@ -49,7 +48,7 @@ public class MultipleRulesTest extends AbstractRuleTest
         String request = """
             GET / HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -72,7 +71,8 @@ public class MultipleRulesTest extends AbstractRuleTest
                 String value = input.getHeaders().get(requestHeaderName);
                 assertEquals("Request", value);
 
-                HttpFields newFields = HttpFields.build(input.getHeaders()).put(requestHeaderName, String.join(", ", value, "Rule1"));
+                HttpFields newFields =
+                    HttpFields.build(input.getHeaders()).put(requestHeaderName, String.join(", ", value, "Rule1"));
                 return new Handler(input)
                 {
                     @Override
@@ -105,7 +105,8 @@ public class MultipleRulesTest extends AbstractRuleTest
                 String pathInContext = Request.getPathInContext(input);
                 assertEquals("/rewritten", pathInContext);
 
-                HttpFields newFields = HttpFields.build(input.getHeaders()).put(requestHeaderName, String.join(", ", "Request", "Rule1", "Rule3"));
+                HttpFields newFields = HttpFields.build(input.getHeaders())
+                    .put(requestHeaderName, String.join(", ", "Request", "Rule1", "Rule3"));
                 return new Handler(input)
                 {
                     @Override
@@ -141,12 +142,14 @@ public class MultipleRulesTest extends AbstractRuleTest
             }
         });
 
-        String request = """
-            GET / HTTP/1.1
-            Host: localhost
-            %s: Request
-                        
-            """.formatted(requestHeaderName);
+        String request =
+            """
+                GET / HTTP/1.1
+                Host: localhost
+                %s: Request
+
+                """
+                .formatted(requestHeaderName);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(200, response.getStatus());

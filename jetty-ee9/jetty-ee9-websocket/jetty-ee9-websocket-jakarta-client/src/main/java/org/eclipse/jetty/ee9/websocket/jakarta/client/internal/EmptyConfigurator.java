@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.client.internal;
 
-import java.util.List;
-import java.util.Map;
-
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.HandshakeResponse;
+import java.util.List;
+import java.util.Map;
 
 public class EmptyConfigurator extends ClientEndpointConfig.Configurator
 {

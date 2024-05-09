@@ -13,13 +13,19 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -32,13 +38,6 @@ import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsStringIgnoringCase;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * SessionInvalidationTest
@@ -59,8 +58,7 @@ public class SessionInvalidationTest
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
 
-        SessionTestSupport server = new SessionTestSupport(0, 0, scavengePeriod,
-            cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, 0, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -109,8 +107,7 @@ public class SessionInvalidationTest
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
 
-        SessionTestSupport server = new SessionTestSupport(0, 0, scavengePeriod,
-            cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, 0, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -136,13 +133,13 @@ public class SessionInvalidationTest
                 Request request2 = client.newRequest(url + "?action=test");
                 ContentResponse response2 = request2.send();
                 assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
-                
-                //Make a request to get the session - should not exist
+
+                // Make a request to get the session - should not exist
                 Request request3 = client.newRequest(url + "?action=get");
                 ContentResponse response3 = request3.send();
                 assertEquals(HttpServletResponse.SC_OK, response3.getStatus());
                 assertThat(response3.getContentAsString(), containsStringIgnoringCase("session=null"));
-                
+
             }
             finally
             {
@@ -160,7 +157,8 @@ public class SessionInvalidationTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
 
@@ -174,7 +172,7 @@ public class SessionInvalidationTest
                 HttpSession session = request.getSession(false);
                 assertNotNull(session);
 
-                //invalidate existing session
+                // invalidate existing session
                 session.invalidate();
 
                 assertThrows(IllegalStateException.class, session::invalidate);
@@ -190,7 +188,7 @@ public class SessionInvalidationTest
             {
                 HttpSession session = request.getSession(false);
 
-                httpServletResponse.getWriter().println("SESSION=" + (session == null  ? "null" : session.getId()));
+                httpServletResponse.getWriter().println("SESSION=" + (session == null ? "null" : session.getId()));
             }
         }
     }

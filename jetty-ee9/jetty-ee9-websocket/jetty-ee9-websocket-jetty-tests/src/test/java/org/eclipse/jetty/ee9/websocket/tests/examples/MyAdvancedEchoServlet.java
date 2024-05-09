@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.tests.examples;
 
-import java.time.Duration;
-
 import jakarta.servlet.annotation.WebServlet;
+import java.time.Duration;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
 
 @SuppressWarnings("serial")
-@WebServlet(name = "MyAdvanced Echo WebSocket Servlet", urlPatterns = {"/advecho"})
+@WebServlet(name = "MyAdvanced Echo WebSocket Servlet", urlPatterns =
+{"/advecho"})
 public class MyAdvancedEchoServlet extends JettyWebSocketServlet
 {
     @Override

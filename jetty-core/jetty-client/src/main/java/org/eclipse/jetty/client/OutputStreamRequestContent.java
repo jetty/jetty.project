@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.OutputStream;
-
 import org.eclipse.jetty.io.content.OutputStreamContentSource;
 
 /**

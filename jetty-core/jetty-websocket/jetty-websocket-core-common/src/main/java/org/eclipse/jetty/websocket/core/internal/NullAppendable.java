@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.charset.CharacterCodingException;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
 public class NullAppendable extends Utf8StringBuilder

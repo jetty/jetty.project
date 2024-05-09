@@ -13,8 +13,13 @@
 
 package org.eclipse.jetty.ee10.demos;
 
-import java.net.URI;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
+import java.net.URI;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
@@ -22,12 +27,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 public class ServerWithJNDITest extends AbstractEmbeddedTest
 {
@@ -57,13 +56,13 @@ public class ServerWithJNDITest extends AbstractEmbeddedTest
 
         // test response content
         String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody,
+        assertThat(
+            "Response Content",
+            responseBody,
             allOf(
                 containsString("java:comp/env/woggle"),
                 containsString("java:comp/env/gargle"),
-                containsString("java:comp/env/wiggle")
-            )
-        );
+                containsString("java:comp/env/wiggle")));
 
         assertThat("Response Content", responseBody, not(containsString("<span class=\"fail\">")));
     }

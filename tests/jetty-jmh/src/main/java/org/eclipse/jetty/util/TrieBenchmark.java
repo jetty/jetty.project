@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.eclipse.jetty.http.HttpParser;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
@@ -71,10 +70,10 @@ public class TrieBenchmark
 
         trie.put(LONG_HIT, LONG_HIT);
 
-//        System.err.println("====");
-//        for (String k : trie.keySet())
-//            System.err.printf("%s: %s%n", k, trie.get(k));
-//        System.err.println("----");
+        //        System.err.println("====");
+        //        for (String k : trie.keySet())
+        //            System.err.printf("%s: %s%n", k, trie.get(k));
+        //        System.err.println("----");
     }
 
     @Benchmark
@@ -91,59 +90,62 @@ public class TrieBenchmark
     public boolean testGet()
     {
         if (
-            // short miss
-            trie.get("Xx") == null &&
-                // long miss
-                trie.get("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m") == null &&
+        // short miss
+        trie.get("Xx") == null &&
+            // long miss
+            trie.get("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m") == null &&
 
-                // short near miss
-                trie.get("Pragma: no-cache0") == null &&
+            // short near miss
+            trie.get("Pragma: no-cache0") == null &&
 
-                // long near miss
-                trie.get(LONG_MISS) == null &&
+            // long near miss
+            trie.get(LONG_MISS) == null &&
 
-                // short hit
-                trie.get("Pragma: no-cache") != null &&
+            // short hit
+            trie.get("Pragma: no-cache") != null &&
 
-                // medium hit
-                trie.get("Accept-Language: en-US,enq=0.5") != null &&
+            // medium hit
+            trie.get("Accept-Language: en-US,enq=0.5") != null &&
 
-                // long hit
-                trie.get(LONG_HIT) != null
-        )
+            // long hit
+            trie.get(LONG_HIT) != null)
             return true;
 
         throw new IllegalStateException();
     }
 
-    private static final ByteBuffer X = BufferUtil.toBuffer("Xx\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ByteBuffer Z = BufferUtil.toBuffer("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final ByteBuffer X = BufferUtil.toBuffer(
+        "Xx\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final ByteBuffer Z = BufferUtil.toBuffer(
+        "Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
     private static final ByteBuffer M = BufferUtil.toBuffer(LONG_MISS + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ByteBuffer P = BufferUtil.toBuffer("Pragma: no-cache;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ByteBuffer A = BufferUtil.toBuffer("Accept-Language: en-US,enq=0.5;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final ByteBuffer P = BufferUtil.toBuffer(
+        "Pragma: no-cache;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final ByteBuffer A = BufferUtil.toBuffer(
+        "Accept-Language: en-US,enq=0.5;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
     private static final ByteBuffer H = BufferUtil.toBuffer(LONG_HIT + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 
     @Benchmark
     public boolean testGetBest()
     {
         if (
-            // short miss
-            trie.getBest(X) == null &&
+        // short miss
+        trie.getBest(X) == null &&
 
-                // long miss
-                trie.getBest(Z) == null &&
+            // long miss
+            trie.getBest(Z) == null &&
 
-                // long near miss
-                trie.getBest(M) == null &&
+            // long near miss
+            trie.getBest(M) == null &&
 
-                // short hit
-                trie.getBest(P) != null &&
+            // short hit
+            trie.getBest(P) != null &&
 
-                // medium hit
-                trie.getBest(A) != null &&
+            // medium hit
+            trie.getBest(A) != null &&
 
-                // long hit
-                trie.getBest(H) != null)
+            // long hit
+            trie.getBest(H) != null)
             return true;
 
         throw new IllegalStateException();
@@ -246,15 +248,15 @@ public class TrieBenchmark
         }
     }
 
-//    public static void main(String... args) throws Exception
-//    {
-//        TrieBenchmark.TRIE_TYPE = "HashTrie";
-//        TrieBenchmark b = new TrieBenchmark();
-//        b.setUp();
-//        b.testGet();
-//        b.testGetBest();
-//        b.testPut();
-//    }
+    //    public static void main(String... args) throws Exception
+    //    {
+    //        TrieBenchmark.TRIE_TYPE = "HashTrie";
+    //        TrieBenchmark b = new TrieBenchmark();
+    //        b.setUp();
+    //        b.testGet();
+    //        b.testGetBest();
+    //        b.testPut();
+    //    }
 
     public static void main(String[] args) throws RunnerException
     {
@@ -271,5 +273,4 @@ public class TrieBenchmark
 
         new Runner(opt).run();
     }
-
 }

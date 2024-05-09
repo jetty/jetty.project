@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.coders;
 
+import jakarta.websocket.Decoder;
+import jakarta.websocket.Encoder;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import jakarta.websocket.Decoder;
-import jakarta.websocket.Encoder;
 
 /**
  * Singleton used for tracking events of {@link jakarta.websocket.Decoder} and {@link jakarta.websocket.Encoder}

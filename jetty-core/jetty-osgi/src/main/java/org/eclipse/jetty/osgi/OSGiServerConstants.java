@@ -19,12 +19,13 @@ package org.eclipse.jetty.osgi;
  * Name of the properties that configure a jetty Server OSGi service.
  */
 public class OSGiServerConstants
-{   
+{
     /**
      * Usual system property used as the hostname for a typical jetty
      * configuration.
      */
     public static final String JETTY_HOME = "jetty.home";
+
     public static final String JETTY_BASE = "jetty.base";
 
     /**
@@ -52,11 +53,12 @@ public class OSGiServerConstants
      */
     public static final String JETTY_PORT_SSL = "jetty.ssl.port";
 
-    //for managed jetty instances, name of the configuration parameters
+    // for managed jetty instances, name of the configuration parameters
     /**
      * PID of the jetty servers's ManagedFactory
      */
-    public static final String MANAGED_JETTY_SERVER_FACTORY_PID = "org.eclipse.jetty.ee9.osgi.boot.managedserverfactory";
+    public static final String MANAGED_JETTY_SERVER_FACTORY_PID =
+        "org.eclipse.jetty.ee9.osgi.boot.managedserverfactory";
 
     /**
      * The associated value of that configuration parameter is the name under which this
@@ -80,15 +82,14 @@ public class OSGiServerConstants
      * List of URLs to the folders where the legacy J2EE shared libraries are stored aka lib/ext, lib/jsp etc.
      */
     public static final String MANAGED_JETTY_SHARED_LIB_FOLDER_URLS = "managedJettySharedLibFolderUrls";
-    
+
     /*
      * Name of server attribute that stores a classloader suitable as the parent classloader for contexts
      */
     public static final String SERVER_CLASSLOADER = "org.eclipse.jetty.osgi.server.classLoader";
-    
+
     /**
      * Name of server attribute that stores a List of Bundles on the server classpath that must be scanned
      */
     public static final String SERVER_CLASSPATH_BUNDLES = "org.eclipse.jetty.osgi.server.classpathBundles";
-    
 }

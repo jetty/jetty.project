@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.util.Date;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
@@ -46,11 +45,11 @@ public class HTTP2CServer extends Server
         setHandler(new SimpleHandler());
     }
 
-//    public static void main(String... args) throws Exception
-//    {
-//        HTTP2CServer server = new HTTP2CServer(8080);
-//        server.start();
-//    }
+    //    public static void main(String... args) throws Exception
+    //    {
+    //        HTTP2CServer server = new HTTP2CServer(8080);
+    //        server.start();
+    //    }
 
     private static class SimpleHandler extends NonBlocking
     {
@@ -65,7 +64,8 @@ public class HTTP2CServer extends Server
 
             response.getHeaders().put("Custom", "Value");
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-            String content = "Hello from Jetty using " + request.getConnectionMetaData().getProtocol() + "\n";
+            String content =
+                "Hello from Jetty using " + request.getConnectionMetaData().getProtocol() + "\n";
             content += "uri=" + Request.getPathInContext(request) + "\n";
             content += "date=" + new Date() + "\n";
             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length());

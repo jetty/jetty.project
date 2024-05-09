@@ -16,7 +16,6 @@ package org.eclipse.jetty.session;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
@@ -187,7 +186,7 @@ public class TestableSessionManager extends AbstractSessionManager
         if (StringUtil.isNotBlank(checkEncoding))
             setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(checkEncoding));
     }
-    
+
     public Map<String, String> getCookieConfig()
     {
         return _cookieConfig;

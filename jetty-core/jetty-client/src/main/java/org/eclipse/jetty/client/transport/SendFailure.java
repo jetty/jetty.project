@@ -27,10 +27,6 @@ public class SendFailure
     @Override
     public String toString()
     {
-        return String.format("%s@%x[failure=%s,retry=%b]",
-            getClass().getSimpleName(),
-            hashCode(),
-            failure,
-            retry);
+        return String.format("%s@%x[failure=%s,retry=%b]", getClass().getSimpleName(), hashCode(), failure, retry);
     }
 }

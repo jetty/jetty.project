@@ -16,7 +16,6 @@ package org.eclipse.jetty.osgi;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
@@ -64,14 +63,14 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     {
         return _properties;
     }
-    
+
     @Override
     public ContextHandler createContextHandler(App app) throws Exception
     {
         if (app == null)
             return null;
 
-        //Create a ContextHandler suitable to deploy in OSGi
+        // Create a ContextHandler suitable to deploy in OSGi
         ContextHandler h = _contextFactory.createContextHandler(this, app);
 
         return h;
@@ -82,7 +81,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     {
         _deploymentManager = deploymentManager;
     }
-    
+
     @Override
     public String getEnvironmentName()
     {
@@ -93,7 +92,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     {
         return _deploymentManager;
     }
-    
+
     /**
      * Get the extractWars.
      * This is equivalent to getting the {@link Deployable#EXTRACT_WARS} property.
@@ -175,9 +174,8 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        _properties.put(Deployable.CONFIGURATION_CLASSES, (configurations == null)
-            ? null
-            : String.join(",", configurations));
+        _properties.put(
+            Deployable.CONFIGURATION_CLASSES, (configurations == null) ? null : String.join(",", configurations));
     }
 
     /**
@@ -197,7 +195,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
      */
     public void setTldBundles(String tldBundles)
     {
-       _properties.put(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, tldBundles);
+        _properties.put(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, tldBundles);
     }
 
     /**
@@ -208,29 +206,29 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
     {
         return _properties.get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
     }
-    
+
     public boolean isDeployable(Bundle bundle)
     {
         if (bundle == null)
             return false;
-        
-        //check environment matches
+
+        // check environment matches
         if (getEnvironmentName().equalsIgnoreCase(bundle.getHeaders().get(OSGiWebappConstants.JETTY_ENVIRONMENT)))
             return true;
-        
+
         return false;
     }
-    
+
     public boolean isDeployable(ServiceReference service)
     {
         if (service == null)
             return false;
-        
-        //has it been deployed before?
+
+        // has it been deployed before?
         if (!StringUtil.isBlank((String)service.getProperty(OSGiWebappConstants.WATERMARK)))
             return false;
-        
-        //destined for our environment?
+
+        // destined for our environment?
         if (getEnvironmentName().equalsIgnoreCase((String)service.getProperty(OSGiWebappConstants.JETTY_ENVIRONMENT)))
             return true;
 

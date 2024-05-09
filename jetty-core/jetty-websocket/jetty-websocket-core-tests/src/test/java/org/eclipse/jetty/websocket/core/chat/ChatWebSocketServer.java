@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.websocket.core.chat;
 
+import static org.eclipse.jetty.util.Callback.NOOP;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.Content;
@@ -38,8 +39,6 @@ import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.util.Callback.NOOP;
 
 public class ChatWebSocketServer
 {
@@ -69,11 +68,15 @@ public class ChatWebSocketServer
             {
                 LOG.debug("onOpen {}", coreSession);
                 coreSession.setMaxTextMessageSize(2 * 1024);
-                super.onOpen(coreSession, Callback.from(() ->
-                {
-                    members.add(this);
-                    callback.succeeded();
-                }, callback::failed));
+                super.onOpen(
+                    coreSession,
+                    Callback.from(
+                        () ->
+                        {
+                            members.add(this);
+                            callback.succeeded();
+                        },
+                        callback::failed));
             }
 
             @Override

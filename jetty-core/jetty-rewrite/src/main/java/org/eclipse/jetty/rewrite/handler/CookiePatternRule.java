@@ -15,7 +15,6 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;

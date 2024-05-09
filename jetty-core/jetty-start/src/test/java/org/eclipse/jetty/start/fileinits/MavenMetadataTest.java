@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.start.fileinits;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MavenMetadataTest
 {
@@ -43,12 +42,14 @@ public class MavenMetadataTest
 
         assertThat("Metadata.versioning.lastUpdated", mavenMetadata.getLastUpdated(), is("20200918022411"));
 
-        assertThat("Metadata.versioning.snapshot.timestamp", mavenMetadata.getSnapshotTimestamp(), is("20200918.022411"));
+        assertThat(
+            "Metadata.versioning.snapshot.timestamp", mavenMetadata.getSnapshotTimestamp(), is("20200918.022411"));
         assertThat("Metadata.versioning.snapshot.buildNumber", mavenMetadata.getSnapshotBuildNumber(), is("580"));
 
         assertThat("Metadata.snapshots.size", mavenMetadata.getSnapshots().size(), is(4));
 
-        assertThat("Metadata.snapshot(null, 'jar').value",
+        assertThat(
+            "Metadata.snapshot(null, 'jar').value",
             mavenMetadata.getSnapshot(null, "jar").getValue(),
             is("10.0.0-20200918.022411-580"));
     }

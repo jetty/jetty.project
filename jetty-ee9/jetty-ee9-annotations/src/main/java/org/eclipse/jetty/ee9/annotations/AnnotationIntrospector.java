@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import org.eclipse.jetty.ee9.servlet.BaseHolder;
 import org.eclipse.jetty.ee9.servlet.Source.Origin;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
@@ -76,7 +75,7 @@ public class AnnotationIntrospector
         {
             Class<?> c = clazz;
 
-            //process the whole inheritance hierarchy for the class
+            // process the whole inheritance hierarchy for the class
             while (c != null && (!c.equals(Object.class)))
             {
                 doHandle(c);
@@ -126,10 +125,10 @@ public class AnnotationIntrospector
     public boolean isIntrospectable(Object o, Object metaInfo)
     {
         if (o == null)
-            return false; //nothing to introspect
+            return false; // nothing to introspect
 
         if (metaInfo == null)
-            return true;  //no information about the object to introspect, assume introspectable
+            return true; // no information about the object to introspect, assume introspectable
 
         @SuppressWarnings("rawtypes")
         BaseHolder holder = null;
@@ -141,35 +140,36 @@ public class AnnotationIntrospector
         catch (ClassCastException e)
         {
             LOG.warn("Not introspectable {}", metaInfo.getClass().getName(), e);
-            return true; //not the type of information we were expecting, assume introspectable
+            return true; // not the type of information we were expecting, assume introspectable
         }
 
         Origin origin = (holder.getSource() == null ? null : holder.getSource().getOrigin());
         if (origin == null)
-            return true; //assume introspectable
+            return true; // assume introspectable
 
         switch (origin)
         {
             case EMBEDDED:
             case JAKARTA_API:
             {
-                return true; //objects created from the jetty or servlet api are always introspectable
+                return true; // objects created from the jetty or servlet api are always introspectable
             }
             case ANNOTATION:
             {
-                return true; //we will have discovered annotations only if metadata-complete==false
+                return true; // we will have discovered annotations only if metadata-complete==false
             }
             default:
             {
-                //must be from a descriptor. Only introspect if the descriptor with which it was associated
-                //is not metadata-complete
+                // must be from a descriptor. Only introspect if the descriptor with which it was associated
+                // is not metadata-complete
                 if (_context.getMetaData().isMetaDataComplete())
                     return false;
 
                 Resource descriptorLocation = holder.getSource().getResource();
                 if (descriptorLocation == null)
-                    return true; //no descriptor, can't be metadata-complete
-                return !WebDescriptor.isMetaDataComplete(_context.getMetaData().getFragmentDescriptor(descriptorLocation));
+                    return true; // no descriptor, can't be metadata-complete
+                return !WebDescriptor.isMetaDataComplete(
+                    _context.getMetaData().getFragmentDescriptor(descriptorLocation));
             }
         }
     }

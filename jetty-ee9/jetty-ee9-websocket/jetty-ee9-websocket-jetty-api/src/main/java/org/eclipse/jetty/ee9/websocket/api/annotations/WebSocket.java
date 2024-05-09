@@ -18,7 +18,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
 import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 
@@ -28,7 +27,7 @@ import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value =
-    {ElementType.TYPE})
+{ElementType.TYPE})
 public @interface WebSocket
 {
     /**

@@ -13,10 +13,14 @@
 
 package org.eclipse.jetty.ee10.jersey.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
@@ -36,11 +40,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EmbeddedJerseyTest
 {
@@ -79,7 +78,8 @@ public class EmbeddedJerseyTest
 
         ServletHolder servletHolder = new ServletHolder(org.glassfish.jersey.servlet.ServletContainer.class);
         servletHolder.setInitOrder(1);
-        servletHolder.setInitParameter("jersey.config.server.provider.packages", "org.eclipse.jetty.ee10.jersey.tests.endpoints");
+        servletHolder.setInitParameter(
+            "jersey.config.server.provider.packages", "org.eclipse.jetty.ee10.jersey.tests.endpoints");
         context.addServlet(servletHolder, "/webapi/*");
 
         server.start();
@@ -103,14 +103,15 @@ public class EmbeddedJerseyTest
     {
         start();
 
-        Request.Content content = new StringRequestContent("""
-            {
-                "principal" : "foo",
-                "roles" : ["admin", "user"]
-            }
+        Request.Content content = new StringRequestContent(
             """
-        );
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+                {
+                    "principal" : "foo",
+                    "roles" : ["admin", "user"]
+                }
+                """);
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.PUT)
             .path("/webapi/resource/security/")
             .headers(httpFields -> httpFields.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.APPLICATION_JSON.asString()))
@@ -120,12 +121,13 @@ public class EmbeddedJerseyTest
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getHeaders().get(HttpHeader.CONTENT_TYPE), is(MimeTypes.Type.APPLICATION_JSON.asString()));
-        assertThat(response.getContentAsString(), is("""
-            {
-                "response" : "ok"
-            }
-            """)
-        );
+        assertThat(
+            response.getContentAsString(),
+            is("""
+                {
+                    "response" : "ok"
+                }
+                """));
     }
 
     @Test
@@ -138,15 +140,15 @@ public class EmbeddedJerseyTest
         AsyncRequestContent content = new AsyncRequestContent();
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(
-            httpClient.newRequest("localhost", connector.getLocalPort())
-                .method(HttpMethod.PUT)
-                .path("/webapi/resource/security/")
-                .timeout(3 * idleTimeout, TimeUnit.SECONDS)
-                .headers(httpFields -> httpFields.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.APPLICATION_JSON.asString()))
-                .body(content)
-                .onResponseSuccess(r -> responseLatch.countDown())
-        ).send();
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(httpClient
+            .newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.PUT)
+            .path("/webapi/resource/security/")
+            .timeout(3 * idleTimeout, TimeUnit.SECONDS)
+            .headers(httpFields -> httpFields.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.APPLICATION_JSON.asString()))
+            .body(content)
+            .onResponseSuccess(r -> responseLatch.countDown()))
+            .send();
 
         // Do not add content to the request, the server should time out and send the response.
         assertTrue(responseLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));

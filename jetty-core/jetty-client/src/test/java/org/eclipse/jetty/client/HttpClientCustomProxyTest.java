@@ -13,12 +13,14 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -38,9 +40,6 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HttpClientCustomProxyTest
 {
@@ -127,9 +126,11 @@ public class HttpClientCustomProxyTest
         }
 
         @Override
-        public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+        public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+            throws IOException
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpDestination destination =
+                (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
             CAFEBABEConnection connection = new CAFEBABEConnection(endPoint, executor, connectionFactory, context);
             return customize(connection, context);
@@ -141,7 +142,11 @@ public class HttpClientCustomProxyTest
         private final ClientConnectionFactory connectionFactory;
         private final Map<String, Object> context;
 
-        public CAFEBABEConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, Map<String, Object> context)
+        public CAFEBABEConnection(
+                                  EndPoint endPoint,
+                                  Executor executor,
+                                  ClientConnectionFactory connectionFactory,
+                                  Map<String, Object> context)
         {
             super(endPoint, executor);
             this.connectionFactory = connectionFactory;
@@ -184,7 +189,8 @@ public class HttpClientCustomProxyTest
             {
                 close();
                 @SuppressWarnings("unchecked")
-                Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+                Promise<Connection> promise =
+                    (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
                 promise.failed(x);
             }
         }
@@ -211,7 +217,8 @@ public class HttpClientCustomProxyTest
     {
         private final org.eclipse.jetty.server.ConnectionFactory connectionFactory;
 
-        public CAFEBABEServerConnection(Connector connector, EndPoint endPoint, org.eclipse.jetty.server.ConnectionFactory connectionFactory)
+        public CAFEBABEServerConnection(
+                                        Connector connector, EndPoint endPoint, org.eclipse.jetty.server.ConnectionFactory connectionFactory)
         {
             super(endPoint, connector.getExecutor());
             this.connectionFactory = connectionFactory;

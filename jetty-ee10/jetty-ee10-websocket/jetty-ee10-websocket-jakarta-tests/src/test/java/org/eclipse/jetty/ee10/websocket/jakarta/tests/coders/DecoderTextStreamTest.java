@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.coders;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.Decoder;
 import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.nio.file.Files;
@@ -22,9 +28,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.Decoder;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.FunctionMethod;
@@ -34,10 +37,6 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Test various {@link jakarta.websocket.Decoder.TextStream} scenarios
@@ -80,7 +79,8 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
         });
 
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(QuotesDecoder.class, Quotes.class);
-        DecodedTextStreamMessageSink<Quotes> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), quoteHandle, decoders);
+        DecodedTextStreamMessageSink<Quotes> sink =
+            new DecodedTextStreamMessageSink<>(session.getCoreSession(), quoteHandle, decoders);
 
         List<FutureCallback> callbacks = new ArrayList<>();
         FutureCallback finCallback = null;
@@ -122,6 +122,11 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
         else
             throw new IllegalStateException();
 
-        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build(), _components));
+        return List.of(new RegisteredDecoder(
+            clazz,
+            interfaceType,
+            objectType,
+            ClientEndpointConfig.Builder.create().build(),
+            _components));
     }
 }

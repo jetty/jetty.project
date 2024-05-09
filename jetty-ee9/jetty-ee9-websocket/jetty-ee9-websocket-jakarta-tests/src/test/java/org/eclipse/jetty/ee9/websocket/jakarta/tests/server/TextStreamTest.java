@@ -13,6 +13,21 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.MessageHandler;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.Session;
+import jakarta.websocket.WebSocketContainer;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
@@ -26,17 +41,6 @@ import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.ContainerProvider;
-import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.MessageHandler;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.Session;
-import jakarta.websocket.WebSocketContainer;
-import jakarta.websocket.server.ServerContainer;
-import jakarta.websocket.server.ServerEndpoint;
-import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.DataUtils;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.Fuzzer;
@@ -54,17 +58,13 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class TextStreamTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(TextStreamTest.class);
     private static final BlockingArrayQueue<QueuedTextStreamer> serverEndpoints = new BlockingArrayQueue<>();
 
-    private final ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create().build();
+    private final ClientEndpointConfig clientConfig =
+        ClientEndpointConfig.Builder.create().build();
     private LocalServer server;
     private ServerContainer container;
     private WebSocketContainer wsClient;
@@ -76,8 +76,10 @@ public class TextStreamTest
         server.start();
         container = server.getServerContainer();
         container.addEndpoint(ServerTextStreamer.class);
-        container.addEndpoint(ServerEndpointConfig.Builder.create(QueuedTextStreamer.class, "/test").build());
-        container.addEndpoint(ServerEndpointConfig.Builder.create(QueuedPartialTextStreamer.class, "/partial").build());
+        container.addEndpoint(ServerEndpointConfig.Builder.create(QueuedTextStreamer.class, "/test")
+            .build());
+        container.addEndpoint(ServerEndpointConfig.Builder.create(QueuedPartialTextStreamer.class, "/partial")
+            .build());
 
         wsClient = ContainerProvider.getWebSocketContainer();
     }
@@ -159,7 +161,8 @@ public class TextStreamTest
     public void testMessageOrdering() throws Exception
     {
         ClientTextStreamer client = new ClientTextStreamer();
-        Session session = wsClient.connectToServer(client, clientConfig, server.getWsUri().resolve("/test"));
+        Session session =
+            wsClient.connectToServer(client, clientConfig, server.getWsUri().resolve("/test"));
 
         final int numLoops = 20;
         for (int i = 0; i < numLoops; i++)
@@ -181,7 +184,8 @@ public class TextStreamTest
     public void testFragmentedMessageOrdering() throws Exception
     {
         ClientTextStreamer client = new ClientTextStreamer();
-        Session session = wsClient.connectToServer(client, clientConfig, server.getWsUri().resolve("/test"));
+        Session session =
+            wsClient.connectToServer(client, clientConfig, server.getWsUri().resolve("/test"));
 
         final int numLoops = 20;
         for (int i = 0; i < numLoops; i++)
@@ -206,7 +210,8 @@ public class TextStreamTest
     public void testMessageOrderingDoNotReadToEOF() throws Exception
     {
         ClientTextStreamer clientEndpoint = new ClientTextStreamer();
-        Session session = wsClient.connectToServer(clientEndpoint, clientConfig, server.getWsUri().resolve("/partial"));
+        Session session = wsClient.connectToServer(
+            clientEndpoint, clientConfig, server.getWsUri().resolve("/partial"));
         QueuedTextStreamer serverEndpoint = Objects.requireNonNull(serverEndpoints.poll(5, TimeUnit.SECONDS));
 
         int serverInputBufferSize = 1024;

@@ -13,14 +13,21 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -30,14 +37,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PostServletTest
 {
@@ -153,7 +152,7 @@ public class PostServletTest
         req.append("Transfer-Encoding: chunked\r\n");
         req.append("\r\n");
         // intentionally bad (not a valid chunked char here)
-        for (int i = 1024; i-- > 0; )
+        for (int i = 1024; i-- > 0;)
         {
             req.append("xxxxxxxxxxxx");
         }
@@ -183,7 +182,7 @@ public class PostServletTest
 
         req.setLength(0);
         // intentionally bad (not a valid chunked char here)
-        for (int i = 1024; i-- > 0; )
+        for (int i = 1024; i-- > 0;)
         {
             req.append("xxxxxxxxxxxx");
         }

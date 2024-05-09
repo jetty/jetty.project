@@ -17,7 +17,6 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.StringUtil;
 
 public class HTTP2Cipher
@@ -25,13 +24,9 @@ public class HTTP2Cipher
     public static final Comparator<String> COMPARATOR = new CipherComparator();
 
     private static final Set<String> __blackProtocols = Stream.of(
-        "TLSv1.2",
-        "TLSv1.1",
-        "TLSv1",
-        "SSL",
-        "SSLv2",
-        "SSLv3"
-    ).map(StringUtil::asciiToUpperCase).collect(Collectors.toSet());
+        "TLSv1.2", "TLSv1.1", "TLSv1", "SSL", "SSLv2", "SSLv3")
+        .map(StringUtil::asciiToUpperCase)
+        .collect(Collectors.toSet());
 
     private static final Set<String> __blackCiphers = Stream.of(
         "TLS_NULL_WITH_NULL_NULL",
@@ -309,8 +304,9 @@ public class HTTP2Cipher
         "TLS_PSK_WITH_AES_128_CCM",
         "TLS_PSK_WITH_AES_256_CCM",
         "TLS_PSK_WITH_AES_128_CCM_8",
-        "TLS_PSK_WITH_AES_256_CCM_8"
-    ).map(StringUtil::asciiToUpperCase).collect(Collectors.toSet());
+        "TLS_PSK_WITH_AES_256_CCM_8")
+        .map(StringUtil::asciiToUpperCase)
+        .collect(Collectors.toSet());
 
     public static boolean isBlackListProtocol(String tlsProtocol)
     {

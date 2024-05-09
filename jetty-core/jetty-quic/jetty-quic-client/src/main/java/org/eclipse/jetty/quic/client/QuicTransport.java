@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.client;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;

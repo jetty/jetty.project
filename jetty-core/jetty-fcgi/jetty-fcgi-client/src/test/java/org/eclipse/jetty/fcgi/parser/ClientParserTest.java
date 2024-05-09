@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpField;
@@ -29,10 +32,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientParserTest
 {
@@ -109,8 +108,7 @@ public class ClientParserTest
     public void testParseNoResponseContent()
     {
         int id = 13;
-        HttpFields fields = HttpFields.build()
-            .put("Content-Length", "0");
+        HttpFields fields = HttpFields.build().put("Content-Length", "0");
 
         ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
@@ -254,7 +252,8 @@ public class ClientParserTest
     @ParameterizedTest
     // Frame type 0x01 is BEGIN_REQUEST, cannot be received by clients.
     // Frame type 0x7F is unknown to FCGI.
-    @ValueSource(ints = {0x01, 0x7F})
+    @ValueSource(ints =
+    {0x01, 0x7F})
     public void testClientUnknownFrameType(int frameType) throws Exception
     {
         CountDownLatch failureLatch = new CountDownLatch(1);
@@ -285,7 +284,8 @@ public class ClientParserTest
     @ParameterizedTest
     // Frame type 0x06 is STDOUT, cannot be received by servers.
     // Frame type 0x7F is unknown to FCGI.
-    @ValueSource(ints = {0x06, 0x7F})
+    @ValueSource(ints =
+    {0x06, 0x7F})
     public void testServerUnknownFrameType(int frameType) throws Exception
     {
         CountDownLatch failureLatch = new CountDownLatch(1);

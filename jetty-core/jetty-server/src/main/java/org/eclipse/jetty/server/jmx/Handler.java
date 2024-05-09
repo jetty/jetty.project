@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.jmx;
 
 import java.util.List;
-
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;

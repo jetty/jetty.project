@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
-
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -46,13 +52,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SslConnectionTest
 {
@@ -87,7 +86,8 @@ public class SslConnectionTest
         {
             SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(_bufferPool, getExecutor(), _sslCtxFactory, endpoint, engine);
+            SslConnection sslConnection =
+                new SslConnection(_bufferPool, getExecutor(), _sslCtxFactory, endpoint, engine);
             sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
             SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
@@ -229,7 +229,8 @@ public class SslConnectionTest
                         filled = endp.fill(_in);
                     }
 
-                    boolean shutdown = _onXWriteThenShutdown && BufferUtil.toString(_in).contains("X");
+                    boolean shutdown =
+                        _onXWriteThenShutdown && BufferUtil.toString(_in).contains("X");
 
                     // Write everything
                     int l = _in.remaining();
@@ -493,7 +494,8 @@ public class SslConnectionTest
                 __blockFor.set(Integer.MAX_VALUE); // > retry loops in SslConnection + 1
                 client.getOutputStream().write("This is a much longer example with X".getBytes(StandardCharsets.UTF_8));
                 len = client.getInputStream().read(buffer);
-                assertEquals("This is a much longer example with X", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals(
+                    "This is a much longer example with X", new String(buffer, 0, len, StandardCharsets.UTF_8));
 
                 try
                 {
@@ -534,7 +536,8 @@ public class SslConnectionTest
                 {
                     try
                     {
-                        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
+                        BufferedReader in = new BufferedReader(
+                            new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
                         while (count.getCount() > 0)
                         {
                             String line = in.readLine();
@@ -547,7 +550,8 @@ public class SslConnectionTest
                     {
                         e.printStackTrace();
                     }
-                }).start();
+                })
+                    .start();
 
                 for (int i = 0; i < LINES; i++)
                 {

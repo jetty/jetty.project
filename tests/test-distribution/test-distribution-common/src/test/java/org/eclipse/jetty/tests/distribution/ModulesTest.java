@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import static org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest.START_TIMEOUT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.logging.JettyLevel;
 import org.eclipse.jetty.logging.JettyLogger;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
@@ -23,10 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest.START_TIMEOUT;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class ModulesTest
 {
@@ -50,13 +49,13 @@ public class ModulesTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee8-openid", "ee9-openid", "openid"})
+    @ValueSource(strings =
+    {"ee8-openid", "ee9-openid", "openid"})
     public void testOpenidModules(String module) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .build();
+        JettyHomeTester distribution =
+            JettyHomeTester.Builder.newInstance().jettyVersion(jettyVersion).build();
 
         // Add module.
         try (JettyHomeTester.Run run = distribution.start("--add-modules=" + module))
@@ -67,7 +66,7 @@ public class ModulesTest
 
         // Verify that Jetty fails to start b/c the issue was not configured.
         try (LogDisabler ignored = new LogDisabler(JettyHomeTester.class);
-            JettyHomeTester.Run run = distribution.start())
+             JettyHomeTester.Run run = distribution.start())
         {
             assertThat(run.awaitConsoleLogsFor("Issuer was not configured", START_TIMEOUT, TimeUnit.SECONDS), is(true));
             run.stop();
@@ -76,13 +75,13 @@ public class ModulesTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee8-websocket-javax", "ee9-websocket-jakarta", "ee10-websocket-jakarta"})
+    @ValueSource(strings =
+    {"ee8-websocket-javax", "ee9-websocket-jakarta", "ee10-websocket-jakarta"})
     public void testWebsocketModules(String module) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .build();
+        JettyHomeTester distribution =
+            JettyHomeTester.Builder.newInstance().jettyVersion(jettyVersion).build();
 
         // Add module.
         try (JettyHomeTester.Run run = distribution.start("--add-modules=" + module))
@@ -104,9 +103,8 @@ public class ModulesTest
     public void testStatistics() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .build();
+        JettyHomeTester distribution =
+            JettyHomeTester.Builder.newInstance().jettyVersion(jettyVersion).build();
 
         // Add module.
         try (JettyHomeTester.Run run = distribution.start("--add-modules=statistics"))

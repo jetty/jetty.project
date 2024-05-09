@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.io.Closeable;
 import java.net.SocketAddress;
-
 import org.eclipse.jetty.util.Promise;
 
 /**

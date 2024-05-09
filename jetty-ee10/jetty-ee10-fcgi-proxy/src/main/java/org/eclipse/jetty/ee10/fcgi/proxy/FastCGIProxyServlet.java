@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee10.fcgi.proxy;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -23,12 +28,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee10.proxy.AsyncProxyServlet;
@@ -116,9 +115,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         String envNames = getInitParameter(FASTCGI_ENV_NAMES_INIT_PARAM);
         if (envNames != null)
         {
-            fcgiEnvNames = Stream.of(envNames.split(","))
-                .map(String::trim)
-                .collect(Collectors.toSet());
+            fcgiEnvNames = Stream.of(envNames.split(",")).map(String::trim).collect(Collectors.toSet());
         }
 
         String path = getInitParameter("unixDomainPath");
@@ -144,7 +141,8 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     }
 
     @Override
-    protected void sendProxyRequest(HttpServletRequest request, HttpServletResponse proxyResponse, Request proxyRequest)
+    protected void sendProxyRequest(
+                                    HttpServletRequest request, HttpServletResponse proxyResponse, Request proxyRequest)
     {
         proxyRequest.attribute(REMOTE_ADDR_ATTRIBUTE, request.getRemoteAddr());
         proxyRequest.attribute(REMOTE_PORT_ATTRIBUTE, String.valueOf(request.getRemotePort()));
@@ -196,9 +194,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             if (port != URIUtil.getDefaultPortForScheme(request.getScheme()))
                 server += ":" + port;
             String host = server;
-            proxyRequest.headers(headers -> headers
-                .put(HttpHeader.HOST, host)
-                .put(HttpHeader.X_FORWARDED_HOST, host));
+            proxyRequest.headers(headers -> headers.put(HttpHeader.HOST, host).put(HttpHeader.X_FORWARDED_HOST, host));
         }
 
         // PHP does not like multiple Cookie headers, coalesce into one.
@@ -234,11 +230,16 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
 
         fastCGIHeaders.remove("HTTP_PROXY");
 
-        fastCGIHeaders.put(FCGI.Headers.REMOTE_ADDR, (String)proxyRequest.getAttributes().get(REMOTE_ADDR_ATTRIBUTE));
-        fastCGIHeaders.put(FCGI.Headers.REMOTE_PORT, (String)proxyRequest.getAttributes().get(REMOTE_PORT_ATTRIBUTE));
-        fastCGIHeaders.put(FCGI.Headers.SERVER_NAME, (String)proxyRequest.getAttributes().get(SERVER_NAME_ATTRIBUTE));
-        fastCGIHeaders.put(FCGI.Headers.SERVER_ADDR, (String)proxyRequest.getAttributes().get(SERVER_ADDR_ATTRIBUTE));
-        fastCGIHeaders.put(FCGI.Headers.SERVER_PORT, (String)proxyRequest.getAttributes().get(SERVER_PORT_ATTRIBUTE));
+        fastCGIHeaders.put(
+            FCGI.Headers.REMOTE_ADDR, (String)proxyRequest.getAttributes().get(REMOTE_ADDR_ATTRIBUTE));
+        fastCGIHeaders.put(
+            FCGI.Headers.REMOTE_PORT, (String)proxyRequest.getAttributes().get(REMOTE_PORT_ATTRIBUTE));
+        fastCGIHeaders.put(
+            FCGI.Headers.SERVER_NAME, (String)proxyRequest.getAttributes().get(SERVER_NAME_ATTRIBUTE));
+        fastCGIHeaders.put(
+            FCGI.Headers.SERVER_ADDR, (String)proxyRequest.getAttributes().get(SERVER_ADDR_ATTRIBUTE));
+        fastCGIHeaders.put(
+            FCGI.Headers.SERVER_PORT, (String)proxyRequest.getAttributes().get(SERVER_PORT_ATTRIBUTE));
 
         if (fcgiHTTPS || HttpScheme.HTTPS.is((String)proxyRequest.getAttributes().get(SCHEME_ATTRIBUTE)))
             fastCGIHeaders.put(FCGI.Headers.HTTPS, "on");
@@ -297,9 +298,12 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
                     fcgi.put(field.getName(), field.getValue());
                 }
                 String eol = System.lineSeparator();
-                _log.debug("FastCGI variables {}{}", eol, fcgi.entrySet().stream()
-                    .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
-                    .collect(Collectors.joining(eol)));
+                _log.debug(
+                    "FastCGI variables {}{}",
+                    eol,
+                    fcgi.entrySet().stream()
+                        .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
+                        .collect(Collectors.joining(eol)));
             }
         }
     }

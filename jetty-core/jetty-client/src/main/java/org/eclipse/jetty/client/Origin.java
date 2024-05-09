@@ -18,7 +18,6 @@ import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -133,11 +132,7 @@ public class Origin
         if (obj == null || getClass() != obj.getClass())
             return false;
         Origin that = (Origin)obj;
-        return scheme.equals(that.scheme) &&
-               address.equals(that.address) &&
-               Objects.equals(tag, that.tag) &&
-               Objects.equals(protocol, that.protocol) &&
-               Objects.equals(transport, that.transport);
+        return scheme.equals(that.scheme) && address.equals(that.address) && Objects.equals(tag, that.tag) && Objects.equals(protocol, that.protocol) && Objects.equals(transport, that.transport);
     }
 
     public String asString()
@@ -148,14 +143,9 @@ public class Origin
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s,tag=%s,protocol=%s,transport=%s]",
-            getClass().getSimpleName(),
-            hashCode(),
-            asString(),
-            getTag(),
-            getProtocol(),
-            getTransport()
-        );
+        return String.format(
+            "%s@%x[%s,tag=%s,protocol=%s,transport=%s]",
+            getClass().getSimpleName(), hashCode(), asString(), getTag(), getProtocol(), getTransport());
     }
 
     public static class Address

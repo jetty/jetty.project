@@ -26,7 +26,8 @@ public class OpenIdAuthenticatorConfiguration extends Authenticator.Configuratio
 {
     private final OpenIdLoginService _openIdLoginService;
 
-    public OpenIdAuthenticatorConfiguration(OpenIdConfiguration openIdConfiguration, Authenticator.Configuration authenticatorConfiguration)
+    public OpenIdAuthenticatorConfiguration(
+                                            OpenIdConfiguration openIdConfiguration, Authenticator.Configuration authenticatorConfiguration)
     {
         super(authenticatorConfiguration);
 

@@ -20,7 +20,6 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 
-
 @WebListener
 public class ClassLoadingTestingServletContextListener
     implements ServletContextListener
@@ -56,15 +55,15 @@ public class ClassLoadingTestingServletContextListener
     public void contextDestroyed(ServletContextEvent sce)
     {
     }
-    
+
     private void printURLs(URLClassLoader l)
     {
         if (l == null)
             return;
-        
-        for (URL u: l.getURLs())
+
+        for (URL u : l.getURLs())
         {
             System.err.println(u);
         }
     }
-} 
+}

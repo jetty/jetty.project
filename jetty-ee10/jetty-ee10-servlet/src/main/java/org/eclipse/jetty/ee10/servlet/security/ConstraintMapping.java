@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.servlet.security;
 
 import java.util.Arrays;
-
 import org.eclipse.jetty.security.Constraint;
 
 public class ConstraintMapping
@@ -88,12 +87,13 @@ public class ConstraintMapping
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s %s -> %s}".formatted(
-            getClass().getSimpleName(),
-            hashCode(),
-            _method,
-            _methodOmissions == null ? null : Arrays.asList(_methodOmissions),
-            _pathSpec,
-            _constraint);
+        return "%s@%x{%s,%s %s -> %s}"
+            .formatted(
+                getClass().getSimpleName(),
+                hashCode(),
+                _method,
+                _methodOmissions == null ? null : Arrays.asList(_methodOmissions),
+                _pathSpec,
+                _constraint);
     }
 }

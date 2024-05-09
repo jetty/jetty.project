@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -21,6 +23,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -31,10 +34,6 @@ import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * SameContextForwardedSessionTest
@@ -68,18 +67,22 @@ public class SameContextForwardedSessionTest
             client.start();
             try
             {
-                //make a request to the first servlet, which will forward it to other servlets
+                // make a request to the first servlet, which will forward it to other servlets
                 ContentResponse response = client.GET("http://localhost:" + serverPort + "/context/one");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
 
-                //test that the session was created, and that it contains the attributes from servlet3 and servlet1
+                // test that the session was created, and that it contains the attributes from servlet3 and servlet1
                 String id = SessionTestSupport.extractSessionId(sessionCookie);
                 testServletContextHandler.getSessionHandler().getSessionCache().contains(id);
-                testServletContextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id);
+                testServletContextHandler
+                    .getSessionHandler()
+                    .getSessionCache()
+                    .getSessionDataStore()
+                    .exists(id);
 
-                //Make a fresh request
+                // Make a fresh request
                 Request request = client.newRequest("http://localhost:" + serverPort + "/context/four");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
@@ -100,12 +103,13 @@ public class SameContextForwardedSessionTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
-            //Don't create a session, just forward to another session in the same context
+            // Don't create a session, just forward to another session in the same context
             assertNull(request.getSession(false));
 
-            //The session will be created by the other servlet, so will exist as this dispatch returns
+            // The session will be created by the other servlet, so will exist as this dispatch returns
             RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher("/two");
             dispatcher.forward(request, response);
 
@@ -121,15 +125,16 @@ public class SameContextForwardedSessionTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
-            //forward to yet another servlet to do the creation
+            // forward to yet another servlet to do the creation
             assertNull(request.getSession(false));
 
             RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher("/three");
             dispatcher.forward(request, response);
 
-            //the session should exist after the forward
+            // the session should exist after the forward
             HttpSession sess = request.getSession(false);
             assertNotNull(sess);
             assertNotNull(sess.getAttribute("servlet3"));
@@ -141,16 +146,17 @@ public class SameContextForwardedSessionTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
-            //No session yet
+            // No session yet
             assertNull(request.getSession(false));
 
-            //Create it
+            // Create it
             HttpSession session = request.getSession();
             assertNotNull(session);
 
-            //Set an attribute on it
+            // Set an attribute on it
             session.setAttribute("servlet3", "servlet3");
         }
     }
@@ -160,9 +166,10 @@ public class SameContextForwardedSessionTest
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
-            //Check that the session contains attributes set during and after the session forward
+            // Check that the session contains attributes set during and after the session forward
             HttpSession session = request.getSession();
             assertNotNull(session);
             assertNotNull(session.getAttribute("servlet1"));

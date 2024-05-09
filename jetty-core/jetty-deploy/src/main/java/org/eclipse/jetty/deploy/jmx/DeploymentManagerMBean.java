@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
@@ -79,7 +78,11 @@ public class DeploymentManagerMBean extends ObjectMBean
 
     private String toRef(App app)
     {
-        return String.format("contextPath=%s,path=%s,appProvider=%s", app.getContextPath(), app.getPath(), app.getAppProvider().getClass().getName());
+        return String.format(
+            "contextPath=%s,path=%s,appProvider=%s",
+            app.getContextPath(),
+            app.getPath(),
+            app.getAppProvider().getClass().getName());
     }
 
     public Collection<ContextHandler> getContexts() throws Exception

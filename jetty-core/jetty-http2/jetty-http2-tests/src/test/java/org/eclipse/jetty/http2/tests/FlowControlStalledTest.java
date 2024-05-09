@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -22,7 +25,6 @@ import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -49,21 +51,20 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class FlowControlStalledTest
 {
     private ServerConnector connector;
     private HTTP2Client client;
     private Server server;
 
-    private void start(FlowControlStrategy.Factory flowControlFactory, ServerSessionListener listener) throws Exception
+    private void start(FlowControlStrategy.Factory flowControlFactory, ServerSessionListener listener)
+        throws Exception
     {
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
-        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
+        RawHTTP2ServerConnectionFactory connectionFactory =
+            new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
         connectionFactory.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         connectionFactory.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         connectionFactory.setFlowControlStrategyFactory(flowControlFactory);
@@ -96,7 +97,14 @@ public class FlowControlStalledTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), target, HttpVersion.HTTP_2, fields, -1);
+        return new MetaData.Request(
+            method,
+            HttpScheme.HTTP.asString(),
+            new HostPortHttpField(authority),
+            target,
+            HttpVersion.HTTP_2,
+            fields,
+            -1);
     }
 
     @AfterEach
@@ -113,55 +121,60 @@ public class FlowControlStalledTest
     {
         AtomicReference<CountDownLatch> stallLatch = new AtomicReference<>(new CountDownLatch(1));
         CountDownLatch unstallLatch = new CountDownLatch(1);
-        start(() -> new BufferingFlowControlStrategy(0.5f)
-        {
-            @Override
-            public void onStreamStalled(Stream stream)
+        start(
+            () -> new BufferingFlowControlStrategy(0.5f)
             {
-                super.onStreamStalled(stream);
-                stallLatch.get().countDown();
-            }
-
-            @Override
-            protected void onStreamUnstalled(Stream stream)
-            {
-                super.onStreamUnstalled(stream);
-                unstallLatch.countDown();
-            }
-        }, new ServerSessionListener()
-        {
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-
-                if (request.getHttpURI().toString().endsWith("/stall"))
+                @Override
+                public void onStreamStalled(Stream stream)
                 {
-                    stream.headers(new HeadersFrame(stream.getId(), response, null, false), new Callback()
+                    super.onStreamStalled(stream);
+                    stallLatch.get().countDown();
+                }
+
+                @Override
+                protected void onStreamUnstalled(Stream stream)
+                {
+                    super.onStreamUnstalled(stream);
+                    unstallLatch.countDown();
+                }
+            },
+            new ServerSessionListener()
+            {
+                @Override
+                public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+                {
+                    MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                    MetaData.Response response =
+                        new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+
+                    if (request.getHttpURI().toString().endsWith("/stall"))
                     {
-                        @Override
-                        public void succeeded()
+                        stream.headers(new HeadersFrame(stream.getId(), response, null, false), new Callback()
                         {
-                            // Send a large chunk of data so the stream gets stalled.
-                            ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1);
-                            stream.data(new DataFrame(stream.getId(), data, true), NOOP);
-                        }
-                    });
-                }
-                else
-                {
-                    stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                }
+                            @Override
+                            public void succeeded()
+                            {
+                                // Send a large chunk of data so the stream gets stalled.
+                                ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1);
+                                stream.data(new DataFrame(stream.getId(), data, true), NOOP);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                    }
 
-                stream.demand();
-                return null;
-            }
-        });
+                    stream.demand();
+                    return null;
+                }
+            });
 
         // Use a large session window so that only the stream gets stalled.
         client.setInitialSessionRecvWindow(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE);
-        Session client = newClient(new Session.Listener() {});
+        Session client = newClient(new Session.Listener()
+        {
+        });
 
         CountDownLatch latch = new CountDownLatch(1);
         Queue<Stream.Data> dataQueue = new ArrayDeque<>();
@@ -209,51 +222,54 @@ public class FlowControlStalledTest
     {
         AtomicReference<CountDownLatch> stallLatch = new AtomicReference<>(new CountDownLatch(1));
         CountDownLatch unstallLatch = new CountDownLatch(1);
-        start(() -> new BufferingFlowControlStrategy(0.5f)
-        {
-            @Override
-            public void onSessionStalled(Session session)
+        start(
+            () -> new BufferingFlowControlStrategy(0.5f)
             {
-                super.onSessionStalled(session);
-                stallLatch.get().countDown();
-            }
-
-            @Override
-            protected void onSessionUnstalled(Session session)
-            {
-                super.onSessionUnstalled(session);
-                unstallLatch.countDown();
-            }
-        }, new ServerSessionListener()
-        {
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-
-                if (request.getHttpURI().toString().endsWith("/stall"))
+                @Override
+                public void onSessionStalled(Session session)
                 {
-                    stream.headers(new HeadersFrame(stream.getId(), response, null, false), new Callback()
+                    super.onSessionStalled(session);
+                    stallLatch.get().countDown();
+                }
+
+                @Override
+                protected void onSessionUnstalled(Session session)
+                {
+                    super.onSessionUnstalled(session);
+                    unstallLatch.countDown();
+                }
+            },
+            new ServerSessionListener()
+            {
+                @Override
+                public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+                {
+                    MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                    MetaData.Response response =
+                        new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+
+                    if (request.getHttpURI().toString().endsWith("/stall"))
                     {
-                        @Override
-                        public void succeeded()
+                        stream.headers(new HeadersFrame(stream.getId(), response, null, false), new Callback()
                         {
-                            // Send a large chunk of data so the session gets stalled.
-                            ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1);
-                            stream.data(new DataFrame(stream.getId(), data, true), NOOP);
-                        }
-                    });
-                }
-                else
-                {
-                    stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                }
+                            @Override
+                            public void succeeded()
+                            {
+                                // Send a large chunk of data so the session gets stalled.
+                                ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1);
+                                stream.data(new DataFrame(stream.getId(), data, true), NOOP);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                    }
 
-                stream.demand();
-                return null;
-            }
-        });
+                    stream.demand();
+                    return null;
+                }
+            });
 
         // Use a large stream window so that only the session gets stalled.
         client.setInitialStreamRecvWindow(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE);

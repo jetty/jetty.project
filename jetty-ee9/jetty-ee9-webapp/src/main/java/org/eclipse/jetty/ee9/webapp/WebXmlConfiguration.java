@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-
 import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
@@ -46,7 +45,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
-        //parse webdefault-ee9.xml
+        // parse webdefault-ee9.xml
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
@@ -70,16 +69,20 @@ public class WebXmlConfiguration extends AbstractConfiguration
                 context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
         }
 
-        //parse, but don't process web.xml
+        // parse, but don't process web.xml
         Resource webxml = findWebXml(context);
         if (webxml != null)
         {
             context.getMetaData().setWebDescriptor(new WebDescriptor(webxml));
-            context.getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebDescriptor().getMajorVersion());
-            context.getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebDescriptor().getMinorVersion());
+            context.getServletContext()
+                .setEffectiveMajorVersion(
+                    context.getMetaData().getWebDescriptor().getMajorVersion());
+            context.getServletContext()
+                .setEffectiveMinorVersion(
+                    context.getMetaData().getWebDescriptor().getMinorVersion());
         }
 
-        //parse but don't process override-web.xml
+        // parse but don't process override-web.xml
         for (String overrideDescriptor : context.getOverrideDescriptors())
         {
             if (overrideDescriptor != null && overrideDescriptor.length() > 0)
@@ -119,7 +122,8 @@ public class WebXmlConfiguration extends AbstractConfiguration
             if (Resources.isReadableFile(web))
                 return web;
             if (LOG.isDebugEnabled())
-                LOG.debug("No WEB-INF/web.xml in {}. Serving files and default/dynamic servlets only", context.getWar());
+                LOG.debug(
+                    "No WEB-INF/web.xml in {}. Serving files and default/dynamic servlets only", context.getWar());
         }
         return null;
     }
@@ -130,8 +134,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         context.setWelcomeFiles(null);
 
         if (context.getErrorHandler() instanceof ErrorPageErrorHandler)
-            ((ErrorPageErrorHandler)
-                context.getErrorHandler()).setErrorPages(null);
+            ((ErrorPageErrorHandler)context.getErrorHandler()).setErrorPages(null);
 
         IO.close(_resourceFactory);
         _resourceFactory = null;

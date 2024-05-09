@@ -13,12 +13,20 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
@@ -37,15 +45,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SuspendResumeTest
 {
@@ -219,7 +218,8 @@ public class SuspendResumeTest
         assertThat(serverSocket.textMessages.poll(5, TimeUnit.SECONDS), is("suspend"));
 
         // Send two messages, with batching on, so they are read into same network buffer on the server.
-        // First frame is read and delayed inside the JettyWebSocketFrameHandler suspendState, second frame remains in the network buffer.
+        // First frame is read and delayed inside the JettyWebSocketFrameHandler suspendState, second frame remains in
+        // the network buffer.
         clientSocket.session.getRemote().setBatchMode(BatchMode.ON);
         clientSocket.session.getRemote().sendString("no demand");
         clientSocket.session.getRemote().sendString("this should sit in network buffer");

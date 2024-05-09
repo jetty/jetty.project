@@ -16,7 +16,6 @@ package org.eclipse.jetty.osgi.util;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
 import org.eclipse.jetty.util.component.LifeCycle;

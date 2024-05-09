@@ -35,7 +35,6 @@ import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.management.remote.rmi.RMIConnectorServer;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
-
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -107,7 +106,11 @@ public class ConnectorServer extends AbstractLifeCycle
      * @param objectName object name string to be assigned to ConnectorServer bean
      * @param sslContextFactory the SslContextFactory.Server to use for secure communication
      */
-    public ConnectorServer(JMXServiceURL serviceURL, Map<String, ?> environment, String objectName, SslContextFactory.Server sslContextFactory)
+    public ConnectorServer(
+                           JMXServiceURL serviceURL,
+                           Map<String, ?> environment,
+                           String objectName,
+                           SslContextFactory.Server sslContextFactory)
     {
         this._jmxURL = serviceURL;
         this._environment = environment == null ? new HashMap<>() : new HashMap<>(environment);
@@ -170,7 +173,9 @@ public class ConnectorServer extends AbstractLifeCycle
         if (rmi)
         {
             if (!_environment.containsKey(RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE))
-                _environment.put(RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE, new JMXRMIServerSocketFactory(_jmxURL.getHost(), port -> _rmiPort = port));
+                _environment.put(
+                    RMIConnectorServer.RMI_SERVER_SOCKET_FACTORY_ATTRIBUTE,
+                    new JMXRMIServerSocketFactory(_jmxURL.getHost(), port -> _rmiPort = port));
             if (getSslContextFactory() != null)
             {
                 SslRMIClientSocketFactory csf = new SslRMIClientSocketFactory();
@@ -293,7 +298,8 @@ public class ConnectorServer extends AbstractLifeCycle
         @Override
         public ServerSocket createServerSocket(int port) throws IOException
         {
-            InetAddress address = _host == null || _host.isEmpty() ? InetAddress.getLocalHost() : InetAddress.getByName(_host);
+            InetAddress address =
+                _host == null || _host.isEmpty() ? InetAddress.getLocalHost() : InetAddress.getByName(_host);
             ServerSocket server = createServerSocket(address, port);
             _portConsumer.accept(server.getLocalPort());
             return server;

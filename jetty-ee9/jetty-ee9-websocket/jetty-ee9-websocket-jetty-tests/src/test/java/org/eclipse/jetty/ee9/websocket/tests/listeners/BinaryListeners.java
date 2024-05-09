@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketListener;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketPartialListener;
@@ -38,8 +37,8 @@ public class BinaryListeners
             AnnotatedByteArrayWholeListener.class,
             AnnotatedOffsetByteArrayWholeListener.class,
             AnnotatedInputStreamWholeListener.class,
-            AnnotatedReverseArgumentPartialListener.class
-        ).map(Arguments::of);
+            AnnotatedReverseArgumentPartialListener.class)
+            .map(Arguments::of);
     }
 
     public static class OffsetByteArrayWholeListener extends AbstractListener implements WebSocketListener

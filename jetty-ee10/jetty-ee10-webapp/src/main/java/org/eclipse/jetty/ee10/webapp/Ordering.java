@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.util.List;
-
 import org.eclipse.jetty.util.resource.Resource;
 
 /**

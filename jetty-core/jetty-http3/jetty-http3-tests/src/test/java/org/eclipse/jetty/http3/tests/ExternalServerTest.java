@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpFields;
@@ -38,10 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @Tag("external")
 public class ExternalServerTest
 {
@@ -59,7 +58,8 @@ public class ExternalServerTest
         httpClient.start();
         try
         {
-            URI uri = URI.create("https://maven-central-eu.storage-download.googleapis.com/maven2/org/apache/maven/maven-parent/38/maven-parent-38.pom");
+            URI uri = URI.create(
+                "https://maven-central-eu.storage-download.googleapis.com/maven2/org/apache/maven/maven-parent/38/maven-parent-38.pom");
             ContentResponse response = httpClient.newRequest(uri).send();
             assertThat(response.getContentAsString(), containsString("<artifactId>maven-parent</artifactId>"));
         }
@@ -80,19 +80,24 @@ public class ExternalServerTest
         try
         {
             // Well-known HTTP/3 servers to try.
-//            HostPort hostPort = new HostPort("maven-central-eu.storage-download.googleapis.com:443");
+            //            HostPort hostPort = new HostPort("maven-central-eu.storage-download.googleapis.com:443");
             HostPort hostPort = new HostPort("google.com:443");
-//            HostPort hostPort = new HostPort("nghttp2.org:4433");
-//            HostPort hostPort = new HostPort("http3check.net:443");
-//            HostPort hostPort = new HostPort("quic.tech:8443");
-//            HostPort hostPort = new HostPort("h2o.examp1e.net:443");
-//            HostPort hostPort = new HostPort("test.privateoctopus.com:4433");
-            Session.Client session = client.connect(new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {})
+            //            HostPort hostPort = new HostPort("nghttp2.org:4433");
+            //            HostPort hostPort = new HostPort("http3check.net:443");
+            //            HostPort hostPort = new HostPort("quic.tech:8443");
+            //            HostPort hostPort = new HostPort("h2o.examp1e.net:443");
+            //            HostPort hostPort = new HostPort("test.privateoctopus.com:4433");
+            Session.Client session = client.connect(
+                new InetSocketAddress(hostPort.getHost(), hostPort.getPort()),
+                new Session.Client.Listener()
+                {
+                })
                 .get(5, TimeUnit.SECONDS);
 
             CountDownLatch requestLatch = new CountDownLatch(1);
             HttpURI uri = HttpURI.from(String.format("https://%s/", hostPort));
-            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
+            MetaData.Request request =
+                new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
             session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener()
             {
                 @Override

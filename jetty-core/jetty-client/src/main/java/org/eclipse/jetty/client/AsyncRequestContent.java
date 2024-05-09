@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.util.Callback;
 

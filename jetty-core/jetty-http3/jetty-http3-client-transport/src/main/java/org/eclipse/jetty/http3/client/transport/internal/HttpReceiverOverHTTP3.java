@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpReceiver;
 import org.eclipse.jetty.client.transport.HttpResponse;
@@ -74,11 +73,15 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     public void failAndClose(Throwable failure)
     {
         Stream stream = getHttpChannel().getStream();
-        responseFailure(failure, Promise.from(failed ->
-        {
-            if (failed)
-                stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure);
-        }, x -> stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure)));
+        responseFailure(
+            failure,
+            Promise.from(
+                failed ->
+                {
+                    if (failed)
+                        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure);
+                },
+                x -> stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure)));
     }
 
     @Override
@@ -102,7 +105,10 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
 
         HttpResponse httpResponse = exchange.getResponse();
         MetaData.Response response = (MetaData.Response)frame.getMetaData();
-        httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
+        httpResponse
+            .version(response.getHttpVersion())
+            .status(response.getStatus())
+            .reason(response.getReason());
 
         responseBegin(exchange);
 

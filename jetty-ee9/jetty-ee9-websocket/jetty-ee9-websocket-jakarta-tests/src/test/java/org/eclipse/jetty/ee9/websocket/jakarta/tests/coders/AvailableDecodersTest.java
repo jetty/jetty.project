@@ -13,6 +13,17 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.DecodeException;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.EndpointConfig;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
@@ -20,11 +31,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.TimeZone;
-
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.Decoder;
-import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.IntegerDecoder;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
@@ -32,13 +38,6 @@ import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AvailableDecodersTest
 {
@@ -75,8 +74,7 @@ public class AvailableDecodersTest
         assertThat("Decoded", decoded, is(expectedDecoded));
     }
 
-    private <T> void assertBinaryDecoder(Class<T> type, ByteBuffer value, T expectedDecoded)
-        throws DecodeException
+    private <T> void assertBinaryDecoder(Class<T> type, ByteBuffer value, T expectedDecoded) throws DecodeException
     {
         Decoder.Binary<T> decoder = getInstanceFor(type);
         assertThat("Decoder Class", decoder, notNullValue());
@@ -294,7 +292,8 @@ public class AvailableDecodersTest
     {
         init(ValidDualDecoder.class);
         RegisteredDecoder registered = availableDecoders.getFirstRegisteredDecoder(Integer.class);
-        assertThat("Registered Decoder for Integer", registered.decoder.getName(), is(ValidDualDecoder.class.getName()));
+        assertThat(
+            "Registered Decoder for Integer", registered.decoder.getName(), is(ValidDualDecoder.class.getName()));
 
         String val = "[1,234,567]";
         Integer expected = 1234567;

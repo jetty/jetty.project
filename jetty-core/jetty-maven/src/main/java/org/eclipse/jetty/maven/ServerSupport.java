@@ -18,9 +18,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.eclipse.jetty.maven.MavenServerConnector;
-import org.eclipse.jetty.maven.PluginLog;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
@@ -42,13 +39,14 @@ public class ServerSupport
      * Also put in a DefaultHandler so we get a nicer page
      * than a 404 if we hit the root and the webapp's
      * context isn't at root.
-     * 
+     *
      * @param server the server to use
      * @param contextHandlers the context handlers to include
      * @param requestLog a request log to use
      * @throws Exception if there is an unspecified problem
      */
-    public static void configureHandlers(Server server, List<ContextHandler> contextHandlers, RequestLog requestLog) throws Exception 
+    public static void configureHandlers(Server server, List<ContextHandler> contextHandlers, RequestLog requestLog)
+        throws Exception
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -61,11 +59,11 @@ public class ServerSupport
         {
             contexts = new ContextHandlerCollection();
             server.setHandler(contexts);
-        } 
-        
+        }
+
         if (contextHandlers != null)
-        {   
-            for (ContextHandler context:contextHandlers)
+        {
+            for (ContextHandler context : contextHandlers)
             {
                 contexts.addHandler(context);
             }
@@ -84,7 +82,7 @@ public class ServerSupport
         if (server == null)
             throw new IllegalArgumentException("Server is null");
 
-        //if a connector is provided, use it
+        // if a connector is provided, use it
         if (connector != null)
         {
             server.addConnector(connector);
@@ -95,9 +93,9 @@ public class ServerSupport
         Connector[] connectors = server.getConnectors();
         if (connectors == null || connectors.length == 0)
         {
-            //Make a new default connector
+            // Make a new default connector
             MavenServerConnector tmp = new MavenServerConnector();
-            //use any jetty.http.port settings provided, trying system properties before jetty properties
+            // use any jetty.http.port settings provided, trying system properties before jetty properties
             String port = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY);
             if (port == null)
                 port = System.getProperty("jetty.port");
@@ -150,7 +148,7 @@ public class ServerSupport
 
     /**
      * Locate a ContextHandlerCollection for a Server.
-     * 
+     *
      * @param server the Server to check.
      * @return The ContextHandlerCollection or null if not found.
      */
@@ -185,11 +183,13 @@ public class ServerSupport
         for (File xmlFile : files)
         {
             if (PluginLog.getLog() != null)
-                PluginLog.getLog().info("Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath());
+                PluginLog.getLog()
+                    .info("Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath());
 
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(server).newResource(xmlFile.toPath()));
+            XmlConfiguration xmlConfiguration =
+                new XmlConfiguration(ResourceFactory.of(server).newResource(xmlFile.toPath()));
 
-            //add in any properties
+            // add in any properties
             if (properties != null)
             {
                 for (Map.Entry<String, String> e : properties.entrySet())
@@ -198,11 +198,11 @@ public class ServerSupport
                 }
             }
 
-            //chain ids from one config file to another
+            // chain ids from one config file to another
             if (lastMap != null)
                 xmlConfiguration.getIdMap().putAll(lastMap);
 
-            //Set the system properties each time in case the config file set a new one
+            // Set the system properties each time in case the config file set a new one
             Enumeration<?> ensysprop = System.getProperties().propertyNames();
             while (ensysprop.hasMoreElements())
             {
@@ -224,8 +224,7 @@ public class ServerSupport
      * @return the Server after application of configs
      * @throws Exception if there is an unspecified problem
      */
-    public static Server applyXmlConfigurations(Server server, List<File> files)
-        throws Exception
+    public static Server applyXmlConfigurations(Server server, List<File> files) throws Exception
     {
         return applyXmlConfigurations(server, files, null);
     }

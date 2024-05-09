@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
@@ -76,8 +75,7 @@ public class ExceptionUtil
      * @throws Error If the passed {@link Throwable} is an {@link Error}.
      * @throws Exception Otherwise, if the passed {@link Throwable} is not null.
      */
-    public static void ifExceptionThrow(Throwable throwable)
-        throws Error, Exception
+    public static void ifExceptionThrow(Throwable throwable) throws Error, Exception
     {
         if (throwable == null)
             return;
@@ -94,8 +92,7 @@ public class ExceptionUtil
      * @throws Error If the passed {@link Throwable} is an {@link Error}.
      * @throws RuntimeException Otherwise, if the passed {@link Throwable} is not null.
      */
-    public static void ifExceptionThrowUnchecked(Throwable throwable)
-        throws Error, RuntimeException
+    public static void ifExceptionThrowUnchecked(Throwable throwable) throws Error, RuntimeException
     {
         if (throwable == null)
             return;
@@ -118,8 +115,8 @@ public class ExceptionUtil
      * @throws T Thrown in <code>throwable</code> is not null and neither an {@link Error} nor {@link RuntimeException}.
      * @throws IllegalArgumentException if the passed <code>type</code> cannot be constructed with a cause.
      */
-    public static <T extends Throwable> void ifExceptionThrowAs(Class<T> type, Throwable throwable) throws
-        Error, RuntimeException, T, IllegalArgumentException
+    public static <T extends Throwable> void ifExceptionThrowAs(Class<T> type, Throwable throwable)
+        throws Error, RuntimeException, T, IllegalArgumentException
     {
         if (throwable == null)
             return;

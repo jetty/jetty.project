@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.qpack.internal;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -82,7 +81,7 @@ public abstract class EncodableEntry
             {
                 // Indexed Field Line with Post-Base Index.
                 buffer.put((byte)0x10);
-                int relativeIndex =  _entry.getIndex() - base;
+                int relativeIndex = _entry.getIndex() - base;
                 NBitIntegerEncoder.encode(buffer, 4, relativeIndex);
             }
         }
@@ -100,7 +99,7 @@ public abstract class EncodableEntry
             else if (_entry.getIndex() < base)
             {
                 // Indexed Field Line with Dynamic Reference.
-                int relativeIndex =  (base - 1) - _entry.getIndex();
+                int relativeIndex = (base - 1) - _entry.getIndex();
                 return NBitIntegerEncoder.octetsNeeded(6, relativeIndex);
             }
             else
@@ -143,7 +142,7 @@ public abstract class EncodableEntry
             {
                 // Literal Field Line with Static Name Reference.
                 buffer.put((byte)(0x40 | 0x10 | (allowIntermediary ? 0x20 : 0x00)));
-                int relativeIndex =  _nameEntry.getIndex();
+                int relativeIndex = _nameEntry.getIndex();
                 NBitIntegerEncoder.encode(buffer, 4, relativeIndex);
             }
             else if (_nameEntry.getIndex() < base)
@@ -171,7 +170,7 @@ public abstract class EncodableEntry
             int nameOctets;
             if (_nameEntry.isStatic())
             {
-                int relativeIndex =  _nameEntry.getIndex();
+                int relativeIndex = _nameEntry.getIndex();
                 nameOctets = NBitIntegerEncoder.octetsNeeded(4, relativeIndex);
             }
             else if (_nameEntry.getIndex() < base)

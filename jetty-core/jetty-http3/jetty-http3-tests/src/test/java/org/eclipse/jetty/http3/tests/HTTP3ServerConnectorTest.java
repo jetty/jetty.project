@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.InputStream;
 import java.security.KeyStore;
 import javax.net.ssl.SSLContext;
-
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
@@ -28,8 +29,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @ExtendWith(WorkDirExtension.class)
 public class HTTP3ServerConnectorTest
 {
@@ -40,8 +39,10 @@ public class HTTP3ServerConnectorTest
     {
         Server server = new Server();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
+        ServerQuicConfiguration quicConfiguration =
+            new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
+        HTTP3ServerConnector connector = new HTTP3ServerConnector(
+            server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
         server.addConnector(connector);
         assertThrows(IllegalStateException.class, server::start);
     }
@@ -52,8 +53,10 @@ public class HTTP3ServerConnectorTest
         Server server = new Server();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setSslContext(SSLContext.getDefault());
-        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
+        ServerQuicConfiguration quicConfiguration =
+            new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
+        HTTP3ServerConnector connector = new HTTP3ServerConnector(
+            server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
         server.addConnector(connector);
         assertThrows(IllegalStateException.class, server::start);
     }
@@ -66,8 +69,10 @@ public class HTTP3ServerConnectorTest
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
         keyStore.load(null, null);
         sslContextFactory.setKeyStore(keyStore);
-        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
+        ServerQuicConfiguration quicConfiguration =
+            new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
+        HTTP3ServerConnector connector = new HTTP3ServerConnector(
+            server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
         server.addConnector(connector);
         assertThrows(IllegalStateException.class, server::start);
     }
@@ -85,7 +90,8 @@ public class HTTP3ServerConnectorTest
         sslContextFactory.setKeyStore(keyStore);
         sslContextFactory.setKeyManagerPassword("storepwd");
         ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslContextFactory, null);
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
+        HTTP3ServerConnector connector = new HTTP3ServerConnector(
+            server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
         server.addConnector(connector);
         assertThrows(IllegalStateException.class, server::start);
     }
@@ -102,8 +108,10 @@ public class HTTP3ServerConnectorTest
         }
         sslContextFactory.setKeyStore(keyStore);
         sslContextFactory.setKeyManagerPassword("storepwd");
-        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
+        ServerQuicConfiguration quicConfiguration =
+            new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
+        HTTP3ServerConnector connector = new HTTP3ServerConnector(
+            server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
         server.addConnector(connector);
         try
         {

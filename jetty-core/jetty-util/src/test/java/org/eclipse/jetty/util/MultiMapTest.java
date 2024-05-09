@@ -13,13 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -27,6 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
 
 public class MultiMapTest
 {
@@ -339,7 +338,7 @@ public class MultiMapTest
 
         // Remove last value
         mm.removeValue(key, "pack200");
-        assertMapSize(mm, 0);  // should be empty now
+        assertMapSize(mm, 0); // should be empty now
     }
 
     /**

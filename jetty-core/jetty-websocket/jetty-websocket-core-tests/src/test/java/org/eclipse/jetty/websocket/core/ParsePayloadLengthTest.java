@@ -13,20 +13,19 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test behavior of Parser with payload length parsing (per RFC6455)
@@ -48,8 +47,7 @@ public class ParsePayloadLengthTest
             // -- large 8 byte payload length
             Arguments.of(65536, "Autobahn Server Testcase 1.1.7"),
             Arguments.of(500 * 1024, "Jetty Testcase - 500KB"),
-            Arguments.of(10 * 1024 * 1024, "Jetty Testcase - 10MB")
-        );
+            Arguments.of(10 * 1024 * 1024, "Jetty Testcase - 10MB"));
     }
 
     @ParameterizedTest(name = "size={0} {1}")

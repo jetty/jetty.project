@@ -15,4 +15,3 @@
  * Jetty EE9 Jndi : Factories
  */
 package org.eclipse.jetty.ee9.jndi.factories;
-

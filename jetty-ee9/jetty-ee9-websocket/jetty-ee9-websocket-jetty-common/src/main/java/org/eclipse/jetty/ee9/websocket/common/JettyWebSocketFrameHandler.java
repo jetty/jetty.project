@@ -17,7 +17,6 @@ import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
 import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.api.UpgradeResponse;
@@ -83,14 +82,19 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private Frame delayedFrame;
     private Callback delayedCallback;
 
-    public JettyWebSocketFrameHandler(WebSocketContainer container,
+    public JettyWebSocketFrameHandler(
+                                      WebSocketContainer container,
                                       Object endpointInstance,
-                                      MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-                                      MethodHandle textHandle, MethodHandle binaryHandle,
+                                      MethodHandle openHandle,
+                                      MethodHandle closeHandle,
+                                      MethodHandle errorHandle,
+                                      MethodHandle textHandle,
+                                      MethodHandle binaryHandle,
                                       Class<? extends MessageSink> textSinkClass,
                                       Class<? extends MessageSink> binarySinkClass,
                                       MethodHandle frameHandle,
-                                      MethodHandle pingHandle, MethodHandle pongHandle,
+                                      MethodHandle pingHandle,
+                                      MethodHandle pongHandle,
                                       BatchMode batchMode,
                                       Configuration.Customizer customizer)
     {
@@ -167,7 +171,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, session);
 
             if (binaryHandle != null)
-                binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, session);
+                binarySink =
+                    JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, session);
 
             if (openHandle != null)
                 openHandle.invoke();
@@ -180,7 +185,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         catch (Throwable cause)
         {
-            callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause));
+            callback.failed(new WebSocketException(
+                endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause));
         }
     }
 
@@ -219,7 +225,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(), cause);
+                throw new WebSocketException(
+                    endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(),
+                    cause);
             }
         }
 
@@ -246,15 +254,22 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             else
             {
                 if (log.isDebugEnabled())
-                    log.warn("Unhandled Error: Endpoint {}", endpointInstance.getClass().getName(), cause);
+                    log.warn(
+                        "Unhandled Error: Endpoint {}",
+                        endpointInstance.getClass().getName(),
+                        cause);
                 else
-                    log.warn("Unhandled Error: Endpoint {} : {}", endpointInstance.getClass().getName(), cause.toString());
+                    log.warn(
+                        "Unhandled Error: Endpoint {} : {}",
+                        endpointInstance.getClass().getName(),
+                        cause.toString());
             }
             callback.succeeded();
         }
         catch (Throwable t)
         {
-            WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getSimpleName() + " ERROR method error: " + cause.getMessage(), t);
+            WebSocketException wsError = new WebSocketException(
+                endpointInstance.getClass().getSimpleName() + " ERROR method error: " + cause.getMessage(), t);
             wsError.addSuppressed(cause);
             callback.failed(wsError);
         }
@@ -309,13 +324,18 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         catch (Throwable cause)
         {
-            callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " CLOSE method error: " + cause.getMessage(), cause));
+            callback.failed(new WebSocketException(
+                endpointInstance.getClass().getSimpleName() + " CLOSE method error: " + cause.getMessage(), cause));
         }
     }
 
     public String toString()
     {
-        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), this.hashCode(), endpointInstance.getClass().getName());
+        return String.format(
+            "%s@%x[%s]",
+            this.getClass().getSimpleName(),
+            this.hashCode(),
+            endpointInstance.getClass().getName());
     }
 
     private void acceptMessage(Frame frame, Callback callback)
@@ -362,7 +382,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PING method error: " + cause.getMessage(), cause);
+                throw new WebSocketException(
+                    endpointInstance.getClass().getSimpleName() + " PING method error: " + cause.getMessage(),
+                    cause);
             }
 
             callback.succeeded();
@@ -405,7 +427,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause);
+                throw new WebSocketException(
+                    endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(),
+                    cause);
             }
         }
 
@@ -505,7 +529,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     public static Throwable convertCause(Throwable cause)
     {
         if (cause instanceof MessageTooLargeException)
-            return new org.eclipse.jetty.ee9.websocket.api.exceptions.MessageTooLargeException(cause.getMessage(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.MessageTooLargeException(
+                cause.getMessage(), cause);
 
         if (cause instanceof ProtocolException)
             return new org.eclipse.jetty.ee9.websocket.api.exceptions.ProtocolException(cause.getMessage(), cause);
@@ -514,16 +539,20 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             return new org.eclipse.jetty.ee9.websocket.api.exceptions.BadPayloadException(cause.getMessage(), cause);
 
         if (cause instanceof CloseException ce)
-            return new org.eclipse.jetty.ee9.websocket.api.exceptions.CloseException(ce.getStatusCode(), cause.getMessage(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.CloseException(
+                ce.getStatusCode(), cause.getMessage(), cause);
 
         if (cause instanceof WebSocketTimeoutException)
-            return new org.eclipse.jetty.ee9.websocket.api.exceptions.WebSocketTimeoutException(cause.getMessage(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.WebSocketTimeoutException(
+                cause.getMessage(), cause);
 
         if (cause instanceof InvalidSignatureException)
-            return new org.eclipse.jetty.ee9.websocket.api.exceptions.InvalidWebSocketException(cause.getMessage(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.InvalidWebSocketException(
+                cause.getMessage(), cause);
 
         if (cause instanceof UpgradeException ue)
-            return new org.eclipse.jetty.ee9.websocket.api.exceptions.UpgradeException(ue.getRequestURI(), ue.getResponseStatusCode(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.UpgradeException(
+                ue.getRequestURI(), ue.getResponseStatusCode(), cause);
 
         return cause;
     }

@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee10.loginservice;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -21,8 +25,6 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.BytesRequestContent;
@@ -43,14 +45,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @Testcontainers(disabledWithoutDocker = true)
 public class JdbcLoginServiceTest
 {
-    private static String _content =
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+    private static String _content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 
     private static Path __docRoot;
     private static String __realm = "JdbcRealm";
@@ -66,7 +64,7 @@ public class JdbcLoginServiceTest
         Path dir = MavenTestingUtils.getTargetTestingPath("jdbcloginservice-test");
         FS.ensureDirExists(dir);
 
-        //create the realm properties file based on dynamic + static info
+        // create the realm properties file based on dynamic + static info
         Path skeleton = MavenTestingUtils.getTestResourcePath("jdbcrealm.properties");
         File realmFile = dir.resolve("realm.properties").toFile();
         try (PrintWriter writer = new PrintWriter(new FileOutputStream(realmFile)))
@@ -78,7 +76,7 @@ public class JdbcLoginServiceTest
             IO.copy(new FileReader(skeleton.toFile()), writer);
         }
 
-        //make some static content
+        // make some static content
         __docRoot = dir.resolve("docroot");
         FS.ensureDirExists(__docRoot);
         File content = __docRoot.resolve("input.txt").toFile();
@@ -88,18 +86,17 @@ public class JdbcLoginServiceTest
         }
 
         LoginService loginService = new JDBCLoginService(__realm, realmFile.getAbsolutePath());
-        
+
         __testServer = new DatabaseLoginServiceTestServer();
         __testServer.setResourceBase(__docRoot);
         __testServer.setLoginService(loginService);
         __testServer.start();
-        
+
         __baseUri = __testServer.getBaseUri();
     }
 
     @AfterAll
-    public static void tearDown()
-        throws Exception
+    public static void tearDown() throws Exception
     {
         DatabaseLoginServiceTestServer.afterAll();
         if (__testServer != null)
@@ -139,7 +136,8 @@ public class JdbcLoginServiceTest
         int responseStatus = response.getStatus();
         boolean statusOk = (responseStatus == 200 || responseStatus == 201);
         assertTrue(statusOk);
-        String content = IO.toString(new FileInputStream(__docRoot.resolve("output.txt").toFile()));
+        String content =
+            IO.toString(new FileInputStream(__docRoot.resolve("output.txt").toFile()));
         assertEquals(_content, content);
     }
 
@@ -148,7 +146,7 @@ public class JdbcLoginServiceTest
     {
         _authStore.addAuthentication(new BasicAuthentication(__baseUri, __realm, "jetty", "jetty"));
         _client.start();
-        
+
         ContentResponse response = _client.GET(__baseUri.resolve("input.txt"));
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
         assertEquals(_content, response.getContentAsString());

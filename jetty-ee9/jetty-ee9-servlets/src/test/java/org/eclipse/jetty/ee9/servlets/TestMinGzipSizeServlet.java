@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.io.IOException;
-
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * Test servlet for testing against unusual minGzip configurable.
@@ -34,7 +33,8 @@ public class TestMinGzipSizeServlet extends AbstractFileContentServlet
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         String fileName = request.getServletPath();
         byte[] dataBytes = loadContentFileBytes(fileName);

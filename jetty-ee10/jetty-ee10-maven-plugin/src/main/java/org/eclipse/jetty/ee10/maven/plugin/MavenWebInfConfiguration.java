@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.net.URI;
-
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -35,10 +34,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     public MavenWebInfConfiguration()
     {
         super(new Builder()
-            .hide("org.apache.maven.",
-                "org.codehaus.plexus.",
-                "jakarta.enterprise.",
-                "javax.decorator."));
+            .hide("org.apache.maven.", "org.codehaus.plexus.", "jakarta.enterprise.", "javax.decorator."));
     }
 
     @Override
@@ -52,7 +48,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     {
         MavenWebAppContext jwac = (MavenWebAppContext)context;
 
-        //put the classes dir and all dependencies into the classpath
+        // put the classes dir and all dependencies into the classpath
         if (jwac.getClassPathUris() != null && context.getClassLoader() instanceof WebAppClassLoader loader)
         {
             if (LOG.isDebugEnabled())

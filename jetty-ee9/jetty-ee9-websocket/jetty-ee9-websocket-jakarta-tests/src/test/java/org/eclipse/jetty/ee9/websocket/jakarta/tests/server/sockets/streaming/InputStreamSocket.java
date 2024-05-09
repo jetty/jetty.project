@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.streaming;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.io.InputStream;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.toolchain.test.StackUtils;
 import org.eclipse.jetty.util.IO;

@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee10.tests.distribution;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -20,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
@@ -31,12 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Isolated
 public class DisableUrlCacheTest extends AbstractJettyHomeTest
@@ -54,16 +53,15 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             .jvmArgs(List.of("-Dorg.eclipse.jetty.deploy.LEVEL=DEBUG"))
             .build();
 
-        String[] setupArgs = {
-            "--add-modules=http,ee10-webapp,ee10-deploy,disable-urlcache"
-        };
+        String[] setupArgs = {"--add-modules=http,ee10-webapp,ee10-deploy,disable-urlcache"};
 
         try (JettyHomeTester.Run setupRun = distribution.start(setupArgs))
         {
             assertTrue(setupRun.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, setupRun.getExitValue());
 
-            Path webApp = distribution.resolveArtifact("org.eclipse.jetty.ee10:jetty-ee10-test-log4j2-webapp:war:" + jettyVersion);
+            Path webApp = distribution.resolveArtifact(
+                "org.eclipse.jetty.ee10:jetty-ee10-test-log4j2-webapp:war:" + jettyVersion);
             Path testWebApp = distribution.getJettyBase().resolve("webapps/test.war");
 
             Files.copy(webApp, testWebApp);
@@ -75,35 +73,34 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             FS.ensureEmpty(resourcesDir);
 
             Path webappsDir = distribution.getJettyBase().resolve("webapps");
-            String warXml = """
-                <?xml version="1.0"  encoding="ISO-8859-1"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
-                <Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
-                   <Set name="contextPath">/test</Set>
-                   <Set name="war"><Property name="jetty.webapps"/>/test.war</Set>
-                   <Set name="tempDirectory"><Property name="jetty.base"/>/work/test</Set>
-                   <Set name="tempDirectoryPersistent">false</Set>
-                </Configure>
-                """;
+            String warXml =
+                """
+                    <?xml version="1.0"  encoding="ISO-8859-1"?>
+                    <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                    <Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+                       <Set name="contextPath">/test</Set>
+                       <Set name="war"><Property name="jetty.webapps"/>/test.war</Set>
+                       <Set name="tempDirectory"><Property name="jetty.base"/>/work/test</Set>
+                       <Set name="tempDirectoryPersistent">false</Set>
+                    </Configure>
+                    """;
             Path warXmlPath = webappsDir.resolve("test.xml");
             Files.writeString(warXmlPath, warXml, StandardCharsets.UTF_8);
 
             Path loggingFile = resourcesDir.resolve("jetty-logging.properties");
-            String loggingConfig = """
-                org.eclipse.jetty.LEVEL=INFO
-                org.eclipse.jetty.deploy.LEVEL=DEBUG
-                org.eclipse.jetty.ee10.webapp.LEVEL=DEBUG
-                org.eclipse.jetty.ee10.webapp.WebAppClassLoader.LEVEL=INFO
-                org.eclipse.jetty.ee10.servlet.LEVEL=DEBUG
-                """;
+            String loggingConfig =
+                """
+                    org.eclipse.jetty.LEVEL=INFO
+                    org.eclipse.jetty.deploy.LEVEL=DEBUG
+                    org.eclipse.jetty.ee10.webapp.LEVEL=DEBUG
+                    org.eclipse.jetty.ee10.webapp.WebAppClassLoader.LEVEL=INFO
+                    org.eclipse.jetty.ee10.servlet.LEVEL=DEBUG
+                    """;
             Files.writeString(loggingFile, loggingConfig, StandardCharsets.UTF_8);
 
-
             int port = Tester.freePort();
-            String[] runArgs = {
-                "jetty.http.port=" + port,
-                "jetty.deploy.scanInterval=1"
-                //"jetty.server.dumpAfterStart=true",
+            String[] runArgs = {"jetty.http.port=" + port, "jetty.deploy.scanInterval=1"
+                // "jetty.server.dumpAfterStart=true",
             };
             try (JettyHomeTester.Run run2 = distribution.start(runArgs))
             {

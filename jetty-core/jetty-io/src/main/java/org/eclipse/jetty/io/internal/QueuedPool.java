@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.Pool;
 
 /**

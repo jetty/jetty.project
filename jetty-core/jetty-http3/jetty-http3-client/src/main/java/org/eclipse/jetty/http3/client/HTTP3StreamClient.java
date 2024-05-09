@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.client;
 
 import java.util.EnumSet;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3Session;
@@ -57,13 +56,16 @@ public class HTTP3StreamClient extends HTTP3Stream implements Stream.Client
     {
         MetaData.Response response = (MetaData.Response)frame.getMetaData();
         int status = response.getStatus();
-        boolean valid = switch (status)
-        {
-            case HttpStatus.CONTINUE_100 -> validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.INFORMATIONAL);
-            case HttpStatus.PROCESSING_102,
-                HttpStatus.EARLY_HINTS_103 -> validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.INFORMATIONAL);
-            default -> validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.HEADER);
-        };
+        boolean valid =
+            switch (status)
+            {
+                case HttpStatus.CONTINUE_100 -> validateAndUpdate(
+                    EnumSet.of(FrameState.INITIAL), FrameState.INFORMATIONAL);
+                case HttpStatus.PROCESSING_102, HttpStatus.EARLY_HINTS_103 -> validateAndUpdate(
+                    EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.INFORMATIONAL);
+                default -> validateAndUpdate(
+                    EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.HEADER);
+            };
         if (valid)
         {
             onHeaders(frame);

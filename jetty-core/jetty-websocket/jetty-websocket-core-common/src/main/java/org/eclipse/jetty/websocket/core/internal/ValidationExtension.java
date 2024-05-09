@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
+import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
+import static org.eclipse.jetty.websocket.core.OpCode.UNDEFINED;
+
 import java.io.IOException;
 import java.util.Map;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -26,10 +29,6 @@ import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.util.FrameValidation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
-import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
-import static org.eclipse.jetty.websocket.core.OpCode.UNDEFINED;
 
 public class ValidationExtension extends AbstractExtension
 {
@@ -124,11 +123,11 @@ public class ValidationExtension extends AbstractExtension
 
     private void validateUTF8(Frame frame, NullAppendable appendable, byte continuedOpCode) throws IOException
     {
-        //TODO this relies on sequencing being set
+        // TODO this relies on sequencing being set
 
         if (frame.isControlFrame())
         {
-            //todo validate utf8 of control frames
+            // todo validate utf8 of control frames
 
         }
         else

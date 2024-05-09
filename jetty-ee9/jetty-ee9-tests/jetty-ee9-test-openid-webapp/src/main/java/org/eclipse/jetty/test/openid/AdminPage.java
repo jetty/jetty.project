@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.test.openid;
 
-import java.io.IOException;
-import java.util.Map;
-
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Map;
 
 public class AdminPage extends HttpServlet
 {
@@ -26,7 +25,8 @@ public class AdminPage extends HttpServlet
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         @SuppressWarnings("unchecked")
-        Map<String, Object> userInfo = (Map<String, Object>)request.getSession().getAttribute("org.eclipse.jetty.security.openid.claims");
+        Map<String, Object> userInfo =
+            (Map<String, Object>)request.getSession().getAttribute("org.eclipse.jetty.security.openid.claims");
         response.getWriter().println(userInfo.get("sub") + ": success");
     }
 }

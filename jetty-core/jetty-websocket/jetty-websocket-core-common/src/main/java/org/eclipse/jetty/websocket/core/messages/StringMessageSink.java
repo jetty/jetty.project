@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -54,7 +53,8 @@ public class StringMessageSink extends AbstractMessageSink
             long maxSize = getCoreSession().getMaxTextMessageSize();
             if (maxSize > 0 && size > maxSize)
             {
-                callback.failed(new MessageTooLargeException(String.format("Text message too large: %,d > %,d", size, maxSize)));
+                callback.failed(new MessageTooLargeException(
+                    String.format("Text message too large: %,d > %,d", size, maxSize)));
                 return;
             }
 

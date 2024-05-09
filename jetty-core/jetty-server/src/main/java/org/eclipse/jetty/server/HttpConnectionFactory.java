@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.util.Objects;
-
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;

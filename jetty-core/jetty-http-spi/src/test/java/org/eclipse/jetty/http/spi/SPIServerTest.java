@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.http.spi;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
+import com.sun.net.httpserver.BasicAuthenticator;
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -21,13 +31,6 @@ import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
-import com.sun.net.httpserver.BasicAuthenticator;
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.ContentResponse;
@@ -39,10 +42,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 public class SPIServerTest
 {
@@ -108,11 +107,7 @@ public class SPIServerTest
     @Test
     public void testComplexResponseMediaType() throws Exception
     {
-        final String mediaType = "multipart/related;" +
-            "start=\"<a*b-c-d-e-f@example.com>\";" +
-            "type=\"application/xop+xml\";" +
-            "boundary=\"uuid:aa-bb-cc-dd-ee\";" +
-            "start-info=\"application/soap+xml;action=\\\"urn:xyz\\\"\"";
+        final String mediaType = "multipart/related;" + "start=\"<a*b-c-d-e-f@example.com>\";" + "type=\"application/xop+xml\";" + "boundary=\"uuid:aa-bb-cc-dd-ee\";" + "start-info=\"application/soap+xml;action=\\\"urn:xyz\\\"\"";
 
         server.createContext("/", new HttpHandler()
         {
@@ -144,11 +139,7 @@ public class SPIServerTest
     @Test
     public void testComplexRequestMediaType() throws Exception
     {
-        final String mediaType = "multipart/related;" +
-            "start=\"<a*b-c-d-e-f@example.com>\";" +
-            "type=\"application/xop+xml\";" +
-            "boundary=\"uuid:aa-bb-cc-dd-ee\";" +
-            "start-info=\"application/soap+xml;action=\\\"urn:xyz\\\"\"";
+        final String mediaType = "multipart/related;" + "start=\"<a*b-c-d-e-f@example.com>\";" + "type=\"application/xop+xml\";" + "boundary=\"uuid:aa-bb-cc-dd-ee\";" + "start-info=\"application/soap+xml;action=\\\"urn:xyz\\\"\"";
 
         server.createContext("/", new HttpHandler()
         {
@@ -173,8 +164,7 @@ public class SPIServerTest
         Request request = client.newRequest("localhost", port)
             .scheme("http")
             .method(HttpMethod.GET)
-            .headers((headers) ->
-                headers.put("Content-Type", mediaType))
+            .headers((headers) -> headers.put("Content-Type", mediaType))
             .path("/");
 
         ContentResponse response = request.send();
@@ -213,15 +203,16 @@ public class SPIServerTest
         {
             try (OutputStream output = socket.getOutputStream())
             {
-                String request = """
-                    GET / HTTP/1.1
-                    Host: localhost
-                    Connection: close
-                    X-Action: Begin
-                    X-Action: "Ongoing Behavior"
-                    X-Action: Final
-                                        
-                    """;
+                String request =
+                    """
+                        GET / HTTP/1.1
+                        Host: localhost
+                        Connection: close
+                        X-Action: Begin
+                        X-Action: "Ongoing Behavior"
+                        X-Action: Final
+
+                        """;
 
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
@@ -238,7 +229,8 @@ public class SPIServerTest
     public void testRequestUserAgentHeader() throws Exception
     {
         // The `User-Agent` header that should ignore value list behaviors
-        final String ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
+        final String ua =
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
         // The `Sec-Ch-Ua` header that should participate in value list behaviors
         final String secua = "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Google Chrome\";v=\"116\"\n";
 
@@ -275,14 +267,16 @@ public class SPIServerTest
         {
             try (OutputStream output = socket.getOutputStream())
             {
-                String request = """
-                    GET / HTTP/1.1
-                    Host: localhost
-                    Connection: close
-                    User-Agent: %s
-                    Sec-Ch-Ua: %s
-                                        
-                    """.formatted(ua, secua);
+                String request =
+                    """
+                        GET / HTTP/1.1
+                        Host: localhost
+                        Connection: close
+                        User-Agent: %s
+                        Sec-Ch-Ua: %s
+
+                        """
+                        .formatted(ua, secua);
 
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
@@ -329,13 +323,15 @@ public class SPIServerTest
         {
             try (OutputStream output = socket.getOutputStream())
             {
-                String request = """
-                    GET / HTTP/1.1
-                    Host: localhost
-                    Connection: close
-                    If-Modified-Since: %s
-                                        
-                    """.formatted(since);
+                String request =
+                    """
+                        GET / HTTP/1.1
+                        Host: localhost
+                        Connection: close
+                        If-Modified-Since: %s
+
+                        """
+                        .formatted(since);
 
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();

@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-
 import org.eclipse.jetty.start.BaseBuilder;
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
@@ -62,7 +61,8 @@ public class StartDirBuilder implements BaseBuilder.Config
         {
             // Create start.d/{name}.ini
             Path ini = startDir.resolve(module.getName() + ".ini");
-            try (BufferedWriter writer = Files.newBufferedWriter(ini, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))
+            try (BufferedWriter writer = Files.newBufferedWriter(
+                ini, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))
             {
                 module.writeIniSection(writer, props);
             }

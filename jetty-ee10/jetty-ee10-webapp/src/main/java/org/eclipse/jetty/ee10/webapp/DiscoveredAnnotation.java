@@ -31,7 +31,7 @@ public abstract class DiscoveredAnnotation
     protected WebAppContext _context;
     protected String _className;
     protected Class<?> _clazz;
-    protected Resource _resource; //resource it was discovered on, can be null (eg from WEB-INF/classes)
+    protected Resource _resource; // resource it was discovered on, can be null (eg from WEB-INF/classes)
 
     public abstract void apply();
 

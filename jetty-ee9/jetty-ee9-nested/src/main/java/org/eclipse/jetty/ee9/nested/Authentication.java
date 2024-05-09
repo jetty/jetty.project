@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.security.Principal;
-
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.security.Principal;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 
@@ -176,15 +175,14 @@ public interface Authentication extends Request.AuthenticationState
      * This convenience instance is for non mandatory authentication where credentials
      * have been presented and checked, but failed authentication.
      */
-    Authentication UNAUTHENTICATED =
-        new Authentication()
+    Authentication UNAUTHENTICATED = new Authentication()
+    {
+        @Override
+        public String toString()
         {
-            @Override
-            public String toString()
-            {
-                return "UNAUTHENTICATED";
-            }
-        };
+            return "UNAUTHENTICATED";
+        }
+    };
 
     /**
      * Authentication not checked
@@ -228,6 +226,7 @@ public interface Authentication extends Request.AuthenticationState
             return "FAILURE";
         }
     };
+
     Authentication SEND_SUCCESS = new SendSuccess()
     {
         @Override

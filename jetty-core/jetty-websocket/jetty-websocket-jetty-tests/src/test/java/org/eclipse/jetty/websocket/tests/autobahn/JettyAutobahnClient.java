@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.websocket.tests.autobahn;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -20,7 +23,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.api.Callback;
@@ -31,9 +33,6 @@ import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * WebSocket Client for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
@@ -168,7 +167,8 @@ public class JettyAutobahnClient
 
     public void runCaseByNumber(int caseNumber) throws IOException, InterruptedException
     {
-        URI wsUri = baseWebsocketUri.resolve("/runCase?case=" + caseNumber + "&agent=" + UrlEncoded.encodeString(userAgent));
+        URI wsUri = baseWebsocketUri.resolve(
+            "/runCase?case=" + caseNumber + "&agent=" + UrlEncoded.encodeString(userAgent));
         LOG.info("test uri: {}", wsUri);
 
         EchoSocket echoHandler = new JettyAutobahnSocket();

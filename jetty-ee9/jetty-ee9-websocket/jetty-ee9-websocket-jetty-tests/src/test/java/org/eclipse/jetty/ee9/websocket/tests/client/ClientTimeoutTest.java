@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.exceptions.UpgradeException;
@@ -34,10 +37,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ClientTimeoutTest
 {
@@ -94,10 +93,13 @@ public class ClientTimeoutTest
         client.setIdleTimeout(Duration.ofMillis(timeout));
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
 
-        ExecutionException executionException = assertThrows(ExecutionException.class, () -> connect.get(timeout * 2, TimeUnit.MILLISECONDS));
+        ExecutionException executionException =
+            assertThrows(ExecutionException.class, () -> connect.get(timeout * 2, TimeUnit.MILLISECONDS));
         assertThat(executionException.getCause(), instanceOf(UpgradeException.class));
         UpgradeException upgradeException = (UpgradeException)executionException.getCause();
-        assertThat(upgradeException.getCause(), instanceOf(org.eclipse.jetty.websocket.core.exception.UpgradeException.class));
+        assertThat(
+            upgradeException.getCause(),
+            instanceOf(org.eclipse.jetty.websocket.core.exception.UpgradeException.class));
         org.eclipse.jetty.websocket.core.exception.UpgradeException coreUpgradeException =
             (org.eclipse.jetty.websocket.core.exception.UpgradeException)upgradeException.getCause();
         assertThat(coreUpgradeException.getCause(), instanceOf(TimeoutException.class));
@@ -112,10 +114,13 @@ public class ClientTimeoutTest
         upgradeRequest.setTimeout(timeout, TimeUnit.MILLISECONDS);
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest);
 
-        ExecutionException executionException = assertThrows(ExecutionException.class, () -> connect.get(timeout * 2, TimeUnit.MILLISECONDS));
+        ExecutionException executionException =
+            assertThrows(ExecutionException.class, () -> connect.get(timeout * 2, TimeUnit.MILLISECONDS));
         assertThat(executionException.getCause(), instanceOf(UpgradeException.class));
         UpgradeException upgradeException = (UpgradeException)executionException.getCause();
-        assertThat(upgradeException.getCause(), instanceOf(org.eclipse.jetty.websocket.core.exception.UpgradeException.class));
+        assertThat(
+            upgradeException.getCause(),
+            instanceOf(org.eclipse.jetty.websocket.core.exception.UpgradeException.class));
         org.eclipse.jetty.websocket.core.exception.UpgradeException coreUpgradeException =
             (org.eclipse.jetty.websocket.core.exception.UpgradeException)upgradeException.getCause();
         assertThat(coreUpgradeException.getCause(), instanceOf(TimeoutException.class));

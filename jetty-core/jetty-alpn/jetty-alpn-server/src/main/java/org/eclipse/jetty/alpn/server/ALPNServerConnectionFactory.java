@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ServiceLoader;
 import javax.net.ssl.SSLEngine;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.ALPNProcessor.Server;
@@ -87,7 +86,8 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
     }
 
     @Override
-    protected AbstractConnection newServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
+    protected AbstractConnection newServerConnection(
+                                                     Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
         for (Server processor : processors)
         {
@@ -95,7 +95,8 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} for {} on {}", processor, engine, endPoint);
-                ALPNServerConnection connection = new ALPNServerConnection(connector, endPoint, engine, protocols, defaultProtocol);
+                ALPNServerConnection connection =
+                    new ALPNServerConnection(connector, endPoint, engine, protocols, defaultProtocol);
                 processor.configure(engine, connection);
                 return connection;
             }

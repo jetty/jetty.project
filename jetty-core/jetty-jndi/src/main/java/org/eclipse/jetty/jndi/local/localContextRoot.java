@@ -31,7 +31,6 @@ import javax.naming.OperationNotSupportedException;
 import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
-
 import org.eclipse.jetty.jndi.NamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,7 +125,7 @@ public class localContextRoot implements Context
     {
         if (ctx instanceof Reference)
         {
-            //deference the object
+            // deference the object
             try
             {
                 return NamingManager.getObjectInstance(ctx, getNameParser("").parse(firstComponent), __root, _env);
@@ -169,7 +168,7 @@ public class localContextRoot implements Context
     @Override
     public void unbind(Name name) throws NamingException
     {
-        //__root.unbind(getSuffix(name));
+        // __root.unbind(getSuffix(name));
 
         if (name.size() == 0)
             return;
@@ -185,7 +184,7 @@ public class localContextRoot implements Context
         if (cname.size() == 0)
             throw new NamingException("Name is empty");
 
-        //if no subcontexts, just unbind it
+        // if no subcontexts, just unbind it
         if (cname.size() == 1)
         {
             __root.removeBinding(cname);
@@ -215,7 +214,8 @@ public class localContextRoot implements Context
 
         if (cname == null || cname.isEmpty())
         {
-            //If no name create copy of this context with same bindings, but with copy of the environment so it can be modified
+            // If no name create copy of this context with same bindings, but with copy of the environment so it can be
+            // modified
             return __root.shallowCopy(_env);
         }
 
@@ -230,10 +230,10 @@ public class localContextRoot implements Context
 
             Object o = binding.getObject();
 
-            //handle links by looking up the link
+            // handle links by looking up the link
             if (o instanceof Reference)
             {
-                //deference the object
+                // deference the object
                 try
                 {
                     return NamingManager.getObjectInstance(o, cname.getPrefix(1), __root, _env);
@@ -250,13 +250,13 @@ public class localContextRoot implements Context
             }
             else
             {
-                //object is either a LinkRef which we don't dereference
-                //or a plain object in which case spec says we return it
+                // object is either a LinkRef which we don't dereference
+                // or a plain object in which case spec says we return it
                 return o;
             }
         }
 
-        //it is a multipart name, recurse to the first subcontext
+        // it is a multipart name, recurse to the first subcontext
         return getContext(cname).lookup(cname.getSuffix(1));
     }
 
@@ -290,16 +290,16 @@ public class localContextRoot implements Context
 
             Object o = binding.getObject();
 
-            //handle links by looking up the link
+            // handle links by looking up the link
             if (o instanceof LinkRef)
             {
-                //if link name starts with ./ it is relative to current context
+                // if link name starts with ./ it is relative to current context
                 String linkName = ((LinkRef)o).getLinkName();
                 if (linkName.startsWith("./"))
                     return lookup(linkName.substring(2));
                 else
                 {
-                    //link name is absolute
+                    // link name is absolute
                     InitialContext ictx = new InitialContext();
                     return ictx.lookup(linkName);
                 }
@@ -358,10 +358,10 @@ public class localContextRoot implements Context
         if (cname.size() == 0)
             throw new NamingException("Name is empty");
 
-        //if no subcontexts, just bind it
+        // if no subcontexts, just bind it
         if (cname.size() == 1)
         {
-            //get the object to be bound
+            // get the object to be bound
             Object objToBind = NamingManager.getStateToBind(obj, name, this, _env);
             // Check for Referenceable
             if (objToBind instanceof Referenceable)
@@ -369,13 +369,14 @@ public class localContextRoot implements Context
                 objToBind = ((Referenceable)objToBind).getReference();
             }
 
-            //anything else we should be able to bind directly
+            // anything else we should be able to bind directly
             __root.addBinding(cname, objToBind);
         }
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Checking for existing binding for name={} for first element of name={}", cname, cname.get(0));
+                LOG.debug(
+                    "Checking for existing binding for name={} for first element of name={}", cname, cname.get(0));
 
             getContext(cname).bind(cname.getSuffix(1), obj);
         }
@@ -395,10 +396,10 @@ public class localContextRoot implements Context
         if (cname.size() == 0)
             throw new NamingException("Name is empty");
 
-        //if no subcontexts, just bind it
+        // if no subcontexts, just bind it
         if (cname.size() == 1)
         {
-            //check if it is a Referenceable
+            // check if it is a Referenceable
             Object objToBind = NamingManager.getStateToBind(obj, name, __root, _env);
 
             if (objToBind instanceof Referenceable)
@@ -410,9 +411,10 @@ public class localContextRoot implements Context
         }
         else
         {
-            //walk down the subcontext hierarchy
+            // walk down the subcontext hierarchy
             if (LOG.isDebugEnabled())
-                LOG.debug("Checking for existing binding for name={} for first element of name={}", cname, cname.get(0));
+                LOG.debug(
+                    "Checking for existing binding for name={} for first element of name={}", cname, cname.get(0));
 
             getContext(cname).rebind(cname.getSuffix(1), obj);
         }
@@ -439,13 +441,13 @@ public class localContextRoot implements Context
     @Override
     public Context createSubcontext(String name) throws NamingException
     {
-        //if the subcontext comes directly off the root, use the env of the InitialContext
-        //as the root itself has no environment. Otherwise, it inherits the env of the parent
-        //Context further down the tree.
-        //NamingContext ctx = (NamingContext)__root.createSubcontext(name);
-        //if (ctx.getParent() == __root)
+        // if the subcontext comes directly off the root, use the env of the InitialContext
+        // as the root itself has no environment. Otherwise, it inherits the env of the parent
+        // Context further down the tree.
+        // NamingContext ctx = (NamingContext)__root.createSubcontext(name);
+        // if (ctx.getParent() == __root)
         //    ctx.setEnv(_env);
-        //return ctx;
+        // return ctx;
 
         return createSubcontext(__root.getNameParser("").parse(name));
     }
@@ -453,13 +455,13 @@ public class localContextRoot implements Context
     @Override
     public Context createSubcontext(Name name) throws NamingException
     {
-        //if the subcontext comes directly off the root, use the env of the InitialContext
-        //as the root itself has no environment. Otherwise, it inherits the env of the parent
-        //Context further down the tree.
-        //NamingContext ctx = (NamingContext)__root.createSubcontext(getSuffix(name));
-        //if (ctx.getParent() == __root)
+        // if the subcontext comes directly off the root, use the env of the InitialContext
+        // as the root itself has no environment. Otherwise, it inherits the env of the parent
+        // Context further down the tree.
+        // NamingContext ctx = (NamingContext)__root.createSubcontext(getSuffix(name));
+        // if (ctx.getParent() == __root)
         //    ctx.setEnv(_env);
-        //return ctx;
+        // return ctx;
 
         if (__root.isLocked())
         {
@@ -477,18 +479,18 @@ public class localContextRoot implements Context
 
         if (cname.size() == 1)
         {
-            //not permitted to bind if something already bound at that name
+            // not permitted to bind if something already bound at that name
             Binding binding = __root.getBinding(cname);
             if (binding != null)
                 throw new NameAlreadyBoundException(cname.toString());
 
-            //make a new naming context with the root as the parent
+            // make a new naming context with the root as the parent
             Context ctx = new NamingContext(_env, cname.get(0), __root, __root.getNameParser(""));
             __root.addBinding(cname, ctx);
             return ctx;
         }
 
-        //If the name has multiple subcontexts,
+        // If the name has multiple subcontexts,
         return getContext(cname).createSubcontext(cname.getSuffix(1));
     }
 
@@ -529,15 +531,13 @@ public class localContextRoot implements Context
     }
 
     @Override
-    public Object addToEnvironment(String propName, Object propVal)
-        throws NamingException
+    public Object addToEnvironment(String propName, Object propVal) throws NamingException
     {
         return _env.put(propName, propVal);
     }
 
     @Override
-    public String composeName(String name, String prefix)
-        throws NamingException
+    public String composeName(String name, String prefix) throws NamingException
     {
         return __root.composeName(name, prefix);
     }

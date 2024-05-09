@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.util.Formatter;
 import java.util.Locale;
-
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.WriteThroughWriter;
@@ -472,8 +471,8 @@ public class ResponseWriter extends PrintWriter
     {
         try
         {
-            
-            /* If the passed locale is null then 
+
+            /* If the passed locale is null then
             use any locale set on the response as the default. */
             if (locale == null)
                 locale = _locale;

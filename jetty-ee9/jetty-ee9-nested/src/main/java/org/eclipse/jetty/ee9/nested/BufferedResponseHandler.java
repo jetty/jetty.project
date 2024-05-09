@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Queue;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import org.eclipse.jetty.ee9.nested.HttpOutput.Interceptor;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -66,9 +65,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         _methods.include(HttpMethod.GET.asString());
         for (String type : MimeTypes.DEFAULTS.getMimeMap().values())
         {
-            if (type.startsWith("image/") ||
-                type.startsWith("audio/") ||
-                type.startsWith("video/"))
+            if (type.startsWith("image/") || type.startsWith("audio/") || type.startsWith("video/"))
                 _mimeTypes.exclude(type);
         }
 
@@ -123,7 +120,8 @@ public class BufferedResponseHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         final ServletContext context = baseRequest.getServletContext();
         final String path = baseRequest.getPathInContext();
@@ -266,8 +264,10 @@ public class BufferedResponseHandler extends HandlerWrapper
                     // Do we need a new aggregate buffer.
                     if (BufferUtil.space(_aggregate) == 0)
                     {
-                        // TODO: use a buffer pool always allocating with outputBufferSize to avoid polluting the ByteBuffer pool.
-                        int size = Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), BufferUtil.length(content));
+                        // TODO: use a buffer pool always allocating with outputBufferSize to avoid polluting the
+                        // ByteBuffer pool.
+                        int size = Math.max(
+                            _channel.getHttpConfiguration().getOutputBufferSize(), BufferUtil.length(content));
                         _aggregate = BufferUtil.allocate(size);
                         _buffers.offer(_aggregate);
                     }

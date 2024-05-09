@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.quickstart;
 
-import java.io.IOException;
-
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import java.io.IOException;
 
 public class FooFilter implements Filter
 {

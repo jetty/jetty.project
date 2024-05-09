@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.security.authentication;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
-
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 import org.eclipse.jetty.ee9.security.AbstractUserAuthentication;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
@@ -64,8 +63,7 @@ public class SessionAuthentication extends AbstractUserAuthentication
         return super.getUserIdentity();
     }
 
-    private void readObject(ObjectInputStream stream)
-        throws IOException, ClassNotFoundException
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException
     {
         stream.defaultReadObject();
 
@@ -98,7 +96,9 @@ public class SessionAuthentication extends AbstractUserAuthentication
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,%s}", this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
+        return String.format(
+            "%s@%x{%s,%s}",
+            this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
     }
 
     @Override

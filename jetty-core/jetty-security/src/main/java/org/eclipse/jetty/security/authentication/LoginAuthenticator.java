@@ -16,7 +16,6 @@ package org.eclipse.jetty.security.authentication;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.function.Function;
-
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
@@ -118,12 +117,14 @@ public abstract class LoginAuthenticator implements Authenticator
             synchronized (session)
             {
                 if (_sessionMaxInactiveIntervalOnAuthentication != 0)
-                    session.setMaxInactiveInterval(_sessionMaxInactiveIntervalOnAuthentication < 0 ? -1 : _sessionMaxInactiveIntervalOnAuthentication);
+                    session.setMaxInactiveInterval(
+                        _sessionMaxInactiveIntervalOnAuthentication < 0 ? -1 : _sessionMaxInactiveIntervalOnAuthentication);
 
                 if (_sessionRenewedOnAuthentication)
                 {
-                    //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
-                    //(indicated by SESSION_SECURED not being set on the session) then we should change id
+                    // if we should renew sessions, and there is an existing session that may have been seen by
+                    // non-authenticated users
+                    // (indicated by SESSION_SECURED not being set on the session) then we should change id
                     if (session.getAttribute(SecurityHandler.SESSION_AUTHENTICATED_ATTRIBUTE) != Boolean.TRUE)
                     {
                         session.setAttribute(SecurityHandler.SESSION_AUTHENTICATED_ATTRIBUTE, Boolean.TRUE);
@@ -141,6 +142,7 @@ public abstract class LoginAuthenticator implements Authenticator
     {
         @Serial
         private static final long serialVersionUID = -6290411814232723403L;
+
         protected String _authenticationType;
         protected transient UserIdentity _userIdentity;
 
@@ -196,7 +198,8 @@ public abstract class LoginAuthenticator implements Authenticator
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(getClass().getSimpleName(), hashCode(), getAuthenticationType(), getUserIdentity());
+            return "%s@%x{%s,%s}"
+                .formatted(getClass().getSimpleName(), hashCode(), getAuthenticationType(), getUserIdentity());
         }
     }
 
@@ -204,7 +207,8 @@ public abstract class LoginAuthenticator implements Authenticator
      * This Authentication represents a just completed authentication, that has sent a response, typically to
      * redirect the client to the original request target..
      */
-    public static class UserAuthenticationSent extends UserAuthenticationSucceeded implements AuthenticationState.ResponseSent
+    public static class UserAuthenticationSent extends UserAuthenticationSucceeded
+        implements AuthenticationState.ResponseSent
     {
         public UserAuthenticationSent(String method, UserIdentity userIdentity)
         {

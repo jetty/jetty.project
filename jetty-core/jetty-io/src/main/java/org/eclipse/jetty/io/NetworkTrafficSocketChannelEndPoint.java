@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,13 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
 
     private final NetworkTrafficListener listener;
 
-    public NetworkTrafficSocketChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, Scheduler scheduler, long idleTimeout, NetworkTrafficListener listener)
+    public NetworkTrafficSocketChannelEndPoint(
+                                               SocketChannel channel,
+                                               ManagedSelector selectSet,
+                                               SelectionKey key,
+                                               Scheduler scheduler,
+                                               long idleTimeout,
+                                               NetworkTrafficListener listener)
     {
         super(channel, selectSet, key, scheduler);
         setIdleTimeout(idleTimeout);

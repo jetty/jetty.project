@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Files;
@@ -20,7 +25,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
@@ -54,11 +58,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HTTP2TransportTest extends AbstractTransportTest
 {
     private HttpClient httpClient;
@@ -85,7 +84,8 @@ public class HTTP2TransportTest extends AbstractTransportTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -97,7 +97,11 @@ public class HTTP2TransportTest extends AbstractTransportTest
         assertThat(destination.getOrigin().getTransport(), sameInstance(Transport.TCP_IP));
 
         HttpClientTransportOverHTTP2 httpClientTransport = (HttpClientTransportOverHTTP2)httpClient.getTransport();
-        int networkConnections = httpClientTransport.getHTTP2Client().getClientConnector().getSelectorManager().getTotalKeys();
+        int networkConnections = httpClientTransport
+            .getHTTP2Client()
+            .getClientConnector()
+            .getSelectorManager()
+            .getTotalKeys();
         assertThat(networkConnections, is(1));
     }
 
@@ -109,7 +113,8 @@ public class HTTP2TransportTest extends AbstractTransportTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .transport(Transport.TCP_IP)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -125,7 +130,8 @@ public class HTTP2TransportTest extends AbstractTransportTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("http://localhost/")
+        ContentResponse response = httpClient
+            .newRequest("http://localhost/")
             .transport(new MemoryTransport(connector))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -133,20 +139,26 @@ public class HTTP2TransportTest extends AbstractTransportTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         HttpClientTransportOverHTTP2 httpClientTransport = (HttpClientTransportOverHTTP2)httpClient.getTransport();
-        int networkConnections = httpClientTransport.getHTTP2Client().getClientConnector().getSelectorManager().getTotalKeys();
+        int networkConnections = httpClientTransport
+            .getHTTP2Client()
+            .getClientConnector()
+            .getSelectorManager()
+            .getTotalKeys();
         assertThat(networkConnections, is(0));
     }
 
     @Test
     public void testUnixDomainTransport() throws Exception
     {
-        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, 1, 1, new HTTP2CServerConnectionFactory());
+        UnixDomainServerConnector connector =
+            new UnixDomainServerConnector(server, 1, 1, new HTTP2CServerConnectionFactory());
         connector.setUnixDomainPath(newUnixDomainPath());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        ContentResponse response = httpClient.newRequest("http://localhost/")
+        ContentResponse response = httpClient
+            .newRequest("http://localhost/")
             .transport(new Transport.TCPUnix(connector.getUnixDomainPath()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -158,14 +170,16 @@ public class HTTP2TransportTest extends AbstractTransportTest
     public void testQUICTransportWithH2C(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
-        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslServer.setKeyStorePath(
+            MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
 
         Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
 
         ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslServer, pemServerDir);
-        QuicServerConnector connector = new QuicServerConnector(server, quicConfiguration, new HTTP2CServerConnectionFactory());
+        QuicServerConnector connector =
+            new QuicServerConnector(server, quicConfiguration, new HTTP2CServerConnectionFactory());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
 
@@ -176,7 +190,8 @@ public class HTTP2TransportTest extends AbstractTransportTest
 
         server.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .transport(new QuicTransport(clientQuicConfig))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -188,14 +203,16 @@ public class HTTP2TransportTest extends AbstractTransportTest
     public void testQUICTransportWithH2(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
-        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslServer.setKeyStorePath(
+            MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
 
         Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
 
         ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslServer, pemServerDir);
-        QuicServerConnector connector = new QuicServerConnector(server, quicConfiguration, new HTTP2ServerConnectionFactory());
+        QuicServerConnector connector =
+            new QuicServerConnector(server, quicConfiguration, new HTTP2ServerConnectionFactory());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
 
@@ -209,7 +226,8 @@ public class HTTP2TransportTest extends AbstractTransportTest
 
         server.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .transport(new QuicTransport(clientQuicConfig))
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
@@ -227,10 +245,14 @@ public class HTTP2TransportTest extends AbstractTransportTest
         server.start();
 
         InetSocketAddress socketAddress = new InetSocketAddress("localhost", connector.getLocalPort());
-        Session session = http2Client.connect(socketAddress, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
+        Session session =
+            http2Client.connect(socketAddress, new Session.Listener()
+            {
+            }).get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
+        MetaData.Request request =
+            new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request, null, true), new Stream.Listener()
         {
             @Override
@@ -253,10 +275,19 @@ public class HTTP2TransportTest extends AbstractTransportTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        Session session = http2Client.connect(new MemoryTransport(connector), null, connector.getLocalSocketAddress(), new Session.Listener() {}).get(5, TimeUnit.SECONDS);
+        Session session = http2Client
+            .connect(
+                new MemoryTransport(connector),
+                null,
+                connector.getLocalSocketAddress(),
+                new Session.Listener()
+                {
+                })
+            .get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
+        MetaData.Request request =
+            new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request, null, true), new Stream.Listener()
         {
             @Override
@@ -274,16 +305,26 @@ public class HTTP2TransportTest extends AbstractTransportTest
     @Test
     public void testLowLevelH2COverUnixDomain() throws Exception
     {
-        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, new HTTP2CServerConnectionFactory());
+        UnixDomainServerConnector connector =
+            new UnixDomainServerConnector(server, new HTTP2CServerConnectionFactory());
         connector.setUnixDomainPath(newUnixDomainPath());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        Session session = http2Client.connect(new Transport.TCPUnix(connector.getUnixDomainPath()), null, connector.getLocalSocketAddress(), new Session.Listener() {}).get(5, TimeUnit.SECONDS);
+        Session session = http2Client
+            .connect(
+                new Transport.TCPUnix(connector.getUnixDomainPath()),
+                null,
+                connector.getLocalSocketAddress(),
+                new Session.Listener()
+                {
+                })
+            .get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
+        MetaData.Request request =
+            new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request, null, true), new Stream.Listener()
         {
             @Override
@@ -302,14 +343,16 @@ public class HTTP2TransportTest extends AbstractTransportTest
     public void testLowLevelH2COverQUIC(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
-        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslServer.setKeyStorePath(
+            MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
 
         Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
 
         ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslServer, pemServerDir);
-        QuicServerConnector connector = new QuicServerConnector(server, quicConfiguration, new HTTP2CServerConnectionFactory());
+        QuicServerConnector connector =
+            new QuicServerConnector(server, quicConfiguration, new HTTP2CServerConnectionFactory());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
 
@@ -322,10 +365,15 @@ public class HTTP2TransportTest extends AbstractTransportTest
         server.start();
 
         SocketAddress socketAddress = new InetSocketAddress("localhost", connector.getLocalPort());
-        Session session = http2Client.connect(new QuicTransport(clientQuicConfig), null, socketAddress, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
+        Session session = http2Client
+            .connect(new QuicTransport(clientQuicConfig), null, socketAddress, new Session.Listener()
+            {
+            })
+            .get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
+        MetaData.Request request =
+            new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request, null, true), new Stream.Listener()
         {
             @Override

@@ -13,13 +13,18 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
@@ -38,12 +43,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ThreadLimitHandlerTest
 {
     private Server _server;
@@ -51,8 +50,7 @@ public class ThreadLimitHandlerTest
     private LocalConnector _local;
 
     @BeforeEach
-    public void before()
-        throws Exception
+    public void before() throws Exception
     {
         _server = new Server();
         _connector = new ServerConnector(_server);
@@ -61,8 +59,7 @@ public class ThreadLimitHandlerTest
     }
 
     @AfterEach
-    public void after()
-        throws Exception
+    public void after() throws Exception
     {
         _server.stop();
     }
@@ -147,7 +144,8 @@ public class ThreadLimitHandlerTest
         assertThat(last.get(), is("0.0.0.0"));
 
         last.set(null);
-        _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nX-Forwarded-For: 6.6.6.6,1.2.3.4\r\nForwarded: for=1.2.3.4\r\n\r\n");
+        _local.getResponse(
+            "GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nX-Forwarded-For: 6.6.6.6,1.2.3.4\r\nForwarded: for=1.2.3.4\r\n\r\n");
         assertThat(last.get(), is("1.2.3.4"));
 
         await().atMost(5, TimeUnit.SECONDS).until(handler::getRemoteCount, is(0));
@@ -192,7 +190,8 @@ public class ThreadLimitHandlerTest
         assertThat(last.get(), is("1.2.3.4"));
 
         last.set(null);
-        _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nForwarded: for=6.6.6.6; for=1.2.3.4\r\nX-Forwarded-For: 6.6.6.6\r\nForwarded: proto=https\r\n\r\n");
+        _local.getResponse(
+            "GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nForwarded: for=6.6.6.6; for=1.2.3.4\r\nX-Forwarded-For: 6.6.6.6\r\nForwarded: proto=https\r\n\r\n");
         assertThat(last.get(), is("1.2.3.4"));
 
         await().atMost(5, TimeUnit.SECONDS).until(handler::getRemoteCount, is(0));
@@ -277,6 +276,7 @@ public class ThreadLimitHandlerTest
                 Runnable onContent = new Runnable()
                 {
                     private final AtomicLong read = new AtomicLong();
+
                     @Override
                     public void run()
                     {
@@ -301,7 +301,8 @@ public class ThreadLimitHandlerTest
 
                                 if (chunk.isLast())
                                 {
-                                    Content.Sink.write(response, true, request.getHttpURI() + " read " + read.get(), callback);
+                                    Content.Sink.write(
+                                        response, true, request.getHttpURI() + " read " + read.get(), callback);
                                     return;
                                 }
                             }
@@ -331,7 +332,10 @@ public class ThreadLimitHandlerTest
         for (int i = 0; i < client.length; i++)
         {
             client[i] = new Socket("127.0.0.1", _connector.getLocalPort());
-            client[i].getOutputStream().write(("POST /" + i + " HTTP/1.0\r\nForwarded: for=1.2.3.4\r\nContent-Length: 2\r\n\r\n").getBytes());
+            client[i]
+                .getOutputStream()
+                .write(("POST /" + i + " HTTP/1.0\r\nForwarded: for=1.2.3.4\r\nContent-Length: 2\r\n\r\n")
+                    .getBytes());
             client[i].getOutputStream().flush();
         }
 

@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee9.jndi.factories;
 
+import jakarta.mail.Authenticator;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -24,10 +27,6 @@ import javax.naming.RefAddr;
 import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
-
-import jakarta.mail.Authenticator;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
 import org.eclipse.jetty.util.security.Password;
 
 /**
@@ -51,12 +50,12 @@ public class MailSessionReference extends Reference implements ObjectFactory
 
         public PasswordAuthenticator()
         {
-
         }
 
         public PasswordAuthenticator(String user, String password)
         {
-            passwordAuthentication = new PasswordAuthentication(user, (password.startsWith(Password.__OBFUSCATE) ? Password.deobfuscate(password) : password));
+            passwordAuthentication = new PasswordAuthentication(
+                user, (password.startsWith(Password.__OBFUSCATE) ? Password.deobfuscate(password) : password));
         }
 
         @Override
@@ -90,7 +89,6 @@ public class MailSessionReference extends Reference implements ObjectFactory
     {
         super("jakarta.mail.Session", MailSessionReference.class.getName(), null);
     }
-
 
     /**
      * Create a jakarta.mail.Session instance based on the information passed in the Reference
@@ -161,7 +159,8 @@ public class MailSessionReference extends Reference implements ObjectFactory
             Map.Entry e = (Map.Entry)entries.next();
             StringRefAddr sref = (StringRefAddr)get((String)e.getKey());
             if (sref != null)
-                throw new RuntimeException("property " + e.getKey() + " already set on Session reference, can't be changed");
+                throw new RuntimeException(
+                    "property " + e.getKey() + " already set on Session reference, can't be changed");
             add(new StringRefAddr((String)e.getKey(), (String)e.getValue()));
         }
     }

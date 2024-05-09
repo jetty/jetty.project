@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.client.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.EmptyServerHandler;
 import org.eclipse.jetty.client.HttpClient;
@@ -38,10 +41,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class InputStreamContentTest
 {
@@ -91,8 +90,7 @@ public class InputStreamContentTest
     {
         return List.of(
             (request, stream) -> request.body(new InputStreamRequestContent(stream)),
-            (request, stream) -> request.body(new InputStreamRequestContent(stream))
-        );
+            (request, stream) -> request.body(new InputStreamRequestContent(stream)));
     }
 
     @ParameterizedTest
@@ -128,8 +126,8 @@ public class InputStreamContentTest
             }
         };
 
-        Request request = client.newRequest("localhost", connector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS);
+        Request request =
+            client.newRequest("localhost", connector.getLocalPort()).timeout(5, TimeUnit.SECONDS);
         setContent.accept(request, stream);
         ContentResponse response = request.send();
 
@@ -161,8 +159,8 @@ public class InputStreamContentTest
             }
         };
 
-        Request request = client.newRequest("localhost", connector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS);
+        Request request =
+            client.newRequest("localhost", connector.getLocalPort()).timeout(5, TimeUnit.SECONDS);
         setContent.accept(request, stream);
 
         assertThrows(ExecutionException.class, request::send);
@@ -208,8 +206,8 @@ public class InputStreamContentTest
             }
         };
 
-        Request request = client.newRequest("localhost", connector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS);
+        Request request =
+            client.newRequest("localhost", connector.getLocalPort()).timeout(5, TimeUnit.SECONDS);
         setContent.accept(request, stream);
 
         assertThrows(ExecutionException.class, request::send);
@@ -230,7 +228,8 @@ public class InputStreamContentTest
         testInputStreamWithContent(setContent, new byte[64 * 1024 * 1024]);
     }
 
-    private void testInputStreamWithContent(BiConsumer<Request, InputStream> setContent, byte[] content) throws Exception
+    private void testInputStreamWithContent(BiConsumer<Request, InputStream> setContent, byte[] content)
+        throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
         start(new EmptyServerHandler()
@@ -254,8 +253,8 @@ public class InputStreamContentTest
             }
         };
 
-        Request request = client.newRequest("localhost", connector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS);
+        Request request =
+            client.newRequest("localhost", connector.getLocalPort()).timeout(5, TimeUnit.SECONDS);
         setContent.accept(request, stream);
         ContentResponse response = request.send();
 

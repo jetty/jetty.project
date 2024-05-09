@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.ee9.proxy;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.Request;
@@ -46,7 +45,8 @@ public class ProxyServlet extends AbstractProxyServlet
     private static final String CONTINUE_ACTION_ATTRIBUTE = ProxyServlet.class.getName() + ".continueAction";
 
     @Override
-    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void service(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         int requestId = getRequestId(request);
 
@@ -91,7 +91,12 @@ public class ProxyServlet extends AbstractProxyServlet
                     try
                     {
                         Request.Content content = proxyRequestContent(request, response, proxyRequest);
-                        Content.copy(content, delegate, Callback.from(delegate::close, x -> onClientRequestFailure(request, proxyRequest, response, x)));
+                        Content.copy(
+                            content,
+                            delegate,
+                            Callback.from(
+                                delegate::close,
+                                x -> onClientRequestFailure(request, proxyRequest, response, x)));
                     }
                     catch (Throwable failure)
                     {
@@ -117,7 +122,8 @@ public class ProxyServlet extends AbstractProxyServlet
      * @return a proxy-to-server request content
      * @throws IOException if the proxy-to-server request content cannot be created
      */
-    protected Request.Content proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
+    protected Request.Content proxyRequestContent(
+                                                  HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
     {
         return new ProxyInputStreamRequestContent(request, response, proxyRequest, request.getInputStream());
     }
@@ -128,7 +134,14 @@ public class ProxyServlet extends AbstractProxyServlet
         return new ProxyResponseListener(request, response);
     }
 
-    protected void onResponseContent(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, byte[] buffer, int offset, int length, Callback callback)
+    protected void onResponseContent(
+                                     HttpServletRequest request,
+                                     HttpServletResponse response,
+                                     Response proxyResponse,
+                                     byte[] buffer,
+                                     int offset,
+                                     int length,
+                                     Callback callback)
     {
         try
         {
@@ -239,7 +252,8 @@ public class ProxyServlet extends AbstractProxyServlet
         private final Request proxyRequest;
         private final HttpServletRequest request;
 
-        protected ProxyInputStreamRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, InputStream input)
+        protected ProxyInputStreamRequestContent(
+                                                 HttpServletRequest request, HttpServletResponse response, Request proxyRequest, InputStream input)
         {
             super(input);
             this.request = request;

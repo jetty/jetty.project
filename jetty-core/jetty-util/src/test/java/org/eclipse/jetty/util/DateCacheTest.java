@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
@@ -21,16 +25,11 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class DateCacheTest
 {
@@ -38,7 +37,7 @@ public class DateCacheTest
     @SuppressWarnings("ReferenceEquality")
     public void testDateCache() throws Exception
     {
-        //@WAS: Test t = new Test("org.eclipse.jetty.util.DateCache");
+        // @WAS: Test t = new Test("org.eclipse.jetty.util.DateCache");
         //                            012345678901234567890123456789
         DateCache dc = new DateCache("EEE, dd MMM yyyy HH:mm:ss zzz ZZZ", Locale.US, TimeZone.getTimeZone("GMT"));
 
@@ -101,7 +100,6 @@ public class DateCacheTest
             }
         };
 
-
         for (int i = 0; i < 10; i++)
         {
             assertThat(format(dateCache, "2012-12-21T10:15:30.55Z"), equalTo("Fri Dec 21 10:15:30 UTC 2012 | 550"));
@@ -125,13 +123,13 @@ public class DateCacheTest
             Arguments.of("SS", "000", "SSS", false),
             Arguments.of("SSS", "000", "SSS", false),
             Arguments.of("SSSS", "000", "SSS", false),
-            Arguments.of("SSSSSS", "000", "SSS", false)
-        );
+            Arguments.of("SSSSSS", "000", "SSS", false));
     }
 
     @ParameterizedTest
     @MethodSource("msFormatArgs")
-    public void testMsFormat(String format, String expected, String correctedFormatString, boolean msPrecision) throws Exception
+    public void testMsFormat(String format, String expected, String correctedFormatString, boolean msPrecision)
+        throws Exception
     {
         String timeString = "2012-12-21T10:15:31.123Z";
         DateCache dateCache = new DateCache(format, null, TimeZone.getDefault(), msPrecision);

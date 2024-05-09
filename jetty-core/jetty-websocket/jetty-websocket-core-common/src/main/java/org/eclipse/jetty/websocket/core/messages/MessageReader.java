@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.ByteBuffer;
@@ -21,13 +23,10 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Support class for reading a (single) WebSocket TEXT message via a Reader.

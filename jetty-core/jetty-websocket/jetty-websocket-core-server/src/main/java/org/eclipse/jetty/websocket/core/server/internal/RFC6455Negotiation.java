@@ -27,7 +27,8 @@ public class RFC6455Negotiation extends WebSocketNegotiation
     private boolean successful;
     private String key;
 
-    public RFC6455Negotiation(Request request, Response response, Callback callback, WebSocketComponents components) throws BadMessageException
+    public RFC6455Negotiation(Request request, Response response, Callback callback, WebSocketComponents components)
+        throws BadMessageException
     {
         super(request, response, callback, components);
     }
@@ -66,8 +67,7 @@ public class RFC6455Negotiation extends WebSocketNegotiation
             }
         }
 
-        successful = upgrade && connectionCSVs != null &&
-            connectionCSVs.getValues().stream().anyMatch(s -> s.equalsIgnoreCase("upgrade"));
+        successful = upgrade && connectionCSVs != null && connectionCSVs.getValues().stream().anyMatch(s -> s.equalsIgnoreCase("upgrade"));
     }
 
     @Override

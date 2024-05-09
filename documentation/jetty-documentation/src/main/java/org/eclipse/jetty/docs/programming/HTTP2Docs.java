@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
@@ -39,17 +38,18 @@ public class HTTP2Docs
         HTTP2Client http2Client = new HTTP2Client();
         http2Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener() {});
+        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener()
+        {
+        });
         Session session = sessionCF.get();
 
-        HttpFields requestHeaders = HttpFields.build()
-            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        HttpFields requestHeaders = HttpFields.build().put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
+        MetaData.Request request = new MetaData.Request(
+            "GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::dataUnwrap[]
-        record Chunk(ByteBuffer byteBuffer, Callback callback)
-        {
+        record Chunk(ByteBuffer byteBuffer, Callback callback) {
         }
 
         // A queue that consumers poll to consume content asynchronously.

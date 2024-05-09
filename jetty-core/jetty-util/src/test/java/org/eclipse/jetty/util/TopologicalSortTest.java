@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.util;
 
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 
 public class TopologicalSortTest
 {

@@ -13,15 +13,15 @@
 
 package org.eclipse.jetty.session;
 
-import org.eclipse.jetty.server.Server;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.eclipse.jetty.server.Server;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -31,7 +31,7 @@ public class DefaultSessionIdManagerTest
     private class TestSessionManager extends TestableSessionManager
     {
         private boolean _idInUse;
-        
+
         public void setIdInUse(boolean idInUse)
         {
             _idInUse = idInUse;
@@ -43,23 +43,23 @@ public class DefaultSessionIdManagerTest
             return _idInUse;
         }
     }
-    
+
     @Test
     public void testNewSessionId() throws Exception
     {
-        //Test that we will create a new session id if there
-        //is no request
+        // Test that we will create a new session id if there
+        // is no request
         Server server = new Server();
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
         server.addBean(sessionIdManager, true);
         server.start();
         String id = sessionIdManager.newSessionId(null, "1234", System.currentTimeMillis());
-        //check we got an id
+        // check we got an id
         assertNotNull(id);
-        //check that it cannot be the requested id
+        // check that it cannot be the requested id
         assertNotSame("1234", id);
     }
-    
+
     @Test
     public void testIsIdInUse() throws Exception
     {
@@ -67,15 +67,14 @@ public class DefaultSessionIdManagerTest
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
         server.addBean(sessionIdManager, true);
 
-        
-        //test something that is not in use
+        // test something that is not in use
         TestSessionManager tsh1 = new TestSessionManager();
         tsh1.setIdInUse(false);
         tsh1.setServer(server);
         server.addBean(tsh1);
         server.start();
         assertFalse(sessionIdManager.isIdInUse("1234"));
-        //test something that _is_ in use
+        // test something that _is_ in use
         server.stop();
         TestSessionManager tsh2 = new TestSessionManager();
         tsh2.setIdInUse(true);
@@ -84,12 +83,12 @@ public class DefaultSessionIdManagerTest
         server.start();
         assertTrue(sessionIdManager.isIdInUse("1234"));
     }
-    
+
     @Test
     public void testRequestedSessionIdNotReused() throws Exception
     {
-        //Test that we do not use the suggested requested id because
-        //it is not _already_ in use.
+        // Test that we do not use the suggested requested id because
+        // it is not _already_ in use.
         Server server = new Server();
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
         server.addBean(sessionIdManager, true);
@@ -103,8 +102,8 @@ public class DefaultSessionIdManagerTest
     @Test
     public void testRequestedSessionIdReused() throws Exception
     {
-        //Test that we do use the suggested requested id because
-        //it _is_ in use.
+        // Test that we do use the suggested requested id because
+        // it _is_ in use.
         Server server = new Server();
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
         TestSessionManager tsh = new TestSessionManager();
@@ -112,7 +111,7 @@ public class DefaultSessionIdManagerTest
         server.addBean(tsh);
         tsh.setServer(server);
         server.start();
-        
+
         String id = sessionIdManager.newSessionId(new TestableRequest(), "1234", System.currentTimeMillis());
         assertNotNull(id);
         assertEquals("1234", id);

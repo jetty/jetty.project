@@ -17,8 +17,7 @@ public abstract class Frame
 {
     public static boolean isLast(Frame frame)
     {
-        return frame instanceof HeadersFrame && ((HeadersFrame)frame).isLast() ||
-            frame instanceof DataFrame && ((DataFrame)frame).isLast();
+        return frame instanceof HeadersFrame && ((HeadersFrame)frame).isLast() || frame instanceof DataFrame && ((DataFrame)frame).isLast();
     }
 
     private final FrameType type;

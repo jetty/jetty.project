@@ -13,9 +13,8 @@
 
 module org.eclipse.jetty.ee10.security.jaspi
 {
-    requires  jakarta.servlet;
+    requires jakarta.servlet;
     requires org.slf4j;
-
     requires transitive jakarta.security.auth.message;
     requires transitive org.eclipse.jetty.ee10.servlet;
 

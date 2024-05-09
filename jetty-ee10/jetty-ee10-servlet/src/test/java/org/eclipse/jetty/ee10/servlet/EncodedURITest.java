@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.util.EnumSet;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -27,6 +27,8 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.EnumSet;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
@@ -41,9 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
-
 public class EncodedURITest
 {
     private Server _server;
@@ -57,8 +56,14 @@ public class EncodedURITest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
-        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
+        _connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendServerVersion(false);
+        _connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendDateHeader(false);
         _server.addConnector(_connector);
 
         _contextCollection = new ContextHandlerCollection();
@@ -99,7 +104,8 @@ public class EncodedURITest
     @Test
     public void testAsyncFilterTestServlet() throws Exception
     {
-        String response = _connector.getResponse("GET /context%20path/test%20servlet/path%20info?async=true HTTP/1.0\n\n");
+        String response =
+            _connector.getResponse("GET /context%20path/test%20servlet/path%20info?async=true HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));
         assertThat(response, Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
         assertThat(response, Matchers.containsString("contextPath=/context%20path"));
@@ -110,7 +116,8 @@ public class EncodedURITest
     @Test
     public void testAsyncFilterWrapTestServlet() throws Exception
     {
-        String response = _connector.getResponse("GET /context%20path/test%20servlet/path%20info?async=true&wrap=true HTTP/1.0\n\n");
+        String response = _connector.getResponse(
+            "GET /context%20path/test%20servlet/path%20info?async=true&wrap=true HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));
         assertThat(response, Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
         assertThat(response, Matchers.containsString("contextPath=/context%20path"));
@@ -133,7 +140,8 @@ public class EncodedURITest
     @Disabled
     public void testAsyncServletTestServletEncoded() throws Exception
     {
-        String response = _connector.getResponse("GET /context%20path/async%20servlet/path%20info?encode=true HTTP/1.0\n\n");
+        String response =
+            _connector.getResponse("GET /context%20path/async%20servlet/path%20info?encode=true HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));
         assertThat(response, Matchers.containsString("requestURI=/context%20path/test%20servlet/path%2520info"));
         assertThat(response, Matchers.containsString("contextPath=/context%20path"));
@@ -142,7 +150,8 @@ public class EncodedURITest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"%2F", "%3F"})
+    @ValueSource(strings =
+    {"%2F", "%3F"})
     public void testCanonicallyEncodedUris(String separator) throws Exception
     {
         _server.stop();
@@ -150,17 +159,29 @@ public class EncodedURITest
         context2.setContextPath("/context_path".replace("_", separator));
         _contextCollection.addHandler(context2);
         context2.addServlet(TestServlet.class, URIUtil.decodePath("/test_servlet/*".replace("_", separator)));
-        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        _connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setUriCompliance(UriCompliance.UNSAFE);
         _server.start();
 
-        String response = _connector.getResponse("GET /context_path/test_servlet/path_info HTTP/1.0\n\n".replace("_", separator));
+        String response =
+            _connector.getResponse("GET /context_path/test_servlet/path_info HTTP/1.0\n\n".replace("_", separator));
         assertThat(response, startsWith("HTTP/1.1 200 "));
-        assertThat(response, Matchers.containsString("requestURI=/context_path/test_servlet/path_info".replace("_", separator)));
+        assertThat(
+            response,
+            Matchers.containsString("requestURI=/context_path/test_servlet/path_info".replace("_", separator)));
         assertThat(response, Matchers.containsString("contextPath=/context_path".replace("_", separator)));
         if ("%2F".equals(separator))
         {
-            assertThat(response, Matchers.containsString("servletPath=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
-            assertThat(response, Matchers.containsString("pathInfo=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "servletPath=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
+            assertThat(
+                response,
+                Matchers.containsString(
+                    "pathInfo=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
         }
         else
         {
@@ -172,7 +193,8 @@ public class EncodedURITest
     public static class TestServlet extends HttpServlet
     {
         @Override
-        public void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        public void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.setContentType("text/plain");
             response.getWriter().println("requestURI=" + request.getRequestURI());
@@ -199,11 +221,10 @@ public class EncodedURITest
     public static class AsyncServlet extends HttpServlet
     {
         @Override
-        public void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        public void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
-            AsyncContext async = Boolean.parseBoolean(request.getParameter("wrap"))
-                ? request.startAsync(request, response)
-                : request.startAsync();
+            AsyncContext async = Boolean.parseBoolean(request.getParameter("wrap")) ? request.startAsync(request, response) : request.startAsync();
 
             if (Boolean.parseBoolean(request.getParameter("encode")))
                 async.dispatch("/test%20servlet" + URIUtil.encodePath(request.getPathInfo()));
@@ -221,14 +242,13 @@ public class EncodedURITest
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             if (Boolean.parseBoolean(request.getParameter("async")) && !Boolean.parseBoolean((String)request.getAttribute("async")))
             {
                 request.setAttribute("async", "true");
-                AsyncContext async = Boolean.parseBoolean(request.getParameter("wrap"))
-                    ? request.startAsync(request, response)
-                    : request.startAsync();
+                AsyncContext async = Boolean.parseBoolean(request.getParameter("wrap")) ? request.startAsync(request, response) : request.startAsync();
                 async.dispatch();
                 return;
             }

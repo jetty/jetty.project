@@ -13,17 +13,19 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -41,9 +43,6 @@ import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionManager;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  *
  *
@@ -51,9 +50,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class RequestScopedSessionSaveTest
 {
     public class RequestAwareSessionDataStore extends AbstractSessionDataStore
-    { 
+    {
         public Map<String, SessionData> _map = new ConcurrentHashMap<>();
-        
+
         @Override
         public boolean isPassivating()
         {
@@ -69,23 +68,24 @@ public class RequestScopedSessionSaveTest
         @Override
         public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
         {
-            //check that the request attribute has been set in the scope
+            // check that the request attribute has been set in the scope
             String reqValue = RequestAwareContextScopeListener.__requestAttribute.get();
             assertNotNull(reqValue);
-            _map.put(id,  data);
+            _map.put(id, data);
         }
 
         @Override
         public SessionData doLoad(String id) throws Exception
         {
-            //check that the request attribute has been set in the scope
+            // check that the request attribute has been set in the scope
             String reqValue = RequestAwareContextScopeListener.__requestAttribute.get();
             assertNotNull(reqValue);
-            
+
             SessionData sd = _map.get(id);
             if (sd == null)
                 return null;
-            SessionData nsd = new SessionData(id, "", "", System.currentTimeMillis(), System.currentTimeMillis(), System.currentTimeMillis(), 0);
+            SessionData nsd = new SessionData(
+                id, "", "", System.currentTimeMillis(), System.currentTimeMillis(), System.currentTimeMillis(), 0);
             nsd.copy(sd);
             return nsd;
         }
@@ -113,9 +113,9 @@ public class RequestScopedSessionSaveTest
         @Override
         public Set<String> doGetExpired(long before)
         {
-            Set<String> set =  new HashSet<>();
+            Set<String> set = new HashSet<>();
 
-            for (SessionData d:_map.values())
+            for (SessionData d : _map.values())
             {
                 if (d.getExpiry() > 0 && d.getExpiry() <= before)
                     set.add(d.getId());
@@ -126,10 +126,10 @@ public class RequestScopedSessionSaveTest
         @Override
         public void doCleanOrphans(long time)
         {
-            //noop
+            // noop
         }
     }
-    
+
     /**
      * Place an attribute from a request into a threadlocal on scope entry, and then remove it
      * on scope exit.
@@ -139,11 +139,11 @@ public class RequestScopedSessionSaveTest
     {
         public static final ThreadLocal<String> __requestAttribute = new ThreadLocal<>();
         public static final String ATTRIBUTE = "cheese";
-        
+
         @Override
         public void enterScope(org.eclipse.jetty.server.Context context, Request request)
         {
-            //set a request attribute
+            // set a request attribute
             if (request != null)
             {
                 request.setAttribute(ATTRIBUTE, (System.currentTimeMillis() % 2 == 0 ? "Parmigiano" : "Reblochon"));
@@ -170,14 +170,13 @@ public class RequestScopedSessionSaveTest
         }
 
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            //ensure session
+            // ensure session
             HttpSession session = req.getSession(true);
             assertNotNull(session);
 
-            //also set same as session attribute
+            // also set same as session attribute
             session.setAttribute(_attributeName, req.getAttribute(_attributeName));
             resp.getWriter().println(_attributeName + ":" + req.getAttribute(_attributeName));
         }
@@ -202,7 +201,8 @@ public class RequestScopedSessionSaveTest
         };
 
         storeFactory.setSavePeriodSec(10);
-        SessionTestSupport server = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server =
+            new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet(RequestAwareContextScopeListener.ATTRIBUTE);
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server.addContext(contextPath);
@@ -219,7 +219,7 @@ public class RequestScopedSessionSaveTest
                 client.start();
                 String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
-                //make a request to set up a session on the server
+                // make a request to set up a session on the server
                 ContentResponse response = client.GET(url);
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             }

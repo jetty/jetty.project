@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Props;
@@ -223,6 +222,8 @@ public class CommandLineConfigSource implements ConfigSource
     @Override
     public String toString()
     {
-        return String.format("%s[%s,args.length=%d]", this.getClass().getSimpleName(), getId(), getArgs().size());
+        return String.format(
+            "%s[%s,args.length=%d]",
+            this.getClass().getSimpleName(), getId(), getArgs().size());
     }
 }

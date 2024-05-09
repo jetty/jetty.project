@@ -13,12 +13,8 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
-import java.net.URI;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.Endpoint;
@@ -27,6 +23,12 @@ import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
+import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
@@ -36,9 +38,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
 
 public class MemoryUsageTest
 {
@@ -75,7 +74,8 @@ public class MemoryUsageTest
         ServletContextHandler contextHandler = new ServletContextHandler(server, "/", true, false);
         JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
         {
-            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEndpoint.class, "/").build();
+            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEndpoint.class, "/")
+                .build();
             container.addEndpoint(config);
         });
 
@@ -108,14 +108,16 @@ public class MemoryUsageTest
         final CountDownLatch latch = new CountDownLatch(sessionCount);
         for (int i = 0; i < sessionCount; ++i)
         {
-            sessions[i] = client.connectToServer(new EndpointAdapter()
-            {
-                @Override
-                public void onMessage(String message)
+            sessions[i] = client.connectToServer(
+                new EndpointAdapter()
                 {
-                    latch.countDown();
-                }
-            }, uri);
+                    @Override
+                    public void onMessage(String message)
+                    {
+                        latch.countDown();
+                    }
+                },
+                uri);
         }
         for (int i = 0; i < sessionCount; ++i)
         {

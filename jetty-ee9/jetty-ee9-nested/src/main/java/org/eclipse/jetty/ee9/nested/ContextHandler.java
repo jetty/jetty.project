@@ -13,28 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.EventListener;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Supplier;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterRegistration;
@@ -60,6 +38,27 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.EventListener;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpMethod;
@@ -143,22 +142,22 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     public static final Environment ENVIRONMENT = Environment.ensure("ee9");
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
-    public static final Class<?>[] SERVLET_LISTENER_TYPES =
-            {
-                    ServletContextListener.class,
-                    ServletContextAttributeListener.class,
-                    ServletRequestListener.class,
-                    ServletRequestAttributeListener.class,
-                    HttpSessionIdListener.class,
-                    HttpSessionListener.class,
-                    HttpSessionAttributeListener.class
-            };
+    public static final Class<?>[] SERVLET_LISTENER_TYPES = {
+        ServletContextListener.class,
+        ServletContextAttributeListener.class,
+        ServletRequestListener.class,
+        ServletRequestAttributeListener.class,
+        HttpSessionIdListener.class,
+        HttpSessionListener.class,
+        HttpSessionAttributeListener.class
+    };
 
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
 
     public static final int EXTENDED_LISTENER_TYPE_INDEX = 0;
 
-    private static final String UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER = "Unimplemented {} - use org.eclipse.jetty.servlet.ServletContextHandler";
+    private static final String UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER =
+        "Unimplemented {} - use org.eclipse.jetty.servlet.ServletContextHandler";
 
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
 
@@ -230,9 +229,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _destroyServletContextListeners = new ArrayList<>();
-    private final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
+    private final List<ServletContextAttributeListener> _servletContextAttributeListeners =
+        new CopyOnWriteArrayList<>();
     private final List<ServletRequestListener> _servletRequestListeners = new CopyOnWriteArrayList<>();
-    private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
+    private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners =
+        new CopyOnWriteArrayList<>();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final Set<EventListener> _durableListeners = new HashSet<>();
 
@@ -263,9 +264,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         this(null, parent, contextPath);
     }
 
-    protected ContextHandler(APIContext context,
-                             org.eclipse.jetty.server.Handler.Container parent,
-                             String contextPath)
+    protected ContextHandler(
+                             APIContext context, org.eclipse.jetty.server.Handler.Container parent, String contextPath)
     {
         _coreContextHandler = new CoreContextHandler();
         installBean(_coreContextHandler, false);
@@ -299,7 +299,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent, new DumpableCollection("initparams " + this, getInitParams().entrySet()));
+        dumpObjects(
+            out,
+            indent,
+            new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
     public APIContext getServletContext()
@@ -853,7 +856,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             {
                 try
                 {
-                    //Call context listeners
+                    // Call context listeners
                     Throwable multiException = null;
                     ServletContextEvent event = new ServletContextEvent(_apiContext);
                     Collections.reverse(_destroyServletContextListeners);
@@ -908,10 +911,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     }
 
     @Override
-    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("scope {}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
+            LOG.debug(
+                "scope {}|{}|{} @ {}",
+                baseRequest.getContextPath(),
+                baseRequest.getServletPath(),
+                baseRequest.getPathInfo(),
+                this);
 
         APIContext oldContext = baseRequest.getContext();
         String oldPathInContext = baseRequest.getPathInContext();
@@ -946,7 +955,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
         try
         {
-            baseRequest.setContext(_apiContext,
+            baseRequest.setContext(
+                _apiContext,
                 (DispatcherType.INCLUDE.equals(dispatch) || !target.startsWith("/")) ? oldPathInContext : pathInContext);
 
             ScopedContext context = getCoreContextHandler().getContext();
@@ -999,7 +1009,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         if (!_servletRequestListeners.isEmpty())
         {
             final ServletRequestEvent sre = new ServletRequestEvent(_apiContext, request);
-            for (int i = _servletRequestListeners.size(); i-- > 0; )
+            for (int i = _servletRequestListeners.size(); i-- > 0;)
             {
                 _servletRequestListeners.get(i).requestDestroyed(sre);
             }
@@ -1007,7 +1017,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
         if (!_servletRequestAttributeListeners.isEmpty())
         {
-            for (int i = _servletRequestAttributeListeners.size(); i-- > 0; )
+            for (int i = _servletRequestAttributeListeners.size(); i-- > 0;)
             {
                 baseRequest.removeEventListener(_servletRequestAttributeListeners.get(i));
             }
@@ -1015,7 +1025,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         final DispatcherType dispatch = baseRequest.getDispatcherType();
         final boolean new_context = dispatch == DispatcherType.REQUEST;
@@ -1069,7 +1080,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     {
         if (!_contextListeners.isEmpty())
         {
-            for (int i = _contextListeners.size(); i-- > 0; )
+            for (int i = _contextListeners.size(); i-- > 0;)
             {
                 try
                 {
@@ -1235,7 +1246,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
 
         _coreContextHandler.setContextPath(contextPath);
-
     }
 
     /**
@@ -1434,7 +1444,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         b.append('{');
         if (getDisplayName() != null)
             b.append(getDisplayName()).append(',');
-        b.append(getContextPath()).append(',').append(getBaseResource()).append(',').append(_coreContextHandler.isAvailable());
+        b.append(getContextPath())
+            .append(',')
+            .append(getBaseResource())
+            .append(',')
+            .append(_coreContextHandler.isAvailable());
 
         if (vhosts != null && vhosts.length > 0)
             b.append(',').append(vhosts[0]);
@@ -1605,7 +1619,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
             HashSet<String> set = new HashSet<>();
 
-            for (Resource item: resource.list())
+            for (Resource item : resource.list())
             {
                 String entry = path + item.getFileName();
                 if (item.isDirectory())
@@ -1673,7 +1687,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         final org.eclipse.jetty.ee9.nested.Response response = channel.getResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} {} ?{} on {}", request.getDispatcherType(), request.getMethod(), target, request.getQueryString(), channel);
+            LOG.debug(
+                "{} {} {} ?{} on {}",
+                request.getDispatcherType(),
+                request.getMethod(),
+                target,
+                request.getQueryString(),
+                channel);
 
         if (HttpMethod.OPTIONS.is(request.getMethod()) || "*".equals(target))
         {
@@ -1693,7 +1713,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             handle(target, request, request, response);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("handled={} async={} committed={} on {}", request.isHandled(), request.isAsyncStarted(), response.isCommitted(), channel);
+            LOG.debug(
+                "handled={} async={} committed={} on {}",
+                request.isHandled(),
+                request.isAsyncStarted(),
+                response.isCommitted(),
+                channel);
     }
 
     /* Handle Options request to server
@@ -1738,12 +1763,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 ServletContext servletContext = event.getServletContext();
                 if (servletContext != null)
                 {
-                    String encodedContextPath = servletContext instanceof APIContext
-                            ? ((APIContext)servletContext).getContextHandler().getContextPathEncoded()
-                            : URIUtil.encodePath(servletContext.getContextPath());
+                    String encodedContextPath = servletContext instanceof APIContext ? ((APIContext)servletContext).getContextHandler().getContextPathEncoded() : URIUtil.encodePath(servletContext.getContextPath());
                     if (!StringUtil.isEmpty(encodedContextPath))
                     {
-                        encodedPathQuery = URIUtil.normalizePath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
+                        encodedPathQuery =
+                            URIUtil.normalizePath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
                         if (encodedPathQuery == null)
                             throw new BadMessageException(500, "Bad dispatch path");
                     }
@@ -1773,7 +1797,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
     }
 
-    private void handleAsync(HttpChannel channel, AsyncContextEvent event, Request baseRequest) throws IOException, ServletException
+    private void handleAsync(HttpChannel channel, AsyncContextEvent event, Request baseRequest)
+        throws IOException, ServletException
     {
         final String target = baseRequest.getPathInfo();
         final HttpServletRequest request = Request.unwrap(event.getSuppliedRequest());
@@ -1783,7 +1808,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             LOG.debug("{} {} {} on {}", request.getDispatcherType(), request.getMethod(), target, channel);
         handle(target, baseRequest, request, response);
         if (LOG.isDebugEnabled())
-            LOG.debug("handledAsync={} async={} committed={} on {}", channel.getRequest().isHandled(), request.isAsyncStarted(), response.isCommitted(), channel);
+            LOG.debug(
+                "handledAsync={} async={} committed={} on {}",
+                channel.getRequest().isHandled(),
+                request.isAsyncStarted(),
+                response.isCommitted(),
+                channel);
     }
 
     /**
@@ -1859,7 +1889,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public ServletContext getContext(String path)
         {
-            org.eclipse.jetty.server.handler.ContextHandler context = getContextHandler().getCoreContextHandler().getCrossContextHandler(path);
+            org.eclipse.jetty.server.handler.ContextHandler context =
+                getContextHandler().getCoreContextHandler().getCrossContextHandler(path);
 
             if (context == null)
                 return null;
@@ -2054,7 +2085,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
             if (!_servletContextAttributeListeners.isEmpty())
             {
-                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_apiContext, name, oldValue == null ? value : oldValue);
+                ServletContextAttributeEvent event =
+                    new ServletContextAttributeEvent(_apiContext, name, oldValue == null ? value : oldValue);
 
                 for (ServletContextAttributeListener listener : _servletContextAttributeListeners)
                 {
@@ -2122,7 +2154,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             {
                 ClassLoader classLoader = _coreContext.getClassLoader();
                 @SuppressWarnings({"unchecked", "rawtypes"})
-                Class<? extends EventListener> clazz = classLoader == null ? Loader.loadClass(className) : (Class)classLoader.loadClass(className);
+                Class<? extends EventListener> clazz =
+                    classLoader == null ? Loader.loadClass(className) : (Class)classLoader.loadClass(className);
                 addListener(clazz);
             }
             catch (ClassNotFoundException e)
@@ -2310,7 +2343,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
         {
-
         }
 
         @Override
@@ -2340,7 +2372,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public void setSessionTimeout(int sessionTimeout)
         {
-
         }
 
         @Override
@@ -2407,7 +2438,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
         public void setJspConfigDescriptor(JspConfigDescriptor d)
         {
-
         }
 
         @Override
@@ -2465,9 +2495,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         private ManagedSession _managedSession;
         AbstractSessionManager.RequestedSession _requestedSession;
 
-        protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
-                                     ScopedContext context,
-                                     HttpChannel httpChannel)
+        protected CoreContextRequest(
+                                     org.eclipse.jetty.server.Request wrapped, ScopedContext context, HttpChannel httpChannel)
         {
             super(context, wrapped);
             _httpChannel = httpChannel;
@@ -2547,7 +2576,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             if (_sessionManager == null)
                 throw new IllegalStateException("No SessionManager");
 
-            _sessionManager.newSession(this, _requestedSession == null ? null : _requestedSession.sessionId(), this::setManagedSession);
+            _sessionManager.newSession(
+                this, _requestedSession == null ? null : _requestedSession.sessionId(), this::setManagedSession);
 
             if (_managedSession == null)
                 throw new IllegalStateException("Create session failed");
@@ -2560,7 +2590,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
     }
 
-    public class CoreContextHandler extends org.eclipse.jetty.server.handler.ContextHandler implements org.eclipse.jetty.server.Request.Handler
+    public class CoreContextHandler extends org.eclipse.jetty.server.handler.ContextHandler
+        implements org.eclipse.jetty.server.Request.Handler
     {
         CoreContextHandler()
         {
@@ -2576,7 +2607,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
             // update context mappings
             if (getServer() != null && getServer().isRunning())
-                getServer().getDescendants(ContextHandlerCollection.class).forEach(ContextHandlerCollection::mapContexts);
+                getServer()
+                    .getDescendants(ContextHandlerCollection.class)
+                    .forEach(ContextHandlerCollection::mapContexts);
         }
 
         @Override
@@ -2655,7 +2688,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         protected ContextRequest wrapRequest(org.eclipse.jetty.server.Request request, Response response)
         {
-            HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().getAttribute(HttpChannel.class.getName());
+            HttpChannel httpChannel =
+                (HttpChannel)request.getComponents().getCache().getAttribute(HttpChannel.class.getName());
             if (httpChannel == null)
             {
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
@@ -2681,9 +2715,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         {
             __context.set(_apiContext);
             super.notifyEnterScope(coreRequest);
-            Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
-                    ? coreContextRequest.getHttpChannel().getRequest()
-                    : null;
+            Request request = (coreRequest instanceof CoreContextRequest coreContextRequest) ? coreContextRequest.getHttpChannel().getRequest() : null;
             ContextHandler.this.enterScope(request, "Entered core context");
         }
 
@@ -2692,9 +2724,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         {
             try
             {
-                Request request = (coreRequest instanceof CoreContextRequest coreContextRequest)
-                        ? coreContextRequest.getHttpChannel().getRequest()
-                        : null;
+                Request request = (coreRequest instanceof CoreContextRequest coreContextRequest) ? coreContextRequest.getHttpChannel().getRequest() : null;
                 ContextHandler.this.exitScope(request);
                 super.notifyExitScope(coreRequest);
             }
@@ -2722,7 +2752,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             @Override
             public boolean handle(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback)
             {
-                HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
+                HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(
+                    coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
                 Objects.requireNonNull(httpChannel).onProcess(response, callback);
                 httpChannel.handle();
                 return true;

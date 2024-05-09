@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -311,13 +310,18 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             LOG.debug("Idle timeout {}ms expired on {}", getIdleTimeout(), this);
 
         // Notify the application.
-        notifyIdleTimeout(this, timeout, Promise.from(timedOut ->
-        {
-            if (timedOut)
-                reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-            else
-                notIdle();
-        }, x -> reset(new ResetFrame(getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP)));
+        notifyIdleTimeout(
+            this,
+            timeout,
+            Promise.from(
+                timedOut ->
+                {
+                    if (timedOut)
+                        reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                    else
+                        notIdle();
+                },
+                x -> reset(new ResetFrame(getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP)));
     }
 
     private ConcurrentMap<String, Object> attributes()
@@ -959,7 +963,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public String toString()
     {
-        return String.format("%s#%d@%x{sendWindow=%s,recvWindow=%s,queue=%d,demand=%b,reset=%b/%b,%s,age=%d,attachment=%s}",
+        return String.format(
+            "%s#%d@%x{sendWindow=%s,recvWindow=%s,queue=%d,demand=%b,reset=%b/%b,%s,age=%d,attachment=%s}",
             getClass().getSimpleName(),
             getId(),
             session.hashCode(),

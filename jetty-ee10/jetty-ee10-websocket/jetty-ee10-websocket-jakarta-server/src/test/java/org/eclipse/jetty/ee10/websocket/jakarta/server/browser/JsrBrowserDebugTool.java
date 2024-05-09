@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Objects;
-
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -87,14 +86,15 @@ public class JsrBrowserDebugTool
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        context.setBaseResourceAsPath(ResourceFactory.of(server).newResource(urlBase).getPath());
+        context.setBaseResourceAsPath(
+            ResourceFactory.of(server).newResource(urlBase).getPath());
 
         ServletHolder holder = context.addServlet(DefaultServlet.class, "/");
         holder.setInitParameter("dirAllowed", "true");
         server.setHandler(context);
 
-        JakartaWebSocketServletContainerInitializer.configure(context,
-            (servletContext, container) -> container.addEndpoint(JsrBrowserSocket.class));
+        JakartaWebSocketServletContainerInitializer.configure(
+            context, (servletContext, container) -> container.addEndpoint(JsrBrowserSocket.class));
 
         LOG.info("{} setup on port {}", this.getClass().getName(), port);
     }

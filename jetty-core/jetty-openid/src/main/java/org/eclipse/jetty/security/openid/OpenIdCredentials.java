@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.Authentication;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.ContentResponse;
@@ -192,7 +191,8 @@ public class OpenIdCredentials implements Serializable
         {
             case "client_secret_basic":
                 URI uri = URI.create(configuration.getTokenEndpoint());
-                Authentication.Result authentication = new BasicAuthentication.BasicResult(uri, configuration.getClientId(), configuration.getClientSecret());
+                Authentication.Result authentication = new BasicAuthentication.BasicResult(
+                    uri, configuration.getClientId(), configuration.getClientSecret());
                 authentication.apply(request);
                 break;
             case "client_secret_post":

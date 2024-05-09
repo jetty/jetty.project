@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,8 @@ public class FileSessionWithMemcacheDistributionTests extends AbstractSessionDis
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSessionWithMemcacheDistributionTests.class);
-    private static final Logger MEMCACHED_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.memcached");
+    private static final Logger MEMCACHED_LOG =
+        LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.memcached");
 
     private GenericContainer memcached;
 
@@ -42,22 +42,21 @@ public class FileSessionWithMemcacheDistributionTests extends AbstractSessionDis
     @BeforeEach
     public void prepareJettyHomeTester() throws Exception
     {
-        memcached =
-                new GenericContainer("memcached:" + System.getProperty("memcached.docker.version", "1.6.6"))
-                        .withExposedPorts(11211)
-                        .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
+        memcached = new GenericContainer("memcached:" + System.getProperty("memcached.docker.version", "1.6.6"))
+            .withExposedPorts(11211)
+            .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
         memcached.start();
         this.host = memcached.getContainerIpAddress();
         this.port = memcached.getMappedPort(11211);
         super.prepareJettyHomeTester();
     }
-    
+
     @Override
     public void configureExternalSessionStorage(Path jettyBase) throws Exception
     {
         // no op
     }
-    
+
     @Override
     public void startExternalSessionStorage() throws Exception
     {
@@ -93,5 +92,4 @@ public class FileSessionWithMemcacheDistributionTests extends AbstractSessionDis
     {
         return Collections.singletonList("session-data-cache=xmemcached");
     }
-
 }

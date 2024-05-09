@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
@@ -36,7 +35,8 @@ public class DelayedServerTest extends HttpServerTestBase
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                DelayedHttpConnection connection = new DelayedHttpConnection(getHttpConfiguration(), connector, endPoint);
+                DelayedHttpConnection connection =
+                    new DelayedHttpConnection(getHttpConfiguration(), connector, endPoint);
                 connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
                 connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
                 return configure(connection, connector, endPoint);
@@ -57,7 +57,12 @@ public class DelayedServerTest extends HttpServerTestBase
             return new HttpStreamOverHTTP1(method, uri, version)
             {
                 @Override
-                public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+                public void send(
+                                 MetaData.Request request,
+                                 MetaData.Response response,
+                                 boolean last,
+                                 ByteBuffer content,
+                                 Callback callback)
                 {
                     DelayedCallback delay = new DelayedCallback(callback);
                     super.send(request, response, last, content, delay);
@@ -91,7 +96,8 @@ public class DelayedServerTest extends HttpServerTestBase
                 {
                     super.succeeded();
                 }
-            }).start();
+            })
+                .start();
         }
 
         @Override
@@ -111,7 +117,8 @@ public class DelayedServerTest extends HttpServerTestBase
                 {
                     super.failed(x);
                 }
-            }).start();
+            })
+                .start();
         }
 
         @Override

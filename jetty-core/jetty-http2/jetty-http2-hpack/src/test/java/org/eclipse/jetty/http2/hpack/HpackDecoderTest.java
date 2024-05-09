@@ -13,9 +13,18 @@
 
 package org.eclipse.jetty.http2.hpack;
 
+import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.nio.ByteBuffer;
 import java.util.Iterator;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -29,32 +38,22 @@ import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class HpackDecoderTest
 {
     /*
-      0   1   2   3   4   5   6   7
-     +---+---+---+---+---+---+---+---+
-     | 0 | 0 | 0 | 0 |       0       |
-     +---+---+-----------------------+
-     | H |     Name Length (7+)      |
-     +---+---------------------------+
-     |  Name String (Length octets)  |
-     +---+---------------------------+
-     | H |     Value Length (7+)     |
-     +---+---------------------------+
-     | Value String (Length octets)  |
-     +-------------------------------+
-     */
+     0   1   2   3   4   5   6   7
+    +---+---+---+---+---+---+---+---+
+    | 0 | 0 | 0 | 0 |       0       |
+    +---+---+-----------------------+
+    | H |     Name Length (7+)      |
+    +---+---------------------------+
+    |  Name String (Length octets)  |
+    +---+---------------------------+
+    | H |     Value Length (7+)     |
+    +---+---------------------------+
+    | Value String (Length octets)  |
+    +-------------------------------+
+    */
 
     @Test
     public void testDecodeD3() throws Exception
@@ -143,7 +142,8 @@ public class HpackDecoderTest
         String value = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==";
 
         HpackDecoder decoder = new HpackDecoder(8192, NanoTime::now);
-        String encoded = "8682418cF1E3C2E5F23a6bA0Ab90F4Ff841f0822426173696320515778685a475270626a70766347567549484e6c633246745a513d3d";
+        String encoded =
+            "8682418cF1E3C2E5F23a6bA0Ab90F4Ff841f0822426173696320515778685a475270626a70766347567549484e6c633246745a513d3d";
         byte[] bytes = StringUtil.fromHexString(encoded);
         byte[] array = new byte[bytes.length + 1];
         System.arraycopy(bytes, 0, array, 1, bytes.length);
@@ -185,7 +185,8 @@ public class HpackDecoderTest
     public void testNghttpx() throws Exception
     {
         // Response encoded by nghttpx
-        String encoded = "886196C361Be940b6a65B6850400B8A00571972e080a62D1Bf5f87497cA589D34d1f9a0f0d0234327690Aa69D29aFcA954D3A5358980Ae112e0f7c880aE152A9A74a6bF3";
+        String encoded =
+            "886196C361Be940b6a65B6850400B8A00571972e080a62D1Bf5f87497cA589D34d1f9a0f0d0234327690Aa69D29aFcA954D3A5358980Ae112e0f7c880aE152A9A74a6bF3";
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         HpackDecoder decoder = new HpackDecoder(8192, NanoTime::now);
@@ -243,7 +244,8 @@ public class HpackDecoderTest
     @Test
     public void testTooBigToIndex() throws Exception
     {
-        String encoded = "3f610f17FfEc02Df3990A190A0D4Ee5b3d2940Ec98Aa4a62D127D29e273a0aA20dEcAa190a503b262d8a2671D4A2672a927aA874988a2471D05510750c951139EdA2452a3a548cAa1aA90bE4B228342864A9E0D450A5474a92992a1aA513395448E3A0Aa17B96cFe3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f14E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F353F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F54f";
+        String encoded =
+            "3f610f17FfEc02Df3990A190A0D4Ee5b3d2940Ec98Aa4a62D127D29e273a0aA20dEcAa190a503b262d8a2671D4A2672a927aA874988a2471D05510750c951139EdA2452a3a548cAa1aA90bE4B228342864A9E0D450A5474a92992a1aA513395448E3A0Aa17B96cFe3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f14E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F3E7Cf9f3e7cF9F353F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F7F54f";
         ByteBuffer buffer = ByteBuffer.wrap(StringUtil.fromHexString(encoded));
 
         HpackDecoder decoder = new HpackDecoder(8192, NanoTime::now);
@@ -309,7 +311,8 @@ public class HpackDecoderTest
 
         // 3: Sends a HEADERS frame that contains a pseudo-header field as trailers
 
-        // 4: Sends a HEADERS frame that contains a pseudo-header field that appears in a header block after a regular header field
+        // 4: Sends a HEADERS frame that contains a pseudo-header field that appears in a header block after a regular
+        // header field
         mdb = new MetaDataBuilder(4096);
         mdb.emit(new HttpField(HttpHeader.C_SCHEME, "http"));
         mdb.emit(new HttpField(HttpHeader.C_METHOD, "GET"));

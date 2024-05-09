@@ -13,12 +13,6 @@
 
 package org.eclipse.jetty.ee9.security.jaspi.modules;
 
-import java.io.IOException;
-import java.util.Map;
-import javax.security.auth.Subject;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.UnsupportedCallbackException;
-
 import jakarta.security.auth.message.AuthException;
 import jakarta.security.auth.message.AuthStatus;
 import jakarta.security.auth.message.MessageInfo;
@@ -26,13 +20,18 @@ import jakarta.security.auth.message.MessagePolicy;
 import jakarta.security.auth.message.module.ServerAuthModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Map;
+import javax.security.auth.Subject;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.UnsupportedCallbackException;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 
- * A {@link ServerAuthModule} implementation of HTTP Basic Authentication.  
+/**
+ * A {@link ServerAuthModule} implementation of HTTP Basic Authentication.
  */
 public class BasicAuthenticationAuthModule extends BaseAuthModule
 {
@@ -53,14 +52,17 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
     }
 
     @Override
-    public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy, CallbackHandler callbackHandler, Map options) throws AuthException
+    public void initialize(
+                           MessagePolicy requestPolicy, MessagePolicy responsePolicy, CallbackHandler callbackHandler, Map options)
+        throws AuthException
     {
         super.initialize(requestPolicy, responsePolicy, callbackHandler, options);
         realmName = (String)options.get(REALM_KEY);
     }
 
     @Override
-    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
+    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject)
+        throws AuthException
     {
         HttpServletRequest request = (HttpServletRequest)messageInfo.getRequestMessage();
         HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();

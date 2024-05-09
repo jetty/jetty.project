@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.ee10.demos;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.EnumSet;
+import static jakarta.servlet.DispatcherType.ASYNC;
+import static jakarta.servlet.DispatcherType.REQUEST;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -29,6 +27,10 @@ import jakarta.servlet.ServletRequestEvent;
 import jakarta.servlet.ServletRequestListener;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.EnumSet;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ListenerHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -36,9 +38,6 @@ import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
-
-import static jakarta.servlet.DispatcherType.ASYNC;
-import static jakarta.servlet.DispatcherType.REQUEST;
 
 public class OneServletContext
 {
@@ -93,7 +92,8 @@ public class OneServletContext
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             if (response instanceof HttpServletResponse)
             {
@@ -106,7 +106,6 @@ public class OneServletContext
         @Override
         public void destroy()
         {
-
         }
     }
 

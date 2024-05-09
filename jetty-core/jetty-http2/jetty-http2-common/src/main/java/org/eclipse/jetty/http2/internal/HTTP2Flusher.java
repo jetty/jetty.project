@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
@@ -224,7 +223,8 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                         if (!processedEntries.contains(entry))
                         {
                             processedEntries.add(entry);
-                            invocationType = Invocable.combine(invocationType, Invocable.getInvocationType(entry.getCallback()));
+                            invocationType =
+                                Invocable.combine(invocationType, Invocable.getInvocationType(entry.getCallback()));
                         }
 
                         if (entry.getDataBytesRemaining() == 0)
@@ -281,7 +281,8 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Writing {} buffers ({} bytes) - entries processed/pending {}/{}: {}/{}",
+            LOG.debug(
+                "Writing {} buffers ({} bytes) - entries processed/pending {}/{}: {}/{}",
                 byteBuffers.size(),
                 accumulator.getTotalLength(),
                 processedEntries.size(),
@@ -306,7 +307,8 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public void succeeded()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Written {} buffers - entries processed/pending {}/{}: {}/{}",
+            LOG.debug(
+                "Written {} buffers - entries processed/pending {}/{}: {}/{}",
                 accumulator.getByteBuffers().size(),
                 processedEntries.size(),
                 pendingEntries.size(),
@@ -357,11 +359,14 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             closed = terminated;
             terminated = x;
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("%s, entries processed/pending/queued=%d/%d/%d",
-                    closed != null ? "Closing" : "Failing",
-                    processedEntries.size(),
-                    pendingEntries.size(),
-                    entries.size()), x);
+                LOG.debug(
+                    String.format(
+                        "%s, entries processed/pending/queued=%d/%d/%d",
+                        closed != null ? "Closing" : "Failing",
+                        processedEntries.size(),
+                        pendingEntries.size(),
+                        entries.size()),
+                    x);
             allEntries = new HashSet<>(entries);
             entries.clear();
         }
@@ -412,7 +417,8 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s[window_queue=%d,frame_queue=%d,processed/pending=%d/%d]",
+        return String.format(
+            "%s[window_queue=%d,frame_queue=%d,processed/pending=%d/%d]",
             super.toString(),
             getWindowQueueSize(),
             getFrameQueueSize(),

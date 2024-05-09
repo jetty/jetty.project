@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ScopedHandlerTest
 {
@@ -82,7 +81,8 @@ public class ScopedHandlerTest
     @Test
     public void testDouble() throws Exception
     {
-        HttpChannel httpChannel = new HttpChannel(new ContextHandler(), new MockConnectionMetaData(new MockConnector()));
+        HttpChannel httpChannel =
+            new HttpChannel(new ContextHandler(), new MockConnectionMetaData(new MockConnector()));
         Request request = new Request(httpChannel, null);
         Response response = new Response(httpChannel, null);
 
@@ -107,7 +107,8 @@ public class ScopedHandlerTest
     @Test
     public void testTriple() throws Exception
     {
-        HttpChannel httpChannel = new HttpChannel(new ContextHandler(), new MockConnectionMetaData(new MockConnector()));
+        HttpChannel httpChannel =
+            new HttpChannel(new ContextHandler(), new MockConnectionMetaData(new MockConnector()));
         Request request = new Request(httpChannel, null);
         Response response = new Response(httpChannel, null);
 
@@ -145,7 +146,9 @@ public class ScopedHandlerTest
         }
 
         @Override
-        public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doScope(
+                            String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             try
             {
@@ -159,7 +162,9 @@ public class ScopedHandlerTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void doHandle(
+                             String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             try
             {
@@ -183,7 +188,8 @@ public class ScopedHandlerTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             try
             {

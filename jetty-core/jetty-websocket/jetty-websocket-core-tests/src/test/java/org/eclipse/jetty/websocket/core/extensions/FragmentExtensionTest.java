@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -21,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -39,9 +41,6 @@ import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.internal.FragmentExtension;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class FragmentExtensionTest extends AbstractExtensionTest
 {
@@ -76,14 +75,21 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         // Expected Frames
         List<Frame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("No amount of experim").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("entation can ever pr").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("ove me right;").setFin(true));
+        expectedFrames.add(
+            new Frame(OpCode.TEXT).setPayload("No amount of experim").setFin(false));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION)
+            .setPayload("entation can ever pr")
+            .setFin(false));
+        expectedFrames.add(
+            new Frame(OpCode.CONTINUATION).setPayload("ove me right;").setFin(true));
 
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("a single experiment ").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("can prove me wrong.").setFin(true));
+        expectedFrames.add(
+            new Frame(OpCode.TEXT).setPayload("a single experiment ").setFin(false));
+        expectedFrames.add(
+            new Frame(OpCode.CONTINUATION).setPayload("can prove me wrong.").setFin(true));
 
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("-- Albert Einstein").setFin(true));
+        expectedFrames.add(
+            new Frame(OpCode.TEXT).setPayload("-- Albert Einstein").setFin(true));
 
         // capture.dump();
 
@@ -149,7 +155,8 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
         assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+        ByteBufferAssert.assertEquals(
+            "Frame.payload", expected, actual.getPayload().slice());
     }
 
     /**
@@ -183,14 +190,21 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         // Expected Frames
         List<Frame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("No amount of experim").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("entation can ever pr").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("ove me right;").setFin(true));
+        expectedFrames.add(
+            new Frame(OpCode.TEXT).setPayload("No amount of experim").setFin(false));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION)
+            .setPayload("entation can ever pr")
+            .setFin(false));
+        expectedFrames.add(
+            new Frame(OpCode.CONTINUATION).setPayload("ove me right;").setFin(true));
 
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("a single experiment ").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("can prove me wrong.").setFin(true));
+        expectedFrames.add(
+            new Frame(OpCode.TEXT).setPayload("a single experiment ").setFin(false));
+        expectedFrames.add(
+            new Frame(OpCode.CONTINUATION).setPayload("can prove me wrong.").setFin(true));
 
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("-- Albert Einstein").setFin(true));
+        expectedFrames.add(
+            new Frame(OpCode.TEXT).setPayload("-- Albert Einstein").setFin(true));
 
         // capture.dump();
 
@@ -321,20 +335,27 @@ public class FragmentExtensionTest extends AbstractExtensionTest
 
         ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
         assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+        ByteBufferAssert.assertEquals(
+            "Frame.payload", expected, actual.getPayload().slice());
     }
 
     private WebSocketCoreSession newSession(ExtensionConfig config)
     {
-        return newSessionFromConfig(new Configuration.ConfigurationCustomizer(), config == null ? Collections.emptyList() : Collections.singletonList(config));
+        return newSessionFromConfig(
+            new Configuration.ConfigurationCustomizer(),
+            config == null ? Collections.emptyList() : Collections.singletonList(config));
     }
 
-    private WebSocketCoreSession newSessionFromConfig(Configuration.ConfigurationCustomizer configuration, List<ExtensionConfig> configs)
+    private WebSocketCoreSession newSessionFromConfig(
+                                                      Configuration.ConfigurationCustomizer configuration, List<ExtensionConfig> configs)
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(configs, configs);
-        exStack.setLastDemand(() -> {}); // Never delegate to WebSocketConnection as it is null for this test.
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
+        exStack.setLastDemand(() ->
+        {
+        }); // Never delegate to WebSocketConnection as it is null for this test.
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(
+            new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
         configuration.customize(configuration);
         return coreSession;
     }

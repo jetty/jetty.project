@@ -13,12 +13,19 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.acme.webapp.TestAnnotation;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -31,14 +38,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class TestMetaData
@@ -186,27 +185,27 @@ public class TestMetaData
         wac.getMetaData().addDiscoveredAnnotation(annotationD);
         wac.getMetaData().addDiscoveredAnnotation(annotationE);
 
-        //test an annotation from a web-inf lib fragment
+        // test an annotation from a web-inf lib fragment
         List<DiscoveredAnnotation> list = wac.getMetaData()._annotations.get(fragResource);
         assertThat(list, contains(annotationA));
         assertThat(list, hasSize(1));
 
-        //test an annotation from a web-inf lib fragment without a descriptor
+        // test an annotation from a web-inf lib fragment without a descriptor
         list = wac.getMetaData()._annotations.get(nonFragResource);
         assertThat(list, contains(annotationB));
         assertThat(list, hasSize(1));
 
-        //test an annotation that didn't have an associated resource
+        // test an annotation that didn't have an associated resource
         list = wac.getMetaData()._annotations.get(null);
         assertThat(list, contains(annotationC));
         assertThat(list, hasSize(1));
 
-        //test an annotation that came from the container path
+        // test an annotation that came from the container path
         list = wac.getMetaData()._annotations.get(containerDir);
         assertThat(list, contains(annotationD));
         assertThat(list, hasSize(1));
 
-        //test an annoation from web-inf classes
+        // test an annoation from web-inf classes
         list = wac.getMetaData()._annotations.get(webInfClassesDir);
         assertThat(list, contains(annotationE));
         assertThat(list, hasSize(1));
@@ -228,8 +227,8 @@ public class TestMetaData
         wac.getMetaData().addDiscoveredAnnotation(annotationE);
 
         wac.getMetaData().resolve(wac);
-        //test that annotations are applied from resources in order:
-        //no resource associated, container resources, web-inf classes resources, web-inf lib resources
+        // test that annotations are applied from resources in order:
+        // no resource associated, container resources, web-inf classes resources, web-inf lib resources
         assertThat(applications, contains(annotationC, annotationD, annotationE, annotationA, annotationB));
     }
 }

@@ -19,7 +19,6 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
@@ -65,7 +64,8 @@ public class LikeJettyXml
     public static Server createServer(int port, int securePort, boolean addDebugListener) throws Exception
     {
         Path configDir = Path.of("src/main/resources/demo").toAbsolutePath();
-        Path runtimeDir = Path.of("target/embedded/" + LikeJettyXml.class.getSimpleName()).toAbsolutePath();
+        Path runtimeDir =
+            Path.of("target/embedded/" + LikeJettyXml.class.getSimpleName()).toAbsolutePath();
         mkdir(runtimeDir);
 
         // === jetty.xml ===
@@ -125,7 +125,8 @@ public class LikeJettyXml
 
         // === jetty-https.xml ===
         // SSL Connector
-        ServerConnector sslConnector = new ServerConnector(server,
+        ServerConnector sslConnector = new ServerConnector(
+            server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(httpsConfig));
         sslConnector.setPort(securePort);
@@ -146,9 +147,10 @@ public class LikeJettyXml
         Path testWebapp = webappsDir.resolve("test.war");
         if (!Files.exists(testWebapp))
         {
-            JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee10.demos",
-                    "jetty-ee10-demo-simple-webapp", "", "war");
-            Path testWebappSrc = JettyDemos.find("jetty-ee10-demo-simple-webapp/target/jetty-ee10-demo-simple-webapp-@VER@.war", mavenCoordinate);
+            JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate(
+                "org.eclipse.jetty.ee10.demos", "jetty-ee10-demo-simple-webapp", "", "war");
+            Path testWebappSrc = JettyDemos.find(
+                "jetty-ee10-demo-simple-webapp/target/jetty-ee10-demo-simple-webapp-@VER@.war", mavenCoordinate);
             Files.copy(testWebappSrc, testWebapp);
         }
 
@@ -167,11 +169,15 @@ public class LikeJettyXml
         ContextProvider webAppProvider = new ContextProvider();
         webAppProvider.setEnvironmentName(environmentName);
         webAppProvider.setMonitoredDirName(webappsDir.toString());
-        webAppProvider.setDefaultsDescriptor(configDir.resolve("webdefault-ee10.xml").toString());
+        webAppProvider.setDefaultsDescriptor(
+            configDir.resolve("webdefault-ee10.xml").toString());
         webAppProvider.setScanInterval(1);
         webAppProvider.setExtractWars(true);
-        webAppProvider.getProperties().put(Deployable.CONTAINER_SCAN_JARS,
-            ".*/jakarta.servlet-api-[^/]*\\.jar$|.*jakarta.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$");
+        webAppProvider
+            .getProperties()
+            .put(
+                Deployable.CONTAINER_SCAN_JARS,
+                ".*/jakarta.servlet-api-[^/]*\\.jar$|.*jakarta.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$");
 
         deployer.addAppProvider(webAppProvider);
         server.addBean(deployer);
@@ -195,11 +201,13 @@ public class LikeJettyXml
         // === jetty-requestlog.xml ===
         Path logsDir = runtimeDir.resolve("logs");
         mkdir(logsDir);
-        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(logsDir.resolve("yyyy_mm_dd.request.log").toString());
+        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(
+            logsDir.resolve("yyyy_mm_dd.request.log").toString());
         logWriter.setFilenameDateFormat("yyyy_MM_dd");
         logWriter.setRetainDays(90);
         logWriter.setTimeZone("GMT");
-        CustomRequestLog requestLog = new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT + " \"%C\"");
+        CustomRequestLog requestLog =
+            new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT + " \"%C\"");
         server.setRequestLog(requestLog);
 
         // === jetty-lowresources.xml ===

@@ -14,7 +14,6 @@
 module org.eclipse.jetty.quic.common
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.quic.quiche;
 

@@ -16,7 +16,6 @@ package org.eclipse.jetty.tests.distribution.session;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -29,13 +28,13 @@ public class FileSessionDistributionTests extends AbstractSessionDistributionTes
     {
         // no op
     }
-    
+
     @Override
     public void startExternalSessionStorage() throws Exception
     {
         // no op
     }
-    
+
     @Override
     public void stopExternalSessionStorage() throws Exception
     {

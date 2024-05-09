@@ -13,13 +13,18 @@
 
 package org.eclipse.jetty.ee10.servlets;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -38,12 +43,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 
 /**
  * Tests {@link GzipHandler} in combination with {@link DefaultServlet} for ability to configure {@link GzipHandler} to
@@ -70,8 +69,7 @@ public class GzipHandlerNoReCompressTest extends AbstractGzipTest
             Arguments.of("jetty_logo.tif", "image/tiff"),
             Arguments.of("jetty_logo.tiff", "image/tiff"),
             Arguments.of("jetty_logo.xcf", "image/xcf"),
-            Arguments.of("jetty_logo.jp2", "image/jpeg2000")
-        );
+            Arguments.of("jetty_logo.jp2", "image/jpeg2000"));
     }
 
     private Server server;
@@ -107,7 +105,8 @@ public class GzipHandlerNoReCompressTest extends AbstractGzipTest
         Path testResource = MavenTestingUtils.getTestResourcePath(fileName);
         Path file = contextDir.resolve(fileName);
         IO.copy(testResource.toFile(), file.toFile());
-        String expectedSha1Sum = Sha1Sum.loadSha1(MavenTestingUtils.getTestResourceFile(fileName + ".sha1")).toUpperCase(Locale.ENGLISH);
+        String expectedSha1Sum = Sha1Sum.loadSha1(MavenTestingUtils.getTestResourceFile(fileName + ".sha1"))
+            .toUpperCase(Locale.ENGLISH);
         int fileSize = (int)Files.size(file);
 
         server.start();

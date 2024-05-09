@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.server.internal;
 import java.util.EnumSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.MessageFlusher;
@@ -54,7 +53,8 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
 
     private Listener notifyRequest(HeadersFrame frame)
     {
-        Session.Server.Listener listener = (Session.Server.Listener)getSession().getListener();
+        Session.Server.Listener listener =
+            (Session.Server.Listener)getSession().getListener();
         try
         {
             return listener.onRequest(this, frame);

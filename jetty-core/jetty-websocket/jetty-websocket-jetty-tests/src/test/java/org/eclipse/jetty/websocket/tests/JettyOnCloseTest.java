@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.websocket.api.Callback;
@@ -29,12 +34,6 @@ import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyOnCloseTest
 {
@@ -94,8 +93,8 @@ public class JettyOnCloseTest
         connector.setPort(0);
         server.addConnector(connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
-            container.addMapping("/", (rq, rs, cb) -> serverEndpoint));
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(
+            server, container -> container.addMapping("/", (rq, rs, cb) -> serverEndpoint));
 
         server.setHandler(wsHandler);
         server.start();
@@ -119,7 +118,8 @@ public class JettyOnCloseTest
         client.connect(clientEndpoint, uri).get(5, TimeUnit.SECONDS);
 
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
-        serverEndpoint.setOnClose((session) -> session.close(StatusCode.SERVICE_RESTART, "custom close reason", Callback.NOOP));
+        serverEndpoint.setOnClose(
+            (session) -> session.close(StatusCode.SERVICE_RESTART, "custom close reason", Callback.NOOP));
 
         clientEndpoint.session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested.jmx;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.jmx.ObjectMBean;
@@ -53,12 +51,12 @@ public class AbstractHandlerMBean extends ObjectMBean
                 if (server != null)
                 {
                     // TODO
-//                    ContextHandler context =
-//                        AbstractHandlerContainer.findContainerOf(server,
-//                            ContextHandler.class, handler);
-//
-//                    if (context != null)
-//                        basis = getContextName(context);
+                    //                    ContextHandler context =
+                    //                        AbstractHandlerContainer.findContainerOf(server,
+                    //                            ContextHandler.class, handler);
+                    //
+                    //                    if (context != null)
+                    //                        basis = getContextName(context);
                 }
             }
             if (basis != null)

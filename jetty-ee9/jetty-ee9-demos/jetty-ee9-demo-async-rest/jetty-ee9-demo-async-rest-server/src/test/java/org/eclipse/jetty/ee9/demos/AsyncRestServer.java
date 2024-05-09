@@ -16,20 +16,21 @@ package org.eclipse.jetty.ee9.demos;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 
 public class AsyncRestServer
 {
-    public static void main(String[] args)
-        throws Exception
+    public static void main(String[] args) throws Exception
     {
         // Find the async-reset webapp based on common IDE working directories
         // TODO import webapp as maven artifact
-        Path home = FileSystems.getDefault().getPath(System.getProperty("jetty.home", ".")).toAbsolutePath();
+        Path home = FileSystems.getDefault()
+            .getPath(System.getProperty("jetty.home", "."))
+            .toAbsolutePath();
         System.err.println(home);
-        Path war = home.resolve("jetty-ee9/jetty-ee9-demos/jetty-ee9-demo-async-rest/jetty-ee9-demo-async-rest-webapp/target/jetty-ee9-demo-async-rest-webapp-12.0.0-SNAPSHOT");
+        Path war = home.resolve(
+            "jetty-ee9/jetty-ee9-demos/jetty-ee9-demo-async-rest/jetty-ee9-demo-async-rest-webapp/target/jetty-ee9-demo-async-rest-webapp-12.0.0-SNAPSHOT");
         System.err.println(war);
         if (!Files.exists(war))
             throw new IllegalArgumentException("Cannot find async-rest webapp");

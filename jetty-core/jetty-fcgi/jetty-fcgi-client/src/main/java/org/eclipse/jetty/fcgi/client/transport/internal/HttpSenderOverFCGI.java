@@ -17,7 +17,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Locale;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.transport.HttpChannel;
@@ -52,7 +51,8 @@ public class HttpSenderOverFCGI extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendHeaders(
+                               HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
@@ -113,7 +113,8 @@ public class HttpSenderOverFCGI extends HttpSender
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendContent(
+                               HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         if (contentBuffer.hasRemaining() || lastContent)
         {

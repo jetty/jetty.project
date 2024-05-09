@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.ee10.annotations.resources;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.lang.reflect.Field;
 import java.util.Set;
 import javax.naming.Context;
 import javax.naming.InitialContext;
-
 import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector;
 import org.eclipse.jetty.ee10.annotations.ResourceAnnotationHandler;
 import org.eclipse.jetty.ee10.annotations.ResourcesAnnotationHandler;
@@ -29,9 +31,6 @@ import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestResourceAnnotations
 {
@@ -63,8 +62,7 @@ public class TestResourceAnnotations
     }
 
     @Test
-    public void testResourceAnnotations()
-        throws Exception
+    public void testResourceAnnotations() throws Exception
     {
         new EnvEntry(server, "resA", objA, false);
         new EnvEntry(server, "resB", objB, false);
@@ -78,7 +76,7 @@ public class TestResourceAnnotations
         parser.introspect(resourceA, null);
         parser.introspect(resourceB, null);
 
-        //processing classA should give us these jndi name bindings:
+        // processing classA should give us these jndi name bindings:
         // java:comp/env/myf
         // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceA/g
         // java:comp/env/mye
@@ -95,18 +93,18 @@ public class TestResourceAnnotations
         assertEquals(objB, env.lookup("org.eclipse.jetty.ee10.annotations.resources.ResourceB/f"));
         assertEquals(objB, env.lookup("org.eclipse.jetty.ee10.annotations.resources.ResourceA/n"));
 
-        //we should have Injections
+        // we should have Injections
         assertNotNull(injections);
 
         Set<Injection> resBInjections = injections.getInjections(ResourceB.class.getName());
         assertNotNull(resBInjections);
 
-        //only 1 field injection because the other has no Resource mapping
+        // only 1 field injection because the other has no Resource mapping
         assertEquals(1, resBInjections.size());
         Injection fi = resBInjections.iterator().next();
         assertEquals("f", fi.getTarget().getName());
 
-        //3 method injections on class ResourceA, 4 field injections
+        // 3 method injections on class ResourceA, 4 field injections
         Set<Injection> resAInjections = injections.getInjections(ResourceA.class.getName());
         assertNotNull(resAInjections);
         assertEquals(7, resAInjections.size());
@@ -122,34 +120,33 @@ public class TestResourceAnnotations
         assertEquals(4, fieldCount);
         assertEquals(3, methodCount);
 
-        //test injection
+        // test injection
         ResourceB binst = new ResourceB();
         injections.inject(binst);
 
-        //check injected values
+        // check injected values
         Field f = ResourceB.class.getDeclaredField("f");
         f.setAccessible(true);
         assertEquals(objB, f.get(binst));
 
-        //@Resource(mappedName="resA") //test the default naming scheme but using a mapped name from the environment
+        // @Resource(mappedName="resA") //test the default naming scheme but using a mapped name from the environment
         f = ResourceA.class.getDeclaredField("g");
         f.setAccessible(true);
         assertEquals(objA, f.get(binst));
 
-        //@Resource(name="resA") //test using the given name as the name from the environment
+        // @Resource(name="resA") //test using the given name as the name from the environment
         f = ResourceA.class.getDeclaredField("j");
         f.setAccessible(true);
         assertEquals(objA, f.get(binst));
 
-        //@Resource(mappedName="resB") //test using the default name on an inherited field
+        // @Resource(mappedName="resB") //test using the default name on an inherited field
         f = ResourceA.class.getDeclaredField("n");
         f.setAccessible(true);
         assertEquals(objB, f.get(binst));
     }
 
     @Test
-    public void testResourcesAnnotation()
-        throws Exception
+    public void testResourcesAnnotation() throws Exception
     {
         new EnvEntry(server, "resA", objA, false);
         new EnvEntry(server, "resB", objB, false);

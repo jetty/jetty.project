@@ -16,7 +16,6 @@ package org.eclipse.jetty.http2.server.internal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -46,7 +45,13 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
 
     private final ServerSessionListener listener;
 
-    public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, ServerParser parser, Generator generator, ServerSessionListener listener, FlowControlStrategy flowControl)
+    public HTTP2ServerSession(
+                              Scheduler scheduler,
+                              EndPoint endPoint,
+                              ServerParser parser,
+                              Generator generator,
+                              ServerSessionListener listener,
+                              FlowControlStrategy flowControl)
     {
         super(scheduler, endPoint, parser, generator, listener, flowControl, 2);
         this.listener = listener;

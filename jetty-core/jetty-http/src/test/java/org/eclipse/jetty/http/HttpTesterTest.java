@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PipedInputStream;
@@ -20,13 +24,8 @@ import java.io.PipedOutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 
 public class HttpTesterTest
 {
@@ -43,7 +42,8 @@ public class HttpTesterTest
             request.setContent("q=jetty%20server");
             ByteBuffer output = request.generate();
 
-            socket.getOutputStream().write(output.array(), output.arrayOffset() + output.position(), output.remaining());
+            socket.getOutputStream()
+                .write(output.array(), output.arrayOffset() + output.position(), output.remaining());
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
             System.err.printf("%s %s %s%n", response.getVersion(), response.getStatus(), response.getReason());
@@ -58,15 +58,7 @@ public class HttpTesterTest
     @Test
     public void testGetRequestBuffer10()
     {
-        HttpTester.Request request = HttpTester.parseRequest(
-            "GET /uri HTTP/1.0\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: keep-alive\r\n" +
-                "\r\n" +
-                "GET /some/other/request /HTTP/1.0\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n"
-        );
+        HttpTester.Request request = HttpTester.parseRequest("GET /uri HTTP/1.0\r\n" + "Host: localhost\r\n" + "Connection: keep-alive\r\n" + "\r\n" + "GET /some/other/request /HTTP/1.0\r\n" + "Host: localhost\r\n" + "\r\n");
         MatcherAssert.assertThat(request.getMethod(), is("GET"));
         MatcherAssert.assertThat(request.getURI(), is("/uri"));
         MatcherAssert.assertThat(request.getVersion(), is(HttpVersion.HTTP_1_0));
@@ -77,14 +69,7 @@ public class HttpTesterTest
     @Test
     public void testGetRequestBuffer11()
     {
-        HttpTester.Request request = HttpTester.parseRequest(
-            "GET /uri HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n" +
-                "GET /some/other/request /HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n"
-        );
+        HttpTester.Request request = HttpTester.parseRequest("GET /uri HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n" + "GET /some/other/request /HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n");
         MatcherAssert.assertThat(request.getMethod(), is("GET"));
         MatcherAssert.assertThat(request.getURI(), is("/uri"));
         MatcherAssert.assertThat(request.getVersion(), is(HttpVersion.HTTP_1_1));
@@ -95,18 +80,7 @@ public class HttpTesterTest
     @Test
     public void testPostRequestBuffer10()
     {
-        HttpTester.Request request = HttpTester.parseRequest(
-            "POST /uri HTTP/1.0\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: keep-alive\r\n" +
-                "Content-Length: 16\r\n" +
-                "\r\n" +
-                "0123456789ABCDEF" +
-                "\r\n" +
-                "GET /some/other/request /HTTP/1.0\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n"
-        );
+        HttpTester.Request request = HttpTester.parseRequest("POST /uri HTTP/1.0\r\n" + "Host: localhost\r\n" + "Connection: keep-alive\r\n" + "Content-Length: 16\r\n" + "\r\n" + "0123456789ABCDEF" + "\r\n" + "GET /some/other/request /HTTP/1.0\r\n" + "Host: localhost\r\n" + "\r\n");
         MatcherAssert.assertThat(request.getMethod(), is("POST"));
         MatcherAssert.assertThat(request.getURI(), is("/uri"));
         MatcherAssert.assertThat(request.getVersion(), is(HttpVersion.HTTP_1_0));
@@ -117,21 +91,7 @@ public class HttpTesterTest
     @Test
     public void testPostRequestBuffer11()
     {
-        HttpTester.Request request = HttpTester.parseRequest(
-            "POST /uri HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Transfer-Encoding: chunked\r\n" +
-                "\r\n" +
-                "A\r\n" +
-                "0123456789\r\n" +
-                "6\r\n" +
-                "ABCDEF\r\n" +
-                "0\r\n" +
-                "\r\n" +
-                "GET /some/other/request /HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n"
-        );
+        HttpTester.Request request = HttpTester.parseRequest("POST /uri HTTP/1.1\r\n" + "Host: localhost\r\n" + "Transfer-Encoding: chunked\r\n" + "\r\n" + "A\r\n" + "0123456789\r\n" + "6\r\n" + "ABCDEF\r\n" + "0\r\n" + "\r\n" + "GET /some/other/request /HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n");
         MatcherAssert.assertThat(request.getMethod(), is("POST"));
         MatcherAssert.assertThat(request.getURI(), is("/uri"));
         MatcherAssert.assertThat(request.getVersion(), is(HttpVersion.HTTP_1_1));
@@ -143,12 +103,7 @@ public class HttpTesterTest
     public void testResponseEOFBuffer()
     {
         HttpTester.Response response = HttpTester.parseResponse(
-            "HTTP/1.1 200 OK\r\n" +
-                "Header: value\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                "0123456789ABCDEF"
-        );
+            "HTTP/1.1 200 OK\r\n" + "Header: value\r\n" + "Connection: close\r\n" + "\r\n" + "0123456789ABCDEF");
 
         MatcherAssert.assertThat(response.getVersion(), is(HttpVersion.HTTP_1_1));
         MatcherAssert.assertThat(response.getStatus(), is(200));
@@ -160,15 +115,7 @@ public class HttpTesterTest
     @Test
     public void testResponseLengthBuffer()
     {
-        HttpTester.Response response = HttpTester.parseResponse(
-            "HTTP/1.1 200 OK\r\n" +
-                "Header: value\r\n" +
-                "Content-Length: 16\r\n" +
-                "\r\n" +
-                "0123456789ABCDEF" +
-                "HTTP/1.1 200 OK\r\n" +
-                "\r\n"
-        );
+        HttpTester.Response response = HttpTester.parseResponse("HTTP/1.1 200 OK\r\n" + "Header: value\r\n" + "Content-Length: 16\r\n" + "\r\n" + "0123456789ABCDEF" + "HTTP/1.1 200 OK\r\n" + "\r\n");
 
         MatcherAssert.assertThat(response.getVersion(), is(HttpVersion.HTTP_1_1));
         MatcherAssert.assertThat(response.getStatus(), is(200));
@@ -180,20 +127,7 @@ public class HttpTesterTest
     @Test
     public void testResponseChunkedBuffer()
     {
-        HttpTester.Response response = HttpTester.parseResponse(
-            "HTTP/1.1 200 OK\r\n" +
-                "Header: value\r\n" +
-                "Transfer-Encoding: chunked\r\n" +
-                "\r\n" +
-                "A\r\n" +
-                "0123456789\r\n" +
-                "6\r\n" +
-                "ABCDEF\r\n" +
-                "0\r\n" +
-                "\r\n" +
-                "HTTP/1.1 200 OK\r\n" +
-                "\r\n"
-        );
+        HttpTester.Response response = HttpTester.parseResponse("HTTP/1.1 200 OK\r\n" + "Header: value\r\n" + "Transfer-Encoding: chunked\r\n" + "\r\n" + "A\r\n" + "0123456789\r\n" + "6\r\n" + "ABCDEF\r\n" + "0\r\n" + "\r\n" + "HTTP/1.1 200 OK\r\n" + "\r\n");
 
         MatcherAssert.assertThat(response.getVersion(), is(HttpVersion.HTTP_1_1));
         MatcherAssert.assertThat(response.getStatus(), is(200));
@@ -205,23 +139,8 @@ public class HttpTesterTest
     @Test
     public void testResponsesInput() throws Exception
     {
-        ByteArrayInputStream stream = new ByteArrayInputStream((
-            "HTTP/1.1 200 OK\r\n" +
-                "Header: value\r\n" +
-                "Transfer-Encoding: chunked\r\n" +
-                "\r\n" +
-                "A\r\n" +
-                "0123456789\r\n" +
-                "6\r\n" +
-                "ABCDEF\r\n" +
-                "0\r\n" +
-                "\r\n" +
-                "HTTP/1.1 400 OK\r\n" +
-                "Next: response\r\n" +
-                "Content-Length: 16\r\n" +
-                "\r\n" +
-                "0123456789ABCDEF").getBytes(StandardCharsets.ISO_8859_1)
-        );
+        ByteArrayInputStream stream = new ByteArrayInputStream(("HTTP/1.1 200 OK\r\n" + "Header: value\r\n" + "Transfer-Encoding: chunked\r\n" + "\r\n" + "A\r\n" + "0123456789\r\n" + "6\r\n" + "ABCDEF\r\n" + "0\r\n" + "\r\n" + "HTTP/1.1 400 OK\r\n" + "Next: response\r\n" + "Content-Length: 16\r\n" + "\r\n" + "0123456789ABCDEF")
+            .getBytes(StandardCharsets.ISO_8859_1));
 
         HttpTester.Input in = HttpTester.from(stream);
 
@@ -258,31 +177,13 @@ public class HttpTesterTest
 
         HttpTester.Input in = HttpTester.from(stream);
 
-        src.write((
-                "HTTP/1.1 200 OK\r\n" +
-                    "Header: value\r\n" +
-                    "Transfer-Encoding: chunked\r\n" +
-                    "\r\n" +
-                    "A\r\n" +
-                    "0123456789\r\n" +
-                    "6\r\n" +
-                    "ABC"
-            ).getBytes(StandardCharsets.ISO_8859_1)
-        );
+        src.write(("HTTP/1.1 200 OK\r\n" + "Header: value\r\n" + "Transfer-Encoding: chunked\r\n" + "\r\n" + "A\r\n" + "0123456789\r\n" + "6\r\n" + "ABC")
+            .getBytes(StandardCharsets.ISO_8859_1));
 
         HttpTester.Response response = HttpTester.parseResponse(in);
         assertThat(response, nullValue());
-        src.write((
-                "DEF\r\n" +
-                    "0\r\n" +
-                    "\r\n" +
-                    "HTTP/1.1 400 OK\r\n" +
-                    "Next: response\r\n" +
-                    "Content-Length: 16\r\n" +
-                    "\r\n" +
-                    "0123456789"
-            ).getBytes(StandardCharsets.ISO_8859_1)
-        );
+        src.write(("DEF\r\n" + "0\r\n" + "\r\n" + "HTTP/1.1 400 OK\r\n" + "Next: response\r\n" + "Content-Length: 16\r\n" + "\r\n" + "0123456789")
+            .getBytes(StandardCharsets.ISO_8859_1));
 
         response = HttpTester.parseResponse(in);
         MatcherAssert.assertThat(response.getVersion(), is(HttpVersion.HTTP_1_1));
@@ -294,10 +195,7 @@ public class HttpTesterTest
         response = HttpTester.parseResponse(in);
         assertThat(response, nullValue());
 
-        src.write((
-                "ABCDEF"
-            ).getBytes(StandardCharsets.ISO_8859_1)
-        );
+        src.write(("ABCDEF").getBytes(StandardCharsets.ISO_8859_1));
 
         response = HttpTester.parseResponse(in);
         MatcherAssert.assertThat(response.getVersion(), is(HttpVersion.HTTP_1_1));

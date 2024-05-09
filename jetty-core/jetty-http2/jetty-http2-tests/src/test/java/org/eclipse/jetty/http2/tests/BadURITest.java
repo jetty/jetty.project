@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -44,8 +45,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BadURITest
 {
@@ -107,8 +106,7 @@ public class BadURITest
             "/foo/..;/bar",
             HttpVersion.HTTP_2,
             HttpFields.EMPTY,
-            -1
-        );
+            -1);
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
@@ -134,8 +132,7 @@ public class BadURITest
                 "/valid",
                 HttpVersion.HTTP_2,
                 HttpFields.EMPTY,
-                -1
-            );
+                -1);
             generator.control(accumulator, new HeadersFrame(3, metaData2, null, true));
             for (ByteBuffer buffer : accumulator.getByteBuffers())
             {

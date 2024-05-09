@@ -32,7 +32,11 @@ public class JndiConfiguration extends AbstractConfiguration
     public JndiConfiguration()
     {
         super(new Builder()
-            .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class)
+            .addDependencies(
+                WebXmlConfiguration.class,
+                MetaInfConfiguration.class,
+                WebInfConfiguration.class,
+                FragmentConfiguration.class)
             .addDependents(WebAppConfiguration.class)
             .protectAndExpose("org.eclipse.jetty.jndi."));
     }
@@ -51,4 +55,3 @@ public class JndiConfiguration extends AbstractConfiguration
         }
     }
 }
-

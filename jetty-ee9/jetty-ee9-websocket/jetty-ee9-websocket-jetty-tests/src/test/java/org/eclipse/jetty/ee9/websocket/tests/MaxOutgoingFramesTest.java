@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
@@ -37,11 +41,6 @@ import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MaxOutgoingFramesTest
 {
@@ -68,8 +67,11 @@ public class MaxOutgoingFramesTest
         JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
         {
             container.addMapping("/", (req, resp) -> serverSocket);
-            WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(contextHandler.getCoreContextHandler());
-            components.getExtensionRegistry().register(BlockingOutgoingExtension.class.getName(), BlockingOutgoingExtension.class);
+            WebSocketComponents components =
+                WebSocketServerComponents.getWebSocketComponents(contextHandler.getCoreContextHandler());
+            components
+                .getExtensionRegistry()
+                .register(BlockingOutgoingExtension.class.getName(), BlockingOutgoingExtension.class);
         });
 
         server.setHandler(contextHandler);
@@ -138,7 +140,9 @@ public class MaxOutgoingFramesTest
     {
         // We need to have the frames queued but not yet sent, we do this by blocking in the ExtensionStack.
         WebSocketCoreClient coreClient = client.getBean(WebSocketCoreClient.class);
-        coreClient.getExtensionRegistry().register(BlockingOutgoingExtension.class.getName(), BlockingOutgoingExtension.class);
+        coreClient
+            .getExtensionRegistry()
+            .register(BlockingOutgoingExtension.class.getName(), BlockingOutgoingExtension.class);
 
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/");
         EventSocket socket = new EventSocket();
@@ -164,7 +168,8 @@ public class MaxOutgoingFramesTest
         // Sending any more frames will result in WritePendingException.
         FutureWriteCallback callback = new FutureWriteCallback();
         remote.sendString("fail", callback);
-        ExecutionException executionException = assertThrows(ExecutionException.class, () -> callback.get(5, TimeUnit.SECONDS));
+        ExecutionException executionException =
+            assertThrows(ExecutionException.class, () -> callback.get(5, TimeUnit.SECONDS));
         assertThat(executionException.getCause(), instanceOf(WritePendingException.class));
 
         // Check that all callbacks are succeeded when the server processes the frames.

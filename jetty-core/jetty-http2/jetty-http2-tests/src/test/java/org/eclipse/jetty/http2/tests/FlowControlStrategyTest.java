@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -25,7 +31,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -64,12 +69,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class FlowControlStrategyTest
 {
     private ServerConnector connector;
@@ -81,7 +80,8 @@ public class FlowControlStrategyTest
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName("server");
         server = new Server(serverExecutor);
-        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
+        RawHTTP2ServerConnectionFactory connectionFactory =
+            new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
         connectionFactory.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         connectionFactory.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         connectionFactory.setFlowControlStrategyFactory(() -> newFlowControlStrategy(type));
@@ -114,7 +114,14 @@ public class FlowControlStrategyTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), "/", HttpVersion.HTTP_2, fields, -1);
+        return new MetaData.Request(
+            method,
+            HttpScheme.HTTP.asString(),
+            new HostPortHttpField(authority),
+            "/",
+            HttpVersion.HTTP_2,
+            fields,
+            -1);
     }
 
     protected FlowControlStrategy newFlowControlStrategy(FlowControlStrategyType type)
@@ -188,7 +195,9 @@ public class FlowControlStrategyTest
             }
         });
 
-        HTTP2Session clientSession = (HTTP2Session)newClient(new Session.Listener() {});
+        HTTP2Session clientSession = (HTTP2Session)newClient(new Session.Listener()
+        {
+        });
 
         assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientSession.getSendWindow());
         assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientSession.getRecvWindow());
@@ -278,11 +287,12 @@ public class FlowControlStrategyTest
         });
 
         MetaData.Request request = newRequest("POST", HttpFields.EMPTY);
-        Stream stream = session.newStream(new HeadersFrame(request, null, false), null)
-            .get(5, TimeUnit.SECONDS);
+        Stream stream =
+            session.newStream(new HeadersFrame(request, null, false), null).get(5, TimeUnit.SECONDS);
 
         // Send first chunk that will exceed the flow control window when the new SETTINGS is received.
-        CompletableFuture<Stream> completable = stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), false));
+        CompletableFuture<Stream> completable =
+            stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), false));
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         completable.thenAccept(s ->
@@ -330,17 +340,19 @@ public class FlowControlStrategyTest
             }
         });
 
-        Session session = newClient(new Session.Listener() {});
+        Session session = newClient(new Session.Listener()
+        {
+        });
 
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, windowSize);
-        session.settings(new SettingsFrame(settings, false))
-            .thenRun(settingsLatch::countDown);
+        session.settings(new SettingsFrame(settings, false)).thenRun(settingsLatch::countDown);
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
         await().atMost(5, TimeUnit.SECONDS).until(() ->
         {
-            AbstractFlowControlStrategy flow = (AbstractFlowControlStrategy)((HTTP2Session)session).getFlowControlStrategy();
+            AbstractFlowControlStrategy flow =
+                (AbstractFlowControlStrategy)((HTTP2Session)session).getFlowControlStrategy();
             return flow.getInitialStreamRecvWindow() == windowSize;
         });
 
@@ -423,23 +435,25 @@ public class FlowControlStrategyTest
             }
         });
 
-        Session clientSession = newClient(new Session.Listener() {});
+        Session clientSession = newClient(new Session.Listener()
+        {
+        });
 
         await().atMost(5, TimeUnit.SECONDS).until(() ->
         {
-            AbstractFlowControlStrategy flow = (AbstractFlowControlStrategy)serverSessionRef.get().getFlowControlStrategy();
+            AbstractFlowControlStrategy flow =
+                (AbstractFlowControlStrategy)serverSessionRef.get().getFlowControlStrategy();
             return flow.getInitialStreamRecvWindow() == windowSize;
         });
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
-        clientSession.newStream(requestFrame, null)
-            .thenCompose(s ->
-            {
-                int length = 5 * windowSize;
-                DataFrame dataFrame = new DataFrame(s.getId(), ByteBuffer.allocate(length), true);
-                return s.data(dataFrame);
-            });
+        clientSession.newStream(requestFrame, null).thenCompose(s ->
+        {
+            int length = 5 * windowSize;
+            DataFrame dataFrame = new DataFrame(s.getId(), ByteBuffer.allocate(length), true);
+            return s.data(dataFrame);
+        });
 
         // Verify that the data arrived to the server.
         await().atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() != null);
@@ -490,7 +504,8 @@ public class FlowControlStrategyTest
                         .thenCompose(s ->
                         {
                             // Send data to consume most of the session window.
-                            ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE - windowSize);
+                            ByteBuffer data =
+                                ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE - windowSize);
                             DataFrame dataFrame = new DataFrame(s.getId(), data, true);
                             return s.data(dataFrame);
                         });
@@ -503,7 +518,8 @@ public class FlowControlStrategyTest
                     stream.headers(new HeadersFrame(stream.getId(), metaData, null, false))
                         .thenCompose(s ->
                         {
-                            DataFrame dataFrame = new DataFrame(s.getId(), ByteBuffer.allocate(windowSize / 2), true);
+                            DataFrame dataFrame =
+                                new DataFrame(s.getId(), ByteBuffer.allocate(windowSize / 2), true);
                             return s.data(dataFrame);
                         });
                     return null;
@@ -511,7 +527,9 @@ public class FlowControlStrategyTest
             }
         });
 
-        Session session = newClient(new Session.Listener() {});
+        Session session = newClient(new Session.Listener()
+        {
+        });
 
         // First request is just to consume most of the session window.
         AtomicReference<Stream> streamRef1 = new AtomicReference<>();
@@ -582,14 +600,16 @@ public class FlowControlStrategyTest
 
     private void consumeAll(Stream stream) throws Exception
     {
-        await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() ->
-        {
-            Stream.Data data = stream.readData();
-            if (data == null)
-                return false;
-            data.release();
-            return data.frame().isEndStream();
-        });
+        await().pollInterval(1, TimeUnit.MILLISECONDS)
+            .atMost(5, TimeUnit.SECONDS)
+            .until(() ->
+            {
+                Stream.Data data = stream.readData();
+                if (data == null)
+                    return false;
+                data.release();
+                return data.frame().isEndStream();
+            });
     }
 
     @ParameterizedTest
@@ -612,7 +632,9 @@ public class FlowControlStrategyTest
             }
         });
 
-        Session session = newClient(new Session.Listener() {});
+        Session session = newClient(new Session.Listener()
+        {
+        });
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         byte[] bytes = new byte[data.length];
@@ -660,13 +682,12 @@ public class FlowControlStrategyTest
                     public void onDataAvailable(Stream stream)
                     {
                         Stream.Data data = stream.readData();
-                        completable.thenAccept(s -> s.data(data.frame())
-                            .whenComplete((r, x) ->
-                            {
-                                data.release();
-                                if (!data.frame().isEndStream())
-                                    stream.demand();
-                            }));
+                        completable.thenAccept(s -> s.data(data.frame()).whenComplete((r, x) ->
+                        {
+                            data.release();
+                            if (!data.frame().isEndStream())
+                                stream.demand();
+                        }));
                     }
                 };
             }
@@ -693,19 +714,19 @@ public class FlowControlStrategyTest
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
         CountDownLatch latch = new CountDownLatch(1);
         session.newStream(requestFrame, new Stream.Listener()
+        {
+            @Override
+            public void onDataAvailable(Stream stream)
             {
-                @Override
-                public void onDataAvailable(Stream stream)
-                {
-                    Stream.Data data = stream.readData();
-                    responseContent.put(data.frame().getByteBuffer());
-                    data.release();
-                    if (data.frame().isEndStream())
-                        latch.countDown();
-                    else
-                        stream.demand();
-                }
-            })
+                Stream.Data data = stream.readData();
+                responseContent.put(data.frame().getByteBuffer());
+                data.release();
+                if (data.frame().isEndStream())
+                    latch.countDown();
+                else
+                    stream.demand();
+            }
+        })
             .thenAccept(s ->
             {
                 ByteBuffer requestContent = ByteBuffer.wrap(requestData);
@@ -803,7 +824,9 @@ public class FlowControlStrategyTest
         HTTP2Session http2Session = (HTTP2Session)session;
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         ByteBuffer extraData = ByteBuffer.allocate(1024);
-        http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
+        http2Session
+            .getGenerator()
+            .data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
         List<ByteBuffer> buffers = accumulator.getByteBuffers();
         http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[0]));
 
@@ -902,7 +925,9 @@ public class FlowControlStrategyTest
         HTTP2Session http2Session = (HTTP2Session)session;
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         ByteBuffer extraData = ByteBuffer.allocate(1024);
-        http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
+        http2Session
+            .getGenerator()
+            .data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
         List<ByteBuffer> buffers = accumulator.getByteBuffers();
         http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[0]));
 
@@ -943,7 +968,9 @@ public class FlowControlStrategyTest
             }
         });
 
-        Session session = newClient(new Session.Listener() {});
+        Session session = newClient(new Session.Listener()
+        {
+        });
         MetaData.Request metaData = newRequest("POST", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
@@ -1000,7 +1027,8 @@ public class FlowControlStrategyTest
                         data.release();
                         boolean last = data.frame().isEndStream();
                         int status = last ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500;
-                        MetaData.Response response = new MetaData.Response(status, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                        MetaData.Response response =
+                            new MetaData.Response(status, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     }
                 };
@@ -1022,7 +1050,9 @@ public class FlowControlStrategyTest
             }
         });
 
-        Session session = newClient(new Session.Listener() {});
+        Session session = newClient(new Session.Listener()
+        {
+        });
         MetaData.Request metaData = newRequest("POST", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
@@ -1044,18 +1074,20 @@ public class FlowControlStrategyTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        int sessionUpdates = switch (type)
-        {
-            case SIMPLE -> 1;
-            // For small writes, session updates are buffered.
-            case BUFFERING -> 0;
-        };
+        int sessionUpdates =
+            switch (type)
+            {
+                case SIMPLE -> 1;
+                // For small writes, session updates are buffered.
+                case BUFFERING -> 0;
+            };
         assertEquals(sessionUpdates, sessionWindowUpdates.size());
         assertEquals(0, streamWindowUpdates.size());
     }
 
     public enum FlowControlStrategyType
     {
-        SIMPLE, BUFFERING
+        SIMPLE,
+        BUFFERING
     }
 }

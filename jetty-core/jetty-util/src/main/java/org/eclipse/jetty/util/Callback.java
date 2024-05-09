@@ -16,7 +16,6 @@ package org.eclipse.jetty.util;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
@@ -623,7 +622,7 @@ public interface Callback extends Invocable
      * @param failure The failure
      * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
      */
-    private static void failed(Consumer<Throwable> first, Consumer<Throwable> second,  Throwable failure)
+    private static void failed(Consumer<Throwable> first, Consumer<Throwable> second, Throwable failure)
     {
         // This is an improved version of:
         // try

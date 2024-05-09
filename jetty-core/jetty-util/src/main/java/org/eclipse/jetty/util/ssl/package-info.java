@@ -15,4 +15,3 @@
  * Jetty Util : Common SSL Utility Classes
  */
 package org.eclipse.jetty.util.ssl;
-

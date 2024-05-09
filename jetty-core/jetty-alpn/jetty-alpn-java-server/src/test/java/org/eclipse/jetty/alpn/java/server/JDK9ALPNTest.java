@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.alpn.java.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,7 +32,6 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
-
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -41,12 +46,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class JDK9ALPNTest
 {
@@ -100,19 +99,16 @@ public class JDK9ALPNTest
         SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
-        try (SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
+        try (SSLSocket client =
+            (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
         {
             client.setUseClientMode(true);
             client.setSoTimeout(5000);
             client.startHandshake();
 
             OutputStream output = client.getOutputStream();
-            output.write((
-                "GET / HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n" +
-                    "").getBytes(StandardCharsets.UTF_8));
+            output.write(("GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n" + "")
+                .getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             InputStream input = client.getInputStream();
@@ -143,7 +139,8 @@ public class JDK9ALPNTest
         SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
-        try (SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
+        try (SSLSocket client =
+            (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
         {
             client.setUseClientMode(true);
             SSLParameters sslParameters = client.getSSLParameters();
@@ -153,12 +150,8 @@ public class JDK9ALPNTest
             client.startHandshake();
 
             OutputStream output = client.getOutputStream();
-            output.write((
-                "GET / HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n" +
-                    "").getBytes(StandardCharsets.UTF_8));
+            output.write(("GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n" + "")
+                .getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             InputStream input = client.getInputStream();

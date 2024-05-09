@@ -28,6 +28,7 @@ class EmptyTrie<V> extends AbstractTrie<V>
 {
     @SuppressWarnings("rawtypes")
     private static final EmptyTrie SENSITIVE = new EmptyTrie<>(true);
+
     @SuppressWarnings("rawtypes")
     private static final EmptyTrie INSENSITIVE = new EmptyTrie<>(false);
 

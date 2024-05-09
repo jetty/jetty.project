@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.xml;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.net.URISyntaxException;
 import java.net.URL;
 import javax.xml.catalog.Catalog;
 import javax.xml.catalog.CatalogFeatures;
 import javax.xml.catalog.CatalogManager;
-
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class CatalogTest
 {

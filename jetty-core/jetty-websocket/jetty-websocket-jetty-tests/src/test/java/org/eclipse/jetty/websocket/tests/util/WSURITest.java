@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.websocket.tests.util;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import org.eclipse.jetty.websocket.api.util.WSURI;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import org.eclipse.jetty.websocket.api.util.WSURI;
+import org.junit.jupiter.api.Test;
 
 public class WSURITest
 {
@@ -51,7 +50,9 @@ public class WSURITest
     public void testHttpToWs() throws URISyntaxException
     {
         assertURI(WSURI.toWebsocket(URI.create("http://localhost/")), URI.create("ws://localhost/"));
-        assertURI(WSURI.toWebsocket(URI.create("http://localhost:8080/deeper/")), URI.create("ws://localhost:8080/deeper/"));
+        assertURI(
+            WSURI.toWebsocket(URI.create("http://localhost:8080/deeper/")),
+            URI.create("ws://localhost:8080/deeper/"));
         assertURI(WSURI.toWebsocket("http://localhost/"), URI.create("ws://localhost/"));
         assertURI(WSURI.toWebsocket("http://localhost/", null), URI.create("ws://localhost/"));
         assertURI(WSURI.toWebsocket("http://localhost/", "a=b"), URI.create("ws://localhost/?a=b"));

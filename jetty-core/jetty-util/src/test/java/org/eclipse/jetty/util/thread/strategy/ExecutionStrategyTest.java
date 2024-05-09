@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.util.thread.strategy;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -23,7 +27,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -39,10 +42,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ExecutionStrategyTest
 {
     public static Stream<Arguments> pooledStrategies()
@@ -53,17 +52,20 @@ public class ExecutionStrategyTest
             VirtualThreads.getDefaultVirtualThreadsExecutor() == null ? null : VirtualThreadPool.class)
             .filter(Objects::nonNull)
             .flatMap(tp -> Stream.of(
-            ProduceExecuteConsume.class,
-            ExecuteProduceConsume.class,
-            AdaptiveExecutionStrategy.class)
-            .map(s -> Arguments.of(tp, s)));
+                ProduceExecuteConsume.class,
+                ExecuteProduceConsume.class,
+                AdaptiveExecutionStrategy.class)
+                .map(s -> Arguments.of(tp, s)));
     }
 
     List<Object> _lifeCycles = new ArrayList<>();
 
-    protected ExecutionStrategy newExecutionStrategy(Class<? extends ExecutionStrategy> strategyClass, Producer producer, Executor executor) throws Exception
+    protected ExecutionStrategy newExecutionStrategy(
+                                                     Class<? extends ExecutionStrategy> strategyClass, Producer producer, Executor executor) throws Exception
     {
-        ExecutionStrategy strategy = strategyClass.getDeclaredConstructor(Producer.class, Executor.class).newInstance(producer, executor);
+        ExecutionStrategy strategy = strategyClass
+            .getDeclaredConstructor(Producer.class, Executor.class)
+            .newInstance(producer, executor);
         _lifeCycles.add(executor);
         _lifeCycles.add(strategy);
         LifeCycle.start(strategy);
@@ -92,7 +94,8 @@ public class ExecutionStrategyTest
 
     @ParameterizedTest
     @MethodSource("pooledStrategies")
-    public void idleTest(Class<? extends ThreadPool> threadPoolClass, Class<? extends ExecutionStrategy> strategyClass) throws Exception
+    public void idleTest(Class<? extends ThreadPool> threadPoolClass, Class<? extends ExecutionStrategy> strategyClass)
+        throws Exception
     {
         ThreadPool threadPool = threadPoolClass.getDeclaredConstructor().newInstance();
         LifeCycle.start(threadPool);
@@ -116,7 +119,9 @@ public class ExecutionStrategyTest
 
     @ParameterizedTest
     @MethodSource("pooledStrategies")
-    public void simpleTest(Class<? extends ThreadPool> threadPoolClass, Class<? extends ExecutionStrategy> strategyClass) throws Exception
+    public void simpleTest(
+                           Class<? extends ThreadPool> threadPoolClass, Class<? extends ExecutionStrategy> strategyClass)
+        throws Exception
     {
         ThreadPool threadPool = threadPoolClass.getDeclaredConstructor().newInstance();
         LifeCycle.start(threadPool);
@@ -145,20 +150,22 @@ public class ExecutionStrategyTest
             strategy.produce();
         }
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS),
-            () ->
-            {
-                // Dump state on failure
-                return String.format("Timed out waiting for latch: %s%ntasks=%d latch=%d%n%s",
-                    strategy, TASKS, latch.getCount(), threadPool instanceof Dumpable dumpable ? dumpable.dump() : "");
-            });
+        assertTrue(latch.await(10, TimeUnit.SECONDS), () ->
+        {
+            // Dump state on failure
+            return String.format(
+                "Timed out waiting for latch: %s%ntasks=%d latch=%d%n%s",
+                strategy, TASKS, latch.getCount(), threadPool instanceof Dumpable dumpable ? dumpable.dump() : "");
+        });
 
         LifeCycle.stop(threadPool);
     }
 
     @ParameterizedTest
     @MethodSource("pooledStrategies")
-    public void blockingProducerTest(Class<? extends ThreadPool> threadPoolClass, Class<? extends ExecutionStrategy> strategyClass) throws Exception
+    public void blockingProducerTest(
+                                     Class<? extends ThreadPool> threadPoolClass, Class<? extends ExecutionStrategy> strategyClass)
+        throws Exception
     {
         ThreadPool threadPool = threadPoolClass.getDeclaredConstructor().newInstance();
         LifeCycle.start(threadPool);
@@ -202,7 +209,7 @@ public class ExecutionStrategyTest
         {
             try
             {
-                for (int t = TASKS; t-- > 0; )
+                for (int t = TASKS; t-- > 0;)
                 {
                     Thread.sleep(5);
                     q.offer(latch);
@@ -214,9 +221,15 @@ public class ExecutionStrategyTest
             }
         });
 
-        assertTrue(latch.await(30, TimeUnit.SECONDS),
-            String.format("Timed out waiting for latch: %s%ntasks=%d latch=%d q=%d%n%s",
-                strategy, TASKS, latch.getCount(), q.size(), threadPool instanceof Dumpable dumpable ? dumpable.dump() : ""));
+        assertTrue(
+            latch.await(30, TimeUnit.SECONDS),
+            String.format(
+                "Timed out waiting for latch: %s%ntasks=%d latch=%d q=%d%n%s",
+                strategy,
+                TASKS,
+                latch.getCount(),
+                q.size(),
+                threadPool instanceof Dumpable dumpable ? dumpable.dump() : ""));
 
         LifeCycle.stop(threadPool);
     }

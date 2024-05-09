@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,12 +39,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamResponseListener;
@@ -67,11 +71,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-
 @Tag("large-disk-resource")
 public class HugeResourceTest
 {
@@ -98,8 +97,10 @@ public class HugeResourceTest
         // once again for multipart/form temp files
         // for a total of (at least) 30GB needed.
 
-        Assumptions.assumeTrue(baseFileStore.getUnallocatedSpace() > 30 * GB,
-            String.format("FileStore %s of %s needs at least 30GB of free space for this test (only had %,.2fGB)",
+        Assumptions.assumeTrue(
+            baseFileStore.getUnallocatedSpace() > 30 * GB,
+            String.format(
+                "FileStore %s of %s needs at least 30GB of free space for this test (only had %,.2fGB)",
                 baseFileStore, staticBase, (double)(baseFileStore.getUnallocatedSpace() / GB)));
 
         makeStaticFile(staticBase.resolve("test-1g.dat"), GB);
@@ -109,7 +110,8 @@ public class HugeResourceTest
         outputDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-outputdir");
         FS.ensureEmpty(outputDir);
 
-        multipartTempDir = MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-multipart-tmp");
+        multipartTempDir =
+            MavenTestingUtils.getTargetTestingPath(HugeResourceTest.class.getSimpleName() + "-multipart-tmp");
         FS.ensureEmpty(multipartTempDir);
     }
 
@@ -158,7 +160,11 @@ public class HugeResourceTest
         }
 
         System.err.printf("Creating %,d byte file: %s ...%n", size, staticFile.getFileName());
-        try (SeekableByteChannel channel = Files.newByteChannel(staticFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING))
+        try (SeekableByteChannel channel = Files.newByteChannel(
+            staticFile,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.TRUNCATE_EXISTING))
         {
             long remaining = size;
             while (remaining > 0)
@@ -200,7 +206,8 @@ public class HugeResourceTest
         long maxRequestSize = Long.MAX_VALUE;
         int fileSizeThreshold = (int)(2 * MB);
 
-        MultipartConfigElement multipartConfig = new MultipartConfigElement(location, maxFileSize, maxRequestSize, fileSizeThreshold);
+        MultipartConfigElement multipartConfig =
+            new MultipartConfigElement(location, maxFileSize, maxRequestSize, fileSizeThreshold);
         ServletHolder holder = context.addServlet(MultipartServlet.class, "/multipart");
         holder.getRegistration().setMultipartConfig(multipartConfig);
 
@@ -238,8 +245,7 @@ public class HugeResourceTest
         URI destUri = server.getURI().resolve("/" + filename);
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
 
-        Request request = client.newRequest(destUri)
-            .method(HttpMethod.GET);
+        Request request = client.newRequest(destUri).method(HttpMethod.GET);
         request.send(responseListener);
         Response response = responseListener.get(5, TimeUnit.SECONDS);
 
@@ -248,7 +254,8 @@ public class HugeResourceTest
 
         String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
         long contentLengthLong = Long.parseLong(contentLength);
-        assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
+        assertThat(
+            "Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
 
         try (ByteCountingOutputStream out = new ByteCountingOutputStream();
              InputStream in = responseListener.getInputStream())
@@ -265,8 +272,7 @@ public class HugeResourceTest
         URI destUri = server.getURI().resolve("/chunked/" + filename);
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
 
-        Request request = client.newRequest(destUri)
-            .method(HttpMethod.GET);
+        Request request = client.newRequest(destUri).method(HttpMethod.GET);
         request.send(responseListener);
         Response response = responseListener.get(5, TimeUnit.SECONDS);
 
@@ -291,8 +297,7 @@ public class HugeResourceTest
         URI destUri = server.getURI().resolve("/" + filename);
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
 
-        Request request = client.newRequest(destUri)
-            .method(HttpMethod.HEAD);
+        Request request = client.newRequest(destUri).method(HttpMethod.HEAD);
         request.send(responseListener);
         Response response = responseListener.get(5, TimeUnit.SECONDS);
 
@@ -306,7 +311,8 @@ public class HugeResourceTest
 
         String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
         long contentLengthLong = Long.parseLong(contentLength);
-        assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
+        assertThat(
+            "Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
     }
 
     @ParameterizedTest
@@ -316,8 +322,7 @@ public class HugeResourceTest
         URI destUri = server.getURI().resolve("/chunked/" + filename);
         InputStreamResponseListener responseListener = new InputStreamResponseListener();
 
-        Request request = client.newRequest(destUri)
-            .method(HttpMethod.HEAD);
+        Request request = client.newRequest(destUri).method(HttpMethod.HEAD);
         request.send(responseListener);
         Response response = responseListener.get(5, TimeUnit.SECONDS);
 

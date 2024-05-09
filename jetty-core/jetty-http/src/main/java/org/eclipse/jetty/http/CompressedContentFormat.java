@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.util.Objects;
-
 import org.eclipse.jetty.util.StringUtil;
 
 public class CompressedContentFormat

@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.util.component;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.Test;
 
 /**
  * Testing for LifeCycleListener events on nested components

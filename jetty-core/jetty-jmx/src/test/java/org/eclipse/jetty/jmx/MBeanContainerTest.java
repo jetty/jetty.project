@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.jmx;
 
-import java.lang.management.ManagementFactory;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-
-import com.acme.Managed;
-import org.eclipse.jetty.util.component.Container;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.acme.Managed;
+import java.lang.management.ManagementFactory;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class MBeanContainerTest
 {
@@ -116,7 +115,10 @@ public class MBeanContainerTest
 
         mbeanContainer.beanAdded(null, null);
 
-        assertEquals(mbeanCount, mbeanServer.getMBeanCount(), "MBean count must not change after beanAdded(null, null) call");
+        assertEquals(
+            mbeanCount,
+            mbeanServer.getMBeanCount(),
+            "MBean count must not change after beanAdded(null, null) call");
     }
 
     private void setBeanAdded()
@@ -134,7 +136,9 @@ public class MBeanContainerTest
 
         mbeanContainer.beanRemoved(null, managed);
 
-        assertNull(mbeanContainer.findMBean(managed), "Bean shouldn't be registered with container as we removed the bean");
+        assertNull(
+            mbeanContainer.findMBean(managed),
+            "Bean shouldn't be registered with container as we removed the bean");
     }
 
     private void setUpBeanRemoved()
@@ -155,7 +159,8 @@ public class MBeanContainerTest
         mbeanContainer.getMBeanServer().unregisterMBean(objectName);
 
         // then
-        assertFalse(mbeanServer.isRegistered(objectName), "Bean must not have been registered as we unregistered the bean");
+        assertFalse(
+            mbeanServer.isRegistered(objectName), "Bean must not have been registered as we unregistered the bean");
         // this flow covers InstanceNotFoundException. Actual code just eating
         // the exception. i.e Actual code just printing the stacktrace, whenever
         // an exception of type InstanceNotFoundException occurs.

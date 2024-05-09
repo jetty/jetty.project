@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.proxy;
 
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.StringRequestContent;
@@ -33,8 +34,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReverseProxyTest extends AbstractProxyTest
 {
@@ -56,28 +55,32 @@ public class ReverseProxyTest extends AbstractProxyTest
             }
         });
 
-        startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->
-            HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
-        {
-            @Override
-            protected HttpClient newHttpClient()
+        startProxy(
+            new ProxyHandler.Reverse(clientToProxyRequest -> HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
             {
-                ClientConnector proxyClientConnector = new ClientConnector();
-                QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
-                proxyClientThreads.setName("proxy-client");
-                proxyClientConnector.setExecutor(proxyClientThreads);
-                HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
-                return new HttpClient(new HttpClientTransportDynamic(proxyClientConnector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client)));
-            }
+                @Override
+                protected HttpClient newHttpClient()
+                {
+                    ClientConnector proxyClientConnector = new ClientConnector();
+                    QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
+                    proxyClientThreads.setName("proxy-client");
+                    proxyClientConnector.setExecutor(proxyClientThreads);
+                    HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
+                    return new HttpClient(new HttpClientTransportDynamic(
+                        proxyClientConnector,
+                        HttpClientConnectionFactory.HTTP11,
+                        new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client)));
+                }
 
-            @Override
-            protected org.eclipse.jetty.client.Request newProxyToServerRequest(Request clientToProxyRequest, HttpURI newHttpURI)
-            {
-                // Use the client to proxy protocol also from the proxy to server.
-                return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
-                    .version(httpVersion);
-            }
-        });
+                @Override
+                protected org.eclipse.jetty.client.Request newProxyToServerRequest(
+                                                                                   Request clientToProxyRequest, HttpURI newHttpURI)
+                {
+                    // Use the client to proxy protocol also from the proxy to server.
+                    return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
+                        .version(httpVersion);
+                }
+            });
 
         startClient();
 
@@ -105,28 +108,32 @@ public class ReverseProxyTest extends AbstractProxyTest
                 return true;
             }
         });
-        startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->
-            HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
-        {
-            @Override
-            protected HttpClient newHttpClient()
+        startProxy(
+            new ProxyHandler.Reverse(clientToProxyRequest -> HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
             {
-                ClientConnector proxyClientConnector = new ClientConnector();
-                QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
-                proxyClientThreads.setName("proxy-client");
-                proxyClientConnector.setExecutor(proxyClientThreads);
-                HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
-                return new HttpClient(new HttpClientTransportDynamic(proxyClientConnector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client)));
-            }
+                @Override
+                protected HttpClient newHttpClient()
+                {
+                    ClientConnector proxyClientConnector = new ClientConnector();
+                    QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
+                    proxyClientThreads.setName("proxy-client");
+                    proxyClientConnector.setExecutor(proxyClientThreads);
+                    HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
+                    return new HttpClient(new HttpClientTransportDynamic(
+                        proxyClientConnector,
+                        HttpClientConnectionFactory.HTTP11,
+                        new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client)));
+                }
 
-            @Override
-            protected org.eclipse.jetty.client.Request newProxyToServerRequest(Request clientToProxyRequest, HttpURI newHttpURI)
-            {
-                // Use the client to proxy protocol also from the proxy to server.
-                return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
-                    .version(httpVersion);
-            }
-        });
+                @Override
+                protected org.eclipse.jetty.client.Request newProxyToServerRequest(
+                                                                                   Request clientToProxyRequest, HttpURI newHttpURI)
+                {
+                    // Use the client to proxy protocol also from the proxy to server.
+                    return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
+                        .version(httpVersion);
+                }
+            });
         startClient();
 
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())

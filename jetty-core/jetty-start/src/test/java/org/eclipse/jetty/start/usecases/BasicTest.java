@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +34,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -32,27 +41,13 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 public class BasicTest extends AbstractUseCase
 {
     private void setupDistHome() throws IOException
     {
         setupStandardHomeDir();
 
-        Files.write(homeDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(homeDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
     }
 
     @Test
@@ -60,11 +55,7 @@ public class BasicTest extends AbstractUseCase
     {
         setupDistHome();
 
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = new ArrayList<>();
@@ -72,19 +63,13 @@ public class BasicTest extends AbstractUseCase
         ExecResults results = exec(runArgs, true);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml"
-        );
+        List<String> expectedXmls = Arrays.asList("${jetty.home}/etc/base.xml", "${jetty.home}/etc/main.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/base.jar", "${jetty.home}/lib/main.jar", "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 
@@ -102,10 +87,16 @@ public class BasicTest extends AbstractUseCase
 
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(results.baseHome.getHome()));
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(not(startsWith("file:"))));
-        assertThat("Props(jetty.home.uri)", props.getString("jetty.home.uri") + "/", is(results.baseHome.getHomePath().toUri().toString()));
+        assertThat(
+            "Props(jetty.home.uri)",
+            props.getString("jetty.home.uri") + "/",
+            is(results.baseHome.getHomePath().toUri().toString()));
         assertThat("Props(jetty.base)", props.getString("jetty.base"), is(results.baseHome.getBase()));
         assertThat("Props(jetty.base)", props.getString("jetty.base"), is(not(startsWith("file:"))));
-        assertThat("Props(jetty.base.uri)", props.getString("jetty.base.uri") + "/", is(results.baseHome.getBasePath().toUri().toString()));
+        assertThat(
+            "Props(jetty.base.uri)",
+            props.getString("jetty.base.uri") + "/",
+            is(results.baseHome.getBasePath().toUri().toString()));
 
         assertThat("System.getProperty(jetty.home)", System.getProperty("jetty.home"), is(results.baseHome.getHome()));
         assertThat("System.getProperty(jetty.home)", System.getProperty("jetty.home"), is(not(startsWith("file:"))));
@@ -118,11 +109,9 @@ public class BasicTest extends AbstractUseCase
     {
         setupDistHome();
 
-        Files.write(baseDir.resolve("start.ini"),
-            List.of(
-                "--modules=main",
-                "--modules=does-not-exist"
-            ),
+        Files.write(
+            baseDir.resolve("start.ini"),
+            List.of("--modules=main", "--modules=does-not-exist"),
             StandardCharsets.UTF_8);
 
         // === Execute Main
@@ -144,12 +133,9 @@ public class BasicTest extends AbstractUseCase
     {
         setupDistHome();
 
-        Files.write(baseDir.resolve("start.ini"),
-            List.of(
-                "--modules=main",
-                "--modules=does-not-exist",
-                "--modules=also-not-present"
-            ),
+        Files.write(
+            baseDir.resolve("start.ini"),
+            List.of("--modules=main", "--modules=does-not-exist", "--modules=also-not-present"),
             StandardCharsets.UTF_8);
 
         // === Execute Main
@@ -171,11 +157,8 @@ public class BasicTest extends AbstractUseCase
     {
         Path homePath = MavenTestingUtils.getTestResourcePathDir("providers-home");
 
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=server"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(
+            baseDir.resolve("start.ini"), Collections.singletonList("--modules=server"), StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = new ArrayList<>();
@@ -205,11 +188,8 @@ public class BasicTest extends AbstractUseCase
     {
         Path homePath = MavenTestingUtils.getTestResourcePathDir("providers-home");
 
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=server"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(
+            baseDir.resolve("start.ini"), Collections.singletonList("--modules=server"), StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = new ArrayList<>();
@@ -240,11 +220,7 @@ public class BasicTest extends AbstractUseCase
     {
         setupDistHome();
 
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = new ArrayList<>();
@@ -256,8 +232,10 @@ public class BasicTest extends AbstractUseCase
         runArgs.add("-Xmx1g");
 
         // Arbitrary Libs
-        Path extraJar = MavenTestingUtils.getTestResourcePathFile("extra-libs/example.jar").toRealPath();
-        Path extraDir = MavenTestingUtils.getTestResourcePathDir("extra-resources").toRealPath();
+        Path extraJar = MavenTestingUtils.getTestResourcePathFile("extra-libs/example.jar")
+            .toRealPath();
+        Path extraDir =
+            MavenTestingUtils.getTestResourcePathDir("extra-resources").toRealPath();
 
         assertThat("Extra Jar exists: " + extraJar, Files.exists(extraJar), is(true));
         assertThat("Extra Dir exists: " + extraDir, Files.exists(extraDir), is(true));
@@ -278,8 +256,7 @@ public class BasicTest extends AbstractUseCase
             "${jetty.home}/etc/main.xml",
             "${jetty.home}/etc/config.xml",
             "${jetty.home}/etc/config-foo.xml",
-            "${jetty.home}/etc/config-bar.xml"
-        );
+            "${jetty.home}/etc/config-bar.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
@@ -289,8 +266,7 @@ public class BasicTest extends AbstractUseCase
             extraDir.toString(),
             "${jetty.home}/lib/base.jar",
             "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 
@@ -304,11 +280,9 @@ public class BasicTest extends AbstractUseCase
         PathAssert.assertDirExists("Required Directory: maindir/", results.baseHome.getPath("maindir/"));
 
         // === Validate JVM args
-        List<String> expectedJvmArgs = Arrays.asList(
-            "-Xms1g",
-            "-Xmx1g"
-        );
-        List<String> actualJvmArgs = new ArrayList<>(results.startArgs.getJvmArgSources().keySet());
+        List<String> expectedJvmArgs = Arrays.asList("-Xms1g", "-Xmx1g");
+        List<String> actualJvmArgs =
+            new ArrayList<>(results.startArgs.getJvmArgSources().keySet());
         assertThat("JVM Args", actualJvmArgs, contains(expectedJvmArgs.toArray()));
     }
 
@@ -317,11 +291,7 @@ public class BasicTest extends AbstractUseCase
     {
         setupDistHome();
 
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = new ArrayList<>();
@@ -338,8 +308,7 @@ public class BasicTest extends AbstractUseCase
             "${jetty.home}/etc/optional.xml",
             "${jetty.home}/etc/base.xml",
             "${jetty.home}/etc/main.xml",
-            "${jetty.home}/etc/extra.xml"
-        );
+            "${jetty.home}/etc/extra.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
@@ -350,8 +319,7 @@ public class BasicTest extends AbstractUseCase
             "${jetty.home}/lib/main.jar",
             "${jetty.home}/lib/other.jar",
             "${jetty.home}/lib/extra/extra0.jar",
-            "${jetty.home}/lib/extra/extra1.jar"
-        );
+            "${jetty.home}/lib/extra/extra1.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 
@@ -381,19 +349,13 @@ public class BasicTest extends AbstractUseCase
         ExecResults results = exec(runArgs, true);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml"
-        );
+        List<String> expectedXmls = Arrays.asList("${jetty.home}/etc/base.xml", "${jetty.home}/etc/main.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/base.jar", "${jetty.home}/lib/main.jar", "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 
@@ -408,10 +370,16 @@ public class BasicTest extends AbstractUseCase
 
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(results.baseHome.getHome()));
         assertThat("Props(jetty.home)", props.getString("jetty.home"), is(not(startsWith("file:"))));
-        assertThat("Props(jetty.home.uri)", props.getString("jetty.home.uri") + "/", is(results.baseHome.getHomePath().toUri().toString()));
+        assertThat(
+            "Props(jetty.home.uri)",
+            props.getString("jetty.home.uri") + "/",
+            is(results.baseHome.getHomePath().toUri().toString()));
         assertThat("Props(jetty.base)", props.getString("jetty.base"), is(results.baseHome.getBase()));
         assertThat("Props(jetty.base)", props.getString("jetty.base"), is(not(startsWith("file:"))));
-        assertThat("Props(jetty.base.uri)", props.getString("jetty.base.uri") + "/", is(results.baseHome.getBasePath().toUri().toString()));
+        assertThat(
+            "Props(jetty.base.uri)",
+            props.getString("jetty.base.uri") + "/",
+            is(results.baseHome.getBasePath().toUri().toString()));
 
         assertThat("System.getProperty(jetty.home)", System.getProperty("jetty.home"), is(results.baseHome.getHome()));
         assertThat("System.getProperty(jetty.home)", System.getProperty("jetty.home"), is(not(startsWith("file:"))));

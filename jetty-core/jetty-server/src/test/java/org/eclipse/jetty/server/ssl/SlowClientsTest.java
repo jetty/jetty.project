@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static java.time.Duration.ofSeconds;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -27,7 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
-
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -45,8 +46,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.time.Duration.ofSeconds;
 
 public class SlowClientsTest
 {
@@ -111,50 +110,54 @@ public class SlowClientsTest
             for (int i = 0; i < futures.length; i++)
             {
                 int k = i;
-                futures[i] = CompletableFuture.runAsync(() ->
-                {
-                    try (Socket socket = newSocketToServer())
+                futures[i] = CompletableFuture.runAsync(
+                    () ->
                     {
-                        socket.setSoTimeout(contentLength / 1024);
-                        OutputStream output = socket.getOutputStream();
-                        String target = "/" + k;
-                        String rawRequest = """
-                            GET %s HTTP/1.1\r
-                            Host: localhost\r
-                            Connection: close\r
-                            \r
-                            """.formatted(target);
-                        output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
-                        output.flush();
-
-                        int delayReadCount = 10;
-
-                        InputStream input = socket.getInputStream();
-                        while (true)
+                        try (Socket socket = newSocketToServer())
                         {
-                            int read = input.read();
-                            if (read < 0)
-                                break;
-                            // simulate a slow client (for a bit).
-                            // we are testing that the server thread pool doesn't misbehave
-                            // in this scenario, where there are more clients active than server threads.
-                            if (delayReadCount > 0)
+                            socket.setSoTimeout(contentLength / 1024);
+                            OutputStream output = socket.getOutputStream();
+                            String target = "/" + k;
+                            String rawRequest =
+                                """
+                                    GET %s HTTP/1.1\r
+                                    Host: localhost\r
+                                    Connection: close\r
+                                    \r
+                                    """
+                                    .formatted(target);
+                            output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+                            output.flush();
+
+                            int delayReadCount = 10;
+
+                            InputStream input = socket.getInputStream();
+                            while (true)
                             {
-                                TimeUnit.MILLISECONDS.sleep(200);
-                                delayReadCount--;
+                                int read = input.read();
+                                if (read < 0)
+                                    break;
+                                // simulate a slow client (for a bit).
+                                // we are testing that the server thread pool doesn't misbehave
+                                // in this scenario, where there are more clients active than server threads.
+                                if (delayReadCount > 0)
+                                {
+                                    TimeUnit.MILLISECONDS.sleep(200);
+                                    delayReadCount--;
+                                }
                             }
+                            LOG.info("FINISHED {}", target);
                         }
-                        LOG.info("FINISHED {}", target);
-                    }
-                    catch (IOException x)
-                    {
-                        throw new UncheckedIOException(x);
-                    }
-                    catch (InterruptedException x)
-                    {
-                        throw new UncheckedIOException(new InterruptedIOException());
-                    }
-                }, executor);
+                        catch (IOException x)
+                        {
+                            throw new UncheckedIOException(x);
+                        }
+                        catch (InterruptedException x)
+                        {
+                            throw new UncheckedIOException(new InterruptedIOException());
+                        }
+                    },
+                    executor);
             }
             CompletableFuture.allOf(futures).join();
         });

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
-import java.util.EventListener;
-
 import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.ServletRequestAttributeListener;
@@ -23,6 +21,7 @@ import jakarta.servlet.annotation.WebListener;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import java.util.EventListener;
 import org.eclipse.jetty.ee9.servlet.ListenerHolder;
 import org.eclipse.jetty.ee9.servlet.Source;
 import org.eclipse.jetty.ee9.webapp.DiscoveredAnnotation;
@@ -63,18 +62,13 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
 
         try
         {
-            if (ServletContextListener.class.isAssignableFrom(clazz) ||
-                ServletContextAttributeListener.class.isAssignableFrom(clazz) ||
-                ServletRequestListener.class.isAssignableFrom(clazz) ||
-                ServletRequestAttributeListener.class.isAssignableFrom(clazz) ||
-                HttpSessionListener.class.isAssignableFrom(clazz) ||
-                HttpSessionAttributeListener.class.isAssignableFrom(clazz) ||
-                HttpSessionIdListener.class.isAssignableFrom(clazz))
+            if (ServletContextListener.class.isAssignableFrom(clazz) || ServletContextAttributeListener.class.isAssignableFrom(clazz) || ServletRequestListener.class.isAssignableFrom(clazz) || ServletRequestAttributeListener.class.isAssignableFrom(clazz) || HttpSessionListener.class.isAssignableFrom(clazz) || HttpSessionAttributeListener.class.isAssignableFrom(clazz) || HttpSessionIdListener.class.isAssignableFrom(clazz))
             {
                 MetaData metaData = _context.getMetaData();
                 if (metaData.getOrigin(clazz.getName() + ".listener") == Origin.NotSet)
                 {
-                    ListenerHolder h = _context.getServletHandler().newListenerHolder(new Source(Source.Origin.ANNOTATION, clazz));
+                    ListenerHolder h =
+                        _context.getServletHandler().newListenerHolder(new Source(Source.Origin.ANNOTATION, clazz));
                     h.setHeldClass(clazz);
                     _context.getServletHandler().addListener(h);
                     metaData.setOrigin(clazz.getName() + ".listener", clazz.getAnnotation(WebListener.class), clazz);

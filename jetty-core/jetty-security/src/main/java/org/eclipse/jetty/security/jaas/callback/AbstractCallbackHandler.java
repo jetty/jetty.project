@@ -44,8 +44,7 @@ public abstract class AbstractCallbackHandler implements CallbackHandler
     }
 
     @Override
-    public void handle(Callback[] callbacks)
-        throws IOException, UnsupportedCallbackException
+    public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
     {
     }
 }

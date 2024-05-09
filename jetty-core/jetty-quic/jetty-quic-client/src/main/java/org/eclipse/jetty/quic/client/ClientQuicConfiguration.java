@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.client;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
-
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.quiche.PemExporter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -86,7 +85,8 @@ public class ClientQuicConfiguration extends QuicConfiguration
         deleteFile(certificateChainPemPath);
         Path privateKeyPemPath = (Path)getImplementationConfiguration().remove(PRIVATE_KEY_PEM_PATH_KEY);
         deleteFile(privateKeyPemPath);
-        Path trustedCertificatesPemPath = (Path)getImplementationConfiguration().remove(TRUSTED_CERTIFICATES_PEM_PATH_KEY);
+        Path trustedCertificatesPemPath =
+            (Path)getImplementationConfiguration().remove(TRUSTED_CERTIFICATES_PEM_PATH_KEY);
         deleteFile(trustedCertificatesPemPath);
     }
 

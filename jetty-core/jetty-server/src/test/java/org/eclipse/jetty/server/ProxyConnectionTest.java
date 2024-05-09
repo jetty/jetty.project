@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
@@ -29,20 +31,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 public class ProxyConnectionTest
 {
     @ParameterizedTest
     @MethodSource("requestProcessors")
     public void testBadCRLF(RequestProcessor p) throws Exception
     {
-        String request = "PROXY TCP 1.2.3.4 5.6.7.8 111 222\r \n" +
-            "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = "PROXY TCP 1.2.3.4 5.6.7.8 111 222\r \n" + "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
         String response = p.sendRequestWaitingForResponse(request);
         assertNull(response);
     }
@@ -51,11 +46,7 @@ public class ProxyConnectionTest
     @MethodSource("requestProcessors")
     public void testBadChar(RequestProcessor p) throws Exception
     {
-        String request = "PROXY\tTCP 1.2.3.4 5.6.7.8 111 222\r\n" +
-            "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = "PROXY\tTCP 1.2.3.4 5.6.7.8 111 222\r\n" + "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
         String response = p.sendRequestWaitingForResponse(request);
         assertNull(response);
     }
@@ -66,11 +57,7 @@ public class ProxyConnectionTest
     {
         try (StacklessLogging stackless = new StacklessLogging(ProxyConnectionFactory.class))
         {
-            String request = "PROXY TCP 1.2.3.4 5.6.7.8 9999999999999 222\r\n" +
-                "GET /path HTTP/1.1\n" +
-                "Host: server:80\n" +
-                "Connection: close\n" +
-                "\n";
+            String request = "PROXY TCP 1.2.3.4 5.6.7.8 9999999999999 222\r\n" + "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
             String response = p.sendRequestWaitingForResponse(request);
             assertNull(response);
         }
@@ -80,11 +67,7 @@ public class ProxyConnectionTest
     @MethodSource("requestProcessors")
     public void testHttp(RequestProcessor p) throws Exception
     {
-        String request =
-            "GET /path HTTP/1.1\n" +
-                "Host: server:80\n" +
-                "Connection: close\n" +
-                "\n";
+        String request = "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
         String response = p.sendRequestWaitingForResponse(request);
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
     }
@@ -94,11 +77,8 @@ public class ProxyConnectionTest
     public void testIPv6(RequestProcessor p) throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-        String request = "PROXY TCP6 eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff 65535 65535\r\n" +
-            "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request =
+            "PROXY TCP6 eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff 65535 65535\r\n" + "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
 
         String response = p.sendRequestWaitingForResponse(request);
 
@@ -133,12 +113,10 @@ public class ProxyConnectionTest
                 "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE" + // eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee
                 "3039" + // 12345
                 "1F90"; // 8080
-        String http = "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String http = "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
 
-        String response = p.sendRequestWaitingForResponse(StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
+        String response = p.sendRequestWaitingForResponse(
+            StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInContext=/path"));
@@ -164,14 +142,11 @@ public class ProxyConnectionTest
                 "0010" +
 
                 // gibberish
-                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-            ;
-        String http = "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+        String http = "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
 
-        String response = p.sendRequestWaitingForResponse(StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
+        String response = p.sendRequestWaitingForResponse(
+            StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInContext=/path"));
@@ -183,11 +158,7 @@ public class ProxyConnectionTest
     @MethodSource("requestProcessors")
     public void testMissingField(RequestProcessor p) throws Exception
     {
-        String request = "PROXY TCP 1.2.3.4 5.6.7.8 222\r\n" +
-            "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = "PROXY TCP 1.2.3.4 5.6.7.8 222\r\n" + "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
         String response = p.sendRequestWaitingForResponse(request);
         assertNull(response);
     }
@@ -196,7 +167,8 @@ public class ProxyConnectionTest
     @MethodSource("requestProcessors")
     public void testNotComplete(RequestProcessor p) throws Exception
     {
-        String response = p.customize(connector -> connector.setIdleTimeout(100)).sendRequestWaitingForResponse("PROXY TIMEOUT");
+        String response =
+            p.customize(connector -> connector.setIdleTimeout(100)).sendRequestWaitingForResponse("PROXY TIMEOUT");
         assertNull(response);
     }
 
@@ -204,11 +176,8 @@ public class ProxyConnectionTest
     @MethodSource("requestProcessors")
     public void testTooLong(RequestProcessor p) throws Exception
     {
-        String request = "PROXY TOOLONG!!! eeee:eeee:eeee:eeee:0000:0000:0000:0000 ffff:ffff:ffff:ffff:0000:0000:0000:0000 65535 65535\r\n" +
-            "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request =
+            "PROXY TOOLONG!!! eeee:eeee:eeee:eeee:0000:0000:0000:0000 ffff:ffff:ffff:ffff:0000:0000:0000:0000 65535 65535\r\n" + "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
 
         String response = p.sendRequestWaitingForResponse(request);
 
@@ -219,11 +188,7 @@ public class ProxyConnectionTest
     @MethodSource("requestProcessors")
     public void testSimple(RequestProcessor p) throws Exception
     {
-        String request = "PROXY TCP 1.2.3.4 5.6.7.8 111 222\r\n" +
-            "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = "PROXY TCP 1.2.3.4 5.6.7.8 111 222\r\n" + "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
 
         String response = p.sendRequestWaitingForResponse(request);
 
@@ -256,12 +221,10 @@ public class ProxyConnectionTest
                 "7f000001" + // 127.0.0.1
                 "3039" + // 12345
                 "1F90"; // 8080
-        String http = "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+        String http = "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
 
-        String response = p.sendRequestWaitingForResponse(StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
+        String response = p.sendRequestWaitingForResponse(
+            StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInContext=/path"));
@@ -293,16 +256,11 @@ public class ProxyConnectionTest
                 "000C" +
 
                 // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
-                "C0A80001" +
-                "7f000001" +
-                "3039" +
-                "1F90";
-        String http = "GET /path HTTP/1.1\n" +
-            "Host: server:80\n" +
-            "Connection: close\n" +
-            "\n";
+                "C0A80001" + "7f000001" + "3039" + "1F90";
+        String http = "GET /path HTTP/1.1\n" + "Host: server:80\n" + "Connection: close\n" + "\n";
 
-        String response = p.sendRequestWaitingForResponse(StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
+        String response = p.sendRequestWaitingForResponse(
+            StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.is(Matchers.nullValue()));
     }
@@ -402,8 +360,6 @@ public class ProxyConnectionTest
                 {
                     return "Byte by byte";
                 }
-            })
-        );
+            }));
     }
-
 }

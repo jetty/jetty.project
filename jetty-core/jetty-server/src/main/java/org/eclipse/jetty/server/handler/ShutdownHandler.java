@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
@@ -152,18 +151,24 @@ public class ShutdownHandler extends Handler.Wrapper
 
         if (!hasCorrectSecurityToken(request))
         {
-            LOG.warn("Unauthorized tokenless shutdown attempt from {}", request.getConnectionMetaData().getRemoteSocketAddress());
+            LOG.warn(
+                "Unauthorized tokenless shutdown attempt from {}",
+                request.getConnectionMetaData().getRemoteSocketAddress());
             Response.writeError(request, response, callback, HttpStatus.UNAUTHORIZED_401);
             return true;
         }
         if (!requestFromLocalhost(request))
         {
-            LOG.warn("Unauthorized non-loopback shutdown attempt from {}", request.getConnectionMetaData().getRemoteSocketAddress());
+            LOG.warn(
+                "Unauthorized non-loopback shutdown attempt from {}",
+                request.getConnectionMetaData().getRemoteSocketAddress());
             Response.writeError(request, response, callback, HttpStatus.UNAUTHORIZED_401);
             return true;
         }
 
-        LOG.info("Shutting down by request from {}", request.getConnectionMetaData().getRemoteSocketAddress());
+        LOG.info(
+            "Shutting down by request from {}",
+            request.getConnectionMetaData().getRemoteSocketAddress());
         // Establish callback to trigger server shutdown when write of response is complete
         Callback triggerShutdownCallback = Callback.from(() ->
         {

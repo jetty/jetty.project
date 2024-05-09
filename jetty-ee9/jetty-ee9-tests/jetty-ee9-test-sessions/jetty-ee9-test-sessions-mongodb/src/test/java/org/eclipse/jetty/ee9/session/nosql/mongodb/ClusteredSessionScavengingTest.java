@@ -24,9 +24,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
 
-    private static final String DB_NAME = "DB" + ClusteredSessionScavengingTest.class.getSimpleName() + System.nanoTime();
+    private static final String DB_NAME =
+        "DB" + ClusteredSessionScavengingTest.class.getSimpleName() + System.nanoTime();
 
-    private static final String COLLECTION_NAME = "COLLECTION" + ClusteredSessionScavengingTest.class.getSimpleName() + System.nanoTime();
+    private static final String COLLECTION_NAME =
+        "COLLECTION" + ClusteredSessionScavengingTest.class.getSimpleName() + System.nanoTime();
 
     @BeforeAll
     public static void beforeClass() throws Exception

@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import jakarta.servlet.Registration;
+import jakarta.servlet.ServletContext;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import jakarta.servlet.Registration;
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -104,8 +103,7 @@ public abstract class Holder<T> extends BaseHolder<T>
         }
     }
 
-    public void destroyInstance(Object instance)
-        throws Exception
+    public void destroyInstance(Object instance) throws Exception
     {
     }
 
@@ -288,8 +286,3 @@ public abstract class Holder<T> extends BaseHolder<T>
         }
     }
 }
-
-
-
-
-

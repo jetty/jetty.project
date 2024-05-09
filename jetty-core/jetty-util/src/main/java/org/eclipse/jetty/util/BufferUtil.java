@@ -32,7 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
-
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,12 +98,24 @@ public class BufferUtil
     static final int TEMP_BUFFER_SIZE = 4096;
     static final byte SPACE = 0x20;
     static final byte MINUS = '-';
-    static final byte[] DIGIT =
-        {
-            (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
-            (byte)'A', (byte)'B', (byte)'C', (byte)'D',
-            (byte)'E', (byte)'F'
-        };
+    static final byte[] DIGIT = {
+        (byte)'0',
+        (byte)'1',
+        (byte)'2',
+        (byte)'3',
+        (byte)'4',
+        (byte)'5',
+        (byte)'6',
+        (byte)'7',
+        (byte)'8',
+        (byte)'9',
+        (byte)'A',
+        (byte)'B',
+        (byte)'C',
+        (byte)'D',
+        (byte)'E',
+        (byte)'F'
+    };
 
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]).asReadOnlyBuffer();
 
@@ -653,7 +664,8 @@ public class BufferUtil
     {
         if (buffer.hasArray())
         {
-            int read = is.read(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit());
+            int read =
+                is.read(buffer.array(), buffer.arrayOffset() + buffer.limit(), buffer.capacity() - buffer.limit());
             buffer.limit(buffer.limit() + read);
             return read;
         }
@@ -1356,21 +1368,31 @@ public class BufferUtil
         return StringUtil.toHexString(b);
     }
 
-    private static final int[] decDivisors =
-    {
-        1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1
+    private static final int[] decDivisors = {1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1
     };
 
-    private static final int[] hexDivisors =
-    {
-        0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1
-    };
+    private static final int[] hexDivisors = {0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1};
 
-    private static final long[] decDivisorsL =
-    {
-        1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L,
-        1000000000000L, 100000000000L,
-        10000000000L, 1000000000L, 100000000L, 10000000L, 1000000L, 100000L, 10000L, 1000L, 100L, 10L, 1L
+    private static final long[] decDivisorsL = {
+        1000000000000000000L,
+        100000000000000000L,
+        10000000000000000L,
+        1000000000000000L,
+        100000000000000L,
+        10000000000000L,
+        1000000000000L,
+        100000000000L,
+        10000000000L,
+        1000000000L,
+        100000000L,
+        10000000L,
+        1000000L,
+        100000L,
+        10000L,
+        1000L,
+        100L,
+        10L,
+        1L
     };
 
     public static void putCRLF(ByteBuffer buffer)
@@ -1401,7 +1423,10 @@ public class BufferUtil
             return buffer;
 
         if (buffer.hasArray())
-            return ByteBuffer.wrap(Arrays.copyOfRange(buffer.array(), buffer.arrayOffset(), buffer.arrayOffset() + capacity), buffer.position(), buffer.remaining());
+            return ByteBuffer.wrap(
+                Arrays.copyOfRange(buffer.array(), buffer.arrayOffset(), buffer.arrayOffset() + capacity),
+                buffer.position(),
+                buffer.remaining());
 
         throw new UnsupportedOperationException();
     }

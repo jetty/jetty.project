@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.charset.StandardCharsets;
-import java.util.stream.Stream;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class MimeTypesTest
 {
@@ -47,8 +46,7 @@ public class MimeTypesTest
             // Make sure that a deep path doesn't interfere
             Arguments.of("org/eclipse/jetty/Logo.png", "image/png"),
             // Make sure that path that looks like a filename doesn't interfere
-            Arguments.of("org/eclipse.jpg/jetty/Logo.png", "image/png")
-        );
+            Arguments.of("org/eclipse.jpg/jetty/Logo.png", "image/png"));
     }
 
     @ParameterizedTest
@@ -57,8 +55,7 @@ public class MimeTypesTest
     {
         MimeTypes mimetypes = new MimeTypes();
         String contentType = mimetypes.getMimeByExtension(filename);
-        assertThat("MimeTypes.getMimeByExtension(\"" + filename + "\")",
-            contentType, is(expectedMimeType));
+        assertThat("MimeTypes.getMimeByExtension(\"" + filename + "\")", contentType, is(expectedMimeType));
     }
 
     @Test
@@ -89,16 +86,17 @@ public class MimeTypesTest
             Arguments.of("application/pdf;; charset=UTF-8", "utf-8"),
             Arguments.of("application/pdf;;; charset=UTF-8", "utf-8"),
             Arguments.of("application/pdf;;;; charset=UTF-8", "utf-8"),
-            Arguments.of("text/html;charset=utf-8", "utf-8")
-        );
+            Arguments.of("text/html;charset=utf-8", "utf-8"));
     }
 
     @ParameterizedTest
     @MethodSource("charsetFromContentTypeCases")
     public void testCharsetFromContentType(String contentType, String expectedCharset)
     {
-        assertThat("getCharsetFromContentType(\"" + contentType + "\")",
-            MimeTypes.getCharsetFromContentType(contentType), is(expectedCharset));
+        assertThat(
+            "getCharsetFromContentType(\"" + contentType + "\")",
+            MimeTypes.getCharsetFromContentType(contentType),
+            is(expectedCharset));
     }
 
     public static Stream<Arguments> contentTypeWithoutCharsetCases()
@@ -111,22 +109,25 @@ public class MimeTypesTest
             Arguments.of("foo/bar;other=param;charset=abc;some=else", "foo/bar;other=param;some=else"),
             Arguments.of("foo/bar;other=param;charset=abc", "foo/bar;other=param"),
             Arguments.of("foo/bar ; other = param ; charset = abc", "foo/bar ; other = param"),
-            Arguments.of("foo/bar ; other = param ; charset = abc ; some=else", "foo/bar ; other = param;some=else"),
+            Arguments.of(
+                "foo/bar ; other = param ; charset = abc ; some=else", "foo/bar ; other = param;some=else"),
             Arguments.of("foo/bar ; other = param ; charset = abc", "foo/bar ; other = param"),
-            Arguments.of("foo/bar ; other = param ; charset = \"abc\" ; some=else", "foo/bar ; other = param;some=else"),
+            Arguments.of(
+                "foo/bar ; other = param ; charset = \"abc\" ; some=else", "foo/bar ; other = param;some=else"),
             Arguments.of("foo/bar", "foo/bar"),
             Arguments.of("foo/bar;charset=uTf8", "foo/bar"),
             Arguments.of("foo/bar;other=\"charset=abc\";charset=uTf8", "foo/bar;other=\"charset=abc\""),
-            Arguments.of("text/html;charset=utf-8", "text/html")
-        );
+            Arguments.of("text/html;charset=utf-8", "text/html"));
     }
 
     @ParameterizedTest
     @MethodSource("contentTypeWithoutCharsetCases")
     public void testContentTypeWithoutCharset(String contentTypeWithCharset, String expectedContentType)
     {
-        assertThat("MimeTypes.getContentTypeWithoutCharset(\"" + contentTypeWithCharset + "\")",
-            MimeTypes.getContentTypeWithoutCharset(contentTypeWithCharset), is(expectedContentType));
+        assertThat(
+            "MimeTypes.getContentTypeWithoutCharset(\"" + contentTypeWithCharset + "\")",
+            MimeTypes.getContentTypeWithoutCharset(contentTypeWithCharset),
+            is(expectedContentType));
     }
 
     public static Stream<Arguments> mimeTypesGetBaseTypeCases()
@@ -139,9 +140,7 @@ public class MimeTypesTest
             Arguments.of("text/html; charset=iso-8859-1", MimeTypes.Type.TEXT_HTML),
             Arguments.of("text/html;charset=utf-8;other=param", MimeTypes.Type.TEXT_HTML),
             Arguments.of("text/html;other=param;charset=iso-8859-1", MimeTypes.Type.TEXT_HTML),
-
-            Arguments.of(null, null)
-        );
+            Arguments.of(null, null));
     }
 
     @ParameterizedTest

@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.api;
 import java.io.Closeable;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**

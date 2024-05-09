@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -21,7 +29,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -44,14 +51,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ConnectFutureTest
 {
     private Server server;
@@ -67,8 +66,8 @@ public class ConnectFutureTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            configuration.accept(container));
+        JettyWebSocketServletContainerInitializer.configure(
+            contextHandler, (context, container) -> configuration.accept(container));
         server.start();
 
         client = new WebSocketClient();
@@ -186,7 +185,8 @@ public class ConnectFutureTest
 
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest, upgradeListener);
+        Future<Session> connect =
+            client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest, upgradeListener);
 
         // Abort after after handshake response, this is during the connection upgrade.
         assertTrue(enteredListener.await(5, TimeUnit.SECONDS));

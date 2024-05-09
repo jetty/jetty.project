@@ -13,13 +13,10 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.EnumSet;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -28,6 +25,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.EnumSet;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
@@ -42,11 +46,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public abstract class AbstractDoSFilterTest
 {
     private Server _server;
@@ -60,7 +59,8 @@ public abstract class AbstractDoSFilterTest
         _server.addConnector(_connector);
         ServletContextHandler context = new ServletContextHandler(_server, "/ctx", true, false);
 
-        DefaultSessionCache sessionCache = new DefaultSessionCache(context.getSessionHandler().getSessionManager());
+        DefaultSessionCache sessionCache =
+            new DefaultSessionCache(context.getSessionHandler().getSessionManager());
         FileSessionDataStore fileStore = new FileSessionDataStore();
 
         Path p = workDir.resolve("sessions");
@@ -72,7 +72,8 @@ public abstract class AbstractDoSFilterTest
 
         context.addServlet(TestServlet.class, "/*");
 
-        FilterHolder dosFilter = context.addFilter(filter, "/dos/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        FilterHolder dosFilter =
+            context.addFilter(filter, "/dos/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
         dosFilter.setInitParameter("maxRequestsPerSec", "4");
         dosFilter.setInitParameter("delayMs", "200");
         dosFilter.setInitParameter("throttledRequests", "1");
@@ -81,7 +82,8 @@ public abstract class AbstractDoSFilterTest
         dosFilter.setInitParameter("remotePort", "false");
         dosFilter.setInitParameter("insertHeaders", "true");
 
-        FilterHolder timeoutFilter = context.addFilter(filter, "/timeout/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        FilterHolder timeoutFilter =
+            context.addFilter(filter, "/timeout/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
         timeoutFilter.setInitParameter("maxRequestsPerSec", "4");
         timeoutFilter.setInitParameter("delayMs", "200");
         timeoutFilter.setInitParameter("throttledRequests", "1");
@@ -100,7 +102,9 @@ public abstract class AbstractDoSFilterTest
         LifeCycle.stop(_server);
     }
 
-    protected String doRequests(String loopRequests, int loops, long pauseBetweenLoops, long pauseBeforeLast, String lastRequest) throws Exception
+    protected String doRequests(
+                                String loopRequests, int loops, long pauseBetweenLoops, long pauseBeforeLast, String lastRequest)
+        throws Exception
     {
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
@@ -108,7 +112,7 @@ public abstract class AbstractDoSFilterTest
 
             OutputStream out = socket.getOutputStream();
 
-            for (int i = loops; i-- > 0; )
+            for (int i = loops; i-- > 0;)
             {
                 out.write(loopRequests.getBytes(StandardCharsets.UTF_8));
                 out.flush();
@@ -188,7 +192,8 @@ public abstract class AbstractDoSFilterTest
             {
                 // Cause a delay, then sleep while holding pass
                 String request = "GET /ctx/dos/sleeper HTTP/1.1\r\nHost: localhost\r\n\r\n";
-                String last = "GET /ctx/dos/sleeper?sleep=2000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+                String last =
+                    "GET /ctx/dos/sleeper?sleep=2000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
                 doRequests(request + request + request + request, 1, 0, 0, last);
             }
             catch (Exception e)
@@ -263,7 +268,8 @@ public abstract class AbstractDoSFilterTest
     public static class TestServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             if (request.getParameter("session") != null)
                 request.getSession(true);
@@ -284,7 +290,10 @@ public abstract class AbstractDoSFilterTest
                 int count = Integer.parseInt(request.getParameter("lines"));
                 for (int i = 0; i < count; ++i)
                 {
-                    response.getWriter().append("Line: ").append(String.valueOf(i)).append("\n");
+                    response.getWriter()
+                        .append("Line: ")
+                        .append(String.valueOf(i))
+                        .append("\n");
                     response.flushBuffer();
 
                     try

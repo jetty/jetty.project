@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
@@ -21,7 +28,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import javax.net.ssl.SSLSocket;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -44,13 +50,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class TryPathsHandlerTest
@@ -188,7 +187,10 @@ public class TryPathsHandlerTest
             {
                 response.setStatus(HttpStatus.OK_200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
-                String message = "PHP: pathInContext=%s, query=%s".formatted(Request.getPathInContext(request), request.getHttpURI().getQuery());
+                String message = "PHP: pathInContext=%s, query=%s"
+                    .formatted(
+                        Request.getPathInContext(request),
+                        request.getHttpURI().getQuery());
                 Content.Sink.write(response, true, message, callback);
                 return true;
             }
@@ -261,19 +263,22 @@ public class TryPathsHandlerTest
     {
         Path tmpPath = workDir.getEmptyPathDir();
         String path = "/secure";
-        start(List.of("$path"), new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
+        start(
+            List.of("$path"),
+            new Handler.Abstract.NonBlocking()
             {
-                HttpURI httpURI = request.getHttpURI();
-                assertEquals("https", httpURI.getScheme());
-                assertTrue(request.isSecure());
-                assertEquals(path, Request.getPathInContext(request));
-                callback.succeeded();
-                return true;
-            }
-        }, tmpPath);
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    HttpURI httpURI = request.getHttpURI();
+                    assertEquals("https", httpURI.getScheme());
+                    assertTrue(request.isSecure());
+                    assertEquals(path, Request.getPathInContext(request));
+                    callback.succeeded();
+                    return true;
+                }
+            },
+            tmpPath);
 
         try (SSLSocket sslSocket = sslContextFactory.newSslSocket())
         {

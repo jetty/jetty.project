@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -42,7 +41,8 @@ public class WindowUpdateGenerator extends FrameGenerator
         if (windowUpdate < 0)
             throw new IllegalArgumentException("Invalid window update: " + windowUpdate);
 
-        RetainableByteBuffer header = generateHeader(FrameType.WINDOW_UPDATE, WindowUpdateFrame.WINDOW_UPDATE_LENGTH, Flags.NONE, streamId);
+        RetainableByteBuffer header =
+            generateHeader(FrameType.WINDOW_UPDATE, WindowUpdateFrame.WINDOW_UPDATE_LENGTH, Flags.NONE, streamId);
         ByteBuffer byteBuffer = header.getByteBuffer();
         byteBuffer.putInt(windowUpdate);
         BufferUtil.flipToFlush(byteBuffer, 0);

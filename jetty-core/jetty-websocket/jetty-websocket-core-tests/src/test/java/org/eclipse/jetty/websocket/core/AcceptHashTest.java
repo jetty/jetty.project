@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.util.Base64;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class AcceptHashTest
 {
@@ -45,8 +44,7 @@ public class AcceptHashTest
             Arguments.of("dGhlIHNhbXBsZSBub25jZQ==", "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="),
 
             // Real World Captured values (from functional browser sessions)
-            Arguments.of("xo++9aD2ivkaFaRNKcOrwQ==", "eYTC3DAl9qX36VRW2fZ/LPwTFZU=")
-        );
+            Arguments.of("xo++9aD2ivkaFaRNKcOrwQ==", "eYTC3DAl9qX36VRW2fZ/LPwTFZU="));
     }
 
     @ParameterizedTest

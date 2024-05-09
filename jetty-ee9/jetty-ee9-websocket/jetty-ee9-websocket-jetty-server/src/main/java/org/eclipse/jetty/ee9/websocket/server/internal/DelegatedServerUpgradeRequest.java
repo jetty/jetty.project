@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.server.internal;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.net.HttpCookie;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -27,10 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
@@ -51,8 +50,8 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 
     public DelegatedServerUpgradeRequest(ServerUpgradeRequest request)
     {
-        this.httpServletRequest = (HttpServletRequest)request
-            .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+        this.httpServletRequest =
+            (HttpServletRequest)request.getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
         this.upgradeRequest = request;
         this.queryString = httpServletRequest.getQueryString();
 

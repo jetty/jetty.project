@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http.spi;
 
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -20,9 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -116,7 +115,9 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
     public InetSocketAddress getAddress()
     {
         if (_addr.getPort() == 0 && _server.isStarted())
-            return new InetSocketAddress(_addr.getHostString(), _server.getBean(NetworkConnector.class).getLocalPort());
+            return new InetSocketAddress(
+                _addr.getHostString(),
+                _server.getBean(NetworkConnector.class).getLocalPort());
         return _addr;
     }
 

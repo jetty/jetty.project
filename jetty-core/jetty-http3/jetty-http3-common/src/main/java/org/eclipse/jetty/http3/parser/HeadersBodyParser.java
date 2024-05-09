@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
@@ -37,7 +36,12 @@ public class HeadersBodyParser extends BodyParser
     private State state = State.INIT;
     private long length;
 
-    public HeadersBodyParser(HeaderParser headerParser, ParserListener listener, QpackDecoder decoder, long streamId, BooleanSupplier isLast)
+    public HeadersBodyParser(
+                             HeaderParser headerParser,
+                             ParserListener listener,
+                             QpackDecoder decoder,
+                             long streamId,
+                             BooleanSupplier isLast)
     {
         super(headerParser, listener);
         this.streamId = streamId;
@@ -95,7 +99,9 @@ public class HeadersBodyParser extends BodyParser
                         else
                         {
                             byteBuffers.add(slice);
-                            int capacity = byteBuffers.stream().mapToInt(ByteBuffer::remaining).sum();
+                            int capacity = byteBuffers.stream()
+                                .mapToInt(ByteBuffer::remaining)
+                                .sum();
                             encoded = byteBuffers.stream().reduce(ByteBuffer.allocate(capacity), ByteBuffer::put);
                             encoded.flip();
                             byteBuffers.clear();
@@ -121,7 +127,8 @@ public class HeadersBodyParser extends BodyParser
     {
         try
         {
-            return decoder.decode(streamId, encoded, (streamId, metaData, wasBlocked) -> onHeaders(metaData, last, wasBlocked));
+            return decoder.decode(
+                streamId, encoded, (streamId, metaData, wasBlocked) -> onHeaders(metaData, last, wasBlocked));
         }
         catch (QpackException.StreamException x)
         {
@@ -166,6 +173,7 @@ public class HeadersBodyParser extends BodyParser
 
     private enum State
     {
-        INIT, HEADERS
+        INIT,
+        HEADERS
     }
 }

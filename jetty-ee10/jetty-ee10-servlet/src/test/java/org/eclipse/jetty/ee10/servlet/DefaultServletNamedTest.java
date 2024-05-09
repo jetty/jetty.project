@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.stream.Stream;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
@@ -25,6 +23,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
@@ -38,10 +41,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
 public class DefaultServletNamedTest
@@ -69,10 +68,7 @@ public class DefaultServletNamedTest
 
     public static Stream<Arguments> dispatchSource()
     {
-        return Stream.of(
-            Arguments.of(DispatcherType.FORWARD),
-            Arguments.of(DispatcherType.INCLUDE)
-        );
+        return Stream.of(Arguments.of(DispatcherType.FORWARD), Arguments.of(DispatcherType.INCLUDE));
     }
 
     /**
@@ -99,7 +95,8 @@ public class DefaultServletNamedTest
         HttpServlet testServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 response.setHeader("X-TestServlet-PathInfo", request.getPathInfo());
                 RequestDispatcher dispatcher = getServletContext().getNamedDispatcher("default");
@@ -116,12 +113,13 @@ public class DefaultServletNamedTest
         contextHandler.addServlet(testServlet, "/*");
         startServer(contextHandler);
 
-        String rawRequest = """
-            GET /ctx/foo.txt HTTP/1.1
-            Host: test
-            Connection: close
-            
-            """;
+        String rawRequest =
+            """
+                GET /ctx/foo.txt HTTP/1.1
+                Host: test
+                Connection: close
+
+                """;
 
         HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));

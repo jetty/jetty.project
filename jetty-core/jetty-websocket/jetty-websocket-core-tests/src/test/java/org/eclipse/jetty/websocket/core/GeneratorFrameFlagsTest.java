@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
@@ -24,8 +25,6 @@ import org.eclipse.jetty.websocket.core.util.FrameValidation;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test various invalid frame situations
@@ -49,15 +48,15 @@ public class GeneratorFrameFlagsTest
             Arguments.of(new Frame(OpCode.CLOSE).setFin(false)),
             Arguments.of(new Frame(OpCode.CLOSE).setRsv1(true)),
             Arguments.of(new Frame(OpCode.CLOSE).setRsv2(true)),
-            Arguments.of(new Frame(OpCode.CLOSE).setRsv3(true))
-        );
+            Arguments.of(new Frame(OpCode.CLOSE).setRsv3(true)));
     }
 
     public void setup(Frame invalidFrame)
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(new LinkedList<>(), new LinkedList<>());
-        this.coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.CLIENT, Negotiated.from(exStack), components);
+        this.coreSession = new WebSocketCoreSession(
+            new TestMessageHandler(), Behavior.CLIENT, Negotiated.from(exStack), components);
     }
 
     @ParameterizedTest

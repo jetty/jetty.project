@@ -29,7 +29,8 @@ public class ContentCopier extends IteratingNestedCallback
     private Content.Chunk current;
     private boolean terminated;
 
-    public ContentCopier(Content.Source source, Content.Sink sink, Content.Chunk.Processor chunkProcessor, Callback callback)
+    public ContentCopier(
+                         Content.Source source, Content.Sink sink, Content.Chunk.Processor chunkProcessor, Callback callback)
     {
         super(callback);
         this.source = source;

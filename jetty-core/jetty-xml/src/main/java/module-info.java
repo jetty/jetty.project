@@ -14,7 +14,6 @@
 module org.eclipse.jetty.xml
 {
     requires org.slf4j;
-
     requires transitive java.xml;
     requires transitive org.eclipse.jetty.util;
 

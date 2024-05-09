@@ -13,12 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.ContainerProvider;
@@ -26,6 +23,12 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
@@ -34,10 +37,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SyntheticOnMessageTest
 {
@@ -55,8 +54,8 @@ public class SyntheticOnMessageTest
 
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
-        JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addEndpoint(ServerSocket.class));
+        JakartaWebSocketServletContainerInitializer.configure(
+            contextHandler, (context, container) -> container.addEndpoint(ServerSocket.class));
         server.setHandler(contextHandler);
         server.start();
         serverUri = URI.create("ws://localhost:" + connector.getLocalPort());

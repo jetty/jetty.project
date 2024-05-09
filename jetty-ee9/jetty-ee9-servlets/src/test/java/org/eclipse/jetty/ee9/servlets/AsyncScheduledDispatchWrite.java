@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.io.IOException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("serial")
 public abstract class AsyncScheduledDispatchWrite extends AbstractFileContentServlet
@@ -76,7 +75,8 @@ public abstract class AsyncScheduledDispatchWrite extends AbstractFileContentSer
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         Boolean suspended = (Boolean)request.getAttribute("SUSPENDED");
         if (suspended == null || !suspended)

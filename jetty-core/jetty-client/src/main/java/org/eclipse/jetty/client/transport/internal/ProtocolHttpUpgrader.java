@@ -16,7 +16,6 @@ package org.eclipse.jetty.client.transport.internal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -71,13 +70,19 @@ public class ProtocolHttpUpgrader implements HttpUpgrader
                 HttpClientTransportDynamic dynamicTransport = (HttpClientTransportDynamic)transport;
 
                 Origin origin = destination.getOrigin();
-                Origin newOrigin = new Origin(origin.getScheme(), origin.getAddress(), origin.getTag(), new Origin.Protocol(List.of(protocol), false));
+                Origin newOrigin = new Origin(
+                    origin.getScheme(),
+                    origin.getAddress(),
+                    origin.getTag(),
+                    new Origin.Protocol(List.of(protocol), false));
                 Destination newDestination = httpClient.resolveDestination(newOrigin);
 
                 Map<String, Object> context = new HashMap<>();
                 context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, newDestination);
                 context.put(HttpResponse.class.getName(), response);
-                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(y -> callback.succeeded(), callback::failed));
+                context.put(
+                    HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY,
+                    Promise.from(y -> callback.succeeded(), callback::failed));
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Upgrading {} on {}", response.getRequest(), endPoint);
@@ -86,7 +91,8 @@ public class ProtocolHttpUpgrader implements HttpUpgrader
             }
             else
             {
-                callback.failed(new HttpResponseException(HttpClientTransportDynamic.class.getName() + " required to upgrade to: " + protocol, response));
+                callback.failed(new HttpResponseException(
+                    HttpClientTransportDynamic.class.getName() + " required to upgrade to: " + protocol, response));
             }
         }
         else

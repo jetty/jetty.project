@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.util.BufferUtil;
@@ -147,6 +146,9 @@ public class DataBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, PADDING_LENGTH, DATA, PADDING
+        PREPARE,
+        PADDING_LENGTH,
+        DATA,
+        PADDING
     }
 }

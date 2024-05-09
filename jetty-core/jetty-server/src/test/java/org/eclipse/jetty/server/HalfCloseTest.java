@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Connection;
@@ -25,8 +26,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HalfCloseTest
 {
@@ -183,7 +182,8 @@ public class HalfCloseTest
                     System.err.println(ex);
                     callback.failed(ex);
                 }
-            }).start();
+            })
+                .start();
             return true;
         }
 

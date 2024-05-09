@@ -25,7 +25,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -61,7 +60,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final JettyWebSocketFrameHandlerFactory frameHandlerFactory;
     private final List<WebSocketSessionListener> sessionListeners = new CopyOnWriteArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();
-    private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
+    private final Configuration.ConfigurationCustomizer configurationCustomizer =
+        new Configuration.ConfigurationCustomizer();
     private final WebSocketComponents components = new WebSocketComponents();
     private boolean stopAtShutdown = false;
     private long _stopTimeout = Long.MAX_VALUE;
@@ -102,7 +102,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
-    public CompletableFuture<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request) throws IOException
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request)
+        throws IOException
     {
         return connect(websocket, toUri, request, null);
     }
@@ -117,14 +118,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
-    public CompletableFuture<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request, JettyUpgradeListener upgradeListener) throws IOException
+    public CompletableFuture<Session> connect(
+                                              Object websocket, URI toUri, ClientUpgradeRequest request, JettyUpgradeListener upgradeListener)
+        throws IOException
     {
         for (Connection.Listener listener : getBeans(Connection.Listener.class))
         {
             coreClient.addBean(listener);
         }
 
-        JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(coreClient, request, toUri, frameHandlerFactory, websocket);
+        JettyClientUpgradeRequest upgradeRequest =
+            new JettyClientUpgradeRequest(coreClient, request, toUri, frameHandlerFactory, websocket);
         upgradeRequest.setConfiguration(configurationCustomizer);
         for (Request.Listener l : getBeans(Request.Listener.class))
         {

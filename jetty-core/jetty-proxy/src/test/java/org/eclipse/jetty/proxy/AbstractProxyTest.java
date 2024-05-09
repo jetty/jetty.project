@@ -14,7 +14,6 @@
 package org.eclipse.jetty.proxy;
 
 import java.util.List;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
@@ -52,7 +51,10 @@ public class AbstractProxyTest
         clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
-        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client)));
+        client = new HttpClient(new HttpClientTransportDynamic(
+            clientConnector,
+            HttpClientConnectionFactory.HTTP11,
+            new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client)));
         client.start();
     }
 
@@ -64,7 +66,12 @@ public class AbstractProxyTest
         HttpConfiguration configuration = new HttpConfiguration();
         configuration.setSendDateHeader(false);
         configuration.setSendServerVersion(false);
-        proxyConnector = new ServerConnector(proxy, 1, 1, new HttpConnectionFactory(configuration), new HTTP2CServerConnectionFactory(configuration));
+        proxyConnector = new ServerConnector(
+            proxy,
+            1,
+            1,
+            new HttpConnectionFactory(configuration),
+            new HTTP2CServerConnectionFactory(configuration));
         proxy.addConnector(proxyConnector);
         proxy.setHandler(handler);
         proxy.start();
@@ -76,7 +83,8 @@ public class AbstractProxyTest
         serverPool.setName("server");
         server = new Server(serverPool);
         HttpConfiguration httpConfig = new HttpConfiguration();
-        serverConnector = new ServerConnector(server, 1, 1, new HttpConnectionFactory(httpConfig), new HTTP2CServerConnectionFactory(httpConfig));
+        serverConnector = new ServerConnector(
+            server, 1, 1, new HttpConnectionFactory(httpConfig), new HTTP2CServerConnectionFactory(httpConfig));
         server.addConnector(serverConnector);
         server.setHandler(handler);
         server.start();

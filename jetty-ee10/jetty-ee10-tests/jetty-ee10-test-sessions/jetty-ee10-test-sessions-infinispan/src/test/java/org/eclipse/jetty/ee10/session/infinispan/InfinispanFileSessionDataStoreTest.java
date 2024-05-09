@@ -35,7 +35,7 @@ public class InfinispanFileSessionDataStoreTest extends InfinispanSessionDataSto
     {
         super();
     }
-    
+
     @BeforeEach
     public void configure() throws Exception
     {
@@ -43,7 +43,7 @@ public class InfinispanFileSessionDataStoreTest extends InfinispanSessionDataSto
         _testSupport.setUseFileStore(true);
         _testSupport.setup(workDir.getEmptyPathDir());
     }
-    
+
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();

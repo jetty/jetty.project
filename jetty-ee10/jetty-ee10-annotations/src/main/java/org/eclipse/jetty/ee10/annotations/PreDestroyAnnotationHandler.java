@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
+import jakarta.annotation.PreDestroy;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-
-import jakarta.annotation.PreDestroy;
 import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.ee10.webapp.MetaData;
 import org.eclipse.jetty.ee10.webapp.Origin;
@@ -34,7 +33,7 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
     @Override
     public void doHandle(Class clazz)
     {
-        //Check that the PreDestroy is on a class that we're interested in
+        // Check that the PreDestroy is on a class that we're interested in
         if (supportsPreDestroy(clazz))
         {
             Method[] methods = clazz.getDeclaredMethods();
@@ -52,14 +51,11 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
                     if (Modifier.isStatic(m.getModifiers()))
                         throw new IllegalStateException(m + " is static");
 
-                    //ServletSpec 3.0 p80 If web.xml declares even one predestroy then all predestroys
-                    //in fragments must be ignored. Otherwise, they are additive.
+                    // ServletSpec 3.0 p80 If web.xml declares even one predestroy then all predestroys
+                    // in fragments must be ignored. Otherwise, they are additive.
                     MetaData metaData = _context.getMetaData();
                     Origin origin = metaData.getOrigin("pre-destroy");
-                    if (origin != null &&
-                        (origin == Origin.WebXml ||
-                            origin == Origin.WebDefaults ||
-                            origin == Origin.WebOverride))
+                    if (origin != null && (origin == Origin.WebXml || origin == Origin.WebDefaults || origin == Origin.WebOverride))
                         return;
 
                     PreDestroyCallback callback = new PreDestroyCallback(clazz, m.getName());
@@ -85,17 +81,8 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
      */
     public boolean supportsPreDestroy(Class c)
     {
-        if (jakarta.servlet.Servlet.class.isAssignableFrom(c) ||
-            jakarta.servlet.Filter.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletContextListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.AsyncListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
+        if (jakarta.servlet.Servlet.class.isAssignableFrom(c) || jakarta.servlet.Filter.class.isAssignableFrom(c) || jakarta.servlet.ServletContextListener.class.isAssignableFrom(c) || jakarta.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) || jakarta.servlet.ServletRequestListener.class.isAssignableFrom(c) || jakarta.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) || jakarta.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) || jakarta.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) || jakarta.servlet.AsyncListener.class.isAssignableFrom(c) || jakarta.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
             return true;
 
         return false;

@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets;
 
-import java.nio.ByteBuffer;
-import java.util.Locale;
+import static java.util.Comparator.naturalOrder;
+import static java.util.stream.Collectors.joining;
 
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnMessage;
@@ -22,22 +22,16 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.nio.ByteBuffer;
+import java.util.Locale;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.coders.DateDecoder;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.coders.TimeEncoder;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.configs.EchoSocketConfigurator;
 
-import static java.util.Comparator.naturalOrder;
-import static java.util.stream.Collectors.joining;
-
 /**
  * Annotated echo socket, using all of the annotation configurations
  */
-@ServerEndpoint(
-    value = "/echo",
-    decoders = {DateDecoder.class},
-    encoders = {TimeEncoder.class},
-    subprotocols = {"test", "echo", "chat"},
-    configurator = EchoSocketConfigurator.class)
+@ServerEndpoint(value = "/echo", decoders = {DateDecoder.class}, encoders = {TimeEncoder.class}, subprotocols = {"test", "echo", "chat"}, configurator = EchoSocketConfigurator.class)
 public class ConfiguredEchoSocket
 {
     private Session session;
@@ -77,7 +71,9 @@ public class ConfiguredEchoSocket
                 }
                 else
                 {
-                    return serverConfig.getSubprotocols().stream().sorted(naturalOrder()).collect(joining(", "));
+                    return serverConfig.getSubprotocols().stream()
+                        .sorted(naturalOrder())
+                        .collect(joining(", "));
                 }
             case "configurator":
                 if (serverConfig == null)

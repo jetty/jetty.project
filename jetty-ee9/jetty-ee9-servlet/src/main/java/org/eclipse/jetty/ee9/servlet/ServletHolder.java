@@ -13,6 +13,19 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import jakarta.servlet.GenericServlet;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.SingleThreadModel;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -29,20 +42,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicLong;
-
-import jakarta.servlet.GenericServlet;
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRegistration;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.ServletSecurityElement;
-import jakarta.servlet.SingleThreadModel;
-import jakarta.servlet.UnavailableException;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.ee9.nested.UserIdentityScope;
@@ -89,7 +88,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
 
     public enum JspContainer
     {
-        APACHE, OTHER
+        APACHE,
+        OTHER
     }
 
     /**
@@ -172,7 +172,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
     public void setServlet(Servlet servlet)
     {
         if (servlet == null || servlet instanceof SingleThreadModel)
-            throw new IllegalArgumentException(SingleThreadModel.class.getName() + " has been deprecated since Servlet API 2.4");
+            throw new IllegalArgumentException(
+                SingleThreadModel.class.getName() + " has been deprecated since Servlet API 2.4");
         setInstance(servlet);
     }
 
@@ -314,8 +315,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
     }
 
     @Override
-    public void doStart()
-        throws Exception
+    public void doStart() throws Exception
     {
         if (!_enabled)
             return;
@@ -333,7 +333,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
                 if (jsp != null && jsp.getClassName() != null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("JSP file {} for {} mapped to Servlet {}", _forcedPath, getName(), jsp.getClassName());
+                        LOG.debug(
+                            "JSP file {} for {} mapped to Servlet {}", _forcedPath, getName(), jsp.getClassName());
                     // set the className/servlet/instance for this servlet to the precompiled one
                     setClassFrom(jsp);
                 }
@@ -344,18 +345,25 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
                     if (jsp != null)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("JSP file {} for {} mapped to JspServlet class {}", _forcedPath, getName(), jsp.getClassName());
+                            LOG.debug(
+                                "JSP file {} for {} mapped to JspServlet class {}",
+                                _forcedPath,
+                                getName(),
+                                jsp.getClassName());
                         setClassFrom(jsp);
-                        //copy jsp init params that don't exist for this servlet
+                        // copy jsp init params that don't exist for this servlet
                         for (Map.Entry<String, String> entry : jsp.getInitParameters().entrySet())
                         {
                             if (!getInitParameters().containsKey(entry.getKey()))
                                 setInitParameter(entry.getKey(), entry.getValue());
                         }
-                        //jsp specific: set up the jsp-file on the JspServlet. If load-on-startup is >=0 and the jsp container supports
-                        //precompilation, the jsp will be compiled when this holder is initialized. If not load on startup, or the
-                        //container does not support startup precompilation, it will be compiled at runtime when handling a request for this jsp.
-                        //See also adaptForcedPathToJspContainer
+                        // jsp specific: set up the jsp-file on the JspServlet. If load-on-startup is >=0 and the jsp
+                        // container supports
+                        // precompilation, the jsp will be compiled when this holder is initialized. If not load on
+                        // startup, or the
+                        // container does not support startup precompilation, it will be compiled at runtime when
+                        // handling a request for this jsp.
+                        // See also adaptForcedPathToJspContainer
                         setInitParameter("jspFile", _forcedPath);
                     }
                 }
@@ -364,7 +372,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
                 LOG.warn("Bad jsp-file {} conversion to classname in holder {}", _forcedPath, getName());
         }
 
-        //check servlet has a class (ie is not a preliminary registration). If preliminary, fail startup.
+        // check servlet has a class (ie is not a preliminary registration). If preliminary, fail startup.
         try
         {
             super.doStart();
@@ -381,7 +389,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
                 throw ex;
         }
 
-        //servlet is not an instance of jakarta.servlet.Servlet
+        // servlet is not an instance of jakarta.servlet.Servlet
         try
         {
             checkServletType();
@@ -398,15 +406,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
                 throw ex;
         }
 
-        //check if we need to forcibly set load-on-startup
+        // check if we need to forcibly set load-on-startup
         checkInitOnStartup();
 
         _config = new Config();
     }
 
     @Override
-    public void initialize()
-        throws Exception
+    public void initialize() throws Exception
     {
         try (AutoLock l = lock())
         {
@@ -419,8 +426,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
     }
 
     @Override
-    public void doStop()
-        throws Exception
+    public void doStop() throws Exception
     {
         try (AutoLock l = lock())
         {
@@ -473,8 +479,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
      * @return The servlet
      * @throws ServletException if unable to init the servlet on first use
      */
-    public Servlet getServlet()
-        throws ServletException
+    public Servlet getServlet() throws ServletException
     {
         Servlet servlet = _servlet;
         if (servlet == null)
@@ -507,8 +512,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
      *
      * @throws UnavailableException if Servlet class is not of type {@link jakarta.servlet.Servlet}
      */
-    public void checkServletType()
-        throws UnavailableException
+    public void checkServletType() throws UnavailableException
     {
         if (getHeldClass() == null || !jakarta.servlet.Servlet.class.isAssignableFrom(getHeldClass()))
         {
@@ -578,8 +582,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         }
     }
 
-    private void initServlet()
-        throws ServletException
+    private void initServlet() throws ServletException
     {
         // must be called with lock held and _servlet==null
         if (!lockIsHeldByCurrentThread())
@@ -601,8 +604,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
 
             if (_config == null)
                 _config = new Config();
-          
-            //check run-as rolename and convert to token from IdentityService
+
+            // check run-as rolename and convert to token from IdentityService
             if (_runAsRole != null)
             {
                 IdentityService identityService = getServletHandler().getIdentityService();
@@ -750,12 +753,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
      * @throws UnavailableException if servlet is unavailable
      * @throws IOException if unable to process the request or response
      */
-    public void handle(Request baseRequest,
-                       ServletRequest request,
-                       ServletResponse response)
-        throws ServletException,
-        UnavailableException,
-        IOException
+    public void handle(Request baseRequest, ServletRequest request, ServletResponse response)
+        throws ServletException, UnavailableException, IOException
     {
         try
         {
@@ -797,7 +796,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         {
             try
             {
-                //check for apache
+                // check for apache
                 Loader.loadClass(APACHE_SENTINEL_CLASS);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Apache jasper detected");
@@ -819,15 +818,15 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
     public String getNameOfJspClass(String jsp)
     {
         if (StringUtil.isBlank(jsp))
-            return ""; //empty
+            return ""; // empty
 
         jsp = jsp.trim();
         if ("/".equals(jsp))
-            return ""; //only slash
+            return ""; // only slash
 
         int i = jsp.lastIndexOf('/');
         if (i == jsp.length() - 1)
-            return ""; //ends with slash
+            return ""; // ends with slash
 
         jsp = jsp.substring(i + 1);
         try
@@ -865,12 +864,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         {
             String tmp = jsp;
 
-            //remove any leading slash
+            // remove any leading slash
             int s = 0;
             if ('/' == (tmp.charAt(0)))
                 s = 1;
 
-            //remove the element after last slash, which should be name of jsp
+            // remove the element after last slash, which should be name of jsp
             tmp = tmp.substring(s, i).trim();
 
             tmp = StringUtil.replace(tmp, '/', '.');
@@ -892,7 +891,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         String jspPackageName = null;
 
         if (getServletHandler() != null && getServletHandler().getServletContext() != null)
-            jspPackageName = (String)getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME);
+            jspPackageName =
+                (String)getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME);
 
         if (jspPackageName == null)
             jspPackageName = "org.apache.jsp";
@@ -958,7 +958,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
                 ServletMapping mapping = getServletHandler().getServletMapping(pattern);
                 if (mapping != null)
                 {
-                    //if the servlet mapping was from a default descriptor, then allow it to be overridden
+                    // if the servlet mapping was from a default descriptor, then allow it to be overridden
                     if (!mapping.isFromDefaultDescriptor())
                     {
                         if (clash == null)
@@ -968,11 +968,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
                 }
             }
 
-            //if there were any clashes amongst the urls, return them
+            // if there were any clashes amongst the urls, return them
             if (clash != null)
                 return clash;
 
-            //otherwise apply all of them
+            // otherwise apply all of them
             ServletMapping mapping = new ServletMapping(Source.JAKARTA_API);
             mapping.setServletName(ServletHolder.this.getName());
             mapping.setPathSpecs(urlPatterns);
@@ -1183,10 +1183,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
     public void dump(Appendable out, String indent) throws IOException
     {
         if (getInitParameters().isEmpty())
-            Dumpable.dumpObjects(out, indent, this,
-                _servlet == null ? getHeldClass() : _servlet);
+            Dumpable.dumpObjects(out, indent, this, _servlet == null ? getHeldClass() : _servlet);
         else
-            Dumpable.dumpObjects(out, indent, this,
+            Dumpable.dumpObjects(
+                out,
+                indent,
+                this,
                 _servlet == null ? getHeldClass() : _servlet,
                 new DumpableCollection("initParams", getInitParameters().entrySet()));
     }
@@ -1194,9 +1196,17 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
     @Override
     public String toString()
     {
-        return String.format("%s==%s@%x{jsp=%s,order=%d,inst=%b,async=%b,src=%s,%s}",
-            getName(), getClassName(), hashCode(),
-            _forcedPath, _initOrder, _servlet != null, isAsyncSupported(), getSource(), getState());
+        return String.format(
+            "%s==%s@%x{jsp=%s,order=%d,inst=%b,async=%b,src=%s,%s}",
+            getName(),
+            getClassName(),
+            hashCode(),
+            _forcedPath,
+            _initOrder,
+            _servlet != null,
+            isAsyncSupported(),
+            getSource(),
+            getState());
     }
 
     private class UnavailableServlet extends Wrapper
@@ -1206,14 +1216,15 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
 
         public UnavailableServlet(UnavailableException unavailableException, Servlet servlet)
         {
-            super(servlet != null ? servlet : new GenericServlet()
-            {
-                @Override
-                public void service(ServletRequest req, ServletResponse res) throws IOException
+            super(
+                servlet != null ? servlet : new GenericServlet()
                 {
-                    ((HttpServletResponse)res).sendError(HttpServletResponse.SC_NOT_FOUND);
-                }
-            });
+                    @Override
+                    public void service(ServletRequest req, ServletResponse res) throws IOException
+                    {
+                        ((HttpServletResponse)res).sendError(HttpServletResponse.SC_NOT_FOUND);
+                    }
+                });
             _unavailableException = unavailableException;
 
             if (unavailableException.isPermanent())
@@ -1353,7 +1364,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         @Override
         public void init(ServletConfig config) throws ServletException
         {
-            try (Association ignored = _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
+            try (Association ignored =
+                _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
             {
                 getWrapped().init(config);
             }
@@ -1362,7 +1374,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
-            try (Association ignored = _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
+            try (Association ignored =
+                _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
             {
                 getWrapped().service(req, res);
             }
@@ -1371,7 +1384,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         @Override
         public void destroy()
         {
-            try (Association ignored = _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
+            try (Association ignored =
+                _identityService.associate(_identityService.getSystemUserIdentity(), _runAsToken))
             {
                 getWrapped().destroy();
             }

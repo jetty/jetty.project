@@ -16,7 +16,6 @@ package org.eclipse.jetty.security;
 import java.security.Principal;
 import java.util.function.Function;
 import javax.security.auth.Subject;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 
@@ -43,7 +42,8 @@ public interface LoginService
      * @param getOrCreateSession function to retrieve or create a session.
      * @return A UserIdentity if the credentials matched, otherwise null
      */
-    UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession);
+    UserIdentity login(
+                       String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession);
 
     /**
      * Get or create a {@link UserIdentity} that is not authenticated by the {@link LoginService}.

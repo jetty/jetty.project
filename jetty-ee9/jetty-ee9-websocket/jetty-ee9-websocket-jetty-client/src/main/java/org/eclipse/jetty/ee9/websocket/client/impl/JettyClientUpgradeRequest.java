@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.websocket.client.impl;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandler;
@@ -32,7 +31,11 @@ public class JettyClientUpgradeRequest extends CoreClientUpgradeRequest
 {
     private final JettyWebSocketFrameHandler frameHandler;
 
-    public JettyClientUpgradeRequest(WebSocketCoreClient coreClient, ClientUpgradeRequest request, URI requestURI, JettyWebSocketFrameHandlerFactory frameHandlerFactory,
+    public JettyClientUpgradeRequest(
+                                     WebSocketCoreClient coreClient,
+                                     ClientUpgradeRequest request,
+                                     URI requestURI,
+                                     JettyWebSocketFrameHandlerFactory frameHandlerFactory,
                                      Object websocketPojo)
     {
         super(coreClient, requestURI);

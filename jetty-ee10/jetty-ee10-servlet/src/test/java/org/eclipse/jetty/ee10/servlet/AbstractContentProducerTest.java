@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-
-import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public abstract class AbstractContentProducerTest
 {
@@ -129,12 +128,15 @@ public abstract class AbstractContentProducerTest
                 return;
             }
 
-            _scheduler.schedule(() ->
-            {
-                int idx = counter < chunks.size() ? counter++ : chunks.size() - 1;
-                nextContent = chunks.get(idx);
-                demandCallback.run();
-            }, 50, TimeUnit.MILLISECONDS);
+            _scheduler.schedule(
+                () ->
+                {
+                    int idx = counter < chunks.size() ? counter++ : chunks.size() - 1;
+                    nextContent = chunks.get(idx);
+                    demandCallback.run();
+                },
+                50,
+                TimeUnit.MILLISECONDS);
         }
 
         @Override

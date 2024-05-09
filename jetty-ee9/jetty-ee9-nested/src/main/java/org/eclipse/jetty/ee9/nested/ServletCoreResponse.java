@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
@@ -22,8 +23,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -39,10 +38,16 @@ import org.eclipse.jetty.util.IO;
  */
 public class ServletCoreResponse implements org.eclipse.jetty.server.Response
 {
-    public static org.eclipse.jetty.server.Response wrap(org.eclipse.jetty.server.Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
+    public static org.eclipse.jetty.server.Response wrap(
+                                                         org.eclipse.jetty.server.Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
     {
         Response baseResponse = Objects.requireNonNull(Response.getBaseResponse(httpServletResponse));
-        return new ServletCoreResponse(coreRequest, httpServletResponse, baseResponse, baseResponse.getHttpChannel().getCoreResponse(), included);
+        return new ServletCoreResponse(
+            coreRequest,
+            httpServletResponse,
+            baseResponse,
+            baseResponse.getHttpChannel().getCoreResponse(),
+            included);
     }
 
     private final HttpServletResponse _httpServletResponse;
@@ -53,7 +58,12 @@ public class ServletCoreResponse implements org.eclipse.jetty.server.Response
     private final org.eclipse.jetty.server.Response _coreResponse;
     private final boolean _wrapped;
 
-    ServletCoreResponse(org.eclipse.jetty.server.Request coreRequest, HttpServletResponse httpServletResponse, Response baseResponse, org.eclipse.jetty.server.Response coreResponse, boolean included)
+    ServletCoreResponse(
+                        org.eclipse.jetty.server.Request coreRequest,
+                        HttpServletResponse httpServletResponse,
+                        Response baseResponse,
+                        org.eclipse.jetty.server.Response coreResponse,
+                        boolean included)
     {
         _coreRequest = coreRequest;
         _httpServletResponse = httpServletResponse;
@@ -220,7 +230,8 @@ public class ServletCoreResponse implements org.eclipse.jetty.server.Response
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _httpServletResponse);
+        return "%s@%x{%s,%s}"
+            .formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _httpServletResponse);
     }
 
     private static class HttpServletResponseHttpFields implements HttpFields.Mutable

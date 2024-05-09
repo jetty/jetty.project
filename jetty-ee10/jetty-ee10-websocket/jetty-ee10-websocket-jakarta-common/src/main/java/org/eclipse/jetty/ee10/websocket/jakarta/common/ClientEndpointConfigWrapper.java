@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
-import java.util.List;
-import javax.net.ssl.SSLContext;
-
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.Extension;
+import java.util.List;
+import javax.net.ssl.SSLContext;
 
 public class ClientEndpointConfigWrapper extends EndpointConfigWrapper implements ClientEndpointConfig
 {

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
@@ -24,6 +22,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 public class AsyncContextState implements AsyncContext
 {
@@ -43,7 +42,8 @@ public class AsyncContextState implements AsyncContext
     }
 
     @Override
-    public void addListener(final AsyncListener listener, final ServletRequest request, final ServletResponse response)
+    public void addListener(
+                            final AsyncListener listener, final ServletRequest request, final ServletResponse response)
     {
         AsyncListener wrap = new WrappedAsyncListener(listener, request, response);
         state().addListener(wrap);
@@ -116,8 +116,10 @@ public class AsyncContextState implements AsyncContext
         ServletRequest servletRequest = getRequest();
         ServletResponse servletResponse = getResponse();
         ServletChannel servletChannel = _state.getServletChannel();
-        HttpServletRequest originalHttpServletRequest = servletChannel.getServletContextRequest().getServletApiRequest();
-        HttpServletResponse originalHttpServletResponse = servletChannel.getServletContextResponse().getServletApiResponse();
+        HttpServletRequest originalHttpServletRequest =
+            servletChannel.getServletContextRequest().getServletApiRequest();
+        HttpServletResponse originalHttpServletResponse =
+            servletChannel.getServletContextResponse().getServletApiResponse();
         return (servletRequest == originalHttpServletRequest && servletResponse == originalHttpServletResponse);
     }
 
@@ -130,18 +132,22 @@ public class AsyncContextState implements AsyncContext
     @Override
     public void start(final Runnable task)
     {
-        _state.getServletChannel().getContext().execute(() ->
-        {
-            AsyncContextEvent asyncContextEvent = state().getAsyncContextEvent();
-            if (asyncContextEvent != null && asyncContextEvent.getContext() != null)
-            {
-                asyncContextEvent.getContext().run(task);
-            }
-            else
-            {
-                task.run();
-            }
-        }, _state.getServletChannel().getRequest());
+        _state.getServletChannel()
+            .getContext()
+            .execute(
+                () ->
+                {
+                    AsyncContextEvent asyncContextEvent = state().getAsyncContextEvent();
+                    if (asyncContextEvent != null && asyncContextEvent.getContext() != null)
+                    {
+                        asyncContextEvent.getContext().run(task);
+                    }
+                    else
+                    {
+                        task.run();
+                    }
+                },
+                _state.getServletChannel().getRequest());
     }
 
     public void reset()

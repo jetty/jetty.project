@@ -13,12 +13,18 @@
 
 package org.eclipse.jetty.ee9.demos;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.net.URI;
 import java.util.Set;
 import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -29,13 +35,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class OneServletContextJmxStatsTest extends AbstractEmbeddedTest
 {
@@ -58,22 +57,20 @@ public class OneServletContextJmxStatsTest extends AbstractEmbeddedTest
     public void testGetDumpViaPathInfo() throws Exception
     {
         URI uri = server.getURI().resolve("/dump/something");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
 
         // test response content
         String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody,
+        assertThat(
+            "Response Content",
+            responseBody,
             allOf(
                 containsString("DumpServlet"),
                 containsString("servletPath=/dump"),
-                containsString("pathInfo=/something")
-            )
-        );
+                containsString("pathInfo=/something")));
     }
 
     @Test
@@ -83,7 +80,8 @@ public class OneServletContextJmxStatsTest extends AbstractEmbeddedTest
         MBeanServer mbeanServer = mbeanContainer.getMBeanServer();
 
         String domain = ConnectionStatistics.class.getPackage().getName();
-        Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":type=connectionstatistics,*"), null);
+        Set<ObjectName> mbeanNames =
+            mbeanServer.queryNames(ObjectName.getInstance(domain + ":type=connectionstatistics,*"), null);
         ObjectName connStatsName = mbeanNames.stream().findFirst().orElseThrow(AssertionFailedError::new);
         ObjectInstance mbeanConnStats = mbeanServer.getObjectInstance(connStatsName);
         Number connections = (Number)mbeanServer.getAttribute(connStatsName, "connections");

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http3.internal.VarLenInt;
 
 /**
@@ -92,6 +91,7 @@ public class HeaderParser
 
     private enum State
     {
-        TYPE, LENGTH
+        TYPE,
+        LENGTH
     }
 }

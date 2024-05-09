@@ -13,17 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import org.eclipse.jetty.io.internal.CompoundPool;
-import org.eclipse.jetty.util.ConcurrentPool;
-import org.eclipse.jetty.util.Pool;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
@@ -34,6 +23,16 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.eclipse.jetty.io.internal.CompoundPool;
+import org.eclipse.jetty.util.ConcurrentPool;
+import org.eclipse.jetty.util.Pool;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 
 public class ArrayByteBufferPoolTest
 {

@@ -13,35 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.ClosedFileSystemException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystemException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.URIUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.OS;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -57,6 +28,34 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.ClosedFileSystemException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ExtendWith(WorkDirExtension.class)
 public class PathResourceTest
@@ -110,7 +109,10 @@ public class PathResourceTest
             Path path = resource.getPath();
             assertThat("Path should not be null even for non-default FileSystem", path, notNullValue());
 
-            assertThat("Resource.getName", resource.getName(), is(path.toAbsolutePath().toString()));
+            assertThat(
+                "Resource.getName",
+                resource.getName(),
+                is(path.toAbsolutePath().toString()));
             assertThat("Resource.getFileName", resource.getFileName(), is("MANIFEST.MF"));
         }
     }
@@ -124,7 +126,10 @@ public class PathResourceTest
         Path path = resource.getPath();
         assertThat("File for default FileSystem", path, is(exampleJar));
 
-        assertThat("Resource.getName", resource.getName(), is(exampleJar.toAbsolutePath().toString()));
+        assertThat(
+            "Resource.getName",
+            resource.getName(),
+            is(exampleJar.toAbsolutePath().toString()));
         assertThat("Resource.getFileName", resource.getFileName(), is("example.jar"));
     }
 
@@ -313,7 +318,10 @@ public class PathResourceTest
             Resource twoTxt = resourceFactory2.newResource(jarUri.toASCIIString() + "datainf/two.txt");
             assertTrue(Resources.isReadableFile(twoTxt));
 
-            assertThat("Should see only 1 FS Mount", FileSystemPool.INSTANCE.mounts().size(), is(1));
+            assertThat(
+                "Should see only 1 FS Mount",
+                FileSystemPool.INSTANCE.mounts().size(),
+                is(1));
 
             if (resourceFactory1 instanceof ResourceFactoryInternals.Tracking tracking)
             {
@@ -337,9 +345,14 @@ public class PathResourceTest
             assertThat(IO.toString(oneTxt.newInputStream()), is("Contents of one.txt"));
 
             // should not be able to use closed ResourceFactory.Closable
-            assertThrows(IllegalStateException.class, () -> resourceFactory1.newResource(jarUri.toASCIIString() + "one.txt"));
+            assertThrows(
+                IllegalStateException.class,
+                () -> resourceFactory1.newResource(jarUri.toASCIIString() + "one.txt"));
 
-            assertThat("Should see only 1 FS Mount", FileSystemPool.INSTANCE.mounts().size(), is(1));
+            assertThat(
+                "Should see only 1 FS Mount",
+                FileSystemPool.INSTANCE.mounts().size(),
+                is(1));
 
             Resource oneAlt = resourceFactory2.newResource(jarUri.toASCIIString() + "one.txt");
             assertTrue(Resources.isReadableFile(oneAlt));
@@ -351,7 +364,10 @@ public class PathResourceTest
             assertThrows(ClosedFileSystemException.class, oneTxt::newInputStream);
             assertThrows(ClosedFileSystemException.class, oneTxt2::newInputStream);
 
-            assertThat("Should see only 0 FS Mount", FileSystemPool.INSTANCE.mounts().size(), is(0));
+            assertThat(
+                "Should see only 0 FS Mount",
+                FileSystemPool.INSTANCE.mounts().size(),
+                is(0));
         }
         finally
         {
@@ -511,7 +527,7 @@ public class PathResourceTest
             // Skip if this file system does not get tricked by ending filenames with nul
 
             Files.writeString(file0, "Contents of test.txt%00", StandardCharsets.UTF_8);
-            assertThat(file0 + " exists", Files.exists(file0), is(true));  // This could be an alias
+            assertThat(file0 + " exists", Files.exists(file0), is(true)); // This could be an alias
         }
         catch (InvalidPathException e)
         {
@@ -646,12 +662,24 @@ public class PathResourceTest
 
             assertThat("resource.alias", resFoo.isAlias(), is(false));
 
-            assertThat("resource.uri.alias", resourceFactory.newResource(resFoo.getURI()).isAlias(), is(false));
-            assertThat("resource.file.alias", resourceFactory.newResource(resFoo.getPath()).isAlias(), is(false));
+            assertThat(
+                "resource.uri.alias",
+                resourceFactory.newResource(resFoo.getURI()).isAlias(),
+                is(false));
+            assertThat(
+                "resource.file.alias",
+                resourceFactory.newResource(resFoo.getPath()).isAlias(),
+                is(false));
 
             assertThat("targetURI", resBar.getRealURI(), is(resFoo.getURI()));
-            assertThat("uri.targetURI", resourceFactory.newResource(resBar.getURI()).getRealURI(), is(resFoo.getURI()));
-            assertThat("file.targetURI", resourceFactory.newResource(resBar.getPath()).getRealURI(), is(resFoo.getURI()));
+            assertThat(
+                "uri.targetURI",
+                resourceFactory.newResource(resBar.getURI()).getRealURI(),
+                is(resFoo.getURI()));
+            assertThat(
+                "file.targetURI",
+                resourceFactory.newResource(resBar.getPath()).getRealURI(),
+                is(resFoo.getURI()));
         }
         catch (InvalidPathException e)
         {

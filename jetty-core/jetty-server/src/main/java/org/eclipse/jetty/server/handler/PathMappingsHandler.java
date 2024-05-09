@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
@@ -77,8 +76,10 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         {
             handler.setServer(server);
 
-            // If the collection can be changed dynamically, then the risk is that if we switch from NON_BLOCKING to BLOCKING
-            // whilst the execution strategy may have already dispatched the very last available thread, thinking it would
+            // If the collection can be changed dynamically, then the risk is that if we switch from NON_BLOCKING to
+            // BLOCKING
+            // whilst the execution strategy may have already dispatched the very last available thread, thinking it
+            // would
             // never block, only for it to lose the race and find a newly added BLOCKING handler.
             InvocationType serverInvocationType = server.getInvocationType();
             InvocationType invocationType = InvocationType.NON_BLOCKING;

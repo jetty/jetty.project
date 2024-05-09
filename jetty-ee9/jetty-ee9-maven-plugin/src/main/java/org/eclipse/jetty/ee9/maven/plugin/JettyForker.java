@@ -13,16 +13,7 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import org.eclipse.jetty.maven.AbstractForker;
 import org.eclipse.jetty.maven.AbstractServerForker;
-import org.eclipse.jetty.maven.PluginLog;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.Jetty;
 
 /**
  * JettyForker
@@ -45,10 +36,9 @@ public class JettyForker extends AbstractServerForker
     }
 
     @Override
-    public void generateWebApp()
-        throws Exception
+    public void generateWebApp() throws Exception
     {
-        //Run the webapp to create the quickstart file and properties file
+        // Run the webapp to create the quickstart file and properties file
         generator = new QuickStartGenerator(forkWebXml.toPath(), webApp);
         generator.setContextXml(contextXml);
         generator.setWebAppPropsFile(webAppPropsFile.toPath());
@@ -56,11 +46,10 @@ public class JettyForker extends AbstractServerForker
         generator.generate();
     }
 
-    protected void redeployWebApp()
-        throws Exception 
+    protected void redeployWebApp() throws Exception
     {
-        //regenerating the quickstart will be noticed by the JettyForkedChild process
-        //which will redeploy the webapp
+        // regenerating the quickstart will be noticed by the JettyForkedChild process
+        // which will redeploy the webapp
         generator.generate();
     }
 }

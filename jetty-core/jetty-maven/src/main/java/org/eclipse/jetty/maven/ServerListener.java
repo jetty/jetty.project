@@ -15,7 +15,6 @@ package org.eclipse.jetty.maven;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadPendingException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;

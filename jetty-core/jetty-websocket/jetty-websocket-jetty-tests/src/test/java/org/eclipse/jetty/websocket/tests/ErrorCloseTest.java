@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
@@ -20,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -37,12 +42,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ErrorCloseTest
 {
@@ -160,7 +159,8 @@ public class ErrorCloseTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"onError", "onClose"})
+    @ValueSource(strings =
+    {"onError", "onClose"})
     public void testWebSocketThrowsAfterOnOpenError(String methodToThrow) throws Exception
     {
         serverSocket.methodsToThrow.add("onOpen");
@@ -180,7 +180,8 @@ public class ErrorCloseTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"onError", "onClose"})
+    @ValueSource(strings =
+    {"onError", "onClose"})
     public void testWebSocketThrowsAfterOnMessageError(String methodToThrow) throws Exception
     {
         serverSocket.methodsToThrow.add("onMessage");
@@ -201,7 +202,8 @@ public class ErrorCloseTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"onError", "onClose"})
+    @ValueSource(strings =
+    {"onError", "onClose"})
     public void testWebSocketThrowsOnTimeout(String methodToThrow) throws Exception
     {
         serverSocket.methodsToThrow.add(methodToThrow);
@@ -225,7 +227,8 @@ public class ErrorCloseTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"onError", "onClose"})
+    @ValueSource(strings =
+    {"onError", "onClose"})
     public void testWebSocketThrowsOnRemoteDisconnect(String methodToThrow) throws Exception
     {
         serverSocket.methodsToThrow.add(methodToThrow);
@@ -245,7 +248,8 @@ public class ErrorCloseTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"onError", "onClose"})
+    @ValueSource(strings =
+    {"onError", "onClose"})
     public void testWebSocketThrowsOnLocalDisconnect(String methodToThrow) throws Exception
     {
         serverSocket.methodsToThrow.add(methodToThrow);

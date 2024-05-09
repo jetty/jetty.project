@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +27,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
-
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -46,9 +48,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientLoadTest extends AbstractTest
 {
@@ -85,7 +84,10 @@ public class HttpClientLoadTest extends AbstractTest
             run(transport, iterations);
         }
 
-        assertThat("Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
+        assertThat(
+            "Leaks: " + byteBufferPool.dumpLeaks(),
+            byteBufferPool.getLeaks().size(),
+            Matchers.is(0));
     }
 
     @ParameterizedTest
@@ -105,11 +107,13 @@ public class HttpClientLoadTest extends AbstractTest
 
         int runs = 1;
         int iterations = 128;
-        IntStream.range(0, 16).parallel().forEach(i ->
-                IntStream.range(0, runs).forEach(j ->
-                        run(transport, iterations)));
+        IntStream.range(0, 16).parallel().forEach(i -> IntStream.range(0, runs)
+            .forEach(j -> run(transport, iterations)));
 
-        assertThat("Connection Leaks: " + byteBufferPool.getLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
+        assertThat(
+            "Connection Leaks: " + byteBufferPool.getLeaks(),
+            byteBufferPool.getLeaks().size(),
+            Matchers.is(0));
     }
 
     private void run(Transport transport, int iterations)
@@ -122,24 +126,37 @@ public class HttpClientLoadTest extends AbstractTest
         // Dumps the state of the client if the test takes too long
         Thread testThread = Thread.currentThread();
         long maxTime = Math.max(60000, (long)iterations * factor);
-        Scheduler.Task task = client.getScheduler().schedule(() ->
-        {
-            logger.warn("Interrupting test, it is taking too long (maxTime={} ms){}{}{}{}", maxTime,
-                System.lineSeparator(), server.dump(),
-                System.lineSeparator(), client.dump());
-            testThread.interrupt();
-        }, maxTime, TimeUnit.MILLISECONDS);
+        Scheduler.Task task = client.getScheduler()
+            .schedule(
+                () ->
+                {
+                    logger.warn(
+                        "Interrupting test, it is taking too long (maxTime={} ms){}{}{}{}",
+                        maxTime,
+                        System.lineSeparator(),
+                        server.dump(),
+                        System.lineSeparator(),
+                        client.dump());
+                    testThread.interrupt();
+                },
+                maxTime,
+                TimeUnit.MILLISECONDS);
 
         long begin = NanoTime.now();
         for (int i = 0; i < iterations; ++i)
         {
             test(transport, latch, failures);
-//            test("http", "localhost", "GET", false, false, 64 * 1024, false, latch, failures);
+            //            test("http", "localhost", "GET", false, false, 64 * 1024, false, latch, failures);
         }
         long end = NanoTime.now();
         task.cancel();
         long elapsed = NanoTime.millisElapsed(begin, end);
-        logger.info("{} {} requests in {} ms, {} req/s", iterations, transport, elapsed, elapsed > 0 ? iterations * 1000L / elapsed : -1);
+        logger.info(
+            "{} {} requests in {} ms, {} req/s",
+            iterations,
+            transport,
+            elapsed,
+            elapsed > 0 ? iterations * 1000L / elapsed : -1);
 
         for (String failure : failures)
         {
@@ -168,8 +185,8 @@ public class HttpClientLoadTest extends AbstractTest
         boolean serverClose = !ssl && random.nextInt(100) < 5;
 
         long clientTimeout = 0;
-//        if (!ssl && random.nextInt(100) < 5)
-//            clientTimeout = random.nextInt(500) + 500;
+        //        if (!ssl && random.nextInt(100) < 5)
+        //            clientTimeout = random.nextInt(500) + 500;
 
         int maxContentLength = 64 * 1024;
         int contentLength = random.nextInt(maxContentLength) + 1;
@@ -180,12 +197,19 @@ public class HttpClientLoadTest extends AbstractTest
         test(uri, method.asString(), clientClose, serverClose, clientTimeout, contentLength, true, latch, failures);
     }
 
-    private void test(String uri, String method, boolean clientClose, boolean serverClose, long clientTimeout, int contentLength, boolean checkContentLength, CountDownLatch latch, List<String> failures)
+    private void test(
+                      String uri,
+                      String method,
+                      boolean clientClose,
+                      boolean serverClose,
+                      long clientTimeout,
+                      int contentLength,
+                      boolean checkContentLength,
+                      CountDownLatch latch,
+                      List<String> failures)
     {
         long requestId = requestCount.incrementAndGet();
-        Request request = client.newRequest(uri)
-            .path("/" + requestId)
-            .method(method);
+        Request request = client.newRequest(uri).path("/" + requestId).method(method);
 
         if (clientClose)
             request.headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
@@ -256,9 +280,14 @@ public class HttpClientLoadTest extends AbstractTest
         int maxTime = 30000;
         if (!await(requestLatch, maxTime))
         {
-            logger.warn("Request {} took too long (maxTime={} ms){}{}{}{}", requestId, maxTime,
-                System.lineSeparator(), server.dump(),
-                System.lineSeparator(), client.dump());
+            logger.warn(
+                "Request {} took too long (maxTime={} ms){}{}{}{}",
+                requestId,
+                maxTime,
+                System.lineSeparator(),
+                server.dump(),
+                System.lineSeparator(),
+                client.dump());
         }
     }
 
@@ -277,7 +306,9 @@ public class HttpClientLoadTest extends AbstractTest
     private static class LoadHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean handle(
+                              org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            throws Exception
         {
             String timeout = request.getHeaders().get("X-Timeout");
             if (timeout != null)

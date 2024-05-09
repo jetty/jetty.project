@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.ee10.maven.plugin;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.File;
-import java.io.FileReader;
-import java.io.LineNumberReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,15 +24,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestJettyStopMojo
 {
@@ -157,7 +154,7 @@ public class TestJettyStopMojo
         {
             assertThat(sink, Matchers.hasItem(str));
         }
-        
+
         public void dumpStdErr()
         {
             for (String s : sink)
@@ -170,35 +167,35 @@ public class TestJettyStopMojo
     @Test
     public void testStopNoWait() throws Exception
     {
-        //send a stop message and don't wait for the reply or the process to shutdown
+        // send a stop message and don't wait for the reply or the process to shutdown
         String stopKey = "foo";
         MockShutdownMonitorRunnable runnable = new MockShutdownMonitorRunnable();
         runnable.setPidResponse("abcd");
         MockShutdownMonitor monitor = new MockShutdownMonitor(stopKey, runnable);
         monitor.start();
-        
+
         TestLog log = new TestLog();
         JettyStopMojo mojo = new JettyStopMojo();
         mojo.stopKey = stopKey;
         mojo.stopPort = monitor.getPort();
         mojo.setLog(log);
-        
+
         mojo.execute();
-        
+
         log.assertContains("Stopping jetty");
     }
-    
+
     @Test
     public void testStopWaitBadPid() throws Exception
     {
-        //test that even if we receive a bad pid, we still send the stop command and wait to
-        //receive acknowledgement, but we don't wait for the process to exit
+        // test that even if we receive a bad pid, we still send the stop command and wait to
+        // receive acknowledgement, but we don't wait for the process to exit
         String stopKey = "foo";
         MockShutdownMonitorRunnable runnable = new MockShutdownMonitorRunnable();
         runnable.setPidResponse("abcd");
         MockShutdownMonitor monitor = new MockShutdownMonitor(stopKey, runnable);
         monitor.start();
-        
+
         TestLog log = new TestLog();
         JettyStopMojo mojo = new JettyStopMojo();
         mojo.stopWait = 5;
@@ -207,7 +204,7 @@ public class TestJettyStopMojo
         mojo.setLog(log);
 
         mojo.execute();
-        
+
         log.assertContains("Server returned bad pid");
         log.assertContains("Server reports itself as stopped");
     }
@@ -215,15 +212,15 @@ public class TestJettyStopMojo
     @Test
     public void testStopSameProcess() throws Exception
     {
-        //test that if we need to stop a jetty in the same process as us
-        //we will wait for it to exit
+        // test that if we need to stop a jetty in the same process as us
+        // we will wait for it to exit
         String stopKey = "foo";
         long thisPid = ProcessHandle.current().pid();
         MockShutdownMonitorRunnable runnable = new MockShutdownMonitorRunnable();
         runnable.setPidResponse(Long.toString(thisPid));
         MockShutdownMonitor monitor = new MockShutdownMonitor(stopKey, runnable);
         monitor.start();
-        
+
         TestLog log = new TestLog();
         JettyStopMojo mojo = new JettyStopMojo();
         mojo.stopWait = 5;
@@ -232,14 +229,14 @@ public class TestJettyStopMojo
         mojo.setLog(log);
 
         mojo.execute();
-        
+
         log.assertContains("Waiting 5 seconds for jetty " + thisPid + " to stop");
     }
-    
+
     @Test
     public void testStopWait() throws Exception
     {
-        //test that we will communicate with a remote process and wait for it to exit
+        // test that we will communicate with a remote process and wait for it to exit
         String stopKey = "foo";
         List<String> cmd = new ArrayList<>();
         String java = "java";
@@ -272,7 +269,8 @@ public class TestJettyStopMojo
         Awaitility.await().atMost(Duration.ofSeconds(5)).until(() ->
         {
             Optional<String> tmp = Files.readAllLines(file.toPath()).stream()
-                    .filter(s -> s.startsWith("STOP.PORT=")).findFirst();
+                .filter(s -> s.startsWith("STOP.PORT="))
+                .findFirst();
             if (tmp.isPresent())
             {
                 // TODO validate it's an integer
@@ -280,7 +278,6 @@ public class TestJettyStopMojo
                 return true;
             }
             return false;
-
         });
 
         assertNotNull(port[0]);

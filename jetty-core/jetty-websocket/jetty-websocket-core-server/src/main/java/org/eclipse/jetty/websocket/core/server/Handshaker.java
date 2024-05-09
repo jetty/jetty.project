@@ -56,5 +56,12 @@ public interface Handshaker
      * @return true if a response was generated, false if a response is not generated
      * @throws WebSocketException there is an error during the upgrade
      */
-    boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws WebSocketException;
+    boolean upgradeRequest(
+                           WebSocketNegotiator negotiator,
+                           Request request,
+                           Response response,
+                           Callback callback,
+                           WebSocketComponents components,
+                           Configuration.Customizer defaultCustomizer)
+        throws WebSocketException;
 }

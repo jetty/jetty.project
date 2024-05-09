@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.io.internal;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.TestSource;
-import org.eclipse.jetty.util.Promise;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.TestSource;
+import org.eclipse.jetty.util.Promise;
+import org.junit.jupiter.api.Test;
 
 public class ContentSourceByteBufferTest
 {
@@ -35,12 +34,13 @@ public class ContentSourceByteBufferTest
         TimeoutException originalFailure = new TimeoutException("timeout");
         TestSource originalSource = new TestSource(
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
             null,
             Content.Chunk.from(originalFailure, false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), true));
 
         Promise.Completable<ByteBuffer> promise = new Promise.Completable<>();
         ContentSourceByteBuffer contentSourceByteBuffer = new ContentSourceByteBuffer(originalSource, promise);

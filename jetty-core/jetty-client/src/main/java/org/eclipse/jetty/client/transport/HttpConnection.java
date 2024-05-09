@@ -17,7 +17,6 @@ import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.client.Authentication;
 import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BytesRequestContent;
@@ -117,7 +116,8 @@ public abstract class HttpConnection implements IConnection, Attachable
                 // Association may fail, for example if the application
                 // aborted the request, so we must release the channel.
                 channel.release();
-                result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
+                result = new SendFailure(
+                    new HttpRequestException("Could not associate request to connection", request), false);
             }
 
             try (AutoLock ignored = lock.lock())
@@ -269,7 +269,8 @@ public abstract class HttpConnection implements IConnection, Attachable
     {
         if (proxy != null)
         {
-            Authentication.Result result = getHttpClient().getAuthenticationStore().findAuthenticationResult(proxy.getURI());
+            Authentication.Result result =
+                getHttpClient().getAuthenticationStore().findAuthenticationResult(proxy.getURI());
             if (result != null)
                 result.apply(request);
         }
@@ -348,7 +349,8 @@ public abstract class HttpConnection implements IConnection, Attachable
             if (exchange == null)
                 return false;
             HttpRequest request = exchange.getRequest();
-            request.abort(new TimeoutException("Total timeout " + request.getConversation().getTimeout() + " ms elapsed"));
+            request.abort(new TimeoutException(
+                "Total timeout " + request.getConversation().getTimeout() + " ms elapsed"));
             // The implementation of the Iterator returned above may not support
             // removal, but the HttpChannel will be removed by request.abort().
             return false;

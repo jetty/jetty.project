@@ -13,11 +13,15 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -37,11 +41,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ValidationExtensionTest extends WebSocketTester
 {
     private WebSocketServer server;
@@ -54,11 +53,13 @@ public class ValidationExtensionTest extends WebSocketTester
         WebSocketNegotiator negotiator = new TestWebSocketNegotiator(serverHandler)
         {
             @Override
-            public FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
+            public FrameHandler negotiate(
+                                          ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
             {
                 List<ExtensionConfig> negotiatedExtensions = new ArrayList<>();
-                negotiatedExtensions.add(ExtensionConfig.parse(
-                    "@validation; outgoing-sequence; incoming-sequence; outgoing-frame; incoming-frame; incoming-utf8; outgoing-utf8"));
+                negotiatedExtensions.add(
+                    ExtensionConfig.parse(
+                        "@validation; outgoing-sequence; incoming-sequence; outgoing-frame; incoming-frame; incoming-utf8; outgoing-utf8"));
                 response.setExtensions(negotiatedExtensions);
 
                 return super.negotiate(request, response, callback);
@@ -87,7 +88,7 @@ public class ValidationExtensionTest extends WebSocketTester
             assertThat(frame.getOpCode(), is(OpCode.BINARY));
             assertThat(BufferUtil.toArray(frame.getPayload()), is(nonUtf8Payload));
 
-            //close normally
+            // close normally
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
             assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
             frame = receiveFrame(client.getInputStream());
@@ -118,7 +119,7 @@ public class ValidationExtensionTest extends WebSocketTester
             assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
             assertThat(BufferUtil.toArray(frame.getPayload()), is(continuationPayload));
 
-            //close normally
+            // close normally
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
             assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
             frame = receiveFrame(client.getInputStream());
@@ -143,7 +144,8 @@ public class ValidationExtensionTest extends WebSocketTester
             assertThat(frame.getOpCode(), is(OpCode.TEXT));
             assertThat(BufferUtil.toArray(frame.getPayload()), is(initialPayload));
 
-            client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.CONTINUATION, incompleteContinuationPayload, true));
+            client.getOutputStream()
+                .write(RawFrameBuilder.buildFrame(OpCode.CONTINUATION, incompleteContinuationPayload, true));
             frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.CLOSE));

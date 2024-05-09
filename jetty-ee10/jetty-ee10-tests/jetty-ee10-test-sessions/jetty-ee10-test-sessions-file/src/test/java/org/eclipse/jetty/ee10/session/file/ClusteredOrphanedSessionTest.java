@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.ee10.session.file;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.ee10.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.session.FileSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
@@ -24,8 +25,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * ClusteredOrphanedSessionTest

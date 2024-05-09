@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 @ServerEndpoint("/")
 @ClientEndpoint

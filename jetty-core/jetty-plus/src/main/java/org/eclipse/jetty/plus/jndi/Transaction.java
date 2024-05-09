@@ -19,7 +19,6 @@ import javax.naming.LinkRef;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 import javax.naming.Reference;
-
 import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +33,7 @@ public class Transaction extends NamingEntry
     private static final Logger LOG = LoggerFactory.getLogger(Transaction.class);
     public static final String USER_TRANSACTION = "UserTransaction";
 
-    public static void bindTransactionToENC(String scope)
-        throws NamingException
+    public static void bindTransactionToENC(String scope) throws NamingException
     {
         NamingEntry txEntry = NamingEntryUtil.lookupNamingEntry(scope, Transaction.USER_TRANSACTION);
 
@@ -54,19 +52,17 @@ public class Transaction extends NamingEntry
      * @param entry a UserTransaction or a Reference to a UserTransaction
      * @throws NamingException if there was a problem re
      */
-    protected Transaction(String scope, Object entry)
-        throws NamingException
+    protected Transaction(String scope, Object entry) throws NamingException
     {
         super(scope, USER_TRANSACTION, entry);
     }
 
-    /** 
+    /**
      * @param scope the environment in which to bind the UserTransaction
      * @param userTransactionRef a Reference to a UserTransaction
      * @throws NamingException if there was a problem re
      */
-    public Transaction(String scope, Reference userTransactionRef)
-        throws NamingException
+    public Transaction(String scope, Reference userTransactionRef) throws NamingException
     {
         this(scope, (Object)userTransactionRef);
     }
@@ -79,8 +75,7 @@ public class Transaction extends NamingEntry
      * @see NamingEntry#bindToENC(String)
      */
     @Override
-    public void bindToENC(String localName)
-        throws NamingException
+    public void bindToENC(String localName) throws NamingException
     {
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp/env");
@@ -92,10 +87,9 @@ public class Transaction extends NamingEntry
     /**
      * Insist on the java:comp/UserTransaction binding
      */
-    private void bindToComp()
-        throws NamingException
+    private void bindToComp() throws NamingException
     {
-        //ignore the name, it is always bound to java:comp
+        // ignore the name, it is always bound to java:comp
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp");
         if (LOG.isDebugEnabled())

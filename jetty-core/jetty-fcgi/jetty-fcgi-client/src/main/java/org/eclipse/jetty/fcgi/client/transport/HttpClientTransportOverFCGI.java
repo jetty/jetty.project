@@ -15,7 +15,6 @@ package org.eclipse.jetty.fcgi.client.transport;
 
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
@@ -96,7 +95,8 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
         return customize(connection, context);
     }
 
-    protected org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Destination destination, Promise<Connection> promise)
+    protected org.eclipse.jetty.io.Connection newConnection(
+                                                            EndPoint endPoint, Destination destination, Promise<Connection> promise)
     {
         return new HttpConnectionOverFCGI(endPoint, destination, promise);
     }

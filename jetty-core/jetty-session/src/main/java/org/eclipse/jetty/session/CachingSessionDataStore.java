@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.util.Set;
-
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +86,7 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
 
         try
         {
-            //check to see if the session data is already in the cache
+            // check to see if the session data is already in the cache
             d = _cache.load(id);
         }
         catch (Exception e)
@@ -96,9 +95,9 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         }
 
         if (d != null)
-            return d; //cache hit
+            return d; // cache hit
 
-        //cache miss - go get it from the store
+        // cache miss - go get it from the store
         d = _store.load(id);
 
         return d;
@@ -107,9 +106,9 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
     @Override
     public boolean delete(String id) throws Exception
     {
-        //delete from the store
+        // delete from the store
         boolean deleted = _store.delete(id);
-        //and from the cache
+        // and from the cache
         _cache.delete(id);
 
         return deleted;
@@ -118,7 +117,7 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
-        //pass thru to the delegate store
+        // pass thru to the delegate store
         return _store.getExpired(candidates);
     }
 
@@ -127,10 +126,10 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
     {
         long lastSaved = data.getLastSaved();
 
-        //write to the SessionDataStore first
+        // write to the SessionDataStore first
         _store.store(id, data);
 
-        //if the store saved it, then update the cache too
+        // if the store saved it, then update the cache too
         if (data.getLastSaved() != lastSaved)
             _cache.store(id, data);
     }
@@ -158,7 +157,7 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
     {
         try
         {
-            //check the cache first
+            // check the cache first
             SessionData data = _cache.load(id);
             if (data != null)
                 return true;
@@ -168,14 +167,14 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
             LOG.warn("Unable test exists on {}", id, e);
         }
 
-        //then the delegate store
+        // then the delegate store
         return _store.exists(id);
     }
 
     @Override
     public void initialize(SessionContext context) throws Exception
     {
-        //pass through
+        // pass through
         _store.initialize(context);
         _cache.initialize(context);
     }

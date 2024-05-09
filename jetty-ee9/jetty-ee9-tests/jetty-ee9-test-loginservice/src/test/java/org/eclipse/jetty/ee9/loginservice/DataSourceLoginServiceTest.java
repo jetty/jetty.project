@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee9.loginservice;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
@@ -20,8 +23,6 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
-
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.ContentResponse;
@@ -39,8 +40,6 @@ import org.junit.jupiter.api.Test;
 import org.mariadb.jdbc.MariaDbDataSource;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * DataSourceLoginServiceTest
  */
@@ -54,7 +53,7 @@ public class DataSourceLoginServiceTest
     private static DatabaseLoginServiceTestServer __testServer;
     private AuthenticationStore _authStore;
     private HttpClient _client;
-    
+
     @BeforeAll
     public static void setUp() throws Exception
     {
@@ -68,16 +67,15 @@ public class DataSourceLoginServiceTest
             out.write(_content.getBytes("utf-8"));
         }
 
-        //create a datasource and bind to jndi
+        // create a datasource and bind to jndi
         MariaDbDataSource ds = new MariaDbDataSource();
         ds.setUser(DatabaseLoginServiceTestServer.MARIA_DB_USER);
         ds.setPassword(DatabaseLoginServiceTestServer.MARIA_DB_PASSWORD);
         ds.setUrl(DatabaseLoginServiceTestServer.MARIA_DB_FULL_URL);
-        org.eclipse.jetty.plus.jndi.Resource binding = 
-            new org.eclipse.jetty.plus.jndi.Resource(null, "dstest", ds);
-        
+        org.eclipse.jetty.plus.jndi.Resource binding = new org.eclipse.jetty.plus.jndi.Resource(null, "dstest", ds);
+
         __testServer = new DatabaseLoginServiceTestServer();
-        
+
         DataSourceLoginService loginService = new DataSourceLoginService();
         loginService.setUserTableName("users");
         loginService.setUserTableKey("id");
@@ -92,16 +90,15 @@ public class DataSourceLoginServiceTest
         loginService.setJndiName("dstest");
         loginService.setName(REALM_NAME);
         loginService.setServer(__testServer.getServer());
-        
-        __testServer.setResourceBase(__docRoot); 
+
+        __testServer.setResourceBase(__docRoot);
         __testServer.setLoginService(loginService);
         __testServer.start();
         __baseUri = __testServer.getBaseUri();
     }
 
     @AfterAll
-    public static void tearDown()
-        throws Exception
+    public static void tearDown() throws Exception
     {
         DatabaseLoginServiceTestServer.afterAll();
         if (__testServer != null)
@@ -117,7 +114,7 @@ public class DataSourceLoginServiceTest
         _client = new HttpClient();
         _authStore = _client.getAuthenticationStore();
     }
-    
+
     @AfterEach
     public void stopClient() throws Exception
     {

@@ -80,8 +80,10 @@ public class ProcessingProtocolHandler implements ProtocolHandler
             if (exchange != null)
             {
                 ResponseListeners listeners = exchange.getResponseListeners();
-                HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
-                listeners.emitFailureComplete(new Result(exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure));
+                HttpContentResponse contentResponse =
+                    new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
+                listeners.emitFailureComplete(
+                    new Result(exchange.getRequest(), exchange.getRequestFailure(), contentResponse, failure));
             }
         }
 

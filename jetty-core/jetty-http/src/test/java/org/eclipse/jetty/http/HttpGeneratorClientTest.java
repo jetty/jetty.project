@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
-import java.util.List;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.nio.ByteBuffer;
+import java.util.List;
+import org.eclipse.jetty.util.BufferUtil;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 
 public class HttpGeneratorClientTest
 {
@@ -54,8 +53,7 @@ public class HttpGeneratorClientTest
         ByteBuffer header = BufferUtil.allocate(2048);
         HttpGenerator gen = new HttpGenerator();
 
-        HttpGenerator.Result
-            result = gen.generateRequest(null, null, null, null, true);
+        HttpGenerator.Result result = gen.generateRequest(null, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
@@ -92,8 +90,7 @@ public class HttpGeneratorClientTest
         ByteBuffer header = BufferUtil.allocate(2048);
         HttpGenerator gen = new HttpGenerator();
 
-        HttpGenerator.Result
-            result = gen.generateRequest(null, null, null, null, true);
+        HttpGenerator.Result result = gen.generateRequest(null, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
@@ -171,8 +168,7 @@ public class HttpGeneratorClientTest
         ByteBuffer header = BufferUtil.allocate(2048);
         HttpGenerator gen = new HttpGenerator();
 
-        HttpGenerator.Result
-            result = gen.generateRequest(null, null, null, null, true);
+        HttpGenerator.Result result = gen.generateRequest(null, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
@@ -211,8 +207,7 @@ public class HttpGeneratorClientTest
         ByteBuffer content0 = BufferUtil.toBuffer("Hello World. The quick brown fox jumped over the lazy dog.");
         HttpGenerator gen = new HttpGenerator();
 
-        HttpGenerator.Result
-            result = gen.generateRequest(null, null, null, content0, true);
+        HttpGenerator.Result result = gen.generateRequest(null, null, null, content0, true);
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
@@ -257,8 +252,7 @@ public class HttpGeneratorClientTest
         ByteBuffer content1 = BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog.");
         HttpGenerator gen = new HttpGenerator();
 
-        HttpGenerator.Result
-            result = gen.generateRequest(null, null, null, content0, false);
+        HttpGenerator.Result result = gen.generateRequest(null, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
@@ -329,8 +323,7 @@ public class HttpGeneratorClientTest
         ByteBuffer content1 = BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog.");
         HttpGenerator gen = new HttpGenerator();
 
-        HttpGenerator.Result
-            result = gen.generateRequest(null, null, null, content0, false);
+        HttpGenerator.Result result = gen.generateRequest(null, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 

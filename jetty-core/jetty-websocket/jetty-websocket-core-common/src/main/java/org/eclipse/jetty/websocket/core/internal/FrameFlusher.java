@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -79,7 +78,13 @@ public class FrameFlusher extends IteratingCallback
     private long idleTimeout;
     private boolean useDirectByteBuffers;
 
-    public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
+    public FrameFlusher(
+                        ByteBufferPool bufferPool,
+                        Scheduler scheduler,
+                        Generator generator,
+                        EndPoint endPoint,
+                        int bufferSize,
+                        int maxGather)
     {
         this.bufferPool = bufferPool;
         this.endPoint = endPoint;
@@ -134,7 +139,7 @@ public class FrameFlusher extends IteratingCallback
                             closeStatus = CloseStatus.getCloseStatus(frame);
                             if (closeStatus.isAbnormal())
                             {
-                                //fail all existing entries in the queue, and enqueue the error close
+                                // fail all existing entries in the queue, and enqueue the error close
                                 failedEntries = new ArrayList<>(queue);
                                 queue.clear();
                             }
@@ -168,10 +173,9 @@ public class FrameFlusher extends IteratingCallback
 
         if (failedEntries != null)
         {
-            WebSocketException failure =
-                new WebSocketException(
-                    "Flusher received abnormal CloseFrame: " +
-                        CloseStatus.codeString(closeStatus.getCode()), closeStatus.getCause());
+            WebSocketException failure = new WebSocketException(
+                "Flusher received abnormal CloseFrame: " + CloseStatus.codeString(closeStatus.getCode()),
+                closeStatus.getCause());
 
             for (Entry e : failedEntries)
             {
@@ -234,10 +238,7 @@ public class FrameFlusher extends IteratingCallback
 
                 int batchSpace = batchBuffer == null ? bufferSize : BufferUtil.space(batchBuffer.getByteBuffer());
 
-                boolean batch = entry.batch &&
-                    !entry.frame.isControlFrame() &&
-                    entry.frame.getPayloadLength() < bufferSize / 4 &&
-                    (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
+                boolean batch = entry.batch && !entry.frame.isControlFrame() && entry.frame.getPayloadLength() < bufferSize / 4 && (batchSpace - Generator.MAX_HEADER_LENGTH) >= entry.frame.getPayloadLength();
 
                 if (batch)
                 {
@@ -291,17 +292,14 @@ public class FrameFlusher extends IteratingCallback
             {
                 List<RetainableByteBuffer> callbackBuffers = releasableBuffers;
                 releasableBuffers = new ArrayList<>();
-                releasingCallback = Callback.from(releasingCallback, () -> callbackBuffers.forEach(RetainableByteBuffer::release));
+                releasingCallback =
+                    Callback.from(releasingCallback, () -> callbackBuffers.forEach(RetainableByteBuffer::release));
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} processed {} entries flush={} batch={}: {}",
-                this,
-                entries.size(),
-                flush,
-                batchBuffer,
-                entries);
+            LOG.debug(
+                "{} processed {} entries flush={} batch={}: {}", this, entries.size(), flush, batchBuffer, entries);
 
         // succeed previous entries
         for (Entry entry : previousEntries)
@@ -500,10 +498,7 @@ public class FrameFlusher extends IteratingCallback
     @Override
     public String toString()
     {
-        return String.format("%s[queueSize=%d,aggregate=%s]",
-            super.toString(),
-            getQueueSize(),
-            batchBuffer);
+        return String.format("%s[queueSize=%d,aggregate=%s]", super.toString(), getQueueSize(), batchBuffer);
     }
 
     private static class Entry extends FrameEntry

@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.util.resource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -25,7 +37,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -37,18 +48,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @ExtendWith(WorkDirExtension.class)
 public class CombinedResourceTest
@@ -78,23 +77,13 @@ public class CombinedResourceTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
         Resource rc = ResourceFactory.combine(
-            resourceFactory.newResource(one),
-            resourceFactory.newResource(two),
-            resourceFactory.newResource(three)
-        );
+            resourceFactory.newResource(one), resourceFactory.newResource(two), resourceFactory.newResource(three));
 
         List<Resource> listing = rc.list();
-        List<String> relative = listing.stream()
-            .map(rc::getPathTo)
-            .map(Path::toString)
-            .toList();
+        List<String> relative =
+            listing.stream().map(rc::getPathTo).map(Path::toString).toList();
 
-        String[] expected = new String[] {
-            "1.txt",
-            "2.txt",
-            "3.txt",
-            "dir"
-        };
+        String[] expected = new String[]{"1.txt", "2.txt", "3.txt", "dir"};
         assertThat(relative, containsInAnyOrder(expected));
 
         for (Resource r : listing)
@@ -108,11 +97,7 @@ public class CombinedResourceTest
             .map(Path::toString)
             .toList();
 
-        expected = new String[] {
-            FS.separators("dir/1.txt"),
-            FS.separators("dir/2.txt"),
-            FS.separators("dir/3.txt")
-        };
+        expected = new String[]{FS.separators("dir/1.txt"), FS.separators("dir/2.txt"), FS.separators("dir/3.txt")};
 
         assertThat(relative, containsInAnyOrder(expected));
 
@@ -132,10 +117,7 @@ public class CombinedResourceTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
         Resource rc = ResourceFactory.combine(
-            resourceFactory.newResource(one),
-            resourceFactory.newResource(two),
-            resourceFactory.newResource(three)
-        );
+            resourceFactory.newResource(one), resourceFactory.newResource(two), resourceFactory.newResource(three));
 
         // This should return a ResourceCollection with 3 `/dir/` sub-directories.
         Resource r = rc.resolve("dir");
@@ -154,10 +136,7 @@ public class CombinedResourceTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
         Resource rc = ResourceFactory.combine(
-                resourceFactory.newResource(one),
-                resourceFactory.newResource(two),
-                resourceFactory.newResource(three)
-        );
+            resourceFactory.newResource(one), resourceFactory.newResource(two), resourceFactory.newResource(three));
         rc.copyTo(destDir);
 
         Resource r = resourceFactory.newResource(destDir);
@@ -207,8 +186,7 @@ public class CombinedResourceTest
                 archiveResource,
                 resourceFactory.newResource(one),
                 resourceFactory.newResource(two),
-                resourceFactory.newResource(three)
-            );
+                resourceFactory.newResource(three));
 
             Path destDir = testDir.resolve("dest");
             Files.createDirectory(destDir);
@@ -259,8 +237,7 @@ public class CombinedResourceTest
                 resourceFactory.newResource(one),
                 resourceFactory.newResource(two),
                 resourceFactory.newResource(three),
-                archiveResource
-            );
+                archiveResource);
 
             List<String> actual = new ArrayList<>();
 
@@ -297,31 +274,20 @@ public class CombinedResourceTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
         Path twoDir = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two/dir");
 
-        Resource rc1 = ResourceFactory.combine(
-            List.of(
-                resourceFactory.newResource(one),
-                resourceFactory.newResource(two),
-                resourceFactory.newResource(three)
-            )
-        );
+        Resource rc1 = ResourceFactory.combine(List.of(
+            resourceFactory.newResource(one),
+            resourceFactory.newResource(two),
+            resourceFactory.newResource(three)));
 
-        Resource rc2 = ResourceFactory.combine(
-            List.of(
-                // the original ResourceCollection
-                rc1,
-                // a duplicate entry
-                resourceFactory.newResource(two),
-                // a new entry
-                resourceFactory.newResource(twoDir)
-            )
-        );
+        Resource rc2 = ResourceFactory.combine(List.of(
+            // the original ResourceCollection
+            rc1,
+            // a duplicate entry
+            resourceFactory.newResource(two),
+            // a new entry
+            resourceFactory.newResource(twoDir)));
 
-        URI[] expected = new URI[] {
-            one.toUri(),
-            two.toUri(),
-            three.toUri(),
-            twoDir.toUri()
-        };
+        URI[] expected = new URI[]{one.toUri(), two.toUri(), three.toUri(), twoDir.toUri()};
 
         List<URI> actual = new ArrayList<>();
         assertThat(rc2, instanceOf(CombinedResource.class));
@@ -341,37 +307,26 @@ public class CombinedResourceTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
         Path dirFoo = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two/dir");
 
-        Resource compositeA = ResourceFactory.combine(
-            List.of(
-                resourceFactory.newResource(one),
-                resourceFactory.newResource(two),
-                resourceFactory.newResource(three)
-            )
-        );
+        Resource compositeA = ResourceFactory.combine(List.of(
+            resourceFactory.newResource(one),
+            resourceFactory.newResource(two),
+            resourceFactory.newResource(three)));
 
-        Resource compositeB = ResourceFactory.combine(
-            List.of(
-                // the original composite Resource
-                compositeA,
-                // a duplicate entry
-                resourceFactory.newResource(two),
-                // a new entry
-                resourceFactory.newResource(dirFoo)
-            )
-        );
+        Resource compositeB = ResourceFactory.combine(List.of(
+            // the original composite Resource
+            compositeA,
+            // a duplicate entry
+            resourceFactory.newResource(two),
+            // a new entry
+            resourceFactory.newResource(dirFoo)));
 
         List<URI> actual = new ArrayList<>();
-        for (Resource resource: compositeB)
+        for (Resource resource : compositeB)
         {
             actual.add(resource.getURI());
         }
 
-        URI[] expected = new URI[] {
-            one.toUri(),
-            two.toUri(),
-            three.toUri(),
-            dirFoo.toUri()
-        };
+        URI[] expected = new URI[]{one.toUri(), two.toUri(), three.toUri(), dirFoo.toUri()};
 
         assertThat(actual, contains(expected));
     }
@@ -381,7 +336,8 @@ public class CombinedResourceTest
      * conflicting names between Directories and Files.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"foo", "/foo", "foo/", "/foo/"})
+    @ValueSource(strings =
+    {"foo", "/foo", "foo/", "/foo/"})
     public void testResolveConflictDirAndFile(String input) throws IOException
     {
         Path base = workDir.getEmptyPathDir();
@@ -400,8 +356,7 @@ public class CombinedResourceTest
         Resource rc = ResourceFactory.combine(
             ResourceFactory.root().newResource(dirA),
             ResourceFactory.root().newResource(dirB),
-            ResourceFactory.root().newResource(dirC)
-        );
+            ResourceFactory.root().newResource(dirC));
 
         Resource result = rc.resolve(input);
         assertThat(result, instanceOf(PathResource.class));
@@ -474,13 +429,10 @@ public class CombinedResourceTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
         Path four = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/four");
 
-        Resource composite = ResourceFactory.combine(
-            List.of(
-                resourceFactory.newResource(one),
-                resourceFactory.newResource(two),
-                resourceFactory.newResource(three)
-            )
-        );
+        Resource composite = ResourceFactory.combine(List.of(
+            resourceFactory.newResource(one),
+            resourceFactory.newResource(two),
+            resourceFactory.newResource(three)));
 
         Resource oneTxt = composite.resolve("1.txt");
         assertThat(oneTxt, notNullValue());
@@ -539,7 +491,8 @@ public class CombinedResourceTest
         try (FileSystem zipfs = FileSystems.newFileSystem(unusedJarURI, env))
         {
             Path root = zipfs.getPath("/");
-            Files.writeString(root.resolve("unused.txt"), "Contents of unused.txt from UNUSED JAR", StandardCharsets.UTF_8);
+            Files.writeString(
+                root.resolve("unused.txt"), "Contents of unused.txt from UNUSED JAR", StandardCharsets.UTF_8);
         }
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
@@ -550,14 +503,11 @@ public class CombinedResourceTest
             Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
             Path four = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/four");
 
-            Resource composite = ResourceFactory.combine(
-                List.of(
-                    resourceFactory.newResource(one),
-                    resourceFactory.newResource(two),
-                    resourceFactory.newResource(three),
-                    archiveResource
-                )
-            );
+            Resource composite = ResourceFactory.combine(List.of(
+                resourceFactory.newResource(one),
+                resourceFactory.newResource(two),
+                resourceFactory.newResource(three),
+                archiveResource));
 
             Resource oneTxt = composite.resolve("1.txt");
             assertThat(oneTxt, notNullValue());
@@ -575,7 +525,6 @@ public class CombinedResourceTest
             // some negations
             Resource fourth = resourceFactory.newResource(four);
             Resource fourText = fourth.resolve("four.txt");
-
 
             assertThat(oneTxt.contains(composite), is(false));
             assertThat(threeTxt.contains(composite), is(false));
@@ -625,7 +574,8 @@ public class CombinedResourceTest
         try (FileSystem zipfs = FileSystems.newFileSystem(unusedJarURI, env))
         {
             Path root = zipfs.getPath("/");
-            Files.writeString(root.resolve("unused.txt"), "Contents of unused.txt from UNUSED JAR", StandardCharsets.UTF_8);
+            Files.writeString(
+                root.resolve("unused.txt"), "Contents of unused.txt from UNUSED JAR", StandardCharsets.UTF_8);
             Path dir = root.resolve("dir");
             Files.createDirectories(dir);
             Files.writeString(dir.resolve("un.txt"), "Contents of dir/un.txt from TEST JAR", StandardCharsets.UTF_8);
@@ -635,59 +585,36 @@ public class CombinedResourceTest
         {
             Resource archiveResource = resourceFactory.newResource(jarUri);
             Resource unused = resourceFactory.newResource(unusedJarURI);
-            Resource one = resourceFactory.newResource(MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one"));
-            Resource two = resourceFactory.newResource(MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two"));
-            Resource three = resourceFactory.newResource(MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three"));
-            Resource four = resourceFactory.newResource(MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/four"));
+            Resource one = resourceFactory.newResource(
+                MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one"));
+            Resource two = resourceFactory.newResource(
+                MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two"));
+            Resource three = resourceFactory.newResource(
+                MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three"));
+            Resource four = resourceFactory.newResource(
+                MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/four"));
 
-            Resource composite = ResourceFactory.combine(
-                List.of(
-                    one,
-                    two,
-                    three,
-                    archiveResource
-                )
-            );
+            Resource composite = ResourceFactory.combine(List.of(one, two, three, archiveResource));
 
-            Resource other = ResourceFactory.combine(
-                List.of(
-                    one.resolve("dir"),
-                    two.resolve("dir"),
-                    three.resolve("dir")
-                )
-            );
+            Resource other =
+                ResourceFactory.combine(List.of(one.resolve("dir"), two.resolve("dir"), three.resolve("dir")));
 
             assertThat(composite.contains(other), is(true));
 
-            other = ResourceFactory.combine(
-                List.of(
-                    one.resolve("dir"),
-                    two.resolve("dir"),
-                    three.resolve("dir"),
-                    archiveResource.resolve("dir")
-                )
-            );
+            other = ResourceFactory.combine(List.of(
+                one.resolve("dir"), two.resolve("dir"), three.resolve("dir"), archiveResource.resolve("dir")));
 
             assertThat(composite.contains(other), is(true));
 
             // some negations
 
-            other = ResourceFactory.combine(
-                List.of(
-                    one.resolve("dir"),
-                    four.resolve("dir") // not in composite
-                )
-            );
+            other = ResourceFactory.combine(List.of(
+                one.resolve("dir"), four.resolve("dir") // not in composite
+            ));
 
             assertThat(composite.contains(other), is(false));
 
-
-            other = ResourceFactory.combine(
-                List.of(
-                    archiveResource.resolve("dir"),
-                    unused.resolve("dir")
-                )
-            );
+            other = ResourceFactory.combine(List.of(archiveResource.resolve("dir"), unused.resolve("dir")));
 
             assertThat(composite.contains(other), is(false));
         }
@@ -701,20 +628,13 @@ public class CombinedResourceTest
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
         Path four = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/four");
 
-        Resource composite = ResourceFactory.combine(
-            List.of(
-                resourceFactory.newResource(one),
-                resourceFactory.newResource(two),
-                resourceFactory.newResource(three)
-            )
-        );
+        Resource composite = ResourceFactory.combine(List.of(
+            resourceFactory.newResource(one),
+            resourceFactory.newResource(two),
+            resourceFactory.newResource(three)));
 
-        Resource compositeAlt = ResourceFactory.combine(
-            List.of(
-                resourceFactory.newResource(one),
-                resourceFactory.newResource(four)
-            )
-        );
+        Resource compositeAlt =
+            ResourceFactory.combine(List.of(resourceFactory.newResource(one), resourceFactory.newResource(four)));
 
         Resource fourth = resourceFactory.newResource(four);
 
@@ -770,13 +690,10 @@ public class CombinedResourceTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        Resource composite = ResourceFactory.combine(
-            List.of(
-                resourceFactory.newResource(one),
-                resourceFactory.newResource(two),
-                resourceFactory.newResource(three)
-            )
-        );
+        Resource composite = ResourceFactory.combine(List.of(
+            resourceFactory.newResource(one),
+            resourceFactory.newResource(two),
+            resourceFactory.newResource(three)));
 
         assertThat(composite.getFileName(), nullValue());
         Resource dir = composite.resolve("dir");
@@ -790,23 +707,24 @@ public class CombinedResourceTest
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
 
-        Resource composite = ResourceFactory.combine(
-            List.of(
-                resourceFactory.newResource(one),
-                resourceFactory.newResource(two),
-                resourceFactory.newResource(three)
-            )
-        );
+        Resource composite = ResourceFactory.combine(List.of(
+            resourceFactory.newResource(one),
+            resourceFactory.newResource(two),
+            resourceFactory.newResource(three)));
 
-        assertThat(composite.getAllResources().stream().map(composite::getPathTo).map(Path::toString).toList(), containsInAnyOrder(
-            "1.txt",
-            "2.txt",
-            "3.txt",
-            "dir",
-            FS.separators("dir/1.txt"),
-            FS.separators("dir/2.txt"),
-            FS.separators("dir/3.txt")
-        ));
+        assertThat(
+            composite.getAllResources().stream()
+                .map(composite::getPathTo)
+                .map(Path::toString)
+                .toList(),
+            containsInAnyOrder(
+                "1.txt",
+                "2.txt",
+                "3.txt",
+                "dir",
+                FS.separators("dir/1.txt"),
+                FS.separators("dir/2.txt"),
+                FS.separators("dir/3.txt")));
     }
 
     private void createJar(Path outputJar, String entryName, String entryContents) throws IOException

@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.logging;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 public class CapturedStream extends PrintStream
 {

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.proxy;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.security.KeyStore;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
@@ -29,9 +31,6 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.security.auth.x500.X500Principal;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
@@ -120,7 +119,8 @@ public class ClientAuthProxyTest
         serverTLS.setSniRequired(false);
         serverTLS.setNeedClientAuth(true);
         // The KeyStore is also a TrustStore.
-        serverTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/server_keystore.p12").toString());
+        serverTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/server_keystore.p12")
+            .toString());
         serverTLS.setKeyStorePassword("storepwd");
         serverTLS.setKeyStoreType("PKCS12");
 
@@ -148,7 +148,8 @@ public class ClientAuthProxyTest
                     Assertions.assertNotNull(certificates);
                     X509Certificate certificate = certificates[0];
                     X500Principal principal = certificate.getSubjectX500Principal();
-                    String body = "%s\r\n%d\r\n".formatted(principal.toString(), org.eclipse.jetty.server.Request.getRemotePort(request));
+                    String body = "%s\r\n%d\r\n"
+                        .formatted(principal.toString(), org.eclipse.jetty.server.Request.getRemotePort(request));
                     Content.Sink.write(response, true, body, callback);
                     return true;
                 }
@@ -174,7 +175,8 @@ public class ClientAuthProxyTest
         proxyTLS.setSniRequired(false);
         proxyTLS.setNeedClientAuth(true);
         // The KeyStore is also a TrustStore.
-        proxyTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/proxy_keystore.p12").toString());
+        proxyTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/proxy_keystore.p12")
+            .toString());
         proxyTLS.setKeyStorePassword("storepwd");
         proxyTLS.setKeyStoreType("PKCS12");
 
@@ -196,7 +198,8 @@ public class ClientAuthProxyTest
         SslContextFactory.Client clientTLS = new SslContextFactory.Client();
         // Disable TLS-level hostname verification.
         clientTLS.setEndpointIdentificationAlgorithm(null);
-        clientTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/client_keystore.p12").toString());
+        clientTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/client_keystore.p12")
+            .toString());
         clientTLS.setKeyStorePassword("storepwd");
         clientTLS.setKeyStoreType("PKCS12");
         ClientConnector connector = new ClientConnector();
@@ -219,7 +222,8 @@ public class ClientAuthProxyTest
 
     private static String retrieveUser(HttpServletRequest request)
     {
-        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(ServletContextRequest.PEER_CERTIFICATES);
+        X509Certificate[] certificates =
+            (X509Certificate[])request.getAttribute(ServletContextRequest.PEER_CERTIFICATES);
         String clientName = certificates[0].getSubjectX500Principal().getName();
         Matcher matcher = Pattern.compile("CN=([^,]+)").matcher(clientName);
         if (matcher.find())
@@ -250,7 +254,8 @@ public class ClientAuthProxyTest
             {
                 String user = retrieveUser(request);
                 HttpClient httpClient = getOrCreateHttpClient(user);
-                Request proxyRequest = httpClient.newRequest(rewrittenTarget)
+                Request proxyRequest = httpClient
+                    .newRequest(rewrittenTarget)
                     .scheme(HttpScheme.HTTPS.asString())
                     .method(request.getMethod())
                     .attribute(CLIENT_REQUEST_ATTRIBUTE, request);
@@ -269,7 +274,8 @@ public class ClientAuthProxyTest
                     SslContextFactory.Client clientTLS = new SslContextFactory.Client();
                     // Disable TLS-level hostname verification for this test.
                     clientTLS.setEndpointIdentificationAlgorithm(null);
-                    clientTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/proxy_keystore.p12").toString());
+                    clientTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/proxy_keystore.p12")
+                        .toString());
                     clientTLS.setKeyStorePassword("storepwd");
                     clientTLS.setKeyStoreType("PKCS12");
                     clientTLS.setCertAlias(key + "_proxy");
@@ -335,7 +341,8 @@ public class ClientAuthProxyTest
                 };
                 // Disable TLS-level hostname verification for this test.
                 clientTLS.setEndpointIdentificationAlgorithm(null);
-                clientTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/proxy_keystore.p12").toString());
+                clientTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/proxy_keystore.p12")
+                    .toString());
                 clientTLS.setKeyStorePassword("storepwd");
                 clientTLS.setKeyStoreType("PKCS12");
                 ClientConnector connector = new ClientConnector();
@@ -398,7 +405,8 @@ public class ClientAuthProxyTest
                 };
                 // Disable hostname verification is required.
                 clientTLS.setEndpointIdentificationAlgorithm(null);
-                clientTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/proxy_keystore.p12").toString());
+                clientTLS.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/proxy_keystore.p12")
+                    .toString());
                 clientTLS.setKeyStorePassword("storepwd");
                 clientTLS.setKeyStoreType("PKCS12");
                 ClientConnector connector = new ClientConnector();
@@ -448,7 +456,8 @@ public class ClientAuthProxyTest
             {
                 // Disable TLS-level hostname verification for this test.
                 tls.setEndpointIdentificationAlgorithm(null);
-                tls.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/proxy_keystore.p12").toString());
+                tls.setKeyStorePath(MavenPaths.findTestResourceFile("client_auth/proxy_keystore.p12")
+                    .toString());
                 tls.setKeyStorePassword("storepwd");
                 tls.setKeyStoreType("PKCS12");
                 if (user != null)
@@ -586,7 +595,8 @@ public class ClientAuthProxyTest
         }
     }
 
-    private static class ProxyAliasClientSslContextFactory extends SslContextFactory.Client implements SslClientConnectionFactory.SslEngineFactory
+    private static class ProxyAliasClientSslContextFactory extends SslContextFactory.Client
+        implements SslClientConnectionFactory.SslEngineFactory
     {
         private final Map<String, SslContextFactory.Client> factories = new ConcurrentHashMap<>();
 
@@ -595,7 +605,9 @@ public class ClientAuthProxyTest
         {
             Destination destination = (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             String user = (String)destination.getOrigin().getTag();
-            return factories.compute(user, (key, value) -> value != null ? value : this).newSSLEngine(host, port);
+            return factories
+                .compute(user, (key, value) -> value != null ? value : this)
+                .newSSLEngine(host, port);
         }
     }
 }

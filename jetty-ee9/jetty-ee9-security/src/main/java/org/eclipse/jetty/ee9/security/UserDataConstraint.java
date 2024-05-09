@@ -18,7 +18,9 @@ package org.eclipse.jetty.ee9.security;
  */
 public enum UserDataConstraint
 {
-    None, Integral, Confidential;
+    None,
+    Integral,
+    Confidential;
 
     public static UserDataConstraint get(int dataConstraint)
     {

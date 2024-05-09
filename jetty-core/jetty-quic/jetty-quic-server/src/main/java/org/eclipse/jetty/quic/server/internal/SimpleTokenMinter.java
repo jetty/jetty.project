@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.server.internal;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 
 public class SimpleTokenMinter implements QuicheConnection.TokenMinter

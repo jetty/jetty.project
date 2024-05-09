@@ -16,7 +16,6 @@ package org.eclipse.jetty.tests.distribution.jettysh;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.testcontainers.images.builder.dockerfile.DockerfileBuilder;
 

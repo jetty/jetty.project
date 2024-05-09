@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.coders;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.websocket.DecodeException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
-
-import jakarta.websocket.DecodeException;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class DecoderTextTest
 {

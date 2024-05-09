@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
@@ -122,19 +121,34 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
             {
                 updateRecvWindow(session, level);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Data consumed, {} bytes, updated session recv window by {}/{} for {}", length, level, maxLevel, session);
+                    LOG.debug(
+                        "Data consumed, {} bytes, updated session recv window by {}/{} for {}",
+                        length,
+                        level,
+                        maxLevel,
+                        session);
                 sendWindowUpdate(session, null, List.of(new WindowUpdateFrame(0, level)));
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Data consumed, {} bytes, concurrent session recv window level {}/{} for {}", length, sessionLevel, maxLevel, session);
+                    LOG.debug(
+                        "Data consumed, {} bytes, concurrent session recv window level {}/{} for {}",
+                        length,
+                        sessionLevel,
+                        maxLevel,
+                        session);
             }
         }
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Data consumed, {} bytes, session recv window level {}/{} for {}", length, level, maxLevel, session);
+                LOG.debug(
+                    "Data consumed, {} bytes, session recv window level {}/{} for {}",
+                    length,
+                    level,
+                    maxLevel,
+                    session);
         }
 
         if (stream != null)
@@ -142,7 +156,10 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
             if (stream.isRemotelyClosed())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Data consumed, {} bytes, ignoring update stream recv window for remotely closed {}", length, stream);
+                    LOG.debug(
+                        "Data consumed, {} bytes, ignoring update stream recv window for remotely closed {}",
+                        length,
+                        stream);
             }
             else
             {
@@ -156,13 +173,23 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                         level = streamLevel.getAndSet(0);
                         updateRecvWindow(stream, level);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Data consumed, {} bytes, updated stream recv window by {}/{} for {}", length, level, maxLevel, stream);
+                            LOG.debug(
+                                "Data consumed, {} bytes, updated stream recv window by {}/{} for {}",
+                                length,
+                                level,
+                                maxLevel,
+                                stream);
                         sendWindowUpdate(session, stream, List.of(new WindowUpdateFrame(stream.getId(), level)));
                     }
                     else
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Data consumed, {} bytes, stream recv window level {}/{} for {}", length, level, maxLevel, stream);
+                            LOG.debug(
+                                "Data consumed, {} bytes, stream recv window level {}/{} for {}",
+                                length,
+                                level,
+                                maxLevel,
+                                stream);
                     }
                 }
             }
@@ -211,7 +238,8 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
     @Override
     public String toString()
     {
-        return String.format("%s@%x[ratio=%.2f,sessionLevel=%s,sessionStallTime=%dms,streamsStallTime=%dms]",
+        return String.format(
+            "%s@%x[ratio=%.2f,sessionLevel=%s,sessionStallTime=%dms,streamsStallTime=%dms]",
             getClass().getSimpleName(),
             hashCode(),
             bufferRatio,

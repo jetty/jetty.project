@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
-
 import org.eclipse.jetty.http.UriCompliance.Violation;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
@@ -598,17 +597,16 @@ public interface HttpURI
             for (int i = 0; i < illegalChars.length; i++)
             {
                 if (((i >= 'a') && (i <= 'z')) || // ALPHA (lower)
-                    ((i >= 'A') && (i <= 'Z')) ||  // ALPHA (upper)
+                    ((i >= 'A') && (i <= 'Z')) || // ALPHA (upper)
                     ((i >= '0') && (i <= '9')) || // DIGIT
-                    (i == '-') || (i == '.') || (i == '_') || (i == '_') || (i == '~')
-                )
+                    (i == '-') || (i == '.') || (i == '_') || (i == '_') || (i == '~'))
                 {
                     illegalChars[i] = false;
                 }
             }
             // reserved
             String reserved = ":/?#[]@!$&'()*+,=";
-            for (char c: reserved.toCharArray())
+            for (char c : reserved.toCharArray())
                 illegalChars[c] = false;
             __illegalPathCharacters = illegalChars;
             // anything else in the US-ASCII space is not allowed
@@ -1389,7 +1387,7 @@ public interface HttpURI
                                     if (c > __illegalPathCharacters.length || __illegalPathCharacters[c])
                                         addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
                                     if (c < __suspiciousPathCharacters.length && __suspiciousPathCharacters[c])
-                                       addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
+                                        addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
                                     break;
                             }
                         }
@@ -1499,7 +1497,8 @@ public interface HttpURI
             }
             else if (_path != null)
             {
-                // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot segments
+                // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot
+                // segments
                 // which are not canonicalized and could be used in an attempt to bypass security checks.
                 _canonicalPath = URIUtil.canonicalPath(_path, this::onBadUtf8);
                 if (_canonicalPath == null)
@@ -1573,7 +1572,7 @@ public interface HttpURI
         {
             if (_violations == null)
                 _violations = EnumSet.of(violation);
-            else 
+            else
                 _violations.add(violation);
         }
     }

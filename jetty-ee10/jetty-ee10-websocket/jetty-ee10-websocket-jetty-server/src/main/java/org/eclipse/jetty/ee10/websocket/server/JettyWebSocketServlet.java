@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee10.websocket.server;
 
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.time.Duration;
-import java.util.Set;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.time.Duration;
+import java.util.Set;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
@@ -119,7 +118,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
      */
     private FrameHandlerFactory getFactory()
     {
-        JettyServerFrameHandlerFactory frameHandlerFactory = JettyServerFrameHandlerFactory.getFactory(getServletContext());
+        JettyServerFrameHandlerFactory frameHandlerFactory =
+            JettyServerFrameHandlerFactory.getFactory(getServletContext());
         if (frameHandlerFactory == null)
             throw new IllegalStateException("JettyServerFrameHandlerFactory not found");
 
@@ -187,8 +187,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     }
 
     @Override
-    protected void service(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
         ServletContextRequest request = ServletContextRequest.getServletContextRequest(req);
         ServletContextResponse response = request.getServletContextResponse();
@@ -222,7 +221,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         super.service(req, resp);
     }
 
-    private class CustomizedWebSocketServletFactory extends Configuration.ConfigurationCustomizer implements JettyWebSocketServletFactory
+    private class CustomizedWebSocketServletFactory extends Configuration.ConfigurationCustomizer
+        implements JettyWebSocketServletFactory
     {
         @Override
         public Set<String> getAvailableExtensionNames()
@@ -233,7 +233,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         @Override
         public void addMapping(String pathSpec, JettyWebSocketCreator creator)
         {
-            mappings.addMapping(WebSocketMappings.parsePathSpec(pathSpec), new WrappedJettyCreator(creator), getFactory(), this);
+            mappings.addMapping(
+                WebSocketMappings.parsePathSpec(pathSpec), new WrappedJettyCreator(creator), getFactory(), this);
         }
 
         @Override
@@ -287,8 +288,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         }
     }
 
-    private record WrappedJettyCreator(JettyWebSocketCreator creator) implements WebSocketCreator
-    {
+    private record WrappedJettyCreator(JettyWebSocketCreator creator) implements WebSocketCreator {
 
         private JettyWebSocketCreator getJettyWebSocketCreator()
         {
@@ -296,7 +296,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         }
 
         @Override
-        public Object createWebSocket(ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse, Callback callback)
+        public Object createWebSocket(
+                                      ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse, Callback callback)
         {
             DelegatedServerUpgradeRequest request = new DelegatedServerUpgradeRequest(upgradeRequest);
             DelegatedServerUpgradeResponse response = new DelegatedServerUpgradeResponse(upgradeResponse);

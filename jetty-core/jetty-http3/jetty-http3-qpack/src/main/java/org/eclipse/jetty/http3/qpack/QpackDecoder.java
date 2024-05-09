@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.http3.qpack;
 
+import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
+import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_ERROR;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -22,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
@@ -39,10 +42,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
-import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_FAILED;
-import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_ERROR;
 
 public class QpackDecoder implements Dumpable
 {
@@ -154,7 +153,8 @@ public class QpackDecoder implements Dumpable
             LOG.debug("Decoding: streamId={}, buffer={}", streamId, BufferUtil.toDetailString(buffer));
 
         // If the buffer is big, don't even think about decoding it
-        // Huffman may double the size, but it will only be a temporary allocation until detected in MetaDataBuilder.emit().
+        // Huffman may double the size, but it will only be a temporary allocation until detected in
+        // MetaDataBuilder.emit().
         int maxHeaderSize = getMaxHeadersSize();
         if (maxHeaderSize > 0 && buffer.remaining() > maxHeaderSize)
             throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "header_too_large");
@@ -180,7 +180,8 @@ public class QpackDecoder implements Dumpable
         {
             // Parse the buffer into an Encoded Field Section.
             int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
-            EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, handler, requiredInsertCount, base, buffer, _beginNanoTimeSupplier.getAsLong());
+            EncodedFieldSection encodedFieldSection = new EncodedFieldSection(
+                streamId, handler, requiredInsertCount, base, buffer, _beginNanoTimeSupplier.getAsLong());
 
             // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
             if (requiredInsertCount <= insertCount)
@@ -199,7 +200,8 @@ public class QpackDecoder implements Dumpable
                 AtomicInteger blockedFields = _blockedStreams.computeIfAbsent(streamId, id -> new AtomicInteger(0));
                 blockedFields.incrementAndGet();
                 if (_blockedStreams.size() > _maxBlockedStreams)
-                    throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "exceeded max blocked streams");
+                    throw new QpackException.SessionException(
+                        QPACK_DECOMPRESSION_FAILED, "exceeded max blocked streams");
                 _encodedFieldSections.add(encodedFieldSection);
             }
 
@@ -281,14 +283,16 @@ public class QpackDecoder implements Dumpable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
 
-                _metaDataNotifications.add(new MetaDataNotification(streamId, metaData, encodedFieldSection.getHandler()));
+                _metaDataNotifications.add(
+                    new MetaDataNotification(streamId, metaData, encodedFieldSection.getHandler()));
                 if (requiredInsertCount > 0)
                     _instructions.add(new SectionAcknowledgmentInstruction(streamId));
             }
         }
     }
 
-    private static int decodeInsertCount(int encInsertCount, int totalNumInserts, int maxTableCapacity) throws QpackException
+    private static int decodeInsertCount(int encInsertCount, int totalNumInserts, int maxTableCapacity)
+        throws QpackException
     {
         if (encInsertCount == 0)
             return 0;
@@ -296,7 +300,8 @@ public class QpackDecoder implements Dumpable
         int maxEntries = maxTableCapacity / 32;
         int fullRange = 2 * maxEntries;
         if (encInsertCount > fullRange)
-            throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "encInsertCount_greater_than_fullRange");
+            throw new QpackException.SessionException(
+                QPACK_DECOMPRESSION_FAILED, "encInsertCount_greater_than_fullRange");
 
         // MaxWrapped is the largest possible value of ReqInsertCount that is 0 mod 2 * MaxEntries.
         int maxValue = totalNumInserts + maxEntries;
@@ -307,7 +312,8 @@ public class QpackDecoder implements Dumpable
         if (reqInsertCount > maxValue)
         {
             if (reqInsertCount <= fullRange)
-                throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "reqInsertCount_less_than_or_equal_to_fullRange");
+                throw new QpackException.SessionException(
+                    QPACK_DECOMPRESSION_FAILED, "reqInsertCount_less_than_or_equal_to_fullRange");
             reqInsertCount -= fullRange;
         }
 
@@ -368,7 +374,8 @@ public class QpackDecoder implements Dumpable
         public void onSetDynamicTableCapacity(int capacity) throws QpackException
         {
             if (capacity > getMaxTableCapacity())
-                throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "DynamicTable capacity exceeds max capacity");
+                throw new QpackException.StreamException(
+                    H3_GENERAL_PROTOCOL_ERROR, "DynamicTable capacity exceeds max capacity");
             _context.getDynamicTable().setCapacity(capacity);
         }
 
@@ -389,17 +396,26 @@ public class QpackDecoder implements Dumpable
         }
 
         @Override
-        public void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
+        public void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value)
+            throws QpackException
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("InsertNameReference: nameIndex={}, dynamic={}, value={}", nameIndex, isDynamicTableIndex, value);
+                LOG.debug(
+                    "InsertNameReference: nameIndex={}, dynamic={}, value={}",
+                    nameIndex,
+                    isDynamicTableIndex,
+                    value);
 
             StaticTable staticTable = QpackContext.getStaticTable();
             DynamicTable dynamicTable = _context.getDynamicTable();
-            Entry referencedEntry = isDynamicTableIndex ? dynamicTable.getRelative(nameIndex) : staticTable.get(nameIndex);
+            Entry referencedEntry =
+                isDynamicTableIndex ? dynamicTable.getRelative(nameIndex) : staticTable.get(nameIndex);
 
             // Add the new Entry to the DynamicTable.
-            Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
+            Entry entry = new Entry(new HttpField(
+                referencedEntry.getHttpField().getHeader(),
+                referencedEntry.getHttpField().getName(),
+                value));
             dynamicTable.add(entry);
             _instructions.add(new InsertCountIncrementInstruction(1));
             checkEncodedFieldSections();

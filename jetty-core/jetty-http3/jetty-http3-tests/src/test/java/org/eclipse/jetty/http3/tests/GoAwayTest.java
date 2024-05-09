@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -20,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -41,12 +46,6 @@ import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class GoAwayTest extends AbstractClientServerTest
 {
     @Test
@@ -61,7 +60,8 @@ public class GoAwayTest extends AbstractClientServerTest
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverSessionRef.set((HTTP3SessionServer)stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
                 stream.respond(new HeadersFrame(response, true));
                 return null;
             }
@@ -116,17 +116,22 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(serverSession.getStreams().isEmpty());
         ServerQuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(3, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicStreamEndPoints().isEmpty());
-        await().atMost(3, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicConnection().getQuicSessions().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS)
+            .until(() -> serverQuicSession.getQuicStreamEndPoints().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS)
+            .until(() -> serverQuicSession.getQuicConnection().getQuicSessions().isEmpty());
 
         assertTrue(clientSession.isClosed());
         assertTrue(clientSession.getStreams().isEmpty());
         ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(3, TimeUnit.SECONDS).until(() -> clientQuicSession.getQuicStreamEndPoints().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS)
+            .until(() -> clientQuicSession.getQuicStreamEndPoints().isEmpty());
         QuicConnection quicConnection = clientQuicSession.getQuicConnection();
-        await().atMost(3, TimeUnit.SECONDS).until(() -> quicConnection.getQuicSessions().isEmpty());
-        await().atMost(3, TimeUnit.SECONDS).until(() -> quicConnection.getEndPoint().isOpen(), is(false));
+        await().atMost(3, TimeUnit.SECONDS)
+            .until(() -> quicConnection.getQuicSessions().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS)
+            .until(() -> quicConnection.getEndPoint().isOpen(), is(false));
     }
 
     @Test
@@ -141,7 +146,8 @@ public class GoAwayTest extends AbstractClientServerTest
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
                 stream.respond(new HeadersFrame(response, true));
                 return null;
             }
@@ -220,7 +226,8 @@ public class GoAwayTest extends AbstractClientServerTest
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                MetaData.Response response =
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
                 stream.respond(new HeadersFrame(response, true));
                 return null;
             }
@@ -357,7 +364,8 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(clientGracefulGoAwayLatch.await(5, TimeUnit.SECONDS));
 
         // Now the client cannot create new streams.
-        CompletableFuture<Stream> streamCompletable = clientSession.newRequest(new HeadersFrame(newRequest("/"), true), null);
+        CompletableFuture<Stream> streamCompletable =
+            clientSession.newRequest(new HeadersFrame(newRequest("/"), true), null);
         assertThrows(ExecutionException.class, () -> streamCompletable.get(5, TimeUnit.SECONDS));
 
         // The client must not reply to a graceful GOAWAY.
@@ -365,7 +373,8 @@ public class GoAwayTest extends AbstractClientServerTest
 
         // Previous streams must complete successfully.
         Stream.Server serverStream = serverStreamRef.get();
-        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+        MetaData.Response response =
+            new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
         serverStream.respond(new HeadersFrame(response, true));
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
@@ -452,7 +461,8 @@ public class GoAwayTest extends AbstractClientServerTest
 
         // Complete the stream.
         Stream.Server serverStream = serverStreamRef.get();
-        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+        MetaData.Response response =
+            new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
         serverStream.respond(new HeadersFrame(response, true));
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
@@ -540,7 +550,8 @@ public class GoAwayTest extends AbstractClientServerTest
 
         // Complete the stream, the server should send the non-graceful GOAWAY.
         Stream.Server serverStream = serverStreamRef.get();
-        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+        MetaData.Response response =
+            new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
         serverStream.respond(new HeadersFrame(response, true));
 
         // The server already received the client GOAWAY,
@@ -557,7 +568,8 @@ public class GoAwayTest extends AbstractClientServerTest
     }
 
     @Test
-    public void testClientGracefulGoAwayWithStreamsServerGracefulGoAwayServerClosesWhenLastStreamCloses() throws Exception
+    public void testClientGracefulGoAwayWithStreamsServerGracefulGoAwayServerClosesWhenLastStreamCloses()
+        throws Exception
     {
         AtomicReference<Stream> serverStreamRef = new AtomicReference<>();
         CountDownLatch serverRequestLatch = new CountDownLatch(1);
@@ -581,7 +593,8 @@ public class GoAwayTest extends AbstractClientServerTest
                             data.release();
                         if (data != null && data.isLast())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                            MetaData.Response response = new MetaData.Response(
+                                HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
                             serverStream.respond(new HeadersFrame(response, true));
                         }
                         else
@@ -633,7 +646,10 @@ public class GoAwayTest extends AbstractClientServerTest
                 clientDisconnectLatch.countDown();
             }
         });
-        Stream clientStream = clientSession.newRequest(new HeadersFrame(newRequest("/"), false), new Stream.Client.Listener() {})
+        Stream clientStream = clientSession
+            .newRequest(new HeadersFrame(newRequest("/"), false), new Stream.Client.Listener()
+            {
+            })
             .get(5, TimeUnit.SECONDS);
 
         assertTrue(serverRequestLatch.await(5, TimeUnit.SECONDS));
@@ -742,7 +758,11 @@ public class GoAwayTest extends AbstractClientServerTest
             public void onGoAway(Session session, GoAwayFrame frame)
             {
                 // Reply to the graceful GOAWAY from the server with a network disconnection.
-                ((HTTP3Session)session).getProtocolSession().getQuicSession().getQuicConnection().close();
+                ((HTTP3Session)session)
+                    .getProtocolSession()
+                    .getQuicSession()
+                    .getQuicConnection()
+                    .close();
             }
 
             @Override
@@ -822,7 +842,15 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(serverSession.isClosed());
         assertTrue(clientSession.isClosed());
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getProtocolSession().getQuicSession().getQuicConnection().getEndPoint().isOpen(), is(false));
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(
+                () -> clientSession
+                    .getProtocolSession()
+                    .getQuicSession()
+                    .getQuicConnection()
+                    .getEndPoint()
+                    .isOpen(),
+                is(false));
     }
 
     @Test
@@ -966,17 +994,22 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(serverSession.getStreams().isEmpty());
         ServerQuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicStreamEndPoints().isEmpty());
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicConnection().getQuicSessions().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> serverQuicSession.getQuicStreamEndPoints().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> serverQuicSession.getQuicConnection().getQuicSessions().isEmpty());
 
         assertTrue(clientSession.isClosed());
         assertTrue(clientSession.getStreams().isEmpty());
         ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientQuicSession.getQuicStreamEndPoints().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> clientQuicSession.getQuicStreamEndPoints().isEmpty());
         QuicConnection quicConnection = clientQuicSession.getQuicConnection();
-        await().atMost(1, TimeUnit.SECONDS).until(() -> quicConnection.getQuicSessions().isEmpty());
-        await().atMost(1, TimeUnit.SECONDS).until(() -> quicConnection.getEndPoint().isOpen(), is(false));
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> quicConnection.getQuicSessions().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> quicConnection.getEndPoint().isOpen(), is(false));
     }
 
     @Test
@@ -1187,7 +1220,15 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDisconnectLatch.await(5, TimeUnit.SECONDS));
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getProtocolSession().getQuicSession().getQuicConnection().getEndPoint().isOpen(), is(false));
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(
+                () -> clientSession
+                    .getProtocolSession()
+                    .getQuicSession()
+                    .getQuicConnection()
+                    .getEndPoint()
+                    .isOpen(),
+                is(false));
     }
 
     @Test
@@ -1246,8 +1287,25 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(clientDisconnectLatch.await(30, TimeUnit.SECONDS));
         assertTrue(serverDisconnectLatch.await(30, TimeUnit.SECONDS));
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverSessionRef.get().getProtocolSession().getQuicSession().getQuicConnection().getEndPoint().isOpen(), is(false));
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getProtocolSession().getQuicSession().getQuicConnection().getEndPoint().isOpen(), is(false));
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(
+                () -> serverSessionRef
+                    .get()
+                    .getProtocolSession()
+                    .getQuicSession()
+                    .getQuicConnection()
+                    .getEndPoint()
+                    .isOpen(),
+                is(false));
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(
+                () -> clientSession
+                    .getProtocolSession()
+                    .getQuicSession()
+                    .getQuicConnection()
+                    .getEndPoint()
+                    .isOpen(),
+                is(false));
     }
 
     @Test
@@ -1260,14 +1318,17 @@ public class GoAwayTest extends AbstractClientServerTest
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverStreamRef.set((HTTP3Stream)stream);
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false));
+                stream.respond(new HeadersFrame(
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false));
                 return null;
             }
         });
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        HTTP3SessionClient clientSession = (HTTP3SessionClient)newSession(new Session.Client.Listener() {});
+        HTTP3SessionClient clientSession = (HTTP3SessionClient)newSession(new Session.Client.Listener()
+        {
+        });
         clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Client.Listener()
         {
             @Override
@@ -1318,14 +1379,17 @@ public class GoAwayTest extends AbstractClientServerTest
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverStreamRef.set((HTTP3Stream)stream);
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false));
+                stream.respond(new HeadersFrame(
+                    new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false));
                 return null;
             }
         });
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        HTTP3SessionClient clientSession = (HTTP3SessionClient)newSession(new Session.Client.Listener() {});
+        HTTP3SessionClient clientSession = (HTTP3SessionClient)newSession(new Session.Client.Listener()
+        {
+        });
         clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Client.Listener()
         {
             @Override

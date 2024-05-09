@@ -17,7 +17,6 @@ import java.time.Duration;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.NanoTime;
 

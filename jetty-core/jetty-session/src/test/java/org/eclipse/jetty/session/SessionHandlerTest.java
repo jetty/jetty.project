@@ -13,9 +13,16 @@
 
 package org.eclipse.jetty.session;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
@@ -31,14 +38,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * SessionHandlerTest
@@ -149,9 +148,16 @@ public class SessionHandlerTest
                         if (session.isNew())
                             out.append("New\n");
                         for (String name : session.getAttributeNameSet())
-                            out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
+                            out.append("Attribute ")
+                                .append(name)
+                                .append(" = ")
+                                .append(session.getAttribute(name))
+                                .append('\n');
                         out.append("URI [")
-                            .append(session.encodeURI(request, "/some/path", request.getHeaders().contains(HttpHeader.COOKIE)))
+                            .append(session.encodeURI(
+                                request,
+                                "/some/path",
+                                request.getHeaders().contains(HttpHeader.COOKIE)))
                             .append("]");
                     }
                     else
@@ -178,15 +184,16 @@ public class SessionHandlerTest
         _server.start();
 
         LocalConnector.LocalEndPoint endPoint = _connector.connect();
-        endPoint.addInput("""
-            GET / HTTP/1.1
-            Host: localhost
-            
-            GET / HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=oldCookieId
+        endPoint.addInput(
+            """
+                GET / HTTP/1.1
+                Host: localhost
 
-            """);
+                GET / HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=oldCookieId
+
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
@@ -203,16 +210,17 @@ public class SessionHandlerTest
         _server.start();
 
         LocalConnector.LocalEndPoint endPoint = _connector.connect();
-        endPoint.addInput("""
-            GET / HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=oldCookieId
-            
-            GET /create HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=oldCookieId
-            
-            """);
+        endPoint.addInput(
+            """
+                GET / HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=oldCookieId
+
+                GET /create HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=oldCookieId
+
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
@@ -228,12 +236,14 @@ public class SessionHandlerTest
         String content = response.getContent();
         assertThat(content, startsWith("Session="));
 
-        endPoint.addInput("""
-            GET / HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=%s
-            
-            """.formatted(id));
+        endPoint.addInput(
+            """
+                GET / HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=%s
+
+                """
+                .formatted(id));
 
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -251,7 +261,7 @@ public class SessionHandlerTest
         endPoint.addInput("""
             GET /create HTTP/1.1
             Host: localhost
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
@@ -261,16 +271,18 @@ public class SessionHandlerTest
         String content = response.getContent();
         assertThat(content, startsWith("Session="));
 
-        endPoint.addInput("""
-            GET /set/attribute/value HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=%s
-            
-            GET /set/another/attribute HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=%s
-            
-            """.formatted(id, id));
+        endPoint.addInput(
+            """
+                GET /set/attribute/value HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=%s
+
+                GET /set/another/attribute HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=%s
+
+                """
+                .formatted(id, id));
 
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
@@ -296,7 +308,7 @@ public class SessionHandlerTest
         endPoint.addInput("""
             GET /create HTTP/1.1
             Host: localhost
-            
+
             """);
 
         HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
@@ -307,16 +319,18 @@ public class SessionHandlerTest
         String setCookie = response.get(HttpHeader.SET_COOKIE);
         String id = setCookie.substring(setCookie.indexOf("SESSION_ID=") + 11, setCookie.indexOf("; Path=/"));
 
-        endPoint.addInput("""
-            GET /set/attribute/value HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=%s
-            
-            GET /change HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=%s
-            
-            """.formatted(id, id));
+        endPoint.addInput(
+            """
+                GET /set/attribute/value HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=%s
+
+                GET /change HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=%s
+
+                """
+                .formatted(id, id));
 
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
@@ -336,12 +350,14 @@ public class SessionHandlerTest
         assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
         assertThat(content, containsString("attribute = value"));
 
-        endPoint.addInput("""
-            GET / HTTP/1.1
-            Host: localhost
-            Cookie: SESSION_ID=%s
-            
-            """.formatted(id));
+        endPoint.addInput(
+            """
+                GET / HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=%s
+
+                """
+                .formatted(id));
 
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
@@ -381,11 +397,12 @@ public class SessionHandlerTest
         _server.start();
 
         LocalConnector.LocalEndPoint endPoint = _connector.connect();
-        endPoint.addInput("""
-            GET /create/change/invalidate HTTP/1.1
-            Host: localhost
-            
-            """);
+        endPoint.addInput(
+            """
+                GET /create/change/invalidate HTTP/1.1
+                Host: localhost
+
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
@@ -410,7 +427,8 @@ public class SessionHandlerTest
                 session.setAttribute("listener", new Session.ValueListener()
                 {
                     @Override
-                    public void onSessionAttributeUpdate(Session session, String name, Object oldValue, Object newValue)
+                    public void onSessionAttributeUpdate(
+                                                         Session session, String name, Object oldValue, Object newValue)
                     {
                         LOGGER.debug("testSessionValueAttributeListener#onSessionAttributeUpdate");
                         history.add("attribute %s %s: %s->%s".formatted(session.getId(), name, oldValue, newValue));
@@ -442,11 +460,12 @@ public class SessionHandlerTest
         _server.start();
 
         LocalConnector.LocalEndPoint endPoint = _connector.connect();
-        endPoint.addInput("""
-            GET /create/set/n1/v1/set/n2/v2/set/n1/V1/remove/n2 HTTP/1.1
-            Host: localhost
-            
-            """);
+        endPoint.addInput(
+            """
+                GET /create/set/n1/v1/set/n2/v2/set/n1/V1/remove/n2 HTTP/1.1
+                Host: localhost
+
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
@@ -468,11 +487,12 @@ public class SessionHandlerTest
 
         try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
         {
-            endPoint.addInput("""
-                GET /create HTTP/1.1
-                Host: localhost
-                            
-                """);
+            endPoint.addInput(
+                """
+                    GET /create HTTP/1.1
+                    Host: localhost
+
+                    """);
 
             HttpTester.Response response;
 
@@ -484,15 +504,19 @@ public class SessionHandlerTest
 
             String content = response.getContent();
             assertThat(content, startsWith("Session="));
-            assertThat(content, containsString("URI [/some/path;session_id=%s]".formatted(id))); // Cookies not known to be in use
+            assertThat(
+                content,
+                containsString("URI [/some/path;session_id=%s]".formatted(id))); // Cookies not known to be in use
 
             // Get with cookie
-            endPoint.addInput("""
-                GET / HTTP/1.1
-                Host: localhost
-                Cookie: SESSION_ID=%s
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET / HTTP/1.1
+                    Host: localhost
+                    Cookie: SESSION_ID=%s
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -502,11 +526,13 @@ public class SessionHandlerTest
             assertThat(content, containsString("URI [/some/path]")); // Cookies known to be in use
 
             // Get with parameter
-            endPoint.addInput("""
-                GET /;session_id=%s HTTP/1.1
-                Host: localhost
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET /;session_id=%s HTTP/1.1
+                    Host: localhost
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -516,12 +542,14 @@ public class SessionHandlerTest
             assertThat(content, containsString("URI [/some/path;session_id=%s]".formatted(id))); // Cookies not in use
 
             // Get with both, but param wrong
-            endPoint.addInput("""
-                GET /;session_id=wrong HTTP/1.1
-                Host: localhost
-                Cookie: SESSION_ID=%s
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET /;session_id=wrong HTTP/1.1
+                    Host: localhost
+                    Cookie: SESSION_ID=%s
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -531,12 +559,14 @@ public class SessionHandlerTest
             assertThat(content, containsString("URI [/some/path]")); // Cookies known to be in use
 
             // Get with both, but cookie wrong
-            endPoint.addInput("""
-                GET /;session_id=%s HTTP/1.1
-                Host: localhost
-                Cookie: SESSION_ID=wrong
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET /;session_id=%s HTTP/1.1
+                    Host: localhost
+                    Cookie: SESSION_ID=wrong
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -556,11 +586,12 @@ public class SessionHandlerTest
 
         try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
         {
-            endPoint.addInput("""
-                GET /create HTTP/1.1
-                Host: localhost
-                            
-                """);
+            endPoint.addInput(
+                """
+                    GET /create HTTP/1.1
+                    Host: localhost
+
+                    """);
 
             HttpTester.Response response;
 
@@ -575,12 +606,14 @@ public class SessionHandlerTest
             assertThat(content, containsString("URI [/some/path]"));
 
             // Get with cookie
-            endPoint.addInput("""
-                GET / HTTP/1.1
-                Host: localhost
-                Cookie: SESSION_ID=%s
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET / HTTP/1.1
+                    Host: localhost
+                    Cookie: SESSION_ID=%s
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -590,14 +623,16 @@ public class SessionHandlerTest
             assertThat(content, containsString("URI [/some/path]")); // Cookies known to be in use
 
             // Get with multiple cookie
-            endPoint.addInput("""
-                GET / HTTP/1.1
-                Host: localhost
-                Cookie: SESSION_ID=wrong
-                Cookie: SESSION_ID=%s
-                Cookie: SESSION_ID=other
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET / HTTP/1.1
+                    Host: localhost
+                    Cookie: SESSION_ID=wrong
+                    Cookie: SESSION_ID=%s
+                    Cookie: SESSION_ID=other
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -607,11 +642,13 @@ public class SessionHandlerTest
             assertThat(content, containsString("URI [/some/path]")); // Cookies known to be in use
 
             // Try with parameter
-            endPoint.addInput("""
-                GET /;session_id=%s HTTP/1.1
-                Host: localhost
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET /;session_id=%s HTTP/1.1
+                    Host: localhost
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -620,13 +657,15 @@ public class SessionHandlerTest
             assertThat(content, containsString("No Session"));
 
             // Get with bad cookies
-            endPoint.addInput("""
-                GET /;session_id=%s HTTP/1.1
-                Host: localhost
-                Cookie: SESSION_ID
-                Cookie: SESSION_ID=
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET /;session_id=%s HTTP/1.1
+                    Host: localhost
+                    Cookie: SESSION_ID
+                    Cookie: SESSION_ID=
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -645,11 +684,12 @@ public class SessionHandlerTest
 
         try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
         {
-            endPoint.addInput("""
-                GET /create HTTP/1.1
-                Host: localhost
-                            
-                """);
+            endPoint.addInput(
+                """
+                    GET /create HTTP/1.1
+                    Host: localhost
+
+                    """);
 
             HttpTester.Response response;
 
@@ -665,12 +705,14 @@ public class SessionHandlerTest
             assertThat(content, containsString("URI [/some/path;session_id=%s]".formatted(id)));
 
             // Try with cookie
-            endPoint.addInput("""
-                GET / HTTP/1.1
-                Host: localhost
-                Cookie: SESSION_ID=%s
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET / HTTP/1.1
+                    Host: localhost
+                    Cookie: SESSION_ID=%s
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -679,11 +721,13 @@ public class SessionHandlerTest
             assertThat(content, containsString("No Session"));
 
             // Get with parameter
-            endPoint.addInput("""
-                GET /;session_id=%s HTTP/1.1
-                Host: localhost
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET /;session_id=%s HTTP/1.1
+                    Host: localhost
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -693,11 +737,13 @@ public class SessionHandlerTest
             assertThat(content, containsString("URI [/some/path;session_id=%s]".formatted(id)));
 
             // Get with multiple parameters
-            endPoint.addInput("""
-                GET /;session_id=wrong;session_id=%s;session_id=other;session_id=;session_id HTTP/1.1
-                Host: localhost
-                            
-                """.formatted(id));
+            endPoint.addInput(
+                """
+                    GET /;session_id=wrong;session_id=%s;session_id=other;session_id=;session_id HTTP/1.1
+                    Host: localhost
+
+                    """
+                    .formatted(id));
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -707,11 +753,12 @@ public class SessionHandlerTest
             assertThat(content, containsString("URI [/some/path;session_id=%s]".formatted(id)));
 
             // Get with bad parameter
-            endPoint.addInput("""
-                GET /;session_id=;session_id HTTP/1.1
-                Host: localhost
-                            
-                """);
+            endPoint.addInput(
+                """
+                    GET /;session_id=;session_id HTTP/1.1
+                    Host: localhost
+
+                    """);
 
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
@@ -720,5 +767,4 @@ public class SessionHandlerTest
             assertThat(content, containsString("No Session"));
         }
     }
-
 }

@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.ee9.websocket.client;
 
-import java.util.concurrent.Executor;
-
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
+
+import java.util.concurrent.Executor;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.jupiter.api.Test;
 
 public class HttpClientInitTest
 {

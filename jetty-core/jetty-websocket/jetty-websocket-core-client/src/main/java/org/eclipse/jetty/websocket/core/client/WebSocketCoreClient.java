@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -57,7 +56,8 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         if (webSocketComponents == null)
         {
             if (client.isStarted())
-                webSocketComponents = new WebSocketComponents(null, null, client.getByteBufferPool(), null, null, client.getExecutor());
+                webSocketComponents = new WebSocketComponents(
+                    null, null, client.getByteBufferPool(), null, null, client.getExecutor());
             else
                 webSocketComponents = new WebSocketComponents();
         }
@@ -92,7 +92,8 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     public CompletableFuture<CoreSession> connect(CoreClientUpgradeRequest request) throws IOException
     {
         if (!isStarted())
-            throw new IllegalStateException(WebSocketCoreClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");
+            throw new IllegalStateException(
+                WebSocketCoreClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");
 
         // Validate Requested Extensions
         for (ExtensionConfig reqExt : request.getExtensions())

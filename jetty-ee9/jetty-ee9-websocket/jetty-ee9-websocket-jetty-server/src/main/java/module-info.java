@@ -18,7 +18,6 @@ module org.eclipse.jetty.ee9.websocket.jetty.server
     requires org.eclipse.jetty.ee9.websocket.jetty.common;
     requires org.eclipse.jetty.ee9.websocket.servlet;
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.ee9.webapp;
     requires transitive org.eclipse.jetty.ee9.websocket.jetty.api;
 
@@ -30,7 +29,6 @@ module org.eclipse.jetty.ee9.websocket.jetty.server
 
     provides jakarta.servlet.ServletContainerInitializer with
         org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
-
     provides org.eclipse.jetty.ee9.webapp.Configuration with
         org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketConfiguration;
 }

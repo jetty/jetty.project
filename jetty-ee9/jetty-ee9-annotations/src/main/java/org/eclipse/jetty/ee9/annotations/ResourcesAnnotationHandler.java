@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee9.annotations;
 
-import javax.naming.NamingException;
-
 import jakarta.annotation.Resource;
 import jakarta.annotation.Resources;
+import javax.naming.NamingException;
 import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
@@ -51,16 +50,20 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
                 String mappedName = resArray[j].mappedName();
 
                 if (name == null || name.trim().isEmpty())
-                    throw new IllegalStateException("Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");
+                    throw new IllegalStateException(
+                        "Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");
 
                 try
                 {
-                    //TODO don't ignore the shareable, auth etc etc
+                    // TODO don't ignore the shareable, auth etc etc
 
                     if (!NamingEntryUtil.bindToENC(_context, name, mappedName))
                         if (!NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName))
-                            LOG.warn("Skipping Resources(Resource) annotation on {} for name {}: no resource bound at {}",
-                                    clazz.getName(), name, (mappedName == null ? name : mappedName));
+                            LOG.warn(
+                                "Skipping Resources(Resource) annotation on {} for name {}: no resource bound at {}",
+                                clazz.getName(),
+                                name,
+                                (mappedName == null ? name : mappedName));
                 }
                 catch (NamingException e)
                 {

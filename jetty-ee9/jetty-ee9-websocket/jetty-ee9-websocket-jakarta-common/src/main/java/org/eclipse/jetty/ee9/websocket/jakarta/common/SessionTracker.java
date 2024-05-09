@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.Session;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-
-import jakarta.websocket.CloseReason;
-import jakarta.websocket.Session;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;

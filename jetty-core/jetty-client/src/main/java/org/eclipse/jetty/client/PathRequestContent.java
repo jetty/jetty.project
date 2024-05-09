@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.content.PathContentSource;
 

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +123,11 @@ public class HeaderParser
                 {
                     buffer.get();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Parsed request {} header {} length={}", getRequest(), getFrameType(), getContentLength());
+                        LOG.debug(
+                            "Parsed request {} header {} length={}",
+                            getRequest(),
+                            getFrameType(),
+                            getContentLength());
                     return true;
                 }
                 default:
@@ -169,6 +172,13 @@ public class HeaderParser
 
     private enum State
     {
-        VERSION, TYPE, REQUEST, REQUEST_BYTES, LENGTH, LENGTH_BYTES, PADDING, RESERVED
+        VERSION,
+        TYPE,
+        REQUEST,
+        REQUEST_BYTES,
+        LENGTH,
+        LENGTH_BYTES,
+        PADDING,
+        RESERVED
     }
 }

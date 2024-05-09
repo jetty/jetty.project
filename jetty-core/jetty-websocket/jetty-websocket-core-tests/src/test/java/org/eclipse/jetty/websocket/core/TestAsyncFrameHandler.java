@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;

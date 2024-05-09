@@ -17,7 +17,6 @@ import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.Statement;
 import javax.sql.DataSource;
-
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.slf4j.Logger;

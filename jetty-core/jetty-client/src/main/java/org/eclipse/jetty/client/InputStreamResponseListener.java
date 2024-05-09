@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.client.Response.Listener;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.IO;
@@ -69,7 +68,11 @@ import org.slf4j.LoggerFactory;
 public class InputStreamResponseListener implements Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
-    private static final ChunkCallback EOF = new ChunkCallback(Content.Chunk.EOF, () -> {}, x -> {});
+    private static final ChunkCallback EOF = new ChunkCallback(Content.Chunk.EOF, () ->
+    {
+    }, x ->
+    {
+    });
 
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final CountDownLatch responseLatch = new CountDownLatch(1);
@@ -353,8 +356,7 @@ public class InputStreamResponseListener implements Listener
         }
     }
 
-    private record ChunkCallback(Content.Chunk chunk, Runnable success, Consumer<Throwable> throwableConsumer)
-    {
+    private record ChunkCallback(Content.Chunk chunk, Runnable success, Consumer<Throwable> throwableConsumer) {
         private void releaseAndSucceed()
         {
             chunk.release();

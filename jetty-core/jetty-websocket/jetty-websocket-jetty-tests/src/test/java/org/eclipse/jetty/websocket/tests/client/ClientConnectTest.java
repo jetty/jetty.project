@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -27,7 +37,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -55,16 +64,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * Various connect condition testing
  */
@@ -75,7 +74,8 @@ public class ClientConnectTest
     private final CountDownLatch serverLatch = new CountDownLatch(1);
 
     @SuppressWarnings("unchecked")
-    private <E extends Throwable> E assertExpectedError(ExecutionException e, CloseTrackingEndpoint wsocket, Matcher<Throwable> errorMatcher)
+    private <E extends Throwable> E assertExpectedError(
+                                                        ExecutionException e, CloseTrackingEndpoint wsocket, Matcher<Throwable> errorMatcher)
     {
         // Validate thrown cause
         Throwable cause = e.getCause();
@@ -124,7 +124,8 @@ public class ClientConnectTest
                     upgradeResponse.setAcceptedSubProtocol("echo");
                 return new EchoSocket();
             });
-            container.addMapping("/get-auth-header", (upgradeRequest, upgradeResponse, callback) -> new GetAuthHeaderEndpoint());
+            container.addMapping(
+                "/get-auth-header", (upgradeRequest, upgradeResponse, callback) -> new GetAuthHeaderEndpoint());
             container.addMapping("/noResponse", (upgradeRequest, upgradeResponse, callback) ->
             {
                 try
@@ -252,8 +253,7 @@ public class ClientConnectTest
         Future<Session> future = client.connect(cliSock, wsUri);
 
         // The attempt to get upgrade response future should throw error
-        ExecutionException e = assertThrows(ExecutionException.class,
-            () -> future.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
 
         UpgradeException ue = assertExpectedError(e, cliSock, instanceOf(UpgradeException.class));
         assertThat("UpgradeException.requestURI", ue.getRequestURI(), notNullValue());
@@ -270,8 +270,7 @@ public class ClientConnectTest
         Future<Session> future = client.connect(cliSock, wsUri);
 
         // The attempt to get upgrade response future should throw error
-        ExecutionException e = assertThrows(ExecutionException.class,
-            () -> future.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
 
         UpgradeException ue = assertExpectedError(e, cliSock, instanceOf(UpgradeException.class));
         assertThat("UpgradeException.requestURI", ue.getRequestURI(), notNullValue());
@@ -288,8 +287,7 @@ public class ClientConnectTest
         Future<Session> future = client.connect(cliSock, wsUri);
 
         // The attempt to get upgrade response future should throw error
-        ExecutionException e = assertThrows(ExecutionException.class,
-            () -> future.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
 
         UpgradeException ue = assertExpectedError(e, cliSock, instanceOf(UpgradeException.class));
         assertThat("UpgradeException.requestURI", ue.getRequestURI(), notNullValue());
@@ -306,8 +304,7 @@ public class ClientConnectTest
         Future<Session> future = client.connect(cliSock, wsUri);
 
         // The attempt to get upgrade response future should throw error
-        ExecutionException e = assertThrows(ExecutionException.class,
-            () -> future.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
 
         UpgradeException ue = assertExpectedError(e, cliSock, instanceOf(UpgradeException.class));
         assertThat("UpgradeException.requestURI", ue.getRequestURI(), notNullValue());
@@ -324,8 +321,7 @@ public class ClientConnectTest
         Future<Session> future = client.connect(cliSock, wsUri);
 
         // The attempt to get upgrade response future should throw error
-        ExecutionException e = assertThrows(ExecutionException.class,
-            () -> future.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
 
         UpgradeException ue = assertExpectedError(e, cliSock, instanceOf(UpgradeException.class));
         assertThat("UpgradeException.requestURI", ue.getRequestURI(), notNullValue());
@@ -342,8 +338,7 @@ public class ClientConnectTest
         Future<Session> future = client.connect(cliSock, wsUri);
 
         // The attempt to get upgrade response future should throw error
-        ExecutionException e = assertThrows(ExecutionException.class,
-            () -> future.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> future.get(5, TimeUnit.SECONDS));
 
         UpgradeException ue = assertExpectedError(e, cliSock, instanceOf(UpgradeException.class));
         assertThat("UpgradeException.responseStatusCode", ue.getResponseStatusCode(), is(101));
@@ -407,7 +402,9 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-            assertExpectedError(e, cliSock,
+            assertExpectedError(
+                e,
+                cliSock,
                 anyOf(
                     instanceOf(UpgradeException.class),
                     instanceOf(SocketTimeoutException.class),
@@ -427,8 +424,7 @@ public class ClientConnectTest
         Future<Session> future = client.connect(cliSock, wsUri);
 
         // The attempt to get upgrade response future should throw error
-        Exception e = assertThrows(Exception.class,
-            () -> future.get(5, TimeUnit.SECONDS));
+        Exception e = assertThrows(Exception.class, () -> future.get(5, TimeUnit.SECONDS));
 
         // Allow server to exit now we have failed.
         serverLatch.countDown();
@@ -455,7 +451,8 @@ public class ClientConnectTest
             String pathInContext = Request.getPathInContext(request);
             if (pathInContext.contains("only-accept"))
             {
-                // Force 200 response, no response body content, incomplete websocket response headers, no actual upgrade for this test.
+                // Force 200 response, no response body content, incomplete websocket response headers, no actual
+                // upgrade for this test.
                 response.setStatus(HttpStatus.OK_200);
                 String key = request.getHeaders().get(HttpHeader.SEC_WEBSOCKET_KEY);
                 response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketUtils.hashKey(key));

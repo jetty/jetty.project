@@ -68,8 +68,8 @@ public class JakartaAutobahnServer
         context.setContextPath("/");
         server.setHandler(context);
 
-        JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) ->
-            container.addEndpoint(JakartaAutobahnSocket.class));
+        JakartaWebSocketServletContainerInitializer.configure(
+            context, (servletContext, container) -> container.addEndpoint(JakartaAutobahnSocket.class));
 
         server.start();
         server.join();

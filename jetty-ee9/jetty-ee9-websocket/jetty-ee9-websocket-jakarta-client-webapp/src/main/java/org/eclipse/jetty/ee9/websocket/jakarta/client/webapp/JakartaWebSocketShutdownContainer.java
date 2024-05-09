@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.client.webapp;
 
-import java.util.Set;
-
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.ServletException;
+import java.util.Set;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -35,7 +34,8 @@ import org.slf4j.LoggerFactory;
  * In this case then the client {@link jakarta.websocket.WebSocketContainer} will register itself to be automatically shutdown
  * with the Jetty {@code ContextHandler}.</p>
  */
-public class JakartaWebSocketShutdownContainer extends ContainerLifeCycle implements ServletContainerInitializer, ServletContextListener
+public class JakartaWebSocketShutdownContainer extends ContainerLifeCycle
+    implements ServletContainerInitializer, ServletContextListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketShutdownContainer.class);
 
@@ -68,6 +68,8 @@ public class JakartaWebSocketShutdownContainer extends ContainerLifeCycle implem
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s, size=%s}", getClass().getSimpleName(), hashCode(), getState(), getBeans().size());
+        return String.format(
+            "%s@%x{%s, size=%s}",
+            getClass().getSimpleName(), hashCode(), getState(), getBeans().size());
     }
 }

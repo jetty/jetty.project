@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee9;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.server.LocalConnector;
@@ -21,9 +24,6 @@ import org.example.ChatServlet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class ChatServletTest
 {
@@ -76,12 +76,6 @@ public class ChatServletTest
 
     private String createRequestString(String body)
     {
-        return "POST /chat/ HTTP/1.1\r\n" +
-            "Host: tester\r\n" +
-            "Content-length: " + body.length() + "\r\n" +
-            "Content-type: application/x-www-form-urlencoded\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            body;
+        return "POST /chat/ HTTP/1.1\r\n" + "Host: tester\r\n" + "Content-length: " + body.length() + "\r\n" + "Content-type: application/x-www-form-urlencoded\r\n" + "Connection: close\r\n" + "\r\n" + body;
     }
 }

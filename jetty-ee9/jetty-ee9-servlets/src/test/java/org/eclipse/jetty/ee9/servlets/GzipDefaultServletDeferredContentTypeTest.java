@@ -13,14 +13,18 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
@@ -36,11 +40,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 /**
  * GzipHandler setting of headers when reset and/or not compressed.
@@ -81,7 +80,8 @@ public class GzipDefaultServletDeferredContentTypeTest extends AbstractGzipTest
                 String uri = req.getRequestURI();
                 if (uri.endsWith(".deferred"))
                 {
-                    // System.err.println("type for "+uri.substring(0,uri.length()-9)+" is "+getServletContext().getMimeType(uri.substring(0,uri.length()-9)));
+                    // System.err.println("type for "+uri.substring(0,uri.length()-9)+" is
+                    // "+getServletContext().getMimeType(uri.substring(0,uri.length()-9)));
                     resp.setContentType(getServletContext().getMimeType(uri.substring(0, uri.length() - 9)));
                 }
 

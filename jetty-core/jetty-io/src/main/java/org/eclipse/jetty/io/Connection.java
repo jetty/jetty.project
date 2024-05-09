@@ -17,7 +17,6 @@ import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.util.component.Container;
 
 /**

@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
+
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -29,10 +34,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -63,8 +64,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
-
 /**
  * <p>The state machine that processes a request/response
  * cycle interpreting the HTTP and Servlet semantic.</p>
@@ -86,8 +85,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Listener _combinedListener;
     private final Dispatchable _requestDispatcher;
     private final Dispatchable _asyncDispatcher;
+
     @Deprecated
     private final List<Listener> _transientListeners = new ArrayList<>();
+
     private MetaData.Response _committedMetaData;
     private long _oldIdleTimeout;
 
@@ -95,6 +96,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * Bytes written after interception (eg after compression)
      */
     private long _written;
+
     private ContextHandler.CoreContextRequest _coreRequest;
     private org.eclipse.jetty.server.Response _coreResponse;
     private Callback _coreCallback;
@@ -115,7 +117,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _asyncDispatcher = new AsyncDispatchable();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("new {} -> {},{},{}",
+            LOG.debug(
+                "new {} -> {},{},{}",
                 this,
                 _endPoint,
                 _endPoint == null ? null : _endPoint.getConnection(),
@@ -379,8 +382,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public String getLocalName()
     {
-        return getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress
-            ? org.eclipse.jetty.server.Request.getHostName(inetSocketAddress) : null;
+        return getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress ? org.eclipse.jetty.server.Request.getHostName(inetSocketAddress) : null;
     }
 
     /**
@@ -402,20 +404,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public int getLocalPort()
     {
-        return getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress
-            ? inetSocketAddress.getPort() : 0;
+        return getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress ? inetSocketAddress.getPort() : 0;
     }
 
     public InetSocketAddress getLocalAddress()
     {
-        return getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress
-            ? inetSocketAddress : null;
+        return getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress ? inetSocketAddress : null;
     }
 
     public InetSocketAddress getRemoteAddress()
     {
-        return getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddress
-            ? inetSocketAddress : null;
+        return getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddress ? inetSocketAddress : null;
     }
 
     /**
@@ -537,14 +536,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             _response.setStatus(code);
 
                             // The handling of the original dispatch failed and we are now going to either generate
-                            // and error response ourselves or dispatch for an error page.  If there is content left over
+                            // and error response ourselves or dispatch for an error page.  If there is content left
+                            // over
                             // from the failed dispatch, then we try to consume it here and if we fail we add a
                             // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
                             // by then.
                             ensureConsumeAllOrNotPersistent();
 
-                            ContextHandler.APIContext context = (ContextHandler.APIContext)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
-                            ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
+                            ContextHandler.APIContext context =
+                                (ContextHandler.APIContext)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
+                            ErrorHandler errorHandler = ErrorHandler.getErrorHandler(
+                                getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body, then create a minimal error response.
                             if (HttpStatus.hasNoBody(_response.getStatus()) || errorHandler == null || !errorHandler.errorPageForMethod(_request.getMethod()))
@@ -626,16 +628,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         }
 
                         // RFC 7230, section 3.3.
-                        if (!_request.isHead() &&
-                            _response.getStatus() != HttpStatus.NOT_MODIFIED_304 &&
-                            !_response.isContentComplete(_response.getHttpOutput().getWritten()))
+                        if (!_request.isHead() && _response.getStatus() != HttpStatus.NOT_MODIFIED_304 && !_response.isContentComplete(
+                            _response.getHttpOutput().getWritten()))
                         {
                             if (sendErrorOrAbort("Insufficient content written"))
                                 break;
                         }
 
                         // Set a close callback on the HttpOutput to make it an async callback
-                        _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
+                        _response.completeOutput(
+                            Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
                         break;
                     }
@@ -646,7 +648,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (Throwable failure)
             {
-                if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
+                if ("org.eclipse.jetty.continuation.ContinuationThrowable"
+                    .equals(failure.getClass().getName()))
                     LOG.trace("IGNORED", failure);
                 else
                     handleException(failure);
@@ -695,7 +698,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                 // Returns a single Cookie header with all cookies.
                 return new HttpField(HttpHeader.CONNECTION, coalesced);
-
             });
             _response.getHttpFields().ensureField(HttpFields.CONNECTION_CLOSE);
         }
@@ -825,7 +827,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _request.setHandled(true);
             _state.completing();
-            sendResponse(null, _response.getHttpOutput().getByteBuffer(), true, Callback.from(() -> _state.completed(null), _state::completed));
+            sendResponse(
+                null,
+                _response.getHttpOutput().getByteBuffer(),
+                true,
+                Callback.from(() -> _state.completed(null), _state::completed));
         }
         catch (Throwable x)
         {
@@ -837,7 +843,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public String toString()
     {
         long timeStamp = _request == null ? 0 : _request.getTimeStamp();
-        return String.format("%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
+        return String.format(
+            "%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
             getClass().getSimpleName(),
             hashCode(),
             _state,
@@ -859,8 +866,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
         {
             MetaData.Request metaData = _request.getMetaData();
-            LOG.debug("onRequest for {} on {}{}{} {} {}{}{}", metaData.getHttpURI().toString(), this, System.lineSeparator(),
-                metaData.getMethod(), metaData.getHttpURI().toString(), metaData.getHttpVersion(), System.lineSeparator(),
+            LOG.debug(
+                "onRequest for {} on {}{}{} {} {}{}{}",
+                metaData.getHttpURI().toString(),
+                this,
+                System.lineSeparator(),
+                metaData.getMethod(),
+                metaData.getHttpURI().toString(),
+                metaData.getHttpVersion(),
+                System.lineSeparator(),
                 metaData.getHttpFields());
         }
     }
@@ -874,8 +888,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
         {
             MetaData.Request metaData = _request.getMetaData();
-            LOG.debug("onProcess for {} on {}{}{} {} {}{}{}", metaData.getHttpURI().toString(), this, System.lineSeparator(),
-                metaData.getMethod(), metaData.getHttpURI().toString(), metaData.getHttpVersion(), System.lineSeparator(),
+            LOG.debug(
+                "onProcess for {} on {}{}{} {} {}{}{}",
+                metaData.getHttpURI().toString(),
+                this,
+                System.lineSeparator(),
+                metaData.getMethod(),
+                metaData.getHttpURI().toString(),
+                metaData.getHttpVersion(),
+                System.lineSeparator(),
                 metaData.getHttpFields());
         }
     }
@@ -922,9 +943,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (getServer().getRequestLog() instanceof CustomRequestLog)
         {
             CustomRequestLog.LogDetail logDetail = new CustomRequestLog.LogDetail(
-                _request.getServletName(),
-                _request.getLastContext().getRealPath(_request.getLastPathInContext())
-            );
+                _request.getServletName(), _request.getLastContext().getRealPath(_request.getLastPathInContext()));
             _request.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }
 
@@ -969,7 +988,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 if (handler != null)
                     content = handler.badMessageError(status, reason, fields);
 
-                sendResponse(new MetaData.Response(status, null, HttpVersion.HTTP_1_1, fields, BufferUtil.length(content)), content, true);
+                sendResponse(
+                    new MetaData.Response(status, null, HttpVersion.HTTP_1_1, fields, BufferUtil.length(content)),
+                    content,
+                    true);
             }
         }
         catch (IOException e)
@@ -991,12 +1013,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    protected boolean sendResponse(MetaData.Response response, ByteBuffer content, boolean complete, final Callback callback)
+    protected boolean sendResponse(
+                                   MetaData.Response response, ByteBuffer content, boolean complete, final Callback callback)
     {
         boolean committing = _state.commitResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("sendResponse info={} content={} complete={} committing={} callback={}",
+            LOG.debug(
+                "sendResponse info={} content={} complete={} committing={} callback={}",
                 response,
                 BufferUtil.toDetailString(content),
                 complete,
@@ -1014,9 +1038,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
             // wrap callback to process informational responses
             final int status = response.getStatus();
-            final Callback committed = HttpStatus.isInformational(status)
-                ? new Send1XXCallback(callback)
-                : new SendCallback(callback, content, true, complete);
+            final Callback committed = HttpStatus.isInformational(status) ? new Send1XXCallback(callback) : new SendCallback(callback, content, true, complete);
 
             // committing write
             send(_request.getMetaData(), response, content, complete, committed);
@@ -1033,7 +1055,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return committing;
     }
 
-    private void send(MetaData.Request ignored, MetaData.Response response, ByteBuffer content, boolean complete, Callback callback)
+    private void send(
+                      MetaData.Request ignored,
+                      MetaData.Response response,
+                      ByteBuffer content,
+                      boolean complete,
+                      Callback callback)
     {
         if (response != null)
         {
@@ -1064,8 +1091,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         _committedMetaData = info;
         if (LOG.isDebugEnabled())
-            LOG.debug("COMMIT for {} on {}{}{} {} {}{}{}", getRequest().getRequestURI(), this, System.lineSeparator(),
-                info.getStatus(), info.getReason(), info.getHttpVersion(), System.lineSeparator(),
+            LOG.debug(
+                "COMMIT for {} on {}{}{} {} {}{}{}",
+                getRequest().getRequestURI(),
+                this,
+                System.lineSeparator(),
+                info.getStatus(),
+                info.getReason(),
+                info.getHttpVersion(),
+                System.lineSeparator(),
                 info.getHttpFields());
     }
 
@@ -1181,7 +1215,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    private void notifyEvent2(Function<Listener, BiConsumer<Request, ByteBuffer>> function, Request request, ByteBuffer content)
+    private void notifyEvent2(
+                              Function<Listener, BiConsumer<Request, ByteBuffer>> function, Request request, ByteBuffer content)
     {
         for (Listener listener : _transientListeners)
         {
@@ -1198,7 +1233,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    private void notifyEvent2(Function<Listener, BiConsumer<Request, Throwable>> function, Request request, Throwable failure)
+    private void notifyEvent2(
+                              Function<Listener, BiConsumer<Request, Throwable>> function, Request request, Throwable failure)
     {
         for (Listener listener : _transientListeners)
         {
@@ -1426,7 +1462,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
             if (x instanceof HttpException httpException)
             {
-                MetaData.Response responseMeta = new MetaData.Response(httpException.getCode(), httpException.getReason(), HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
+                MetaData.Response responseMeta = new MetaData.Response(
+                    httpException.getCode(),
+                    httpException.getReason(),
+                    HttpVersion.HTTP_1_1,
+                    HttpFields.build().add(HttpFields.CONNECTION_CLOSE),
+                    0);
                 send(_request.getMetaData(), responseMeta, null, true, new Nested(getCallback())
                 {
                     @Override

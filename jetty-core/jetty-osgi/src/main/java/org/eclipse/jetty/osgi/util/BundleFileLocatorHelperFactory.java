@@ -41,9 +41,10 @@ public class BundleFileLocatorHelperFactory
         BundleFileLocatorHelper helper = BundleFileLocatorHelper.DEFAULT;
         try
         {
-            //see if a fragment has supplied an alternative
+            // see if a fragment has supplied an alternative
             helper = (BundleFileLocatorHelper)Class.forName(BundleFileLocatorHelper.CLASS_NAME)
-                .getDeclaredConstructor().newInstance();
+                .getDeclaredConstructor()
+                .newInstance();
         }
         catch (Throwable t)
         {

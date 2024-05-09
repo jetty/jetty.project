@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -123,8 +122,9 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         try
         {
             // Perform 2 scans to be sure that the scan is stable.
-            _scanner.scan(Callback.from(() ->
-                _scanner.scan(Callback.from(() -> cf.complete(true), cf::completeExceptionally)), cf::completeExceptionally));
+            _scanner.scan(Callback.from(
+                () -> _scanner.scan(Callback.from(() -> cf.complete(true), cf::completeExceptionally)),
+                cf::completeExceptionally));
             return cf.get(waitMillis, TimeUnit.MILLISECONDS);
         }
         catch (Exception e)

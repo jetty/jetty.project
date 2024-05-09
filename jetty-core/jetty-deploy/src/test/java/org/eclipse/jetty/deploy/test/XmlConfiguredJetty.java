@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.deploy.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,7 +40,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Connector;
@@ -52,13 +58,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Allows for setting up a Jetty server for testing based on XML configuration files.
@@ -82,7 +81,8 @@ public class XmlConfiguredJetty
      * @return the ID Map of configured objects (key is the id name in the XML, and the value is configured object)
      * @throws Exception if unable to create objects or read XML
      */
-    public static Map<String, Object> configure(List<Resource> xmls, Map<String, String> properties, Path jettyBase) throws Exception
+    public static Map<String, Object> configure(List<Resource> xmls, Map<String, String> properties, Path jettyBase)
+        throws Exception
     {
         Map<String, Object> idMap = new HashMap<>();
 
@@ -151,7 +151,7 @@ public class XmlConfiguredJetty
     {
         _xmlConfigurations.add(xmlConfig);
     }
-    
+
     public List<Resource> getConfigurations()
     {
         return Collections.unmodifiableList(_xmlConfigurations);
@@ -160,7 +160,13 @@ public class XmlConfiguredJetty
     public void assertNoContextHandlers()
     {
         int count = _contexts.getHandlers().size();
-        assertEquals(0, count, "Should have no Contexts, but saw [%s]".formatted(_contexts.getHandlers().stream().map(Handler::toString).collect(Collectors.joining(", "))));
+        assertEquals(
+            0,
+            count,
+            "Should have no Contexts, but saw [%s]"
+                .formatted(_contexts.getHandlers().stream()
+                    .map(Handler::toString)
+                    .collect(Collectors.joining(", "))));
     }
 
     public String getResponse(String path) throws IOException
@@ -192,8 +198,11 @@ public class XmlConfiguredJetty
             {
                 failure.append(" - ").append(expected).append('\n');
             }
-            failure.append("## Actual Contexts [%d]\n".formatted(_contexts.getHandlers().size()));
-            _contexts.getHandlers().forEach((handler) -> failure.append(" - ").append(handler).append('\n'));
+            failure.append("## Actual Contexts [%d]\n"
+                .formatted(_contexts.getHandlers().size()));
+            _contexts
+                .getHandlers()
+                .forEach((handler) -> failure.append(" - ").append(handler).append('\n'));
             assertEquals(expectedContextPaths.length, _contexts.getHandlers().size(), failure.toString());
         }
 
@@ -207,7 +216,10 @@ public class XmlConfiguredJetty
                     if (contextHandler.getContextPath().equals(expectedPath))
                     {
                         found = true;
-                        assertThat("Context[" + contextHandler.getContextPath() + "].state", contextHandler.getState(), is("STARTED"));
+                        assertThat(
+                            "Context[" + contextHandler.getContextPath() + "].state",
+                            contextHandler.getState(),
+                            is("STARTED"));
                         break;
                     }
                 }
@@ -267,7 +279,8 @@ public class XmlConfiguredJetty
 
     public URI getServerURI() throws UnknownHostException
     {
-        return HttpURI.from(getScheme(), InetAddress.getLocalHost().getHostAddress(), getServerPort(), null).toURI();
+        return HttpURI.from(getScheme(), InetAddress.getLocalHost().getHostAddress(), getServerPort(), null)
+            .toURI();
     }
 
     public Path getJettyBasePath()
@@ -282,10 +295,11 @@ public class XmlConfiguredJetty
         Server server = (Server)idMap.get("Server");
 
         this._server = Objects.requireNonNull(server, "Load failed to configure a " + Server.class.getName());
-        this._server.setStopTimeout(1000); //wait up to a second to stop
+        this._server.setStopTimeout(1000); // wait up to a second to stop
 
         ContextHandlerCollection contexts = (ContextHandlerCollection)idMap.get("Contexts");
-        this._contexts = Objects.requireNonNull(contexts, "Load failed to configure a " + ContextHandlerCollection.class.getName());
+        this._contexts = Objects.requireNonNull(
+            contexts, "Load failed to configure a " + ContextHandlerCollection.class.getName());
 
         return this._server;
     }
@@ -293,7 +307,7 @@ public class XmlConfiguredJetty
     /*
         Path testConfig = _jettyBase.resolve("xml-configured-jetty.properties");
         setProperty("jetty.deploy.common.properties", testConfig.toString());
-
+    
         // Write out configuration for use by ConfigurationManager.
         Properties properties = new Properties();
         properties.putAll(_properties);
@@ -301,10 +315,10 @@ public class XmlConfiguredJetty
         {
             properties.store(out, "Generated by " + XmlConfiguredJetty.class.getName());
         }
-
+    
         XmlConfiguration last = null;
         Object[] obj = new Object[_xmlConfigurations.size()];
-
+    
         // Configure everything
         for (int i = 0; i < _xmlConfigurations.size(); i++)
         {
@@ -316,16 +330,16 @@ public class XmlConfiguredJetty
             obj[i] = configuration.configure();
             last = configuration;
         }
-
+    
         Map<String, Object> ids = last.getIdMap();
-
+    
         // Test for Server Instance.
         Server server = (Server)ids.get("Server");
         if (server == null)
         {
             throw new Exception("Load failed to configure a " + Server.class.getName());
         }
-
+    
         this._server = server;
         this._server.setStopTimeout(10000);
         this._contexts = (ContextHandlerCollection)ids.get("Contexts");
@@ -370,7 +384,9 @@ public class XmlConfiguredJetty
             }
         }
 
-        assertTrue((1 <= this._serverPort) && (this._serverPort <= 65535), "Server Port is between 1 and 65535. Was actually <" + _serverPort + ">");
+        assertTrue(
+            (1 <= this._serverPort) && (this._serverPort <= 65535),
+            "Server Port is between 1 and 65535. Was actually <" + _serverPort + ">");
 
         // Uncomment to have server start and continue to run (without exiting)
         // System.err.printf("Listening to port %d%n",this.serverPort);

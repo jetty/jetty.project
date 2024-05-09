@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.ee10.session.nosql.mongodb;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
@@ -35,9 +37,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  * MongoSessionDataStoreTest
  */
@@ -47,7 +46,8 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
 
     private static String DB_NAME = "DB" + MongoSessionDataStoreTest.class.getSimpleName() + System.nanoTime();
 
-    private static String COLLECTION_NAME = "COLLECTION" + MongoSessionDataStoreTest.class.getSimpleName() + System.nanoTime();
+    private static String COLLECTION_NAME =
+        "COLLECTION" + MongoSessionDataStoreTest.class.getSimpleName() + System.nanoTime();
 
     @BeforeAll
     public static void beforeClass() throws Exception
@@ -94,17 +94,37 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        MongoTestHelper.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getAllAttributes(),
-                DB_NAME, COLLECTION_NAME);
+        MongoTestHelper.createSession(
+            data.getId(),
+            data.getContextPath(),
+            data.getVhost(),
+            data.getLastNode(),
+            data.getCreated(),
+            data.getAccessed(),
+            data.getLastAccessed(),
+            data.getMaxInactiveMs(),
+            data.getExpiry(),
+            data.getAllAttributes(),
+            DB_NAME,
+            COLLECTION_NAME);
     }
 
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        MongoTestHelper.createUnreadableSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), null,
-                DB_NAME, COLLECTION_NAME);
+        MongoTestHelper.createUnreadableSession(
+            data.getId(),
+            data.getContextPath(),
+            data.getVhost(),
+            data.getLastNode(),
+            data.getCreated(),
+            data.getAccessed(),
+            data.getLastAccessed(),
+            data.getMaxInactiveMs(),
+            data.getExpiry(),
+            null,
+            DB_NAME,
+            COLLECTION_NAME);
     }
 
     @Override
@@ -137,7 +157,7 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         DefaultSessionIdManager idMgr = new DefaultSessionIdManager(new Server());
 
-        //create the SessionDataStore
+        // create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/legacy");
         context.getSessionHandler().setSessionIdManager(idMgr);
@@ -147,22 +167,28 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
         SessionContext sessionContext = new SessionContext(context.getSessionHandler());
         store.initialize(sessionContext);
 
-        //persist an old-style session
+        // persist an old-style session
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("attribute1", "attribute1value");
         attributes.put("attribute2", new ArrayList<String>(Arrays.asList("1", "2", "3")));
-        MongoTestHelper.createLegacySession("1234",
-            sessionContext.getCanonicalContextPath(), sessionContext.getVhost(),
+        MongoTestHelper.createLegacySession(
+            "1234",
+            sessionContext.getCanonicalContextPath(),
+            sessionContext.getVhost(),
             "foo",
-            1000L, System.currentTimeMillis() - 1000L, System.currentTimeMillis() - 2000L,
-            -1, -1,
+            1000L,
+            System.currentTimeMillis() - 1000L,
+            System.currentTimeMillis() - 2000L,
+            -1,
+            -1,
             attributes,
-                DB_NAME, COLLECTION_NAME);
+            DB_NAME,
+            COLLECTION_NAME);
 
         store.start();
 
-        //test that we can retrieve it
+        // test that we can retrieve it
         SessionData loaded = store.load("1234");
         assertNotNull(loaded);
         assertEquals("1234", loaded.getId());
@@ -171,10 +197,10 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
         assertEquals("attribute1value", loaded.getAttribute("attribute1"));
         assertNotNull(loaded.getAttribute("attribute2"));
 
-        //test that we can write it
+        // test that we can write it
         store.store("1234", loaded);
 
-        //and that it has now been written out with the new format
+        // and that it has now been written out with the new format
         MongoTestHelper.checkSessionPersisted(loaded, DB_NAME, COLLECTION_NAME);
     }
 }

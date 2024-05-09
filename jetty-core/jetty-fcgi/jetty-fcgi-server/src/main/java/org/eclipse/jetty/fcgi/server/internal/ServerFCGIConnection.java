@@ -16,7 +16,6 @@ package org.eclipse.jetty.fcgi.server.internal;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
@@ -55,7 +54,8 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private RetainableByteBuffer inputBuffer;
     private HttpStreamOverFCGI stream;
 
-    public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
+    public ServerFCGIConnection(
+                                Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
         super(connector, configuration, endPoint);
         this.connector = connector;
@@ -331,7 +331,8 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
             if (stream != null)
                 throw new UnsupportedOperationException("FastCGI Multiplexing");
             HttpChannel channel = httpChannelFactory.newHttpChannel(ServerFCGIConnection.this);
-            ServerGenerator generator = new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
+            ServerGenerator generator =
+                new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
             stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
             channel.setHttpStream(stream);
             if (LOG.isDebugEnabled())

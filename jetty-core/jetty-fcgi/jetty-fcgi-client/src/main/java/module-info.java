@@ -14,7 +14,6 @@
 module org.eclipse.jetty.fcgi.client
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.client;
 
     exports org.eclipse.jetty.fcgi;

@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -43,10 +46,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 public class AbstractTest
 {
     protected Server server;
@@ -71,12 +70,16 @@ public class AbstractTest
 
     protected void start(ServerSessionListener listener) throws Exception
     {
-        start(listener, x -> {});
+        start(listener, x ->
+        {
+        });
     }
 
-    protected void start(ServerSessionListener listener, Consumer<AbstractHTTP2ServerConnectionFactory> configurator) throws Exception
+    protected void start(ServerSessionListener listener, Consumer<AbstractHTTP2ServerConnectionFactory> configurator)
+        throws Exception
     {
-        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
+        RawHTTP2ServerConnectionFactory connectionFactory =
+            new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
         connectionFactory.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         connectionFactory.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         configurator.accept(connectionFactory);
@@ -132,7 +135,14 @@ public class AbstractTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields, -1);
+        return new MetaData.Request(
+            method,
+            HttpScheme.HTTP.asString(),
+            new HostPortHttpField(authority),
+            path,
+            HttpVersion.HTTP_2,
+            fields,
+            -1);
     }
 
     @AfterEach
@@ -141,9 +151,17 @@ public class AbstractTest
         try
         {
             if (serverBufferPool != null)
-                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0)));
+                await().atMost(5, TimeUnit.SECONDS)
+                    .untilAsserted(() -> assertThat(
+                        "Server leaks: " + serverBufferPool.dumpLeaks(),
+                        serverBufferPool.getLeaks().size(),
+                        is(0)));
             if (clientBufferPool != null)
-                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Client leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0)));
+                await().atMost(5, TimeUnit.SECONDS)
+                    .untilAsserted(() -> assertThat(
+                        "Client leaks: " + clientBufferPool.dumpLeaks(),
+                        clientBufferPool.getLeaks().size(),
+                        is(0)));
         }
         finally
         {

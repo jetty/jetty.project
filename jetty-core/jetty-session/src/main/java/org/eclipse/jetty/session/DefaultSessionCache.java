@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
-
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -148,7 +147,7 @@ public class DefaultSessionCache extends AbstractSessionCache
             {
                 if (isInvalidateOnShutdown())
                 {
-                    //not preserving sessions on exit
+                    // not preserving sessions on exit
                     try
                     {
                         session.invalidate();
@@ -160,7 +159,7 @@ public class DefaultSessionCache extends AbstractSessionCache
                 }
                 else
                 {
-                    //write out the session and remove from the cache
+                    // write out the session and remove from the cache
                     if (_sessionDataStore.isPassivating())
                         session.onSessionPassivation();
                     try
@@ -171,7 +170,7 @@ public class DefaultSessionCache extends AbstractSessionCache
                     {
                         LOG.warn("Unable to store {}", session, e);
                     }
-                    doDelete(session.getId()); //remove from memory
+                    doDelete(session.getId()); // remove from memory
                     session.setResident(false);
                 }
             }

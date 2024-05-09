@@ -66,9 +66,6 @@ public class Baz
     @Override
     public String toString()
     {
-        return "\n=== " + getClass().getSimpleName() + " ===" +
-            "\nmessage: " + getMessage() +
-            "\nboolean2: " + isBoolean2() +
-            "\nfoo: " + getFoo();
+        return "\n=== " + getClass().getSimpleName() + " ===" + "\nmessage: " + getMessage() + "\nboolean2: " + isBoolean2() + "\nfoo: " + getFoo();
     }
 }

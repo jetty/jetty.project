@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.Trailers;
@@ -33,7 +32,8 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
-    private static final Content.Chunk RECYCLED_ERROR_CHUNK = Content.Chunk.from(new StaticException("ContentProducer has been recycled"), true);
+    private static final Content.Chunk RECYCLED_ERROR_CHUNK =
+        Content.Chunk.from(new StaticException("ContentProducer has been recycled"), true);
 
     final AutoLock _lock;
     private final ServletChannel _servletChannel;
@@ -124,12 +124,14 @@ class AsyncContentProducer implements ContentProducer
             long period = NanoTime.since(_firstByteNanoTime);
             if (period > 0)
             {
-                long minimumData = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
+                long minimumData =
+                    minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
                 if (getBytesArrived() < minimumData)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("checkMinDataRate check failed {}", this);
-                    BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
+                    BadMessageException bad = new BadMessageException(
+                        HttpStatus.REQUEST_TIMEOUT_408,
                         String.format("Request content data rate < %d B/s", minRequestDataRate));
                     if (_servletChannel.getServletRequestState().isResponseCommitted())
                     {
@@ -333,7 +335,11 @@ class AsyncContentProducer implements ContentProducer
             if (_firstByteNanoTime == Long.MIN_VALUE)
                 _firstByteNanoTime = NanoTime.now();
             if (LOG.isDebugEnabled())
-                LOG.debug("readChunk() updated _bytesArrived to {} and _firstByteTimeStamp to {} {}", _bytesArrived, _firstByteNanoTime, this);
+                LOG.debug(
+                    "readChunk() updated _bytesArrived to {} and _firstByteTimeStamp to {} {}",
+                    _bytesArrived,
+                    _firstByteNanoTime,
+                    this);
             if (chunk instanceof Trailers trailers)
                 _servletChannel.onTrailers(trailers.getTrailers());
         }
@@ -351,11 +357,7 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public String toString()
     {
-        return String.format("%s@%x[c=%s]",
-            getClass().getSimpleName(),
-            hashCode(),
-            _chunk
-        );
+        return String.format("%s@%x[c=%s]", getClass().getSimpleName(), hashCode(), _chunk);
     }
 
     LockedSemaphore newLockedSemaphore()

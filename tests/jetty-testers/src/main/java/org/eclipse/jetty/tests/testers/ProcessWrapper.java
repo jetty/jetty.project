@@ -22,7 +22,6 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.toolchain.test.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

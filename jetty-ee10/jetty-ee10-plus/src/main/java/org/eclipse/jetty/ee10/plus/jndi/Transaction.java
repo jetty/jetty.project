@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.ee10.plus.jndi;
 
-import javax.naming.NamingException;
-
 import jakarta.transaction.UserTransaction;
+import javax.naming.NamingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +32,7 @@ public class Transaction extends org.eclipse.jetty.plus.jndi.Transaction
      * @param userTransaction the UserTransaction
      * @throws NamingException if there was a problem registering the transaction
      */
-    public Transaction(String scope, UserTransaction userTransaction)
-        throws NamingException
+    public Transaction(String scope, UserTransaction userTransaction) throws NamingException
     {
         super(scope, userTransaction);
     }

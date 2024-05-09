@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.security.jaas;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.util.Collections;
 import java.util.List;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
-
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.jaas.callback.RequestCallback;
 import org.eclipse.jetty.security.jaas.spi.AbstractLoginModule;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.security.Password;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestLoginModule extends AbstractLoginModule
 {
@@ -32,7 +31,7 @@ public class TestLoginModule extends AbstractLoginModule
 
     @Override
     public JAASUser getUser(String username) throws Exception
-    {        
+    {
         return new JAASUser(new UserPrincipal(username, new Password("aaa")))
         {
             @Override

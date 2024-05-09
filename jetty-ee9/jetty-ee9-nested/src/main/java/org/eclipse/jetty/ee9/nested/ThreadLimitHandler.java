@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequestEvent;
+import jakarta.servlet.ServletRequestListener;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -22,13 +28,6 @@ import java.util.Deque;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequestEvent;
-import jakarta.servlet.ServletRequestListener;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -73,7 +72,8 @@ public class ThreadLimitHandler extends HandlerWrapper
     private static final String PERMIT = "o.e.j.s.h.TLH.PASS";
     private final boolean _rfc7239;
     private final String _forwardedHeader;
-    private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet = new IncludeExcludeSet<>(InetAddressSet.class);
+    private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet =
+        new IncludeExcludeSet<>(InetAddressSet.class);
     private final ConcurrentHashMap<String, Remote> _remotes = new ConcurrentHashMap<>();
     private volatile boolean _enabled;
     private int _threadLimit = 10;
@@ -100,7 +100,8 @@ public class ThreadLimitHandler extends HandlerWrapper
     protected void doStart() throws Exception
     {
         super.doStart();
-        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d include=%s", _enabled, _threadLimit, _includeExcludeSet));
+        LOG.info(String.format(
+            "ThreadLimitHandler enable=%b limit=%d include=%s", _enabled, _threadLimit, _includeExcludeSet));
     }
 
     @ManagedAttribute("true if this handler is enabled")
@@ -112,7 +113,8 @@ public class ThreadLimitHandler extends HandlerWrapper
     public void setEnabled(boolean enabled)
     {
         _enabled = enabled;
-        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d include=%s", _enabled, _threadLimit, _includeExcludeSet));
+        LOG.info(String.format(
+            "ThreadLimitHandler enable=%b limit=%d include=%s", _enabled, _threadLimit, _includeExcludeSet));
     }
 
     @ManagedAttribute("The maximum threads that can be dispatched per remote IP")
@@ -161,7 +163,8 @@ public class ThreadLimitHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         // Allow ThreadLimit to be enabled dynamically without restarting server
         if (!_enabled)
@@ -217,7 +220,8 @@ public class ThreadLimitHandler extends HandlerWrapper
                                 LOG.debug("Threadlimited {} {}", remote, target);
                             // No, lets asynchronously suspend the request
                             AsyncContext async = baseRequest.startAsync();
-                            // let's never timeout the async.  If this is a DOS, then good to make them wait, if this is not
+                            // let's never timeout the async.  If this is a DOS, then good to make them wait, if this is
+                            // not
                             // then give them maximum time to get a thread.
                             async.setTimeout(0);
 
@@ -292,7 +296,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         }
 
         // If no remote IP from a header, determine it directly from the channel
-        // Do not use the request methods, as they may have been lied to by the 
+        // Do not use the request methods, as they may have been lied to by the
         // RequestCustomizer!
         InetSocketAddress inetAddr = baseRequest.getHttpChannel().getRemoteAddress();
         if (inetAddr != null && inetAddr.getAddress() != null)
@@ -366,7 +370,7 @@ public class ThreadLimitHandler extends HandlerWrapper
                     return _permitted; // TODO is it OK to share/reuse this?
                 }
 
-                // No pass available, so queue a new future 
+                // No pass available, so queue a new future
                 CompletableFuture<Closeable> pass = new CompletableFuture<>();
                 _queue.addLast(pass);
                 return pass;
@@ -439,7 +443,7 @@ public class ThreadLimitHandler extends HandlerWrapper
                     // if unknown, clear any leftward values
                     if ("unknown".equalsIgnoreCase(value))
                         _for = null;
-                        // Otherwise accept IP or token(starting with '_') as remote keys
+                    // Otherwise accept IP or token(starting with '_') as remote keys
                     else
                         _for = value;
                 }

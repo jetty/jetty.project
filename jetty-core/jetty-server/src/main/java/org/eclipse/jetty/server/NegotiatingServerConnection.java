@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -41,7 +40,8 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
     private final String defaultProtocol;
     private String protocol; // No need to be volatile: it is modified and read by the same thread
 
-    protected NegotiatingServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
+    protected NegotiatingServerConnection(
+                                          Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
         super(endPoint, connector.getExecutor());
         this.connector = connector;
@@ -115,8 +115,11 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
                 ConnectionFactory connectionFactory = connector.getConnectionFactory(protocol);
                 if (connectionFactory == null)
                 {
-                    LOG.info("{} application selected protocol '{}', but no correspondent {} has been configured",
-                        this, protocol, ConnectionFactory.class.getName());
+                    LOG.info(
+                        "{} application selected protocol '{}', but no correspondent {} has been configured",
+                        this,
+                        protocol,
+                        ConnectionFactory.class.getName());
                     close();
                 }
                 else

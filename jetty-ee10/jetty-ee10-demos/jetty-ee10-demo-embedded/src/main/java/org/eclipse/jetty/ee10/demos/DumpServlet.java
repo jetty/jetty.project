@@ -13,21 +13,19 @@
 
 package org.eclipse.jetty.ee10.demos;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Collections;
-
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Collections;
 
 @SuppressWarnings("serial")
 public class DumpServlet extends HttpServlet
 {
     @Override
-    protected void doGet(HttpServletRequest request,
-                         HttpServletResponse response) throws IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
@@ -51,19 +49,15 @@ public class DumpServlet extends HttpServlet
             out.println("resource(" + r + ")=" + servletContext.getResource(r));
         }
 
-        Collections.list(request.getAttributeNames())
-            .stream()
+        Collections.list(request.getAttributeNames()).stream()
             .filter((name) -> name.startsWith("X-"))
             .sorted()
-            .forEach((name) ->
-                out.println("request.attribute[" + name + "]=" + request.getAttribute(name)));
+            .forEach((name) -> out.println("request.attribute[" + name + "]=" + request.getAttribute(name)));
 
-        Collections.list(servletContext.getAttributeNames())
-            .stream()
+        Collections.list(servletContext.getAttributeNames()).stream()
             .filter((name) -> name.startsWith("X-"))
             .sorted()
-            .forEach((name) ->
-                out.println("servletContext.attribute[" + name + "]=" + servletContext.getAttribute(name)));
+            .forEach((name) -> out.println("servletContext.attribute[" + name + "]=" + servletContext.getAttribute(name)));
 
         out.println("</pre>");
     }

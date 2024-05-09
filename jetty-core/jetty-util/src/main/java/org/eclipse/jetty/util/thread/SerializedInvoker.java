@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +57,8 @@ public class SerializedInvoker
             if (!(task instanceof NamedRunnable))
             {
                 // Wrap the given task with another one that's going to delegate run() to the wrapped task while the
-                // wrapper's toString() returns a description of the place in code where SerializedInvoker.run() was called.
+                // wrapper's toString() returns a description of the place in code where SerializedInvoker.run() was
+                // called.
                 task = new NamedRunnable(task, deriveTaskName(task));
             }
         }
@@ -115,9 +115,8 @@ public class SerializedInvoker
         Runnable todo = offer(task);
         if (todo != null)
             todo.run();
-        else
-            if (LOG.isDebugEnabled())
-                LOG.debug("Queued link in {}", this);
+        else if (LOG.isDebugEnabled())
+            LOG.debug("Queued link in {}", this);
     }
 
     /**
@@ -130,9 +129,8 @@ public class SerializedInvoker
         Runnable todo = offer(tasks);
         if (todo != null)
             todo.run();
-        else
-            if (LOG.isDebugEnabled())
-                LOG.debug("Queued links in {}", this);
+        else if (LOG.isDebugEnabled())
+            LOG.debug("Queued links in {}", this);
     }
 
     @Override
@@ -209,8 +207,7 @@ public class SerializedInvoker
         }
     }
 
-    private record NamedRunnable(Runnable delegate, String name) implements Runnable
-    {
+    private record NamedRunnable(Runnable delegate, String name) implements Runnable {
         private static final Logger LOG = LoggerFactory.getLogger(NamedRunnable.class);
 
         @Override

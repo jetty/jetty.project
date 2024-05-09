@@ -15,7 +15,6 @@ package org.eclipse.jetty.session;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -35,7 +34,7 @@ public class SessionContext
     protected String _workerName;
     protected String _canonicalContextPath;
     protected String _vhost;
-    
+
     protected SessionContext()
     {
     }

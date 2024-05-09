@@ -13,25 +13,6 @@
 
 package org.example;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.net.URL;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
@@ -51,6 +32,24 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.Part;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Reader;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Dump Servlet Request.
@@ -62,6 +61,7 @@ public class Dump extends HttpServlet
      * Zero Width Space, to allow text to be wrapped at designated spots
      */
     private static final String ZWSP = "&#8203;";
+
     boolean fixed;
     Timer _timer;
 
@@ -74,7 +74,8 @@ public class Dump extends HttpServlet
         {
 
             fixed = true;
-            throw new UnavailableException("Unavailable test", Integer.parseInt(config.getInitParameter("unavailable")));
+            throw new UnavailableException(
+                "Unavailable test", Integer.parseInt(config.getInitParameter("unavailable")));
         }
 
         _timer = new Timer(true);
@@ -105,7 +106,8 @@ public class Dump extends HttpServlet
     }
 
     @Override
-    public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+    public void doGet(final HttpServletRequest request, final HttpServletResponse response)
+        throws ServletException, IOException
     {
         if (request.getRemoteUser() == null)
         {
@@ -124,7 +126,8 @@ public class Dump extends HttpServlet
         final String chars = request.getParameter("chars");
         final String block = request.getParameter("block");
         final String dribble = request.getParameter("dribble");
-        final boolean flush = request.getParameter("flush") != null ? Boolean.parseBoolean(request.getParameter("flush")) : false;
+        final boolean flush =
+            request.getParameter("flush") != null ? Boolean.parseBoolean(request.getParameter("flush")) : false;
 
         if (request.getPathInfo() != null && request.getPathInfo().toLowerCase(Locale.ENGLISH).indexOf("script") != -1)
         {
@@ -226,36 +229,40 @@ public class Dump extends HttpServlet
                     request.setAttribute("RESUME", Boolean.TRUE);
 
                     final long resume = Long.parseLong(request.getParameter("dispatch"));
-                    _timer.schedule(new TimerTask()
-                    {
-                        @Override
-                        public void run()
+                    _timer.schedule(
+                        new TimerTask()
                         {
-                            async.dispatch();
-                        }
-                    }, resume);
+                            @Override
+                            public void run()
+                            {
+                                async.dispatch();
+                            }
+                        },
+                        resume);
                 }
 
                 if (request.getParameter("complete") != null)
                 {
                     final long complete = Long.parseLong(request.getParameter("complete"));
-                    _timer.schedule(new TimerTask()
-                    {
-                        @Override
-                        public void run()
+                    _timer.schedule(
+                        new TimerTask()
                         {
-                            try
+                            @Override
+                            public void run()
                             {
-                                response.setContentType("text/html");
-                                response.getOutputStream().println("<h1>COMPLETED</h1>");
-                                async.complete();
+                                try
+                                {
+                                    response.setContentType("text/html");
+                                    response.getOutputStream().println("<h1>COMPLETED</h1>");
+                                    async.complete();
+                                }
+                                catch (Exception e)
+                                {
+                                    e.printStackTrace();
+                                }
                             }
-                            catch (Exception e)
-                            {
-                                e.printStackTrace();
-                            }
-                        }
-                    }, complete);
+                        },
+                        complete);
                 }
 
                 return;
@@ -287,8 +294,11 @@ public class Dump extends HttpServlet
         {
             try
             {
-                throw (Throwable)Thread.currentThread().getContextClassLoader()
-                    .loadClass(info.substring(1)).getDeclaredConstructor().newInstance();
+                throw (Throwable)Thread.currentThread()
+                    .getContextClassLoader()
+                    .loadClass(info.substring(1))
+                    .getDeclaredConstructor()
+                    .newInstance();
             }
             catch (Throwable th)
             {
@@ -614,9 +624,7 @@ public class Dump extends HttpServlet
             }
 
             String contentType = request.getContentType();
-            if (contentType != null &&
-                !contentType.startsWith("application/x-www-form-urlencoded") &&
-                !contentType.startsWith("multipart/form-data"))
+            if (contentType != null && !contentType.startsWith("application/x-www-form-urlencoded") && !contentType.startsWith("multipart/form-data"))
             {
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"left\" valign=\"top\" colspan=\"2\"><big><br/>Content:</big></th>");
@@ -752,7 +760,8 @@ public class Dump extends HttpServlet
                     }
 
                     pout.write("</tr><tr>\n");
-                    pout.write("<th align=\"right\">getServletContext().getContext(...).getResourcePaths(...):&nbsp;</th>");
+                    pout.write(
+                        "<th align=\"right\">getServletContext().getContext(...).getResourcePaths(...):&nbsp;</th>");
                     try
                     {
                         pout.write("<td>" + context.getResourcePaths(res) + "</td>");
@@ -766,7 +775,8 @@ public class Dump extends HttpServlet
                     if (cp == null || "/".equals(cp))
                         cp = "";
                     pout.write("</tr><tr>\n");
-                    pout.write("<th align=\"right\">getServletContext().getContext(...).getRequestDispatcher(...):&nbsp;</th>");
+                    pout.write(
+                        "<th align=\"right\">getServletContext().getContext(...).getRequestDispatcher(...):&nbsp;</th>");
                     pout.write("<td>" + context.getRequestDispatcher(res.substring(cp.length())) + "</td>");
 
                     pout.write("</tr><tr>\n");
@@ -783,11 +793,15 @@ public class Dump extends HttpServlet
                 pout.write("<td>" + this.getClass().getClassLoader().getResource(res) + "</td>");
 
                 pout.write("</tr><tr>\n");
-                pout.write("<th align=\"right\">Thread.currentThread().getContextClassLoader().getResource(...):&nbsp;</th>");
-                pout.write("<td>" + Thread.currentThread().getContextClassLoader().getResource(res) + "</td>");
+                pout.write(
+                    "<th align=\"right\">Thread.currentThread().getContextClassLoader().getResource(...):&nbsp;</th>");
+                pout.write(
+                    "<td>" + Thread.currentThread().getContextClassLoader().getResource(res) + "</td>");
                 pout.write("</tr><tr>\n");
-                pout.write("<th align=\"right\">Thread.currentThread().getContextClassLoader().getResources(...):&nbsp;</th>");
-                Enumeration<URL> urls = Thread.currentThread().getContextClassLoader().getResources(res);
+                pout.write(
+                    "<th align=\"right\">Thread.currentThread().getContextClassLoader().getResources(...):&nbsp;</th>");
+                Enumeration<URL> urls =
+                    Thread.currentThread().getContextClassLoader().getResources(res);
                 if (urls == null)
                     pout.write("<td>null</td>");
                 else
@@ -830,7 +844,8 @@ public class Dump extends HttpServlet
             pout.write("Directly uni encoded(\\u1d01): \u1d01<br/>"); // uni encoded
             pout.write("HTML reference (&amp;AElig;): &AElig;<br/>");
             pout.write("Decimal (&amp;#7425;): &#7425;<br/>");
-            pout.write("Javascript unicode (\\u1d01) : <script language='javascript'>document.write(\"\u1d01\");</script><br/>"); // uni encoded
+            pout.write(
+                "Javascript unicode (\\u1d01) : <script language='javascript'>document.write(\"\u1d01\");</script><br/>"); // uni encoded
             pout.write("<br/>");
             pout.write("<h2>Form to generate GET content</h2>");
             pout.write("<form method=\"GET\" action=\"" + response.encodeURL(getURI(request)) + "\">");
@@ -853,9 +868,7 @@ public class Dump extends HttpServlet
             pout.write("<br/>");
 
             pout.write("<h2>Form to generate UPLOAD content</h2>");
-            pout.write("<form method=\"POST\" enctype=\"multipart/form-data\" accept-charset=\"utf-8\" action=\"" +
-                response.encodeURL(getURI(request)) + (request.getQueryString() == null ? "" : ("?" + request.getQueryString())) +
-                "\">");
+            pout.write("<form method=\"POST\" enctype=\"multipart/form-data\" accept-charset=\"utf-8\" action=\"" + response.encodeURL(getURI(request)) + (request.getQueryString() == null ? "" : ("?" + request.getQueryString())) + "\">");
             pout.write("TextField: <input type=\"text\" name=\"TextField\" value=\"comment\"/><br/>\n");
             pout.write("File 1: <input type=\"file\" name=\"file1\" /><br/>\n");
             pout.write("File 2: <input type=\"file\" name=\"file2\" /><br/>\n");
@@ -883,8 +896,9 @@ public class Dump extends HttpServlet
         String lines = request.getParameter("lines");
         if (lines != null)
         {
-            char[] line = "<span>A line of characters. Blah blah blah blah.  blooble blooble</span></br>\n".toCharArray();
-            for (int l = Integer.parseInt(lines); l-- > 0; )
+            char[] line =
+                "<span>A line of characters. Blah blah blah blah.  blooble blooble</span></br>\n".toCharArray();
+            for (int l = Integer.parseInt(lines); l-- > 0;)
             {
                 pout.write("<span>" + l + " </span>");
                 pout.write(line);
@@ -976,7 +990,9 @@ public class Dump extends HttpServlet
         }
     }
 
-    private boolean dump(HttpServletResponse response, String data, String chars, String block, String dribble, boolean flush) throws IOException
+    private boolean dump(
+                         HttpServletResponse response, String data, String chars, String block, String dribble, boolean flush)
+        throws IOException
     {
         if (data != null && data.length() > 0)
         {

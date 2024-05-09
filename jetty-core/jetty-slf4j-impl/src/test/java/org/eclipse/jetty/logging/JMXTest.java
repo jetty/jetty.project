@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.logging;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,15 +28,9 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Isolated("Because the test is making assertions on Logger which is static and may have data from other tests")
 public class JMXTest
@@ -41,7 +40,10 @@ public class JMXTest
     {
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
-        ObjectName objectName = ObjectName.getInstance("org.eclipse.jetty.logging", "type", JettyLoggerFactory.class.getSimpleName().toLowerCase(Locale.ENGLISH));
+        ObjectName objectName = ObjectName.getInstance(
+            "org.eclipse.jetty.logging",
+            "type",
+            JettyLoggerFactory.class.getSimpleName().toLowerCase(Locale.ENGLISH));
         mbeanServer.registerMBean(LoggerFactory.getILoggerFactory(), objectName);
 
         // Verify MBeanInfo
@@ -50,7 +52,10 @@ public class JMXTest
         MBeanAttributeInfo[] attributeInfos = beanInfo.getAttributes();
         assertThat("MBeanAttributeInfo count", attributeInfos.length, is(2));
 
-        MBeanAttributeInfo attr = Stream.of(attributeInfos).filter((a) -> a.getName().equals("LoggerNames")).findFirst().orElseThrow();
+        MBeanAttributeInfo attr = Stream.of(attributeInfos)
+            .filter((a) -> a.getName().equals("LoggerNames"))
+            .findFirst()
+            .orElseThrow();
         assertThat("attr", attr.getDescription(), is("List of Registered Loggers by Name."));
 
         // Do some MBean attribute testing
@@ -67,7 +72,8 @@ public class JMXTest
         assertEquals(3, loggerCount);
 
         // Names from JMX are sorted, so lets sort our expected list too.
-        List<String> expected = new ArrayList<>(Arrays.asList(JettyLogger.ROOT_LOGGER_NAME, parent.getName(), child.getName()));
+        List<String> expected =
+            new ArrayList<>(Arrays.asList(JettyLogger.ROOT_LOGGER_NAME, parent.getName(), child.getName()));
         expected.sort(String::compareTo);
         String[] loggerNames = (String[])mbeanServer.getAttribute(objectName, "LoggerNames");
         assertEquals(expected, Arrays.asList(loggerNames));

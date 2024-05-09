@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.http.spi;
 
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpPrincipal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,11 +26,6 @@ import java.net.URI;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpContext;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpPrincipal;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
@@ -42,21 +41,21 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     /**
      * Set of headers that RFC9110 says will not have a value list
      */
-    private static final EnumSet<HttpHeader> SINGLE_VALUE_HEADERS =
-        EnumSet.of(
-            HttpHeader.AUTHORIZATION,
-            HttpHeader.CONTENT_LENGTH,
-            HttpHeader.DATE,
-            HttpHeader.EXPIRES,
-            HttpHeader.HOST,
-            HttpHeader.IF_MODIFIED_SINCE,
-            HttpHeader.IF_UNMODIFIED_SINCE,
-            HttpHeader.IF_RANGE,
-            HttpHeader.LAST_MODIFIED,
-            HttpHeader.LOCATION,
-            HttpHeader.REFERER,
-            HttpHeader.RETRY_AFTER,
-            HttpHeader.USER_AGENT);
+    private static final EnumSet<HttpHeader> SINGLE_VALUE_HEADERS = EnumSet.of(
+        HttpHeader.AUTHORIZATION,
+        HttpHeader.CONTENT_LENGTH,
+        HttpHeader.DATE,
+        HttpHeader.EXPIRES,
+        HttpHeader.HOST,
+        HttpHeader.IF_MODIFIED_SINCE,
+        HttpHeader.IF_UNMODIFIED_SINCE,
+        HttpHeader.IF_RANGE,
+        HttpHeader.LAST_MODIFIED,
+        HttpHeader.LOCATION,
+        HttpHeader.REFERER,
+        HttpHeader.RETRY_AFTER,
+        HttpHeader.USER_AGENT);
+
     private final HttpContext _httpContext;
 
     private final Request _request;

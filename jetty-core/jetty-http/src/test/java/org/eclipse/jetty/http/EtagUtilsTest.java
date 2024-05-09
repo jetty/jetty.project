@@ -13,11 +13,18 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -26,14 +33,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class EtagUtilsTest
@@ -92,8 +91,7 @@ public class EtagUtilsTest
             // Simple, not quoted, gzip suffix in original
             Arguments.of("ABCDEF-gzip", "-br", "\"ABCDEF-br\""),
             // Weak, quoted, gzip suffix in original, different ETAG_SEPARATOR size
-            Arguments.of("W/\"ABCDEF-gzip\"", "--br", "W/\"ABCDEF--br\"")
-        );
+            Arguments.of("W/\"ABCDEF-gzip\"", "--br", "W/\"ABCDEF--br\""));
     }
 
     @ParameterizedTest
@@ -116,8 +114,7 @@ public class EtagUtilsTest
             Arguments.of("12345", "\"12345\""),
             Arguments.of("\"12345\"", "12345"),
             Arguments.of("12345", "\"12345--gzip\""),
-            Arguments.of("\"12345\"", "12345--gzip")
-        );
+            Arguments.of("\"12345\"", "12345--gzip"));
     }
 
     @ParameterizedTest
@@ -133,8 +130,7 @@ public class EtagUtilsTest
             Arguments.of("Zag", "Xag--gzip"),
             Arguments.of("xtag", "tag"),
             Arguments.of("W/\"1234567\"", "W/\"1234111\""),
-            Arguments.of("W/\"1234567\"", "W/\"1234111--gzip\"")
-        );
+            Arguments.of("W/\"1234567\"", "W/\"1234111--gzip\""));
     }
 
     @ParameterizedTest

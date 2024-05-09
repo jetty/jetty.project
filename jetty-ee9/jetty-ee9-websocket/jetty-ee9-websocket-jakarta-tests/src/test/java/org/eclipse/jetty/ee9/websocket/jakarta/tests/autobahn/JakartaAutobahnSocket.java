@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.autobahn;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.CountDownLatch;
-
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
@@ -24,6 +20,9 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

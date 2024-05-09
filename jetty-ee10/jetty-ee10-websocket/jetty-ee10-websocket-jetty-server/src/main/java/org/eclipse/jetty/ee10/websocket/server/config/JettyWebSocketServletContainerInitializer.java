@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.ee10.websocket.server.config;
 
-import java.util.Set;
-
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
+import java.util.Set;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -85,8 +84,10 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      */
     private static JettyWebSocketServerContainer initialize(ServletContextHandler context)
     {
-        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context);
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context.getServletContext());
+        WebSocketComponents components =
+            WebSocketServerComponents.ensureWebSocketComponents(context.getServer(), context);
+        JettyWebSocketServerContainer container =
+            JettyWebSocketServerContainer.ensureContainer(context.getServletContext());
         if (LOG.isDebugEnabled())
             LOG.debug("initialize {} {}", container, components);
 
@@ -96,7 +97,8 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext context)
     {
-        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(context, "Jetty WebSocket SCI");
+        ServletContextHandler contextHandler =
+            ServletContextHandler.getServletContextHandler(context, "Jetty WebSocket SCI");
         JettyWebSocketServerContainer container = JettyWebSocketServletContainerInitializer.initialize(contextHandler);
         if (LOG.isDebugEnabled())
             LOG.debug("onStartup {}", container);

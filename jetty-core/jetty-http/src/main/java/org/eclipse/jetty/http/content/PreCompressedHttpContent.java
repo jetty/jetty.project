@@ -16,7 +16,6 @@ package org.eclipse.jetty.http.content;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Set;
-
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
@@ -31,7 +30,8 @@ public class PreCompressedHttpContent implements HttpContent
     private final CompressedContentFormat _format;
     private final HttpField _etag;
 
-    public PreCompressedHttpContent(HttpContent content, HttpContent precompressedContent, CompressedContentFormat format)
+    public PreCompressedHttpContent(
+                                    HttpContent content, HttpContent precompressedContent, CompressedContentFormat format)
     {
         if (content == null)
             throw new IllegalArgumentException("Null HttpContent");
@@ -43,7 +43,8 @@ public class PreCompressedHttpContent implements HttpContent
         _content = content;
         _precompressedContent = precompressedContent;
         _format = format;
-        _etag = new HttpField(HttpHeader.ETAG, EtagUtils.rewriteWithSuffix(_content.getETagValue(), _format.getEtagSuffix()));
+        _etag = new HttpField(
+            HttpHeader.ETAG, EtagUtils.rewriteWithSuffix(_content.getETagValue(), _format.getEtagSuffix()));
     }
 
     @Override
@@ -133,11 +134,15 @@ public class PreCompressedHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("%s@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",
-            this.getClass().getSimpleName(), hashCode(),
+        return String.format(
+            "%s@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",
+            this.getClass().getSimpleName(),
+            hashCode(),
             _format,
-            _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
-            0L, 0L,
+            _content.getResource().lastModified(),
+            _precompressedContent.getResource().lastModified(),
+            0L,
+            0L,
             getContentType());
     }
 

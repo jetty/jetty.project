@@ -16,7 +16,6 @@ package org.eclipse.jetty.security.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFields.Mutable;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -49,7 +48,8 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
     {
         try
         {
-            AuthenticationState authenticationState = _authenticator.validateRequest(request, __deferredResponse, Callback.NOOP);
+            AuthenticationState authenticationState =
+                _authenticator.validateRequest(request, __deferredResponse, Callback.NOOP);
             if (authenticationState != null)
             {
                 AuthenticationState.setAuthenticationState(request, authenticationState);
@@ -113,7 +113,8 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
         if (identity != null)
         {
             IdentityService identityService = _authenticator.getLoginService().getIdentityService();
-            AuthenticationState.Succeeded authentication = new LoginAuthenticator.UserAuthenticationSucceeded("API", identity);
+            AuthenticationState.Succeeded authentication =
+                new LoginAuthenticator.UserAuthenticationSucceeded("API", identity);
             if (identityService != null)
                 _association = identityService.associate(identity, null);
             return authentication;

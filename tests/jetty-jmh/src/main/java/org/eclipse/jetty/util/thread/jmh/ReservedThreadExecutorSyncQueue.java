@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.util.thread.jmh;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.eclipse.jetty.util.AtomicBiInteger.getHi;
+import static org.eclipse.jetty.util.AtomicBiInteger.getLo;
+
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
@@ -23,7 +27,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -38,10 +41,6 @@ import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 import org.eclipse.jetty.util.thread.TryExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.eclipse.jetty.util.AtomicBiInteger.getHi;
-import static org.eclipse.jetty.util.AtomicBiInteger.getLo;
 
 @ManagedObject("A pool for reserved threads")
 public class ReservedThreadExecutorSyncQueue extends AbstractLifeCycle implements TryExecutor, Dumpable
@@ -153,7 +152,8 @@ public class ReservedThreadExecutorSyncQueue extends AbstractLifeCycle implement
     {
         if (isRunning())
             throw new IllegalStateException();
-        _idleTimeNanos =  (idleTime <= 0 || idleTimeUnit == null) ? DEFAULT_IDLE_TIMEOUT : idleTimeUnit.toNanos(idleTime);
+        _idleTimeNanos =
+            (idleTime <= 0 || idleTimeUnit == null) ? DEFAULT_IDLE_TIMEOUT : idleTimeUnit.toNanos(idleTime);
     }
 
     @Override
@@ -265,22 +265,21 @@ public class ReservedThreadExecutorSyncQueue extends AbstractLifeCycle implement
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this,
-            new DumpableCollection("threads",
-                _threads.stream()
-                    .filter(ReservedThread::isReserved)
-                    .collect(Collectors.toList())));
+        Dumpable.dumpObjects(
+            out,
+            indent,
+            this,
+            new DumpableCollection(
+                "threads",
+                _threads.stream().filter(ReservedThread::isReserved).collect(Collectors.toList())));
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{reserved=%d/%d,pending=%d}",
-            getClass().getSimpleName(),
-            hashCode(),
-            _count.getLo(),
-            _capacity,
-            _count.getHi());
+        return String.format(
+            "%s@%x{reserved=%d/%d,pending=%d}",
+            getClass().getSimpleName(), hashCode(), _count.getLo(), _capacity, _count.getHi());
     }
 
     private enum State
@@ -384,7 +383,14 @@ public class ReservedThreadExecutorSyncQueue extends AbstractLifeCycle implement
                         continue;
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} was={} next={} size={}+{} capacity={}", this, _state, next, pending, size, _capacity);
+                        LOG.debug(
+                            "{} was={} next={} size={}+{} capacity={}",
+                            this,
+                            _state,
+                            next,
+                            pending,
+                            size,
+                            _capacity);
                     _state = next;
                     if (next != State.RESERVED)
                         break;
@@ -425,11 +431,7 @@ public class ReservedThreadExecutorSyncQueue extends AbstractLifeCycle implement
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%s,thread=%s}",
-                getClass().getSimpleName(),
-                hashCode(),
-                _state,
-                _thread);
+            return String.format("%s@%x{%s,thread=%s}", getClass().getSimpleName(), hashCode(), _state, _thread);
         }
     }
 }

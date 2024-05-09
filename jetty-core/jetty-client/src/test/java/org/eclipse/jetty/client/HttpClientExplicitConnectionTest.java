@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTest
 {
@@ -37,7 +36,8 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
     {
         start(scenario, new EmptyServerHandler());
 
-        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
+        Request request =
+            client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         Destination destination = client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
@@ -62,7 +62,8 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
     {
         start(scenario, new EmptyServerHandler());
 
-        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
+        Request request =
+            client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme());
         Destination destination = client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
@@ -97,8 +98,8 @@ public class HttpClientExplicitConnectionTest extends AbstractHttpClientServerTe
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .onResponseSuccess(response -> responseLatch.countDown());
+            .scheme(scenario.getScheme())
+            .onResponseSuccess(response -> responseLatch.countDown());
         Destination destination = client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);

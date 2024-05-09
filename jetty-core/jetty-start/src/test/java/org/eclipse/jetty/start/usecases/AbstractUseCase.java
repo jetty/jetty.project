@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -31,7 +33,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.Main;
 import org.eclipse.jetty.start.Props;
@@ -44,8 +45,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public abstract class AbstractUseCase
@@ -102,16 +101,12 @@ public abstract class AbstractUseCase
         Path modules = homeDir.resolve("modules");
         FS.ensureDirExists(modules);
 
-        Files.write(modules.resolve("base.mod"),
-            Arrays.asList(
-                "[optional]",
-                "optional",
-                "[lib]",
-                "lib/base.jar",
-                "[xml]",
-                "etc/base.xml"),
+        Files.write(
+            modules.resolve("base.mod"),
+            Arrays.asList("[optional]", "optional", "[lib]", "lib/base.jar", "[xml]", "etc/base.xml"),
             StandardCharsets.UTF_8);
-        Files.write(modules.resolve("extra.mod"),
+        Files.write(
+            modules.resolve("extra.mod"),
             Arrays.asList(
                 "[depend]",
                 "main",
@@ -122,7 +117,8 @@ public abstract class AbstractUseCase
                 "[ini]",
                 "extra.prop=value0"),
             StandardCharsets.UTF_8);
-        Files.write(modules.resolve("main.mod"),
+        Files.write(
+            modules.resolve("main.mod"),
             Arrays.asList(
                 "[depend]",
                 "base",
@@ -140,14 +136,10 @@ public abstract class AbstractUseCase
                 "[ini-template]",
                 "main.prop=valueT"),
             StandardCharsets.UTF_8);
-        Files.write(modules.resolve("optional.mod"),
+        Files.write(
+            modules.resolve("optional.mod"),
             Arrays.asList(
-                "[lib]",
-                "lib/optional.jar",
-                "[xml]",
-                "etc/optional.xml",
-                "[ini]",
-                "optional.prop=value0"),
+                "[lib]", "lib/optional.jar", "[xml]", "etc/optional.xml", "[ini]", "optional.prop=value0"),
             StandardCharsets.UTF_8);
     }
 
@@ -168,7 +160,13 @@ public abstract class AbstractUseCase
         public List<String> getLibs()
         {
             return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(startArgs.getJettyEnvironment().getClasspath().iterator(), Spliterator.ORDERED), false)
+                Spliterators.spliteratorUnknownSize(
+                    startArgs
+                        .getJettyEnvironment()
+                        .getClasspath()
+                        .iterator(),
+                    Spliterator.ORDERED),
+                false)
                 .map(f -> baseHome.toShortForm(f))
                 .collect(Collectors.toList());
         }
@@ -190,14 +188,7 @@ public abstract class AbstractUseCase
             Predicate<Props.Prop> propPredicate = (p) ->
             {
                 String name = p.key;
-                return !("jetty.home".equals(name) ||
-                    "jetty.base".equals(name) ||
-                    "jetty.home.uri".equals(name) ||
-                    "jetty.base.uri".equals(name) ||
-                    "user.dir".equals(name) ||
-                    p.source.equals(Props.ORIGIN_SYSPROP) ||
-                    name.startsWith("runtime.feature.") ||
-                    name.startsWith("java."));
+                return !("jetty.home".equals(name) || "jetty.base".equals(name) || "jetty.home.uri".equals(name) || "jetty.base.uri".equals(name) || "user.dir".equals(name) || p.source.equals(Props.ORIGIN_SYSPROP) || name.startsWith("runtime.feature.") || name.startsWith("java."));
             };
 
             return StreamSupport.stream(

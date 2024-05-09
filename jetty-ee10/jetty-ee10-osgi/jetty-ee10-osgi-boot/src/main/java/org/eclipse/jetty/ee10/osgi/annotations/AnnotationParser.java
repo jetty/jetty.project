@@ -17,7 +17,6 @@ import java.io.File;
 import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.resource.Resource;
@@ -32,7 +31,7 @@ import org.slf4j.LoggerFactory;
 public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.AnnotationParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationParser.class);
-    
+
     private Set<URI> _parsed = ConcurrentHashMap.newKeySet();
 
     private ConcurrentHashMap<URI, Bundle> _uriToBundle = new ConcurrentHashMap<>();
@@ -44,7 +43,7 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
     {
         super();
     }
-    
+
     public AnnotationParser(int platform)
     {
         super(platform);
@@ -60,7 +59,8 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
      */
     public Resource indexBundle(ResourceFactory resourceFactory, Bundle bundle) throws Exception
     {
-        File bundleFile = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
+        File bundleFile =
+            BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         Resource resource = resourceFactory.newResource(bundleFile.toURI());
         URI uri = resource.getURI();
         _uriToBundle.putIfAbsent(uri, bundle);
@@ -85,15 +85,14 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
         return _resourceToBundle.get(resource);
     }
 
-    public void parse(Set<? extends Handler> handlers, Bundle bundle)
-        throws Exception
+    public void parse(Set<? extends Handler> handlers, Bundle bundle) throws Exception
     {
 
         Resource bundleResource = _bundleToResource.get(bundle);
         if (bundleResource == null)
             return;
 
-        //if already added, it is already parsed
+        // if already added, it is already parsed
         if (!_parsed.add(_bundleToUri.get(bundle)))
             return;
 
@@ -105,7 +104,7 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
     {
         if (r == null)
             return;
-        
+
         if (!r.exists())
             return;
 
@@ -126,8 +125,8 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
             parseClass(handlers, null, r.getPath());
         }
 
-        //Not already parsed, it could be a file that actually is compressed but does not have
-        //.jar/.zip etc extension, such as equinox urls, so try to parse it
+        // Not already parsed, it could be a file that actually is compressed but does not have
+        // .jar/.zip etc extension, such as equinox urls, so try to parse it
         try
         {
             parseJar(handlers, r);

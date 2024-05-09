@@ -14,7 +14,6 @@
 package org.eclipse.jetty.security;
 
 import java.security.Principal;
-
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -90,7 +89,7 @@ public interface AuthenticationState extends Request.AuthenticationState
         if (authenticationState instanceof Deferred deferred)
             authenticationState = deferred.authenticate(request);
 
-        //if authenticated, return the state
+        // if authenticated, return the state
         if (authenticationState instanceof Succeeded succeeded)
             return succeeded;
 
@@ -148,7 +147,7 @@ public interface AuthenticationState extends Request.AuthenticationState
         // Use Deferred authentication to login
         if (authenticationState instanceof Deferred deferred)
         {
-            Succeeded undeferred =  deferred.login(username, password, request, response);
+            Succeeded undeferred = deferred.login(username, password, request, response);
             if (undeferred != null)
             {
                 setAuthenticationState(request, undeferred);
@@ -163,7 +162,7 @@ public interface AuthenticationState extends Request.AuthenticationState
     {
         AuthenticationState authenticationState = getAuthenticationState(request);
 
-        //if already authenticated, return true
+        // if already authenticated, return true
         if (authenticationState instanceof Succeeded succeededAuthentication)
         {
             succeededAuthentication.logout(request, response);

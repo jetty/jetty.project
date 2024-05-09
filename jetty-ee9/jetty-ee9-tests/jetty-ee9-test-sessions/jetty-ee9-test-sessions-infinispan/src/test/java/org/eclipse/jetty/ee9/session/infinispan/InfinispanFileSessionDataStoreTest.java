@@ -37,13 +37,13 @@ public class InfinispanFileSessionDataStoreTest extends InfinispanSessionDataSto
         _testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
         _testSupport.setUseFileStore(true);
     }
-    
+
     @BeforeEach
     public void configure() throws Exception
     {
         _testSupport.setup(workDir.getEmptyPathDir());
     }
-    
+
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();

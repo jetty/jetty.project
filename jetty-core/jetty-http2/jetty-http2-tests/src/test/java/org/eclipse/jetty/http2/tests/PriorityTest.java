@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -28,10 +31,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PriorityTest extends AbstractTest
 {
@@ -50,30 +49,35 @@ public class PriorityTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
         int streamId = session.priority(new PriorityFrame(0, 13, false), Callback.NOOP);
         assertTrue(streamId > 0);
 
         CountDownLatch latch = new CountDownLatch(2);
         MetaData metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame headersFrame = new HeadersFrame(streamId, metaData, null, true);
-        session.newStream(headersFrame, new Promise.Adapter<>()
-        {
-            @Override
-            public void succeeded(Stream result)
+        session.newStream(
+            headersFrame,
+            new Promise.Adapter<>()
             {
-                assertEquals(streamId, result.getId());
-                latch.countDown();
-            }
-        }, new Stream.Listener()
-        {
-            @Override
-            public void onHeaders(Stream stream, HeadersFrame frame)
-            {
-                if (frame.isEndStream())
+                @Override
+                public void succeeded(Stream result)
+                {
+                    assertEquals(streamId, result.getId());
                     latch.countDown();
-            }
-        });
+                }
+            },
+            new Stream.Listener()
+            {
+                @Override
+                public void onHeaders(Stream stream, HeadersFrame frame)
+                {
+                    if (frame.isEndStream())
+                        latch.countDown();
+                }
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -116,7 +120,9 @@ public class PriorityTest extends AbstractTest
             }
         };
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
         MetaData metaData1 = newRequest("GET", "/one", HttpFields.EMPTY);
         HeadersFrame headersFrame1 = new HeadersFrame(metaData1, null, true);
         FuturePromise<Stream> promise1 = new FuturePromise<>();
@@ -164,7 +170,9 @@ public class PriorityTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
         MetaData metaData = newRequest("GET", "/one", HttpFields.EMPTY);
         HeadersFrame headersFrame = new HeadersFrame(metaData, priorityFrame, true);
         session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener()

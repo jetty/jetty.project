@@ -13,11 +13,15 @@
 
 package org.eclipse.jetty.ee10.proxy;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import jakarta.servlet.http.HttpServletRequest;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
-
-import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
@@ -57,11 +61,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 public class ForwardProxyServerTest
 {
     public static Stream<SslContextFactory.Server> serverTLS()
@@ -72,7 +71,8 @@ public class ForwardProxyServerTest
     private static SslContextFactory.Server newServerSslContextFactory()
     {
         SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        String keyStorePath =
+            MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
         serverTLS.setKeyStorePath(keyStorePath);
         serverTLS.setKeyStorePassword("storepwd");
         return serverTLS;
@@ -84,7 +84,8 @@ public class ForwardProxyServerTest
     private Server proxy;
     private ServerConnector proxyConnector;
 
-    protected void startServer(SslContextFactory.Server serverTLS, ConnectionFactory connectionFactory, Handler handler) throws Exception
+    protected void startServer(SslContextFactory.Server serverTLS, ConnectionFactory connectionFactory, Handler handler)
+        throws Exception
     {
         serverSslContextFactory = serverTLS;
         QueuedThreadPool serverThreads = new QueuedThreadPool();
@@ -144,62 +145,69 @@ public class ForwardProxyServerTest
     @MethodSource("serverTLS")
     public void testRequestTarget(SslContextFactory.Server serverTLS) throws Exception
     {
-        startServer(serverTLS, new AbstractConnectionFactory("http/1.1")
-        {
-            @Override
-            public Connection newConnection(Connector connector, EndPoint endPoint)
+        startServer(
+            serverTLS,
+            new AbstractConnectionFactory("http/1.1")
             {
-                return new AbstractConnection(endPoint, connector.getExecutor())
+                @Override
+                public Connection newConnection(Connector connector, EndPoint endPoint)
                 {
-                    @Override
-                    public void onOpen()
+                    return new AbstractConnection(endPoint, connector.getExecutor())
                     {
-                        super.onOpen();
-                        fillInterested();
-                    }
-
-                    @Override
-                    public void onFillable()
-                    {
-                        try
+                        @Override
+                        public void onOpen()
                         {
-                            // When using TLS, multiple reads are required.
-                            ByteBuffer buffer = BufferUtil.allocate(1024);
-                            int filled = 0;
-                            while (filled == 0)
+                            super.onOpen();
+                            fillInterested();
+                        }
+
+                        @Override
+                        public void onFillable()
+                        {
+                            try
                             {
-                                filled = getEndPoint().fill(buffer);
+                                // When using TLS, multiple reads are required.
+                                ByteBuffer buffer = BufferUtil.allocate(1024);
+                                int filled = 0;
+                                while (filled == 0)
+                                {
+                                    filled = getEndPoint().fill(buffer);
+                                }
+                                Utf8StringBuilder builder = new Utf8StringBuilder();
+                                builder.append(buffer);
+                                String request = builder.toCompleteString();
+
+                                // ProxyServlet will receive an absolute URI from
+                                // the client, and convert it to a relative URI.
+                                // The ConnectHandler won't modify what the client
+                                // sent, which must be a relative URI.
+                                assertThat(request.length(), greaterThan(0));
+                                if (serverSslContextFactory == null)
+                                    assertFalse(request.contains("http://"));
+                                else
+                                    assertFalse(request.contains("https://"));
+
+                                String response =
+                                    """
+                                        HTTP/1.1 200 OK
+                                        Content-Length: 0
+
+                                        """;
+                                getEndPoint()
+                                    .write(
+                                        Callback.NOOP,
+                                        ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
                             }
-                            Utf8StringBuilder builder = new Utf8StringBuilder();
-                            builder.append(buffer);
-                            String request = builder.toCompleteString();
-
-                            // ProxyServlet will receive an absolute URI from
-                            // the client, and convert it to a relative URI.
-                            // The ConnectHandler won't modify what the client
-                            // sent, which must be a relative URI.
-                            assertThat(request.length(), greaterThan(0));
-                            if (serverSslContextFactory == null)
-                                assertFalse(request.contains("http://"));
-                            else
-                                assertFalse(request.contains("https://"));
-
-                            String response = """
-                                HTTP/1.1 200 OK
-                                Content-Length: 0
-                                
-                                """;
-                            getEndPoint().write(Callback.NOOP, ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
+                            catch (Throwable x)
+                            {
+                                x.printStackTrace();
+                                close();
+                            }
                         }
-                        catch (Throwable x)
-                        {
-                            x.printStackTrace();
-                            close();
-                        }
-                    }
-                };
-            }
-        }, new EmptyServerHandler());
+                    };
+                }
+            },
+            new EmptyServerHandler());
         startProxy(new ProxyServlet());
 
         SslContextFactory.Client clientTLS = new SslContextFactory.Client(true);
@@ -211,7 +219,8 @@ public class ForwardProxyServerTest
 
         try
         {
-            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response = httpClient
+                .newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(serverSslContextFactory == null ? "http" : "https")
                 .method(HttpMethod.GET)
                 .path("/test")
@@ -226,7 +235,8 @@ public class ForwardProxyServerTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"::2", "[::3]"})
+    @ValueSource(strings =
+    {"::2", "[::3]"})
     public void testIPv6WithXForwardedForHeader(String ipv6) throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
@@ -237,7 +247,10 @@ public class ForwardProxyServerTest
         startServer(null, http, new Handler.Abstract()
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(
+                                  org.eclipse.jetty.server.Request request,
+                                  org.eclipse.jetty.server.Response response,
+                                  Callback callback)
             {
                 String remoteHost = org.eclipse.jetty.server.Request.getRemoteAddr(request);
                 assertThat(remoteHost, Matchers.matchesPattern("\\[.+\\]"));
@@ -258,7 +271,8 @@ public class ForwardProxyServerTest
         httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
-        ContentResponse response = httpClient.newRequest("[::1]", serverConnector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("[::1]", serverConnector.getLocalPort())
             .scheme("http")
             .send();
 
@@ -276,7 +290,10 @@ public class ForwardProxyServerTest
         startServer(null, http, new Handler.Abstract()
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(
+                                  org.eclipse.jetty.server.Request request,
+                                  org.eclipse.jetty.server.Response response,
+                                  Callback callback)
             {
                 String remoteHost = org.eclipse.jetty.server.Request.getRemoteAddr(request);
                 assertThat(remoteHost, Matchers.matchesPattern("\\[.+\\]"));
@@ -297,7 +314,8 @@ public class ForwardProxyServerTest
         httpClient.getProxyConfiguration().addProxy(newHttpProxy());
         httpClient.start();
 
-        ContentResponse response = httpClient.newRequest("[::1]", serverConnector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("[::1]", serverConnector.getLocalPort())
             .scheme("http")
             .send();
 

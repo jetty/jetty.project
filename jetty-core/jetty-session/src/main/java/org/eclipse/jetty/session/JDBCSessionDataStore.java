@@ -16,8 +16,6 @@ package org.eclipse.jetty.session;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -26,7 +24,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -84,7 +81,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         {
             _dbAdaptor = dbadaptor;
         }
-        
+
         public void setCatalogName(String catalogName)
         {
             if (catalogName != null && StringUtil.isBlank(catalogName))
@@ -97,7 +94,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         {
             return _catalogName;
         }
-        
+
         public String getSchemaName()
         {
             return _schemaName;
@@ -268,11 +265,8 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             String longType = _dbAdaptor.getLongType();
             String stringType = _dbAdaptor.getStringType();
 
-            return "create table " + getSchemaTableName() + " (" + _idColumn + " " + stringType + "(120), " +
-                _contextPathColumn + " " + stringType + "(60), " + _virtualHostColumn + " " + stringType + "(60), " + _lastNodeColumn + " " + stringType + "(60), " + _accessTimeColumn + " " + longType + ", " +
-                _lastAccessTimeColumn + " " + longType + ", " + _createTimeColumn + " " + longType + ", " + _cookieTimeColumn + " " + longType + ", " +
-                _lastSavedTimeColumn + " " + longType + ", " + _expiryTimeColumn + " " + longType + ", " + _maxIntervalColumn + " " + longType + ", " +
-                _mapColumn + " " + blobType + ", primary key(" + _idColumn + ", " + _contextPathColumn + "," + _virtualHostColumn + "))";
+            return "create table " + getSchemaTableName() + " (" + _idColumn + " " + stringType + "(120), " + _contextPathColumn + " " + stringType + "(60), " + _virtualHostColumn + " " + stringType + "(60), " + _lastNodeColumn + " " + stringType + "(60), " + _accessTimeColumn + " " + longType + ", " + _lastAccessTimeColumn + " " + longType + ", " + _createTimeColumn + " " + longType + ", " + _cookieTimeColumn + " " + longType + ", " + _lastSavedTimeColumn + " " + longType + ", " + _expiryTimeColumn + " " +
+                longType + ", " + _maxIntervalColumn + " " + longType + ", " + _mapColumn + " " + blobType + ", primary key(" + _idColumn + ", " + _contextPathColumn + "," + _virtualHostColumn + "))";
         }
 
         public String getCreateIndexOverExpiryStatementAsString(String indexName)
@@ -305,21 +299,13 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
 
         public String getInsertSessionStatementAsString()
         {
-            return "insert into " + getSchemaTableName() +
-                " (" + getIdColumn() + ", " + getContextPathColumn() + ", " + getVirtualHostColumn() + ", " + getLastNodeColumn() +
-                ", " + getAccessTimeColumn() + ", " + getLastAccessTimeColumn() + ", " + getCreateTimeColumn() + ", " + getCookieTimeColumn() +
-                ", " + getLastSavedTimeColumn() + ", " + getExpiryTimeColumn() + ", " + getMaxIntervalColumn() + ", " + getMapColumn() + ") " +
-                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            return "insert into " + getSchemaTableName() + " (" + getIdColumn() + ", " + getContextPathColumn() + ", " + getVirtualHostColumn() + ", " + getLastNodeColumn() + ", " + getAccessTimeColumn() + ", " + getLastAccessTimeColumn() + ", " + getCreateTimeColumn() + ", " + getCookieTimeColumn() + ", " + getLastSavedTimeColumn() + ", " + getExpiryTimeColumn() + ", " + getMaxIntervalColumn() + ", " + getMapColumn() + ") " + " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         }
 
         public PreparedStatement getUpdateSessionStatement(Connection connection, String id, SessionContext context)
             throws SQLException
         {
-            String s = "update " + getSchemaTableName() +
-                " set " + getLastNodeColumn() + " = ?, " + getAccessTimeColumn() + " = ?, " +
-                getLastAccessTimeColumn() + " = ?, " + getLastSavedTimeColumn() + " = ?, " + getExpiryTimeColumn() + " = ?, " +
-                getMaxIntervalColumn() + " = ?, " + getMapColumn() + " = ? where " + getIdColumn() + " = ? and " + getContextPathColumn() +
-                " = ? and " + getVirtualHostColumn() + " = ?";
+            String s = "update " + getSchemaTableName() + " set " + getLastNodeColumn() + " = ?, " + getAccessTimeColumn() + " = ?, " + getLastAccessTimeColumn() + " = ?, " + getLastSavedTimeColumn() + " = ?, " + getExpiryTimeColumn() + " = ?, " + getMaxIntervalColumn() + " = ?, " + getMapColumn() + " = ? where " + getIdColumn() + " = ? and " + getContextPathColumn() + " = ? and " + getVirtualHostColumn() + " = ?";
 
             String cp = context.getCanonicalContextPath();
             if (_dbAdaptor.isEmptyStringNull() && StringUtil.isBlank(cp))
@@ -332,8 +318,8 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             return statement;
         }
 
-        public PreparedStatement getExpiredSessionsStatement(Connection connection, String canonicalContextPath, String vhost, long expiry)
-            throws SQLException
+        public PreparedStatement getExpiredSessionsStatement(
+                                                             Connection connection, String canonicalContextPath, String vhost, long expiry) throws SQLException
         {
             // TODO expiry should be a delay rather than an absolute time.
 
@@ -344,10 +330,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             if (_dbAdaptor.isEmptyStringNull() && StringUtil.isBlank(cp))
                 cp = NULL_CONTEXT_PATH;
 
-            PreparedStatement statement = connection.prepareStatement("select " + getIdColumn() + ", " + getExpiryTimeColumn() +
-                " from " + getSchemaTableName() + " where " + getContextPathColumn() + " = ? and " +
-                getVirtualHostColumn() + " = ? and " +
-                getExpiryTimeColumn() + " >0 and " + getExpiryTimeColumn() + " <= ?");
+            PreparedStatement statement = connection.prepareStatement("select " + getIdColumn() + ", " + getExpiryTimeColumn() + " from " + getSchemaTableName() + " where " + getContextPathColumn() + " = ? and " + getVirtualHostColumn() + " = ? and " + getExpiryTimeColumn() + " >0 and " + getExpiryTimeColumn() + " <= ?");
 
             statement.setString(1, cp);
             statement.setString(2, vhost);
@@ -355,8 +338,8 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             return statement;
         }
 
-        public PreparedStatement getMyExpiredSessionsStatement(Connection connection, SessionContext sessionContext, long expiry)
-            throws SQLException
+        public PreparedStatement getMyExpiredSessionsStatement(
+                                                               Connection connection, SessionContext sessionContext, long expiry) throws SQLException
         {
             // TODO expiry should be a delay rather than an absolute time.
 
@@ -367,12 +350,8 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             if (_dbAdaptor.isEmptyStringNull() && StringUtil.isBlank(cp))
                 cp = NULL_CONTEXT_PATH;
 
-            PreparedStatement statement = connection.prepareStatement("select " + getIdColumn() + ", " + getExpiryTimeColumn() +
-                " from " + getSchemaTableName() + " where " +
-                getLastNodeColumn() + " = ? and " +
-                getContextPathColumn() + " = ? and " +
-                getVirtualHostColumn() + " = ? and " +
-                getExpiryTimeColumn() + " >0 and " + getExpiryTimeColumn() + " <= ?");
+            PreparedStatement statement =
+                connection.prepareStatement("select " + getIdColumn() + ", " + getExpiryTimeColumn() + " from " + getSchemaTableName() + " where " + getLastNodeColumn() + " = ? and " + getContextPathColumn() + " = ? and " + getVirtualHostColumn() + " = ? and " + getExpiryTimeColumn() + " >0 and " + getExpiryTimeColumn() + " <= ?");
 
             statement.setString(1, sessionContext.getWorkerName());
             statement.setString(2, cp);
@@ -380,7 +359,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             statement.setLong(4, expiry);
             return statement;
         }
-    
+
         public PreparedStatement getCheckSessionExistsStatement(Connection connection, SessionContext context)
             throws SQLException
         {
@@ -391,11 +370,8 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             if (_dbAdaptor.isEmptyStringNull() && StringUtil.isBlank(cp))
                 cp = NULL_CONTEXT_PATH;
 
-            PreparedStatement statement = connection.prepareStatement("select " + getIdColumn() + ", " + getExpiryTimeColumn() +
-                " from " + getSchemaTableName() +
-                " where " + getIdColumn() + " = ? and " +
-                getContextPathColumn() + " = ? and " +
-                getVirtualHostColumn() + " = ?");
+            PreparedStatement statement =
+                connection.prepareStatement("select " + getIdColumn() + ", " + getExpiryTimeColumn() + " from " + getSchemaTableName() + " where " + getIdColumn() + " = ? and " + getContextPathColumn() + " = ? and " + getVirtualHostColumn() + " = ?");
             statement.setString(2, cp);
             statement.setString(3, context.getVhost());
             return statement;
@@ -411,9 +387,8 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             if (_dbAdaptor.isEmptyStringNull() && StringUtil.isBlank(cp))
                 cp = NULL_CONTEXT_PATH;
 
-            PreparedStatement statement = connection.prepareStatement("select * from " + getSchemaTableName() +
-                " where " + getIdColumn() + " = ? and " + getContextPathColumn() +
-                " = ? and " + getVirtualHostColumn() + " = ?");
+            PreparedStatement statement =
+                connection.prepareStatement("select * from " + getSchemaTableName() + " where " + getIdColumn() + " = ? and " + getContextPathColumn() + " = ? and " + getVirtualHostColumn() + " = ?");
             statement.setString(1, id);
             statement.setString(2, cp);
             statement.setString(3, contextId.getVhost());
@@ -431,11 +406,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             if (_dbAdaptor.isEmptyStringNull() && StringUtil.isBlank(cp))
                 cp = NULL_CONTEXT_PATH;
 
-            String s = "update " + getSchemaTableName() +
-                " set " + getLastNodeColumn() + " = ?, " + getAccessTimeColumn() + " = ?, " +
-                getLastAccessTimeColumn() + " = ?, " + getLastSavedTimeColumn() + " = ?, " + getExpiryTimeColumn() + " = ?, " +
-                getMaxIntervalColumn() + " = ?, " + getMapColumn() + " = ? where " + getIdColumn() + " = ? and " + getContextPathColumn() +
-                " = ? and " + getVirtualHostColumn() + " = ?";
+            String s = "update " + getSchemaTableName() + " set " + getLastNodeColumn() + " = ?, " + getAccessTimeColumn() + " = ?, " + getLastAccessTimeColumn() + " = ?, " + getLastSavedTimeColumn() + " = ?, " + getExpiryTimeColumn() + " = ?, " + getMaxIntervalColumn() + " = ?, " + getMapColumn() + " = ? where " + getIdColumn() + " = ? and " + getContextPathColumn() + " = ? and " + getVirtualHostColumn() + " = ?";
 
             PreparedStatement statement = connection.prepareStatement(s);
             statement.setString(8, id);
@@ -449,16 +420,13 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             throws Exception
         {
             if (_dbAdaptor == null)
-
                 throw new IllegalStateException("No DB adaptor");
 
             String cp = contextId.getCanonicalContextPath();
             if (_dbAdaptor.isEmptyStringNull() && StringUtil.isBlank(cp))
                 cp = NULL_CONTEXT_PATH;
 
-            PreparedStatement statement = connection.prepareStatement("delete from " + getSchemaTableName() +
-                " where " + getIdColumn() + " = ? and " + getContextPathColumn() +
-                " = ? and " + getVirtualHostColumn() + " = ?");
+            PreparedStatement statement = connection.prepareStatement("delete from " + getSchemaTableName() + " where " + getIdColumn() + " = ? and " + getContextPathColumn() + " = ? and " + getVirtualHostColumn() + " = ?");
             statement.setString(1, id);
             statement.setString(2, cp);
             statement.setString(3, contextId.getVhost());
@@ -466,18 +434,14 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             return statement;
         }
 
-        public PreparedStatement getCleanOrphansStatement(Connection connection, long timeLimit)
-            throws Exception
-        { 
+        public PreparedStatement getCleanOrphansStatement(Connection connection, long timeLimit) throws Exception
+        {
             if (_dbAdaptor == null)
                 throw new IllegalStateException("No DB adaptor");
 
-            PreparedStatement statement = connection.prepareStatement("delete from " + getSchemaTableName() +
-                " where " +
-                getExpiryTimeColumn() + " > 0 and " + getExpiryTimeColumn() + " <= ?");
+            PreparedStatement statement = connection.prepareStatement("delete from " + getSchemaTableName() + " where " + getExpiryTimeColumn() + " > 0 and " + getExpiryTimeColumn() + " <= ?");
             statement.setLong(1, timeLimit);
             return statement;
-
         }
 
         /**
@@ -485,61 +449,65 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
          *
          * @throws SQLException if unable to prepare tables
          */
-        public void prepareTables()
-            throws SQLException
+        public void prepareTables() throws SQLException
         {
             try (Connection connection = _dbAdaptor.getConnection();
                  Statement statement = connection.createStatement())
             {
-                //make the id table
+                // make the id table
                 connection.setAutoCommit(true);
                 DatabaseMetaData metaData = connection.getMetaData();
                 _dbAdaptor.adaptTo(metaData);
 
-                //make the session table if necessary
+                // make the session table if necessary
                 String tableName = _dbAdaptor.convertIdentifier(getTableName());
-                
+
                 String schemaName = _dbAdaptor.convertIdentifier(getSchemaName());
                 if (INFERRED.equalsIgnoreCase(schemaName))
                 {
-                    //use the value from the connection -
-                    //NOTE that this value will also now be prepended to ALL
-                    //table names in queries/updates.
+                    // use the value from the connection -
+                    // NOTE that this value will also now be prepended to ALL
+                    // table names in queries/updates.
                     schemaName = connection.getSchema();
                     setSchemaName(schemaName);
                 }
                 String catalogName = _dbAdaptor.convertIdentifier(getCatalogName());
                 if (INFERRED.equalsIgnoreCase(catalogName))
                 {
-                    //use the value from the connection
+                    // use the value from the connection
                     catalogName = connection.getCatalog();
                     setCatalogName(catalogName);
                 }
-                
+
                 try (ResultSet result = metaData.getTables(catalogName, schemaName, tableName, null))
                 {
                     if (!result.next())
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Creating table {} schema={} catalog={}", tableName, schemaName, catalogName);
-                        //table does not exist, so create it
+                        // table does not exist, so create it
                         statement.executeUpdate(getCreateStatementAsString());
                     }
                     else
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Not creating table {} schema={} catalog={}", tableName, schemaName, catalogName);
-                        //session table exists, check it has maxinterval column
+                        // session table exists, check it has maxinterval column
                         ResultSet colResult = null;
                         try
                         {
-                            colResult = metaData.getColumns(catalogName, schemaName, tableName,
+                            colResult = metaData.getColumns(
+                                catalogName,
+                                schemaName,
+                                tableName,
                                 _dbAdaptor.convertIdentifier(getMaxIntervalColumn()));
                         }
                         catch (SQLException sqlEx)
                         {
-                            LOG.warn("Problem checking if {} table contains {} column. Ensure table contains column with definition: long not null default -999",
-                                getTableName(), getMaxIntervalColumn());
+                            LOG.warn(
+                                "Problem checking if {} table contains {} column. Ensure table contains column with definition: long not null default -999",
+                                getTableName(),
+                                getMaxIntervalColumn());
                             throw sqlEx;
                         }
                         try
@@ -548,12 +516,14 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
                             {
                                 try
                                 {
-                                    //add the maxinterval column
+                                    // add the maxinterval column
                                     statement.executeUpdate(getAlterTableForMaxIntervalAsString());
                                 }
                                 catch (SQLException sqlEx)
                                 {
-                                    LOG.warn("Problem adding {} column. Ensure table contains column definition: long not null default -999", getMaxIntervalColumn());
+                                    LOG.warn(
+                                        "Problem adding {} column. Ensure table contains column definition: long not null default -999",
+                                        getMaxIntervalColumn());
                                     throw sqlEx;
                                 }
                             }
@@ -564,7 +534,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
                         }
                     }
                 }
-                //make some indexes on the JettySessions table
+                // make some indexes on the JettySessions table
                 String index1 = "idx_" + getTableName() + "_expiry";
                 String index2 = "idx_" + getTableName() + "_session";
 
@@ -591,9 +561,23 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         @Override
         public String toString()
         {
-            return String.format("%s[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]", super.toString(),
-                _catalogName, _schemaName, _tableName, _idColumn, _contextPathColumn, _virtualHostColumn, _cookieTimeColumn, _createTimeColumn,
-                _expiryTimeColumn, _accessTimeColumn, _lastAccessTimeColumn, _lastNodeColumn, _lastSavedTimeColumn, _maxIntervalColumn);
+            return String.format(
+                "%s[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]",
+                super.toString(),
+                _catalogName,
+                _schemaName,
+                _tableName,
+                _idColumn,
+                _contextPathColumn,
+                _virtualHostColumn,
+                _cookieTimeColumn,
+                _createTimeColumn,
+                _expiryTimeColumn,
+                _accessTimeColumn,
+                _lastAccessTimeColumn,
+                _lastNodeColumn,
+                _lastSavedTimeColumn,
+                _maxIntervalColumn);
         }
     }
 
@@ -627,7 +611,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         {
             _initialized = true;
 
-            //taking the defaults if one not set
+            // taking the defaults if one not set
             if (_sessionTableSchema == null)
             {
                 _sessionTableSchema = new SessionTableSchema();
@@ -650,7 +634,8 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             SessionData data = null;
             if (result.next())
             {
-                data = newSessionData(id,
+                data = newSessionData(
+                    id,
                     result.getLong(_sessionTableSchema.getCreateTimeColumn()),
                     result.getLong(_sessionTableSchema.getAccessTimeColumn()),
                     result.getLong(_sessionTableSchema.getLastAccessTimeColumn()),
@@ -664,7 +649,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
 
                 try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn()))
                 {
-                   deserializeAttributes(data, is);
+                    deserializeAttributes(data, is);
                 }
                 catch (Exception e)
                 {
@@ -712,8 +697,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         }
     }
 
-    protected void doInsert(String id, SessionData data)
-        throws Exception
+    protected void doInsert(String id, SessionData data) throws Exception
     {
         String s = _sessionTableSchema.getInsertSessionStatementAsString();
 
@@ -722,21 +706,21 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             connection.setAutoCommit(true);
             try (PreparedStatement statement = connection.prepareStatement(s))
             {
-                statement.setString(1, id); //session id
+                statement.setString(1, id); // session id
 
                 String cp = _context.getCanonicalContextPath();
                 if (_dbAdaptor.isEmptyStringNull() && StringUtil.isBlank(cp))
                     cp = NULL_CONTEXT_PATH;
 
-                statement.setString(2, cp); //context path
+                statement.setString(2, cp); // context path
 
-                statement.setString(3, _context.getVhost()); //first vhost
-                statement.setString(4, data.getLastNode()); //my node id
-                statement.setLong(5, data.getAccessed()); //accessTime
-                statement.setLong(6, data.getLastAccessed()); //lastAccessTime
-                statement.setLong(7, data.getCreated()); //time created
-                statement.setLong(8, data.getCookieSet()); //time cookie was set
-                statement.setLong(9, data.getLastSaved()); //last saved time
+                statement.setString(3, _context.getVhost()); // first vhost
+                statement.setString(4, data.getLastNode()); // my node id
+                statement.setLong(5, data.getAccessed()); // accessTime
+                statement.setLong(6, data.getLastAccessed()); // lastAccessTime
+                statement.setLong(7, data.getCreated()); // time created
+                statement.setLong(8, data.getCookieSet()); // time cookie was set
+                statement.setLong(9, data.getLastSaved()); // last saved time
                 statement.setLong(10, data.getExpiry());
                 statement.setLong(11, data.getMaxInactiveMs());
 
@@ -746,7 +730,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
 
                     byte[] bytes = baos.toByteArray();
                     ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                    statement.setBinaryStream(12, bais, bytes.length); //attribute map as blob
+                    statement.setBinaryStream(12, bais, bytes.length); // attribute map as blob
                 }
 
                 statement.executeUpdate();
@@ -756,18 +740,18 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         }
     }
 
-    protected void doUpdate(String id, SessionData data)
-        throws Exception
+    protected void doUpdate(String id, SessionData data) throws Exception
     {
         try (Connection connection = _dbAdaptor.getConnection())
         {
             connection.setAutoCommit(true);
-            try (PreparedStatement statement = _sessionTableSchema.getUpdateSessionStatement(connection, data.getId(), _context))
+            try (PreparedStatement statement =
+                _sessionTableSchema.getUpdateSessionStatement(connection, data.getId(), _context))
             {
-                statement.setString(1, data.getLastNode()); //should be my node id
-                statement.setLong(2, data.getAccessed()); //accessTime
-                statement.setLong(3, data.getLastAccessed()); //lastAccessTime
-                statement.setLong(4, data.getLastSaved()); //last saved time
+                statement.setString(1, data.getLastNode()); // should be my node id
+                statement.setLong(2, data.getAccessed()); // accessTime
+                statement.setLong(3, data.getLastAccessed()); // lastAccessTime
+                statement.setLong(4, data.getLastSaved()); // last saved time
                 statement.setLong(5, data.getExpiry());
                 statement.setLong(6, data.getMaxInactiveMs());
 
@@ -778,7 +762,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
                     byte[] bytes = baos.toByteArray();
                     try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes))
                     {
-                        statement.setBinaryStream(7, bais, bytes.length); //attribute map as blob
+                        statement.setBinaryStream(7, bais, bytes.length); // attribute map as blob
                     }
                 }
 
@@ -795,19 +779,23 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Getting expired sessions at time {}", time);
-        
+
         Set<String> expiredSessionKeys = new HashSet<>();
         try (Connection connection = _dbAdaptor.getConnection())
         {
             connection.setAutoCommit(true);
 
-            //Select sessions managed by this node for our context that have expired
+            // Select sessions managed by this node for our context that have expired
             long upperBound = time;
             if (LOG.isDebugEnabled())
-                LOG.debug("{} - Searching for sessions for context {} managed by me and expired before {}",  
-                    _context.getWorkerName(), _context.getCanonicalContextPath(), upperBound);
+                LOG.debug(
+                    "{} - Searching for sessions for context {} managed by me and expired before {}",
+                    _context.getWorkerName(),
+                    _context.getCanonicalContextPath(),
+                    upperBound);
 
-            try (PreparedStatement statement = _sessionTableSchema.getMyExpiredSessionsStatement(connection, _context, upperBound))
+            try (PreparedStatement statement =
+                _sessionTableSchema.getMyExpiredSessionsStatement(connection, _context, upperBound))
             {
                 try (ResultSet result = statement.executeQuery())
                 {
@@ -817,8 +805,12 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
                         long exp = result.getLong(_sessionTableSchema.getExpiryTimeColumn());
                         expiredSessionKeys.add(sessionId);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} - Found expired sessionId={}, in context={}, expiry={}",
-                                _context.getWorkerName(), sessionId, _context.getCanonicalContextPath(), exp);
+                            LOG.debug(
+                                "{} - Found expired sessionId={}, in context={}, expiry={}",
+                                _context.getWorkerName(),
+                                sessionId,
+                                _context.getCanonicalContextPath(),
+                                exp);
                     }
                 }
             }
@@ -826,19 +818,20 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             Set<String> notExpiredInDB = new HashSet<>();
             for (String k : candidates)
             {
-                //there are some keys that the sessioncache thought had expired, but were not
-                //found in our query either because it is no longer in the db, or its
-                //expiry time was updated
+                // there are some keys that the sessioncache thought had expired, but were not
+                // found in our query either because it is no longer in the db, or its
+                // expiry time was updated
                 if (!expiredSessionKeys.contains(k))
                     notExpiredInDB.add(k);
             }
 
-            //Check the candidates that were not reported as expired in the db: they
-            //either do not exist, or they weren't expired (which means some other node
-            //must be managing it)
+            // Check the candidates that were not reported as expired in the db: they
+            // either do not exist, or they weren't expired (which means some other node
+            // must be managing it)
             if (!notExpiredInDB.isEmpty())
             {
-                try (PreparedStatement checkSessionExists = _sessionTableSchema.getCheckSessionExistsStatement(connection, _context))
+                try (PreparedStatement checkSessionExists =
+                    _sessionTableSchema.getCheckSessionExistsStatement(connection, _context))
                 {
                     for (String k : notExpiredInDB)
                     {
@@ -847,18 +840,25 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
                         {
                             if (!result.next())
                             {
-                                //session doesn't exist any more, can be expired
+                                // session doesn't exist any more, can be expired
                                 expiredSessionKeys.add(k);
                             }
                             else
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("{} Session {} expiry fresher in db than cache, another node must be managing it", _context.getWorkerName(), k);
+                                    LOG.debug(
+                                        "{} Session {} expiry fresher in db than cache, another node must be managing it",
+                                        _context.getWorkerName(),
+                                        k);
                             }
                         }
                         catch (Exception e)
                         {
-                            LOG.warn("{} Problem checking if potentially expired session {} exists in db", _context.getWorkerName(), k, e);
+                            LOG.warn(
+                                "{} Problem checking if potentially expired session {} exists in db",
+                                _context.getWorkerName(),
+                                k,
+                                e);
                         }
                     }
                 }
@@ -869,7 +869,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         catch (Exception e)
         {
             LOG.warn("Unable to get expired sessions", e);
-            return expiredSessionKeys; //return whatever we got
+            return expiredSessionKeys; // return whatever we got
         }
     }
 
@@ -877,16 +877,20 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
     public Set<String> doGetExpired(long timeLimit)
     {
         Set<String> expired = new HashSet<>();
-        
-        //Get sessions for my context but managed by any node that expired at or before the timeLimit   
+
+        // Get sessions for my context but managed by any node that expired at or before the timeLimit
         try (Connection connection = _dbAdaptor.getConnection())
         {
             connection.setAutoCommit(true);
-            try (PreparedStatement selectExpiredSessions = _sessionTableSchema.getExpiredSessionsStatement(connection, _context.getCanonicalContextPath(),
-                                                                                                           _context.getVhost(), timeLimit))
+            try (PreparedStatement selectExpiredSessions = _sessionTableSchema.getExpiredSessionsStatement(
+                connection, _context.getCanonicalContextPath(), _context.getVhost(), timeLimit))
             {
-                if (LOG.isDebugEnabled()) 
-                    LOG.debug("{}- Searching for sessions for context {} expired before {}", _context.getWorkerName(), _context.getCanonicalContextPath(), timeLimit);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(
+                        "{}- Searching for sessions for context {} expired before {}",
+                        _context.getWorkerName(),
+                        _context.getCanonicalContextPath(),
+                        timeLimit);
 
                 try (ResultSet result = selectExpiredSessions.executeQuery())
                 {
@@ -896,8 +900,12 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
                         long exp = result.getLong(_sessionTableSchema.getExpiryTimeColumn());
                         expired.add(sessionId);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{}- Found expired sessionId={} for context={} expiry={}",
-                                _context.getWorkerName(), sessionId, _context.getCanonicalContextPath(), exp);
+                            LOG.debug(
+                                "{}- Found expired sessionId={} for context={} expiry={}",
+                                _context.getWorkerName(),
+                                sessionId,
+                                _context.getCanonicalContextPath(),
+                                exp);
                     }
                 }
             }
@@ -906,14 +914,14 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         catch (Exception e)
         {
             LOG.warn("Error finding sessions expired before {}", timeLimit, e);
-            return expired; //return whatever we got
-        } 
+            return expired; // return whatever we got
+        }
     }
 
     @Override
     public void doCleanOrphans(long time)
     {
-        //Harshly delete sessions for any node and context that expired at or before the timeLimit
+        // Harshly delete sessions for any node and context that expired at or before the timeLimit
         try (Connection connection = _dbAdaptor.getConnection();
              PreparedStatement statement = _sessionTableSchema.getCleanOrphansStatement(connection, time))
         {
@@ -925,7 +933,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         catch (Exception e)
         {
             LOG.warn("Error cleaning orphan sessions", e);
-        } 
+        }
     }
 
     public void setDatabaseAdaptor(DatabaseAdaptor dbAdaptor)
@@ -951,30 +959,30 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
     }
 
     @Override
-    public boolean doExists(String id)
-        throws Exception
+    public boolean doExists(String id) throws Exception
     {
         try (Connection connection = _dbAdaptor.getConnection())
         {
             connection.setAutoCommit(true);
 
-            //non-expired session exists?
-            try (PreparedStatement checkSessionExists = _sessionTableSchema.getCheckSessionExistsStatement(connection, _context))
+            // non-expired session exists?
+            try (PreparedStatement checkSessionExists =
+                _sessionTableSchema.getCheckSessionExistsStatement(connection, _context))
             {
                 checkSessionExists.setString(1, id);
                 try (ResultSet result = checkSessionExists.executeQuery())
                 {
                     if (!result.next())
                     {
-                        return false; //no such session
+                        return false; // no such session
                     }
                     else
                     {
                         long expiry = result.getLong(_sessionTableSchema.getExpiryTimeColumn());
-                        if (expiry <= 0) //never expires
+                        if (expiry <= 0) // never expires
                             return true;
                         else
-                            return (expiry > System.currentTimeMillis()); //hasn't already expired
+                            return (expiry > System.currentTimeMillis()); // hasn't already expired
                     }
                 }
             }

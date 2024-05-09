@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.server.internal;
 
+import static org.eclipse.jetty.http.HttpCompliance.Violation.MISMATCHED_AUTHORITY;
+import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
@@ -25,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -75,13 +77,11 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http.HttpCompliance.Violation.MISMATCHED_AUTHORITY;
-import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
-
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractMetaDataConnection implements Runnable, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
+public class HttpConnection extends AbstractMetaDataConnection
+    implements Runnable, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
@@ -136,7 +136,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
      * @deprecated use {@link #HttpConnection(HttpConfiguration, Connector, EndPoint)} instead.  Will be removed in Jetty 12.1.0
      */
     @Deprecated(since = "12.0.6", forRemoval = true)
-    public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
+    public HttpConnection(
+                          HttpConfiguration configuration,
+                          Connector connector,
+                          EndPoint endPoint,
+                          boolean recordComplianceViolations)
     {
         this(configuration, connector, endPoint);
     }
@@ -176,7 +180,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
     {
-        HttpParser parser = new HttpParser(_requestHandler, getHttpConfiguration().getRequestHeaderSize(), compliance);
+        HttpParser parser =
+            new HttpParser(_requestHandler, getHttpConfiguration().getRequestHeaderSize(), compliance);
         parser.setHeaderCacheSize(getHttpConfiguration().getHeaderCacheSize());
         parser.setHeaderCacheCaseSensitive(getHttpConfiguration().isHeaderCacheCaseSensitive());
         return parser;
@@ -410,9 +415,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     _onRequest = null;
                     onRequest.run();
 
-                    // If the _handling boolean has already been CaS'd to false, then stream is completed and we are no longer
-                    // handling, so the caller can continue to fill and parse more connections.  If it is still true, then some
-                    // thread is still handling the request and they will need to organize more filling and parsing once complete.
+                    // If the _handling boolean has already been CaS'd to false, then stream is completed and we are no
+                    // longer
+                    // handling, so the caller can continue to fill and parse more connections.  If it is still true,
+                    // then some
+                    // thread is still handling the request and they will need to organize more filling and parsing once
+                    // complete.
                     if (_handling.compareAndSet(true, false))
                     {
                         if (LOG.isDebugEnabled())
@@ -484,7 +492,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             return;
         }
 
-        // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
+        // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this
+        // method
         // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown().
 
         // This loop was designed by a committee and voted by a majority.
@@ -565,7 +574,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         if (_parser.isTerminated())
             throw new RuntimeIOException("Parser is terminated");
 
-        boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getByteBuffer());
+        boolean handle = _parser.parseNext(
+            _retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getByteBuffer());
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} parsed {} {}", this, handle, _parser);
@@ -668,12 +678,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public String toConnectionString()
     {
-        return String.format("%s@%x[p=%s,g=%s]=>%s",
-            getClass().getSimpleName(),
-            hashCode(),
-            _parser,
-            _generator,
-            _httpChannel);
+        return String.format(
+            "%s@%x[p=%s,g=%s]=>%s", getClass().getSimpleName(), hashCode(), _parser, _generator, _httpChannel);
     }
 
     private class DemandContentCallback implements Callback
@@ -728,7 +734,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             return _callback.getInvocationType();
         }
 
-        private boolean reset(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
+        private boolean reset(
+                              MetaData.Request request,
+                              MetaData.Response response,
+                              ByteBuffer content,
+                              boolean last,
+                              Callback callback)
         {
             if (reset())
             {
@@ -763,9 +774,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 ByteBuffer headerByteBuffer = _header == null ? null : _header.getByteBuffer();
                 ByteBuffer chunkByteBuffer = _chunk == null ? null : _chunk.getByteBuffer();
-                HttpGenerator.Result result = _generator.generateResponse(_info, _head, headerByteBuffer, chunkByteBuffer, _content, _lastContent);
+                HttpGenerator.Result result = _generator.generateResponse(
+                    _info, _head, headerByteBuffer, chunkByteBuffer, _content, _lastContent);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("generate: {} for {} ({},{},{})@{}",
+                    LOG.debug(
+                        "generate: {} for {} ({},{},{})@{}",
                         result,
                         this,
                         BufferUtil.toSummaryString(headerByteBuffer),
@@ -780,15 +793,21 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(Math.min(getHttpConfiguration().getResponseHeaderSize(), getHttpConfiguration().getOutputBufferSize()), useDirectByteBuffers);
+                        _header = _bufferPool.acquire(
+                            Math.min(
+                                getHttpConfiguration().getResponseHeaderSize(),
+                                getHttpConfiguration().getOutputBufferSize()),
+                            useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
                     {
                         if (_header.capacity() >= getHttpConfiguration().getResponseHeaderSize())
-                            throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response header too large");
+                            throw new HttpException.RuntimeException(
+                                INTERNAL_SERVER_ERROR_500, "Response header too large");
                         releaseHeader();
-                        _header = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
+                        _header = _bufferPool.acquire(
+                            getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case NEED_CHUNK:
@@ -799,12 +818,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     case NEED_CHUNK_TRAILER:
                     {
                         releaseChunk();
-                        _chunk = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
+                        _chunk = _bufferPool.acquire(
+                            getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case FLUSH:
                     {
-                        // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content
+                        // Don't write the chunk or the content if this is a HEAD response, or any other type of
+                        // response that should have no content
                         if (_head || _generator.isNoContent())
                         {
                             if (_chunk != null)
@@ -866,7 +887,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     }
                     case DONE:
                     {
-                        // If this is the end of the response and the connector was shutdown after response was committed,
+                        // If this is the end of the response and the connector was shutdown after response was
+                        // committed,
                         // we can't add the Connection:close header, but we are still allowed to close the connection
                         // by shutting down the output.
                         if (getConnector().isShutdown() && _generator.isEnd() && _generator.isPersistent())
@@ -971,7 +993,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 throw new IllegalStateException();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
+                LOG.debug(
+                    "content {}/{} for {}",
+                    BufferUtil.toDetailString(buffer),
+                    _retainableByteBuffer,
+                    HttpConnection.this);
 
             _retainableByteBuffer.retain();
             stream._chunk = Content.Chunk.asChunk(buffer, false, _retainableByteBuffer);
@@ -1011,7 +1037,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else
                 stream._chunk = Content.Chunk.EOF;
 
-            getHttpChannel().getComplianceViolationListener().onRequestBegin(getHttpChannel().getRequest());
+            getHttpChannel()
+                .getComplianceViolationListener()
+                .onRequestBegin(getHttpChannel().getRequest());
             return false;
         }
 
@@ -1040,7 +1068,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 HttpURI uri = stream._uri;
                 if (uri.hasViolations())
                     uri = HttpURI.from("/badURI");
-                _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
+                _httpChannel.onRequest(new MetaData.Request(
+                    _parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
             }
 
             Runnable task = _httpChannel.onFailure(_failure);
@@ -1155,15 +1184,18 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
                     case EXPECT:
                     {
-                        if (!HttpHeaderValue.parseCsvIndex(value, t ->
-                        {
-                            if (t == HttpHeaderValue.CONTINUE)
+                        if (!HttpHeaderValue.parseCsvIndex(
+                            value,
+                            t ->
                             {
-                                _expects100Continue = true;
-                                return true;
-                            }
-                            return false;
-                        }, s -> false))
+                                if (t == HttpHeaderValue.CONTINUE)
+                                {
+                                    _expects100Continue = true;
+                                    return true;
+                                }
+                                return false;
+                            },
+                            s -> false))
                         {
                             _unknownExpectation = true;
                             _expects100Continue = false;
@@ -1192,7 +1224,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_uri.hasViolations())
             {
                 compliance = getHttpConfiguration().getUriCompliance();
-                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, getHttpChannel().getComplianceViolationListener());
+                String badMessage = UriCompliance.checkUriCompliance(
+                    compliance, _uri, getHttpChannel().getComplianceViolationListener());
                 if (badMessage != null)
                     throw new BadMessageException(badMessage);
             }
@@ -1207,7 +1240,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
                         if (httpCompliance.allows(MISMATCHED_AUTHORITY))
                         {
-                            getHttpChannel().getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
+                            getHttpChannel()
+                                .getComplianceViolationListener()
+                                .onComplianceViolation(new ComplianceViolation.Event(
+                                    httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
                         }
                         else
                             throw new BadMessageException("Authority!=Host");
@@ -1240,14 +1276,21 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _uri.path("/");
             }
 
-            _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder, _contentLength)
-            {
-                @Override
-                public boolean is100ContinueExpected()
+            _request =
+                new MetaData.Request(
+                    _parser.getBeginNanoTime(),
+                    _method,
+                    _uri.asImmutable(),
+                    _version,
+                    _headerBuilder,
+                    _contentLength)
                 {
-                    return _expects100Continue;
-                }
-            };
+                    @Override
+                    public boolean is100ContinueExpected()
+                    {
+                        return _expects100Continue;
+                    }
+                };
 
             Runnable handle = _httpChannel.onRequest(_request);
             ++_requests;
@@ -1272,10 +1315,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 }
                 case HTTP_1_0:
                 {
-                    persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&
-                        _connectionKeepAlive &&
-                        !_connectionClose ||
-                        HttpMethod.CONNECT.is(_method);
+                    persistent = getHttpConfiguration().isPersistentConnectionsEnabled() && _connectionKeepAlive && !_connectionClose || HttpMethod.CONNECT.is(_method);
 
                     _generator.setPersistent(persistent);
                     if (!persistent)
@@ -1292,9 +1332,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         return null;
                     }
 
-                    persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&
-                        !_connectionClose ||
-                        HttpMethod.CONNECT.is(_method);
+                    persistent = getHttpConfiguration().isPersistentConnectionsEnabled() && !_connectionClose || HttpMethod.CONNECT.is(_method);
 
                     _generator.setPersistent(persistent);
 
@@ -1315,10 +1353,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     // Allow prior knowledge "upgrade" to HTTP/2 only if the connector supports h2c.
                     _upgrade = PREAMBLE_UPGRADE_H2C;
 
-                    if (HttpMethod.PRI.is(_method) &&
-                        "*".equals(_uri.getPath()) &&
-                        _headerBuilder.size() == 0 &&
-                        HttpConnection.this.upgrade(_stream.get()))
+                    if (HttpMethod.PRI.is(_method) && "*".equals(_uri.getPath()) && _headerBuilder.size() == 0 && HttpConnection.this.upgrade(_stream.get()))
                         return null;
 
                     // TODO is this sufficient?
@@ -1397,7 +1432,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+        public void send(
+                         MetaData.Request request,
+                         MetaData.Response response,
+                         boolean last,
+                         ByteBuffer content,
+                         Callback callback)
         {
             if (response == null)
             {
@@ -1458,7 +1498,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             @SuppressWarnings("ReferenceEquality")
             boolean isPriorKnowledgeH2C = _upgrade == PREAMBLE_UPGRADE_H2C;
-            if (!isPriorKnowledgeH2C  && !_connectionUpgrade)
+            if (!isPriorKnowledgeH2C && !_connectionUpgrade)
                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
             // Find the upgrade factory.
@@ -1477,7 +1517,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             }
 
             HttpFields.Mutable response101 = HttpFields.build();
-            Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _request, response101);
+            Connection upgradeConnection =
+                factory.upgradeConnection(getConnector(), getEndPoint(), _request, response101);
             if (upgradeConnection == null)
             {
                 if (LOG.isDebugEnabled())
@@ -1488,7 +1529,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // Prior knowledge HTTP/2 does not need a 101 response (it will directly be
             // in HTTP/2 format) while HTTP/1.1 to HTTP/2 upgrade needs a 101 response.
             if (!isPriorKnowledgeH2C)
-                send(_request, new MetaData.Response(HttpStatus.SWITCHING_PROTOCOLS_101, null, HttpVersion.HTTP_1_1, response101, 0), false, null, Callback.NOOP);
+                send(
+                    _request,
+                    new MetaData.Response(
+                        HttpStatus.SWITCHING_PROTOCOLS_101, null, HttpVersion.HTTP_1_1, response101, 0),
+                    false,
+                    null,
+                    Callback.NOOP);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Upgrading from {} to {}", getEndPoint().getConnection(), upgradeConnection);
@@ -1521,7 +1568,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 return;
             }
 
-            Connection upgradeConnection = (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
+            Connection upgradeConnection =
+                (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
             if (upgradeConnection != null)
             {
                 getEndPoint().upgrade(upgradeConnection);

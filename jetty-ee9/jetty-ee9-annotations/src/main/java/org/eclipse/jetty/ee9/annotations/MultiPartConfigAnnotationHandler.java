@@ -29,7 +29,7 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
 {
     public MultiPartConfigAnnotationHandler(WebAppContext context)
     {
-        //TODO verify that MultipartConfig is not inheritable
+        // TODO verify that MultipartConfig is not inheritable
         super(false, context);
     }
 
@@ -45,15 +45,16 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
 
         MetaData metaData = _context.getMetaData();
 
-        //TODO: The MultipartConfigElement needs to be set on the ServletHolder's Registration.
-        //How to identify the correct Servlet?  If the Servlet has no WebServlet annotation on it, does it mean that this MultipartConfig
-        //annotation applies to all declared instances in web.xml/programmatically?
-        //Assuming TRUE for now.
+        // TODO: The MultipartConfigElement needs to be set on the ServletHolder's Registration.
+        // How to identify the correct Servlet?  If the Servlet has no WebServlet annotation on it, does it mean that
+        // this MultipartConfig
+        // annotation applies to all declared instances in web.xml/programmatically?
+        // Assuming TRUE for now.
         for (ServletHolder holder : _context.getServletHandler().getServlets(clazz))
         {
             Descriptor d = metaData.getOriginDescriptor(holder.getName() + ".servlet.multipart-config");
-            //if a descriptor has already set the value for multipart config, do not 
-            //let the annotation override it
+            // if a descriptor has already set the value for multipart config, do not
+            // let the annotation override it
             if (d == null)
             {
                 metaData.setOrigin(holder.getName() + ".servlet.multipart-config", multi, clazz);

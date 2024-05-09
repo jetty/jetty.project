@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -58,9 +57,12 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
     /**
      * Regex of symbolic names of bundles that should be considered to be on the container classpath
      */
-    public static final String CONTAINER_BUNDLE_PATTERN = "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern";
+    public static final String CONTAINER_BUNDLE_PATTERN =
+        "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern";
+
     public static final String FRAGMENT_AND_REQUIRED_BUNDLES = "org.eclipse.jetty.ee10.osgi.fragmentAndRequiredBundles";
-    public static final String FRAGMENT_AND_REQUIRED_RESOURCES = "org.eclipse.jetty.ee10.osgi.fragmentAndRequiredResources";
+    public static final String FRAGMENT_AND_REQUIRED_RESOURCES =
+        "org.eclipse.jetty.ee10.osgi.fragmentAndRequiredResources";
 
     @Override
     public Class<? extends Configuration> replaces()
@@ -91,9 +93,9 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
     @Override
     protected void scanJars(final WebAppContext context) throws Exception
     {
-        //Check to see if there have been any bundle symbolic names added of bundles that should be
-        //regarded as being on the container classpath, and scanned for fragments, tlds etc etc.
-        //This can be defined in:
+        // Check to see if there have been any bundle symbolic names added of bundles that should be
+        // regarded as being on the container classpath, and scanned for fragments, tlds etc etc.
+        // This can be defined in:
         // 1. SystemProperty SYS_PROP_TLD_BUNDLES
         // 2. DeployerManager.setContextAttribute CONTAINER_BUNDLE_PATTERN
         String tmp = (String)context.getAttribute(CONTAINER_BUNDLE_PATTERN);
@@ -112,7 +114,9 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
         HashSet<Resource> matchingResources = new HashSet<>();
         if (!names.isEmpty() || pattern != null)
         {
-            Bundle[] bundles = FrameworkUtil.getBundle(OSGiMetaInfConfiguration.class).getBundleContext().getBundles();
+            Bundle[] bundles = FrameworkUtil.getBundle(OSGiMetaInfConfiguration.class)
+                .getBundleContext()
+                .getBundles();
 
             for (Bundle bundle : bundles)
             {
@@ -123,13 +127,14 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
                     // if bundle symbolic name matches the pattern
                     if (pattern.matcher(bundle.getSymbolicName()).matches())
                     {
-                        //get the file location of the jar and put it into the list of container jars that will be scanned for stuff (including tlds)
+                        // get the file location of the jar and put it into the list of container jars that will be
+                        // scanned for stuff (including tlds)
                         matchingResources.addAll(getBundleAsResource(ResourceFactory.of(context), bundle));
                     }
                 }
                 if (names != null)
                 {
-                    //if there is an explicit bundle name, then check if it matches
+                    // if there is an explicit bundle name, then check if it matches
                     if (names.contains(bundle.getSymbolicName()))
                         matchingResources.addAll(getBundleAsResource(ResourceFactory.of(context), bundle));
                 }
@@ -157,17 +162,17 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
      * @see org.eclipse.jetty.ee10.webapp.MetaInfConfiguration#findJars(org.eclipse.jetty.ee10.webapp.WebAppContext)
      */
     @Override
-    protected List<Resource> findJars(WebAppContext context)
-        throws Exception
+    protected List<Resource> findJars(WebAppContext context) throws Exception
     {
         List<Resource> mergedResources = new ArrayList<Resource>();
-        //get jars from WEB-INF/lib if there are any
+        // get jars from WEB-INF/lib if there are any
         List<Resource> webInfJars = super.findJars(context);
         if (webInfJars != null)
             mergedResources.addAll(webInfJars);
 
-        //add fragment jars and any Required-Bundles as if in WEB-INF/lib of the associated webapp
-        Bundle[] bundles = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles((Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
+        // add fragment jars and any Required-Bundles as if in WEB-INF/lib of the associated webapp
+        Bundle[] bundles = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles(
+            (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
         if (bundles != null && bundles.length > 0)
         {
             @SuppressWarnings("unchecked")
@@ -188,15 +193,15 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
 
             for (Bundle b : bundles)
             {
-                //skip bundles that are not installed
+                // skip bundles that are not installed
                 if (b.getState() == Bundle.UNINSTALLED)
                     continue;
 
-                //add to context attribute storing associated fragments and required bundles
+                // add to context attribute storing associated fragments and required bundles
                 fragsAndReqsBundles.add(b);
                 File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(b);
                 Resource r = ResourceFactory.of(context).newResource(f.toURI());
-                //add to convenience context attribute storing fragments and required bundles as Resources
+                // add to convenience context attribute storing fragments and required bundles as Resources
                 fragsAndReqsResources.add(r);
                 mergedResources.add(r);
             }
@@ -240,20 +245,23 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
                 // looked up.
                 for (Bundle frag : fragments)
                 {
-                    String path = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_FRAGMENT_RESOURCE_PATH, frag.getHeaders());
+                    String path = Util.getManifestHeaderValue(
+                        OSGiWebappConstants.JETTY_WAR_FRAGMENT_RESOURCE_PATH, frag.getHeaders());
                     convertFragmentPathToResource(ResourceFactory.of(context), path, frag, appendedResourcesPath);
-                    path = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_PREPEND_FRAGMENT_RESOURCE_PATH, frag.getHeaders());
+                    path = Util.getManifestHeaderValue(
+                        OSGiWebappConstants.JETTY_WAR_PREPEND_FRAGMENT_RESOURCE_PATH, frag.getHeaders());
                     convertFragmentPathToResource(ResourceFactory.of(context), path, frag, prependedResourcesPath);
                 }
                 if (!appendedResourcesPath.isEmpty())
                 {
                     LinkedHashSet<Resource> resources = new LinkedHashSet<>();
-                    //Add in any existing setting of extra resource dirs
+                    // Add in any existing setting of extra resource dirs
                     @SuppressWarnings("unchecked")
-                    Set<Resource> resourceDirs = (Set<Resource>)context.getAttribute(MetaInfConfiguration.RESOURCE_DIRS);
+                    Set<Resource> resourceDirs =
+                        (Set<Resource>)context.getAttribute(MetaInfConfiguration.RESOURCE_DIRS);
                     if (resourceDirs != null && !resourceDirs.isEmpty())
                         resources.addAll(resourceDirs);
-                    //Then append the values from JETTY_WAR_FRAGMENT_FOLDER_PATH
+                    // Then append the values from JETTY_WAR_FRAGMENT_FOLDER_PATH
                     resources.addAll(appendedResourcesPath.values());
 
                     context.setAttribute(MetaInfConfiguration.RESOURCE_DIRS, resources);
@@ -267,7 +275,12 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
         if (!prependedResourcesPath.isEmpty())
         {
             Resource[] resources = new Resource[1 + prependedResourcesPath.size()];
-            System.arraycopy(prependedResourcesPath.values().toArray(new Resource[prependedResourcesPath.size()]), 0, resources, 0, prependedResourcesPath.size());
+            System.arraycopy(
+                prependedResourcesPath.values().toArray(new Resource[prependedResourcesPath.size()]),
+                0,
+                resources,
+                0,
+                prependedResourcesPath.size());
             resources[resources.length - 1] = context.getBaseResource();
             context.setBaseResource(ResourceFactory.combine(resources));
         }
@@ -277,8 +290,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
      * Resolves the bundle. Usually that would be a single URL per bundle. But we do some more work if there are jars
      * embedded in the bundle.
      */
-    private List<Resource> getBundleAsResource(ResourceFactory resourceFactory, Bundle bundle)
-        throws Exception
+    private List<Resource> getBundleAsResource(ResourceFactory resourceFactory, Bundle bundle) throws Exception
     {
         List<Resource> resources = new ArrayList<>();
 
@@ -302,7 +314,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
                     }
                 }
             }
-            resources.add(resourceFactory.newResource(file.toPath())); //TODO really???
+            resources.add(resourceFactory.newResource(file.toPath())); // TODO really???
         }
         else
         {
@@ -315,7 +327,8 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
     /**
      * Convert a path inside a fragment into a Resource
      */
-    private void convertFragmentPathToResource(ResourceFactory resourceFactory, String resourcePath, Bundle fragment, Map<String, Resource> resourceMap)
+    private void convertFragmentPathToResource(
+                                               ResourceFactory resourceFactory, String resourcePath, Bundle fragment, Map<String, Resource> resourceMap)
         throws Exception
     {
         if (resourcePath == null)
@@ -324,7 +337,8 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
         URL url = fragment.getEntry(resourcePath);
         if (url == null)
         {
-            throw new IllegalArgumentException("Unable to locate " + resourcePath + " inside the fragment '" + fragment.getSymbolicName() + "'");
+            throw new IllegalArgumentException(
+                "Unable to locate " + resourcePath + " inside the fragment '" + fragment.getSymbolicName() + "'");
         }
         url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(url);
         String key = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;

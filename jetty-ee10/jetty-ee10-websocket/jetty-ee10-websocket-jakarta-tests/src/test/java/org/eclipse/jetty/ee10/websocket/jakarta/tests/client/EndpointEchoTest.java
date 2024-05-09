@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.client;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.ContainerProvider;
@@ -24,6 +24,9 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSEndpointTracker;
@@ -32,10 +35,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EndpointEchoTest
 {
@@ -78,7 +77,8 @@ public class EndpointEchoTest
         ClientEndpoint clientEndpoint = new ClientEndpoint();
         assertThat(clientEndpoint, Matchers.instanceOf(jakarta.websocket.Endpoint.class));
         // Issue connect using instance of class that extends Endpoint
-        Session session = container.connectToServer(clientEndpoint, null, server.getWsUri().resolve("/echo/text"));
+        Session session = container.connectToServer(
+            clientEndpoint, null, server.getWsUri().resolve("/echo/text"));
         session.getBasicRemote().sendText("Echo");
 
         String resp = clientEndpoint.messageQueue.poll(1, TimeUnit.SECONDS);
@@ -92,7 +92,8 @@ public class EndpointEchoTest
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         // Issue connect using class reference (class extends Endpoint)
-        Session session = container.connectToServer(ClientEndpoint.class, null, server.getWsUri().resolve("/echo/text"));
+        Session session = container.connectToServer(
+            ClientEndpoint.class, null, server.getWsUri().resolve("/echo/text"));
         session.getBasicRemote().sendText("Echo");
 
         JakartaWebSocketSession jsrSession = (JakartaWebSocketSession)session;
@@ -138,7 +139,8 @@ public class EndpointEchoTest
         };
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-        Session session = container.connectToServer(clientEndpoint, null, server.getWsUri().resolve("/echo/text"));
+        Session session = container.connectToServer(
+            clientEndpoint, null, server.getWsUri().resolve("/echo/text"));
         assertTrue(openLatch.await(5, TimeUnit.SECONDS));
         session.getBasicRemote().sendText("Echo");
 

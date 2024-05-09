@@ -26,7 +26,6 @@ import java.util.Dictionary;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringTokenizer;
-
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.Bundle;
@@ -43,19 +42,18 @@ import org.slf4j.LoggerFactory;
  */
 public class Util
 {
-     private static final Logger LOG = LoggerFactory.getLogger(Util.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Util.class);
 
     /**
      * Resolve a path either absolutely or against the bundle install location, or
      * against jetty home.
-     * 
+     *
      * @param path the path to resolve
      * @param bundle the bundle
      * @param jettyHome the path to jetty home
      * @return the URI resolved either absolutely or against the bundle install location or jetty home.
      */
-    public static URI resolvePathAsLocalizedURI(String path, Bundle bundle, Path jettyHome)
-    throws Exception
+    public static URI resolvePathAsLocalizedURI(String path, Bundle bundle, Path jettyHome) throws Exception
     {
         if (StringUtil.isBlank(path))
             return null;
@@ -74,13 +72,12 @@ public class Util
         }
         catch (InvalidPathException x)
         {
-            //ignore and try via the jetty bundle instead
+            // ignore and try via the jetty bundle instead
             LOG.trace("IGNORED", x);
         }
 
-        
-        //relative location
-        //try inside the bundle first
+        // relative location
+        // try inside the bundle first
         if (bundle != null)
         {
             URL url = bundle.getEntry(path);
@@ -90,7 +87,7 @@ public class Util
             }
         }
 
-        //try resolving against jetty.home
+        // try resolving against jetty.home
         if (jettyHome != null)
         {
             Path p = jettyHome.resolve(path);
@@ -98,34 +95,32 @@ public class Util
                 return p.toUri();
         }
 
-        return null;  
+        return null;
     }
-    
-    public static URL getLocalURL(URL url)
-    throws Exception
+
+    public static URL getLocalURL(URL url) throws Exception
     {
         if (url == null)
             return null;
-        
+
         return BundleFileLocatorHelper.DEFAULT.getLocalURL(url);
     }
-    
-    public static URL getLocalizedEntry(String file, Bundle bundle)
-    throws Exception
+
+    public static URL getLocalizedEntry(String file, Bundle bundle) throws Exception
     {
         if (file == null || bundle == null)
             return null;
-        
+
         URL url = bundle.getEntry(file);
         if (url == null)
             return null;
-        
+
         return BundleFileLocatorHelper.DEFAULT.getLocalURL(url);
     }
-    
+
     /**
      * Resolve the file system paths to bundles identified by their symbolic names.
-     * 
+     *
      * @param bundleSymbolicNames comma separated list of symbolic bundle names
      * @param bundleContext the bundle on whose behalf to resolve
      * @return List of resolved Paths matching the bundle symbolic names
@@ -138,7 +133,8 @@ public class Util
 
         Objects.requireNonNull(bundleContext);
 
-        ServiceReference ref = bundleContext.getServiceReference(org.osgi.service.packageadmin.PackageAdmin.class.getName());
+        ServiceReference ref =
+            bundleContext.getServiceReference(org.osgi.service.packageadmin.PackageAdmin.class.getName());
         PackageAdmin packageAdmin = (ref == null) ? null : (PackageAdmin)bundleContext.getService(ref);
         if (packageAdmin == null)
             throw new IllegalStateException("Unable to get PackageAdmin reference to locate required Tld bundles");
@@ -151,17 +147,17 @@ public class Util
             Bundle[] bs = packageAdmin.getBundles(symbName, null);
             if (bs == null || bs.length == 0)
             {
-                throw new IllegalArgumentException("Unable to locate the bundle '" + symbName + "' specified in manifest of " +
-                    bundleContext.getBundle().getSymbolicName());
+                throw new IllegalArgumentException(
+                    "Unable to locate the bundle '" + symbName + "' specified in manifest of " + bundleContext.getBundle().getSymbolicName());
             }
 
             File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bs[0]);
             paths.add(f.toPath());
         }
-        
+
         return paths;
     }
-    
+
     /**
      * Create an osgi filter for the given classname and server name.
      *
@@ -171,7 +167,8 @@ public class Util
      * @return a new filter
      * @throws InvalidSyntaxException If the filter contains an invalid string that cannot be parsed.
      */
-    public static Filter createFilter(BundleContext bundleContext, String classname, String managedServerName) throws InvalidSyntaxException
+    public static Filter createFilter(BundleContext bundleContext, String classname, String managedServerName)
+        throws InvalidSyntaxException
     {
         if (StringUtil.isBlank(managedServerName) || managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME))
         {
@@ -179,7 +176,8 @@ public class Util
         }
         else
         {
-            return bundleContext.createFilter("(&(objectclass=" + classname + ")(managedServerName=" + managedServerName + "))");
+            return bundleContext.createFilter(
+                "(&(objectclass=" + classname + ")(managedServerName=" + managedServerName + "))");
         }
     }
 
@@ -223,8 +221,7 @@ public class Util
      * @return the list of URLs found in the input list
      * @throws Exception if unable to convert entry to a URL
      */
-    public static List<URL> fileNamesAsURLs(String val, String delims)
-        throws Exception
+    public static List<URL> fileNamesAsURLs(String val, String delims) throws Exception
     {
         String separators = StringUtil.DEFAULT_DELIMS;
         if (delims == null)
@@ -234,7 +231,9 @@ public class Util
         List<URL> urls = new ArrayList<>();
         while (tokenizer.hasMoreTokens())
         {
-            urls.add(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(new URL(tokenizer.nextToken())));
+            urls.add(BundleFileLocatorHelperFactory.getFactory()
+                .getHelper()
+                .getLocalURL(new URL(tokenizer.nextToken())));
         }
         return urls;
     }

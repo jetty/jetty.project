@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
@@ -36,8 +35,8 @@ public class Negotiated
     private final ExtensionStack extensions;
     private final String protocolVersion;
 
-    public Negotiated(URI requestURI, String subProtocol, boolean secure,
-                      ExtensionStack extensions, String protocolVersion)
+    public Negotiated(
+                      URI requestURI, String subProtocol, boolean secure, ExtensionStack extensions, String protocolVersion)
     {
         this.requestURI = toWebsocket(requestURI);
         this.subProtocol = subProtocol;
@@ -97,11 +96,14 @@ public class Negotiated
     @Override
     public String toString()
     {
-        return String.format("[%s,%s,%b.%s]",
+        return String.format(
+            "[%s,%s,%b.%s]",
             requestURI,
             subProtocol,
             secure,
-            extensions.getNegotiatedExtensions().stream().map(ExtensionConfig::getName).collect(Collectors.toList()));
+            extensions.getNegotiatedExtensions().stream()
+                .map(ExtensionConfig::getName)
+                .collect(Collectors.toList()));
     }
 
     public static Negotiated from(ExtensionStack extensions)

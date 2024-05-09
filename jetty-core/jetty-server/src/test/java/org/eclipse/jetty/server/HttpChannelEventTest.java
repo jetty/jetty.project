@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.Callback;
@@ -26,11 +30,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled // TODO
 public class HttpChannelEventTest
@@ -71,7 +70,7 @@ public class HttpChannelEventTest
                 applicationLatch.countDown();
             }
         });
-
+        
          */
 
         CountDownLatch listenerLatch = new CountDownLatch(1);
@@ -86,7 +85,7 @@ public class HttpChannelEventTest
                 listenerLatch.countDown();
             }
         });
-
+        
          */
 
         HttpTester.Request request = HttpTester.newRequest();
@@ -116,7 +115,7 @@ public class HttpChannelEventTest
                 response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
-
+        
          */
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -130,12 +129,13 @@ public class HttpChannelEventTest
                 latch.countDown();
             }
         });
-
+        
          */
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.Response response =
+            HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -157,14 +157,14 @@ public class HttpChannelEventTest
             {
                 latch.countDown();
             }
-
+        
             @Override
             public void onComplete(Request request)
             {
                 latch.countDown();
             }
         });
-
+        
          */
 
         // No Host header, request will fail.
@@ -178,53 +178,54 @@ public class HttpChannelEventTest
     @Test
     public void testResponseBeginModifyHeaders() throws Exception
     {
-        start(new TestHandler()
-        {
-        /* TODO
-            @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response)
+        start(
+            new TestHandler()
             {
-                response.setCharacterEncoding("utf-8");
-                response.setContentType("text/plain");
-                // Intentionally add two values for a header
-                response.addHeader("X-Header", "foo");
-                response.addHeader("X-Header", "bar");
-            }
-         */
-        });
+                /* TODO
+                @Override
+                protected void handle(HttpServletRequest request, HttpServletResponse response)
+                {
+                    response.setCharacterEncoding("utf-8");
+                    response.setContentType("text/plain");
+                    // Intentionally add two values for a header
+                    response.addHeader("X-Header", "foo");
+                    response.addHeader("X-Header", "bar");
+                }
+                 */
+            });
 
-            /* TODO
+        /* TODO
         CountDownLatch latch = new CountDownLatch(1);
         connector.addBean(new HttpChannel.Listener()
         {
-            @Override
-            public void onResponseBegin(Request request)
-            {
-                Response response = request.getResponse();
-                // Eliminate all "X-Header" values from Handler, and force it to be the one value "zed"
-                response.getHttpFields().computeField("X-Header", (n, f) -> new HttpField(n, "zed"));
-            }
-
-            @Override
-            public void onComplete(Request request)
-            {
-                latch.countDown();
-            }
+        @Override
+        public void onResponseBegin(Request request)
+        {
+            Response response = request.getResponse();
+            // Eliminate all "X-Header" values from Handler, and force it to be the one value "zed"
+            response.getHttpFields().computeField("X-Header", (n, f) -> new HttpField(n, "zed"));
+        }
+        
+        @Override
+        public void onComplete(Request request)
+        {
+            latch.countDown();
+        }
         });
-
+        
         HttpTester.Request request = HttpTester.newRequest();
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "localhost");
         request.setHeader("Connection", "close");
-
+        
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
-
+        
         assertTrue(latch.await(5, TimeUnit.SECONDS));
-
+        
         List<HttpField> xheaders = response.getFields("X-Header");
         assertThat("X-Header count", xheaders.size(), is(1));
         assertThat("X-Header[0].value", xheaders.get(0).getValue(), is("zed"));
-             */
+         */
     }
 
     @Test
@@ -240,7 +241,7 @@ public class HttpChannelEventTest
                 connector.getConnectedEndPoints().forEach(EndPoint::close);
             }
         });
-
+        
          */
 
         CountDownLatch latch = new CountDownLatch(2);
@@ -252,14 +253,14 @@ public class HttpChannelEventTest
             {
                 latch.countDown();
             }
-
+        
             @Override
             public void onComplete(Request request)
             {
                 latch.countDown();
             }
         });
-
+        
          */
 
         HttpTester.Request request = HttpTester.newRequest();
@@ -280,13 +281,13 @@ public class HttpChannelEventTest
         connector.addBean(new HttpChannel.Listener()
         {
             private final String attribute = getClass().getName() + ".begin";
-
+        
             @Override
             public void onRequestBegin(Request request)
             {
                 request.setAttribute(attribute, NanoTime.now());
             }
-
+        
             @Override
             public void onComplete(Request request)
             {
@@ -295,12 +296,13 @@ public class HttpChannelEventTest
                 latch.countDown();
             }
         });
-
+        
          */
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.Response response =
+            HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -331,12 +333,13 @@ public class HttpChannelEventTest
                 });
             }
         });
-
+        
          */
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.Response response =
+            HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));

@@ -21,6 +21,7 @@ public class uint8_t_pointer extends ByReference
     {
         this((byte)0);
     }
+
     public uint8_t_pointer(byte v)
     {
         super(1);

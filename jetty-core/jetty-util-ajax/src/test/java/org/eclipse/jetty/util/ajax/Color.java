@@ -15,5 +15,6 @@ package org.eclipse.jetty.util.ajax;
 
 public enum Color
 {
-    Green, Blue
+    Green,
+    Blue
 }

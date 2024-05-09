@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.internal.VarLenInt;
 

@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -21,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
@@ -46,12 +51,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerConfigTest
 {
@@ -193,7 +192,8 @@ public class ServerConfigTest
         connect.get(5, TimeUnit.SECONDS);
 
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
-        WebSocketCoreSession coreSession = (WebSocketCoreSession)((WebSocketSession)serverEndpoint.session).getCoreSession();
+        WebSocketCoreSession coreSession =
+            (WebSocketCoreSession)((WebSocketSession)serverEndpoint.session).getCoreSession();
         WebSocketConnection connection = coreSession.getConnection();
 
         assertThat(connection.getInputBufferSize(), is(INPUT_BUFFER_SIZE));

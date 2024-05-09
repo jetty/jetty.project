@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.websocket.tests.server;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -37,10 +40,6 @@ import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class FrameListenerTest
 {
@@ -141,7 +140,8 @@ public class FrameListenerTest
         @Override
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
-            frameEvents.offer(String.format("FRAME[%s,fin=%b,payload=%s,len=%d]",
+            frameEvents.offer(String.format(
+                "FRAME[%s,fin=%b,payload=%s,len=%d]",
                 OpCode.name(frame.getOpCode()),
                 frame.isFin(),
                 BufferUtil.toUTF8String(frame.getPayload()),

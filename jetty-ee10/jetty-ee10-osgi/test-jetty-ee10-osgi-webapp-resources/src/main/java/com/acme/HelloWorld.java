@@ -13,16 +13,15 @@
 
 package com.acme;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.Enumeration;
-
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Enumeration;
 
 /**
  * Dump Servlet Request.
@@ -50,11 +49,12 @@ public class HelloWorld extends HttpServlet
         ServletOutputStream out = response.getOutputStream();
         out.println("<html>");
         out.println("<h1>Hello World</h1>");
-       
-        Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources("fake.properties");
+
+        Enumeration<URL> resources =
+            Thread.currentThread().getContextClassLoader().getResources("fake.properties");
 
         while (resources.hasMoreElements())
-                out.println(resources.nextElement().toString());
+            out.println(resources.nextElement().toString());
 
         out.println("</html>");
         out.flush();

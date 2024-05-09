@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -28,12 +27,14 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public class FragmentDescriptor extends WebDescriptor
 {
-    public static final String NAMELESS = "@@-NAMELESS-@@"; //prefix for nameless Fragments
+    public static final String NAMELESS = "@@-NAMELESS-@@"; // prefix for nameless Fragments
     protected static int _counter = 0;
 
     public enum OtherType
     {
-        None, Before, After
+        None,
+        Before,
+        After
     }
 
     protected OtherType _otherType = OtherType.None;
@@ -53,8 +54,7 @@ public class FragmentDescriptor extends WebDescriptor
     }
 
     @Override
-    public void parse(XmlParser parser)
-        throws Exception
+    public void parse(XmlParser parser) throws Exception
     {
         super.parse(parser);
         processName();
@@ -76,12 +76,12 @@ public class FragmentDescriptor extends WebDescriptor
     @Override
     public void processOrdering()
     {
-        //Process a fragment jar's web-fragment.xml<ordering> elements
+        // Process a fragment jar's web-fragment.xml<ordering> elements
         XmlParser.Node root = getRoot();
 
         XmlParser.Node ordering = root.get("ordering");
         if (ordering == null)
-            return; //No ordering for this fragment
+            return; // No ordering for this fragment
 
         _isOrdered = true;
 
@@ -91,7 +91,7 @@ public class FragmentDescriptor extends WebDescriptor
 
     public void processBefores(XmlParser.Node ordering)
     {
-        //Process the <before> elements, looking for an <others/> clause and all of the <name> clauses
+        // Process the <before> elements, looking for an <others/> clause and all of the <name> clauses
         XmlParser.Node before = ordering.get("before");
         if (before == null)
             return;
@@ -118,7 +118,7 @@ public class FragmentDescriptor extends WebDescriptor
 
     public void processAfters(XmlParser.Node ordering)
     {
-        //Process the <after> elements, look for an <others/> clause and all of the <name/> clauses
+        // Process the <after> elements, look for an <others/> clause and all of the <name/> clauses
         XmlParser.Node after = ordering.get("after");
         if (after == null)
             return;
@@ -161,6 +161,6 @@ public class FragmentDescriptor extends WebDescriptor
     @Override
     public List<String> getOrdering()
     {
-        return null; //only used for absolute-ordering in Descriptor
+        return null; // only used for absolute-ordering in Descriptor
     }
 }

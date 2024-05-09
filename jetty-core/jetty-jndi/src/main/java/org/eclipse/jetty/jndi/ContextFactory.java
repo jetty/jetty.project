@@ -23,7 +23,6 @@ import javax.naming.NameParser;
 import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
-
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -85,15 +84,11 @@ public class ContextFactory implements ObjectFactory
      * @see javax.naming.spi.ObjectFactory#getObjectInstance(java.lang.Object, javax.naming.Name, javax.naming.Context, java.util.Hashtable)
      */
     @Override
-    public Object getObjectInstance(Object obj,
-                                    Name name,
-                                    Context nameCtx,
-                                    Hashtable env)
-        throws Exception
+    public Object getObjectInstance(Object obj, Name name, Context nameCtx, Hashtable env) throws Exception
     {
         Context ctx = null;
 
-        //If the thread context classloader is set, then try its hierarchy to find a matching context
+        // If the thread context classloader is set, then try its hierarchy to find a matching context
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         ClassLoader loader = tccl;
         if (loader != null)
@@ -120,8 +115,8 @@ public class ContextFactory implements ObjectFactory
             }
         }
 
-        //If trying thread context classloader hierarchy failed, try the
-        //classloader associated with the current context
+        // If trying thread context classloader hierarchy failed, try the
+        // classloader associated with the current context
         if (ContextHandler.getCurrentContext() != null)
         {
             if (LOG.isDebugEnabled())
@@ -162,15 +157,12 @@ public class ContextFactory implements ObjectFactory
         Reference ref = (Reference)obj;
         StringRefAddr parserAddr = (StringRefAddr)ref.get("parser");
         String parserClassName = (parserAddr == null ? null : (String)parserAddr.getContent());
-        NameParser parser =
-            (NameParser)(parserClassName == null
-                ? null
-                : loader.loadClass(parserClassName).getDeclaredConstructor().newInstance());
+        NameParser parser = (NameParser)(parserClassName == null ? null :
+            loader.loadClass(parserClassName)
+                .getDeclaredConstructor()
+                .newInstance());
 
-        return new NamingContext(env,
-            name.get(0),
-            (NamingContext)parentCtx,
-            parser);
+        return new NamingContext(env, name.get(0), (NamingContext)parentCtx, parser);
     }
 
     /**
@@ -193,7 +185,8 @@ public class ContextFactory implements ObjectFactory
     {
         try (AutoLock l = __lock.lock())
         {
-            Dumpable.dumpObjects(out, indent, String.format("o.e.j.jndi.ContextFactory@%x", __contextMap.hashCode()), __contextMap);
+            Dumpable.dumpObjects(
+                out, indent, String.format("o.e.j.jndi.ContextFactory@%x", __contextMap.hashCode()), __contextMap);
         }
     }
 }

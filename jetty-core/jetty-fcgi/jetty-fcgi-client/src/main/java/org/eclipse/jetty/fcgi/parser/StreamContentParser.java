@@ -14,7 +14,6 @@
 package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +118,8 @@ public class StreamContentParser extends ContentParser
 
     private enum State
     {
-        LENGTH, CONTENT, EOF
+        LENGTH,
+        CONTENT,
+        EOF
     }
 }

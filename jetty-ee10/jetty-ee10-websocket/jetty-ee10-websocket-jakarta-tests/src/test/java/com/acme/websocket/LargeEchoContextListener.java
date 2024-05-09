@@ -28,7 +28,8 @@ public class LargeEchoContextListener implements ServletContextListener
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
+        ServerContainer container =
+            (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
         container.setDefaultMaxTextMessageBufferSize(128 * 1024);
     }
 }

@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.server;
 
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -120,7 +119,8 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
             Runnable task = getConnection().onRequest(http3Stream, frame);
             if (task != null)
             {
-                ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
+                ServerHTTP3Session protocolSession =
+                    (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
                 protocolSession.offer(task, false);
             }
         }
@@ -132,7 +132,8 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
             Runnable task = getConnection().onDataAvailable(http3Stream);
             if (task != null)
             {
-                ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
+                ServerHTTP3Session protocolSession =
+                    (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
                 protocolSession.offer(task, false);
             }
         }
@@ -144,7 +145,8 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
             Runnable task = getConnection().onTrailer(http3Stream, frame);
             if (task != null)
             {
-                ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
+                ServerHTTP3Session protocolSession =
+                    (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
                 protocolSession.offer(task, false);
             }
         }
@@ -157,7 +159,8 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
             {
                 if (task != null)
                 {
-                    ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
+                    ServerHTTP3Session protocolSession =
+                        (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
                     protocolSession.offer(task, true);
                 }
                 promise.succeeded(timedOut);
@@ -171,7 +174,8 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
             Runnable task = getConnection().onFailure((HTTP3Stream)stream, failure);
             if (task != null)
             {
-                ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
+                ServerHTTP3Session protocolSession =
+                    (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
                 protocolSession.offer(task, true);
             }
         }

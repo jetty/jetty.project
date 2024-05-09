@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteArrayEndPoint;

@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee10.proxy;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import jakarta.servlet.ServletException;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,8 +27,6 @@ import java.nio.file.Path;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-
-import jakarta.servlet.ServletException;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -50,9 +52,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 {
     private SslContextFactory.Server sslContextFactory;
@@ -61,7 +60,8 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     public void prepare() throws Exception
     {
         sslContextFactory = new SslContextFactory.Server();
-        Path keyStorePath = MavenTestingUtils.getTestResourcePath("server_keystore.p12").toAbsolutePath();
+        Path keyStorePath =
+            MavenTestingUtils.getTestResourcePath("server_keystore.p12").toAbsolutePath();
         sslContextFactory.setKeyStorePath(keyStorePath.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
         server = new Server();
@@ -76,10 +76,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     public void testGETRequest() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -97,10 +94,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
             {
                 output = sslSocket.getOutputStream();
 
-                request =
-                    "GET /echo HTTP/1.1\r\n" +
-                        "Host: " + hostPort + "\r\n" +
-                        "\r\n";
+                request = "GET /echo HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -116,10 +110,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     public void testPOSTRequests() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request =
-            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
-                "Host: " + hostPort + "\r\n" +
-                "\r\n";
+        String request = "CONNECT " + hostPort + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "\r\n";
         try (Socket socket = newSocket())
         {
             OutputStream output = socket.getOutputStream();
@@ -139,12 +130,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
                 for (int i = 0; i < 10; ++i)
                 {
-                    request =
-                        "POST /echo?param=" + i + " HTTP/1.1\r\n" +
-                            "Host: " + hostPort + "\r\n" +
-                            "Content-Length: 5\r\n" +
-                            "\r\n" +
-                            "HELLO";
+                    request = "POST /echo?param=" + i + " HTTP/1.1\r\n" + "Host: " + hostPort + "\r\n" + "Content-Length: 5\r\n" + "\r\n" + "HELLO";
                     output.write(request.getBytes(StandardCharsets.UTF_8));
                     output.flush();
 
@@ -181,7 +167,8 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
         httpClient.getProxyConfiguration().addProxy(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         httpClient.start();
 
-        ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", serverConnector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .path("/echo")
             .body(new StringRequestContent("hello"))

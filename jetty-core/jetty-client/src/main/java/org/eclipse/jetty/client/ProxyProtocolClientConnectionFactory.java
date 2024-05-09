@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -57,7 +56,8 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         @Override
         protected ProxyProtocolConnection newProxyProtocolConnection(EndPoint endPoint, Map<String, Object> context)
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpDestination destination =
+                (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
             Tag tag = (Tag)destination.getOrigin().getTag();
             if (tag == null)
@@ -69,7 +69,8 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 InetSocketAddress inetRemote = remote instanceof InetSocketAddress ? (InetSocketAddress)remote : null;
                 InetAddress remoteAddress = inetRemote == null ? null : inetRemote.getAddress();
                 String family = local == null || inetLocal == null ? "UNKNOWN" : localAddress instanceof Inet4Address ? "TCP4" : "TCP6";
-                tag = new Tag(family,
+                tag = new Tag(
+                    family,
                     localAddress == null ? null : localAddress.getHostAddress(),
                     inetLocal == null ? 0 : inetLocal.getPort(),
                     remoteAddress == null ? null : remoteAddress.getHostAddress(),
@@ -120,7 +121,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
 
             /**
              * <p>Creates a Tag with the given metadata.</p>
-             * 
+             *
              * @param family the protocol family
              * @param srcIP the source IP address
              * @param srcPort the source port
@@ -175,11 +176,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 if (obj == null || getClass() != obj.getClass())
                     return false;
                 Tag that = (Tag)obj;
-                return Objects.equals(family, that.family) &&
-                    Objects.equals(srcIP, that.srcIP) &&
-                    srcPort == that.srcPort &&
-                    Objects.equals(dstIP, that.dstIP) &&
-                    dstPort == that.dstPort;
+                return Objects.equals(family, that.family) && Objects.equals(srcIP, that.srcIP) && srcPort == that.srcPort && Objects.equals(dstIP, that.dstIP) && dstPort == that.dstPort;
             }
 
             @Override
@@ -203,7 +200,8 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         @Override
         protected ProxyProtocolConnection newProxyProtocolConnection(EndPoint endPoint, Map<String, Object> context)
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpDestination destination =
+                (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
             Tag tag = (Tag)destination.getOrigin().getTag();
             if (tag == null)
@@ -215,7 +213,8 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 InetSocketAddress inetRemote = remote instanceof InetSocketAddress ? (InetSocketAddress)remote : null;
                 InetAddress remoteAddress = inetRemote == null ? null : inetRemote.getAddress();
                 Tag.Family family = local == null || inetLocal == null ? Tag.Family.UNSPEC : localAddress instanceof Inet4Address ? Tag.Family.INET4 : Tag.Family.INET6;
-                tag = new Tag(Tag.Command.PROXY,
+                tag = new Tag(
+                    Tag.Command.PROXY,
                     family,
                     Tag.Protocol.STREAM,
                     localAddress == null ? null : localAddress.getHostAddress(),
@@ -239,7 +238,8 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
             /**
              * The PROXY V2 Tag typically used to "ping" the server.
              */
-            public static final Tag LOCAL = new Tag(Command.LOCAL, Family.UNSPEC, Protocol.UNSPEC, null, 0, null, 0, null);
+            public static final Tag LOCAL =
+                new Tag(Command.LOCAL, Family.UNSPEC, Protocol.UNSPEC, null, 0, null, 0, null);
 
             private final Command command;
             private final Family family;
@@ -295,7 +295,15 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
              * @param dstPort the destination port
              * @param tlvs the TLV objects
              */
-            public Tag(Command command, Family family, Protocol protocol, String srcIP, int srcPort, String dstIP, int dstPort, List<TLV> tlvs)
+            public Tag(
+                       Command command,
+                       Family family,
+                       Protocol protocol,
+                       String srcIP,
+                       int srcPort,
+                       String dstIP,
+                       int dstPort,
+                       List<TLV> tlvs)
             {
                 this.command = command;
                 this.family = family;
@@ -361,14 +369,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 if (obj == null || getClass() != obj.getClass())
                     return false;
                 Tag that = (Tag)obj;
-                return command == that.command &&
-                    family == that.family &&
-                    protocol == that.protocol &&
-                    Objects.equals(srcIP, that.srcIP) &&
-                    srcPort == that.srcPort &&
-                    Objects.equals(dstIP, that.dstIP) &&
-                    dstPort == that.dstPort &&
-                    Objects.equals(tlvs, that.tlvs);
+                return command == that.command && family == that.family && protocol == that.protocol && Objects.equals(srcIP, that.srcIP) && srcPort == that.srcPort && Objects.equals(dstIP, that.dstIP) && dstPort == that.dstPort && Objects.equals(tlvs, that.tlvs);
             }
 
             @Override
@@ -379,17 +380,23 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
 
             public enum Command
             {
-                LOCAL, PROXY
+                LOCAL,
+                PROXY
             }
 
             public enum Family
             {
-                UNSPEC, INET4, INET6, UNIX
+                UNSPEC,
+                INET4,
+                INET6,
+                UNIX
             }
 
             public enum Protocol
             {
-                UNSPEC, STREAM, DGRAM
+                UNSPEC,
+                STREAM,
+                DGRAM
             }
 
             public static class TLV
@@ -458,7 +465,8 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         return customize(connection, context);
     }
 
-    protected abstract ProxyProtocolConnection newProxyProtocolConnection(EndPoint endPoint, Map<String, Object> context);
+    protected abstract ProxyProtocolConnection newProxyProtocolConnection(
+                                                                          EndPoint endPoint, Map<String, Object> context);
 
     protected abstract static class ProxyProtocolConnection extends AbstractConnection implements Callback
     {
@@ -467,7 +475,8 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         private final ClientConnectionFactory factory;
         private final Map<String, Object> context;
 
-        private ProxyProtocolConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory factory, Map<String, Object> context)
+        private ProxyProtocolConnection(
+                                        EndPoint endPoint, Executor executor, ClientConnectionFactory factory, Map<String, Object> context)
         {
             super(endPoint, executor);
             this.factory = factory;
@@ -524,7 +533,12 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
     {
         private final V1.Tag tag;
 
-        public ProxyProtocolConnectionV1(EndPoint endPoint, Executor executor, ClientConnectionFactory factory, Map<String, Object> context, V1.Tag tag)
+        public ProxyProtocolConnectionV1(
+                                         EndPoint endPoint,
+                                         Executor executor,
+                                         ClientConnectionFactory factory,
+                                         Map<String, Object> context,
+                                         V1.Tag tag)
         {
             super(endPoint, executor, factory, context);
             this.tag = tag;
@@ -587,7 +601,12 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
 
         private final V2.Tag tag;
 
-        public ProxyProtocolConnectionV2(EndPoint endPoint, Executor executor, ClientConnectionFactory factory, Map<String, Object> context, V2.Tag tag)
+        public ProxyProtocolConnectionV2(
+                                         EndPoint endPoint,
+                                         Executor executor,
+                                         ClientConnectionFactory factory,
+                                         Map<String, Object> context,
+                                         V2.Tag tag)
         {
             super(endPoint, executor, factory, context);
             this.tag = tag;
@@ -604,9 +623,10 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 capacity += 2; // length
                 capacity += 216; // max address length
                 List<V2.Tag.TLV> tlvs = tag.getTLVs();
-                int vectorsLength = tlvs == null ? 0 : tlvs.stream()
-                    .mapToInt(tlv -> 1 + 2 + tlv.getValue().length)
-                    .sum();
+                int vectorsLength = tlvs == null ? 0 :
+                    tlvs.stream()
+                        .mapToInt(tlv -> 1 + 2 + tlv.getValue().length)
+                        .sum();
                 capacity += vectorsLength;
                 ByteBuffer buffer = ByteBuffer.allocateDirect(capacity);
                 buffer.put(MAGIC);

@@ -13,13 +13,18 @@
 
 package org.eclipse.jetty.ee10.test;
 
+import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
-
 import org.eclipse.jetty.ee10.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.ee10.test.support.rawhttp.HttpSocketImpl;
 import org.eclipse.jetty.ee10.test.support.rawhttp.HttpTesting;
@@ -32,12 +37,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests against the facilities within the TestSuite to ensure that the various

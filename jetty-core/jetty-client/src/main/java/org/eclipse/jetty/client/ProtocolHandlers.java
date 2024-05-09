@@ -16,7 +16,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.eclipse.jetty.util.component.Dumpable;
 
 /**

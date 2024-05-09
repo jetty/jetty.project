@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -117,19 +116,13 @@ public class JDBCLoginService extends AbstractLoginService
         final String userRoleTableUserKey = properties.getProperty("userroletableuserkey");
         final String userRoleTableRoleKey = properties.getProperty("userroletablerolekey");
 
-        if (_jdbcDriver == null || _jdbcDriver.isEmpty() ||
-            _url == null || _url.isEmpty() ||
-            _userName == null || _userName.isEmpty() ||
-            _password == null)
+        if (_jdbcDriver == null || _jdbcDriver.isEmpty() || _url == null || _url.isEmpty() || _userName == null || _userName.isEmpty() || _password == null)
         {
             LOG.warn("UserRealm {} has not been properly configured", getName());
         }
 
         _userSql = "select " + _userTableKey + "," + _userTablePasswordField + " from " + userTable + " where " + userTableUserField + " = ?";
-        _roleSql = "select r." + _roleTableRoleField +
-            " from " + roleTable + " r, " + userRoleTable +
-            " u where u." + userRoleTableUserKey + " = ?" +
-            " and r." + roleTableKey + " = u." + userRoleTableRoleKey;
+        _roleSql = "select r." + _roleTableRoleField + " from " + roleTable + " r, " + userRoleTable + " u where u." + userRoleTableUserKey + " = ?" + " and r." + roleTableKey + " = u." + userRoleTableRoleKey;
 
         Loader.loadClass(_jdbcDriver).getDeclaredConstructor().newInstance();
         super.doStart();
@@ -155,8 +148,7 @@ public class JDBCLoginService extends AbstractLoginService
     /**
      * Connect to database with parameters setup by loadConfig()
      */
-    public Connection connectDatabase()
-        throws SQLException
+    public Connection connectDatabase() throws SQLException
     {
         return DriverManager.getConnection(_url, _userName, _password);
     }
@@ -215,7 +207,7 @@ public class JDBCLoginService extends AbstractLoginService
                 {
                     while (rs2.next())
                         roles.add(rs2.getString(_roleTableRoleField));
-                                        
+
                     return roles.stream().map(RolePrincipal::new).collect(Collectors.toList());
                 }
             }

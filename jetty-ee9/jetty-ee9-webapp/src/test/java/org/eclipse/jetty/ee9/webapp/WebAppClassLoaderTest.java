@@ -13,26 +13,6 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
-import java.io.InputStream;
-import java.lang.instrument.ClassFileTransformer;
-import java.net.URI;
-import java.net.URL;
-import java.nio.file.Path;
-import java.security.ProtectionDomain;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -44,6 +24,25 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import java.io.InputStream;
+import java.lang.instrument.ClassFileTransformer;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Path;
+import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class WebAppClassLoaderTest
 {
@@ -136,8 +135,7 @@ public class WebAppClassLoaderTest
         assertCantLoadClass("org.eclipse.jetty.ee9.webapp.Configuration");
 
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
-        assertThrows(NoSuchFieldException.class, () ->
-            clazzA.getField("FROM_PARENT"));
+        assertThrows(NoSuchFieldException.class, () -> clazzA.getField("FROM_PARENT"));
     }
 
     @Test
@@ -148,7 +146,12 @@ public class WebAppClassLoaderTest
         _loader.addTransformer(new ClassFileTransformer()
         {
             @Override
-            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
+            public byte[] transform(
+                                    ClassLoader loader,
+                                    String className,
+                                    Class<?> classBeingRedefined,
+                                    ProtectionDomain protectionDomain,
+                                    byte[] classfileBuffer)
             {
                 results.add(loader);
                 byte[] b = new byte[classfileBuffer.length];
@@ -162,7 +165,12 @@ public class WebAppClassLoaderTest
         _loader.addTransformer(new ClassFileTransformer()
         {
             @Override
-            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
+            public byte[] transform(
+                                    ClassLoader loader,
+                                    String className,
+                                    Class<?> classBeingRedefined,
+                                    ProtectionDomain protectionDomain,
+                                    byte[] classfileBuffer)
             {
                 results.add(className);
                 byte[] b = new byte[classfileBuffer.length];
@@ -182,13 +190,16 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("java.lang.String");
         assertCantLoadClass("org.eclipse.jetty.ee9.webapp.Configuration");
 
-        assertThat("Classname Results", results, contains(
-            _loader,
-            "org.acme.webapp.ClassInJarA",
-            _loader,
-            "org.acme.webapp.ClassInJarB",
-            _loader,
-            "org.acme.other.ClassInClassesC"));
+        assertThat(
+            "Classname Results",
+            results,
+            contains(
+                _loader,
+                "org.acme.webapp.ClassInJarA",
+                _loader,
+                "org.acme.webapp.ClassInJarB",
+                _loader,
+                "org.acme.other.ClassInClassesC"));
     }
 
     @Test
@@ -197,7 +208,12 @@ public class WebAppClassLoaderTest
         _loader.addTransformer(new ClassFileTransformer()
         {
             @Override
-            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
+            public byte[] transform(
+                                    ClassLoader loader,
+                                    String className,
+                                    Class<?> classBeingRedefined,
+                                    ProtectionDomain protectionDomain,
+                                    byte[] classfileBuffer)
             {
                 return null;
             }
@@ -305,8 +321,12 @@ public class WebAppClassLoaderTest
         List<URL> resources;
 
         // Expected Locations
-        URL webappWebInfLibAcme = new URI("jar:" + _testWebappDir.resolve("WEB-INF/lib/acme.jar").toUri().toASCIIString() + "!/org/acme/resource.txt").toURL();
-        URL webappWebInfClasses = _testWebappDir.resolve("WEB-INF/classes/org/acme/resource.txt").toUri().toURL();
+        URL webappWebInfLibAcme = new URI("jar:" + _testWebappDir.resolve("WEB-INF/lib/acme.jar").toUri().toASCIIString() + "!/org/acme/resource.txt")
+            .toURL();
+        URL webappWebInfClasses = _testWebappDir
+            .resolve("WEB-INF/classes/org/acme/resource.txt")
+            .toUri()
+            .toURL();
         // (from parent classloader)
         URL targetTestClasses = this.getClass().getClassLoader().getResource("org/acme/resource.txt");
 
@@ -331,11 +351,11 @@ public class WebAppClassLoaderTest
 
         assertThat("Resources Found (Parent Loader Priority == true)", resources, ordered(expected));
 
-//        dump(resources);
-//        assertEquals(3,resources.size());
-//        assertEquals(0,resources.get(0).toString().indexOf("file:"));
-//        assertEquals(0,resources.get(1).toString().indexOf("jar:file:"));
-//        assertEquals(-1,resources.get(2).toString().indexOf("test-classes"));
+        //        dump(resources);
+        //        assertEquals(3,resources.size());
+        //        assertEquals(0,resources.get(0).toString().indexOf("file:"));
+        //        assertEquals(0,resources.get(1).toString().indexOf("jar:file:"));
+        //        assertEquals(-1,resources.get(2).toString().indexOf("test-classes"));
 
         String[] oldServC = _context.getServerClasses();
         String[] newServC = new String[oldServC.length + 1];
@@ -351,12 +371,15 @@ public class WebAppClassLoaderTest
         expected.add(webappWebInfLibAcme);
         expected.add(webappWebInfClasses);
 
-        assertThat("Resources Found (Parent Loader Priority == true) (with serverClasses filtering)", resources, ordered(expected));
+        assertThat(
+            "Resources Found (Parent Loader Priority == true) (with serverClasses filtering)",
+            resources,
+            ordered(expected));
 
-//        dump(resources);
-//        assertEquals(2,resources.size());
-//        assertEquals(0,resources.get(0).toString().indexOf("jar:file:"));
-//        assertEquals(0,resources.get(1).toString().indexOf("file:"));
+        //        dump(resources);
+        //        assertEquals(2,resources.size());
+        //        assertEquals(0,resources.get(0).toString().indexOf("jar:file:"));
+        //        assertEquals(0,resources.get(1).toString().indexOf("file:"));
 
         _context.setServerClassMatcher(new ClassMatcher(oldServC));
         String[] oldSysC = _context.getSystemClasses();
@@ -372,7 +395,10 @@ public class WebAppClassLoaderTest
         expected.clear();
         expected.add(targetTestClasses);
 
-        assertThat("Resources Found (Parent Loader Priority == true) (with systemClasses filtering)", resources, ordered(expected));
+        assertThat(
+            "Resources Found (Parent Loader Priority == true) (with systemClasses filtering)",
+            resources,
+            ordered(expected));
     }
 
     @Test

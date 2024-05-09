@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
@@ -22,10 +26,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class InvalidURIRuleTest extends AbstractRuleTest
 {
@@ -54,7 +54,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         String request = """
             GET /valid/uri.html HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -71,7 +71,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         String request = """
             GET /invalid%0c/uri.html HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -89,7 +89,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         String request = """
             GET /%01/ HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -107,7 +107,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         String request = """
             GET /jsp/bean1.jsp%00 HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -125,7 +125,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         String request = """
             GET /jsp/bean1.jsp%01 HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -142,7 +142,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         String request = """
             GET /jsp/bean1.jsp\000 HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -160,7 +160,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         String request = """
             GET /jsp/bean1.jsp\001 HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -175,11 +175,12 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         rule.setCode(HttpStatus.NOT_ACCEPTABLE_406);
         start(rule);
 
-        String request = """
-            GET /jsp/shamrock-%00%E2%98%98.jsp HTTP/1.1
-            Host: localhost
-                        
-            """;
+        String request =
+            """
+                GET /jsp/shamrock-%00%E2%98%98.jsp HTTP/1.1
+                Host: localhost
+
+                """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         // The rule is not invoked because byte NULL is rejected at parsing level.
@@ -193,11 +194,12 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         rule.setCode(HttpStatus.NOT_ACCEPTABLE_406);
         start(rule);
 
-        String request = """
-            GET /jsp/shamrock-%0F%E2%98%98.jsp HTTP/1.1
-            Host: localhost
-                        
-            """;
+        String request =
+            """
+                GET /jsp/shamrock-%0F%E2%98%98.jsp HTTP/1.1
+                Host: localhost
+
+                """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.NOT_ACCEPTABLE_406, response.getStatus());
@@ -210,11 +212,12 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         rule.setCode(HttpStatus.NOT_ACCEPTABLE_406);
         start(rule);
 
-        String request = """
-            GET /jsp/shamrock-%E2%98%98.jsp HTTP/1.1
-            Host: localhost
-                        
-            """;
+        String request =
+            """
+                GET /jsp/shamrock-%E2%98%98.jsp HTTP/1.1
+                Host: localhost
+
+                """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -227,11 +230,12 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         rule.setCode(HttpStatus.NOT_ACCEPTABLE_406);
         start(rule);
 
-        String request = """
-            GET /jsp/shamrock-%xx%zz.jsp HTTP/1.1
-            Host: localhost
-                        
-            """;
+        String request =
+            """
+                GET /jsp/shamrock-%xx%zz.jsp HTTP/1.1
+                Host: localhost
+
+                """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         // The rule is not invoked because the UTF-8 sequence is invalid.
@@ -241,17 +245,20 @@ public class InvalidURIRuleTest extends AbstractRuleTest
     @Test
     public void testInvalidUTF8() throws Exception
     {
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+        _connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
             .setUriCompliance(UriCompliance.RFC3986.with("Bad UTF8", UriCompliance.Violation.BAD_UTF8_ENCODING));
         InvalidURIRule rule = new InvalidURIRule();
         rule.setCode(HttpStatus.NOT_ACCEPTABLE_406);
         start(rule);
 
-        String request = """
-            GET /jsp/shamrock-%A0%A1.jsp HTTP/1.1
-            Host: localhost
-                        
-            """;
+        String request =
+            """
+                GET /jsp/shamrock-%A0%A1.jsp HTTP/1.1
+                Host: localhost
+
+                """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.NOT_ACCEPTABLE_406, response.getStatus());
@@ -260,7 +267,9 @@ public class InvalidURIRuleTest extends AbstractRuleTest
     @Test
     public void testIncompleteUTF8() throws Exception
     {
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+        _connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
             .setUriCompliance(UriCompliance.RFC3986.with("Bad UTF8", UriCompliance.Violation.BAD_UTF8_ENCODING));
         InvalidURIRule rule = new InvalidURIRule();
         rule.setCode(HttpStatus.NOT_ACCEPTABLE_406);
@@ -269,7 +278,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
         String request = """
             GET /foo%CE%BA%E1 HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));

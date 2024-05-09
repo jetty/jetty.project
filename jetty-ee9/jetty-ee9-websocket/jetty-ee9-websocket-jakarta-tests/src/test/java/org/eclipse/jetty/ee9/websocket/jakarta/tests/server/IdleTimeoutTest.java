@@ -13,14 +13,19 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
-import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.acme.websocket.IdleTimeoutContextListener;
 import com.acme.websocket.IdleTimeoutOnOpenEndpoint;
 import com.acme.websocket.IdleTimeoutOnOpenSocket;
+import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -31,12 +36,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class IdleTimeoutTest
 {
@@ -73,7 +72,8 @@ public class IdleTimeoutTest
             // wait 1 second to allow timeout to fire off
             TimeUnit.SECONDS.sleep(1);
 
-            IOException error = assertThrows(IOException.class,
+            IOException error = assertThrows(
+                IOException.class,
                 () -> session.sendFrames(new Frame(OpCode.TEXT).setPayload("You shouldn't be there")));
             assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
 

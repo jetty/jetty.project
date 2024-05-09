@@ -14,7 +14,6 @@
 package org.eclipse.jetty.docs.programming;
 
 import java.util.concurrent.Executors;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 

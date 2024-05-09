@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Stream;
@@ -48,7 +47,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private RetainableByteBuffer inputBuffer;
     private boolean remotelyClosed;
 
-    public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser)
+    public HTTP3StreamConnection(
+                                 QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
@@ -294,7 +294,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 if (inputBuffer.isRetained())
                 {
                     inputBuffer.release();
-                    RetainableByteBuffer newBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+                    RetainableByteBuffer newBuffer =
+                        bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
                     if (LOG.isDebugEnabled())
                         LOG.debug("reacquired {} for retained {}", newBuffer, inputBuffer);
                     inputBuffer = newBuffer;

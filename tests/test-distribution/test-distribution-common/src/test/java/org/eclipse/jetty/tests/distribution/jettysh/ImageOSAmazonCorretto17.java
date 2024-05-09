@@ -24,27 +24,20 @@ public class ImageOSAmazonCorretto17 extends ImageOS
 {
     public ImageOSAmazonCorretto17()
     {
-        super("amazoncorretto-jdk17-jetty12",
-            builder ->
-                builder
-                    .from("amazoncorretto:17")
-                    .run("yum update -y ; " +
-                        "yum install -y curl tar gzip vim shadow-utils net-tools")
-                    .env("TEST_DIR", "/var/test")
-                    .env("JETTY_HOME", "$TEST_DIR/jetty-home")
-                    .env("JETTY_BASE", "$TEST_DIR/jetty-base")
-                    .env("PATH", "$PATH:${JETTY_HOME}/bin/")
-                    .user("root")
-                    // Configure /etc/default/jetty
-                    .run("echo \"JETTY_HOME=${JETTY_HOME}\" > /etc/default/jetty ; " +
-                        "echo \"JETTY_BASE=${JETTY_BASE}\" >> /etc/default/jetty ; " +
-                        "echo \"JETTY_RUN=${JETTY_BASE}\" >> /etc/default/jetty ")
-                    // setup Jetty Home
-                    .copy("/opt/jetty/", "${JETTY_HOME}/")
-                    .env("PATH", "$PATH:${JETTY_HOME}/bin/")
-                    .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh")
-                    .build()
-        );
+        super("amazoncorretto-jdk17-jetty12", builder -> builder.from("amazoncorretto:17")
+            .run("yum update -y ; " + "yum install -y curl tar gzip vim shadow-utils net-tools")
+            .env("TEST_DIR", "/var/test")
+            .env("JETTY_HOME", "$TEST_DIR/jetty-home")
+            .env("JETTY_BASE", "$TEST_DIR/jetty-base")
+            .env("PATH", "$PATH:${JETTY_HOME}/bin/")
+            .user("root")
+            // Configure /etc/default/jetty
+            .run("echo \"JETTY_HOME=${JETTY_HOME}\" > /etc/default/jetty ; " + "echo \"JETTY_BASE=${JETTY_BASE}\" >> /etc/default/jetty ; " + "echo \"JETTY_RUN=${JETTY_BASE}\" >> /etc/default/jetty ")
+            // setup Jetty Home
+            .copy("/opt/jetty/", "${JETTY_HOME}/")
+            .env("PATH", "$PATH:${JETTY_HOME}/bin/")
+            .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh")
+            .build());
         withFileFromFile("/opt/jetty/", getJettyHomeDir());
     }
 }

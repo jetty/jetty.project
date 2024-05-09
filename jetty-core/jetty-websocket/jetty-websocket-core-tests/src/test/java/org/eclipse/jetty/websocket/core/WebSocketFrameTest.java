@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.nio.ByteBuffer;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WebSocketFrameTest
 {
@@ -120,7 +119,8 @@ public class WebSocketFrameTest
             frame.setPayload(StringUtil.fromHexString("0000FFFF000FFFF0".substring(0, i * 2)));
             frame.setMask(StringUtil.fromHexString("FF00FF00"));
             frame.demask();
-            assertEquals("Ff0000FfFf0f00F0".substring(0, i * 2), BufferUtil.toHexString(frame.getPayload()), "len=" + i);
+            assertEquals(
+                "Ff0000FfFf0f00F0".substring(0, i * 2), BufferUtil.toHexString(frame.getPayload()), "len=" + i);
         }
     }
 }

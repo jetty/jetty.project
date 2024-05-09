@@ -13,14 +13,6 @@
 
 package org.eclipse.jetty.http.pathmap;
 
-import java.util.Map;
-import java.util.stream.Stream;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,6 +25,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 // @checkstyle-disable-check :  AvoidEscapedUnicodeCharactersCheck
 public class PathMappingsTest
@@ -398,8 +397,7 @@ public class PathMappingsTest
             Arguments.of("/a.b.c.pop", null),
             Arguments.of("/a.foo.c.pop", null),
             Arguments.of("/a.foop", null),
-            Arguments.of("/a%2Efoo", null)
-            );
+            Arguments.of("/a%2Efoo", null));
     }
 
     @ParameterizedTest
@@ -585,21 +583,16 @@ public class PathMappingsTest
         @SuppressWarnings("redundant")
         Map<PathSpec, String> map = p;
 
-        assertThat(map.keySet(), containsInAnyOrder(
-            new ServletPathSpec(""),
-            new ServletPathSpec("/"),
-            new ServletPathSpec("/exact"),
-            new ServletPathSpec("/a/*"),
-            new ServletPathSpec("*.do")
-            ));
+        assertThat(
+            map.keySet(),
+            containsInAnyOrder(
+                new ServletPathSpec(""),
+                new ServletPathSpec("/"),
+                new ServletPathSpec("/exact"),
+                new ServletPathSpec("/a/*"),
+                new ServletPathSpec("*.do")));
 
-        assertThat(map.values(), containsInAnyOrder(
-            "resourceR",
-            "resourceD",
-            "resourceE",
-            "resourceP",
-            "resourceS"
-            ));
+        assertThat(map.values(), containsInAnyOrder("resourceR", "resourceD", "resourceE", "resourceP", "resourceS"));
     }
 
     @Test
@@ -613,14 +606,10 @@ public class PathMappingsTest
         p.put("/", "default");
         p.put("/foo/bar/*", "foobar");
 
-        assertThat(p.getMatches("/foo/bar/bob/some.thing.txt").stream().map(MappedResource::getResource).toList(),
-            contains(
-                "foobarbob",
-                "foobar",
-                "foo",
-                "thingtxt",
-                "txt",
-                "default"
-            ));
+        assertThat(
+            p.getMatches("/foo/bar/bob/some.thing.txt").stream()
+                .map(MappedResource::getResource)
+                .toList(),
+            contains("foobarbob", "foobar", "foo", "thingtxt", "txt", "default"));
     }
 }

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -61,7 +60,8 @@ public class MountedPathResource extends PathResource
     public String getName()
     {
         Path abs = getPath();
-        // If a "jar:file:" based path, we should normalize here, as the toAbsolutePath() does not resolve "/../" style segments in all cases
+        // If a "jar:file:" based path, we should normalize here, as the toAbsolutePath() does not resolve "/../" style
+        // segments in all cases
         if ("jar".equalsIgnoreCase(abs.toUri().getScheme()))
             abs = abs.normalize();
         // Get the absolute path

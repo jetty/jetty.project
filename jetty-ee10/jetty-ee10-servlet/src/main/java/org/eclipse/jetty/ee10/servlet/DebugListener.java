@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.util.Locale;
-
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.DispatcherType;
@@ -28,6 +23,10 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestEvent;
 import jakarta.servlet.ServletRequestListener;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.Locale;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletContextScopeListener;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -54,7 +53,8 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
     private static final Logger LOG = LoggerFactory.getLogger(DebugListener.class);
     private static final DateCache __date = new DateCache("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
 
-    private final String _attr = String.format("__R%s@%x", this.getClass().getSimpleName(), System.identityHashCode(this));
+    private final String _attr =
+        String.format("__R%s@%x", this.getClass().getSimpleName(), System.identityHashCode(this));
 
     private final PrintStream _out;
     private boolean _renameThread;
@@ -66,12 +66,19 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         this(null, false, false, false);
     }
 
-    public DebugListener(@Name("renameThread") boolean renameThread, @Name("showHeaders") boolean showHeaders, @Name("dumpContext") boolean dumpContext)
+    public DebugListener(
+                         @Name("renameThread") boolean renameThread,
+                         @Name("showHeaders") boolean showHeaders,
+                         @Name("dumpContext") boolean dumpContext)
     {
         this(null, renameThread, showHeaders, dumpContext);
     }
 
-    public DebugListener(@Name("outputStream") OutputStream out, @Name("renameThread") boolean renameThread, @Name("showHeaders") boolean showHeaders, @Name("dumpContext") boolean dumpContext)
+    public DebugListener(
+                         @Name("outputStream") OutputStream out,
+                         @Name("renameThread") boolean renameThread,
+                         @Name("showHeaders") boolean showHeaders,
+                         @Name("dumpContext") boolean dumpContext)
     {
         _out = out == null ? null : new PrintStream(out);
         _renameThread = renameThread;
@@ -212,7 +219,9 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         {
             String cname = findContextName(((AsyncContextEvent)event).getServletContext());
             String rname = findRequestName(event.getAsyncContext().getRequest());
-            log("!! ctx=%s r=%s onError %s %s", cname, rname, event.getThrowable(), ((AsyncContextEvent)event).getServletRequestState());
+            log(
+                "!! ctx=%s r=%s onError %s %s",
+                cname, rname, event.getThrowable(), ((AsyncContextEvent)event).getServletRequestState());
         }
 
         @Override
@@ -222,11 +231,14 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             String cname = findContextName(ace.getServletContext());
             String rname = findRequestName(ace.getAsyncContext().getRequest());
 
-            ServletContextRequest request = ServletContextRequest.getServletContextRequest(ace.getAsyncContext().getRequest());
+            ServletContextRequest request = ServletContextRequest.getServletContextRequest(
+                ace.getAsyncContext().getRequest());
             Response response = request.getServletContextResponse();
             String headers = _showHeaders ? ("\n" + response.getHeaders().toString()) : "";
 
-            log("!  ctx=%s r=%s onComplete %s %d%s", cname, rname, ace.getServletRequestState(), response.getStatus(), headers);
+            log(
+                "!  ctx=%s r=%s onComplete %s %d%s",
+                cname, rname, ace.getServletRequestState(), response.getStatus(), headers);
         }
     };
 
@@ -247,7 +259,9 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                 StringBuffer url = r.getRequestURL();
                 if (r.getQueryString() != null)
                     url.append('?').append(r.getQueryString());
-                log(">> %s ctx=%s r=%s %s %s %s %s %s%s", d,
+                log(
+                    ">> %s ctx=%s r=%s %s %s %s %s %s%s",
+                    d,
                     cname,
                     rname,
                     d,
@@ -278,8 +292,12 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             else
             {
                 ServletContextRequest request = ServletContextRequest.getServletContextRequest(r);
-                String headers = _showHeaders ? ("\n" + request.getServletContextResponse().getHeaders().toString()) : "";
-                log("<< %s ctx=%s r=%s async=false %d%s", d, cname, rname, request.getServletContextResponse().getStatus(), headers);
+                String headers = _showHeaders ? ("\n" + request.getServletContextResponse()
+                    .getHeaders()
+                    .toString()) : "";
+                log(
+                    "<< %s ctx=%s r=%s async=false %d%s",
+                    d, cname, rname, request.getServletContextResponse().getStatus(), headers);
             }
         }
     };
@@ -321,7 +339,8 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                 {
                     Thread thread = Thread.currentThread();
                     if (thread.getName().endsWith(rname))
-                        thread.setName(thread.getName().substring(0, thread.getName().length() - rname.length() - 1));
+                        thread.setName(
+                            thread.getName().substring(0, thread.getName().length() - rname.length() - 1));
                 }
             }
         }

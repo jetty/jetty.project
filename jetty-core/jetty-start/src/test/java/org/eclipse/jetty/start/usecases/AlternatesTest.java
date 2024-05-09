@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -20,14 +25,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
 
 public class AlternatesTest extends AbstractUseCase
 {
@@ -40,33 +39,20 @@ public class AlternatesTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("modules"));
         FS.touch(baseDir.resolve("etc/d.xml"));
         FS.touch(baseDir.resolve("etc/ndb.xml"));
-        Files.write(baseDir.resolve("modules/alternate.mod"),
-            Arrays.asList(
-                "[provides]",
-                "default",
-                "[ini]",
-                "default.option=alternate"
-            ),
+        Files.write(
+            baseDir.resolve("modules/alternate.mod"),
+            Arrays.asList("[provides]", "default", "[ini]", "default.option=alternate"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/default.mod"),
-            Arrays.asList(
-                "[xml]",
-                "etc/d.xml",
-                "[ini]",
-                "default.option=default"
-            ),
+        Files.write(
+            baseDir.resolve("modules/default.mod"),
+            Arrays.asList("[xml]", "etc/d.xml", "[ini]", "default.option=default"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/noDftOptionA.mod"),
-            Arrays.asList(
-                "[provides]",
-                "noDft",
-                "[optional]",
-                "default",
-                "[ini]",
-                "noDft.option=A"
-            ),
+        Files.write(
+            baseDir.resolve("modules/noDftOptionA.mod"),
+            Arrays.asList("[provides]", "noDft", "[optional]", "default", "[ini]", "noDft.option=A"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/noDftOptionB.mod"),
+        Files.write(
+            baseDir.resolve("modules/noDftOptionB.mod"),
             Arrays.asList(
                 "[provides]",
                 "noDft",
@@ -75,35 +61,22 @@ public class AlternatesTest extends AbstractUseCase
                 "[xml]",
                 "etc/ndb.xml",
                 "[ini]",
-                "noDft.option=B"
-            ),
+                "noDft.option=B"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Execute Main
-        List<String> runArgs = Collections.singletonList(
-            "--modules=noDftOptionA"
-        );
+        List<String> runArgs = Collections.singletonList("--modules=noDftOptionA");
         ExecResults results = exec(runArgs, false);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml"
-        );
+        List<String> expectedXmls = Arrays.asList("${jetty.home}/etc/base.xml", "${jetty.home}/etc/main.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/base.jar", "${jetty.home}/lib/main.jar", "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 
@@ -124,33 +97,20 @@ public class AlternatesTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("modules"));
         FS.touch(baseDir.resolve("etc/d.xml"));
         FS.touch(baseDir.resolve("etc/ndb.xml"));
-        Files.write(baseDir.resolve("modules/alternate.mod"),
-            Arrays.asList(
-                "[provides]",
-                "default",
-                "[ini]",
-                "default.option=alternate"
-            ),
+        Files.write(
+            baseDir.resolve("modules/alternate.mod"),
+            Arrays.asList("[provides]", "default", "[ini]", "default.option=alternate"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/default.mod"),
-            Arrays.asList(
-                "[xml]",
-                "etc/d.xml",
-                "[ini]",
-                "default.option=default"
-            ),
+        Files.write(
+            baseDir.resolve("modules/default.mod"),
+            Arrays.asList("[xml]", "etc/d.xml", "[ini]", "default.option=default"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/noDftOptionA.mod"),
-            Arrays.asList(
-                "[provides]",
-                "noDft",
-                "[optional]",
-                "default",
-                "[ini]",
-                "noDft.option=A"
-            ),
+        Files.write(
+            baseDir.resolve("modules/noDftOptionA.mod"),
+            Arrays.asList("[provides]", "noDft", "[optional]", "default", "[ini]", "noDft.option=A"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/noDftOptionB.mod"),
+        Files.write(
+            baseDir.resolve("modules/noDftOptionB.mod"),
             Arrays.asList(
                 "[provides]",
                 "noDft",
@@ -159,19 +119,12 @@ public class AlternatesTest extends AbstractUseCase
                 "[xml]",
                 "etc/ndb.xml",
                 "[ini]",
-                "noDft.option=B"
-            ),
+                "noDft.option=B"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Execute Main
-        List<String> runArgs = Collections.singletonList(
-            "--modules=noDftOptionB"
-        );
+        List<String> runArgs = Collections.singletonList("--modules=noDftOptionB");
         ExecResults results = exec(runArgs, false);
 
         // === Validate Resulting XMLs
@@ -179,17 +132,13 @@ public class AlternatesTest extends AbstractUseCase
             "${jetty.home}/etc/base.xml",
             "${jetty.home}/etc/main.xml",
             "${jetty.base}/etc/d.xml",
-            "${jetty.base}/etc/ndb.xml"
-        );
+            "${jetty.base}/etc/ndb.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/base.jar", "${jetty.home}/lib/main.jar", "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 
@@ -211,33 +160,20 @@ public class AlternatesTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("modules"));
         FS.touch(baseDir.resolve("etc/d.xml"));
         FS.touch(baseDir.resolve("etc/ndb.xml"));
-        Files.write(baseDir.resolve("modules/alternate.mod"),
-            Arrays.asList(
-                "[provides]",
-                "default",
-                "[ini]",
-                "default.option=alternate"
-            ),
+        Files.write(
+            baseDir.resolve("modules/alternate.mod"),
+            Arrays.asList("[provides]", "default", "[ini]", "default.option=alternate"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/default.mod"),
-            Arrays.asList(
-                "[xml]",
-                "etc/d.xml",
-                "[ini]",
-                "default.option=default"
-            ),
+        Files.write(
+            baseDir.resolve("modules/default.mod"),
+            Arrays.asList("[xml]", "etc/d.xml", "[ini]", "default.option=default"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/noDftOptionA.mod"),
-            Arrays.asList(
-                "[provides]",
-                "noDft",
-                "[optional]",
-                "default",
-                "[ini]",
-                "noDft.option=A"
-            ),
+        Files.write(
+            baseDir.resolve("modules/noDftOptionA.mod"),
+            Arrays.asList("[provides]", "noDft", "[optional]", "default", "[ini]", "noDft.option=A"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/noDftOptionB.mod"),
+        Files.write(
+            baseDir.resolve("modules/noDftOptionB.mod"),
             Arrays.asList(
                 "[provides]",
                 "noDft",
@@ -246,36 +182,23 @@ public class AlternatesTest extends AbstractUseCase
                 "[xml]",
                 "etc/ndb.xml",
                 "[ini]",
-                "noDft.option=B"
-            ),
+                "noDft.option=B"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Execute Main
-        List<String> runArgs = Collections.singletonList(
-            "--modules=alternate,noDftOptionB"
-        );
+        List<String> runArgs = Collections.singletonList("--modules=alternate,noDftOptionB");
         ExecResults results = exec(runArgs, false);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml",
-            "${jetty.base}/etc/ndb.xml"
-        );
+        List<String> expectedXmls =
+            Arrays.asList("${jetty.home}/etc/base.xml", "${jetty.home}/etc/main.xml", "${jetty.base}/etc/ndb.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/base.jar", "${jetty.home}/lib/main.jar", "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 
@@ -297,33 +220,20 @@ public class AlternatesTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("modules"));
         FS.touch(baseDir.resolve("etc/d.xml"));
         FS.touch(baseDir.resolve("etc/ndb.xml"));
-        Files.write(baseDir.resolve("modules/alternate.mod"),
-            Arrays.asList(
-                "[provides]",
-                "default",
-                "[ini]",
-                "default.option=alternate"
-            ),
+        Files.write(
+            baseDir.resolve("modules/alternate.mod"),
+            Arrays.asList("[provides]", "default", "[ini]", "default.option=alternate"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/default.mod"),
-            Arrays.asList(
-                "[xml]",
-                "etc/d.xml",
-                "[ini]",
-                "default.option=default"
-            ),
+        Files.write(
+            baseDir.resolve("modules/default.mod"),
+            Arrays.asList("[xml]", "etc/d.xml", "[ini]", "default.option=default"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/noDftOptionA.mod"),
-            Arrays.asList(
-                "[provides]",
-                "noDft",
-                "[optional]",
-                "default",
-                "[ini]",
-                "noDft.option=A"
-            ),
+        Files.write(
+            baseDir.resolve("modules/noDftOptionA.mod"),
+            Arrays.asList("[provides]", "noDft", "[optional]", "default", "[ini]", "noDft.option=A"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/noDftOptionB.mod"),
+        Files.write(
+            baseDir.resolve("modules/noDftOptionB.mod"),
             Arrays.asList(
                 "[provides]",
                 "noDft",
@@ -332,19 +242,12 @@ public class AlternatesTest extends AbstractUseCase
                 "[xml]",
                 "etc/ndb.xml",
                 "[ini]",
-                "noDft.option=B"
-            ),
+                "noDft.option=B"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Execute Main
-        List<String> runArgs = Collections.singletonList(
-            "--modules=alternate,default"
-        );
+        List<String> runArgs = Collections.singletonList("--modules=alternate,default");
         ExecResults results = exec(runArgs, false);
 
         // === Check Exceptions
@@ -361,33 +264,20 @@ public class AlternatesTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("modules"));
         FS.touch(baseDir.resolve("etc/d.xml"));
         FS.touch(baseDir.resolve("etc/ndb.xml"));
-        Files.write(baseDir.resolve("modules/alternate.mod"),
-            Arrays.asList(
-                "[provides]",
-                "default",
-                "[ini]",
-                "default.option=alternate"
-            ),
+        Files.write(
+            baseDir.resolve("modules/alternate.mod"),
+            Arrays.asList("[provides]", "default", "[ini]", "default.option=alternate"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/default.mod"),
-            Arrays.asList(
-                "[xml]",
-                "etc/d.xml",
-                "[ini]",
-                "default.option=default"
-            ),
+        Files.write(
+            baseDir.resolve("modules/default.mod"),
+            Arrays.asList("[xml]", "etc/d.xml", "[ini]", "default.option=default"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/noDftOptionA.mod"),
-            Arrays.asList(
-                "[provides]",
-                "noDft",
-                "[optional]",
-                "default",
-                "[ini]",
-                "noDft.option=A"
-            ),
+        Files.write(
+            baseDir.resolve("modules/noDftOptionA.mod"),
+            Arrays.asList("[provides]", "noDft", "[optional]", "default", "[ini]", "noDft.option=A"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/noDftOptionB.mod"),
+        Files.write(
+            baseDir.resolve("modules/noDftOptionB.mod"),
             Arrays.asList(
                 "[provides]",
                 "noDft",
@@ -396,43 +286,27 @@ public class AlternatesTest extends AbstractUseCase
                 "[xml]",
                 "etc/ndb.xml",
                 "[ini]",
-                "noDft.option=B"
-            ),
+                "noDft.option=B"),
             StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.write(baseDir.resolve("start.ini"), Collections.singletonList("--modules=main"), StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
-            "--testing-mode",
-            "--add-modules=noDftOptionB"
-        );
+        List<String> prepareArgs = Arrays.asList("--testing-mode", "--add-modules=noDftOptionB");
         exec(prepareArgs, true);
 
         // === Execute Main
-        List<String> runArgs = Collections.singletonList(
-            "--modules=alternate"
-        );
+        List<String> runArgs = Collections.singletonList("--modules=alternate");
         ExecResults results = exec(runArgs, false);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml",
-            "${jetty.base}/etc/ndb.xml"
-        );
+        List<String> expectedXmls =
+            Arrays.asList("${jetty.home}/etc/base.xml", "${jetty.home}/etc/main.xml", "${jetty.base}/etc/ndb.xml");
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
-        );
+            "${jetty.home}/lib/base.jar", "${jetty.home}/lib/main.jar", "${jetty.home}/lib/other.jar");
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
 

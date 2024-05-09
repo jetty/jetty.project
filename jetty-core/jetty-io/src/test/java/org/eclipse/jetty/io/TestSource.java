@@ -17,7 +17,6 @@ import java.io.Closeable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
 import org.eclipse.jetty.io.content.ChunksContentSource;
 
 public class TestSource extends ChunksContentSource implements Closeable

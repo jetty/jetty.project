@@ -18,7 +18,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -159,7 +158,8 @@ public class ClientGenerator extends Generator
         return length > 127 ? 4 : 1;
     }
 
-    public void generateRequestContent(ByteBufferPool.Accumulator accumulator, int request, ByteBuffer content, boolean lastContent)
+    public void generateRequestContent(
+                                       ByteBufferPool.Accumulator accumulator, int request, ByteBuffer content, boolean lastContent)
     {
         generateContent(accumulator, request, content, lastContent, FCGI.FrameType.STDIN);
     }

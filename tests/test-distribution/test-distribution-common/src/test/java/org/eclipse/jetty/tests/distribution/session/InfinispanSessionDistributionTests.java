@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Properties;
-
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.util.IO;
 import org.infinispan.client.hotrod.RemoteCacheManager;
@@ -46,7 +45,8 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InfinispanSessionDistributionTests.class);
-    private static final Logger INFINISPAN_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.infinispan");
+    private static final Logger INFINISPAN_LOG =
+        LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.infinispan");
 
     @SuppressWarnings("rawtypes")
     private GenericContainer<?> infinispan;
@@ -58,18 +58,16 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
     public void startExternalSessionStorage() throws Exception
     {
         String infinispanVersion = System.getProperty("infinispan.docker.image.version", "15.0.0.CR1-1");
-        infinispan =
-                new GenericContainer<>(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
-                        ":" + infinispanVersion)
-                        .withEnv("USER", "theuser")
-                        .withEnv("PASS", "foobar")
-                        .withEnv("MGMT_USER", "admin")
-                        .withEnv("MGMT_PASS", "admin")
-                        .withEnv("CONFIG_PATH", "/user-config/config.yaml")
-                        .waitingFor(Wait.forListeningPorts(11222))
-                        .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
-                        .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
-                        .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
+        infinispan = new GenericContainer<>(System.getProperty("infinispan.docker.image.name", "infinispan/server") + ":" + infinispanVersion)
+            .withEnv("USER", "theuser")
+            .withEnv("PASS", "foobar")
+            .withEnv("MGMT_USER", "admin")
+            .withEnv("MGMT_PASS", "admin")
+            .withEnv("CONFIG_PATH", "/user-config/config.yaml")
+            .waitingFor(Wait.forListeningPorts(11222))
+            .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
+            .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
+            .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
         infinispan.start();
         host = infinispan.getHost();
         port = infinispan.getMappedPort(11222);
@@ -97,14 +95,20 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
             properties.store(writer, null);
         }
 
-        Configuration configuration = new ConfigurationBuilder().withProperties(properties)
-                .addServer().host(host).port(port)
-                .marshaller(new ProtoStreamMarshaller())
-                .addContextInitializer(new InfinispanSerializationContextInitializer())
-                .security().authentication().saslMechanism("DIGEST-MD5")
-                .username("theuser").password("foobar")
-                .clientIntelligence(ClientIntelligence.BASIC)
-                .build();
+        Configuration configuration = new ConfigurationBuilder()
+            .withProperties(properties)
+            .addServer()
+            .host(host)
+            .port(port)
+            .marshaller(new ProtoStreamMarshaller())
+            .addContextInitializer(new InfinispanSerializationContextInitializer())
+            .security()
+            .authentication()
+            .saslMechanism("DIGEST-MD5")
+            .username("theuser")
+            .password("foobar")
+            .clientIntelligence(ClientIntelligence.BASIC)
+            .build();
 
         RemoteCacheManager remoteCacheManager = new RemoteCacheManager(configuration);
         ByteArrayOutputStream baos;
@@ -118,14 +122,14 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
         }
 
         String content = baos.toString("UTF-8");
-        remoteCacheManager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
+        remoteCacheManager
+            .administration()
+            .getOrCreateCache("___protobuf_metadata", (String)null)
+            .put("session.proto", content);
 
-        String xml = String.format("<infinispan>"  +
-            "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" +
-            "<encoding media-type=\"application/x-protostream\"/>" +
-            "</distributed-cache>" +
-            "</cache-container>" +
-            "</infinispan>", "sessions");
+        String xml = String.format(
+            "<infinispan>" + "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" + "<encoding media-type=\"application/x-protostream\"/>" + "</distributed-cache>" + "</cache-container>" + "</infinispan>",
+            "sessions");
 
         StringConfiguration xmlConfig = new StringConfiguration(xml);
         remoteCacheManager.administration().getOrCreateCache("sessions", xmlConfig);
@@ -160,7 +164,8 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
     {
         Path hotRodProperties = jettyBase.resolve("resources").resolve("hotrod-client.properties");
         Files.deleteIfExists(hotRodProperties);
-        try (BufferedWriter writer = Files.newBufferedWriter(hotRodProperties, StandardCharsets.UTF_8, StandardOpenOption.CREATE))
+        try (BufferedWriter writer =
+            Files.newBufferedWriter(hotRodProperties, StandardCharsets.UTF_8, StandardOpenOption.CREATE))
         {
             writer.write("infinispan.client.hotrod.use_auth=true");
             writer.newLine();

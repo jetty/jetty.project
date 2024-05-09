@@ -156,8 +156,7 @@ public class MovedContextHandler extends ContextHandler
             if (redirectHttpURI.getScheme() == null)
             {
                 HttpURI httpURI = request.getHttpURI();
-                redirectHttpURI = redirectHttpURI.scheme(httpURI.getScheme())
-                    .authority(httpURI.getAuthority());
+                redirectHttpURI = redirectHttpURI.scheme(httpURI.getScheme()).authority(httpURI.getAuthority());
             }
 
             if (!isDiscardPathInContext())

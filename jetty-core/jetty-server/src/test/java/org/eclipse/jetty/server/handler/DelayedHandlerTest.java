@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -21,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
-
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -38,16 +47,6 @@ import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DelayedHandlerTest
 {
@@ -74,7 +73,14 @@ public class DelayedHandlerTest
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
-            protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
+            protected DelayedProcess newDelayedProcess(
+                                                       boolean contentExpected,
+                                                       String contentType,
+                                                       MimeTypes.Type mimeType,
+                                                       Handler handler,
+                                                       Request request,
+                                                       Response response,
+                                                       Callback callback)
             {
                 return null;
             }
@@ -86,11 +92,12 @@ public class DelayedHandlerTest
 
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
-            String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
+            String request =
+                """
+                    GET / HTTP/1.1\r
+                    Host: localhost\r
+                    \r
+                    """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -111,7 +118,14 @@ public class DelayedHandlerTest
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
-            protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
+            protected DelayedProcess newDelayedProcess(
+                                                       boolean contentExpected,
+                                                       String contentType,
+                                                       MimeTypes.Type mimeType,
+                                                       Handler handler,
+                                                       Request request,
+                                                       Response response,
+                                                       Callback callback)
             {
                 return new DelayedProcess(handler, request, response, callback)
                 {
@@ -139,11 +153,12 @@ public class DelayedHandlerTest
 
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
-            String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
+            String request =
+                """
+                    GET / HTTP/1.1\r
+                    Host: localhost\r
+                    \r
+                    """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -182,9 +197,14 @@ public class DelayedHandlerTest
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
                 assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
-                assertThat(stack, not(containsString("%s.%s".formatted(
-                    DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
-                    DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
+                assertThat(
+                    stack,
+                    not(containsString("%s.%s"
+                        .formatted(
+                            DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
+                            DelayedHandler.UntilContentDelayedProcess.class
+                                .getMethod("onContent")
+                                .getName()))));
 
                 processing.countDown();
                 return super.handle(request, response, callback);
@@ -194,12 +214,13 @@ public class DelayedHandlerTest
 
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
-            String request = """
-                POST / HTTP/1.1\r
-                Host: localhost\r
-                Content-Length: 10\r
-                \r
-                """;
+            String request =
+                """
+                    POST / HTTP/1.1\r
+                    Host: localhost\r
+                    Content-Length: 10\r
+                    \r
+                    """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -239,9 +260,14 @@ public class DelayedHandlerTest
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
                 assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
-                assertThat(stack, not(containsString("%s.%s".formatted(
-                    DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
-                    DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
+                assertThat(
+                    stack,
+                    not(containsString("%s.%s"
+                        .formatted(
+                            DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
+                            DelayedHandler.UntilContentDelayedProcess.class
+                                .getMethod("onContent")
+                                .getName()))));
 
                 // Check the thread is in the context
                 assertThat(ContextHandler.getCurrentContext(), sameInstance(context.getContext()));
@@ -257,12 +283,13 @@ public class DelayedHandlerTest
 
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
-            String request = """
-                POST / HTTP/1.1\r
-                Host: localhost\r
-                Content-Length: 10\r
-                \r
-                """;
+            String request =
+                """
+                    POST / HTTP/1.1\r
+                    Host: localhost\r
+                    Content-Length: 10\r
+                    \r
+                    """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -312,13 +339,14 @@ public class DelayedHandlerTest
 
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
-            String request = """
-                POST / HTTP/1.1\r
-                Host: localhost\r
-                Content-Length: 10\r
-                \r
-                1234567890\r
-                """;
+            String request =
+                """
+                    POST / HTTP/1.1\r
+                    Host: localhost\r
+                    Content-Length: 10\r
+                    \r
+                    1234567890\r
+                    """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -338,7 +366,14 @@ public class DelayedHandlerTest
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
-            protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
+            protected DelayedProcess newDelayedProcess(
+                                                       boolean contentExpected,
+                                                       String contentType,
+                                                       MimeTypes.Type mimeType,
+                                                       Handler handler,
+                                                       Request request,
+                                                       Response response,
+                                                       Callback callback)
             {
                 return new DelayedProcess(handler, request, response, callback)
                 {
@@ -365,11 +400,12 @@ public class DelayedHandlerTest
 
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
-            String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
+            String request =
+                """
+                    GET / HTTP/1.1\r
+                    Host: localhost\r
+                    \r
+                    """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -410,8 +446,9 @@ public class DelayedHandlerTest
             output.write("""
                 GET / HTTP/1.1
                 Host: localhost
-                
-                """.getBytes(StandardCharsets.UTF_8));
+
+                """
+                .getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             Awaitility.await().atMost(5, TimeUnit.SECONDS).until(processing::getCount, equalTo(1L));
@@ -422,13 +459,16 @@ public class DelayedHandlerTest
             String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
             assertThat(content, containsString("[]"));
 
-            output.write("""
-                POST / HTTP/1.1
-                Host: localhost
-                Content-Type: %s
-                Content-Length: 22
-                
-                """.formatted(MimeTypes.Type.FORM_ENCODED).getBytes(StandardCharsets.UTF_8));
+            output.write(
+                """
+                    POST / HTTP/1.1
+                    Host: localhost
+                    Content-Type: %s
+                    Content-Length: 22
+
+                    """
+                    .formatted(MimeTypes.Type.FORM_ENCODED)
+                    .getBytes(StandardCharsets.UTF_8));
             output.flush();
             assertFalse(processing.await(100, TimeUnit.MILLISECONDS));
 
@@ -483,14 +523,17 @@ public class DelayedHandlerTest
         {
             OutputStream output = socket.getOutputStream();
 
-            output.write("""
-                POST / HTTP/1.1
-                Host: localhost
-                Content-Type: %s
-                Content-Length: 22
-                
-                name=value&x=1&x=2&x=3
-                """.formatted(MimeTypes.Type.FORM_ENCODED).getBytes(StandardCharsets.UTF_8));
+            output.write(
+                """
+                    POST / HTTP/1.1
+                    Host: localhost
+                    Content-Type: %s
+                    Content-Length: 22
+
+                    name=value&x=1&x=2&x=3
+                    """
+                    .formatted(MimeTypes.Type.FORM_ENCODED)
+                    .getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             HttpTester.Input input = HttpTester.from(socket.getInputStream());

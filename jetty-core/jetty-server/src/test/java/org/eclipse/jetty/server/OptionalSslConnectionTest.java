@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -30,16 +33,13 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 public class OptionalSslConnectionTest
 {
     private Server server;
     private ServerConnector connector;
 
-    private void startServer(Function<SslConnectionFactory, OptionalSslConnectionFactory> configFn, Handler handler) throws Exception
+    private void startServer(Function<SslConnectionFactory, OptionalSslConnectionFactory> configFn, Handler handler)
+        throws Exception
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
@@ -84,10 +84,7 @@ public class OptionalSslConnectionTest
     {
         startServer(this::optionalSsl, new EmptyServerHandler());
 
-        String request =
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
         byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
 
         // Try first a plain text connection.
@@ -175,10 +172,7 @@ public class OptionalSslConnectionTest
     {
         startServer(this::optionalSslNoOtherProtocol, new EmptyServerHandler());
 
-        String request =
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
         byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
 
         // Send a plain text HTTP request to SSL port,
@@ -219,14 +213,12 @@ public class OptionalSslConnectionTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        try (Socket socket = new Socket(server.getURI().getHost(), server.getURI().getPort());
+        try (Socket socket =
+            new Socket(server.getURI().getHost(), server.getURI().getPort());
              StacklessLogging ignored = new StacklessLogging(DetectorConnectionFactory.class))
         {
             OutputStream sslOutput = socket.getOutputStream();
-            String request =
-                "GET / HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
             byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
 
             sslOutput.write(requestBytes);

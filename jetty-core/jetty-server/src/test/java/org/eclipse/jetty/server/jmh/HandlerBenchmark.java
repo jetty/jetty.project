@@ -13,12 +13,14 @@
 
 package org.eclipse.jetty.server.jmh;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -41,48 +43,54 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
 @State(Scope.Benchmark)
 public class HandlerBenchmark
 {
     static Server _server = new Server();
     static ServerConnector _connector = new ServerConnector(_server);
 
-    static final byte[] GET = """
-                    GET /ctx/path HTTP/1.1\r
-                    Host: localhost\r
-                    X-Forwarded-For: 192.168.0.1\r
-                    \r
-                    """.getBytes(StandardCharsets.ISO_8859_1);
+    static final byte[] GET =
+        """
+            GET /ctx/path HTTP/1.1\r
+            Host: localhost\r
+            X-Forwarded-For: 192.168.0.1\r
+            \r
+            """
+            .getBytes(StandardCharsets.ISO_8859_1);
 
-    static final byte[] POST = """
-                    POST /ctx/path HTTP/1.1\r
-                    Host: localhost\r
-                    Content-Length: 16\r
-                    Content-Type: text/plain; charset=iso-8859-1\r
-                    X-Forwarded-For: 192.168.0.1\r
-                    \r
-                    ECHO Echo echo\r
-                    """.getBytes(StandardCharsets.ISO_8859_1);
+    static final byte[] POST =
+        """
+            POST /ctx/path HTTP/1.1\r
+            Host: localhost\r
+            Content-Length: 16\r
+            Content-Type: text/plain; charset=iso-8859-1\r
+            X-Forwarded-For: 192.168.0.1\r
+            \r
+            ECHO Echo echo\r
+            """
+            .getBytes(StandardCharsets.ISO_8859_1);
 
-    static final byte[] POST_CLOSE = """
-                    POST /ctx/path HTTP/1.1\r
-                    Host: localhost\r
-                    Content-Length: 16\r
-                    Content-Type: text/plain; charset=iso-8859-1\r
-                    X-Forwarded-For: 192.168.0.1\r
-                    Connection: close\r
-                    \r
-                    ECHO Echo echo\r
-                    """.getBytes(StandardCharsets.ISO_8859_1);
+    static final byte[] POST_CLOSE =
+        """
+            POST /ctx/path HTTP/1.1\r
+            Host: localhost\r
+            Content-Length: 16\r
+            Content-Type: text/plain; charset=iso-8859-1\r
+            X-Forwarded-For: 192.168.0.1\r
+            Connection: close\r
+            \r
+            ECHO Echo echo\r
+            """
+            .getBytes(StandardCharsets.ISO_8859_1);
 
     @Setup(Level.Trial)
     public static void setupServer() throws Exception
     {
         _server.addConnector(_connector);
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
+        _connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .addCustomizer(new ForwardedRequestCustomizer());
         DelayedHandler delayedHandler = new DelayedHandler();
         _server.setHandler(delayedHandler);
         ContextHandlerCollection contexts = new ContextHandlerCollection();
@@ -101,7 +109,8 @@ public class HandlerBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testPost() throws Exception
     {
         try (Socket client = new Socket("127.0.0.1", _connector.getLocalPort()))

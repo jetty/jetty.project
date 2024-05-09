@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.api.Callback;
@@ -35,8 +34,8 @@ public class BinaryListeners
             OffsetByteBufferPartialListener.class,
             AnnotatedByteBufferWholeListener.class,
             AnnotatedInputStreamWholeListener.class,
-            AnnotatedReverseArgumentPartialListener.class
-        ).map(Arguments::of);
+            AnnotatedReverseArgumentPartialListener.class)
+            .map(Arguments::of);
     }
 
     public static class OffsetByteArrayWholeListener extends Session.Listener.Abstract
@@ -51,11 +50,17 @@ public class BinaryListeners
         @Override
         public void onWebSocketBinary(ByteBuffer payload, Callback callback)
         {
-            getSession().sendPartialBinary(payload, true, Callback.from(() ->
-            {
-                callback.succeed();
-                getSession().demand();
-            }, callback::fail));
+            getSession()
+                .sendPartialBinary(
+                    payload,
+                    true,
+                    Callback.from(
+                        () ->
+                        {
+                            callback.succeed();
+                            getSession().demand();
+                        },
+                        callback::fail));
         }
     }
 
@@ -71,11 +76,17 @@ public class BinaryListeners
         @Override
         public void onWebSocketPartialBinary(ByteBuffer payload, boolean fin, Callback callback)
         {
-            getSession().sendPartialBinary(payload, fin, Callback.from(() ->
-            {
-                callback.succeed();
-                getSession().demand();
-            }, callback::fail));
+            getSession()
+                .sendPartialBinary(
+                    payload,
+                    fin,
+                    Callback.from(
+                        () ->
+                        {
+                            callback.succeed();
+                            getSession().demand();
+                        },
+                        callback::fail));
         }
     }
 

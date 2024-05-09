@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.ee9.demos;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.io.BufferedWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -29,12 +34,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
 public class OneServletContextTest extends AbstractEmbeddedTest
@@ -67,9 +66,7 @@ public class OneServletContextTest extends AbstractEmbeddedTest
     public void testGetHello() throws Exception
     {
         URI uri = server.getURI().resolve("/hello/there");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
@@ -83,53 +80,47 @@ public class OneServletContextTest extends AbstractEmbeddedTest
     public void testGetDumpViaPathInfo() throws Exception
     {
         URI uri = server.getURI().resolve("/dump/something");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
 
         // test response content
         String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody,
+        assertThat(
+            "Response Content",
+            responseBody,
             allOf(
                 containsString("DumpServlet"),
                 containsString("servletPath=/dump"),
-                containsString("pathInfo=/something")
-            )
-        );
+                containsString("pathInfo=/something")));
     }
 
     @Test
     public void testGetDumpSuffix() throws Exception
     {
         URI uri = server.getURI().resolve("/another.dump");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
 
         // test response content
         String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody,
+        assertThat(
+            "Response Content",
+            responseBody,
             allOf(
                 containsString("DumpServlet"),
                 containsString("servletPath=/another.dump"),
-                containsString("pathInfo=null")
-            )
-        );
+                containsString("pathInfo=null")));
     }
 
     @Test
     public void testGetTestDumpSuffix() throws Exception
     {
         URI uri = server.getURI().resolve("/test/another.dump");
-        ContentResponse response = client.newRequest(uri)
-            .method(HttpMethod.GET)
-            .send();
+        ContentResponse response = client.newRequest(uri).method(HttpMethod.GET).send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
@@ -139,14 +130,14 @@ public class OneServletContextTest extends AbstractEmbeddedTest
 
         // test response content
         String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody,
+        assertThat(
+            "Response Content",
+            responseBody,
             allOf(
                 containsString("DumpServlet"),
                 containsString("servletPath=/test/another.dump"),
                 containsString("pathInfo=null"),
                 containsString("request.attribute[X-ReqListener]=true"),
-                containsString("servletContext.attribute[X-Init]=true")
-            )
-        );
+                containsString("servletContext.attribute[X-Init]=true")));
     }
 }

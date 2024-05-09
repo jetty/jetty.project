@@ -14,7 +14,6 @@
 module org.eclipse.jetty.ee
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.util;
     requires transitive org.eclipse.jetty.server;
 

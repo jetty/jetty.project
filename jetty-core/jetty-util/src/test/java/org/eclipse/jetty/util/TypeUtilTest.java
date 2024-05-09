@@ -13,19 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.stream.Stream;
-
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
-import org.eclipse.jetty.util.test10.ExampleClass;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -34,6 +21,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.test10.ExampleClass;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class TypeUtilTest
 {
@@ -113,8 +112,7 @@ public class TypeUtilTest
             Arguments.of("%25", 1, 2),
             Arguments.of("%0d", 1, 2),
             Arguments.of("%uC0AC", 2, 4),
-            Arguments.of("%uc0ac", 2, 4)
-        );
+            Arguments.of("%uc0ac", 2, 4));
     }
 
     @ParameterizedTest
@@ -133,8 +131,7 @@ public class TypeUtilTest
             Arguments.of("0xyz", 2, 2),
             Arguments.of("%xy", 1, 2),
             Arguments.of("%0z", 1, 2),
-            Arguments.of("%users", 2, 4)
-        );
+            Arguments.of("%users", 2, 4));
     }
 
     @ParameterizedTest
@@ -212,7 +209,9 @@ public class TypeUtilTest
         // Classes from maven dependencies
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource resource = resourceFactory.newResource(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString());
+            Resource resource =
+                resourceFactory.newResource(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class)
+                    .toASCIIString());
             assertThat(resource.getPath().toString(), Matchers.startsWith(mavenRepoPath.toString()));
         }
     }
@@ -237,15 +236,16 @@ public class TypeUtilTest
     {
         // Class from JVM core
         String expectedJavaBase = "/java.base";
-        assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(), containsString(expectedJavaBase));
+        assertThat(
+            TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(),
+            containsString(expectedJavaBase));
     }
 
     public static Stream<Arguments> shortNames()
     {
         return Stream.of(
             Arguments.of(TypeUtilTest.class, "oeju.TypeUtilTest"),
-            Arguments.of(ExampleClass.class, "oejut10.ExampleClass")
-        );
+            Arguments.of(ExampleClass.class, "oejut10.ExampleClass"));
     }
 
     @ParameterizedTest

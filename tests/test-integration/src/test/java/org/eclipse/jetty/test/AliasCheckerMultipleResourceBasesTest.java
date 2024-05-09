@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
@@ -35,10 +38,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class AliasCheckerMultipleResourceBasesTest
 {
@@ -152,8 +151,7 @@ public class AliasCheckerMultipleResourceBasesTest
         // Set alias checkers to allow content under these alternative resource bases.
         setAliasCheckers(
             new SymlinkAllowedResourceAliasChecker(_context, toResource(_baseResource1)),
-            new SymlinkAllowedResourceAliasChecker(_context, toResource(_baseResource2))
-        );
+            new SymlinkAllowedResourceAliasChecker(_context, toResource(_baseResource2)));
 
         // Now we have set alias checkers we can access file 1.
         uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/file1");

@@ -144,7 +144,7 @@ public class TopologicalSort<T>
             Set<T> dependencies = _dependencies.get(item);
             if (dependencies != null)
             {
-                // Sort the dependencies 
+                // Sort the dependencies
                 SortedSet<T> orderedDeps = new TreeSet<>(comparator);
                 orderedDeps.addAll(dependencies);
 
@@ -162,7 +162,7 @@ public class TopologicalSort<T>
                 }
             }
 
-            // Now that we have visited all our dependencies, they and their 
+            // Now that we have visited all our dependencies, they and their
             // dependencies will have been added to the sorted list. So we can
             // now add the current item and it will be after its dependencies
             sorted.add(item);

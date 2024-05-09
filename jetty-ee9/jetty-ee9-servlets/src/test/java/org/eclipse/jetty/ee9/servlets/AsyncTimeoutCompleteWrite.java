@@ -13,7 +13,8 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.io.IOException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -22,9 +23,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.nullValue;
+import java.io.IOException;
 
 /**
  * Respond with requested content, but via AsyncContext manipulation.
@@ -65,7 +64,8 @@ public abstract class AsyncTimeoutCompleteWrite extends AbstractFileContentServl
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         assertThat("'filename' request attribute shouldn't be declared", request.getAttribute("filename"), nullValue());
 

@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -69,8 +68,8 @@ public class HandlerWrapper extends AbstractHandlerContainer
             throw new IllegalStateException(getState());
 
         // check for loops
-        if (handler == this || (handler instanceof HandlerContainer &&
-            Arrays.asList(((HandlerContainer)handler).getChildHandlers()).contains(this)))
+        if (handler == this || (handler instanceof HandlerContainer && Arrays.asList(((HandlerContainer)handler).getChildHandlers())
+            .contains(this)))
             throw new IllegalStateException("setHandler loop");
 
         if (handler != null)
@@ -117,7 +116,8 @@ public class HandlerWrapper extends AbstractHandlerContainer
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
     {
         Handler handler = _handler;
         if (handler != null)
@@ -149,7 +149,8 @@ public class HandlerWrapper extends AbstractHandlerContainer
      * @param parent The {@link org.eclipse.jetty.server.Handler.Container} that will be the parent
      * @param handler The {@link org.eclipse.jetty.server.Handler} that will be the child
      */
-    public static void setAsParent(org.eclipse.jetty.server.Handler.Container parent, org.eclipse.jetty.server.Handler handler)
+    public static void setAsParent(
+                                   org.eclipse.jetty.server.Handler.Container parent, org.eclipse.jetty.server.Handler handler)
     {
         if (parent instanceof org.eclipse.jetty.server.Handler.Collection collection)
             collection.addHandler(handler);

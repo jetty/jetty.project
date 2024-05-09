@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeout;
@@ -74,7 +73,13 @@ public abstract class QuicSession extends ContainerLifeCycle
     private QuicheConnectionId quicheConnectionId;
     private long idleTimeout;
 
-    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress)
+    protected QuicSession(
+                          Executor executor,
+                          Scheduler scheduler,
+                          ByteBufferPool byteBufferPool,
+                          QuicheConnection quicheConnection,
+                          QuicConnection connection,
+                          SocketAddress remoteAddress)
     {
         this.executor = executor;
         this.scheduler = scheduler;
@@ -306,7 +311,8 @@ public abstract class QuicSession extends ContainerLifeCycle
         int remaining = cipherBufferIn.remaining();
         if (LOG.isDebugEnabled())
             LOG.debug("feeding {} cipher bytes to {}", remaining, this);
-        int accepted = quicheConnection.feedCipherBytes(cipherBufferIn, connection.getLocalInetSocketAddress(), remoteAddress);
+        int accepted =
+            quicheConnection.feedCipherBytes(cipherBufferIn, connection.getLocalInetSocketAddress(), remoteAddress);
         if (accepted != remaining)
             throw new IllegalStateException();
 
@@ -461,7 +467,8 @@ public abstract class QuicSession extends ContainerLifeCycle
         @Override
         protected Action process() throws IOException
         {
-            cipherBuffer = byteBufferPool.acquire(connection.getOutputBufferSize(), connection.isUseOutputDirectByteBuffers());
+            cipherBuffer =
+                byteBufferPool.acquire(connection.getOutputBufferSize(), connection.isUseOutputDirectByteBuffers());
             ByteBuffer cipherByteBuffer = cipherBuffer.getByteBuffer();
             int pos = BufferUtil.flipToFill(cipherByteBuffer);
             int drained = quicheConnection.drainCipherBytes(cipherByteBuffer);
@@ -479,7 +486,12 @@ public abstract class QuicSession extends ContainerLifeCycle
                 boolean connectionClosed = quicheConnection.isConnectionClosed();
                 Action action = connectionClosed ? Action.SUCCEEDED : Action.IDLE;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("connection draining={} closed={}, action={} on {}", quicheConnection.isDraining(), connectionClosed, action, QuicSession.this);
+                    LOG.debug(
+                        "connection draining={} closed={}, action={} on {}",
+                        quicheConnection.isDraining(),
+                        connectionClosed,
+                        action,
+                        QuicSession.this);
                 if (action == Action.IDLE)
                     cipherBuffer.release();
                 return action;

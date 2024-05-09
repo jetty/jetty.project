@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -27,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -43,12 +48,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * WebInfConfigurationTest
@@ -104,8 +103,7 @@ public class WebInfConfigurationTest
             Arguments.of("a/b!/", "b!"),
             Arguments.of("a/b!/c/", "c"),
             Arguments.of("a/b!/c/d/", "d"),
-            Arguments.of("a/b%21/", "b%21")
-        );
+            Arguments.of("a/b%21/", "b%21"));
     }
 
     @ParameterizedTest
@@ -155,8 +153,8 @@ public class WebInfConfigurationTest
         _server.start();
         Path unpackedDir = context.getTempDirectory().toPath().resolve("webapp");
         Path unpackedWebInfDir = context.getTempDirectory().toPath().resolve("webinf");
-        assertFalse(Files.exists(unpackedDir)); //should not have unpacked
-        assertFalse(Files.exists(unpackedWebInfDir)); //should not have unpacked
+        assertFalse(Files.exists(unpackedDir)); // should not have unpacked
+        assertFalse(Files.exists(unpackedWebInfDir)); // should not have unpacked
     }
 
     /**
@@ -181,8 +179,8 @@ public class WebInfConfigurationTest
         _server.start();
         Path unpackedDir = context.getTempDirectory().toPath().resolve("webapp");
         Path unpackedWebInfDir = context.getTempDirectory().toPath().resolve("webinf");
-        assertTrue(Files.exists(unpackedDir)); //should have unpacked whole war
-        assertFalse(Files.exists(unpackedWebInfDir)); //should not have re-unpacked WEB-INF
+        assertTrue(Files.exists(unpackedDir)); // should have unpacked whole war
+        assertFalse(Files.exists(unpackedWebInfDir)); // should not have re-unpacked WEB-INF
         checkNoDuplicateJars(EXPECTED_JAR_NAMES, (URLClassLoader)context.getClassLoader());
     }
 
@@ -190,7 +188,7 @@ public class WebInfConfigurationTest
      * Test not unpacking the whole war, just WEB-INF
      */
     @Test
-    public void testShouldUnpackWebInfOnly(WorkDir workDir)  throws Exception
+    public void testShouldUnpackWebInfOnly(WorkDir workDir) throws Exception
     {
         Path testPath = MavenPaths.targetTestDir("testSimple");
         FS.ensureDirExists(testPath);
@@ -208,9 +206,10 @@ public class WebInfConfigurationTest
         _server.start();
         Path unpackedDir = context.getTempDirectory().toPath().resolve("webapp");
         Path unpackedWebInfDir = context.getTempDirectory().toPath().resolve("webinf");
-        assertFalse(Files.exists(unpackedDir)); //should not have unpacked whole war
-        assertTrue(Files.exists(unpackedWebInfDir)); //should have unpacked WEB-INF
-        assertTrue(Files.exists(unpackedWebInfDir.resolve("WEB-INF").resolve("lib").resolve("alpha.jar")));
+        assertFalse(Files.exists(unpackedDir)); // should not have unpacked whole war
+        assertTrue(Files.exists(unpackedWebInfDir)); // should have unpacked WEB-INF
+        assertTrue(
+            Files.exists(unpackedWebInfDir.resolve("WEB-INF").resolve("lib").resolve("alpha.jar")));
 
         checkNoDuplicateJars(EXPECTED_JAR_NAMES, (URLClassLoader)context.getClassLoader());
     }
@@ -238,9 +237,10 @@ public class WebInfConfigurationTest
         _server.start();
         Path unpackedDir = context.getTempDirectory().toPath().resolve("webapp");
         Path unpackedWebInfDir = context.getTempDirectory().toPath().resolve("webinf");
-        assertTrue(Files.exists(unpackedDir)); //should have unpacked whole war
-        assertTrue(Files.exists(unpackedWebInfDir)); //should have re-unpacked WEB-INF
-        assertTrue(Files.exists(unpackedWebInfDir.resolve("WEB-INF").resolve("lib").resolve("alpha.jar")));
+        assertTrue(Files.exists(unpackedDir)); // should have unpacked whole war
+        assertTrue(Files.exists(unpackedWebInfDir)); // should have re-unpacked WEB-INF
+        assertTrue(
+            Files.exists(unpackedWebInfDir.resolve("WEB-INF").resolve("lib").resolve("alpha.jar")));
     }
 
     /**

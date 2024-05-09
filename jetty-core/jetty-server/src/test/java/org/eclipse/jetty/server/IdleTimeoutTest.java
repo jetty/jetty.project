@@ -13,13 +13,15 @@
 
 package org.eclipse.jetty.server;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.is;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
@@ -28,9 +30,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.is;
 
 public class IdleTimeoutTest
 {
@@ -59,7 +58,8 @@ public class IdleTimeoutTest
         connector = new ServerConnector(server, 1, 1, h1)
         {
             @Override
-            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+            protected SocketChannelEndPoint newEndPoint(
+                                                        SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
             {
                 SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
@@ -97,7 +97,8 @@ public class IdleTimeoutTest
             client.configureBlocking(false);
             ByteBuffer inputBuffer = ByteBuffer.allocate(1024);
             await().atMost(Duration.ofSeconds(5)).until(() -> client.read(inputBuffer), is(-1));
-            await().atMost(5, TimeUnit.SECONDS).until(() -> connector.getConnectedEndPoints().size(), is(0));
+            await().atMost(5, TimeUnit.SECONDS)
+                .until(() -> connector.getConnectedEndPoints().size(), is(0));
         }
     }
 }

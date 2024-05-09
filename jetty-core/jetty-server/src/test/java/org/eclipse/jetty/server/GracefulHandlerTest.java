@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.server;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,7 +32,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -38,15 +46,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GracefulHandlerTest
 {
@@ -130,13 +129,14 @@ public class GracefulHandlerTest
         server.setStopTimeout(10000);
         server.start();
 
-        String rawRequest = """
-            POST /?hint=intentional_failure HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            1234567890""";
+        String rawRequest =
+            """
+                POST /?hint=intentional_failure HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: text/plain\r
+                Content-Length: 10\r
+                \r
+                1234567890""";
 
         Socket client0 = newSocketToServer("client0");
         OutputStream output0 = client0.getOutputStream();
@@ -192,13 +192,14 @@ public class GracefulHandlerTest
         server.setStopTimeout(10000);
         server.start();
 
-        String rawRequest = """
-            POST /?hint=intentional_failure HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            1234567890""";
+        String rawRequest =
+            """
+                POST /?hint=intentional_failure HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: text/plain\r
+                Content-Length: 10\r
+                \r
+                1234567890""";
 
         Socket client0 = newSocketToServer("client0");
         OutputStream output0 = client0.getOutputStream();
@@ -253,13 +254,14 @@ public class GracefulHandlerTest
         server.setStopTimeout(10000);
         server.start();
 
-        String rawRequest = """
-            POST /?hint=intentional_failure HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            1234567890""";
+        String rawRequest =
+            """
+                POST /?hint=intentional_failure HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: text/plain\r
+                Content-Length: 10\r
+                \r
+                1234567890""";
 
         Socket client0 = newSocketToServer("client0");
         OutputStream output0 = client0.getOutputStream();
@@ -314,13 +316,14 @@ public class GracefulHandlerTest
         server.setStopTimeout(10000);
         server.start();
 
-        String rawRequest = """
-            POST /?hint=intentional_failure HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            1234567890""";
+        String rawRequest =
+            """
+                POST /?hint=intentional_failure HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: text/plain\r
+                Content-Length: 10\r
+                \r
+                1234567890""";
 
         Socket client0 = newSocketToServer("client0");
         OutputStream output0 = client0.getOutputStream();
@@ -375,12 +378,13 @@ public class GracefulHandlerTest
         server.setStopTimeout(10000);
         server.start();
 
-        String rawRequest = """
-            GET / HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            \r
-            """;
+        String rawRequest =
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: text/plain\r
+                \r
+                """;
 
         Socket client0 = newSocketToServer("client0");
         OutputStream output0 = client0.getOutputStream();
@@ -430,13 +434,14 @@ public class GracefulHandlerTest
         server.setStopTimeout(10000);
         server.start();
 
-        String rawRequest = """
-            POST / HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
+        String rawRequest =
+            """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: text/plain\r
+                Content-Length: 10\r
+                \r
+                12345""";
 
         Socket client0 = newSocketToServer("client0");
         OutputStream output0 = client0.getOutputStream();
@@ -484,13 +489,14 @@ public class GracefulHandlerTest
         server.start();
 
         // Body is incomplete (send 5 bytes out of 10)
-        String rawRequest = """
-            POST /?hint=incomplete_body HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
+        String rawRequest =
+            """
+                POST /?hint=incomplete_body HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: text/plain\r
+                Content-Length: 10\r
+                \r
+                12345""";
 
         Socket client0 = newSocketToServer("client0");
         OutputStream output0 = client0.getOutputStream();
@@ -564,13 +570,14 @@ public class GracefulHandlerTest
         server.start();
 
         // Body is incomplete (send 5 bytes out of 10)
-        String rawRequest = """
-            POST /?hint=incomplete_body HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            12345""";
+        String rawRequest =
+            """
+                POST /?hint=incomplete_body HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: text/plain\r
+                Content-Length: 10\r
+                \r
+                12345""";
 
         Socket client0 = newSocketToServer("client0");
         OutputStream output0 = client0.getOutputStream();
@@ -626,13 +633,14 @@ public class GracefulHandlerTest
         server.start();
 
         // Complete request
-        String rawRequest = """
-            POST /?num=%d HTTP/1.1\r
-            Host: localhost\r
-            Content-Type: text/plain\r
-            Content-Length: 10\r
-            \r
-            1234567890""";
+        String rawRequest =
+            """
+                POST /?num=%d HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: text/plain\r
+                Content-Length: 10\r
+                \r
+                1234567890""";
 
         Socket client0 = newSocketToServer("client0");
         OutputStream output0 = client0.getOutputStream();

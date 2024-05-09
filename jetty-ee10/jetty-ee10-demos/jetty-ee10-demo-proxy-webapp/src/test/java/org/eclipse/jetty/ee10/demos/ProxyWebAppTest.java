@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.ee10.demos;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.hamcrest.Matchers.is;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -28,10 +31,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsStringIgnoringCase;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Test the configuration found in WEB-INF/web.xml for purposes of the demo-base
@@ -56,7 +55,8 @@ public class ProxyWebAppTest
         // So, open up server classes here, for purposes of this testcase.
         webapp.getHiddenClassMatcher().add("-org.eclipse.jetty.ee10.proxy.");
         webapp.setWar(MavenTestingUtils.getProjectDirPath("src/main/webapp").toString());
-        webapp.setExtraClasspath(MavenTestingUtils.getTargetPath().resolve("test-classes").toString());
+        webapp.setExtraClasspath(
+            MavenTestingUtils.getTargetPath().resolve("test-classes").toString());
         server.setHandler(webapp);
 
         server.start();

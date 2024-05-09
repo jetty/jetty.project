@@ -13,12 +13,14 @@
 
 package org.eclipse.jetty.deploy;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.deploy.graph.GraphOutputDot;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.graph.Route;
@@ -26,9 +28,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Just an overly picky test case to validate the potential paths.

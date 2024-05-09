@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 

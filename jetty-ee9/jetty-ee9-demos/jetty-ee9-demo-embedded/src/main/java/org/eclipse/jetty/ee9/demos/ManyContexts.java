@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.demos;
 
 import java.util.List;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -39,9 +38,7 @@ public class ManyContexts
         contextV.setVirtualHosts(List.of("127.0.0.2"));
         contextV.setHandler(new HelloHandler("Virtual Hello"));
 
-        ContextHandlerCollection contexts = new ContextHandlerCollection(
-            context, contextFR, contextIT, contextV
-        );
+        ContextHandlerCollection contexts = new ContextHandlerCollection(context, contextFR, contextIT, contextV);
 
         server.setHandler(contexts);
         return server;

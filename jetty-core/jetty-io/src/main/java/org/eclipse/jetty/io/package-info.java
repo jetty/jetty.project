@@ -15,4 +15,3 @@
  * Jetty IO : Core classes for Jetty IO subsystem
  */
 package org.eclipse.jetty.io;
-

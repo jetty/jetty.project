@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -102,9 +101,9 @@ public class RelativeOrdering implements Ordering
                     case None:
                         break;
                     case Before:
-                        // Add a dependency on this jar from all 
+                        // Add a dependency on this jar from all
                         // jars in the 'others' and 'after others' sets, but
-                        // exclude any jars we have already explicitly 
+                        // exclude any jars we have already explicitly
                         // referenced above.
                         Consumer<Resource> addBefore = other ->
                         {
@@ -116,9 +115,9 @@ public class RelativeOrdering implements Ordering
                         break;
 
                     case After:
-                        // Add a dependency from this jar to all 
+                        // Add a dependency from this jar to all
                         // jars in the 'before others' and 'others' sets, but
-                        // exclude any jars we have already explicitly 
+                        // exclude any jars we have already explicitly
                         // referenced above.
                         Consumer<Resource> addAfter = other ->
                         {

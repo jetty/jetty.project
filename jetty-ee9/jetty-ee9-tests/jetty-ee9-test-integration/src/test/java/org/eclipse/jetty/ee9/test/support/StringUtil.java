@@ -19,7 +19,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-
 import org.eclipse.jetty.util.IO;
 
 public class StringUtil

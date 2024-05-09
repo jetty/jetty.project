@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core.util;
 import java.nio.channels.ReadPendingException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;

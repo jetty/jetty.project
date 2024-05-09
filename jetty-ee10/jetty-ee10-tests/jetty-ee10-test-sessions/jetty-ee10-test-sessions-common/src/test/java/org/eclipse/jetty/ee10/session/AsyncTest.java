@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
-import java.lang.reflect.Proxy;
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
@@ -25,6 +26,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.lang.reflect.Proxy;
+import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -40,11 +44,6 @@ import org.eclipse.jetty.session.test.TestFoo;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * AsyncTest
@@ -80,18 +79,24 @@ public class AsyncTest
             client.start();
             String url = "http://localhost:" + port + contextPath + mapping + "?action=async";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertNotNull(sessionCookie);
-            
-            //session should now be evicted from the cache after request exited
+
+            // session should now be evicted from the cache after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
-            Awaitility.await().atMost(30, TimeUnit.SECONDS)
-                    .until(() -> !contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            Awaitility.await().atMost(30, TimeUnit.SECONDS).until(() -> !contextHandler
+                .getSessionHandler()
+                .getSessionCache()
+                .contains(id));
+            assertTrue(contextHandler
+                .getSessionHandler()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(id));
         }
         finally
         {
@@ -126,7 +131,7 @@ public class AsyncTest
             client.start();
             String url = "http://localhost:" + port + contextPath + mapping + "?action=asyncComplete";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
@@ -134,10 +139,16 @@ public class AsyncTest
             assertNotNull(sessionCookie);
             String id = SessionTestSupport.extractSessionId(sessionCookie);
 
-            //session should now be evicted from the cache after request exited
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
-            Awaitility.await().atMost(30, TimeUnit.SECONDS)
-                .until(() -> !contextHandler.getSessionHandler().getSessionCache().contains(id));
+            // session should now be evicted from the cache after request exited
+            assertTrue(contextHandler
+                .getSessionHandler()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(id));
+            Awaitility.await().atMost(30, TimeUnit.SECONDS).until(() -> !contextHandler
+                .getSessionHandler()
+                .getSessionCache()
+                .contains(id));
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
 
         }
@@ -147,7 +158,7 @@ public class AsyncTest
         }
     }
 
-    @Disabled //TODO cross context not supported
+    @Disabled // TODO cross context not supported
     @Test
     public void testSessionWithCrossContextAsync() throws Exception
     {
@@ -169,7 +180,6 @@ public class AsyncTest
         ServletHolder testHolder = new ServletHolder(testServlet);
         contextB.addServlet(testHolder, "/*");
 
-
         server.start();
         int port = server.getPort();
 
@@ -179,19 +189,23 @@ public class AsyncTest
             client.start();
             String url = "http://localhost:" + port + "/ctxA/test?action=async";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertNotNull(sessionCookie);
 
-            //session should now be evicted from the cache after request exited
+            // session should now be evicted from the cache after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
-            Awaitility.await().atMost(30, TimeUnit.SECONDS)
+            Awaitility.await()
+                .atMost(30, TimeUnit.SECONDS)
                 .until(() -> !contextB.getSessionHandler().getSessionCache().contains(id));
             assertFalse(contextB.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextB.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertTrue(contextB.getSessionHandler()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(id));
         }
         finally
         {
@@ -217,7 +231,6 @@ public class AsyncTest
         ServletHolder holder = new ServletHolder(servlet);
         contextHandler.addServlet(holder, mapping);
 
-
         server.start();
         int port = server.getPort();
 
@@ -227,7 +240,7 @@ public class AsyncTest
             client.start();
             String url = "http://localhost:" + port + contextPath + mapping + "?action=asyncWithSession";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
@@ -235,19 +248,25 @@ public class AsyncTest
             assertNotNull(sessionCookie);
             String id = SessionTestSupport.extractSessionId(sessionCookie);
 
-            //session should now be evicted from the cache after request exited
-            Awaitility.await().atMost(30, TimeUnit.SECONDS)
-                .until(() -> !contextHandler.getSessionHandler().getSessionCache().contains(id));
+            // session should now be evicted from the cache after request exited
+            Awaitility.await().atMost(30, TimeUnit.SECONDS).until(() -> !contextHandler
+                .getSessionHandler()
+                .getSessionCache()
+                .contains(id));
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertTrue(contextHandler
+                .getSessionHandler()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(id));
         }
         finally
         {
             server.stop();
-        }   
+        }
     }
 
-    @Disabled //TODO cross context not supported
+    @Disabled // TODO cross context not supported
     @Test
     public void testSessionWithCrossContextAsyncComplete() throws Exception
     {
@@ -280,7 +299,7 @@ public class AsyncTest
             client.start();
             String url = "http://localhost:" + port + "/ctxA/test?action=asyncComplete";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
@@ -288,11 +307,15 @@ public class AsyncTest
 
             assertNotNull(sessionCookie);
 
-            //session should now be evicted from the cache A after request exited
+            // session should now be evicted from the cache A after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
-            Awaitility.await().atMost(30, TimeUnit.SECONDS)
+            Awaitility.await()
+                .atMost(30, TimeUnit.SECONDS)
                 .until(() -> !contextA.getSessionHandler().getSessionCache().contains(id));
-            assertTrue(contextA.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertTrue(contextA.getSessionHandler()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(id));
         }
         finally
         {
@@ -304,7 +327,8 @@ public class AsyncTest
     public static class TestServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
 
@@ -314,10 +338,9 @@ public class AsyncTest
                 TestFoo testFoo = new TestFoo();
                 testFoo.setInt(33);
                 FooInvocationHandler handler = new FooInvocationHandler(testFoo);
-                Foo foo = (Foo)Proxy
-                    .newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[]{
-                        Foo.class
-                    }, handler);
+                Foo foo = (Foo)Proxy.newProxyInstance(
+                    Thread.currentThread().getContextClassLoader(), new Class[]
+                    {Foo.class}, handler);
                 session.setAttribute("foo", foo);
             }
             else if ("test".equals(action))
@@ -380,7 +403,6 @@ public class AsyncTest
                     @Override
                     public void onError(Throwable t)
                     {
-
                     }
                 });
             }
@@ -390,7 +412,8 @@ public class AsyncTest
     public static class CrossContextServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             AsyncContext acontext = request.startAsync();
 

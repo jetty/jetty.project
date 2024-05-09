@@ -18,5 +18,4 @@ package org.eclipse.jetty.ee10.annotations;
  */
 public interface InterfaceD
 {
-
 }

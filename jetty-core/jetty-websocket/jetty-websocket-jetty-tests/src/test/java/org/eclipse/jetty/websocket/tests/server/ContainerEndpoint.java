@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import java.util.Collection;
-
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -47,7 +46,11 @@ public class ContainerEndpoint extends AbstractCloseEndpoint
             int idx = 0;
             for (Session sess : sessions)
             {
-                ret.append('[').append(idx++).append("] ").append(sess.toString()).append('\n');
+                ret.append('[')
+                    .append(idx++)
+                    .append("] ")
+                    .append(sess.toString())
+                    .append('\n');
             }
             session.sendText(ret.toString(), Callback.NOOP);
         }

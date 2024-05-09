@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee9.maven.plugin;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -28,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
-
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -40,10 +43,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test the JettyForkedChild class, which
@@ -65,7 +64,7 @@ public class TestForkedChild
     JettyForkedChild child;
     Thread starter;
     JettyRunner runner = new JettyRunner();
-    
+
     public class JettyRunner implements Runnable
     {
         @Override
@@ -89,7 +88,7 @@ public class TestForkedChild
                 webapp.setBaseResourceAsPath(baseDir.toPath());
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
                 child = new JettyForkedChild(cmd.toArray(new String[0]));
-                child.getJettyEmbedder().setExitVm(false); //ensure jetty doesn't stop vm for testing
+                child.getJettyEmbedder().setExitVm(false); // ensure jetty doesn't stop vm for testing
                 child.start();
             }
             catch (Exception e)
@@ -98,7 +97,7 @@ public class TestForkedChild
             }
         }
     }
-    
+
     @BeforeEach
     public void setUp(WorkDir workDir)
     {
@@ -117,10 +116,11 @@ public class TestForkedChild
         jettyPort = Integer.parseInt(jettyPortString);
 
         Random random = new Random();
-        token = Long.toString(random.nextLong() ^ System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
+        token = Long.toString(random.nextLong() ^ System.currentTimeMillis(), 36)
+            .toUpperCase(Locale.ENGLISH);
         tokenFile = tmpDir.resolve(token + ".txt").toFile();
     }
-    
+
     @AfterEach
     public void tearDown() throws Exception
     {
@@ -150,11 +150,11 @@ public class TestForkedChild
 
     @Test
     public void test() throws Exception
-    {      
+    {
         starter = new Thread(runner, "JettyForkedChild");
         starter.start();
 
-        //wait for the token file to be created
+        // wait for the token file to be created
         Awaitility.await().atMost(Duration.ofSeconds(10)).until(tokenFile::exists);
 
         URL url = new URL("http://localhost:" + jettyPortString + "/foo/");

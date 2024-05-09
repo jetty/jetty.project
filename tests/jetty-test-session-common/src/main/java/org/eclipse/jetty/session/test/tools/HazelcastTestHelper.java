@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.session.test.tools;
 
-import java.util.Collections;
-import java.util.Objects;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
@@ -24,12 +23,12 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import java.util.Collections;
+import java.util.Objects;
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory;
 import org.eclipse.jetty.hazelcast.session.SessionDataSerializer;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * HazelcastTestHelper
@@ -55,7 +54,9 @@ public class HazelcastTestHelper
             org.slf4j.bridge.SLF4JBridgeHandler.install();
         }
 
-        _serializerConfig = new SerializerConfig().setImplementation(new SessionDataSerializer()).setTypeClass(SessionData.class);
+        _serializerConfig = new SerializerConfig()
+            .setImplementation(new SessionDataSerializer())
+            .setTypeClass(SessionData.class);
         Config config = new Config();
         config.setInstanceName(_hazelcastInstanceName);
         config.getNetworkConfig().getJoin().getAutoDetectionConfig().setEnabled(false);
@@ -67,7 +68,10 @@ public class HazelcastTestHelper
     {
         Objects.requireNonNull(mapName, "Hazelcast mapName cannot be null");
         this.mapName = mapName;
-        _instance.getConfig().addMapConfig(new MapConfig().setName(this.mapName)).setClassLoader(null);
+        _instance
+            .getConfig()
+            .addMapConfig(new MapConfig().setName(this.mapName))
+            .setClassLoader(null);
     }
 
     public SessionDataStoreFactory createSessionDataStoreFactory(boolean onlyClient)
@@ -80,12 +84,11 @@ public class HazelcastTestHelper
         {
             ClientNetworkConfig clientNetworkConfig = new ClientNetworkConfig()
                 .setAddresses(Collections.singletonList("localhost:" + _instance.getConfig().getNetworkConfig().getPort()));
-            ClientConfig clientConfig = new ClientConfig()
-                .setNetworkConfig(clientNetworkConfig);
+            ClientConfig clientConfig = new ClientConfig().setNetworkConfig(clientNetworkConfig);
 
             SerializerConfig sc = new SerializerConfig()
-                    .setImplementation(new SessionDataSerializer())
-                    .setTypeClass(SessionData.class);
+                .setImplementation(new SessionDataSerializer())
+                .setTypeClass(SessionData.class);
             clientConfig.getSerializationConfig().addSerializerConfig(sc);
 
             factory.setHazelcastInstance(HazelcastClient.newHazelcastClient(clientConfig));
@@ -114,7 +117,8 @@ public class HazelcastTestHelper
 
     public boolean checkSessionPersisted(SessionData data)
     {
-        Object obj = _instance.getMap(this.mapName).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
+        Object obj =
+            _instance.getMap(this.mapName).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
 
@@ -131,11 +135,11 @@ public class HazelcastTestHelper
         assertEquals(data.getExpiry(), saved.getExpiry());
         assertEquals(data.getMaxInactiveMs(), saved.getMaxInactiveMs());
 
-        //same number of attributes
+        // same number of attributes
         assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
-        //same keys
+        // same keys
         assertEquals(data.getKeys(), saved.getKeys());
-        //same values
+        // same values
         for (String name : data.getKeys())
         {
             assertEquals(data.getAttribute(name), saved.getAttribute(name));

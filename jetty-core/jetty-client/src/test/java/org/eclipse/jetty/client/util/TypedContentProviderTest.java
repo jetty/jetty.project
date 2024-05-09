@@ -13,9 +13,13 @@
 
 package org.eclipse.jetty.client.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.EmptyServerHandler;
@@ -31,11 +35,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TypedContentProviderTest extends AbstractHttpClientServerTest
 {
@@ -56,7 +55,9 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
             protected void service(Request request, Response response)
             {
                 assertEquals("POST", request.getMethod());
-                assertEquals(MimeTypes.Type.FORM_ENCODED.asString(), request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                assertEquals(
+                    MimeTypes.Type.FORM_ENCODED.asString(),
+                    request.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 FormFields.from(request).whenComplete((fields, failure) ->
                 {
                     assertEquals(value1, fields.get(name1).getValue());
@@ -71,7 +72,8 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         fields.put(name1, value1);
         fields.add(name2, value2);
         fields.add(name2, value3);
-        ContentResponse response = client.FORM(scenario.getScheme() + "://localhost:" + connector.getLocalPort(), fields);
+        ContentResponse response =
+            client.FORM(scenario.getScheme() + "://localhost:" + connector.getLocalPort(), fields);
 
         assertEquals(200, response.getStatus());
     }

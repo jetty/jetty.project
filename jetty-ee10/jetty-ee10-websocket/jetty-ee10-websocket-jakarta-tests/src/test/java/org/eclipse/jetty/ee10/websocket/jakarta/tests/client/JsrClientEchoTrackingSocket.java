@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.client;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.PongMessage;
+import java.nio.ByteBuffer;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.DataUtils;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSEventTracker;
 

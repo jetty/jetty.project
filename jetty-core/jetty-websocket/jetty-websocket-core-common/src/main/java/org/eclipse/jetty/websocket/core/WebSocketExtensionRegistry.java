@@ -18,7 +18,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -30,7 +29,8 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
     public WebSocketExtensionRegistry()
     {
         // Load extensions from container loader.
-        TypeUtil.serviceStream(ServiceLoader.load(Extension.class, this.getClass().getClassLoader()))
+        TypeUtil.serviceStream(
+            ServiceLoader.load(Extension.class, this.getClass().getClassLoader()))
             .forEach(ext -> availableExtensions.put(ext.getName(), ext.getClass()));
     }
 

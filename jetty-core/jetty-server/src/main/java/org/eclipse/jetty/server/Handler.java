@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -400,20 +399,20 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
             // check state
             Server server = singleton.getServer();
 
-            // If the collection is changed whilst started, then the risk is that if we switch from NON_BLOCKING to BLOCKING
-            // whilst the execution strategy may have already dispatched the very last available thread, thinking it would
+            // If the collection is changed whilst started, then the risk is that if we switch from NON_BLOCKING to
+            // BLOCKING
+            // whilst the execution strategy may have already dispatched the very last available thread, thinking it
+            // would
             // never block, only for it to lose the race and find a newly added BLOCKING handler.
             if (server != null && server.isStarted() && handler != null)
             {
                 InvocationType serverInvocationType = server.getInvocationType();
-                if (serverInvocationType != Invocable.combine(serverInvocationType, handler.getInvocationType()) &&
-                    serverInvocationType != InvocationType.BLOCKING)
+                if (serverInvocationType != Invocable.combine(serverInvocationType, handler.getInvocationType()) && serverInvocationType != InvocationType.BLOCKING)
                     throw new IllegalArgumentException("Cannot change invocation type of started server");
             }
 
             // Check for loops.
-            if (handler == singleton || (handler instanceof Handler.Container container &&
-                container.getDescendants().contains(singleton)))
+            if (handler == singleton || (handler instanceof Handler.Container container && container.getDescendants().contains(singleton)))
                 throw new IllegalStateException("Handler loop");
 
             if (handler != null && server != null)
@@ -639,7 +638,8 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         }
 
         @SuppressWarnings("unchecked")
-        public static <T extends Handler.Container> T findContainerOf(Handler.Container root, Class<T> type, Handler handler)
+        public static <T extends Handler.Container> T findContainerOf(
+                                                                      Handler.Container root, Class<T> type, Handler handler)
         {
             if (root == null || handler == null)
                 return null;
@@ -784,12 +784,12 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
             this(handlers == null || handlers.isEmpty(), handlers);
         }
 
-         /**
-          * <p>Creates a {@code Sequence} with the given {@code dynamic} parameter
-          * and the given {@code Handler}s.</p>
-          *
-          * @param dynamic whether this {@code Sequence} is dynamic
-          * @param handlers the {@code Handler}s of this {@code Sequence}
+        /**
+         * <p>Creates a {@code Sequence} with the given {@code dynamic} parameter
+         * and the given {@code Handler}s.</p>
+         *
+         * @param dynamic whether this {@code Sequence} is dynamic
+         * @param handlers the {@code Handler}s of this {@code Sequence}
          */
         public Sequence(boolean dynamic, List<Handler> handlers)
         {
@@ -832,16 +832,17 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
                 if (handler == null)
                     continue;
 
-                if (handler == this || (handler instanceof Handler.Container container &&
-                    container.getDescendants().contains(this)))
+                if (handler == this || (handler instanceof Handler.Container container && container.getDescendants().contains(this)))
                     throw new IllegalStateException("setHandler loop");
                 invocationType = Invocable.combine(invocationType, handler.getInvocationType());
                 if (server != null)
                     handler.setServer(server);
             }
 
-            // If the collection can be changed dynamically, then the risk is that if we switch from NON_BLOCKING to BLOCKING
-            // whilst the execution strategy may have already dispatched the very last available thread, thinking it would
+            // If the collection can be changed dynamically, then the risk is that if we switch from NON_BLOCKING to
+            // BLOCKING
+            // whilst the execution strategy may have already dispatched the very last available thread, thinking it
+            // would
             // never block, only for it to lose the race and find a newly added BLOCKING handler.
             if (isDynamic() && server != null && server.isStarted() && serverInvocationType != invocationType && serverInvocationType != InvocationType.BLOCKING)
                 throw new IllegalArgumentException("Cannot change invocation type of started server");

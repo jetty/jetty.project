@@ -38,19 +38,18 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
     private final Set<T> _excludes;
     private final Predicate<P> _excludePredicate;
 
-    private record SetContainsPredicate<T>(Set<T> set) implements Predicate<T>
-    {
+    private record SetContainsPredicate<T>(Set<T> set) implements Predicate<T> {
         @Override
         public boolean test(T item)
-            {
-                return set.contains(item);
-            }
+        {
+            return set.contains(item);
+        }
 
         @Override
         public String toString()
-            {
-                return "CONTAINS";
-            }
+        {
+            return "CONTAINS";
+        }
     }
 
     /**
@@ -117,7 +116,8 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
      * @param <SET> The type of {@link Set} to use as the backing store
      */
     @SuppressWarnings("unused")
-    public <SET extends Set<T>> IncludeExcludeSet(Set<T> includeSet, Predicate<P> includePredicate, Set<T> excludeSet, Predicate<P> excludePredicate)
+    public <SET extends Set<T>> IncludeExcludeSet(
+                                                  Set<T> includeSet, Predicate<P> includePredicate, Set<T> excludeSet, Predicate<P> excludePredicate)
     {
         Objects.requireNonNull(includeSet, "Include Set");
         Objects.requireNonNull(includePredicate, "Include Predicate");
@@ -243,7 +243,10 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
     @Override
     public String toString()
     {
-        return String.format("%s@%x{i=%s,ip=%s,e=%s,ep=%s}", this.getClass().getSimpleName(), hashCode(),
+        return String.format(
+            "%s@%x{i=%s,ip=%s,e=%s,ep=%s}",
+            this.getClass().getSimpleName(),
+            hashCode(),
             _includes,
             _includePredicate == _includes ? "SELF" : _includePredicate,
             _excludes,

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.thread.jmh;
 
 import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 
 public class ReservedThreadExecutorSemaphore extends ReservedThreadExecutor

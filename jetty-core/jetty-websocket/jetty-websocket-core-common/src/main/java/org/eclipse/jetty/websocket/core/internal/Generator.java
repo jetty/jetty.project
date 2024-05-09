@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 

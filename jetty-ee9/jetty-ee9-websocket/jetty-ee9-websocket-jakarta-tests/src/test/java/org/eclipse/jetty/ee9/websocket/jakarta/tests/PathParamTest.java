@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.OnMessage;
@@ -24,6 +25,9 @@ import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
@@ -53,11 +57,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class PathParamTest
 {
     private Server _server;
@@ -78,8 +77,8 @@ public class PathParamTest
 
     private void start(Class<?> endpointClass) throws Exception
     {
-        JakartaWebSocketServletContainerInitializer.configure(_context, (context, container) ->
-            container.addEndpoint(endpointClass));
+        JakartaWebSocketServletContainerInitializer.configure(
+            _context, (context, container) -> container.addEndpoint(endpointClass));
         _server.start();
     }
 
@@ -144,8 +143,7 @@ public class PathParamTest
             Arguments.of(LongTypeSocket.class, Long.toString(Long.MIN_VALUE)),
             Arguments.of(ShortClassSocket.class, Short.toString(Short.MAX_VALUE)),
             Arguments.of(ShortTypeSocket.class, Short.toString(Short.MIN_VALUE)),
-            Arguments.of(StringClassSocket.class, "this_is_a_String_ID")
-        );
+            Arguments.of(StringClassSocket.class, "this_is_a_String_ID"));
     }
 
     @ParameterizedTest
@@ -153,7 +151,8 @@ public class PathParamTest
     public void testPathParamSignatures(Class<?> endpointClass, String id) throws Exception
     {
         start(EchoParamSocket.class);
-        JakartaWebSocketServerContainer serverContainer = JakartaWebSocketServerContainer.getContainer(_context.getServletContext());
+        JakartaWebSocketServerContainer serverContainer =
+            JakartaWebSocketServerContainer.getContainer(_context.getServletContext());
         assertNotNull(serverContainer);
         serverContainer.addEndpoint(endpointClass);
 

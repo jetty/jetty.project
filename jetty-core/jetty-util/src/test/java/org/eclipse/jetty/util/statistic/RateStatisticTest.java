@@ -13,19 +13,17 @@
 
 package org.eclipse.jetty.util.statistic;
 
-import java.util.concurrent.TimeUnit;
-
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+
+import java.util.concurrent.TimeUnit;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 
 public class RateStatisticTest
 {
     @Test
-    public void testRate()
-        throws Exception
+    public void testRate() throws Exception
     {
         RateStatistic rs = new RateStatistic(1, TimeUnit.HOURS);
         assertThat(rs.getCount(), equalTo(0L));

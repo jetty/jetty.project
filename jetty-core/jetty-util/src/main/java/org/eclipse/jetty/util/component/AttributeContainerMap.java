@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.thread.AutoLock;
 

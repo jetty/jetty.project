@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.atomic.LongAdder;
-
-import jakarta.servlet.ReadListener;
-import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -38,6 +37,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * The lock shared with {@link AsyncContentProducer} and this class.
      */
     final AutoLock _lock = new AutoLock();
+
     private final ServletChannel _servletChannel;
     private final ServletChannelState _channelState;
     private final byte[] _oneByteBuffer = new byte[1];
@@ -195,7 +195,8 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         _contentProducer = _asyncContentProducer;
         // trigger content production
-        if (isReady() && _channelState.onReadListenerReady()) // onReadListenerReady b/c we want to transition from WAITING to WOKEN
+        if (isReady() && _channelState
+            .onReadListenerReady()) // onReadListenerReady b/c we want to transition from WAITING to WOKEN
             scheduleReadListenerNotification(); // this is needed by AsyncServletIOTest.testStolenAsyncRead
     }
 
@@ -390,9 +391,6 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "@" + hashCode() +
-            " cs=" + _channelState +
-            " cp=" + _contentProducer +
-            " eof=" + _consumedEof;
+        return getClass().getSimpleName() + "@" + hashCode() + " cs=" + _channelState + " cp=" + _contentProducer + " eof=" + _consumedEof;
     }
 }

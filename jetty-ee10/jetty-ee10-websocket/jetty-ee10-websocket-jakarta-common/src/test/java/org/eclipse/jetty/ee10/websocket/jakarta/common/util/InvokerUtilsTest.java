@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.io.File;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
-
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 @SuppressWarnings("Duplicates")
 public class InvokerUtilsTest
@@ -110,7 +109,8 @@ public class InvokerUtilsTest
 
         public String sigByteArray(byte[] buf, @Name("offset") int offset, @Name("length") int len)
         {
-            return String.format("sigByteArray<%s,%d,%d>", buf == null ? "<null>" : ("[" + buf.length + "]"), offset, len);
+            return String.format(
+                "sigByteArray<%s,%d,%d>", buf == null ? "<null>" : ("[" + buf.length + "]"), offset, len);
         }
 
         public String sigObjectArgs(A a, B b)
@@ -148,12 +148,13 @@ public class InvokerUtilsTest
     }
 
     private static MethodHandles.Lookup lookup = MethodHandles.lookup();
-    
+
     @Test
     public void testSimpleInvoker() throws Throwable
     {
         Method method = ReflectUtils.findMethod(Simple.class, "onMessage", String.class);
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Simple.class, method, new InvokerUtils.Arg(String.class));
+        MethodHandle methodHandle =
+            InvokerUtils.mutatedInvoker(lookup, Simple.class, method, new InvokerUtils.Arg(String.class));
 
         Simple simple = new Simple();
         String result = (String)methodHandle.invoke(simple, "Hello World");
@@ -165,10 +166,9 @@ public class InvokerUtilsTest
     {
         Method method2 = ReflectUtils.findMethod(KeyValue.class, "onEntry", int.class, String.class);
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(String.class),
-            new InvokerUtils.Arg(int.class)
-        };
+        InvokerUtils.Arg[] callingArgs =
+            new InvokerUtils.Arg[]
+            {new InvokerUtils.Arg(String.class), new InvokerUtils.Arg(int.class)};
 
         MethodHandle methodHandle2 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method2, callingArgs);
 
@@ -182,10 +182,9 @@ public class InvokerUtilsTest
     {
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(String.class),
-            new InvokerUtils.Arg(int.class)
-        };
+        InvokerUtils.Arg[] callingArgs =
+            new InvokerUtils.Arg[]
+            {new InvokerUtils.Arg(String.class), new InvokerUtils.Arg(int.class)};
 
         MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method1, callingArgs);
 
@@ -200,9 +199,7 @@ public class InvokerUtilsTest
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
         InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(String.class),
-            new InvokerUtils.Arg(int.class),
-            new InvokerUtils.Arg(Boolean.class)
+            new InvokerUtils.Arg(String.class), new InvokerUtils.Arg(int.class), new InvokerUtils.Arg(Boolean.class)
         };
 
         MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method1, callingArgs);
@@ -218,9 +215,7 @@ public class InvokerUtilsTest
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
         InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(String.class),
-            new InvokerUtils.Arg(Long.class),
-            new InvokerUtils.Arg(int.class)
+            new InvokerUtils.Arg(String.class), new InvokerUtils.Arg(Long.class), new InvokerUtils.Arg(int.class)
         };
 
         MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method1, callingArgs);
@@ -236,9 +231,7 @@ public class InvokerUtilsTest
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
         InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(Simple.class),
-            new InvokerUtils.Arg(String.class),
-            new InvokerUtils.Arg(int.class)
+            new InvokerUtils.Arg(Simple.class), new InvokerUtils.Arg(String.class), new InvokerUtils.Arg(int.class)
         };
 
         MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method1, callingArgs);
@@ -279,7 +272,8 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(int.class, "cost")
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, NamedParams.class, method, new NameParamIdentifier(), null, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(
+            lookup, NamedParams.class, method, new NameParamIdentifier(), null, callingArgs);
 
         NamedParams obj = new NamedParams();
         String result = (String)methodHandle.invoke(obj, "Apple", "Red", 10);
@@ -297,7 +291,8 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class, "color")
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, NamedParams.class, method, new NameParamIdentifier(), null, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(
+            lookup, NamedParams.class, method, new NameParamIdentifier(), null, callingArgs);
 
         NamedParams obj = new NamedParams();
         String result = (String)methodHandle.invoke(obj, 20, "Banana", "Yellow");
@@ -323,9 +318,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigEmpty");
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(File.class)
-        };
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{new InvokerUtils.Arg(File.class)};
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("bogus"));
@@ -338,9 +331,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigEmpty");
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(File.class)
-        };
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{new InvokerUtils.Arg(File.class)};
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, null);
@@ -353,9 +344,7 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStr");
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(String.class)
-        };
+        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{new InvokerUtils.Arg(String.class)};
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, "Hello");
@@ -368,10 +357,9 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStr");
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(File.class),
-            new InvokerUtils.Arg(String.class)
-        };
+        InvokerUtils.Arg[] callingArgs =
+            new InvokerUtils.Arg[]
+            {new InvokerUtils.Arg(File.class), new InvokerUtils.Arg(String.class)};
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("bogus"), "Hiya");
@@ -384,10 +372,9 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStr");
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(String.class),
-            new InvokerUtils.Arg(File.class)
-        };
+        InvokerUtils.Arg[] callingArgs =
+            new InvokerUtils.Arg[]
+            {new InvokerUtils.Arg(String.class), new InvokerUtils.Arg(File.class)};
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, "Greetings", new File("bogus"));
@@ -400,10 +387,9 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStrFile");
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(String.class),
-            new InvokerUtils.Arg(File.class)
-        };
+        InvokerUtils.Arg[] callingArgs =
+            new InvokerUtils.Arg[]
+            {new InvokerUtils.Arg(String.class), new InvokerUtils.Arg(File.class)};
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, "Name", new File("bogus1"));
@@ -416,10 +402,9 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStrFile");
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(File.class),
-            new InvokerUtils.Arg(String.class)
-        };
+        InvokerUtils.Arg[] callingArgs =
+            new InvokerUtils.Arg[]
+            {new InvokerUtils.Arg(File.class), new InvokerUtils.Arg(String.class)};
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("bogus2"), "Alt");
@@ -432,10 +417,9 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStr");
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(String.class),
-            new InvokerUtils.Arg(File.class)
-        };
+        InvokerUtils.Arg[] callingArgs =
+            new InvokerUtils.Arg[]
+            {new InvokerUtils.Arg(String.class), new InvokerUtils.Arg(File.class)};
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, "Bob", new File("bogus3"));
@@ -448,10 +432,9 @@ public class InvokerUtilsTest
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStr");
 
-        InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(File.class),
-            new InvokerUtils.Arg(String.class)
-        };
+        InvokerUtils.Arg[] callingArgs =
+            new InvokerUtils.Arg[]
+            {new InvokerUtils.Arg(File.class), new InvokerUtils.Arg(String.class)};
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("bogus4"), "Dobalina");
@@ -470,7 +453,8 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(boolean.class, "fin")
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(
+            lookup, SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("foo"), "bar", true);
         assertThat("Result", result, is("sigFileStrFin<foo,bar,true>"));
     }
@@ -482,9 +466,7 @@ public class InvokerUtilsTest
         Method method = findMethodByName(samples, "sigFileStrFin");
 
         InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(File.class),
-            new InvokerUtils.Arg(String.class),
-            new InvokerUtils.Arg(boolean.class)
+            new InvokerUtils.Arg(File.class), new InvokerUtils.Arg(String.class), new InvokerUtils.Arg(boolean.class)
         };
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
@@ -504,7 +486,8 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(
+            lookup, SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
         String result = (String)methodHandle.invoke(samples, false, new File("foo"), "bar");
         assertThat("Result", result, is("sigFileStrFin<foo,bar,false>"));
     }
@@ -516,9 +499,7 @@ public class InvokerUtilsTest
         Method method = findMethodByName(samples, "sigFileStrFin");
 
         InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{
-            new InvokerUtils.Arg(boolean.class),
-            new InvokerUtils.Arg(File.class),
-            new InvokerUtils.Arg(String.class)
+            new InvokerUtils.Arg(boolean.class), new InvokerUtils.Arg(File.class), new InvokerUtils.Arg(String.class)
         };
 
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
@@ -538,7 +519,8 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(
+            lookup, SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
         String result = (String)methodHandle.invoke(samples, true, null, "bar");
         assertThat("Result", result, is("sigFileStrFin<<null>,bar,true>"));
     }

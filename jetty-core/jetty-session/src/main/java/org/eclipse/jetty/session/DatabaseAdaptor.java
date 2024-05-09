@@ -27,7 +27,6 @@ import java.util.Locale;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,9 +47,9 @@ public class DatabaseAdaptor
     boolean _isLower;
     boolean _isUpper;
 
-    protected String _blobType; //if not set, is deduced from the type of the database at runtime
-    protected String _longType; //if not set, is deduced from the type of the database at runtime
-    protected String _stringType; //if not set defaults to 'varchar'
+    protected String _blobType; // if not set, is deduced from the type of the database at runtime
+    protected String _longType; // if not set, is deduced from the type of the database at runtime
+    protected String _stringType; // if not set defaults to 'varchar'
     private String _driverClassName;
     private String _connectionUrl;
     private Driver _driver;
@@ -62,8 +61,7 @@ public class DatabaseAdaptor
     {
     }
 
-    public void adaptTo(DatabaseMetaData dbMeta)
-        throws SQLException
+    public void adaptTo(DatabaseMetaData dbMeta) throws SQLException
     {
         _dbName = dbMeta.getDatabaseProductName().toLowerCase(Locale.ENGLISH);
         if (LOG.isDebugEnabled())
@@ -148,8 +146,7 @@ public class DatabaseAdaptor
         return _dbName;
     }
 
-    public InputStream getBlobInputStream(ResultSet result, String columnName)
-        throws SQLException
+    public InputStream getBlobInputStream(ResultSet result, String columnName) throws SQLException
     {
         if (_dbName == null)
             throw new IllegalStateException("DbAdaptor missing metadata");
@@ -252,11 +249,10 @@ public class DatabaseAdaptor
         return _connectionUrl;
     }
 
-    public void initialize()
-        throws Exception
+    public void initialize() throws Exception
     {
         if (_datasource != null)
-            return; //already set up
+            return; // already set up
 
         if (_jndiName != null)
         {
@@ -276,7 +272,7 @@ public class DatabaseAdaptor
             try
             {
                 InitialContext ic = new InitialContext();
-                _datasource = (DataSource)ic.lookup("jdbc/sessions"); //last ditch effort
+                _datasource = (DataSource)ic.lookup("jdbc/sessions"); // last ditch effort
             }
             catch (NamingException e)
             {
@@ -291,8 +287,7 @@ public class DatabaseAdaptor
      * @return the connection for the datasource
      * @throws SQLException if unable to get the connection
      */
-    protected Connection getConnection()
-        throws SQLException
+    protected Connection getConnection() throws SQLException
     {
         if (_datasource != null)
             return _datasource.getConnection();

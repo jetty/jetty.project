@@ -13,9 +13,8 @@
 
 module org.eclipse.jetty.ee10.quickstart
 {
-    requires  jakarta.servlet;
+    requires jakarta.servlet;
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.ee10.annotations;
 
     exports org.eclipse.jetty.ee10.quickstart;

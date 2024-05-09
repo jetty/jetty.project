@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,16 +32,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Server;
@@ -45,10 +47,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Tests of GzipHandler behavior with gzip compressed Request content.
@@ -90,9 +88,8 @@ public class GzipHandlerInputTest
     public static Stream<Arguments> transferScenarios()
     {
         int[] sizes = {
-            0, 1, 8191, 8192, 8193, 8194, 8195, 8226, 8227, 8260, 8261, 8262, 8263, 8264,
-            8192, 8193, 8194, 8195, 8226, 8227, 8228, 8259, 8260, 8261, 8262, 8263, 8515,
-            8516, 8517, 8518, 8773, 8774, 8775, 9216
+            0, 1, 8191, 8192, 8193, 8194, 8195, 8226, 8227, 8260, 8261, 8262, 8263, 8264, 8192, 8193, 8194, 8195, 8226,
+            8227, 8228, 8259, 8260, 8261, 8262, 8263, 8515, 8516, 8517, 8518, 8773, 8774, 8775, 9216
         };
         List<Arguments> scenarios = new ArrayList<>();
         // Scenarios 1: use Content-Length on request

@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.tests.distribution.session;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -24,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
@@ -34,11 +38,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers(disabledWithoutDocker = true)
 public abstract class AbstractSessionDistributionTests extends AbstractJettyHomeTest
@@ -54,31 +53,27 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
     {
 
         jettyHomeTester = JettyHomeTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .env(env())
-                .build();
+            .jettyVersion(jettyVersion)
+            .env(env())
+            .build();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings =
+    {"ee9", "ee10"})
     public void stopRestartWebappTestSessionContentSaved(String environment) throws Exception
     {
         startExternalSessionStorage();
 
-        String modules = "resources,server,http," +
-            toEnvironment("webapp", environment) +
-            "," +
-            toEnvironment("deploy", environment) +
-            "," +
-            toEnvironment("servlet", environment);
-          /*  "," +
-            toEnvironment("servlets", environment);*/
-        
+        String modules = "resources,server,http," + toEnvironment("webapp", environment) + "," + toEnvironment("deploy", environment) + "," + toEnvironment("servlet", environment);
+        /*  "," +
+        toEnvironment("servlets", environment);*/
+
         List<String> args = new ArrayList<>(Arrays.asList(
-                "--create-startd",
-                "--approve-all-licenses",
-                "--add-module=" + modules + "," + getFirstStartExtraModules()));
-        
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-module=" + modules + "," + getFirstStartExtraModules()));
+
         args.addAll(getFirstStartExtraArgs());
         String[] argsStart = args.toArray(new String[0]);
 
@@ -87,18 +82,17 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Path war = jettyHomeTester.resolveArtifact("org.eclipse.jetty." +  environment +
-                    ":" + "jetty-" + environment + "-test-simple-session-webapp:war:" + jettyVersion);
+            Path war = jettyHomeTester.resolveArtifact("org.eclipse.jetty." + environment + ":" + "jetty-" + environment + "-test-simple-session-webapp:war:" + jettyVersion);
             jettyHomeTester.installWar(war, "test");
 
             int port = Tester.freePort();
             args = new ArrayList<>(Collections.singletonList("jetty.http.port=" + port));
             args.addAll(getSecondStartExtraArgs());
             argsStart = args.toArray(new String[0]);
-            
-            //allow the external storage mechanisms to do some config before starting test
+
+            // allow the external storage mechanisms to do some config before starting test
             configureExternalSessionStorage(jettyHomeTester.getJettyBase());
-            
+
             try (JettyHomeTester.Run run2 = jettyHomeTester.start(argsStart))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
@@ -115,7 +109,8 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
 
             Path logFile = jettyHomeTester.getJettyBase().resolve("resources").resolve("jetty-logging.properties");
             Files.deleteIfExists(logFile);
-            try (BufferedWriter writer = Files.newBufferedWriter(logFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE))
+            try (BufferedWriter writer =
+                Files.newBufferedWriter(logFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE))
             {
                 writer.write("org.eclipse.jetty.session.LEVEL=" + sessionLogLevel);
             }
@@ -149,5 +144,4 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
     public abstract void stopExternalSessionStorage() throws Exception;
 
     public abstract void configureExternalSessionStorage(Path jettyBase) throws Exception;
-
 }

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.annotations;
 
+import jakarta.annotation.Resource;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -22,8 +23,6 @@ import java.util.Locale;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
-
-import jakarta.annotation.Resource;
 import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.MetaData;
@@ -38,12 +37,17 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceAnnotationHandler.class);
 
-    protected static final List<Class<?>> ENV_ENTRY_TYPES =
-        Arrays.asList(new Class[]
-            {
-                String.class, Character.class, Integer.class, Boolean.class, Double.class, Byte.class, Short.class, Long.class,
-                Float.class
-            });
+    protected static final List<Class<?>> ENV_ENTRY_TYPES = Arrays.asList(new Class[]{
+        String.class,
+        Character.class,
+        Integer.class,
+        Boolean.class,
+        Double.class,
+        Byte.class,
+        Short.class,
+        Long.class,
+        Float.class
+    });
 
     public ResourceAnnotationHandler(WebAppContext wac)
     {
@@ -68,7 +72,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 handleMethod(clazz, methods[i]);
             }
             Field[] fields = clazz.getDeclaredFields();
-            //For each field, get all of it's annotations
+            // For each field, get all of it's annotations
             for (int i = 0; i < fields.length; i++)
             {
                 handleField(clazz, fields[i]);
@@ -85,7 +89,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             String mappedName = resource.mappedName();
 
             if (name == null || name.trim().isEmpty())
-                throw new IllegalStateException("Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");
+                throw new IllegalStateException(
+                    "Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");
 
             try
             {
@@ -105,43 +110,44 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
         Resource resource = (Resource)field.getAnnotation(Resource.class);
         if (resource != null)
         {
-            //JavaEE Spec 5.2.3: Field cannot be static
+            // JavaEE Spec 5.2.3: Field cannot be static
             if (Modifier.isStatic(field.getModifiers()))
             {
                 LOG.warn("Skipping Resource annotation on {}.{}: cannot be static", clazz.getName(), field.getName());
                 return;
             }
 
-            //JavaEE Spec 5.2.3: Field cannot be final
+            // JavaEE Spec 5.2.3: Field cannot be final
             if (Modifier.isFinal(field.getModifiers()))
             {
                 LOG.warn("Skipping Resource annotation on {}.{}: cannot be final", clazz.getName(), field.getName());
                 return;
             }
 
-            //work out default name
+            // work out default name
             String name = clazz.getName() + "/" + field.getName();
 
-            //allow @Resource name= to override the field name
+            // allow @Resource name= to override the field name
             name = (resource.name() != null && !resource.name().trim().isEmpty() ? resource.name() : name);
             String mappedName = (resource.mappedName() != null && !resource.mappedName().trim().isEmpty() ? resource.mappedName() : null);
-            //get the type of the Field
+            // get the type of the Field
             Class<?> type = field.getType();
 
-            //Servlet Spec 3.0 p. 76
-            //If a descriptor has specified at least 1 injection target for this
-            //resource, then it overrides this annotation
+            // Servlet Spec 3.0 p. 76
+            // If a descriptor has specified at least 1 injection target for this
+            // resource, then it overrides this annotation
             MetaData metaData = _context.getMetaData();
             if (metaData.getOriginDescriptor("resource-ref." + name + ".injection") != null)
             {
-                //at least 1 injection was specified for this resource by a descriptor, so
-                //it overrides this annotation
+                // at least 1 injection was specified for this resource by a descriptor, so
+                // it overrides this annotation
                 return;
             }
 
-            //No injections for this resource in any descriptors, so we can add it
-            //Does the injection already exist?
-            InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+            // No injections for this resource in any descriptors, so we can add it
+            // Does the injection already exist?
+            InjectionCollection injections =
+                (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
             if (injections == null)
             {
                 injections = new InjectionCollection();
@@ -150,26 +156,27 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             Injection injection = injections.getInjection(name, clazz, field);
             if (injection == null)
             {
-                //No injection has been specified, add it
+                // No injection has been specified, add it
                 try
                 {
-                    //try webapp scope first
+                    // try webapp scope first
                     boolean bound = NamingEntryUtil.bindToENC(_context, name, mappedName);
-                    
-                    //try environment scope next
+
+                    // try environment scope next
                     if (!bound)
-                        bound = NamingEntryUtil.bindToENC(ServletContextHandler.ENVIRONMENT.getName(), name, mappedName);
-                    
-                    //try Server scope next
+                        bound = NamingEntryUtil.bindToENC(
+                            ServletContextHandler.ENVIRONMENT.getName(), name, mappedName);
+
+                    // try Server scope next
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
-                    
-                    //try jvm scope next
+
+                    // try jvm scope next
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(null, name, mappedName);
                     if (!bound)
                     {
-                        //see if there is an env-entry value been bound
+                        // see if there is an env-entry value been bound
                         try
                         {
                             InitialContext ic = new InitialContext();
@@ -182,7 +189,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                             bound = false;
                         }
                     }
-                    //Check there is a JNDI entry for this annotation
+                    // Check there is a JNDI entry for this annotation
                     if (bound)
                     {
                         LOG.debug("Bound {} as {}", (mappedName == null ? name : mappedName), name);
@@ -190,13 +197,13 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         injection = new Injection(clazz, field, type, name, mappedName);
                         injections.add(injection);
 
-                        //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
+                        // TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
                         metaData.setOrigin("resource-ref." + name + ".injection", resource, clazz);
                     }
                     else if (!isEnvEntryType(type))
                     {
-                        //if this is an env-entry type resource and there is no value bound for it, it isn't
-                        //an error, it just means that perhaps the code will use a default value instead
+                        // if this is an env-entry type resource and there is no value bound for it, it isn't
+                        // an error, it just means that perhaps the code will use a default value instead
                         // JavaEE Spec. sec 5.4.1.3
 
                         throw new IllegalStateException("No resource at " + (mappedName == null ? name : mappedName));
@@ -204,8 +211,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 }
                 catch (NamingException e)
                 {
-                    //if this is an env-entry type resource and there is no value bound for it, it isn't
-                    //an error, it just means that perhaps the code will use a default value instead
+                    // if this is an env-entry type resource and there is no value bound for it, it isn't
+                    // an error, it just means that perhaps the code will use a default value instead
                     // JavaEE Spec. sec 5.4.1.3
                     if (!isEnvEntryType(type))
                         throw new IllegalStateException(e);
@@ -246,7 +253,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
              *  Which IMHO, put more succinctly means "If you find a @Resource on any method
              *  or field, inject it!".
              */
-            //JavaEE Spec 5.2.3: Method cannot be static
+            // JavaEE Spec 5.2.3: Method cannot be static
             if (Modifier.isStatic(method.getModifiers()))
             {
                 LOG.warn("Skipping Resource annotation on {}.{}: cannot be static", clazz.getName(), method.getName());
@@ -257,23 +264,32 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             // only 1 parameter
             if (!method.getName().startsWith("set"))
             {
-                LOG.warn("Skipping Resource annotation on {}.{}: invalid java bean, does not start with 'set'", clazz.getName(), method.getName());
+                LOG.warn(
+                    "Skipping Resource annotation on {}.{}: invalid java bean, does not start with 'set'",
+                    clazz.getName(),
+                    method.getName());
                 return;
             }
 
             if (method.getParameterCount() != 1)
             {
-                LOG.warn("Skipping Resource annotation on {}.{}: invalid java bean, not single argument to method", clazz.getName(), method.getName());
+                LOG.warn(
+                    "Skipping Resource annotation on {}.{}: invalid java bean, not single argument to method",
+                    clazz.getName(),
+                    method.getName());
                 return;
             }
 
             if (Void.TYPE != method.getReturnType())
             {
-                LOG.warn("Skipping Resource annotation on {}.{}: invalid java bean, not void", clazz.getName(), method.getName());
+                LOG.warn(
+                    "Skipping Resource annotation on {}.{}: invalid java bean, not void",
+                    clazz.getName(),
+                    method.getName());
                 return;
             }
 
-            //default name is the javabean property name
+            // default name is the javabean property name
             String name = method.getName().substring(3);
             name = name.substring(0, 1).toLowerCase(Locale.ENGLISH) + name.substring(1);
             name = clazz.getName() + "/" + name;
@@ -284,19 +300,20 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
             Class<?> resourceType = resource.type();
 
-            //Servlet Spec 3.0 p. 76
-            //If a descriptor has specified at least 1 injection target for this
-            //resource, then it overrides this annotation
+            // Servlet Spec 3.0 p. 76
+            // If a descriptor has specified at least 1 injection target for this
+            // resource, then it overrides this annotation
             MetaData metaData = _context.getMetaData();
             if (metaData.getOriginDescriptor("resource-ref." + name + ".injection") != null)
             {
-                //at least 1 injection was specified for this resource by a descriptor, so
-                //it overrides this annotation
+                // at least 1 injection was specified for this resource by a descriptor, so
+                // it overrides this annotation
                 return;
             }
 
-            //check if an injection has already been setup for this target by web.xml
-            InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+            // check if an injection has already been setup for this target by web.xml
+            InjectionCollection injections =
+                (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
             if (injections == null)
             {
                 injections = new InjectionCollection();
@@ -307,24 +324,25 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             {
                 try
                 {
-                    //try binding name to environment
-                    //try the webapp's scope first
+                    // try binding name to environment
+                    // try the webapp's scope first
                     boolean bound = NamingEntryUtil.bindToENC(_context, name, mappedName);
-                    
-                    //try the environment's scope
+
+                    // try the environment's scope
                     if (!bound)
-                        bound = NamingEntryUtil.bindToENC(ServletContextHandler.ENVIRONMENT.getName(), name, mappedName);
-                    
-                    //try the server's scope
+                        bound = NamingEntryUtil.bindToENC(
+                            ServletContextHandler.ENVIRONMENT.getName(), name, mappedName);
+
+                    // try the server's scope
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
 
-                    //try the jvm's scope
+                    // try the jvm's scope
                     if (!bound)
                         bound = NamingEntryUtil.bindToENC(null, name, mappedName);
 
-                    //TODO if it is an env-entry from web.xml it can be injected, in which case there will be no
-                    //NamingEntry, just a value bound in java:comp/env
+                    // TODO if it is an env-entry from web.xml it can be injected, in which case there will be no
+                    // NamingEntry, just a value bound in java:comp/env
                     if (!bound)
                     {
                         try
@@ -346,22 +364,22 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         //   Make the Injection for it
                         injection = new Injection(clazz, method, paramType, resourceType, name, mappedName);
                         injections.add(injection);
-                        //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
+                        // TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination
                         metaData.setOrigin("resource-ref." + name + ".injection", resource, clazz);
                     }
                     else if (!isEnvEntryType(paramType))
                     {
 
-                        //if this is an env-entry type resource and there is no value bound for it, it isn't
-                        //an error, it just means that perhaps the code will use a default value instead
+                        // if this is an env-entry type resource and there is no value bound for it, it isn't
+                        // an error, it just means that perhaps the code will use a default value instead
                         // JavaEE Spec. sec 5.4.1.3
                         throw new IllegalStateException("No resource at " + (mappedName == null ? name : mappedName));
                     }
                 }
                 catch (NamingException e)
                 {
-                    //if this is an env-entry type resource and there is no value bound for it, it isn't
-                    //an error, it just means that perhaps the code will use a default value instead
+                    // if this is an env-entry type resource and there is no value bound for it, it isn't
+                    // an error, it just means that perhaps the code will use a default value instead
                     // JavaEE Spec. sec 5.4.1.3
                     if (!isEnvEntryType(paramType))
                         throw new IllegalStateException(e);
@@ -378,17 +396,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
      */
     public boolean supportsResourceInjection(Class<?> c)
     {
-        if (jakarta.servlet.Servlet.class.isAssignableFrom(c) ||
-            jakarta.servlet.Filter.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletContextListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.AsyncListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
+        if (jakarta.servlet.Servlet.class.isAssignableFrom(c) || jakarta.servlet.Filter.class.isAssignableFrom(c) || jakarta.servlet.ServletContextListener.class.isAssignableFrom(c) || jakarta.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) || jakarta.servlet.ServletRequestListener.class.isAssignableFrom(c) || jakarta.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) || jakarta.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) || jakarta.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) || jakarta.servlet.AsyncListener.class.isAssignableFrom(c) || jakarta.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
             return true;
 
         return false;

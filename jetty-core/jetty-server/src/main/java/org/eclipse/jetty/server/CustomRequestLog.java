@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server;
 
+import static java.lang.invoke.MethodHandles.dropArguments;
+import static java.lang.invoke.MethodHandles.foldArguments;
+import static java.lang.invoke.MethodType.methodType;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -28,7 +32,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.QuotedCSV;
@@ -42,10 +45,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.invoke.MethodHandles.dropArguments;
-import static java.lang.invoke.MethodHandles.foldArguments;
-import static java.lang.invoke.MethodType.methodType;
 
 /**
  * <p>A flexible RequestLog, which produces log strings in a customizable format.</p>
@@ -214,13 +213,13 @@ import static java.lang.invoke.MethodType.methodType;
  * <p>The name of the Handler or Servlet generating the response (if any).</p>
  * </td>
  * </tr>
-  * <tr>
+ * <tr>
  * <td>%s</td>
  * <td>
  * <p>The HTTP response status code.</p>
  * </td>
  * </tr>
-  * <tr>
+ * <tr>
  * <td>%{format|timeZone|locale}t</td>
  * <td>
  * <p>The time at which the request was received.</p>
@@ -262,7 +261,7 @@ import static java.lang.invoke.MethodType.methodType;
  * <p>The URL path requested, not including any query string.</p>
  * </td>
  * </tr>
-  * <tr>
+ * <tr>
  * <td>%X</td>
  * <td>
  * <p>The connection status when response is completed:</p>
@@ -299,8 +298,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
      * @param handlerName The name of the entity that handled the request
      * @param realPath The real path on the filesystem represented by the request
      */
-    public record LogDetail(String handlerName, String realPath)
-    {
+    public record LogDetail(String handlerName, String realPath) {
     }
 
     public static final String DEFAULT_DATE_FORMAT = "dd/MMM/yyyy:HH:mm:ss ZZZ";
@@ -458,8 +456,12 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private MethodHandle getLogHandle(String formatString) throws NoSuchMethodException, IllegalAccessException
     {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
-        MethodHandle append = lookup.findStatic(CustomRequestLog.class, "append", methodType(void.class, String.class, StringBuilder.class));
-        MethodHandle logHandle = lookup.findStatic(CustomRequestLog.class, "logNothing", methodType(void.class, StringBuilder.class, Request.class, Response.class));
+        MethodHandle append = lookup.findStatic(
+            CustomRequestLog.class, "append", methodType(void.class, String.class, StringBuilder.class));
+        MethodHandle logHandle = lookup.findStatic(
+            CustomRequestLog.class,
+            "logNothing",
+            methodType(void.class, StringBuilder.class, Request.class, Response.class));
 
         List<Token> tokens = getTokens(formatString);
         Collections.reverse(tokens);
@@ -483,13 +485,15 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         Extracts literal strings and percent codes out of the format string.
         We will either match a percent code of the format %MODIFIERS{PARAM}CODE, or a literal string
         until the next percent code or the end of the formatString is reached.
-
+        
         where
             MODIFIERS is an optional comma separated list of numbers.
             {PARAM} is an optional string parameter to the percent code.
             CODE is a 1 to 2 character string corresponding to a format code.
          */
-        final Pattern PATTERN = Pattern.compile("^(?:%(?<MOD>!?[0-9,]+)?(?:\\{(?<ARG>[^}]+)})?(?<CODE>(?:(?:ti)|(?:to)|[a-zA-Z%]))|(?<LITERAL>[^%]+))(?<REMAINING>.*)", Pattern.DOTALL | Pattern.MULTILINE);
+        final Pattern PATTERN = Pattern.compile(
+            "^(?:%(?<MOD>!?[0-9,]+)?(?:\\{(?<ARG>[^}]+)})?(?<CODE>(?:(?:ti)|(?:to)|[a-zA-Z%]))|(?<LITERAL>[^%]+))(?<REMAINING>.*)",
+            Pattern.DOTALL | Pattern.MULTILINE);
 
         List<Token> tokens = new ArrayList<>();
         String remaining = formatString;
@@ -515,10 +519,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                         }
 
                         modifiers = new QuotedCSV(modifierString)
-                            .getValues()
-                            .stream()
-                            .map(Integer::parseInt)
-                            .collect(Collectors.toList());
+                            .getValues().stream().map(Integer::parseInt).collect(Collectors.toList());
                     }
 
                     tokens.add(new Token(code, arg, modifiers, negated));
@@ -583,7 +584,8 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     }
 
     @SuppressWarnings("unused")
-    private static boolean modify(List<Integer> modifiers, Boolean negated, StringBuilder b, Request request, Response response)
+    private static boolean modify(
+                                  List<Integer> modifiers, Boolean negated, StringBuilder b, Request request, Response response)
     {
         if (negated)
             return !modifiers.contains(response.getStatus());
@@ -593,211 +595,241 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String literal)
     {
-        return foldArguments(logHandle, dropArguments(dropArguments(append.bindTo(literal), 1, Request.class), 2, Response.class));
+        return foldArguments(
+            logHandle, dropArguments(dropArguments(append.bindTo(literal), 1, Request.class), 2, Response.class));
     }
 
-    private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, MethodHandles.Lookup lookup, String code, String arg, List<Integer> modifiers, boolean negated) throws NoSuchMethodException, IllegalAccessException
+    private MethodHandle updateLogHandle(
+                                         MethodHandle logHandle,
+                                         MethodHandle append,
+                                         MethodHandles.Lookup lookup,
+                                         String code,
+                                         String arg,
+                                         List<Integer> modifiers,
+                                         boolean negated)
+        throws NoSuchMethodException, IllegalAccessException
     {
         MethodType logType = methodType(void.class, StringBuilder.class, Request.class, Response.class);
-        MethodType logTypeArg = methodType(void.class, String.class, StringBuilder.class, Request.class, Response.class);
+        MethodType logTypeArg =
+            methodType(void.class, String.class, StringBuilder.class, Request.class, Response.class);
 
-        //TODO should we throw IllegalArgumentExceptions when given arguments for codes which do not take them
-        MethodHandle specificHandle = switch (code)
-        {
-            case "%" -> dropArguments(dropArguments(append.bindTo("%"), 1, Request.class), 2, Response.class);
-            case "a" ->
+        // TODO should we throw IllegalArgumentExceptions when given arguments for codes which do not take them
+        MethodHandle specificHandle =
+            switch (code)
             {
-                if (StringUtil.isEmpty(arg))
-                    arg = "server";
-
-                String method = switch (arg)
+                case "%" -> dropArguments(dropArguments(append.bindTo("%"), 1, Request.class), 2, Response.class);
+                case "a" ->
                 {
-                    case "server" -> "logServerHost";
-                    case "client" -> "logClientHost";
-                    case "local" -> "logLocalHost";
-                    case "remote" -> "logRemoteHost";
-                    default -> throw new IllegalArgumentException("Invalid arg for %a");
-                };
+                    if (StringUtil.isEmpty(arg))
+                        arg = "server";
 
-                yield lookup.findStatic(CustomRequestLog.class, method, logType);
-            }
-            case "p" ->
-            {
-                if (StringUtil.isEmpty(arg))
-                    arg = "server";
+                    String method =
+                        switch (arg)
+                        {
+                            case "server" -> "logServerHost";
+                            case "client" -> "logClientHost";
+                            case "local" -> "logLocalHost";
+                            case "remote" -> "logRemoteHost";
+                            default -> throw new IllegalArgumentException("Invalid arg for %a");
+                        };
 
-                String method = switch (arg)
-                {
-                    case "server" -> "logServerPort";
-                    case "client" -> "logClientPort";
-                    case "local" -> "logLocalPort";
-                    case "remote" -> "logRemotePort";
-                    default -> throw new IllegalArgumentException("Invalid arg for %p");
-                };
-
-                yield lookup.findStatic(CustomRequestLog.class, method, logType);
-            }
-            case "I" ->
-            {
-                String method;
-                if (StringUtil.isEmpty(arg))
-                    method = "logBytesReceived";
-                else if (arg.equalsIgnoreCase("clf"))
-                    method = "logBytesReceivedCLF";
-                else
-                    throw new IllegalArgumentException("Invalid argument for %I");
-
-                yield lookup.findStatic(CustomRequestLog.class, method, logType);
-            }
-            case "O" ->
-            {
-                String method;
-                if (StringUtil.isEmpty(arg))
-                    method = "logBytesSent";
-                else if (arg.equalsIgnoreCase("clf"))
-                    method = "logBytesSentCLF";
-                else
-                    throw new IllegalArgumentException("Invalid argument for %O");
-
-                yield lookup.findStatic(CustomRequestLog.class, method, logType);
-            }
-            case "S" ->
-            {
-                String method;
-                if (StringUtil.isEmpty(arg))
-                    method = "logBytesTransferred";
-                else if (arg.equalsIgnoreCase("clf"))
-                    method = "logBytesTransferredCLF";
-                else
-                    throw new IllegalArgumentException("Invalid argument for %S");
-
-                yield lookup.findStatic(CustomRequestLog.class, method, logType);
-            }
-            case "C" ->
-            {
-                if (StringUtil.isEmpty(arg))
-                {
-                    yield lookup.findStatic(CustomRequestLog.class, "logRequestCookies", logType);
+                    yield lookup.findStatic(CustomRequestLog.class, method, logType);
                 }
-                else
+                case "p" ->
                 {
-                    yield lookup.findStatic(CustomRequestLog.class, "logRequestCookie", logTypeArg).bindTo(arg);
+                    if (StringUtil.isEmpty(arg))
+                        arg = "server";
+
+                    String method =
+                        switch (arg)
+                        {
+                            case "server" -> "logServerPort";
+                            case "client" -> "logClientPort";
+                            case "local" -> "logLocalPort";
+                            case "remote" -> "logRemotePort";
+                            default -> throw new IllegalArgumentException("Invalid arg for %p");
+                        };
+
+                    yield lookup.findStatic(CustomRequestLog.class, method, logType);
                 }
-            }
-            case "D" -> lookup.findStatic(CustomRequestLog.class, "logLatencyMicroseconds", logType);
-            case "e" ->
-            {
-                if (StringUtil.isEmpty(arg))
-                    throw new IllegalArgumentException("No arg for %e");
-
-                yield lookup.findStatic(CustomRequestLog.class, "logEnvironmentVar", logTypeArg).bindTo(arg);
-            }
-            case "f" -> lookup.findStatic(CustomRequestLog.class, "logFilename", logType);
-            case "H" -> lookup.findStatic(CustomRequestLog.class, "logRequestProtocol", logType);
-            case "i" ->
-            {
-                if (StringUtil.isEmpty(arg))
-                    throw new IllegalArgumentException("No arg for %i");
-
-                yield lookup.findStatic(CustomRequestLog.class, "logRequestHeader", logTypeArg).bindTo(arg);
-            }
-            case "k" -> lookup.findStatic(CustomRequestLog.class, "logKeepAliveRequests", logType);
-            case "m" -> lookup.findStatic(CustomRequestLog.class, "logRequestMethod", logType);
-            case "o" ->
-            {
-                if (StringUtil.isEmpty(arg))
-                    throw new IllegalArgumentException("No arg for %o");
-                yield lookup.findStatic(CustomRequestLog.class, "logResponseHeader", logTypeArg).bindTo(arg);
-            }
-            case "q" -> lookup.findStatic(CustomRequestLog.class, "logQueryString", logType);
-            case "r" -> lookup.findStatic(CustomRequestLog.class, "logRequestFirstLine", logType);
-            case "R" -> lookup.findStatic(CustomRequestLog.class, "logRequestHandler", logType);
-            case "s" -> lookup.findStatic(CustomRequestLog.class, "logResponseStatus", logType);
-            case "t" ->
-            {
-                String format = DEFAULT_DATE_FORMAT;
-                TimeZone timeZone = TimeZone.getTimeZone("GMT");
-                Locale locale = Locale.getDefault();
-
-                if (arg != null && !arg.isEmpty())
+                case "I" ->
                 {
-                    String[] args = arg.split("\\|");
-                    switch (args.length)
+                    String method;
+                    if (StringUtil.isEmpty(arg))
+                        method = "logBytesReceived";
+                    else if (arg.equalsIgnoreCase("clf"))
+                        method = "logBytesReceivedCLF";
+                    else
+                        throw new IllegalArgumentException("Invalid argument for %I");
+
+                    yield lookup.findStatic(CustomRequestLog.class, method, logType);
+                }
+                case "O" ->
+                {
+                    String method;
+                    if (StringUtil.isEmpty(arg))
+                        method = "logBytesSent";
+                    else if (arg.equalsIgnoreCase("clf"))
+                        method = "logBytesSentCLF";
+                    else
+                        throw new IllegalArgumentException("Invalid argument for %O");
+
+                    yield lookup.findStatic(CustomRequestLog.class, method, logType);
+                }
+                case "S" ->
+                {
+                    String method;
+                    if (StringUtil.isEmpty(arg))
+                        method = "logBytesTransferred";
+                    else if (arg.equalsIgnoreCase("clf"))
+                        method = "logBytesTransferredCLF";
+                    else
+                        throw new IllegalArgumentException("Invalid argument for %S");
+
+                    yield lookup.findStatic(CustomRequestLog.class, method, logType);
+                }
+                case "C" ->
+                {
+                    if (StringUtil.isEmpty(arg))
                     {
-                        case 1 -> format = args[0];
-                        case 2 ->
-                        {
-                            format = args[0];
-                            timeZone = TimeZone.getTimeZone(args[1]);
-                        }
-                        case 3 ->
-                        {
-                            format = args[0];
-                            timeZone = TimeZone.getTimeZone(args[1]);
-                            locale = Locale.forLanguageTag(args[2]);
-                        }
-                        default -> throw new IllegalArgumentException("Too many \"|\" characters in %t");
+                        yield lookup.findStatic(CustomRequestLog.class, "logRequestCookies", logType);
+                    }
+                    else
+                    {
+                        yield lookup.findStatic(CustomRequestLog.class, "logRequestCookie", logTypeArg)
+                            .bindTo(arg);
                     }
                 }
-
-                DateCache logDateCache = new DateCache(format, locale, timeZone);
-
-                MethodType logTypeDateCache = methodType(void.class, DateCache.class, StringBuilder.class, Request.class, Response.class);
-                yield lookup.findStatic(CustomRequestLog.class, "logRequestTime", logTypeDateCache).bindTo(logDateCache);
-            }
-            case "T" ->
-            {
-                if (arg == null)
-                    arg = "s";
-
-                String method = switch (arg)
+                case "D" -> lookup.findStatic(CustomRequestLog.class, "logLatencyMicroseconds", logType);
+                case "e" ->
                 {
-                    case "s" -> "logLatencySeconds";
-                    case "us" -> "logLatencyMicroseconds";
-                    case "ms" -> "logLatencyMilliseconds";
-                    default -> throw new IllegalArgumentException("Invalid arg for %T");
-                };
+                    if (StringUtil.isEmpty(arg))
+                        throw new IllegalArgumentException("No arg for %e");
 
-                yield lookup.findStatic(CustomRequestLog.class, method, logType);
-            }
-            case "u" ->
-            {
-                String method;
-                if (StringUtil.isEmpty(arg))
-                    method = "logRequestAuthentication";
-                else if ("d".equals(arg))
-                    method = "logRequestAuthenticationWithDeferred";
-                else
-                    throw new IllegalArgumentException("Invalid arg for %u: " + arg);
+                    yield lookup.findStatic(CustomRequestLog.class, "logEnvironmentVar", logTypeArg)
+                        .bindTo(arg);
+                }
+                case "f" -> lookup.findStatic(CustomRequestLog.class, "logFilename", logType);
+                case "H" -> lookup.findStatic(CustomRequestLog.class, "logRequestProtocol", logType);
+                case "i" ->
+                {
+                    if (StringUtil.isEmpty(arg))
+                        throw new IllegalArgumentException("No arg for %i");
 
-                yield lookup.findStatic(CustomRequestLog.class, method, logType);
-            }
-            case "U" -> lookup.findStatic(CustomRequestLog.class, "logUrlRequestPath", logType);
-            case "X" -> lookup.findStatic(CustomRequestLog.class, "logConnectionStatus", logType);
-            case "ti" ->
-            {
-                if (StringUtil.isEmpty(arg))
-                    throw new IllegalArgumentException("No arg for %ti");
+                    yield lookup.findStatic(CustomRequestLog.class, "logRequestHeader", logTypeArg)
+                        .bindTo(arg);
+                }
+                case "k" -> lookup.findStatic(CustomRequestLog.class, "logKeepAliveRequests", logType);
+                case "m" -> lookup.findStatic(CustomRequestLog.class, "logRequestMethod", logType);
+                case "o" ->
+                {
+                    if (StringUtil.isEmpty(arg))
+                        throw new IllegalArgumentException("No arg for %o");
+                    yield lookup.findStatic(CustomRequestLog.class, "logResponseHeader", logTypeArg)
+                        .bindTo(arg);
+                }
+                case "q" -> lookup.findStatic(CustomRequestLog.class, "logQueryString", logType);
+                case "r" -> lookup.findStatic(CustomRequestLog.class, "logRequestFirstLine", logType);
+                case "R" -> lookup.findStatic(CustomRequestLog.class, "logRequestHandler", logType);
+                case "s" -> lookup.findStatic(CustomRequestLog.class, "logResponseStatus", logType);
+                case "t" ->
+                {
+                    String format = DEFAULT_DATE_FORMAT;
+                    TimeZone timeZone = TimeZone.getTimeZone("GMT");
+                    Locale locale = Locale.getDefault();
 
-                yield lookup.findStatic(CustomRequestLog.class, "logRequestTrailer", logTypeArg).bindTo(arg);
-            }
-            case "to" ->
-            {
-                if (StringUtil.isEmpty(arg))
-                    throw new IllegalArgumentException("No arg for %to");
+                    if (arg != null && !arg.isEmpty())
+                    {
+                        String[] args = arg.split("\\|");
+                        switch (args.length)
+                        {
+                            case 1 -> format = args[0];
+                            case 2 ->
+                            {
+                                format = args[0];
+                                timeZone = TimeZone.getTimeZone(args[1]);
+                            }
+                            case 3 ->
+                            {
+                                format = args[0];
+                                timeZone = TimeZone.getTimeZone(args[1]);
+                                locale = Locale.forLanguageTag(args[2]);
+                            }
+                            default -> throw new IllegalArgumentException("Too many \"|\" characters in %t");
+                        }
+                    }
 
-                yield lookup.findStatic(CustomRequestLog.class, "logResponseTrailer", logTypeArg).bindTo(arg);
-            }
-            default -> throw new IllegalArgumentException("Unsupported code %" + code);
-        };
+                    DateCache logDateCache = new DateCache(format, locale, timeZone);
+
+                    MethodType logTypeDateCache = methodType(
+                        void.class, DateCache.class, StringBuilder.class, Request.class, Response.class);
+                    yield lookup.findStatic(CustomRequestLog.class, "logRequestTime", logTypeDateCache)
+                        .bindTo(logDateCache);
+                }
+                case "T" ->
+                {
+                    if (arg == null)
+                        arg = "s";
+
+                    String method =
+                        switch (arg)
+                        {
+                            case "s" -> "logLatencySeconds";
+                            case "us" -> "logLatencyMicroseconds";
+                            case "ms" -> "logLatencyMilliseconds";
+                            default -> throw new IllegalArgumentException("Invalid arg for %T");
+                        };
+
+                    yield lookup.findStatic(CustomRequestLog.class, method, logType);
+                }
+                case "u" ->
+                {
+                    String method;
+                    if (StringUtil.isEmpty(arg))
+                        method = "logRequestAuthentication";
+                    else if ("d".equals(arg))
+                        method = "logRequestAuthenticationWithDeferred";
+                    else
+                        throw new IllegalArgumentException("Invalid arg for %u: " + arg);
+
+                    yield lookup.findStatic(CustomRequestLog.class, method, logType);
+                }
+                case "U" -> lookup.findStatic(CustomRequestLog.class, "logUrlRequestPath", logType);
+                case "X" -> lookup.findStatic(CustomRequestLog.class, "logConnectionStatus", logType);
+                case "ti" ->
+                {
+                    if (StringUtil.isEmpty(arg))
+                        throw new IllegalArgumentException("No arg for %ti");
+
+                    yield lookup.findStatic(CustomRequestLog.class, "logRequestTrailer", logTypeArg)
+                        .bindTo(arg);
+                }
+                case "to" ->
+                {
+                    if (StringUtil.isEmpty(arg))
+                        throw new IllegalArgumentException("No arg for %to");
+
+                    yield lookup.findStatic(CustomRequestLog.class, "logResponseTrailer", logTypeArg)
+                        .bindTo(arg);
+                }
+                default -> throw new IllegalArgumentException("Unsupported code %" + code);
+            };
 
         if (modifiers != null && !modifiers.isEmpty())
         {
             MethodHandle dash = updateLogHandle(logHandle, append, "-");
             MethodHandle log = foldArguments(logHandle, specificHandle);
 
-            MethodHandle modifierTest = lookup.findStatic(CustomRequestLog.class, "modify",
-                methodType(Boolean.TYPE, List.class, Boolean.class, StringBuilder.class, Request.class, Response.class));
+            MethodHandle modifierTest = lookup.findStatic(
+                CustomRequestLog.class,
+                "modify",
+                methodType(
+                    Boolean.TYPE,
+                    List.class,
+                    Boolean.class,
+                    StringBuilder.class,
+                    Request.class,
+                    Response.class));
             modifierTest = modifierTest.bindTo(modifiers).bindTo(negated);
             return MethodHandles.guardWithTest(modifierTest, log, dash);
         }
@@ -805,7 +837,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         return foldArguments(logHandle, specificHandle);
     }
 
-    //-----------------------------------------------------------------------------------//
+    // -----------------------------------------------------------------------------------//
     @SuppressWarnings("unused")
     private static void logNothing(StringBuilder b, Request request, Response response)
     {
@@ -982,7 +1014,8 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             Resource baseResource = context.getBaseResource();
             if (baseResource != null)
             {
-                String fileName = baseResource.resolve(Request.getPathInContext(request)).getName();
+                String fileName =
+                    baseResource.resolve(Request.getPathInContext(request)).getName();
                 append(b, fileName);
             }
             else
@@ -1114,9 +1147,8 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logConnectionStatus(StringBuilder b, Request request, Response response)
     {
-        b.append(response.isCompletedSuccessfully()
-            ? (request.getConnectionMetaData().isPersistent() ? '+' : '-')
-            : 'X');
+        b.append(
+            response.isCompletedSuccessfully() ? (request.getConnectionMetaData().isPersistent() ? '+' : '-') : 'X');
     }
 
     @SuppressWarnings("unused")

@@ -15,4 +15,3 @@
  * Jetty Runner : Embedded Jetty Tool for running webapps directly
  */
 package org.eclipse.jetty.ee9.runner;
-

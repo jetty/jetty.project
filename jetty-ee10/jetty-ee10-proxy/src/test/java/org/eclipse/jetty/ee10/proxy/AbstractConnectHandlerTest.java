@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.proxy;
 
 import java.io.IOException;
 import java.net.Socket;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ConnectHandler;

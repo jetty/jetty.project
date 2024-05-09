@@ -23,7 +23,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -36,7 +35,8 @@ import org.eclipse.jetty.util.component.DumpableCollection;
  * A {@link org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool} wrapper around {@link ThreadPoolExecutor}.
  */
 @ManagedObject("A thread pool")
-public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool.SizedThreadPool, TryExecutor, VirtualThreads.Configurable
+public class ExecutorThreadPool extends ContainerLifeCycle
+    implements ThreadPool.SizedThreadPool, TryExecutor, VirtualThreads.Configurable
 {
     private final ThreadPoolExecutor _executor;
     private final ThreadPoolBudget _budget;
@@ -82,7 +82,11 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
 
     public ExecutorThreadPool(ThreadPoolExecutor executor, int reservedThreads, ThreadGroup group)
     {
-        this(executor, Math.min(ProcessorUtils.availableProcessors(), executor.getCorePoolSize()), reservedThreads, group);
+        this(
+            executor,
+            Math.min(ProcessorUtils.availableProcessors(), executor.getCorePoolSize()),
+            reservedThreads,
+            group);
     }
 
     private ExecutorThreadPool(ThreadPoolExecutor executor, int minThreads, int reservedThreads, ThreadGroup group)
@@ -91,7 +95,8 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
         if (maxThreads < minThreads)
         {
             executor.shutdownNow();
-            throw new IllegalArgumentException("max threads (" + maxThreads + ") cannot be less than min threads (" + minThreads + ")");
+            throw new IllegalArgumentException(
+                "max threads (" + maxThreads + ") cannot be less than min threads (" + minThreads + ")");
         }
         _executor = executor;
         _executor.setThreadFactory(this::newThread);
@@ -382,7 +387,8 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
                         b.append(String.valueOf(thread.getId()))
                             .append(" ")
                             .append(thread.getName())
-                            .append(" p=").append(String.valueOf(thread.getPriority()))
+                            .append(" p=")
+                            .append(String.valueOf(thread.getPriority()))
                             .append(" ")
                             .append(known)
                             .append(thread.getState().toString());
@@ -396,7 +402,8 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
                         }
                         else
                         {
-                            b.append(" @ ").append(frames.length > 0 ? String.valueOf(frames[0]) : "<no_stack_frames>");
+                            b.append(" @ ")
+                                .append(frames.length > 0 ? String.valueOf(frames[0]) : "<no_stack_frames>");
                             Dumpable.dumpObject(out, b.toString());
                         }
                     }
@@ -419,7 +426,8 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     @Override
     public String toString()
     {
-        return String.format("%s[%s]@%x{%s,%d<=%d<=%d,i=%d,q=%d,%s}",
+        return String.format(
+            "%s[%s]@%x{%s,%d<=%d<=%d,i=%d,q=%d,%s}",
             getClass().getSimpleName(),
             getName(),
             hashCode(),

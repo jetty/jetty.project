@@ -13,13 +13,15 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import java.io.IOException;
-import java.io.PrintWriter;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.EmptyLoginService;
@@ -30,9 +32,6 @@ import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 public class FormAuthenticatorTest
 {
@@ -96,7 +95,8 @@ public class FormAuthenticatorTest
     @Test
     public void testErrorDispatch() throws Exception
     {
-        String response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        String response = _connector.getResponse(
+            "GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("dispatcherType: REQUEST"));
         assertThat(response, containsString("contextPath: /ctx"));
         assertThat(response, containsString("servletPath: /error"));

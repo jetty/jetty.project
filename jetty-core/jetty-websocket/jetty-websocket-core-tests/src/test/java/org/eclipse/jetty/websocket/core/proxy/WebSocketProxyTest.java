@@ -13,13 +13,21 @@
 
 package org.eclipse.jetty.websocket.core.proxy;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -48,15 +56,6 @@ import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketProxyTest
 {
@@ -118,7 +117,8 @@ public class WebSocketProxyTest
         negotiator = new WebSocketNegotiator.AbstractNegotiator(defaultCustomizer)
         {
             @Override
-            public FrameHandler negotiate(ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
+            public FrameHandler negotiate(
+                                          ServerUpgradeRequest request, ServerUpgradeResponse response, Callback callback)
             {
                 return proxy.client2Proxy;
             }
@@ -145,7 +145,8 @@ public class WebSocketProxyTest
         _server.stop();
     }
 
-    public void awaitProxyClose(WebSocketProxy.Client2Proxy client2Proxy, WebSocketProxy.Proxy2Server server2Proxy) throws Exception
+    public void awaitProxyClose(WebSocketProxy.Client2Proxy client2Proxy, WebSocketProxy.Proxy2Server server2Proxy)
+        throws Exception
     {
         if (client2Proxy != null && !client2Proxy.closed.await(5, TimeUnit.SECONDS))
             throw new TimeoutException("client2Proxy close timeout");
@@ -189,10 +190,22 @@ public class WebSocketProxyTest
         assertThat(proxyClientSide.getState(), is(WebSocketProxy.State.CLOSED));
         assertThat(proxyServerSide.getState(), is(WebSocketProxy.State.CLOSED));
 
-        assertThat(CloseStatus.getCloseStatus(proxyClientSide.receivedFrames.poll()).getReason(), is("standard close"));
-        assertThat(CloseStatus.getCloseStatus(serverFrameHandler.receivedFrames.poll()).getReason(), is("standard close"));
-        assertThat(CloseStatus.getCloseStatus(proxyServerSide.receivedFrames.poll()).getReason(), is("standard close"));
-        assertThat(CloseStatus.getCloseStatus(clientFrameHandler.receivedFrames.poll()).getReason(), is("standard close"));
+        assertThat(
+            CloseStatus.getCloseStatus(proxyClientSide.receivedFrames.poll())
+                .getReason(),
+            is("standard close"));
+        assertThat(
+            CloseStatus.getCloseStatus(serverFrameHandler.receivedFrames.poll())
+                .getReason(),
+            is("standard close"));
+        assertThat(
+            CloseStatus.getCloseStatus(proxyServerSide.receivedFrames.poll())
+                .getReason(),
+            is("standard close"));
+        assertThat(
+            CloseStatus.getCloseStatus(clientFrameHandler.receivedFrames.poll())
+                .getReason(),
+            is("standard close"));
 
         assertNull(proxyClientSide.receivedFrames.poll());
         assertNull(serverFrameHandler.receivedFrames.poll());
@@ -210,7 +223,8 @@ public class WebSocketProxyTest
         TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
         try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
-            CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, proxyUri, clientFrameHandler);
+            CoreClientUpgradeRequest upgradeRequest =
+                CoreClientUpgradeRequest.from(_client, proxyUri, clientFrameHandler);
             upgradeRequest.setConfiguration(defaultCustomizer);
             CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
             response.get(5, TimeUnit.SECONDS);
@@ -249,7 +263,8 @@ public class WebSocketProxyTest
 
         try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
-            CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, proxyUri, clientFrameHandler);
+            CoreClientUpgradeRequest upgradeRequest =
+                CoreClientUpgradeRequest.from(_client, proxyUri, clientFrameHandler);
             upgradeRequest.setConfiguration(defaultCustomizer);
             CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
             Exception e = assertThrows(ExecutionException.class, () -> response.get(5, TimeUnit.SECONDS));

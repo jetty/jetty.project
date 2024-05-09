@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -26,12 +38,6 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.WriteListener;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -47,13 +53,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -171,9 +170,7 @@ public class HttpOutputTest
             }
         };
         LocalEndPoint endp = _connector.executeRequest(
-            "GET / HTTP/1.1\nHost: localhost:80\n\n" +
-                "GET / HTTP/1.1\nHost: localhost:80\nConnection: close\n\n"
-        );
+            "GET / HTTP/1.1\nHost: localhost:80\n\n" + "GET / HTTP/1.1\nHost: localhost:80\nConnection: close\n\n");
 
         String response = endp.getResponse();
 
@@ -290,9 +287,7 @@ public class HttpOutputTest
         };
 
         LocalEndPoint endp = _connector.executeRequest(
-            "GET / HTTP/1.1\nHost: localhost:80\n\n" +
-                "GET / HTTP/1.1\nHost: localhost:80\nConnection: close\n\n"
-        );
+            "GET / HTTP/1.1\nHost: localhost:80\n\n" + "GET / HTTP/1.1\nHost: localhost:80\nConnection: close\n\n");
 
         String response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
@@ -428,7 +423,7 @@ public class HttpOutputTest
         _handler._writeLengthIfKnown = true;
         _handler._content = BufferUtil.allocate(4 * 1024 * 1024);
         _handler._content.limit(_handler._content.capacity());
-        for (int i = _handler._content.capacity(); i-- > 0; )
+        for (int i = _handler._content.capacity(); i-- > 0;)
         {
             _handler._content.put(i, (byte)'x');
         }
@@ -600,7 +595,7 @@ public class HttpOutputTest
         _handler._writeLengthIfKnown = false;
         _handler._content = BufferUtil.allocate(4 * 1024 * 1024);
         _handler._content.limit(_handler._content.capacity());
-        for (int i = _handler._content.capacity(); i-- > 0; )
+        for (int i = _handler._content.capacity(); i-- > 0;)
         {
             _handler._content.put(i, (byte)'x');
         }
@@ -662,8 +657,7 @@ public class HttpOutputTest
     }
 
     @Test
-    public void testAsyncWriteBufferLargeDirect()
-        throws Exception
+    public void testAsyncWriteBufferLargeDirect() throws Exception
     {
         final Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._writeLengthIfKnown = false;
@@ -775,7 +769,9 @@ public class HttpOutputTest
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
@@ -805,7 +801,9 @@ public class HttpOutputTest
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
@@ -837,7 +835,9 @@ public class HttpOutputTest
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
@@ -860,7 +860,9 @@ public class HttpOutputTest
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
@@ -895,7 +897,8 @@ public class HttpOutputTest
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             HttpOutput out = (HttpOutput)response.getOutputStream();
@@ -934,7 +937,8 @@ public class HttpOutputTest
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             HttpOutput out = (HttpOutput)response.getOutputStream();
@@ -1018,7 +1022,8 @@ public class HttpOutputTest
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             HttpOutput out = (HttpOutput)response.getOutputStream();
@@ -1060,7 +1065,9 @@ public class HttpOutputTest
         _swap.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setCharacterEncoding("UTF8");
@@ -1112,7 +1119,9 @@ public class HttpOutputTest
         _swap.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 HttpOutput out = (HttpOutput)response.getOutputStream();
@@ -1166,7 +1175,9 @@ public class HttpOutputTest
         _swap.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setContentLength(0);
@@ -1194,7 +1205,8 @@ public class HttpOutputTest
 
     private static String toUTF8String(Resource resource)
     {
-        return BufferUtil.toUTF8String(IOResources.toRetainableByteBuffer(resource, null, false).getByteBuffer());
+        return BufferUtil.toUTF8String(
+            IOResources.toRetainableByteBuffer(resource, null, false).getByteBuffer());
     }
 
     interface ChainedInterceptor extends HttpOutput.Interceptor
@@ -1221,7 +1233,8 @@ public class HttpOutputTest
         final FuturePromise<Boolean> _closedAfterWrite = new FuturePromise<>();
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             if (_interceptor != null)
@@ -1389,5 +1402,3 @@ public class HttpOutputTest
         }
     }
 }
-
-

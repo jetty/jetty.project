@@ -25,7 +25,6 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.function.Function;
-
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -189,7 +188,7 @@ public interface ResourceFactory
      * <p>
      *     See {@link ClassLoader#getResource(String)} for rules on resource name parameter.
      * </p>
-     * 
+     *
      * <p>
      *     If a provided resource name starts with a {@code /} (example: {@code /org/example/ClassName.class})
      *     then the non-slash version is also tried against the same ClassLoader (example: {@code org/example/ClassName.class}).
@@ -462,7 +461,9 @@ public interface ResourceFactory
                         List<Resource> expanded = dir.list();
                         expanded.sort(ResourceCollators.byName(true));
                         // TODO it is unclear why non archive files are not expanded into the list
-                        expanded.stream().filter(r -> FileID.isLibArchive(r.getName())).forEach(list::add);
+                        expanded.stream()
+                            .filter(r -> FileID.isLibArchive(r.getName()))
+                            .forEach(list::add);
                     }
                 }
                 else
@@ -478,7 +479,7 @@ public interface ResourceFactory
             }
         }
 
-        for (ListIterator<Resource> i = list.listIterator(); i.hasNext(); )
+        for (ListIterator<Resource> i = list.listIterator(); i.hasNext();)
         {
             Resource resource = i.next();
             if (resource.exists() && !resource.isDirectory() && FileID.isLibArchive(resource.getName()))
@@ -598,7 +599,7 @@ public interface ResourceFactory
      * @return the ResourceFactory that builds from the Resource
      * @deprecated Use {@link Resource#resolve(String)}
      */
-    @Deprecated (since = "12.0.8", forRemoval = true)
+    @Deprecated(since = "12.0.8", forRemoval = true)
     static ResourceFactory of(Resource baseResource)
     {
         Objects.requireNonNull(baseResource);

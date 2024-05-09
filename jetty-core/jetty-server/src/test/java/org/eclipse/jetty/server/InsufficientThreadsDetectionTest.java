@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class InsufficientThreadsDetectionTest
 {
@@ -42,7 +42,8 @@ public class InsufficientThreadsDetectionTest
             // connector will use executor from server because connectorPool is null
             ThreadPool connectorPool = null;
             // connector requires 7 threads(2 + 4 + 1)
-            ServerConnector connector = new ServerConnector(_server, connectorPool, null, null, 2, 4, new HttpConnectionFactory());
+            ServerConnector connector =
+                new ServerConnector(_server, connectorPool, null, null, 2, 4, new HttpConnectionFactory());
             connector.setPort(0);
             _server.addConnector(connector);
 
@@ -60,7 +61,8 @@ public class InsufficientThreadsDetectionTest
         // connector pool has 100 threads
         ThreadPool connectorPool = new QueuedThreadPool(100);
         // connector requires 7 threads(2 + 4 + 1)
-        ServerConnector connector = new ServerConnector(_server, connectorPool, null, null, 2, 4, new HttpConnectionFactory());
+        ServerConnector connector =
+            new ServerConnector(_server, connectorPool, null, null, 2, 4, new HttpConnectionFactory());
         connector.setPort(0);
         _server.addConnector(connector);
 
@@ -81,7 +83,8 @@ public class InsufficientThreadsDetectionTest
 
             // second connect also require 3 threads but uses own executor, so its threads should not be counted
             final QueuedThreadPool connectorPool = new QueuedThreadPool(4, 4);
-            _server.addConnector(new ServerConnector(_server, connectorPool, null, null, 1, 1, new HttpConnectionFactory()));
+            _server.addConnector(
+                new ServerConnector(_server, connectorPool, null, null, 1, 1, new HttpConnectionFactory()));
 
             // third connector consumes 3 threads from server pool
             _server.addConnector(new ServerConnector(_server, null, null, null, 1, 1, new HttpConnectionFactory()));

@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import jakarta.servlet.ServletContextAttributeEvent;
 import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
+import java.util.HashSet;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +49,8 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     public void attributeReplaced(ServletContextAttributeEvent event)
     {
         if (_managedAttributes.contains(event.getName()))
-            updateBean(event.getName(), event.getValue(), event.getServletContext().getAttribute(event.getName()));
+            updateBean(
+                event.getName(), event.getValue(), event.getServletContext().getAttribute(event.getName()));
     }
 
     @Override

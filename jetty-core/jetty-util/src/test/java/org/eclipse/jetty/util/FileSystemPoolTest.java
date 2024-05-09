@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.util;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -26,16 +28,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 @ExtendWith(WorkDirExtension.class)
 public class FileSystemPoolTest
 {
     public WorkDir workDir;
 
     @ParameterizedTest
-    @ValueSource(strings = {"example.jar", "a/b/c/d/example.jar"})
+    @ValueSource(strings =
+    {"example.jar", "a/b/c/d/example.jar"})
     public void testCloseResourceFactoryAfterDeletingFileSystemBackingFile(String jarPathString) throws Exception
     {
         Path srcPath = MavenTestingUtils.getTestResourcePath("example.jar");

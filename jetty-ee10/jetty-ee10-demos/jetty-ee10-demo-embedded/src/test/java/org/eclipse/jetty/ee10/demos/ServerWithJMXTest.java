@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.ee10.demos;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Optional;
 import java.util.Set;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled(value = "ServerWithJMX uses registry on fixed port 1999 which can be already in-use")
 public class ServerWithJMXTest extends AbstractEmbeddedTest

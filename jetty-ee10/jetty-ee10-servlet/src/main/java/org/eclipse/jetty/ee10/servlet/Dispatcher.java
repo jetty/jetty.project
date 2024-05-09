@@ -13,19 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -38,6 +25,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -58,10 +57,10 @@ public class Dispatcher implements RequestDispatcher
      * Dispatch include attribute names
      */
     public static final String __FORWARD_PREFIX = "jakarta.servlet.forward.";
-    
+
     /**
      * Name of original request attribute
-     */ 
+     */
     public static final String __ORIGINAL_REQUEST = "org.eclipse.jetty.originalRequest";
 
     public static final String JETTY_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
@@ -82,11 +81,13 @@ public class Dispatcher implements RequestDispatcher
         _named = null;
 
         _servletHandler = _contextHandler.getServletHandler();
-        MatchedResource<ServletHandler.MappedServlet> matchedServlet = _servletHandler.getMatchedServlet(decodedPathInContext);
+        MatchedResource<ServletHandler.MappedServlet> matchedServlet =
+            _servletHandler.getMatchedServlet(decodedPathInContext);
         if (matchedServlet == null)
             throw new IllegalArgumentException("No servlet matching: " + decodedPathInContext);
         _mappedServlet = matchedServlet.getResource();
-        _servletPathMapping = _mappedServlet.getServletPathMapping(_decodedPathInContext, matchedServlet.getMatchedPath());
+        _servletPathMapping =
+            _mappedServlet.getServletPathMapping(_decodedPathInContext, matchedServlet.getMatchedPath());
         if (_servletPathMapping == null)
             throw new IllegalArgumentException("No servlet path mapping: " + _servletPathMapping);
     }
@@ -151,7 +152,8 @@ public class Dispatcher implements RequestDispatcher
         IncludeResponse includeResponse = new IncludeResponse(httpResponse);
         try
         {
-            _mappedServlet.handle(_servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), includeResponse);
+            _mappedServlet.handle(
+                _servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), includeResponse);
         }
         finally
         {
@@ -204,7 +206,7 @@ public class Dispatcher implements RequestDispatcher
                     // Have to assume ENCODING because we can't know otherwise.
                     if (targetQuery != null)
                         UrlEncoded.decodeTo(targetQuery, _parameters::add, UrlEncoded.ENCODING);
-                    for (Enumeration<String> names = getRequest().getParameterNames(); names.hasMoreElements(); )
+                    for (Enumeration<String> names = getRequest().getParameterNames(); names.hasMoreElements();)
                     {
                         String name = names.nextElement();
                         _parameters.add(name, getRequest().getParameterValues(name));
@@ -310,7 +312,13 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public StringBuffer getRequestURL()
         {
-            return _uri == null ? super.getRequestURL() :  new StringBuffer(HttpURI.build(_uri).query(null).scheme(super.getScheme()).host(super.getServerName()).port(super.getServerPort()).asString());
+            return _uri == null ? super.getRequestURL() :
+                new StringBuffer(HttpURI.build(_uri)
+                    .query(null)
+                    .scheme(super.getScheme())
+                    .host(super.getServerName())
+                    .port(super.getServerPort())
+                    .asString());
         }
 
         @Override
@@ -318,12 +326,12 @@ public class Dispatcher implements RequestDispatcher
         {
             if (name == null)
                 return null;
-            
-            //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
+
+            // Servlet Spec 9.4.2 no forward attributes if a named dispatcher
             if (_named != null && name.startsWith(__FORWARD_PREFIX))
                 return null;
 
-            //Servlet Spec 9.4.2 must return the values from the original request
+            // Servlet Spec 9.4.2 must return the values from the original request
             if (name.startsWith(__FORWARD_PREFIX))
             {
                 HttpServletRequest originalRequest = (HttpServletRequest)super.getAttribute(__ORIGINAL_REQUEST);
@@ -350,7 +358,12 @@ public class Dispatcher implements RequestDispatcher
                     return originalRequest == null ? _httpServletRequest : originalRequest;
                 }
                 // Forward should hide include.
-                case RequestDispatcher.INCLUDE_MAPPING, RequestDispatcher.INCLUDE_SERVLET_PATH, RequestDispatcher.INCLUDE_PATH_INFO, RequestDispatcher.INCLUDE_REQUEST_URI, RequestDispatcher.INCLUDE_CONTEXT_PATH, RequestDispatcher.INCLUDE_QUERY_STRING ->
+                case RequestDispatcher.INCLUDE_MAPPING,
+                    RequestDispatcher.INCLUDE_SERVLET_PATH,
+                    RequestDispatcher.INCLUDE_PATH_INFO,
+                    RequestDispatcher.INCLUDE_REQUEST_URI,
+                    RequestDispatcher.INCLUDE_CONTEXT_PATH,
+                    RequestDispatcher.INCLUDE_QUERY_STRING ->
                 {
                     return null;
                 }
@@ -374,11 +387,11 @@ public class Dispatcher implements RequestDispatcher
         public Enumeration<String> getAttributeNames()
         {
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
-            
-            //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
+
+            // Servlet Spec 9.4.2 no forward attributes if a named dispatcher
             if (_named != null)
                 return Collections.enumeration(names);
-            
+
             names.add(RequestDispatcher.FORWARD_REQUEST_URI);
             names.add(RequestDispatcher.FORWARD_SERVLET_PATH);
             names.add(RequestDispatcher.FORWARD_PATH_INFO);
@@ -410,8 +423,8 @@ public class Dispatcher implements RequestDispatcher
         {
             if (name == null)
                 return null;
-            
-            //Servlet Spec 9.3.1 no include attributes if a named dispatcher
+
+            // Servlet Spec 9.3.1 no include attributes if a named dispatcher
             if (_named != null && name.startsWith(__INCLUDE_PREFIX))
                 return null;
 
@@ -430,11 +443,11 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            //Servlet Spec 9.3.1 no include attributes if a named dispatcher
+            // Servlet Spec 9.3.1 no include attributes if a named dispatcher
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
             if (_named != null)
                 return Collections.enumeration(names);
-            
+
             names.add(RequestDispatcher.INCLUDE_MAPPING);
             names.add(RequestDispatcher.INCLUDE_SERVLET_PATH);
             names.add(RequestDispatcher.INCLUDE_PATH_INFO);
@@ -456,7 +469,7 @@ public class Dispatcher implements RequestDispatcher
         ServletOutputStream _servletOutputStream;
         PrintWriter _printWriter;
         PrintWriter _mustFlush;
-        
+
         public IncludeResponse(HttpServletResponse response)
         {
             super(response);
@@ -477,18 +490,20 @@ public class Dispatcher implements RequestDispatcher
             {
                 try
                 {
-                    _servletOutputStream = new ServletOutputStreamWrapper(getResponse().getOutputStream())
-                    {
-                        @Override
-                        public void close()
+                    _servletOutputStream =
+                        new ServletOutputStreamWrapper(getResponse().getOutputStream())
                         {
-                            // NOOP for include.
-                        }
-                    };
+                            @Override
+                            public void close()
+                            {
+                                // NOOP for include.
+                            }
+                        };
                 }
                 catch (IllegalStateException ise)
                 {
-                    OutputStream os = new WriterOutputStream(getResponse().getWriter(), getResponse().getCharacterEncoding());
+                    OutputStream os = new WriterOutputStream(
+                        getResponse().getWriter(), getResponse().getCharacterEncoding());
                     _servletOutputStream = new ServletOutputStream()
                     {
                         @Override
@@ -551,7 +566,8 @@ public class Dispatcher implements RequestDispatcher
                 }
                 catch (IllegalStateException ise)
                 {
-                    _printWriter = _mustFlush = new PrintWriter(new OutputStreamWriter(super.getOutputStream(), super.getCharacterEncoding()));
+                    _printWriter = _mustFlush = new PrintWriter(
+                        new OutputStreamWriter(super.getOutputStream(), super.getCharacterEncoding()));
                 }
             }
             return _printWriter;
@@ -614,8 +630,8 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void setHeader(String name, String value)
         {
-            //implement jetty-specific extension to include to allow headers
-            //to be set
+            // implement jetty-specific extension to include to allow headers
+            // to be set
             if (!StringUtil.isBlank(name) && name.startsWith(JETTY_INCLUDE_HEADER_PREFIX))
                 super.setHeader(name.substring(JETTY_INCLUDE_HEADER_PREFIX.length()), value);
         }
@@ -623,8 +639,8 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void addHeader(String name, String value)
         {
-            //implement jetty-specific extension to include to allow headers
-            //to be set
+            // implement jetty-specific extension to include to allow headers
+            // to be set
             if (!StringUtil.isBlank(name) && name.startsWith(JETTY_INCLUDE_HEADER_PREFIX))
                 super.addHeader(name.substring(JETTY_INCLUDE_HEADER_PREFIX.length()), value);
         }

@@ -67,6 +67,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
      * Array that holds the head and tail indexes, separated by a cache line to avoid false sharing
      */
     private final int[] _indexes = new int[TAIL_OFFSET + 1];
+
     private final Lock _tailLock = new ReentrantLock();
     private final AtomicInteger _size = new AtomicInteger();
     private final Lock _headLock = new ReentrantLock();
@@ -127,7 +128,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         _maxCapacity = maxCapacity;
     }
 
-
     /* Collection methods */
 
     @Override
@@ -167,7 +167,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     {
         return listIterator();
     }
-
 
     /* Queue methods */
 
@@ -381,7 +380,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
             throw new NoSuchElementException();
         return e;
     }
-
 
     /* BlockingQueue methods */
 
@@ -651,7 +649,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         }
         return elements;
     }
-
 
     /* List methods */
 

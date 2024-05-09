@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.ee10.security.jaspi.provider;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import javax.security.auth.callback.CallbackHandler;
-
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.ClientAuthConfig;
 import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.security.auth.message.module.ServerAuthModule;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import javax.security.auth.callback.CallbackHandler;
 import org.eclipse.jetty.ee10.security.jaspi.JaspiAuthenticatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 
+/**
  * <p>A Jetty implementation of the {@link AuthConfigProvider} to allow registration of a {@link ServerAuthModule}
  * directly without having to write a custom {@link AuthConfigProvider}.</p>
  * <p>If this is being constructed by an {@link AuthConfigFactory} after being passed in as a className, then
@@ -53,14 +52,19 @@ public class JaspiAuthConfigProvider implements AuthConfigProvider
     public JaspiAuthConfigProvider(Map properties, AuthConfigFactory factory)
     {
         if (properties == null || !properties.containsKey("ServerAuthModule"))
-            throw new IllegalArgumentException("Missing property 'ServerAuthModule', cannot create JaspiAuthConfigProvider");
+            throw new IllegalArgumentException(
+                "Missing property 'ServerAuthModule', cannot create JaspiAuthConfigProvider");
 
         this.providerProperties = Map.copyOf(properties);
         this.serverAuthModule = createServerAuthModule((String)properties.get("ServerAuthModule"));
 
         // API requires self registration if factory is provided.
         if (factory != null)
-            factory.registerConfigProvider(this, JaspiAuthenticatorFactory.MESSAGE_LAYER, (String)properties.get("appContext"), "Self Registration");
+            factory.registerConfigProvider(
+                this,
+                JaspiAuthenticatorFactory.MESSAGE_LAYER,
+                (String)properties.get("appContext"),
+                "Self Registration");
     }
 
     /**
@@ -122,7 +126,9 @@ public class JaspiAuthConfigProvider implements AuthConfigProvider
     {
         try
         {
-            return (ServerAuthModule)Class.forName(serverAuthModuleClassName).getDeclaredConstructor().newInstance();
+            return (ServerAuthModule)Class.forName(serverAuthModuleClassName)
+                .getDeclaredConstructor()
+                .newInstance();
         }
         catch (ReflectiveOperationException e)
         {

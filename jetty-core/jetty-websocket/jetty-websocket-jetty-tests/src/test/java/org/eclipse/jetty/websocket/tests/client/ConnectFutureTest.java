@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.websocket.tests.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -21,7 +29,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.server.Server;
@@ -43,14 +50,6 @@ import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConnectFutureTest
 {
@@ -90,8 +89,9 @@ public class ConnectFutureTest
     {
         CountDownLatch enteredCreator = new CountDownLatch(1);
         CountDownLatch exitCreator = new CountDownLatch(1);
-        start(wsHandler ->
-            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
+        start(wsHandler -> wsHandler
+            .getServerWebSocketContainer()
+            .addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
             {
                 try
                 {
@@ -125,8 +125,9 @@ public class ConnectFutureTest
     @Test
     public void testAbortSessionOnCreated() throws Exception
     {
-        start(wsHandler ->
-            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
+        start(wsHandler -> wsHandler
+            .getServerWebSocketContainer()
+            .addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
 
         CountDownLatch enteredListener = new CountDownLatch(1);
         CountDownLatch exitListener = new CountDownLatch(1);
@@ -163,8 +164,9 @@ public class ConnectFutureTest
     @Test
     public void testAbortInHandshakeResponse() throws Exception
     {
-        start(wsHandler ->
-            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
+        start(wsHandler -> wsHandler
+            .getServerWebSocketContainer()
+            .addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
 
         CountDownLatch enteredListener = new CountDownLatch(1);
         CountDownLatch exitListener = new CountDownLatch(1);
@@ -187,7 +189,8 @@ public class ConnectFutureTest
 
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest, upgradeListener);
+        Future<Session> connect =
+            client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest, upgradeListener);
 
         // Abort after handshake response, this is during the connection upgrade.
         assertTrue(enteredListener.await(5, TimeUnit.SECONDS));
@@ -202,8 +205,9 @@ public class ConnectFutureTest
     @Test
     public void testAbortOnOpened() throws Exception
     {
-        start(wsHandler ->
-            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
+        start(wsHandler -> wsHandler
+            .getServerWebSocketContainer()
+            .addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
 
         CountDownLatch exitOnOpen = new CountDownLatch(1);
         AwaitOnOpen clientSocket = new AwaitOnOpen(exitOnOpen);
@@ -222,8 +226,9 @@ public class ConnectFutureTest
     @Test
     public void testAbortAfterCompletion() throws Exception
     {
-        start(wsHandler ->
-            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
+        start(wsHandler -> wsHandler
+            .getServerWebSocketContainer()
+            .addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
 
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
@@ -251,8 +256,9 @@ public class ConnectFutureTest
     public void testFutureTimeout() throws Exception
     {
         CountDownLatch exitCreator = new CountDownLatch(1);
-        start(wsHandler ->
-            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
+        start(wsHandler -> wsHandler
+            .getServerWebSocketContainer()
+            .addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
             {
                 try
                 {
@@ -281,8 +287,9 @@ public class ConnectFutureTest
     public void testAbortWithExceptionBeforeUpgrade() throws Exception
     {
         CountDownLatch exitCreator = new CountDownLatch(1);
-        start(wsHandler ->
-            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
+        start(wsHandler -> wsHandler
+            .getServerWebSocketContainer()
+            .addMapping("/", (upgradeRequest, upgradeResponse, callback) ->
             {
                 try
                 {
@@ -321,8 +328,9 @@ public class ConnectFutureTest
     @Test
     public void testAbortWithExceptionAfterUpgrade() throws Exception
     {
-        start(wsHandler ->
-            wsHandler.getServerWebSocketContainer().addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
+        start(wsHandler -> wsHandler
+            .getServerWebSocketContainer()
+            .addMapping("/", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
 
         CountDownLatch exitOnOpen = new CountDownLatch(1);
         AwaitOnOpen clientSocket = new AwaitOnOpen(exitOnOpen);

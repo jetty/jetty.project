@@ -22,7 +22,6 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -42,7 +41,11 @@ public class ClientDemo
         public void onWebSocketOpen(Session session)
         {
             if (verbose)
-                System.err.printf("%s#onWebSocketOpen %s %s\n", this.getClass().getSimpleName(), session, session.getClass().getSimpleName());
+                System.err.printf(
+                    "%s#onWebSocketOpen %s %s\n",
+                    this.getClass().getSimpleName(),
+                    session,
+                    session.getClass().getSimpleName());
         }
 
         public void send(byte op, byte[] data, int maxFragmentLength)
@@ -165,8 +168,7 @@ public class ClientDemo
                 client[i].open();
             }
 
-            System.out
-                .println("Jetty WebSocket PING " + host + ":" + port + " (" + new InetSocketAddress(host, port) + ") " + clients + " clients " + protocol);
+            System.out.println("Jetty WebSocket PING " + host + ":" + port + " (" + new InetSocketAddress(host, port) + ") " + clients + " clients " + protocol);
 
             for (int p = 0; p < count; p++)
             {
@@ -223,11 +225,20 @@ public class ClientDemo
 
             long duration = System.currentTimeMillis() - start;
             System.out.println("--- " + host + " websocket ping statistics using " + clients + " connection" + (clients > 1 ? "s" : "") + " ---");
-            System.out.printf("%d/%d frames sent/recv, %d/%d mesg sent/recv, time %dms %dm/s %.2fbps%n", framesSent, framesReceived.get(), messagesSent,
-                messagesReceived.get(), duration, ((1000L * messagesReceived.get()) / duration),
+            System.out.printf(
+                "%d/%d frames sent/recv, %d/%d mesg sent/recv, time %dms %dm/s %.2fbps%n",
+                framesSent,
+                framesReceived.get(),
+                messagesSent,
+                messagesReceived.get(),
+                duration,
+                ((1000L * messagesReceived.get()) / duration),
                 (1000.0D * messagesReceived.get() * 8 * size) / duration / 1024 / 1024);
-            System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n", minDuration.get() / 1000000.0,
-                messagesReceived.get() == 0 ? 0.0 : (totalTime.get() / messagesReceived.get() / 1000000.0), maxDuration.get() / 1000000.0);
+            System.out.printf(
+                "rtt min/ave/max = %.3f/%.3f/%.3f ms\n",
+                minDuration.get() / 1000000.0,
+                messagesReceived.get() == 0 ? 0.0 : (totalTime.get() / messagesReceived.get() / 1000000.0),
+                maxDuration.get() / 1000000.0);
 
             wsclient.stop();
         }

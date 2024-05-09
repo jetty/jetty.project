@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.nested;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpParser.RequestHandler;
 import org.eclipse.jetty.http.HttpTokens;
@@ -60,7 +59,8 @@ public class MultiPartParser
         END
     }
 
-    private static final EnumSet<State> __delimiterStates = EnumSet.of(State.DELIMITER, State.DELIMITER_CLOSE, State.DELIMITER_PADDING);
+    private static final EnumSet<State> __delimiterStates =
+        EnumSet.of(State.DELIMITER, State.DELIMITER_CLOSE, State.DELIMITER_PADDING);
     private static final int MAX_HEADER_LINE_LENGTH = 998;
 
     private final boolean debugEnabled = LOG.isDebugEnabled();
@@ -254,7 +254,8 @@ public class MultiPartParser
 
         if (_partialBoundary > 0)
         {
-            int partial = _delimiterSearch.startsWith(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining(), _partialBoundary);
+            int partial = _delimiterSearch.startsWith(
+                buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining(), _partialBoundary);
             if (partial > 0)
             {
                 if (partial == _delimiterSearch.getLength())
@@ -273,7 +274,8 @@ public class MultiPartParser
             _partialBoundary = 0;
         }
 
-        int delimiter = _delimiterSearch.match(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        int delimiter =
+            _delimiterSearch.match(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         if (delimiter >= 0)
         {
             buffer.position(delimiter - buffer.arrayOffset() + _delimiterSearch.getLength());
@@ -281,7 +283,8 @@ public class MultiPartParser
             return;
         }
 
-        _partialBoundary = _delimiterSearch.endsWith(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        _partialBoundary =
+            _delimiterSearch.endsWith(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         BufferUtil.clear(buffer);
     }
 
@@ -562,7 +565,8 @@ public class MultiPartParser
         // Starts With
         if (_partialBoundary > 0)
         {
-            int partial = _delimiterSearch.startsWith(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining(), _partialBoundary);
+            int partial = _delimiterSearch.startsWith(
+                buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining(), _partialBoundary);
             if (partial > 0)
             {
                 if (partial == _delimiterSearch.getLength())
@@ -572,7 +576,11 @@ public class MultiPartParser
                     _partialBoundary = 0;
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Content={}, Last={} {}", BufferUtil.toDetailString(BufferUtil.EMPTY_BUFFER), true, this);
+                        LOG.debug(
+                            "Content={}, Last={} {}",
+                            BufferUtil.toDetailString(BufferUtil.EMPTY_BUFFER),
+                            true,
+                            this);
 
                     return _handler.content(BufferUtil.EMPTY_BUFFER, true);
                 }
@@ -602,7 +610,8 @@ public class MultiPartParser
         }
 
         // Contains
-        int delimiter = _delimiterSearch.match(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        int delimiter =
+            _delimiterSearch.match(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         if (delimiter >= 0)
         {
             ByteBuffer content = buffer.slice();
@@ -618,7 +627,8 @@ public class MultiPartParser
         }
 
         // Ends With
-        _partialBoundary = _delimiterSearch.endsWith(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        _partialBoundary =
+            _delimiterSearch.endsWith(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         if (_partialBoundary > 0)
         {
             ByteBuffer content = buffer.slice();
@@ -705,7 +715,9 @@ public class MultiPartParser
         {
             super(400, String.format("Illegal character %s", token));
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("Illegal character %s in state=%s for buffer %s", token, state, BufferUtil.toDetailString(buffer)));
+                LOG.debug(String.format(
+                    "Illegal character %s in state=%s for buffer %s",
+                    token, state, BufferUtil.toDetailString(buffer)));
         }
     }
 }

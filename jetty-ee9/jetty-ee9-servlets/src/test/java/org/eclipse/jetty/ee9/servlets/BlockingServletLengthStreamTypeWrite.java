@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.io.IOException;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 
 /**
@@ -40,7 +39,8 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 public class BlockingServletLengthStreamTypeWrite extends AbstractFileContentServlet
 {
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
         String fileName = request.getPathInfo();
         byte[] dataBytes = loadContentFileBytes(fileName);

@@ -13,13 +13,15 @@
 
 package org.eclipse.jetty.ee10.session;
 
-import java.io.IOException;
-import java.io.PrintWriter;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.client.HttpClient;
@@ -36,9 +38,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class RequestDispatchedSessionTest
 {
@@ -63,7 +62,7 @@ public class RequestDispatchedSessionTest
         contextHandler.addServlet(DefaultServlet.class, "/");
 
         handlers.addHandler(new DefaultHandler());
-        
+
         server.setHandler(handlers);
 
         server.start();
@@ -100,7 +99,8 @@ public class RequestDispatchedSessionTest
     {
         public static final String USERNAME = "loggedInUserName";
 
-        protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             if (request.getParameter("username") != null)
             {

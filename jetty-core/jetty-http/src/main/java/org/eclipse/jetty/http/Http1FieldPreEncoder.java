@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.Arrays;
-
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
+
+import java.util.Arrays;
 
 /**
  *

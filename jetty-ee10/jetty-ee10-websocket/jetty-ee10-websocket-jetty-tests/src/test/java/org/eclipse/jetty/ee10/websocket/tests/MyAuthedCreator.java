@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.websocket.tests;
 
 import java.io.IOException;
 import java.security.Principal;
-
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator;

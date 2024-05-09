@@ -19,7 +19,7 @@ import java.nio.file.Path;
 
 /**
  * GraalVM Native-Image {@link PathResourceFactory}.
- * 
+ *
  * @see <a href="https://github.com/oracle/graal/issues/5720">Graal issue 5720</a>
  * @see GraalIssue5720PathResource
  */

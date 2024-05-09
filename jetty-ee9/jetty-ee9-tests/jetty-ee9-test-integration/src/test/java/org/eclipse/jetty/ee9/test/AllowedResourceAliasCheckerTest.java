@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.ee9.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
@@ -36,11 +40,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class AllowedResourceAliasCheckerTest
 {
     private static Server _server;
@@ -54,7 +53,7 @@ public class AllowedResourceAliasCheckerTest
         _server.start();
         _client.start();
     }
-  
+
     @BeforeAll
     public static void beforeAll() throws Exception
     {
@@ -87,7 +86,7 @@ public class AllowedResourceAliasCheckerTest
         IO.delete(_baseDir);
         FS.ensureDirExists(_baseDir);
     }
-    
+
     public void createBaseDirFile() throws IOException
     {
         assertTrue(Files.exists(_baseDir));
@@ -108,7 +107,7 @@ public class AllowedResourceAliasCheckerTest
         Files.createSymbolicLink(symlink.toPath(), file.toPath());
         assertTrue(symlink.exists());
     }
-    
+
     @Test
     public void testCreateBaseDirFileBeforeStart() throws Exception
     {

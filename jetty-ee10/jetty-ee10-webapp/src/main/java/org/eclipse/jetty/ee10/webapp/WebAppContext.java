@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import jakarta.servlet.ServletRegistration.Dynamic;
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.http.HttpSessionActivationListener;
+import jakarta.servlet.http.HttpSessionAttributeListener;
+import jakarta.servlet.http.HttpSessionBindingListener;
+import jakarta.servlet.http.HttpSessionIdListener;
+import jakarta.servlet.http.HttpSessionListener;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -28,14 +35,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import jakarta.servlet.ServletRegistration.Dynamic;
-import jakarta.servlet.ServletSecurityElement;
-import jakarta.servlet.http.HttpSessionActivationListener;
-import jakarta.servlet.http.HttpSessionAttributeListener;
-import jakarta.servlet.http.HttpSessionBindingListener;
-import jakarta.servlet.http.HttpSessionIdListener;
-import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee10.servlet.ErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
@@ -98,19 +97,21 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * @deprecated use {@link WebAppClassLoading#DEFAULT_PROTECTED_CLASSES}
      */
-    @Deprecated (forRemoval = true, since = "12.0.9")
+    @Deprecated(forRemoval = true, since = "12.0.9")
     public static final org.eclipse.jetty.ee10.webapp.ClassMatcher __dftSystemClasses =
         new org.eclipse.jetty.ee10.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_PROTECTED_CLASSES);
 
     /**
      * @deprecated use {@link WebAppClassLoading#DEFAULT_HIDDEN_CLASSES}
      */
-    @Deprecated (forRemoval = true, since = "12.0.9")
+    @Deprecated(forRemoval = true, since = "12.0.9")
     public static final org.eclipse.jetty.ee10.webapp.ClassMatcher __dftServerClasses =
         new org.eclipse.jetty.ee10.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_HIDDEN_CLASSES);
 
-    private final ClassMatcher _protectedClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
-    private final ClassMatcher _hiddenClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
+    private final ClassMatcher _protectedClasses =
+        new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
+    private final ClassMatcher _hiddenClasses =
+        new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
 
     private Configurations _configurations;
     private String _defaultsDescriptor = WEB_DEFAULTS_XML;
@@ -181,7 +182,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param servletHandler ServletHandler for this web app
      * @param errorHandler ErrorHandler for this web app
      */
-    public WebAppContext(SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
+    public WebAppContext(
+                         SessionHandler sessionHandler,
+                         SecurityHandler securityHandler,
+                         ServletHandler servletHandler,
+                         ErrorHandler errorHandler)
     {
         this(null, sessionHandler, securityHandler, servletHandler, errorHandler, 0);
     }
@@ -194,7 +199,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param errorHandler ErrorHandler for this web app
      * @param options the options ({@link ServletContextHandler#SESSIONS} and/or {@link ServletContextHandler#SECURITY})
      */
-    public WebAppContext(String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
+    public WebAppContext(
+                         String contextPath,
+                         SessionHandler sessionHandler,
+                         SecurityHandler securityHandler,
+                         ServletHandler servletHandler,
+                         ErrorHandler errorHandler,
+                         int options)
     {
         // always pass parent as null and then set below, so that any resulting setServer call
         // is done after this instance is constructed.
@@ -216,13 +227,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             {
                 case Deployable.WAR -> setWar(value);
                 case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
-                case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(value == null ? null : value.split(","));
+                case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(
+                    value == null ? null : value.split(","));
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
                 case Deployable.EXTRACT_WARS -> setExtractWAR(Boolean.parseBoolean(value));
                 case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority(Boolean.parseBoolean(value));
                 case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
                 case Deployable.DEFAULTS_DESCRIPTOR -> setDefaultsDescriptor(value);
-                case Deployable.SCI_EXCLUSION_PATTERN -> setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", value);
+                case Deployable.SCI_EXCLUSION_PATTERN -> setAttribute(
+                    "org.eclipse.jetty.containerInitializerExclusionPattern", value);
                 case Deployable.SCI_ORDER -> setAttribute("org.eclipse.jetty.containerInitializerOrder", value);
                 default ->
                 {
@@ -912,7 +925,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     protected void loadConfigurations()
     {
-        //if the configuration instances have been set explicitly, use them
+        // if the configuration instances have been set explicitly, use them
         if (_configurations != null)
             return;
         if (isStarted())
@@ -924,7 +937,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         return new Configurations(Configurations.getServerDefault(getServer()).getConfigurations());
     }
-    
+
     @Override
     public ServletContextApi newServletContextApi()
     {
@@ -982,16 +995,20 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         name = String.format("%s@%x", name, hashCode());
 
-        dumpObjects(out, indent,
+        dumpObjects(
+            out,
+            indent,
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("Systemclasses " + name, systemClasses),
             new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
-            new DumpableCollection("Handler attributes " + name, asAttributeMap().entrySet()),
-            new DumpableCollection("Context attributes " + name, getContext().asAttributeMap().entrySet()),
+            new DumpableCollection(
+                "Handler attributes " + name, asAttributeMap().entrySet()),
+            new DumpableCollection(
+                "Context attributes " + name,
+                getContext().asAttributeMap().entrySet()),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
-            new DumpableCollection("Initparams " + name, getInitParams().entrySet())
-        );
+            new DumpableCollection("Initparams " + name, getInitParams().entrySet()));
     }
 
     /**
@@ -1125,11 +1142,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (super.removeEventListener(listener))
         {
-            if ((listener instanceof HttpSessionActivationListener) ||
-                (listener instanceof HttpSessionAttributeListener) ||
-                (listener instanceof HttpSessionBindingListener) ||
-                (listener instanceof HttpSessionListener) ||
-                (listener instanceof HttpSessionIdListener))
+            if ((listener instanceof HttpSessionActivationListener) || (listener instanceof HttpSessionAttributeListener) || (listener instanceof HttpSessionBindingListener) || (listener instanceof HttpSessionListener) || (listener instanceof HttpSessionIdListener))
             {
                 if (_sessionHandler != null)
                     _sessionHandler.removeEventListener(listener);
@@ -1290,12 +1303,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    protected void startContext()
-        throws Exception
+    protected void startContext() throws Exception
     {
         if (configure())
         {
-            //resolve the metadata
+            // resolve the metadata
             _metadata.resolve(this);
             startWebapp();
         }
@@ -1308,7 +1320,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         try
         {
-            for (int i = _configurations.size(); i-- > 0; )
+            for (int i = _configurations.size(); i-- > 0;)
             {
                 _configurations.get(i).deconfigure(this);
             }
@@ -1358,27 +1370,27 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     protected void cleanupAfterStop() throws Exception
     {
-        //intentionally left blank
+        // intentionally left blank
     }
 
     @Override
     public Set<String> setServletSecurity(Dynamic registration, ServletSecurityElement servletSecurityElement)
     {
         Set<String> unchangedURLMappings = new HashSet<>();
-        //From javadoc for ServletSecurityElement:
+        // From javadoc for ServletSecurityElement:
         /*
-        If a URL pattern of this ServletRegistration is an exact target of a security-constraint that 
-        was established via the portable deployment descriptor, then this method does not change the 
+        If a URL pattern of this ServletRegistration is an exact target of a security-constraint that
+        was established via the portable deployment descriptor, then this method does not change the
         security-constraint for that pattern, and the pattern will be included in the return value.
-
-        If a URL pattern of this ServletRegistration is an exact target of a security constraint 
-        that was established via the ServletSecurity annotation or a previous call to this method, 
+        
+        If a URL pattern of this ServletRegistration is an exact target of a security constraint
+        that was established via the ServletSecurity annotation or a previous call to this method,
         then this method replaces the security constraint for that pattern.
-
-        If a URL pattern of this ServletRegistration is neither the exact target of a security constraint 
-        that was established via the ServletSecurity annotation or a previous call to this method, 
-        nor the exact target of a security-constraint in the portable deployment descriptor, then 
-        this method establishes the security constraint for that pattern from the argument ServletSecurityElement. 
+        
+        If a URL pattern of this ServletRegistration is neither the exact target of a security constraint
+        that was established via the ServletSecurity annotation or a previous call to this method,
+        nor the exact target of a security-constraint in the portable deployment descriptor, then
+        this method establishes the security constraint for that pattern from the argument ServletSecurityElement.
          */
 
         java.util.Collection<String> pathMappings = registration.getMappings();
@@ -1394,8 +1406,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 {
                     case NotSet:
                     {
-                        //No mapping for this url already established
-                        List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
+                        // No mapping for this url already established
+                        List<ConstraintMapping> mappings =
+                            ConstraintSecurityHandler.createConstraintsWithMappingsForPath(
+                                registration.getName(), pathSpec, servletSecurityElement);
                         for (ConstraintMapping m : mappings)
                         {
                             constraintAware.addConstraintMapping(m);
@@ -1409,18 +1423,22 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                     case WebOverride:
                     case WebFragment:
                     {
-                        //a mapping for this url was created in a descriptor, which overrides everything
+                        // a mapping for this url was created in a descriptor, which overrides everything
                         unchangedURLMappings.add(pathSpec);
                         break;
                     }
                     case Annotation:
                     case API:
                     {
-                        //mapping established via an annotation or by previous call to this method,
-                        //replace the security constraint for this pattern
-                        List<ConstraintMapping> constraintMappings = ConstraintSecurityHandler.removeConstraintMappingsForPath(pathSpec, constraintAware.getConstraintMappings());
+                        // mapping established via an annotation or by previous call to this method,
+                        // replace the security constraint for this pattern
+                        List<ConstraintMapping> constraintMappings =
+                            ConstraintSecurityHandler.removeConstraintMappingsForPath(
+                                pathSpec, constraintAware.getConstraintMappings());
 
-                        List<ConstraintMapping> freshMappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
+                        List<ConstraintMapping> freshMappings =
+                            ConstraintSecurityHandler.createConstraintsWithMappingsForPath(
+                                registration.getName(), pathSpec, servletSecurityElement);
                         constraintMappings.addAll(freshMappings);
 
                         ((ConstraintSecurityHandler)getSecurityHandler()).setConstraintMappings(constraintMappings);
@@ -1435,7 +1453,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         return unchangedURLMappings;
     }
-    
+
     public class ServletApiContext extends ServletContextHandler.ServletContextApi
     {
         @Override
@@ -1460,7 +1478,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 return servletContext;
             }
         }
-        
+
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
@@ -1475,7 +1493,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             if (Resources.missing(resource))
                 return null;
 
-            for (Resource r: resource)
+            for (Resource r : resource)
             {
                 // return first entry
                 return r.getURI().toURL();

@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.common;
 
 import java.util.Map;
 import java.util.Set;
-
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**

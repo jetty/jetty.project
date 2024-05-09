@@ -29,7 +29,9 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
 
     protected static class ClassLoaderThreadLocal extends ThreadLocal<ClassLoader>
     {
-        protected static final ClassLoader UNSET = new ClassLoader() {};
+        protected static final ClassLoader UNSET = new ClassLoader()
+        {
+        };
 
         @Override
         protected ClassLoader initialValue()
@@ -50,8 +52,7 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
         super();
     }
 
-    public Object readObject(ClassLoader loader)
-        throws IOException, ClassNotFoundException
+    public Object readObject(ClassLoader loader) throws IOException, ClassNotFoundException
     {
         try
         {
@@ -82,8 +83,7 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
     }
 
     @Override
-    protected Class<?> resolveProxyClass(String[] interfaces)
-        throws IOException, ClassNotFoundException
+    protected Class<?> resolveProxyClass(String[] interfaces) throws IOException, ClassNotFoundException
     {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
 
@@ -101,8 +101,7 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
                 {
                     if (nonPublicLoader != cl.getClassLoader())
                     {
-                        throw new IllegalAccessError(
-                            "conflicting non-public interface class loaders");
+                        throw new IllegalAccessError("conflicting non-public interface class loaders");
                     }
                 }
                 else

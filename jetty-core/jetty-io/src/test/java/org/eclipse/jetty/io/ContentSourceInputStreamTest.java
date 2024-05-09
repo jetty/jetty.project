@@ -13,20 +13,19 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.TimeoutException;
-
-import org.eclipse.jetty.io.content.ContentSourceInputStream;
-import org.junit.jupiter.api.Test;
-
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.fail;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeoutException;
+import org.eclipse.jetty.io.content.ContentSourceInputStream;
+import org.junit.jupiter.api.Test;
 
 public class ContentSourceInputStreamTest
 {
@@ -44,8 +43,7 @@ public class ContentSourceInputStreamTest
             null,
             Content.Chunk.from(ByteBuffer.wrap("789".getBytes(US_ASCII)), false),
             Content.Chunk.EMPTY,
-            null
-        );
+            null);
 
         ContentSourceInputStream contentSourceInputStream = new ContentSourceInputStream(originalSource);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -73,8 +71,7 @@ public class ContentSourceInputStreamTest
             null,
             Content.Chunk.from(ByteBuffer.wrap("789".getBytes(US_ASCII)), false),
             Content.Chunk.EMPTY,
-            null
-        );
+            null);
 
         ContentSourceInputStream contentSourceInputStream = new ContentSourceInputStream(originalSource);
         byte[] buffer = new byte[2];
@@ -105,8 +102,7 @@ public class ContentSourceInputStreamTest
             null,
             Content.Chunk.from(ByteBuffer.wrap("789".getBytes(US_ASCII)), false),
             Content.Chunk.EMPTY,
-            null
-        );
+            null);
 
         ContentSourceInputStream contentSourceInputStream = new ContentSourceInputStream(originalSource);
         byte[] emptyBuffer = new byte[0];
@@ -136,16 +132,18 @@ public class ContentSourceInputStreamTest
         TimeoutException originalFailure2 = new TimeoutException("timeout 2");
         TestSource originalSource = new TestSource(
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'1'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'1'}), false),
             null,
             Content.Chunk.from(originalFailure1, false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'2'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'2'}), false),
             null,
             Content.Chunk.from(originalFailure2, false),
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'3'}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'3'}), true));
 
         ContentSourceInputStream contentSourceInputStream = new ContentSourceInputStream(originalSource);
 
@@ -198,10 +196,11 @@ public class ContentSourceInputStreamTest
         TimeoutException originalFailure = new TimeoutException("timeout");
         TestSource originalSource = new TestSource(
             null,
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'1'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'1'}), false),
             Content.Chunk.from(originalFailure, false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'2'}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {'2'}), true));
 
         ContentSourceInputStream contentSourceInputStream = new ContentSourceInputStream(originalSource);
 

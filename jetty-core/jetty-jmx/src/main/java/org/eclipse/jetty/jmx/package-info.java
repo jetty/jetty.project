@@ -15,4 +15,3 @@
  * Jetty JMX : Integration for JMX in Jetty
  */
 package org.eclipse.jetty.jmx;
-

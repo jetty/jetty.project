@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.fcgi.generator;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.http.HttpField;
@@ -24,9 +26,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ClientGeneratorTest
 {
@@ -43,12 +42,14 @@ public class ClientGeneratorTest
         // Short name, long value
         final String shortLongName = "REQUEST_URI";
         // Be sure it's longer than 127 chars to test the large value
-        String shortLongValue = "/api/0.6/map?bbox=-64.217736,-31.456810,-64.187736,-31.432322,filler=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+        String shortLongValue =
+            "/api/0.6/map?bbox=-64.217736,-31.456810,-64.187736,-31.432322,filler=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
         fields.put(new HttpField(shortLongName, shortLongValue));
 
         // Long name, short value
         // Be sure it's longer than 127 chars to test the large name
-        final String longShortName = "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210";
+        final String longShortName =
+            "FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210";
         String longShortValue = "api.openstreetmap.org";
         fields.put(new HttpField(longShortName, longShortValue));
 

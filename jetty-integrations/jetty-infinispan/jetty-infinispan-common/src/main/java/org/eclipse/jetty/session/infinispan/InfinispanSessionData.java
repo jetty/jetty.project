@@ -18,7 +18,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.Map;
-
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.hibernate.search.engine.backend.types.Searchable;
@@ -40,12 +39,20 @@ public class InfinispanSessionData extends SessionData
 {
     protected byte[] _serializedAttributes;
 
-    public InfinispanSessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    public InfinispanSessionData(
+                                 String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
         super(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
     }
 
-    public InfinispanSessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs,
+    public InfinispanSessionData(
+                                 String id,
+                                 String cpath,
+                                 String vhost,
+                                 long created,
+                                 long accessed,
+                                 long lastAccessed,
+                                 long maxInactiveMs,
                                  Map<String, Object> attributes)
     {
         super(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs, attributes);

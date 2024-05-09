@@ -100,7 +100,7 @@ public class DateCacheNoTick
                 sb.append('-');
             }
 
-            int raw = tzOffset / (1000 * 60);             // Convert to seconds
+            int raw = tzOffset / (1000 * 60); // Convert to seconds
             int hr = raw / 60;
             int min = raw % 60;
 
@@ -121,15 +121,11 @@ public class DateCacheNoTick
         _zoneId = tz.toZoneId();
         if (_locale != null)
         {
-            _tzFormat = DateTimeFormatter
-                    .ofPattern(_tzFormatString, _locale)
-                    .withZone(_zoneId);
+            _tzFormat = DateTimeFormatter.ofPattern(_tzFormatString, _locale).withZone(_zoneId);
         }
         else
         {
-            _tzFormat = DateTimeFormatter
-                    .ofPattern(_tzFormatString)
-                    .withZone(_zoneId);
+            _tzFormat = DateTimeFormatter.ofPattern(_tzFormatString).withZone(_zoneId);
         }
     }
 

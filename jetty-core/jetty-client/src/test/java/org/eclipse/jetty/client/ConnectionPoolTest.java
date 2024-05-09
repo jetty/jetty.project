@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -25,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpHeader;
@@ -52,29 +60,34 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class ConnectionPoolTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionPoolTest.class);
 
-    private static final ConnectionPoolFactory DUPLEX = new ConnectionPoolFactory("duplex", destination -> new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination()));
-    private static final ConnectionPoolFactory MULTIPLEX = new ConnectionPoolFactory("multiplex", destination -> new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1));
-    private static final ConnectionPoolFactory RANDOM = new ConnectionPoolFactory("random", destination -> new RandomConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1));
-    private static final ConnectionPoolFactory DUPLEX_MAX_DURATION = new ConnectionPoolFactory("duplex-maxDuration", destination ->
-    {
-        DuplexConnectionPool pool = new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination());
-        pool.setMaxDuration(10);
-        return pool;
-    });
-    private static final ConnectionPoolFactory ROUND_ROBIN = new ConnectionPoolFactory("round-robin", destination -> new RoundRobinConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination()));
+    private static final ConnectionPoolFactory DUPLEX = new ConnectionPoolFactory(
+        "duplex",
+        destination -> new DuplexConnectionPool(
+            destination, destination.getHttpClient().getMaxConnectionsPerDestination()));
+    private static final ConnectionPoolFactory MULTIPLEX = new ConnectionPoolFactory(
+        "multiplex",
+        destination -> new MultiplexConnectionPool(
+            destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1));
+    private static final ConnectionPoolFactory RANDOM = new ConnectionPoolFactory(
+        "random",
+        destination -> new RandomConnectionPool(
+            destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1));
+    private static final ConnectionPoolFactory DUPLEX_MAX_DURATION =
+        new ConnectionPoolFactory("duplex-maxDuration", destination ->
+        {
+            DuplexConnectionPool pool = new DuplexConnectionPool(
+                destination, destination.getHttpClient().getMaxConnectionsPerDestination());
+            pool.setMaxDuration(10);
+            return pool;
+        });
+    private static final ConnectionPoolFactory ROUND_ROBIN = new ConnectionPoolFactory(
+        "round-robin",
+        destination -> new RoundRobinConnectionPool(
+            destination, destination.getHttpClient().getMaxConnectionsPerDestination()));
 
     public static Stream<ConnectionPoolFactory> pools()
     {
@@ -206,9 +219,8 @@ public class ConnectionPoolTest
         int iterations = 1024;
         CountDownLatch latch = new CountDownLatch(parallelism * runs);
         List<Throwable> failures = new CopyOnWriteArrayList<>();
-        IntStream.range(0, parallelism).parallel().forEach(i ->
-            IntStream.range(0, runs).forEach(j ->
-                run(latch, iterations, failures)));
+        IntStream.range(0, parallelism).parallel().forEach(i -> IntStream.range(0, runs)
+            .forEach(j -> run(latch, iterations, failures)));
         assertTrue(latch.await(iterations, TimeUnit.SECONDS));
         assertTrue(failures.isEmpty(), failures.toString());
     }
@@ -222,7 +234,8 @@ public class ConnectionPoolTest
         }
         long elapsed = NanoTime.millisSince(begin);
         if (LOG.isInfoEnabled())
-            LOG.info("%d requests in %d ms, %.3f req/s".formatted(iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D));
+            LOG.info("%d requests in %d ms, %.3f req/s"
+                .formatted(iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D));
         latch.countDown();
     }
 
@@ -242,7 +255,8 @@ public class ConnectionPoolTest
         test(method, clientClose, serverClose, contentLength, failures);
     }
 
-    private void test(HttpMethod method, boolean clientClose, boolean serverClose, int contentLength, List<Throwable> failures)
+    private void test(
+                      HttpMethod method, boolean clientClose, boolean serverClose, int contentLength, List<Throwable> failures)
     {
         Request request = client.newRequest("localhost", connector.getLocalPort())
             .path("/")
@@ -266,7 +280,8 @@ public class ConnectionPoolTest
 
         try
         {
-            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, contentLength).send();
+            CompletableFuture<ContentResponse> completable =
+                new CompletableResponseListener(request, contentLength).send();
             ContentResponse response = completable.get(5, TimeUnit.SECONDS);
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
@@ -313,21 +328,17 @@ public class ConnectionPoolTest
         client.start();
 
         CountDownLatch latch = new CountDownLatch(2);
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/one")
-            .send(result ->
-            {
-                if (result.isSucceeded())
-                    latch.countDown();
-            });
+        client.newRequest("localhost", connector.getLocalPort()).path("/one").send(result ->
+        {
+            if (result.isSucceeded())
+                latch.countDown();
+        });
         Thread.sleep(delay / 2);
-        client.newRequest("localhost", connector.getLocalPort())
-            .path("/two")
-            .send(result ->
-            {
-                if (result.isSucceeded())
-                    latch.countDown();
-            });
+        client.newRequest("localhost", connector.getLocalPort()).path("/two").send(result ->
+        {
+            if (result.isSucceeded())
+                latch.countDown();
+        });
 
         assertTrue(latch.await(2 * delay, TimeUnit.MILLISECONDS));
         List<Destination> destinations = client.getDestinations();
@@ -335,7 +346,9 @@ public class ConnectionPoolTest
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         if (DUPLEX_MAX_DURATION == factory)
-            assertThat(connectionPool.getConnectionCount(), lessThanOrEqualTo(2)); // The connections can expire upon release.
+            assertThat(
+                connectionPool.getConnectionCount(),
+                lessThanOrEqualTo(2)); // The connections can expire upon release.
         else
             assertThat(connectionPool.getConnectionCount(), is(2));
     }
@@ -398,7 +411,8 @@ public class ConnectionPoolTest
 
     @ParameterizedTest
     @MethodSource("pools")
-    public void testConcurrentRequestsAllBlockedOnServerWithLargeConnectionPool(ConnectionPoolFactory factory) throws Exception
+    public void testConcurrentRequestsAllBlockedOnServerWithLargeConnectionPool(ConnectionPoolFactory factory)
+        throws Exception
     {
         int count = 10;
         testConcurrentRequestsAllBlockedOnServer(factory, count, 2 * count);
@@ -406,13 +420,15 @@ public class ConnectionPoolTest
 
     @ParameterizedTest
     @MethodSource("pools")
-    public void testConcurrentRequestsAllBlockedOnServerWithExactConnectionPool(ConnectionPoolFactory factory) throws Exception
+    public void testConcurrentRequestsAllBlockedOnServerWithExactConnectionPool(ConnectionPoolFactory factory)
+        throws Exception
     {
         int count = 10;
         testConcurrentRequestsAllBlockedOnServer(factory, count, count);
     }
 
-    private void testConcurrentRequestsAllBlockedOnServer(ConnectionPoolFactory factory, int count, int maxConnections) throws Exception
+    private void testConcurrentRequestsAllBlockedOnServer(ConnectionPoolFactory factory, int count, int maxConnections)
+        throws Exception
     {
         CyclicBarrier barrier = new CyclicBarrier(count);
 
@@ -460,10 +476,13 @@ public class ConnectionPoolTest
                 }));
         }
 
-        assertTrue(latch.await(15, TimeUnit.SECONDS), "server requests " + barrier.getNumberWaiting() + "<" + count + " - client: " + client.dump());
+        assertTrue(
+            latch.await(15, TimeUnit.SECONDS),
+            "server requests " + barrier.getNumberWaiting() + "<" + count + " - client: " + client.dump());
         List<Destination> destinations = client.getDestinations();
         assertEquals(1, destinations.size());
-        // The max duration connection pool aggressively closes expired connections upon release, which interferes with this assertion.
+        // The max duration connection pool aggressively closes expired connections upon release, which interferes with
+        // this assertion.
         if (DUPLEX_MAX_DURATION != factory)
         {
             HttpDestination destination = (HttpDestination)destinations.get(0);
@@ -539,20 +558,22 @@ public class ConnectionPoolTest
         AtomicInteger poolRemoveCounter = new AtomicInteger();
         ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
         {
-            DuplexConnectionPool pool = new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination())
-            {
-                @Override
-                protected void onCreated(Connection connection)
+            DuplexConnectionPool pool =
+                new DuplexConnectionPool(
+                    destination, destination.getHttpClient().getMaxConnectionsPerDestination())
                 {
-                    poolCreateCounter.incrementAndGet();
-                }
+                    @Override
+                    protected void onCreated(Connection connection)
+                    {
+                        poolCreateCounter.incrementAndGet();
+                    }
 
-                @Override
-                protected void onRemoved(Connection connection)
-                {
-                    poolRemoveCounter.incrementAndGet();
-                }
-            };
+                    @Override
+                    protected void onRemoved(Connection connection)
+                    {
+                        poolRemoveCounter.incrementAndGet();
+                    }
+                };
             pool.setMaxDuration(maxDuration);
             return pool;
         });
@@ -591,15 +612,18 @@ public class ConnectionPoolTest
         int maxUsage = 2;
         startClient(destination ->
         {
-            AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(destination);
+            AbstractConnectionPool connectionPool =
+                (AbstractConnectionPool)factory.factory.newConnectionPool(destination);
             connectionPool.setMaxUsage(maxUsage);
-            connectionPool.setMaxDuration(0); // Disable max duration expiry as it may expire the connection between the 1st and 2nd request.
+            connectionPool.setMaxDuration(
+                0); // Disable max duration expiry as it may expire the connection between the 1st and 2nd request.
             return connectionPool;
         });
         client.setMaxConnectionsPerDestination(1);
 
         // Send first request, we are within the max usage count.
-        ContentResponse response1 = client.newRequest("localhost", connector.getLocalPort()).send();
+        ContentResponse response1 =
+            client.newRequest("localhost", connector.getLocalPort()).send();
         assertEquals(HttpStatus.OK_200, response1.getStatus());
 
         HttpDestination destination = (HttpDestination)client.getDestinations().get(0);
@@ -620,7 +644,8 @@ public class ConnectionPoolTest
 
         // Send second request, max usage count will be reached,
         // the only connection must be closed.
-        ContentResponse response2 = client.newRequest("localhost", connector.getLocalPort()).send();
+        ContentResponse response2 =
+            client.newRequest("localhost", connector.getLocalPort()).send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());
 
         assertEquals(0, connectionPool.getActiveConnectionCount());
@@ -654,7 +679,9 @@ public class ConnectionPoolTest
         Destination destination = client.resolveDestination(new Origin("http", "localhost", connector.getLocalPort()));
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         if (DUPLEX_MAX_DURATION == factory)
-            assertThat(connectionPool.getConnectionCount(), lessThanOrEqualTo(1)); // The connections can expire upon release.
+            assertThat(
+                connectionPool.getConnectionCount(),
+                lessThanOrEqualTo(1)); // The connections can expire upon release.
         else
             assertThat(connectionPool.getConnectionCount(), is(1));
 

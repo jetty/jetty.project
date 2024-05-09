@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.websocket.core.CoreSession;
 
 public class ReaderMessageSink extends DispatchedMessageSink

@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.http.spi;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsServer;
 import com.sun.net.httpserver.spi.HttpServerProvider;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -37,8 +36,7 @@ public class JettyHttpServerProvider extends HttpServerProvider
     }
 
     @Override
-    public HttpServer createHttpServer(InetSocketAddress addr, int backlog)
-        throws IOException
+    public HttpServer createHttpServer(InetSocketAddress addr, int backlog) throws IOException
     {
         Server server = _server;
         boolean shared = true;

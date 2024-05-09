@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 public class NoJspServlet extends HttpServlet
 {
@@ -28,7 +27,9 @@ public class NoJspServlet extends HttpServlet
     protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
     {
         if (!_warned)
-            getServletContext().log("No JSP support. Check that the ee9-jsp module is enabled, or otherwise ensure the jsp jars are on the server classpath.");
+            getServletContext()
+                .log(
+                    "No JSP support. Check that the ee9-jsp module is enabled, or otherwise ensure the jsp jars are on the server classpath.");
         _warned = true;
 
         response.sendError(500, "JSP support not configured");

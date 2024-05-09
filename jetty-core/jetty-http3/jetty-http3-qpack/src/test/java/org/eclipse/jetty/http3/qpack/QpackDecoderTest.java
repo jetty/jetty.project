@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.util.BufferUtil;
@@ -22,10 +25,6 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QpackDecoderTest
 {
@@ -71,7 +70,7 @@ public class QpackDecoderTest
         assertThat(entry.getHttpField().getName(), equalTo("name0"));
         assertThat(entry.getHttpField().getValue(), equalTo("value0"));
     }
-    
+
     @Test
     public void testDecodeRequest() throws Exception
     {
@@ -80,12 +79,19 @@ public class QpackDecoderTest
         instructionHandler.onSetDynamicTableCapacity(2048);
 
         instructionHandler.onInsertNameWithReference(0, false, "licensed.app");
-        instructionHandler.onInsertWithLiteralName("sec-ch-ua", "\"Not A(Brand\";v=\"99\", \"Brave\";v=\"121\", \"Chromium\";v=\"121\"");
+        instructionHandler.onInsertWithLiteralName(
+            "sec-ch-ua", "\"Not A(Brand\";v=\"99\", \"Brave\";v=\"121\", \"Chromium\";v=\"121\"");
         instructionHandler.onInsertWithLiteralName("sec-ch-ua-mobile", "?0");
         instructionHandler.onInsertWithLiteralName("sec-ch-ua-platform", "Windows");
         instructionHandler.onInsertWithLiteralName("dnt", "1");
-        instructionHandler.onInsertNameWithReference(95, false, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36");
-        instructionHandler.onInsertNameWithReference(29, false, "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
+        instructionHandler.onInsertNameWithReference(
+            95,
+            false,
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36");
+        instructionHandler.onInsertNameWithReference(
+            29,
+            false,
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
         instructionHandler.onInsertWithLiteralName("sec-gpc", "1");
         instructionHandler.onInsertWithLiteralName("sec-fetch-site", "none");
         instructionHandler.onInsertWithLiteralName("sec-fetch-mode", "navigate");
@@ -108,7 +114,7 @@ public class QpackDecoderTest
         assertThat(metaData.getHttpFields().get("sec-fetch-mode"), equalTo("cors"));
         assertThat(metaData.getHttpFields().get("sec-fetch-dest"), equalTo("script"));
     }
-    
+
     private ByteBuffer fromHex(String hex)
     {
         return BufferUtil.toBuffer(StringUtil.fromHexString(hex));

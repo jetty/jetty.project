@@ -17,7 +17,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.server.Server;
 
 /**
@@ -31,7 +30,7 @@ public abstract class AbstractServerForker extends AbstractForker
     protected Server server;
     protected String containerClassPath;
     protected File webAppPropsFile;
-    protected String contextXml; 
+    protected String contextXml;
     protected int scanInterval;
     protected String executionClassName;
 
@@ -91,7 +90,7 @@ public abstract class AbstractServerForker extends AbstractForker
     {
         this.contextXml = contextXml;
     }
-    
+
     public String getContainerClassPath()
     {
         return containerClassPath;
@@ -113,8 +112,7 @@ public abstract class AbstractServerForker extends AbstractForker
     }
 
     @Override
-    public void doStart()
-        throws Exception
+    public void doStart() throws Exception
     {
         generateWebApp();
         super.doStart();
@@ -128,7 +126,7 @@ public abstract class AbstractServerForker extends AbstractForker
     {
         List<String> cmd = new ArrayList<String>();
         cmd.add(getJavaBin());
-        
+
         if (jvmArgs != null)
         {
             String[] args = jvmArgs.split(" ");
@@ -137,16 +135,16 @@ public abstract class AbstractServerForker extends AbstractForker
                 if (args[i] != null && !"".equals(args[i]))
                     cmd.add(args[i].trim());
             }
-        }     
+        }
 
         if (systemProperties != null)
         {
-            for (Map.Entry<String, String> e:systemProperties.entrySet())
+            for (Map.Entry<String, String> e : systemProperties.entrySet())
             {
                 cmd.add("-D" + e.getKey() + "=" + e.getValue());
             }
         }
-        
+
         if (containerClassPath != null && containerClassPath.length() > 0)
         {
             cmd.add("-cp");
@@ -166,7 +164,7 @@ public abstract class AbstractServerForker extends AbstractForker
         {
             cmd.add("--jetty-xml");
             StringBuilder tmp = new StringBuilder();
-            for (File jettyXml:jettyXmlFiles)
+            for (File jettyXml : jettyXmlFiles)
             {
                 if (tmp.length() != 0)
                     tmp.append(",");
@@ -186,15 +184,15 @@ public abstract class AbstractServerForker extends AbstractForker
             cmd.add("--scanInterval");
             cmd.add(Integer.toString(scanInterval));
         }
-        
+
         if (jettyProperties != null)
         {
-            for (Map.Entry<String, String> e:jettyProperties.entrySet())
+            for (Map.Entry<String, String> e : jettyProperties.entrySet())
             {
                 cmd.add(e.getKey() + "=" + e.getValue());
             }
         }
-        
+
         ProcessBuilder command = new ProcessBuilder(cmd);
         command.directory(workDir);
 
@@ -203,7 +201,7 @@ public abstract class AbstractServerForker extends AbstractForker
 
         PluginLog.getLog().info("Forked process starting");
 
-        //set up extra environment vars if there are any
+        // set up extra environment vars if there are any
         if (env != null && !env.isEmpty())
             command.environment().putAll(env);
 

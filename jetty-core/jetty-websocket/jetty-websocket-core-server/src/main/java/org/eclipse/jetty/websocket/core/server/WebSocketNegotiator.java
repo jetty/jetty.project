@@ -39,7 +39,8 @@ public interface WebSocketNegotiator extends Configuration.Customizer
         return from(creator, factory, null);
     }
 
-    static WebSocketNegotiator from(WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer)
+    static WebSocketNegotiator from(
+                                    WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer)
     {
         return new CreatorNegotiator(creator, factory, customizer);
     }

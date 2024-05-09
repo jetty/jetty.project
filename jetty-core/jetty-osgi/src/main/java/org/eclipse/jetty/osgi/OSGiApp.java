@@ -21,7 +21,6 @@ import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Objects;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
@@ -60,15 +59,16 @@ public class OSGiApp extends App
      */
     private static Path getBundlePath(Bundle bundle) throws Exception
     {
-        String bundleOverrideLocation = bundle.getHeaders().get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
-        File bundleLocation = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
+        String bundleOverrideLocation =
+            bundle.getHeaders().get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
+        File bundleLocation =
+            BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         File root = (bundleOverrideLocation == null ? bundleLocation : new File(bundleOverrideLocation));
         return Paths.get(root.toURI());
-
     }
 
     /**
-     * Convert a bundle installed location into a Resource, taking account of 
+     * Convert a bundle installed location into a Resource, taking account of
      * any locations that are actually packed jars, but without a ".jar" extension, eg
      * as found on equinox. Eg file:///a/b/c/org.eclipse.osgi/89/0/bundleFile
      * @param bundle the bundle
@@ -76,18 +76,22 @@ public class OSGiApp extends App
      */
     private static Resource getBundleAsResource(Bundle bundle) throws Exception
     {
-        String bundleOverrideLocation = bundle.getHeaders().get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
-        File bundleLocation = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
+        String bundleOverrideLocation =
+            bundle.getHeaders().get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
+        File bundleLocation =
+            BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         File root = (bundleOverrideLocation == null ? bundleLocation : new File(bundleOverrideLocation));
-        //Fix some osgiPaths.get( locations which point to an archive, but that doesn't end in .jar 
-        URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(root.toURI().toURL());
-        
+        // Fix some osgiPaths.get( locations which point to an archive, but that doesn't end in .jar
+        URL url = BundleFileLocatorHelperFactory.getFactory()
+            .getHelper()
+            .getLocalURL(root.toURI().toURL());
+
         return ResourceFactory.root().newResource(url);
     }
-    
+
     /**
      * Get or create a contextPath from bundle headers and information
-     * 
+     *
      * @param bundle the bundle
      * @return a contextPath
      */
@@ -114,21 +118,20 @@ public class OSGiApp extends App
 
         return contextPath;
     }
-    
+
     /**
      * @param manager the DeploymentManager to which to deploy
      * @param provider the provider that discovered the context/webapp
      * @param bundle the bundle associated with the context/webapp
      */
-    public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle)
-    throws Exception
+    public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle) throws Exception
     {
         super(manager, provider, getBundlePath(bundle));
 
         _bundle = Objects.requireNonNull(bundle);
         _bundleResource = getBundleAsResource(bundle);
-        
-        //copy selected bundle headers into the properties
+
+        // copy selected bundle headers into the properties
         Dictionary<String, String> headers = bundle.getHeaders();
         Enumeration<String> keys = headers.keys();
         while (keys.hasMoreElements())
@@ -151,7 +154,7 @@ public class OSGiApp extends App
             }
         }
 
-        //set up the context path based on the supplied value, or the calculated default
+        // set up the context path based on the supplied value, or the calculated default
         setContextPath(getContextPath(bundle));
     }
 
@@ -164,8 +167,8 @@ public class OSGiApp extends App
     public ContextHandler getContextHandler() throws Exception
     {
         if (_contextHandler == null)
-                _contextHandler = getAppProvider().createContextHandler(this);
-            return _contextHandler;
+            _contextHandler = getAppProvider().createContextHandler(this);
+        return _contextHandler;
     }
 
     public void setContextHandler(ContextHandler contextHandler)
@@ -236,7 +239,9 @@ public class OSGiApp extends App
             if (getBundleVersionAsString() != null)
                 properties.put(OSGiWebappConstants.OSGI_WEB_VERSION, getBundleVersionAsString());
             properties.put(OSGiWebappConstants.OSGI_WEB_CONTEXTPATH, getContextPath());
-            ServiceRegistration rego = FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ContextHandler.class.getName(), getContextHandler(), properties);
+            ServiceRegistration rego = FrameworkUtil.getBundle(this.getClass())
+                .getBundleContext()
+                .registerService(ContextHandler.class.getName(), getContextHandler(), properties);
             setRegistration(rego);
         }
     }

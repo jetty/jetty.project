@@ -13,20 +13,15 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -50,6 +45,20 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.Part;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
@@ -68,49 +77,23 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class CrossContextDispatcherTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(CrossContextDispatcherTest.class);
-    public static final String MULTIPART = "--AaB03x\r\n" +
-        "content-disposition: form-data; name=\"field1\"\r\n" +
-        "\r\n" +
-        "Joe Blow\r\n" +
-        "--AaB03x\r\n" +
-        "content-disposition: form-data; name=\"stuff\"\r\n" +
-        "Content-Type: text/plain;charset=ISO-8859-1\r\n" +
-        "\r\n" +
-        "000000000000000000000000000000000000000000000000000\r\n" +
-        "--AaB03x--\r\n";
+    public static final String MULTIPART = "--AaB03x\r\n" + "content-disposition: form-data; name=\"field1\"\r\n" + "\r\n" + "Joe Blow\r\n" + "--AaB03x\r\n" + "content-disposition: form-data; name=\"stuff\"\r\n" + "Content-Type: text/plain;charset=ISO-8859-1\r\n" + "\r\n" + "000000000000000000000000000000000000000000000000000\r\n" + "--AaB03x--\r\n";
 
-    public static final String MULTIPART_HEADERS = "Host: whatever\r\n" +
-        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
-        "Content-Length: " + MULTIPART.getBytes().length + "\r\n" +
-        "Connection: close\r\n";
+    public static final String MULTIPART_HEADERS =
+        "Host: whatever\r\n" + "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" + "Content-Length: " + MULTIPART.getBytes().length + "\r\n" + "Connection: close\r\n";
 
     public static final String GET_INCLUDE = "GET /context/dispatch/?include=/reader HTTP/1.1\r\n";
-    public static final String MULTIPART_INCLUDE_REQUEST = GET_INCLUDE +
-        MULTIPART_HEADERS +
-        "\r\n" +
-        MULTIPART;
+    public static final String MULTIPART_INCLUDE_REQUEST = GET_INCLUDE + MULTIPART_HEADERS + "\r\n" + MULTIPART;
 
     public static final String GET_FORWARD = "GET /context/dispatch/?forward=/reader HTTP/1.1\r\n";
 
-    public static final String MULTIPART_FORWARD_REQUEST = GET_FORWARD +
-        MULTIPART_HEADERS +
-        "\r\n" +
-        MULTIPART;
+    public static final String MULTIPART_FORWARD_REQUEST = GET_FORWARD + MULTIPART_HEADERS + "\r\n" + MULTIPART;
 
-    private static final MultipartConfigElement MULTIPART_CONFIG_ELEMENT = new MultipartConfigElement(System.getProperty("java.io.tmpdir"), -1, -1, 2);
+    private static final MultipartConfigElement MULTIPART_CONFIG_ELEMENT =
+        new MultipartConfigElement(System.getProperty("java.io.tmpdir"), -1, -1, 2);
     private Server _server;
     private LocalConnector _connector;
     private ServletContextHandler _contextHandler;
@@ -122,8 +105,14 @@ public class CrossContextDispatcherTest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
-        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
-        _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
+        _connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendServerVersion(false);
+        _connector
+            .getConnectionFactory(HttpConfiguration.ConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendDateHeader(false);
 
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
         _contextHandler = new ServletContextHandler();
@@ -134,12 +123,14 @@ public class CrossContextDispatcherTest
 
         _targetServletContextHandler = new ServletContextHandler();
         _targetServletContextHandler.setContextPath("/foreign");
-        _targetServletContextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest"));
+        _targetServletContextHandler.setBaseResourceAsPath(
+            MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest"));
         _targetServletContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_targetServletContextHandler);
 
         ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest")));
+        resourceHandler.setBaseResource(
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest")));
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(resourceHandler);
         resourceContextHandler.setCrossContextDispatchSupported(true);
@@ -163,19 +154,20 @@ public class CrossContextDispatcherTest
         _targetServletContextHandler.addServlet(VerifyForwardServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-        String rawResponse = _connector.getResponse("""
-            GET /context/dispatch/?forward=/verify HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """);
+        String rawResponse = _connector.getResponse(
+            """
+                GET /context/dispatch/?forward=/verify HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         String content = response.getContent();
         String[] contentLines = content.split("\\n");
 
-        //verify forward attributes
+        // verify forward attributes
         assertThat(content, containsString("Verified!"));
         assertThat(content, containsString("jakarta.servlet.forward.context_path=/context"));
         assertThat(content, containsString("jakarta.servlet.forward.servlet_path=/dispatch"));
@@ -186,7 +178,7 @@ public class CrossContextDispatcherTest
         assertThat(forwardMapping, containsString("CrossContextDispatchServlet"));
         assertThat(content, containsString("jakarta.servlet.forward.query_string=forward=/verify"));
         assertThat(content, containsString("jakarta.servlet.forward.request_uri=/context/dispatch/"));
-        //verify request values
+        // verify request values
         assertThat(content, containsString("CONTEXT_PATH=/foreign"));
         assertThat(content, containsString("SERVLET_PATH=/verify"));
         assertThat(content, containsString("PATH_INFO=/pinfo"));
@@ -196,7 +188,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
-        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        params = params.substring(1, params.length() - 1); // dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward"));
         assertThat(content, containsString("REQUEST_URI=/foreign/verify/pinfo"));
     }
@@ -207,18 +199,19 @@ public class CrossContextDispatcherTest
         _targetServletContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-         String rawResponse = _connector.getResponse("""
-            GET /context/dispatch/?include=/verify HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """);
+        String rawResponse = _connector.getResponse(
+            """
+                GET /context/dispatch/?include=/verify HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String content = response.getContent();
         String[] contentLines = content.split("\\n");
 
-        //verify include attributes
+        // verify include attributes
         assertThat(content, containsString("Verified!"));
         assertThat(content, containsString("jakarta.servlet.include.context_path=/foreign"));
         assertThat(content, containsString("jakarta.servlet.include.servlet_path=/verify"));
@@ -226,7 +219,7 @@ public class CrossContextDispatcherTest
         String includeMapping = extractLine(contentLines, "jakarta.servlet.include.mapping=");
         assertThat(includeMapping, containsString("VerifyIncludeServlet"));
         assertThat(content, containsString("jakarta.servlet.include.request_uri=/foreign/verify/pinfo"));
-        //verify request values
+        // verify request values
         assertThat(content, containsString("CONTEXT_PATH=/context"));
         assertThat(content, containsString("SERVLET_PATH=/dispatch"));
         assertThat(content, containsString("PATH_INFO=/"));
@@ -237,7 +230,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
-        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        params = params.substring(1, params.length() - 1); // dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
     }
 
@@ -249,18 +242,19 @@ public class CrossContextDispatcherTest
         _targetServletContextHandler.addServlet(VerifySimulatedEE8IncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-        String rawResponse = _connector.getResponse("""
-            GET /context/dispatch/?include=/verify HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """);
+        String rawResponse = _connector.getResponse(
+            """
+                GET /context/dispatch/?include=/verify HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String content = response.getContent();
         String[] contentLines = content.split("\\n");
 
-        //verify include attributes
+        // verify include attributes
         assertThat(content, containsString("Verified!"));
         assertThat(content, containsString("javax.servlet.include.context_path=/foreign"));
         assertThat(content, containsString("javax.servlet.include.servlet_path=/verify"));
@@ -268,7 +262,7 @@ public class CrossContextDispatcherTest
         String includeMapping = extractLine(contentLines, "javax.servlet.include.mapping=");
         assertThat(includeMapping, containsString("VerifySimulatedEE8IncludeServlet"));
         assertThat(content, containsString("javax.servlet.include.request_uri=/foreign/verify/pinfo"));
-        //verify request values
+        // verify request values
         assertThat(content, containsString("CONTEXT_PATH=/context"));
         assertThat(content, containsString("SERVLET_PATH=/dispatch"));
         assertThat(content, containsString("PATH_INFO=/"));
@@ -279,7 +273,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
-        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        params = params.substring(1, params.length() - 1); // dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
     }
 
@@ -306,7 +300,8 @@ public class CrossContextDispatcherTest
         Servlet dispatcher = new CrossContextDispatchServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 super.doGet(request, response);
 
@@ -334,14 +329,8 @@ public class CrossContextDispatcherTest
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
         String form = "a=xxx";
-        String rawResponse = _connector.getResponse(
-            "POST /context/dispatch/?forward=/reader HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: " + form.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-             form);
+        String rawResponse =
+            _connector.getResponse("POST /context/dispatch/?forward=/reader HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Content-Length: " + form.length() + "\r\n" + "Connection: close\r\n" + "\r\n" + form);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("a="));
@@ -350,33 +339,28 @@ public class CrossContextDispatcherTest
     @Test
     public void testParamsAfterCrossContextForward() throws Exception
     {
-         _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
-         CountDownLatch latch = new CountDownLatch(2);
-         Servlet dispatcher = new CrossContextDispatchServlet()
-         {
-             @Override
-             protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-             {
-                 super.doGet(request, response);
+        _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
+        CountDownLatch latch = new CountDownLatch(2);
+        Servlet dispatcher = new CrossContextDispatchServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
+            {
+                super.doGet(request, response);
 
-                 if (!StringUtil.isBlank(request.getParameter("param")))
-                     latch.countDown();
-                 if (!StringUtil.isBlank(request.getParameter("a")))
-                     latch.countDown();
-             }
-         };
+                if (!StringUtil.isBlank(request.getParameter("param")))
+                    latch.countDown();
+                if (!StringUtil.isBlank(request.getParameter("a")))
+                    latch.countDown();
+            }
+        };
 
         _contextHandler.addServlet(new ServletHolder(dispatcher), "/dispatch/*");
 
         String form = "a=xxx";
         String rawResponse = _connector.getResponse(
-            "POST /context/dispatch/?forward=/reader&param=a HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: " + form.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-             form);
+            "POST /context/dispatch/?forward=/reader&param=a HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Content-Length: " + form.length() + "\r\n" + "Connection: close\r\n" + "\r\n" + form);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
@@ -388,12 +372,13 @@ public class CrossContextDispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String rawResponse = _connector.getResponse("""
-            GET /context/resourceServlet/content.txt?do=forward HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """);
+        String rawResponse = _connector.getResponse(
+            """
+                GET /context/resourceServlet/content.txt?do=forward HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -406,12 +391,13 @@ public class CrossContextDispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String rawResponse = _connector.getResponse("""
-            GET /context/resourceServlet/content.txt?do=include&wrapped=true HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """);
+        String rawResponse = _connector.getResponse(
+            """
+                GET /context/resourceServlet/content.txt?do=include&wrapped=true HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -424,12 +410,13 @@ public class CrossContextDispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String rawResponse = _connector.getResponse("""
-            GET /context/resourceServlet/content.txt?do=forward&wrapped=true HTTP/1.1
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """);
+        String rawResponse = _connector.getResponse(
+            """
+                GET /context/resourceServlet/content.txt?do=forward&wrapped=true HTTP/1.1
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -441,7 +428,8 @@ public class CrossContextDispatcherTest
     {
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             ResponseWrapper wrapper = new ResponseWrapper((HttpServletResponse)response);
             chain.doFilter(request, wrapper);
@@ -505,12 +493,14 @@ public class CrossContextDispatcherTest
     public static class ForwardServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             RequestDispatcher dispatcher = null;
 
             if (request.getParameter("do").equals("include"))
-                dispatcher = getServletContext().getRequestDispatcher("/IncludeServlet/includepath?do=assertforwardinclude");
+                dispatcher =
+                    getServletContext().getRequestDispatcher("/IncludeServlet/includepath?do=assertforwardinclude");
             else if (request.getParameter("do").equals("assertincludeforward"))
                 dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeForwardServlet/assertpath?do=end");
             else if (request.getParameter("do").equals("assertforward"))
@@ -529,12 +519,15 @@ public class CrossContextDispatcherTest
     public static class AlwaysForwardServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             if ("/params".equals(request.getPathInfo()))
                 getServletContext().getRequestDispatcher("/echo?echo=forward").forward(request, response);
             else if ("/badparams".equals(request.getPathInfo()))
-                getServletContext().getRequestDispatcher("/echo?echo=forward&fbad=%88%A4").forward(request, response);
+                getServletContext()
+                    .getRequestDispatcher("/echo?echo=forward&fbad=%88%A4")
+                    .forward(request, response);
             else
                 getServletContext().getRequestDispatcher("/echo").forward(request, response);
         }
@@ -543,7 +536,8 @@ public class CrossContextDispatcherTest
     public static class NamedForwardServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             getServletContext().getNamedDispatcher(request.getParameter("name")).forward(request, response);
         }
@@ -552,7 +546,8 @@ public class CrossContextDispatcherTest
     public static class NamedIncludeServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             getServletContext().getNamedDispatcher(request.getParameter("name")).include(request, response);
         }
@@ -561,11 +556,14 @@ public class CrossContextDispatcherTest
     public static class ForwardNonUTF8Servlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             RequestDispatcher dispatcher;
             request.setAttribute("org.eclipse.jetty.server.Request.queryEncoding", "cp1251");
-            dispatcher = getServletContext().getRequestDispatcher("/AssertForwardServlet?do=end&else=%D0%B2%D1%8B%D0%B1%D1%80%D0%B0%D0%BD%D0%BE%3D%D0%A2%D0%B5%D0%BC%D0%BF%D0%B5%D1%80%D0%B0%D1%82%D1%83%D1%80%D0%B0");
+            dispatcher = getServletContext()
+                .getRequestDispatcher(
+                    "/AssertForwardServlet?do=end&else=%D0%B2%D1%8B%D0%B1%D1%80%D0%B0%D0%BD%D0%BE%3D%D0%A2%D0%B5%D0%BC%D0%BF%D0%B5%D1%80%D0%B0%D1%82%D1%83%D1%80%D0%B0");
             dispatcher.forward(request, response);
         }
     }
@@ -573,9 +571,10 @@ public class CrossContextDispatcherTest
     public static class MultiPartReadingFilter implements Filter
     {
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
-            //cause the MULTIPART to be parsed on the request
+            // cause the MULTIPART to be parsed on the request
             HttpServletRequest httpServletRequest = (HttpServletRequest)request;
             httpServletRequest.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, MULTIPART_CONFIG_ELEMENT);
             Collection<Part> parts = httpServletRequest.getParts();
@@ -592,7 +591,8 @@ public class CrossContextDispatcherTest
         {
             HttpServletRequest httpServletRequest = (HttpServletRequest)req;
             if (httpServletRequest.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) == null)
-                httpServletRequest.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, MULTIPART_CONFIG_ELEMENT);
+                httpServletRequest.setAttribute(
+                    ServletContextRequest.MULTIPART_CONFIG_ELEMENT, MULTIPART_CONFIG_ELEMENT);
             Collection<Part> parts = httpServletRequest.getParts();
             assertThat(parts, notNullValue());
             Part field1 = httpServletRequest.getPart("field1");
@@ -605,9 +605,10 @@ public class CrossContextDispatcherTest
     public static class ParameterReadingFilter implements Filter
     {
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
-            //cause the params to be parsed on the request
+            // cause the params to be parsed on the request
             Map<String, String[]> params = request.getParameterMap();
 
             chain.doFilter(request, response);
@@ -633,7 +634,8 @@ public class CrossContextDispatcherTest
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
 
             if (servletContext == null || !(request instanceof HttpServletRequest req) || !(response instanceof HttpServletResponse))
@@ -662,7 +664,8 @@ public class CrossContextDispatcherTest
     public static class DispatchServletServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             RequestDispatcher dispatcher;
 
@@ -675,7 +678,8 @@ public class CrossContextDispatcherTest
             {
                 dispatcher = getServletContext().getRequestDispatcher(request.getParameter("forward"));
                 if (dispatcher != null)
-                    dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
+                    dispatcher.forward(
+                        new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
                 else
                     response.sendError(404);
             }
@@ -691,7 +695,8 @@ public class CrossContextDispatcherTest
         }
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             RequestDispatcher dispatcher;
 
@@ -702,9 +707,10 @@ public class CrossContextDispatcherTest
                 dispatcher = foreign.getRequestDispatcher(request.getParameter("forward") + "/pinfo?a=b");
 
                 if (dispatcher == null)
-                       response.sendError(404, "No dispatcher for forward");
+                    response.sendError(404, "No dispatcher for forward");
                 else
-                    dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
+                    dispatcher.forward(
+                        new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
             }
             else if (request.getParameter("include") != null)
             {
@@ -738,7 +744,8 @@ public class CrossContextDispatcherTest
         }
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             RequestDispatcher dispatcher = null;
             boolean headers = Boolean.parseBoolean(request.getParameter("headers"));
@@ -749,11 +756,13 @@ public class CrossContextDispatcherTest
                 response.getOutputStream().write("Include:\n".getBytes(StandardCharsets.US_ASCII));
 
             if (request.getParameter("do").equals("forward"))
-                dispatcher = getServletContext().getRequestDispatcher("/ForwardServlet/forwardpath?do=assertincludeforward");
+                dispatcher =
+                    getServletContext().getRequestDispatcher("/ForwardServlet/forwardpath?do=assertincludeforward");
             else if (request.getParameter("do").equals("assertforwardinclude"))
                 dispatcher = getServletContext().getRequestDispatcher("/AssertForwardIncludeServlet/assertpath?do=end");
             else if (request.getParameter("do").equals("assertinclude"))
-                dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeServlet?do=end&do=the&headers=" + headers);
+                dispatcher = getServletContext()
+                    .getRequestDispatcher("/AssertIncludeServlet?do=end&do=the&headers=" + headers);
             else if (request.getParameter("do").equals("static"))
                 dispatcher = getServletContext().getRequestDispatcher("/test.txt");
             else if (request.getParameter("do").equals("hello"))
@@ -780,7 +789,8 @@ public class CrossContextDispatcherTest
         }
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             if (useWriter)
                 response.getWriter().println("Hello");
@@ -792,7 +802,8 @@ public class CrossContextDispatcherTest
     public static class RelativeDispatch2Servlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             String path = request.getParameter("path");
             String include = request.getParameter("include");
@@ -860,15 +871,22 @@ public class CrossContextDispatcherTest
             {
                 res.getWriter().println("Verified!");
                 res.getWriter().println("----------- FORWARD ATTRIBUTES");
-                res.getWriter().println(RequestDispatcher.FORWARD_CONTEXT_PATH + "=" + req.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
-                res.getWriter().println(RequestDispatcher.FORWARD_SERVLET_PATH + "=" + req.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
-                res.getWriter().println(RequestDispatcher.FORWARD_PATH_INFO  + "=" + req.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
-                res.getWriter().println(RequestDispatcher.FORWARD_MAPPING + "=" + req.getAttribute(RequestDispatcher.FORWARD_MAPPING));
-                res.getWriter().println(RequestDispatcher.FORWARD_QUERY_STRING + "=" + req.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
-                res.getWriter().println(RequestDispatcher.FORWARD_REQUEST_URI + "=" + req.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI));
+                res.getWriter()
+                    .println(RequestDispatcher.FORWARD_CONTEXT_PATH + "=" + req.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
+                res.getWriter()
+                    .println(RequestDispatcher.FORWARD_SERVLET_PATH + "=" + req.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
+                res.getWriter()
+                    .println(RequestDispatcher.FORWARD_PATH_INFO + "=" + req.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
+                res.getWriter()
+                    .println(RequestDispatcher.FORWARD_MAPPING + "=" + req.getAttribute(RequestDispatcher.FORWARD_MAPPING));
+                res.getWriter()
+                    .println(RequestDispatcher.FORWARD_QUERY_STRING + "=" + req.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+                res.getWriter()
+                    .println(RequestDispatcher.FORWARD_REQUEST_URI + "=" + req.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI));
                 res.getWriter().println("----------- REQUEST");
                 HttpServletRequest httpServletRequest = (HttpServletRequest)req;
-                res.getWriter().println("CONTEXT_PATH=" + httpServletRequest.getServletContext().getContextPath());
+                res.getWriter()
+                    .println("CONTEXT_PATH=" + httpServletRequest.getServletContext().getContextPath());
                 res.getWriter().println("SERVLET_PATH=" + httpServletRequest.getServletPath());
                 res.getWriter().println("PATH_INFO=" + httpServletRequest.getPathInfo());
                 res.getWriter().println("MAPPING=" + httpServletRequest.getHttpServletMapping());
@@ -882,7 +900,7 @@ public class CrossContextDispatcherTest
 
     public static class VerifyIncludeServlet extends GenericServlet
     {
-         @Override
+        @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             if (DispatcherType.INCLUDE.equals(req.getDispatcherType()))
@@ -1020,9 +1038,11 @@ public class CrossContextDispatcherTest
         @Override
         public void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
         {
-            // TODO: the `/resource` is a jetty-core ContextHandler, and is not a ServletContextHandler so it cannot return a ServletContext.
+            // TODO: the `/resource` is a jetty-core ContextHandler, and is not a ServletContextHandler so it cannot
+            // return a ServletContext.
 
-            ServletContext targetContext = getServletConfig().getServletContext().getContext("/resource");
+            ServletContext targetContext =
+                getServletConfig().getServletContext().getContext("/resource");
 
             RequestDispatcher dispatcher = targetContext.getRequestDispatcher(req.getPathInfo());
 
@@ -1062,7 +1082,8 @@ public class CrossContextDispatcherTest
     public static class EchoURIServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.setContentType("text/plain");
             response.setStatus(HttpServletResponse.SC_OK);
@@ -1076,7 +1097,8 @@ public class CrossContextDispatcherTest
     public static class IncludeEchoURIServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.setContentType("text/plain");
             response.setStatus(HttpServletResponse.SC_OK);
@@ -1097,7 +1119,8 @@ public class CrossContextDispatcherTest
     public static class ForwardEchoURIServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             response.setContentType("text/plain");
             response.setStatus(HttpServletResponse.SC_OK);
@@ -1108,7 +1131,8 @@ public class CrossContextDispatcherTest
             HttpServletMapping mapping = request.getHttpServletMapping();
             response.getOutputStream().println(mapping == null ? null : mapping.getServletName());
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
-            HttpServletMapping attrMapping = (HttpServletMapping)request.getAttribute(RequestDispatcher.FORWARD_MAPPING);
+            HttpServletMapping attrMapping =
+                (HttpServletMapping)request.getAttribute(RequestDispatcher.FORWARD_MAPPING);
             response.getOutputStream().println(attrMapping == null ? null : attrMapping.getMatchValue());
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
@@ -1120,7 +1144,8 @@ public class CrossContextDispatcherTest
     public static class AssertForwardServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             assertEquals("/context/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
             assertEquals("/context", request.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH));
@@ -1131,8 +1156,12 @@ public class CrossContextDispatcherTest
             assertNotNull(fwdMapping);
             assertEquals("ForwardServlet", fwdMapping.getMatchValue());
 
-            List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH,
-                Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
+            List<String> expectedAttributeNames = Arrays.asList(
+                Dispatcher.FORWARD_REQUEST_URI,
+                Dispatcher.FORWARD_CONTEXT_PATH,
+                Dispatcher.FORWARD_SERVLET_PATH,
+                Dispatcher.FORWARD_QUERY_STRING,
+                Dispatcher.FORWARD_MAPPING);
             List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
@@ -1142,7 +1171,9 @@ public class CrossContextDispatcherTest
             assertEquals("/context/AssertForwardServlet", request.getRequestURI());
             assertEquals("/context", request.getContextPath());
             assertEquals("/AssertForwardServlet", request.getServletPath());
-            assertEquals("http://local:80/context/AssertForwardServlet", request.getRequestURL().toString());
+            assertEquals(
+                "http://local:80/context/AssertForwardServlet",
+                request.getRequestURL().toString());
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
@@ -1153,7 +1184,8 @@ public class CrossContextDispatcherTest
     public static class AssertNonUTF8ForwardServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             byte[] cp1251Bytes = StringUtil.fromHexString("d2e5ecefe5f0e0f2f3f0e0");
             String expectedCP1251String = new String(cp1251Bytes, "cp1251");
@@ -1162,13 +1194,19 @@ public class CrossContextDispatcherTest
             assertEquals("/context", request.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH));
             assertEquals("/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
             assertNull(request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
-            assertEquals("do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
+            assertEquals(
+                "do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1",
+                request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
             HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
             assertNotNull(fwdMapping);
             assertEquals("ForwardServlet", fwdMapping.getMatchValue());
 
-            List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH,
-                Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
+            List<String> expectedAttributeNames = Arrays.asList(
+                Dispatcher.FORWARD_REQUEST_URI,
+                Dispatcher.FORWARD_CONTEXT_PATH,
+                Dispatcher.FORWARD_SERVLET_PATH,
+                Dispatcher.FORWARD_QUERY_STRING,
+                Dispatcher.FORWARD_MAPPING);
             List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
@@ -1183,7 +1221,10 @@ public class CrossContextDispatcherTest
             MultiMap<String> q2 = new MultiMap<>();
             UrlEncoded.decodeTo(query.getString("else"), q2, UrlEncoded.ENCODING);
             String russian = UrlEncoded.encode(q2, UrlEncoded.ENCODING, false);
-            assertThat(russian, is("%D0%B2%D1%8B%D0%B1%D1%80%D0%B0%D0%BD%D0%BE=%D0%A2%D0%B5%D0%BC%D0%BF%D0%B5%D1%80%D0%B0%D1%82%D1%83%D1%80%D0%B0"));
+            assertThat(
+                russian,
+                is(
+                    "%D0%B2%D1%8B%D0%B1%D1%80%D0%B0%D0%BD%D0%BE=%D0%A2%D0%B5%D0%BC%D0%BF%D0%B5%D1%80%D0%B0%D1%82%D1%83%D1%80%D0%B0"));
             assertThat(query.containsKey("test"), is(false));
             assertThat(query.containsKey("foreign"), is(false));
 
@@ -1205,7 +1246,8 @@ public class CrossContextDispatcherTest
     public static class AssertIncludeServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             assertEquals("/context/AssertIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
             assertEquals("/context", request.getAttribute(Dispatcher.INCLUDE_CONTEXT_PATH));
@@ -1216,8 +1258,12 @@ public class CrossContextDispatcherTest
             assertNotNull(incMapping);
             assertEquals("AssertIncludeServlet", incMapping.getMatchValue());
 
-            List<String> expectedAttributeNames = Arrays.asList(Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH,
-                Dispatcher.INCLUDE_SERVLET_PATH, Dispatcher.INCLUDE_QUERY_STRING, Dispatcher.INCLUDE_MAPPING);
+            List<String> expectedAttributeNames = Arrays.asList(
+                Dispatcher.INCLUDE_REQUEST_URI,
+                Dispatcher.INCLUDE_CONTEXT_PATH,
+                Dispatcher.INCLUDE_SERVLET_PATH,
+                Dispatcher.INCLUDE_QUERY_STRING,
+                Dispatcher.INCLUDE_MAPPING);
             List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
@@ -1242,7 +1288,8 @@ public class CrossContextDispatcherTest
     public static class AssertForwardIncludeServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             // include doesn't hide forward
             assertEquals("/context/ForwardServlet/forwardpath", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
@@ -1254,7 +1301,9 @@ public class CrossContextDispatcherTest
             assertNotNull(fwdMapping);
             assertEquals("ForwardServlet", fwdMapping.getMatchValue());
 
-            assertEquals("/context/AssertForwardIncludeServlet/assertpath", request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
+            assertEquals(
+                "/context/AssertForwardIncludeServlet/assertpath",
+                request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
             assertEquals("/context", request.getAttribute(Dispatcher.INCLUDE_CONTEXT_PATH));
             assertEquals("/AssertForwardIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH));
             assertEquals("/assertpath", request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
@@ -1263,10 +1312,19 @@ public class CrossContextDispatcherTest
             assertNotNull(incMapping);
             assertEquals("AssertForwardIncludeServlet", incMapping.getMatchValue());
 
-            List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
-                Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING,
-                Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH, Dispatcher.INCLUDE_SERVLET_PATH,
-                Dispatcher.INCLUDE_PATH_INFO, Dispatcher.INCLUDE_QUERY_STRING, Dispatcher.INCLUDE_MAPPING);
+            List<String> expectedAttributeNames = Arrays.asList(
+                Dispatcher.FORWARD_REQUEST_URI,
+                Dispatcher.FORWARD_CONTEXT_PATH,
+                Dispatcher.FORWARD_SERVLET_PATH,
+                Dispatcher.FORWARD_PATH_INFO,
+                Dispatcher.FORWARD_QUERY_STRING,
+                Dispatcher.FORWARD_MAPPING,
+                Dispatcher.INCLUDE_REQUEST_URI,
+                Dispatcher.INCLUDE_CONTEXT_PATH,
+                Dispatcher.INCLUDE_SERVLET_PATH,
+                Dispatcher.INCLUDE_PATH_INFO,
+                Dispatcher.INCLUDE_QUERY_STRING,
+                Dispatcher.INCLUDE_MAPPING);
             List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
@@ -1286,7 +1344,8 @@ public class CrossContextDispatcherTest
     public static class AssertIncludeForwardServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             // forward hides include
             assertNull(request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
@@ -1305,8 +1364,13 @@ public class CrossContextDispatcherTest
             assertNotNull(fwdMapping);
             assertEquals("IncludeServlet", fwdMapping.getMatchValue());
 
-            List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
-                Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
+            List<String> expectedAttributeNames = Arrays.asList(
+                Dispatcher.FORWARD_REQUEST_URI,
+                Dispatcher.FORWARD_CONTEXT_PATH,
+                Dispatcher.FORWARD_SERVLET_PATH,
+                Dispatcher.FORWARD_PATH_INFO,
+                Dispatcher.FORWARD_QUERY_STRING,
+                Dispatcher.FORWARD_MAPPING);
             List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
@@ -1326,8 +1390,7 @@ public class CrossContextDispatcherTest
     public static class MappingServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             HttpServletMapping mapping = req.getHttpServletMapping();
             if (mapping == null)
@@ -1336,17 +1399,13 @@ public class CrossContextDispatcherTest
             }
             else
             {
-                String sb = "matchValue=" + mapping.getMatchValue() +
-                    ", pattern=" + mapping.getPattern() +
-                    ", servletName=" + mapping.getServletName() +
-                    ", mappingMatch=" + mapping.getMappingMatch();
+                String sb = "matchValue=" + mapping.getMatchValue() + ", pattern=" + mapping.getPattern() + ", servletName=" + mapping.getServletName() + ", mappingMatch=" + mapping.getMappingMatch();
                 resp.getWriter().println(sb);
             }
         }
 
         @Override
-        protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             this.doGet(req, resp);
         }
@@ -1354,8 +1413,7 @@ public class CrossContextDispatcherTest
 
     public static class AsyncDispatchTestServlet extends HttpServlet
     {
-        public void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws IOException
+        public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
         {
             AsyncContext asyncContext = req.startAsync();
             asyncContext.setTimeout(0);

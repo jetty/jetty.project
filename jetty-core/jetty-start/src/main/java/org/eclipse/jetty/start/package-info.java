@@ -15,4 +15,3 @@
  * Jetty Start : Generic Java Start Mechanism
  */
 package org.eclipse.jetty.start;
-

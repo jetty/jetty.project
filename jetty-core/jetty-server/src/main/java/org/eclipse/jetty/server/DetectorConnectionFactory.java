@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -59,7 +58,9 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             throw new IllegalArgumentException("At least one detecting instance is required");
 
         // remove protocol duplicates while keeping their ordering -> use LinkedHashSet
-        LinkedHashSet<String> protocols = Arrays.stream(detectingConnectionFactories).map(ConnectionFactory::getProtocol).collect(Collectors.toCollection(LinkedHashSet::new));
+        LinkedHashSet<String> protocols = Arrays.stream(detectingConnectionFactories)
+            .map(ConnectionFactory::getProtocol)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
 
         String protocol = protocols.stream().collect(Collectors.joining("|", "[", "]"));
         if (LOG.isDebugEnabled())
@@ -76,7 +77,11 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
     public Detection detect(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Detector {} detecting from buffer {} using {}", getProtocol(), BufferUtil.toHexString(buffer), _detectingConnectionFactories);
+            LOG.debug(
+                "Detector {} detecting from buffer {} using {}",
+                getProtocol(),
+                BufferUtil.toHexString(buffer),
+                _detectingConnectionFactories);
         boolean needMoreBytes = true;
         for (Detecting detectingConnectionFactory : _detectingConnectionFactories)
         {
@@ -90,7 +95,10 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             needMoreBytes &= detection == Detection.NEED_MORE_BYTES;
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Detector {} {}", getProtocol(), (needMoreBytes ? "requires more bytes" : "failed to recognize bytes"));
+            LOG.debug(
+                "Detector {} {}",
+                getProtocol(),
+                (needMoreBytes ? "requires more bytes" : "failed to recognize bytes"));
         return needMoreBytes ? Detection.NEED_MORE_BYTES : Detection.NOT_RECOGNIZED;
     }
 
@@ -100,7 +108,8 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
      * @param connector the connector.
      * @param endPoint the endpoint.
      */
-    protected static void upgradeToConnectionFactory(ConnectionFactory connectionFactory, Connector connector, EndPoint endPoint) throws IllegalStateException
+    protected static void upgradeToConnectionFactory(
+                                                     ConnectionFactory connectionFactory, Connector connector, EndPoint endPoint) throws IllegalStateException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Upgrading to connection factory {}", connectionFactory);
@@ -121,11 +130,15 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
      * @param endPoint the endpoint.
      * @param buffer the buffer.
      */
-    protected void nextProtocol(Connector connector, EndPoint endPoint, ByteBuffer buffer) throws IllegalStateException
+    protected void nextProtocol(Connector connector, EndPoint endPoint, ByteBuffer buffer)
+        throws IllegalStateException
     {
         String nextProtocol = findNextProtocol(connector);
         if (LOG.isDebugEnabled())
-            LOG.debug("Detector {} detection unsuccessful, found '{}' as the next protocol to upgrade to", getProtocol(), nextProtocol);
+            LOG.debug(
+                "Detector {} detection unsuccessful, found '{}' as the next protocol to upgrade to",
+                getProtocol(),
+                nextProtocol);
         if (nextProtocol == null)
             throw new IllegalStateException("Cannot find protocol following '" + getProtocol() + "' in connector's protocol list " + connector.getProtocols() + " for " + endPoint);
         upgradeToConnectionFactory(connector.getConnectionFactory(nextProtocol), connector, endPoint);
@@ -137,7 +150,8 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         return configure(new DetectorConnection(endPoint, connector), connector, endPoint);
     }
 
-    private class DetectorConnection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
+    private class DetectorConnection extends AbstractConnection
+        implements Connection.UpgradeFrom, Connection.UpgradeTo
     {
         private final Connector _connector;
         private final RetainableByteBuffer _buffer;
@@ -223,8 +237,13 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                 }
 
                 // all Detecting instances want more bytes than this buffer can store
-                LOG.warn("Detector {} failed to detect upgrade target on {} for {}", getProtocol(), _detectingConnectionFactories, getEndPoint());
-                releaseAndClose(new IOException("Detector %s buffer overflow %d".formatted(getProtocol(), _buffer.capacity())));
+                LOG.warn(
+                    "Detector {} failed to detect upgrade target on {} for {}",
+                    getProtocol(),
+                    _detectingConnectionFactories,
+                    getEndPoint());
+                releaseAndClose(
+                    new IOException("Detector %s buffer overflow %d".formatted(getProtocol(), _buffer.capacity())));
             }
             catch (Throwable x)
             {
@@ -252,7 +271,12 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             {
                 Detection detection = detectingConnectionFactory.detect(_buffer.getByteBuffer());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Detector {} performed detection from {} with {} which returned {}", getProtocol(), _buffer, detectingConnectionFactory, detection);
+                    LOG.debug(
+                        "Detector {} performed detection from {} with {} which returned {}",
+                        getProtocol(),
+                        _buffer,
+                        detectingConnectionFactory,
+                        detection);
                 if (detection == Detection.RECOGNIZED)
                 {
                     try
@@ -276,7 +300,8 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                     catch (Throwable x)
                     {
                         // Two reasons that can make us end up here:
-                        // 1) detectingConnectionFactory.newConnection() failed, probably because it cannot find the next protocol
+                        // 1) detectingConnectionFactory.newConnection() failed, probably because it cannot find the
+                        // next protocol
                         // 2) nextConnection is not instanceof UpgradeTo, rethrow as DetectionFailureException
                         if (LOG.isDebugEnabled())
                             LOG.debug("Detector {} failed to upgrade", getProtocol());
@@ -290,10 +315,13 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             {
                 // No DetectingConnectionFactory recognized those bytes -> call unsuccessful detection callback.
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Detector {} failed to detect a known protocol, falling back to nextProtocol()", getProtocol());
+                    LOG.debug(
+                        "Detector {} failed to detect a known protocol, falling back to nextProtocol()",
+                        getProtocol());
                 nextProtocol(_connector, getEndPoint(), _buffer.getByteBuffer());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Detector {} call to nextProtocol() succeeded, assuming upgrade performed", getProtocol());
+                    LOG.debug(
+                        "Detector {} call to nextProtocol() succeeded, assuming upgrade performed", getProtocol());
                 return true;
             }
 

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client;
 
+import static java.util.stream.Collectors.toCollection;
+
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -23,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.IO;
@@ -38,10 +39,9 @@ import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.stream.Collectors.toCollection;
-
 @ManagedObject
-public abstract class AbstractConnectionPool extends ContainerLifeCycle implements ConnectionPool, Dumpable, Sweeper.Sweepable
+public abstract class AbstractConnectionPool extends ContainerLifeCycle
+    implements ConnectionPool, Dumpable, Sweeper.Sweepable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractConnectionPool.class);
 
@@ -54,7 +54,8 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     private volatile int maxUsage;
     private volatile int initialMaxMultiplex;
 
-    protected AbstractConnectionPool(Destination destination, Pool.Factory<Connection> poolFactory, int initialMaxMultiplex)
+    protected AbstractConnectionPool(
+                                     Destination destination, Pool.Factory<Connection> poolFactory, int initialMaxMultiplex)
     {
         this.destination = (HttpDestination)destination;
         this.poolFactory = poolFactory;
@@ -255,7 +256,11 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     {
         int connectionCount = getConnectionCount();
         if (LOG.isDebugEnabled())
-            LOG.debug("Try creating connection {}/{} with {} pending", connectionCount, getMaxConnectionCount(), getPendingConnectionCount());
+            LOG.debug(
+                "Try creating connection {}/{} with {} pending",
+                connectionCount,
+                getMaxConnectionCount(),
+                getPendingConnectionCount());
 
         // If we have already pending sufficient multiplexed connections, then do not create another.
         int multiplexed = getInitialMaxMultiplex();
@@ -268,7 +273,13 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             boolean tryCreate = isMaximizeConnections() || supply < demand;
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Try creating({}) connection, pending/demand/supply: {}/{}/{}, result={}", create, pending, demand, supply, tryCreate);
+                LOG.debug(
+                    "Try creating({}) connection, pending/demand/supply: {}/{}/{}, result={}",
+                    create,
+                    pending,
+                    demand,
+                    supply,
+                    tryCreate);
 
             if (!tryCreate)
                 return;
@@ -334,7 +345,11 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                         if (canClose)
                             IO.close(connection);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Connection removed{}: expired {} {}", (canClose ? " and closed" : ""), entry, pool);
+                            LOG.debug(
+                                "Connection removed{}: expired {} {}",
+                                (canClose ? " and closed" : ""),
+                                entry,
+                                pool);
                         continue;
                     }
                 }
@@ -351,7 +366,11 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                         if (canClose)
                             IO.close(connection);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Connection removed{}: over used {} {}", (canClose ? " and closed" : ""), entry, pool);
+                            LOG.debug(
+                                "Connection removed{}: over used {} {}",
+                                (canClose ? " and closed" : ""),
+                                entry,
+                                pool);
                         continue;
                     }
                     // Entry is now used, so it must be acquired.
@@ -562,7 +581,8 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                     if (((Sweeper.Sweepable)connection).sweep())
                     {
                         boolean removed = remove(connection);
-                        LOG.warn("Connection swept: {}{}{} from active connections{}{}",
+                        LOG.warn(
+                            "Connection swept: {}{}{} from active connections{}{}",
                             connection,
                             System.lineSeparator(),
                             removed ? "Removed" : "Not removed",
@@ -577,7 +597,8 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public String toString()
     {
-        return String.format("%s@%x[s=%s,c=%d/%d/%d,a=%d,i=%d,q=%d,p=%s]",
+        return String.format(
+            "%s@%x[s=%s,c=%d/%d/%d,a=%d,i=%d,q=%d,p=%s]",
             getClass().getSimpleName(),
             hashCode(),
             getState(),

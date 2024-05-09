@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -129,7 +128,8 @@ public class AdaptiveExecutionStrategyBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testStrategy(ThreadState state) throws Exception
     {
         int r;
@@ -190,5 +190,3 @@ public class AdaptiveExecutionStrategyBenchmark
         new Runner(opt).run();
     }
 }
-
-

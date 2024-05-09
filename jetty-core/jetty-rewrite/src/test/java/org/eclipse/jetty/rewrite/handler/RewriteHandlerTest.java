@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
@@ -23,8 +24,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RewriteHandlerTest extends AbstractRuleTest
 {
@@ -57,7 +56,7 @@ public class RewriteHandlerTest extends AbstractRuleTest
         String request = """
             GET /xxx/bar HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -71,7 +70,7 @@ public class RewriteHandlerTest extends AbstractRuleTest
         String request = """
             GET /foo/bar HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -85,7 +84,7 @@ public class RewriteHandlerTest extends AbstractRuleTest
         String request = """
             GET /aaa/bar HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -100,7 +99,7 @@ public class RewriteHandlerTest extends AbstractRuleTest
         String request = """
             GET /ccc/x%20y HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -115,7 +114,7 @@ public class RewriteHandlerTest extends AbstractRuleTest
         String request = """
             GET /xxx/x%20y HTTP/1.1
             Host: localhost
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));

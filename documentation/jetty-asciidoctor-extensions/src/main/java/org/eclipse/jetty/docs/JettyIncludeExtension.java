@@ -23,7 +23,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.IncludeProcessor;
@@ -85,14 +84,17 @@ public class JettyIncludeExtension implements ExtensionRegistry
         }
 
         @Override
-        public void process(Document document, PreprocessorReader reader, String target, Map<String, Object> attributes)
+        public void process(
+                            Document document, PreprocessorReader reader, String target, Map<String, Object> attributes)
         {
             try
             {
                 String jettyVersion = (String)document.getAttribute("project-version");
                 // Document attributes are converted by Asciidoctor to lowercase.
                 Path jettyDocsPath = Path.of((String)document.getAttribute("project-basedir"));
-                Path jettyHome = jettyDocsPath.resolve("target/jetty-home-" + jettyVersion).normalize();
+                Path jettyHome = jettyDocsPath
+                    .resolve("target/jetty-home-" + jettyVersion)
+                    .normalize();
 
                 JettyHomeTester jetty = JettyHomeTester.Builder.newInstance()
                     .jettyHome(jettyHome)
@@ -179,7 +181,8 @@ public class JettyIncludeExtension implements ExtensionRegistry
             String regExp = parts[0];
             String replacement = parts[1].replace("\\n", "\n");
 
-            return lines.flatMap(line -> Stream.of(line.replaceAll(regExp, replacement).split("\n")));
+            return lines.flatMap(
+                line -> Stream.of(line.replaceAll(regExp, replacement).split("\n")));
         }
 
         private Stream<String> delete(Stream<String> lines, String delete)
@@ -247,10 +250,8 @@ public class JettyIncludeExtension implements ExtensionRegistry
             // Format is (prefix$Nsuffix,regExp...).
             String[] parts = callouts.split(",");
             String calloutPattern = parts[0];
-            List<Pattern> regExps = Stream.of(parts)
-                .skip(1)
-                .map(Pattern::compile)
-                .collect(Collectors.toList());
+            List<Pattern> regExps =
+                Stream.of(parts).skip(1).map(Pattern::compile).collect(Collectors.toList());
 
             AtomicInteger index = new AtomicInteger();
 

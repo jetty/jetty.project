@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +29,7 @@ import org.slf4j.LoggerFactory;
  * Range: bytes=1-10,5-25,50-,-20
  * }</pre>
  */
-public record ByteRange(long first, long last)
-{
+public record ByteRange(long first, long last) {
     private static final Logger LOG = LoggerFactory.getLogger(ByteRange.class);
 
     private ByteRange coalesce(ByteRange r)
@@ -42,8 +40,8 @@ public record ByteRange(long first, long last)
     private boolean overlaps(ByteRange range)
     {
         return
-            // Partial right overlap: 10-20,15-30.
-            (range.first >= this.first && range.first <= this.last) ||
+        // Partial right overlap: 10-20,15-30.
+        (range.first >= this.first && range.first <= this.last) ||
             // Partial left overlap: 20-30,15-25.
             (range.last >= this.first && range.last <= this.last) ||
             // Full inclusion: 20-30,10-40.

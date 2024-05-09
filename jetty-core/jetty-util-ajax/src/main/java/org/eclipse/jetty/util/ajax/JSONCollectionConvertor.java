@@ -16,7 +16,6 @@ package org.eclipse.jetty.util.ajax;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-
 import org.eclipse.jetty.util.Loader;
 
 public class JSONCollectionConvertor implements JSON.Convertor
@@ -36,7 +35,8 @@ public class JSONCollectionConvertor implements JSON.Convertor
         {
             Class<?> cls = Loader.loadClass((String)object.get("class"));
             @SuppressWarnings("unchecked")
-            Collection<Object> result = (Collection<Object>)cls.getConstructor().newInstance();
+            Collection<Object> result =
+                (Collection<Object>)cls.getConstructor().newInstance();
             Collections.addAll(result, (Object[])object.get("list"));
             return result;
         }

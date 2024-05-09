@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.util.ajax;
 
-import org.eclipse.jetty.util.NanoTime;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.eclipse.jetty.util.NanoTime;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test to converts POJOs to JSON and vice versa.

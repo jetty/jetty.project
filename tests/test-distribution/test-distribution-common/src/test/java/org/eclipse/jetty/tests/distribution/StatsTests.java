@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.file.Path;
@@ -20,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -34,24 +40,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.w3c.dom.Document;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class StatsTests extends AbstractJettyHomeTest
 {
-    @Disabled //TODO stats.mod broken
+    @Disabled // TODO stats.mod broken
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings =
+    {"ee9", "ee10"})
     public void testStatsServlet(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .build();
+        JettyHomeTester distribution =
+            JettyHomeTester.Builder.newInstance().jettyVersion(jettyVersion).build();
 
         String[] args1 = {
             "--create-startd",
@@ -68,12 +67,11 @@ public class StatsTests extends AbstractJettyHomeTest
             FS.ensureDirExists(webappsDir.resolve("demo/WEB-INF"));
 
             distribution.installBaseResource("stats-webapp-" + env + "/index.html", "webapps/demo/index.html");
-            distribution.installBaseResource("stats-webapp-" + env + "/WEB-INF/web.xml", "webapps/demo/WEB-INF/web.xml");
+            distribution.installBaseResource(
+                "stats-webapp-" + env + "/WEB-INF/web.xml", "webapps/demo/WEB-INF/web.xml");
 
             int port = Tester.freePort();
-            String[] args2 = {
-                "jetty.http.port=" + port
-            };
+            String[] args2 = {"jetty.http.port=" + port};
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
@@ -95,7 +93,10 @@ public class StatsTests extends AbstractJettyHomeTest
                     .send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
 
-                assertThat("Response.contentType", response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("text/xml"));
+                assertThat(
+                    "Response.contentType",
+                    response.getHeaders().get(HttpHeader.CONTENT_TYPE),
+                    containsString("text/xml"));
 
                 // Parse it, make sure it's well formed.
                 DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -116,7 +117,10 @@ public class StatsTests extends AbstractJettyHomeTest
                     .send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
 
-                assertThat("Response.contentType", response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("application/json"));
+                assertThat(
+                    "Response.contentType",
+                    response.getHeaders().get(HttpHeader.CONTENT_TYPE),
+                    containsString("application/json"));
 
                 Object doc = new JSON().parse(new JSON.StringSource(response.getContentAsString()));
                 assertNotNull(doc);
@@ -136,7 +140,10 @@ public class StatsTests extends AbstractJettyHomeTest
                     .send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
 
-                assertThat("Response.contentType", response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+                assertThat(
+                    "Response.contentType",
+                    response.getHeaders().get(HttpHeader.CONTENT_TYPE),
+                    containsString("text/plain"));
 
                 String textContent = response.getContentAsString();
                 assertThat(textContent, containsString("requests: "));
@@ -152,7 +159,10 @@ public class StatsTests extends AbstractJettyHomeTest
                     .send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
 
-                assertThat("Response.contentType", response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("text/html"));
+                assertThat(
+                    "Response.contentType",
+                    response.getHeaders().get(HttpHeader.CONTENT_TYPE),
+                    containsString("text/html"));
 
                 String htmlContent = response.getContentAsString();
                 // Look for things that indicate it's a well formed HTML output

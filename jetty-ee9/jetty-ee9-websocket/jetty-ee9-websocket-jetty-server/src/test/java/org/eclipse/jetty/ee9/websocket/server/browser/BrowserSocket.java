@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
-
 import org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
@@ -115,7 +114,11 @@ public class BrowserSocket
         if (message.length() > 300)
         {
             int len = message.length();
-            LOG.info("onTextMessage({} ... {}) size:{}", message.substring(0, 15), message.substring(len - 15, len).replaceAll("[\r\n]*", ""), len);
+            LOG.info(
+                "onTextMessage({} ... {}) size:{}",
+                message.substring(0, 15),
+                message.substring(len - 15, len).replaceAll("[\r\n]*", ""),
+                len);
         }
         else
         {
@@ -218,7 +221,8 @@ public class BrowserSocket
                     // Setup threads
                     for (int n = 0; n < threadCount; n++)
                     {
-                        threads[n] = new Thread(new WriteMany(session.getRemote(), size, count), "WriteMany[" + n + "]");
+                        threads[n] =
+                            new Thread(new WriteMany(session.getRemote(), size, count), "WriteMany[" + n + "]");
                     }
 
                     // Execute threads

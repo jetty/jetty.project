@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -27,16 +28,17 @@ import org.eclipse.jetty.server.Response;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 {
     @Override
     public HttpClient newHttpClient(HttpClientTransport transport)
     {
         long timeout = 1000;
-        transport.setConnectionPoolFactory(destination ->
-            new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination.getHttpClient().getScheduler(), timeout));
+        transport.setConnectionPoolFactory(destination -> new ValidatingConnectionPool(
+            destination,
+            destination.getHttpClient().getMaxConnectionsPerDestination(),
+            destination.getHttpClient().getScheduler(),
+            timeout));
 
         return super.newHttpClient(transport);
     }
@@ -65,7 +67,8 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testServerClosesConnectionAfterRedirectWithoutConnectionCloseHeader(Scenario scenario) throws Exception
+    public void testServerClosesConnectionAfterRedirectWithoutConnectionCloseHeader(Scenario scenario)
+        throws Exception
     {
         start(scenario, new EmptyServerHandler()
         {
@@ -76,9 +79,15 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
                 {
                     response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
                     response.getHeaders().put(HttpFields.CONTENT_LENGTH_0);
-                    response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/");
+                    response.getHeaders()
+                        .put(
+                            HttpHeader.LOCATION,
+                            scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/");
                     Content.Sink.write(response, false, null);
-                    request.getConnectionMetaData().getConnection().getEndPoint().shutdownOutput();
+                    request.getConnectionMetaData()
+                        .getConnection()
+                        .getEndPoint()
+                        .shutdownOutput();
                 }
                 else
                 {
@@ -99,7 +108,8 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithConnectionCloseHeader(Scenario scenario) throws Exception
+    public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithConnectionCloseHeader(
+                                                                                                                    Scenario scenario) throws Exception
     {
         testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(scenario, new EmptyServerHandler()
         {
@@ -115,7 +125,8 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithoutConnectionCloseHeader(Scenario scenario) throws Exception
+    public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithoutConnectionCloseHeader(
+                                                                                                                       Scenario scenario) throws Exception
     {
         testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(scenario, new EmptyServerHandler()
         {
@@ -130,7 +141,8 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         });
     }
 
-    private void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(final Scenario scenario, Handler handler) throws Exception
+    private void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(
+                                                                                            final Scenario scenario, Handler handler) throws Exception
     {
         start(scenario, handler);
         client.setMaxConnectionsPerDestination(1);

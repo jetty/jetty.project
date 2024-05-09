@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -36,8 +35,12 @@ import org.eclipse.jetty.util.StringUtil;
 public class Http3Fields implements HttpFields
 {
     public static final HttpField[] STATUSES = new HttpField[599];
-    private static final EnumSet<HttpHeader> IGNORED_HEADERS = EnumSet.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE,
-        HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE);
+    private static final EnumSet<HttpHeader> IGNORED_HEADERS = EnumSet.of(
+        HttpHeader.CONNECTION,
+        HttpHeader.KEEP_ALIVE,
+        HttpHeader.PROXY_CONNECTION,
+        HttpHeader.TRANSFER_ENCODING,
+        HttpHeader.UPGRADE);
     public static final PreEncodedHttpField TE_TRAILERS = new PreEncodedHttpField(HttpHeader.TE, "trailers");
     public static final PreEncodedHttpField C_SCHEME_HTTP = new PreEncodedHttpField(HttpHeader.C_SCHEME, "http");
     public static final PreEncodedHttpField C_SCHEME_HTTPS = new PreEncodedHttpField(HttpHeader.C_SCHEME, "https");
@@ -70,14 +73,17 @@ public class Http3Fields implements HttpFields
             HttpMethod httpMethod = method == null ? null : HttpMethod.fromString(method);
             HttpField methodField = C_METHODS.get(httpMethod);
             pseudoHeaders.add(methodField == null ? new HttpField(HttpHeader.C_METHOD, method) : methodField);
-            pseudoHeaders.add(new HttpField(HttpHeader.C_AUTHORITY, request.getHttpURI().getAuthority()));
+            pseudoHeaders.add(
+                new HttpField(HttpHeader.C_AUTHORITY, request.getHttpURI().getAuthority()));
 
             boolean isConnect = HttpMethod.CONNECT.is(request.getMethod());
             String protocol = request.getProtocol();
             if (!isConnect || protocol != null)
             {
-                pseudoHeaders.add(HttpScheme.HTTPS.is(request.getHttpURI().getScheme()) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
-                pseudoHeaders.add(new HttpField(HttpHeader.C_PATH, request.getHttpURI().getPathQuery()));
+                pseudoHeaders.add(
+                    HttpScheme.HTTPS.is(request.getHttpURI().getScheme()) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
+                pseudoHeaders.add(
+                    new HttpField(HttpHeader.C_PATH, request.getHttpURI().getPathQuery()));
 
                 if (protocol != null)
                     pseudoHeaders.add(new HttpField(HttpHeader.C_PROTOCOL, protocol));
@@ -112,7 +118,6 @@ public class Http3Fields implements HttpFields
                     contentLengthHeader = new HttpField(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength));
             }
         }
-
     }
 
     @Override

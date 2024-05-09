@@ -13,16 +13,15 @@
 
 package org.example;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
-
 import jakarta.servlet.jsp.JspException;
 import jakarta.servlet.jsp.JspTagException;
 import jakarta.servlet.jsp.PageContext;
 import jakarta.servlet.jsp.tagext.BodyContent;
 import jakarta.servlet.jsp.tagext.BodyTagSupport;
 import jakarta.servlet.jsp.tagext.Tag;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 @SuppressWarnings("serial")
 public class DateTag extends BodyTagSupport
@@ -99,4 +98,3 @@ public class DateTag extends BodyTagSupport
         body = null;
     }
 }
-

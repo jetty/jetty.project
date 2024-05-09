@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
@@ -35,9 +37,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientIdleTimeoutTest
 {
@@ -135,7 +134,8 @@ public class HttpClientIdleTimeoutTest
         client.setIdleTimeout(idleTimeout);
 
         // Create one connection.
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort()).send();
+        ContentResponse response =
+            client.newRequest("localhost", connector.getLocalPort()).send();
         assertEquals(response.getStatus(), HttpStatus.OK_200);
 
         assertTrue(idleTimeoutLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));

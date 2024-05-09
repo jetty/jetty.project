@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -115,7 +114,8 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             {
                 newSession(this, _requestedSessionId, this::setManagedSession);
                 session = _session.get();
-                HttpCookie cookie = getSessionCookie(session, getConnectionMetaData().isSecure());
+                HttpCookie cookie =
+                    getSessionCookie(session, getConnectionMetaData().isSecure());
                 if (cookie != null)
                     Response.putCookie(_response, cookie);
             }

@@ -13,7 +13,15 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.ContainerProvider;
@@ -28,6 +36,7 @@ import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSURI;
@@ -38,16 +47,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AddEndpointTest
 {
@@ -82,7 +81,8 @@ public class AddEndpointTest
 
     public void start(CheckedConsumer<ServerContainer> containerConsumer) throws Exception
     {
-        JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) -> containerConsumer.accept(container));
+        JakartaWebSocketServletContainerInitializer.configure(
+            contextHandler, (context, container) -> containerConsumer.accept(container));
         server.start();
     }
 
@@ -191,7 +191,8 @@ public class AddEndpointTest
     {
         RuntimeException error = assertThrows(RuntimeException.class, () ->
         {
-            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ServerSocket.class, "/").build();
+            ServerEndpointConfig config =
+                ServerEndpointConfig.Builder.create(ServerSocket.class, "/").build();
             start(container -> container.addEndpoint(config));
         });
 
@@ -212,11 +213,13 @@ public class AddEndpointTest
                 {
                     return (T)new CustomEndpoint("server");
                 }
-            }).build();
+            })
+            .build();
         start(container -> container.addEndpoint(config));
 
         CloseSocket clientEndpoint = new CloseSocket();
-        Session session = client.connectToServer(clientEndpoint, WSURI.toWebsocket(server.getURI().resolve("/")));
+        Session session = client.connectToServer(
+            clientEndpoint, WSURI.toWebsocket(server.getURI().resolve("/")));
         assertNotNull(session);
         session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
@@ -238,7 +241,8 @@ public class AddEndpointTest
                     {
                         return (T)new CustomPrivateEndpoint();
                     }
-                }).build();
+                })
+                .build();
             start(container -> container.addEndpoint(config));
         });
 
@@ -253,7 +257,8 @@ public class AddEndpointTest
         start(container -> container.addEndpoint(CustomAnnotatedEndpoint.class));
 
         CloseSocket clientEndpoint = new CloseSocket();
-        Session session = client.connectToServer(clientEndpoint, WSURI.toWebsocket(server.getURI().resolve("/")));
+        Session session = client.connectToServer(
+            clientEndpoint, WSURI.toWebsocket(server.getURI().resolve("/")));
         assertNotNull(session);
         session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
@@ -266,7 +271,8 @@ public class AddEndpointTest
     {
         RuntimeException error = assertThrows(RuntimeException.class, () ->
         {
-            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(CustomEndpoint.class, "/").build();
+            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(CustomEndpoint.class, "/")
+                .build();
             start(container -> container.addEndpoint(config));
         });
 
@@ -278,8 +284,10 @@ public class AddEndpointTest
     @Test
     public void testInnerEndpoint()
     {
-        RuntimeException error = assertThrows(RuntimeException.class, () ->
-            start(container -> container.addEndpoint(ServerEndpointConfig.Builder.create(ServerSocketNonStatic.class, "/").build())));
+        RuntimeException error = assertThrows(
+            RuntimeException.class,
+            () -> start(container -> container.addEndpoint(ServerEndpointConfig.Builder.create(ServerSocketNonStatic.class, "/")
+                .build())));
 
         assertThat(error.getCause(), instanceOf(DeploymentException.class));
         DeploymentException deploymentException = (DeploymentException)error.getCause();
@@ -289,8 +297,8 @@ public class AddEndpointTest
     @Test
     public void testAnnotatedEndpoint()
     {
-        RuntimeException error = assertThrows(RuntimeException.class, () ->
-            start(container -> container.addEndpoint(AnnotatedServerSocket.class)));
+        RuntimeException error = assertThrows(
+            RuntimeException.class, () -> start(container -> container.addEndpoint(AnnotatedServerSocket.class)));
 
         assertThat(error.getCause(), instanceOf(DeploymentException.class));
         DeploymentException deploymentException = (DeploymentException)error.getCause();
@@ -300,9 +308,8 @@ public class AddEndpointTest
     @Test
     public void testAnnotatedMethod()
     {
-        RuntimeException error = assertThrows(RuntimeException.class, () ->
-            start(container ->
-                container.addEndpoint(AnnotatedServerMethod.class)));
+        RuntimeException error = assertThrows(
+            RuntimeException.class, () -> start(container -> container.addEndpoint(AnnotatedServerMethod.class)));
 
         assertThat(error.getCause(), instanceOf(DeploymentException.class));
         DeploymentException deploymentException = (DeploymentException)error.getCause();

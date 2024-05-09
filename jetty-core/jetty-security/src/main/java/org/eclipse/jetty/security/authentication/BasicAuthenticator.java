@@ -16,7 +16,6 @@ package org.eclipse.jetty.security.authentication;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -48,7 +47,8 @@ public class BasicAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request req, Response res, Callback callback)
+        throws ServerAuthException
     {
         String credentials = req.getHeaders().get(HttpHeader.AUTHORIZATION);
 

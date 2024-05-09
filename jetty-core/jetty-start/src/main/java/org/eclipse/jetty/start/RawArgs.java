@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import org.eclipse.jetty.start.RawArgs.Entry;
 
 public class RawArgs implements Iterable<Entry>

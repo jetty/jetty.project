@@ -15,4 +15,3 @@
  * Jetty Util : Common ThreadPool Utilities
  */
 package org.eclipse.jetty.util.thread;
-

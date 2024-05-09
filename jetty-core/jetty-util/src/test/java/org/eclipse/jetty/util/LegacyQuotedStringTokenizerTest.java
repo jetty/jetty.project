@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.Iterator;
-
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Iterator;
+import org.junit.jupiter.api.Test;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class LegacyQuotedStringTokenizerTest
@@ -30,8 +29,7 @@ public class LegacyQuotedStringTokenizerTest
     @Test
     public void testTokenizer0()
     {
-        TestTokenizer tok =
-            new TestTokenizer("abc\n\"d\\\"'\"\n'p\\',y'\nz", null, false, false, true);
+        TestTokenizer tok = new TestTokenizer("abc\n\"d\\\"'\"\n'p\\',y'\nz", null, false, false, true);
         checkTok(tok, false, false);
     }
 
@@ -41,8 +39,7 @@ public class LegacyQuotedStringTokenizerTest
     @Test
     public void testTokenizer1()
     {
-        TestTokenizer tok =
-            new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,", false, false, true);
+        TestTokenizer tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,", false, false, true);
         checkTok(tok, false, false);
     }
 
@@ -52,8 +49,7 @@ public class LegacyQuotedStringTokenizerTest
     @Test
     public void testTokenizer2()
     {
-        TestTokenizer tok =
-            new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,", false, false, true);
+        TestTokenizer tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,", false, false, true);
         checkTok(tok, false, false);
 
         tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,", true, false, true);
@@ -68,27 +64,24 @@ public class LegacyQuotedStringTokenizerTest
     {
         TestTokenizer tok;
 
-        tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,",
-            false, false, true);
+        tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,", false, false, true);
         checkTok(tok, false, false);
 
-        tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,",
-            false, true, true);
+        tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,", false, true, true);
         checkTok(tok, false, true);
 
-        tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,",
-            true, false, true);
+        tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,", true, false, true);
         checkTok(tok, true, false);
 
-        tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,",
-            true, true, true);
+        tok = new TestTokenizer("abc, \"d\\\"'\",'p\\',y' z", " ,", true, true, true);
         checkTok(tok, true, true);
     }
 
     @Test
     public void testQuote()
     {
-        QuotedStringTokenizer tokenizer = QuotedStringTokenizer.builder().legacy().build();
+        QuotedStringTokenizer tokenizer =
+            QuotedStringTokenizer.builder().legacy().build();
         StringBuffer buf = new StringBuffer();
 
         buf.setLength(0);
@@ -145,7 +138,8 @@ public class LegacyQuotedStringTokenizerTest
     @Test
     public void testQuoteIfNeeded()
     {
-        QuotedStringTokenizer tokenizer = QuotedStringTokenizer.builder().legacy().delimiters(" ,").build();
+        QuotedStringTokenizer tokenizer =
+            QuotedStringTokenizer.builder().legacy().delimiters(" ,").build();
         assertEquals("abc", tokenizer.quoteIfNeeded("abc"));
         assertEquals("\"a c\"", tokenizer.quoteIfNeeded("a c"));
         assertEquals("\"a'c\"", tokenizer.quoteIfNeeded("a'c"));
@@ -156,7 +150,8 @@ public class LegacyQuotedStringTokenizerTest
     @Test
     public void testUnquote()
     {
-        QuotedStringTokenizer tokenizer = QuotedStringTokenizer.builder().legacy().delimiters(" ,").build();
+        QuotedStringTokenizer tokenizer =
+            QuotedStringTokenizer.builder().legacy().delimiters(" ,").build();
         assertEquals("abc", tokenizer.unquote("abc"));
         assertEquals("a\"c", tokenizer.unquote("\"a\\\"c\""));
         assertEquals("a'c", tokenizer.unquote("\"a'c\""));
@@ -185,16 +180,22 @@ public class LegacyQuotedStringTokenizerTest
         assertEquals("name=\"fileup\"", trial.next().trim());
         assertEquals("filename=\"Taken on Aug 22 \\ 2012.jpg\"", trial.next().trim());
     }
-    
+
     static class TestTokenizer
     {
         private final String _string;
         private final QuotedStringTokenizer _tokenizer;
-        
-        public TestTokenizer(String string, String delimiters, boolean returnDelimiters, boolean returnQuotes, boolean singleQuotes)
+
+        public TestTokenizer(
+                             String string,
+                             String delimiters,
+                             boolean returnDelimiters,
+                             boolean returnQuotes,
+                             boolean singleQuotes)
         {
             _string = string;
-            QuotedStringTokenizer.Builder builder = QuotedStringTokenizer.builder().legacy();
+            QuotedStringTokenizer.Builder builder =
+                QuotedStringTokenizer.builder().legacy();
             if (delimiters != null)
                 builder.delimiters(delimiters);
             if (returnDelimiters)
@@ -212,4 +213,3 @@ public class LegacyQuotedStringTokenizerTest
         }
     }
 }
-

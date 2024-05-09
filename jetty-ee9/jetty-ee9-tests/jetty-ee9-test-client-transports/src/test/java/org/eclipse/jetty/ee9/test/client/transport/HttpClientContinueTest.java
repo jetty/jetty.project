@@ -13,6 +13,20 @@
 
 package org.eclipse.jetty.ee9.test.client.transport;
 
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -28,13 +42,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
@@ -55,14 +62,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class HttpClientContinueTest extends AbstractTest
 {
     @ParameterizedTest
@@ -76,7 +75,11 @@ public class HttpClientContinueTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithMultipleContentsRespond100Continue(Transport transport) throws Exception
     {
-        testExpect100ContinueRespond100Continue(transport, "data1".getBytes(StandardCharsets.UTF_8), "data2".getBytes(StandardCharsets.UTF_8), "data3".getBytes(StandardCharsets.UTF_8));
+        testExpect100ContinueRespond100Continue(
+            transport,
+            "data1".getBytes(StandardCharsets.UTF_8),
+            "data2".getBytes(StandardCharsets.UTF_8),
+            "data3".getBytes(StandardCharsets.UTF_8));
     }
 
     private void testExpect100ContinueRespond100Continue(Transport transport, byte[]... contents) throws Exception
@@ -305,7 +308,8 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithContentWithResponseFailureBefore100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithResponseFailureBefore100Continue(Transport transport)
+        throws Exception
     {
         AtomicReference<Request> clientRequestRef = new AtomicReference<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -354,7 +358,8 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithContentWithResponseFailureAfter100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithResponseFailureAfter100Continue(Transport transport)
+        throws Exception
     {
         AtomicReference<Request> clientRequestRef = new AtomicReference<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -362,7 +367,8 @@ public class HttpClientContinueTest extends AbstractTest
         start(transport, new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 // Send 100-Continue and consume the content
                 IO.copy(request.getInputStream(), new ByteArrayOutputStream());
@@ -404,7 +410,8 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithContentWithResponseFailureDuring100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithResponseFailureDuring100Continue(Transport transport)
+        throws Exception
     {
         start(transport, new HttpServlet()
         {
@@ -532,7 +539,8 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithInitialAndDeferredContentRespond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithInitialAndDeferredContentRespond100Continue(Transport transport)
+        throws Exception
     {
         AtomicReference<Thread> handlerThread = new AtomicReference<>();
         start(transport, new HttpServlet()
@@ -582,7 +590,8 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithConcurrentDeferredContentRespond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithConcurrentDeferredContentRespond100Continue(Transport transport)
+        throws Exception
     {
         start(transport, new HttpServlet()
         {
@@ -621,7 +630,8 @@ public class HttpClientContinueTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testExpect100ContinueWithInitialAndConcurrentDeferredContentRespond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithInitialAndConcurrentDeferredContentRespond100Continue(Transport transport)
+        throws Exception
     {
         start(transport, new HttpServlet()
         {
@@ -692,7 +702,8 @@ public class HttpClientContinueTest extends AbstractTest
             CountDownLatch latch = new CountDownLatch(1);
             client.newRequest("localhost", server.getLocalPort())
                 .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
-                .body(new BytesRequestContent(new byte[]{0}))
+                .body(new BytesRequestContent(new byte[]
+                {0}))
                 .send(result ->
                 {
                     assertTrue(result.isSucceeded(), result.toString());
@@ -706,26 +717,28 @@ public class HttpClientContinueTest extends AbstractTest
                 readRequestHeaders(socket.getInputStream());
 
                 OutputStream output = socket.getOutputStream();
-                String responses = """
-                    HTTP/1.1 100 Continue\r
-                    \r
-                    HTTP/1.1 200 OK\r
-                    Transfer-Encoding: chunked\r
-                    \r
-                    10\r
-                    0123456789ABCDEF\r
-                    """;
+                String responses =
+                    """
+                        HTTP/1.1 100 Continue\r
+                        \r
+                        HTTP/1.1 200 OK\r
+                        Transfer-Encoding: chunked\r
+                        \r
+                        10\r
+                        0123456789ABCDEF\r
+                        """;
                 output.write(responses.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 Thread.sleep(1000);
 
-                String content = """
-                    10\r
-                    0123456789ABCDEF\r
-                    0\r
-                    \r
-                    """;
+                String content =
+                    """
+                        10\r
+                        0123456789ABCDEF\r
+                        0\r
+                        \r
+                        """;
                 output.write(content.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -761,13 +774,15 @@ public class HttpClientContinueTest extends AbstractTest
                 assertNotNull(serverRequest);
                 byte[] content = serverRequest.getContentBytes();
 
-                String serverResponse = """
-                    HTTP/1.1 100 Continue\r
-                    \r
-                    HTTP/1.1 200 OK\r
-                    Content-Length: $L\r
-                    \r
-                    """.replace("$L", String.valueOf(content.length));
+                String serverResponse =
+                    """
+                        HTTP/1.1 100 Continue\r
+                        \r
+                        HTTP/1.1 200 OK\r
+                        Content-Length: $L\r
+                        \r
+                        """
+                        .replace("$L", String.valueOf(content.length));
                 output.write(serverResponse.getBytes(StandardCharsets.UTF_8));
                 output.write(content);
                 output.flush();
@@ -791,12 +806,11 @@ public class HttpClientContinueTest extends AbstractTest
 
             // No Expect header, no content.
             CountDownLatch latch = new CountDownLatch(1);
-            client.newRequest("localhost", server.getLocalPort())
-                .send(result ->
-                {
-                    if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
-                        latch.countDown();
-                });
+            client.newRequest("localhost", server.getLocalPort()).send(result ->
+            {
+                if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                    latch.countDown();
+            });
 
             try (Socket socket = server.accept())
             {
@@ -804,26 +818,28 @@ public class HttpClientContinueTest extends AbstractTest
                 OutputStream output = socket.getOutputStream();
 
                 HttpTester.parseRequest(input);
-                String response1 = """
-                    HTTP/1.1 100 Continue\r
-                    \r
-                    HTTP/1.1 303 See Other\r
-                    Location: /redirect\r
-                    Content-Length: 0\r
-                    \r
-                    """;
+                String response1 =
+                    """
+                        HTTP/1.1 100 Continue\r
+                        \r
+                        HTTP/1.1 303 See Other\r
+                        Location: /redirect\r
+                        Content-Length: 0\r
+                        \r
+                        """;
                 output.write(response1.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
                 HttpTester.parseRequest(input);
-                String response2 = """
-                    HTTP/1.1 100 Continue\r
-                    \r
-                    HTTP/1.1 200 OK\r
-                    Content-Length: 0\r
-                    Connection: close\r
-                    \r
-                    """;
+                String response2 =
+                    """
+                        HTTP/1.1 100 Continue\r
+                        \r
+                        HTTP/1.1 200 OK\r
+                        Content-Length: 0\r
+                        Connection: close\r
+                        \r
+                        """;
                 output.write(response2.getBytes(StandardCharsets.UTF_8));
                 output.flush();
             }

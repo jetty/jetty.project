@@ -14,8 +14,7 @@
 module org.eclipse.jetty.ee9.cdi
 {
     requires org.eclipse.jetty.ee9.annotations;
-
     requires transitive org.eclipse.jetty.ee9.webapp;
 
     exports org.eclipse.jetty.ee9.cdi;
-} 
+}

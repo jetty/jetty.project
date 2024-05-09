@@ -15,7 +15,13 @@ package org.eclipse.jetty.ee10.webapp;
 
 public enum Origin
 {
-    NotSet, WebXml, WebDefaults, WebOverride, WebFragment, Annotation, API;
+    NotSet,
+    WebXml,
+    WebDefaults,
+    WebOverride,
+    WebFragment,
+    Annotation,
+    API;
 
     public static Origin of(Object o)
     {

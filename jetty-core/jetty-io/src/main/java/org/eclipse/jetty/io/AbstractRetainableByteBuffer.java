@@ -15,7 +15,6 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.BufferUtil;
 
 /**
@@ -73,6 +72,8 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
     @Override
     public String toString()
     {
-        return "%s@%x[rc=%d,%s]".formatted(getClass().getSimpleName(), hashCode(), refCount.get(), BufferUtil.toDetailString(byteBuffer));
+        return "%s@%x[rc=%d,%s]"
+            .formatted(
+                getClass().getSimpleName(), hashCode(), refCount.get(), BufferUtil.toDetailString(byteBuffer));
     }
 }

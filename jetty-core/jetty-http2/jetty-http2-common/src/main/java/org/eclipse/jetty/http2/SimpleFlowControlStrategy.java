@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
@@ -58,7 +57,10 @@ public class SimpleFlowControlStrategy extends AbstractFlowControlStrategy
             if (stream.isRemotelyClosed())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Data consumed, ignoring update stream recv window by {} for remotely closed {}", length, stream);
+                    LOG.debug(
+                        "Data consumed, ignoring update stream recv window by {} for remotely closed {}",
+                        length,
+                        stream);
             }
             else
             {

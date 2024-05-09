@@ -13,6 +13,25 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.SessionCookieConfig;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,16 +46,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.SessionCookieConfig;
-import jakarta.servlet.SessionTrackingMode;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpSessionEvent;
-import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpCookie;
@@ -63,44 +72,38 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(WorkDirExtension.class)
 public class SessionHandlerTest
 {
     public static class SessionConsumer implements Consumer<ManagedSession>
     {
         private ManagedSession _session;
-        
+
         @Override
         public void accept(ManagedSession s)
         {
             _session = s;
         }
-        
+
         public Session getSession()
         {
             return _session;
         }
     }
-    
+
     @Test
     public void testSessionTrackingMode()
     {
         SessionHandler sessionHandler = new SessionHandler();
-        sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.COOKIE, SessionTrackingMode.URL)));
+        sessionHandler.setSessionTrackingModes(
+            new HashSet<>(Arrays.asList(SessionTrackingMode.COOKIE, SessionTrackingMode.URL)));
         sessionHandler.setSessionTrackingModes(Collections.singleton(SessionTrackingMode.SSL));
-        assertThrows(IllegalArgumentException.class, () -> sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.SSL, SessionTrackingMode.URL))));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> sessionHandler.setSessionTrackingModes(
+                new HashSet<>(Arrays.asList(SessionTrackingMode.SSL, SessionTrackingMode.URL))));
     }
-    
+
     /**
      * Test that a session listener can access classes only visible to the context it is in.
      */
@@ -109,20 +112,22 @@ public class SessionHandlerTest
     {
         Path foodir = workDir.getEmptyPathDir();
         Path fooClass = foodir.resolve("Foo.class");
-       
-        //Use a class that would only be known to the webapp classloader
-        try (InputStream foostream = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
+
+        // Use a class that would only be known to the webapp classloader
+        try (InputStream foostream =
+            Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
              OutputStream out = Files.newOutputStream(fooClass))
         {
             IO.copy(foostream, out);
         }
-       
+
         assertTrue(Files.exists(fooClass));
         assertThat(Files.size(fooClass), greaterThan(0L));
-       
+
         URL[] foodirUrls = new URL[]{foodir.toUri().toURL()};
-        URLClassLoader contextClassLoader = new URLClassLoader(foodirUrls, Thread.currentThread().getContextClassLoader());
-        
+        URLClassLoader contextClassLoader =
+            new URLClassLoader(foodirUrls, Thread.currentThread().getContextClassLoader());
+
         Server server = new Server();
         ServletContextHandler sch = new ServletContextHandler();
         sch.setContextPath("/");
@@ -139,13 +144,14 @@ public class SessionHandlerTest
             @Override
             public void sessionDestroyed(HttpSessionEvent se)
             {
-                //try loading a class that is known only to the webapp
-                //to test that the calling thread has been properly
-                //annointed with the webapp's classloader
+                // try loading a class that is known only to the webapp
+                // to test that the calling thread has been properly
+                // annointed with the webapp's classloader
                 try
                 {
                     _called = true;
-                    Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass("Foo");
+                    Class<?> clazz =
+                        Thread.currentThread().getContextClassLoader().loadClass("Foo");
                 }
                 catch (Exception cnfe)
                 {
@@ -160,17 +166,20 @@ public class SessionHandlerTest
             sessionHandler.addEventListener(listener);
             sessionHandler.setServer(server);
             server.start();
-            //create the session
+            // create the session
             SessionConsumer consumer = new SessionConsumer();
             sessionHandler.newSession(null, "1234", consumer);
             Session session = consumer.getSession();
             String id = session.getId();
             assertNotNull(session);
 
-            //invalidate the session and check that context classes could be accessed
+            // invalidate the session and check that context classes could be accessed
             session.invalidate();
             assertFalse(sch.getSessionHandler().getSessionCache().contains(id));
-            assertFalse(sch.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(sch.getSessionHandler()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(id));
             assertTrue(listener._called);
             assertNull(listener._e);
         }
@@ -179,7 +188,7 @@ public class SessionHandlerTest
             server.stop();
         }
     }
-    
+
     /**
      * Test that if a session listener throws an exception during sessionDestroyed the session is still invalidated
      */
@@ -191,12 +200,12 @@ public class SessionHandlerTest
         server.setHandler(sch);
         SessionHandler sessionHandler = new SessionHandler();
         sch.setSessionHandler(sessionHandler);
-        
+
         class Listener1 implements HttpSessionListener
         {
             boolean _destroyCalled = false;
             boolean _createCalled = false;
-            
+
             @Override
             public void sessionCreated(HttpSessionEvent se)
             {
@@ -210,7 +219,7 @@ public class SessionHandlerTest
                 throw new IllegalStateException("Exception during sessionDestroyed");
             }
         }
-        
+
         try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, ManagedSession.class))
         {
             Listener1 listener = new Listener1();
@@ -225,9 +234,12 @@ public class SessionHandlerTest
             assertTrue(listener._createCalled);
 
             session.invalidate();
-            //check session no longer exists
+            // check session no longer exists
             assertFalse(sch.getSessionHandler().getSessionCache().contains(id));
-            assertFalse(sch.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            assertFalse(sch.getSessionHandler()
+                .getSessionCache()
+                .getSessionDataStore()
+                .exists(id));
             assertTrue(listener._destroyCalled);
         }
         finally
@@ -237,8 +249,7 @@ public class SessionHandlerTest
     }
 
     @Test
-    public void testSessionListenerOrdering()
-        throws Exception
+    public void testSessionListenerOrdering() throws Exception
     {
         final StringBuffer result = new StringBuffer();
 
@@ -272,7 +283,6 @@ public class SessionHandlerTest
             {
                 result.append("Listener2 destroy;");
             }
-
         }
 
         Server server = new Server();
@@ -317,7 +327,7 @@ public class SessionHandlerTest
         server.addBean(storeFactory);
 
         HouseKeeper housekeeper = new HouseKeeper();
-        housekeeper.setIntervalSec(-1); //turn off scavenging
+        housekeeper.setIntervalSec(-1); // turn off scavenging
         sessionIdManager.setSessionHouseKeeper(housekeeper);
 
         ServletContextHandler context = new ServletContextHandler();
@@ -325,7 +335,7 @@ public class SessionHandlerTest
         server.setHandler(context);
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setSessionIdManager(sessionIdManager);
-        sessionHandler.setMaxInactiveInterval(-1); //immortal session
+        sessionHandler.setMaxInactiveInterval(-1); // immortal session
         context.setSessionHandler(sessionHandler);
 
         TestServlet servlet = new TestServlet();
@@ -339,11 +349,11 @@ public class SessionHandlerTest
             HttpClient client = new HttpClient();
             client.start();
 
-            //make a session
+            // make a session
             String path = contextPath + (contextPath.endsWith("/") && servletMapping.startsWith("/") ? servletMapping.substring(1) : servletMapping);
             String url = "http://localhost:" + port + path + "?action=create";
 
-            //make a request to set up a session on the server
+            // make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
@@ -381,7 +391,7 @@ public class SessionHandlerTest
         server.addBean(storeFactory);
 
         HouseKeeper housekeeper = new HouseKeeper();
-        housekeeper.setIntervalSec(-1); //turn off scavenging
+        housekeeper.setIntervalSec(-1); // turn off scavenging
         sessionIdManager.setSessionHouseKeeper(housekeeper);
 
         ServletContextHandler context = new ServletContextHandler();
@@ -389,7 +399,7 @@ public class SessionHandlerTest
         server.setHandler(context);
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setSessionIdManager(sessionIdManager);
-        sessionHandler.setMaxInactiveInterval(-1); //immortal session
+        sessionHandler.setMaxInactiveInterval(-1); // immortal session
         context.setSessionHandler(sessionHandler);
 
         TestRequestedSessionIdServlet servlet = new TestRequestedSessionIdServlet();
@@ -403,16 +413,19 @@ public class SessionHandlerTest
             HttpClient client = new HttpClient();
             client.start();
 
-            //test with no session cookie
+            // test with no session cookie
             String path = contextPath + (contextPath.endsWith("/") && servletMapping.startsWith("/") ? servletMapping.substring(1) : servletMapping);
             String url = "http://localhost:" + port + path;
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertThat(response.getContentAsString(), containsString("valid=false"));
 
-            //test with a cookie for non-existant session
+            // test with a cookie for non-existant session
             URI uri = URI.create(url);
-            HttpCookie cookie = HttpCookie.build(SessionHandler.__DefaultSessionCookie, "123456789").path("/").domain("localhost").build();
+            HttpCookie cookie = HttpCookie.build(SessionHandler.__DefaultSessionCookie, "123456789")
+                .path("/")
+                .domain("localhost")
+                .build();
             client.getHttpCookieStore().add(uri, cookie);
             response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
@@ -420,21 +433,21 @@ public class SessionHandlerTest
             assertThat(content, containsString("requestedId=123456789"));
             assertThat(content, containsString("valid=false"));
 
-            //Get rid of fake cookie
+            // Get rid of fake cookie
             client.getHttpCookieStore().clear();
 
-            //Make a real session
+            // Make a real session
             response = client.GET(url + "?action=create");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertNotNull(response.getHeaders().get("Set-Cookie"));
 
-            //Check the requestedSessionId is valid
+            // Check the requestedSessionId is valid
             response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             content = response.getContentAsString();
             assertThat(content, containsString("valid=true"));
 
-            //Invalidate it
+            // Invalidate it
             response = client.GET(url + "?action=invalidate");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             content = response.getContentAsString();
@@ -466,7 +479,7 @@ public class SessionHandlerTest
         server.addBean(storeFactory);
 
         HouseKeeper housekeeper = new HouseKeeper();
-        housekeeper.setIntervalSec(-1); //turn off scavenging
+        housekeeper.setIntervalSec(-1); // turn off scavenging
         sessionIdManager.setSessionHouseKeeper(housekeeper);
 
         ServletContextHandler context = new ServletContextHandler();
@@ -476,7 +489,7 @@ public class SessionHandlerTest
         sessionHandler.setUsingCookies(false);
         sessionHandler.setUsingUriParameters(true);
         sessionHandler.setSessionIdManager(sessionIdManager);
-        sessionHandler.setMaxInactiveInterval(-1); //immortal session
+        sessionHandler.setMaxInactiveInterval(-1); // immortal session
         context.setSessionHandler(sessionHandler);
 
         TestRequestedSessionIdServlet servlet = new TestRequestedSessionIdServlet();
@@ -490,21 +503,21 @@ public class SessionHandlerTest
             HttpClient client = new HttpClient();
             client.start();
 
-            //test with no session cookie
+            // test with no session cookie
             String path = contextPath + (contextPath.endsWith("/") && servletMapping.startsWith("/") ? servletMapping.substring(1) : servletMapping);
             String url = "http://localhost:" + port + path;
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertThat(response.getContentAsString(), containsString("valid=false"));
 
-            //test with id for non-existent session
+            // test with id for non-existent session
             response = client.GET(url + ";" + SessionConfig.__DefaultSessionIdPathParameterName + "=" + "123456789");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             String content = response.getContentAsString();
             assertThat(content, containsString("requestedId=123456789"));
             assertThat(content, containsString("valid=false"));
 
-            //Make a real session
+            // Make a real session
             response = client.GET(url + "?action=create");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             content = response.getContentAsString();
@@ -515,14 +528,15 @@ public class SessionHandlerTest
             sessionId = sessionId.substring(0, i);
             sessionId = sessionId.trim();
 
-            //Check the requestedSessionId is valid
+            // Check the requestedSessionId is valid
             response = client.GET(url + ";" + SessionConfig.__DefaultSessionIdPathParameterName + "=" + sessionId);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             content = response.getContentAsString();
             assertThat(content, containsString("valid=true"));
 
-            //Invalidate it
-            response = client.GET(url + "?action=invalidate;" + SessionConfig.__DefaultSessionIdPathParameterName + "=" + sessionId);
+            // Invalidate it
+            response = client.GET(
+                url + "?action=invalidate;" + SessionConfig.__DefaultSessionIdPathParameterName + "=" + sessionId);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             content = response.getContentAsString();
             assertThat(content, containsString("valid=false"));
@@ -539,7 +553,8 @@ public class SessionHandlerTest
         public String _id = null;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse)
+            throws ServletException, IOException
         {
             String action = request.getParameter("action");
             if (action != null && action.startsWith("create"))
@@ -566,7 +581,8 @@ public class SessionHandlerTest
         public String _id = null;
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             PrintWriter writer = response.getWriter();
             writer.println("requestedId=" + request.getRequestedSessionId());
@@ -651,7 +667,6 @@ public class SessionHandlerTest
         @Override
         public void expireAll(String id)
         {
-
         }
 
         @Override
@@ -660,7 +675,7 @@ public class SessionHandlerTest
             return "";
         }
     }
-    
+
     @Test
     public void testSessionCookie() throws Exception
     {
@@ -687,7 +702,7 @@ public class SessionHandlerTest
         sessionCookieConfig.setAttribute("Partitioned", "true");
         sessionCookieConfig.setAttribute("SameSite", "Strict");
         sessionCookieConfig.setAttribute("ham", "cheese");
-        
+
         HttpCookie cookie = mgr.getSessionCookie(session, false);
         assertEquals("SPECIAL", cookie.getName());
         assertEquals("universe", cookie.getDomain());
@@ -722,7 +737,7 @@ public class SessionHandlerTest
 
         server.stop();
 
-        //make a new ContextHandler and SessionHandler that can be configured
+        // make a new ContextHandler and SessionHandler that can be configured
         contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/test");
         sessionHandler = new SessionHandler();
@@ -731,7 +746,8 @@ public class SessionHandlerTest
 
         contextHandler.setInitParameter(SessionConfig.__SessionCookieProperty, "TEST_SESSION_COOKIE");
         contextHandler.setInitParameter(SessionConfig.__SessionDomainProperty, "TEST_DOMAIN");
-        contextHandler.setInitParameter(SessionConfig.__SessionIdPathParameterNameProperty, "TEST_SESSION_ID_PATH_PARAM");
+        contextHandler.setInitParameter(
+            SessionConfig.__SessionIdPathParameterNameProperty, "TEST_SESSION_ID_PATH_PARAM");
         contextHandler.setInitParameter(SessionConfig.__SessionPathProperty, "/mypath");
         contextHandler.setInitParameter(SessionConfig.__MaxAgeProperty, "1000");
         contextHandler.setInitParameter(SessionConfig.__CheckRemoteSessionEncodingProperty, "true");
@@ -765,32 +781,32 @@ public class SessionHandlerTest
         SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
         sessionCookieConfig.setSecure(true);
 
-        //sessionCookieConfig.secure == true, always mark cookie as secure, irrespective of if requestIsSecure
+        // sessionCookieConfig.secure == true, always mark cookie as secure, irrespective of if requestIsSecure
         HttpCookie cookie = mgr.getSessionCookie(session, true);
         assertTrue(cookie.isSecure());
-        //sessionCookieConfig.secure == true, always mark cookie as secure, irrespective of if requestIsSecure
+        // sessionCookieConfig.secure == true, always mark cookie as secure, irrespective of if requestIsSecure
         cookie = mgr.getSessionCookie(session, false);
         assertTrue(cookie.isSecure());
 
-        //sessionCookieConfig.secure==false, setSecureRequestOnly==true, requestIsSecure==true
-        //cookie should be secure: see SessionCookieConfig.setSecure() javadoc
+        // sessionCookieConfig.secure==false, setSecureRequestOnly==true, requestIsSecure==true
+        // cookie should be secure: see SessionCookieConfig.setSecure() javadoc
         sessionCookieConfig.setSecure(false);
         cookie = mgr.getSessionCookie(session, true);
         assertTrue(cookie.isSecure());
 
-        //sessionCookieConfig.secure=false, setSecureRequestOnly==true, requestIsSecure==false
-        //cookie is not secure: see SessionCookieConfig.setSecure() javadoc
+        // sessionCookieConfig.secure=false, setSecureRequestOnly==true, requestIsSecure==false
+        // cookie is not secure: see SessionCookieConfig.setSecure() javadoc
         cookie = mgr.getSessionCookie(session, false);
         assertFalse(cookie.isSecure());
 
-        //sessionCookieConfig.secure=false, setSecureRequestOnly==false, requestIsSecure==false
-        //cookie is not secure: not a secure request
+        // sessionCookieConfig.secure=false, setSecureRequestOnly==false, requestIsSecure==false
+        // cookie is not secure: not a secure request
         mgr.setSecureRequestOnly(false);
         cookie = mgr.getSessionCookie(session, false);
         assertFalse(cookie.isSecure());
 
-        //sessionCookieConfig.secure=false, setSecureRequestOnly==false, requestIsSecure==true
-        //cookie is not secure: not on secured requests and request is secure
+        // sessionCookieConfig.secure=false, setSecureRequestOnly==false, requestIsSecure==true
+        // cookie is not secure: not on secured requests and request is secure
         cookie = mgr.getSessionCookie(session, true);
         assertFalse(cookie.isSecure());
     }

@@ -13,6 +13,21 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -26,13 +41,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -41,15 +49,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled // TODO
 public class BlockingTest
@@ -83,7 +82,9 @@ public class BlockingTest
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 new Thread(() ->
@@ -103,7 +104,8 @@ public class BlockingTest
                         readException.set(t);
                         stopped.countDown();
                     }
-                }).start();
+                })
+                    .start();
 
                 try
                 {
@@ -160,7 +162,9 @@ public class BlockingTest
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 try
                 {
@@ -178,12 +182,15 @@ public class BlockingTest
                             }
                             outputStream.write("All read.".getBytes(StandardCharsets.UTF_8));
                             barrier.await(); // notify that all bytes were read
-                            baseRequest.getHttpInput().read(); // this read should throw IOException as the client has closed the connection
+                            baseRequest
+                                .getHttpInput()
+                                .read(); // this read should throw IOException as the client has closed the
+                            // connection
                             throw new AssertionError("should have thrown IOException");
                         }
                         catch (Exception e)
                         {
-                            //throw new RuntimeException(e);
+                            // throw new RuntimeException(e);
                         }
                         finally
                         {
@@ -193,7 +200,7 @@ public class BlockingTest
                             }
                             catch (Exception e2)
                             {
-                                //e2.printStackTrace();
+                                // e2.printStackTrace();
                             }
                             asyncContext.complete();
                         }
@@ -230,8 +237,7 @@ public class BlockingTest
             .append("Transfer-Encoding: chunked\r\n")
             .append("\r\n")
             .append("10\r\n")
-            .append("01234")
-        ;
+            .append("01234");
 
         int port = connector.getLocalPort();
         try (Socket socket = new Socket("localhost", port))
@@ -256,7 +262,9 @@ public class BlockingTest
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 new Thread(() ->
@@ -278,7 +286,8 @@ public class BlockingTest
                         readException.set(t);
                         stopped.countDown();
                     }
-                }).start();
+                })
+                    .start();
 
                 try
                 {
@@ -339,7 +348,9 @@ public class BlockingTest
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws ServletException
             {
                 baseRequest.setHandled(true);
                 if (baseRequest.getDispatcherType() != DispatcherType.ERROR)
@@ -366,7 +377,8 @@ public class BlockingTest
                             readException.set(t);
                             stopped.countDown();
                         }
-                    }).start();
+                    })
+                        .start();
 
                     try
                     {
@@ -423,7 +435,9 @@ public class BlockingTest
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 if (baseRequest.getDispatcherType() != DispatcherType.ERROR)
@@ -445,7 +459,8 @@ public class BlockingTest
                             readException.set(t);
                             stopped.countDown();
                         }
-                    }).start();
+                    })
+                        .start();
 
                     try
                     {
@@ -500,7 +515,9 @@ public class BlockingTest
         AbstractHandler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public void handle(
+                               String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
@@ -523,7 +540,8 @@ public class BlockingTest
                         readException.set(t);
                         stopped.countDown();
                     }
-                }).start();
+                })
+                    .start();
 
                 try
                 {
@@ -553,7 +571,8 @@ public class BlockingTest
             OutputStream out = socket.getOutputStream();
             out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.ISO_8859_1));
+            BufferedReader in =
+                new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.ISO_8859_1));
 
             // Read the header
             List<String> header = new ArrayList<>();

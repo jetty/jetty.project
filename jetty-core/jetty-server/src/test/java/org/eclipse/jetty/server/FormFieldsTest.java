@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -22,7 +31,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
@@ -32,15 +40,6 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FormFieldsTest
 {
@@ -53,7 +52,12 @@ public class FormFieldsTest
             Arguments.of(List.of("name="), UTF_8, -1, -1, Map.of("name", "")),
             Arguments.of(List.of("name%00="), UTF_8, -1, -1, Map.of("name\u0000", "")),
             Arguments.of(List.of("n1=v1&n2"), UTF_8, -1, -1, Map.of("n1", "v1", "n2", "")),
-            Arguments.of(List.of("n1=v1&n2&n3=v3&n4"), UTF_8, -1, -1, Map.of("n1", "v1", "n2", "", "n3", "v3", "n4", "")),
+            Arguments.of(
+                List.of("n1=v1&n2&n3=v3&n4"),
+                UTF_8,
+                -1,
+                -1,
+                Map.of("n1", "v1", "n2", "", "n3", "v3", "n4", "")),
             Arguments.of(List.of("name=value"), UTF_8, -1, -1, Map.of("name", "value")),
             Arguments.of(List.of("name=%0A"), UTF_8, -1, -1, Map.of("name", "\n")),
             Arguments.of(List.of("name=value", ""), UTF_8, -1, -1, Map.of("name", "value")),
@@ -62,13 +66,13 @@ public class FormFieldsTest
             Arguments.of(List.of("n=v&X=Y"), UTF_8, 2, 4, Map.of("n", "v", "X", "Y")),
             Arguments.of(List.of("name=f¤¤&X=Y"), UTF_8, -1, -1, Map.of("name", "f¤¤", "X", "Y")),
             Arguments.of(List.of("na+me=", "va", "+", "lue"), UTF_8, -1, -1, Map.of("na me", "va lue")),
-            Arguments.of(List.of("=v"), UTF_8, -1, -1, Map.of("", "v"))
-        );
+            Arguments.of(List.of("=v"), UTF_8, -1, -1, Map.of("", "v")));
     }
 
     @ParameterizedTest
     @MethodSource("validData")
-    public void testValidFormFields(List<String> chunks, Charset charset, int maxFields, int maxLength, Map<String, String> expected)
+    public void testValidFormFields(
+                                    List<String> chunks, Charset charset, int maxFields, int maxLength, Map<String, String> expected)
     {
         AsyncContent source = new AsyncContent();
         Attributes attributes = new Attributes.Mapped();
@@ -113,7 +117,6 @@ public class FormFieldsTest
             // TODO: these 2 should throw the same exception.
             Arguments.of(List.of("name%A="), UTF_8, -1, -1, CharacterCodingException.class),
             Arguments.of(List.of("name%A&"), UTF_8, -1, -1, IllegalArgumentException.class),
-
             Arguments.of(List.of("name=%"), UTF_8, -1, -1, IllegalStateException.class),
             Arguments.of(List.of("name=A%%A"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("name=A%%3D"), UTF_8, -1, -1, IllegalArgumentException.class),
@@ -124,23 +127,29 @@ public class FormFieldsTest
             Arguments.of(List.of("n=v&X=Y"), UTF_8, -1, 3, IllegalStateException.class),
             Arguments.of(List.of("n%AH=v"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("n=v%AH"), UTF_8, -1, -1, IllegalArgumentException.class),
-            Arguments.of(List.of("n=v%FF"), UTF_8, -1, -1, CharacterCodingException.class)
-        );
+            Arguments.of(List.of("n=v%FF"), UTF_8, -1, -1, CharacterCodingException.class));
     }
 
     @ParameterizedTest
     @MethodSource("invalidData")
-    public void testInvalidFormFields(List<String> chunks, Charset charset, int maxFields, int maxLength, Class<? extends Exception> expectedException)
+    public void testInvalidFormFields(
+                                      List<String> chunks,
+                                      Charset charset,
+                                      int maxFields,
+                                      int maxLength,
+                                      Class<? extends Exception> expectedException)
     {
         AsyncContent source = new AsyncContent();
-        CompletableFuture<Fields> futureFields = FormFields.from(source, new Attributes.Mapped(), charset, maxFields, maxLength);
+        CompletableFuture<Fields> futureFields =
+            FormFields.from(source, new Attributes.Mapped(), charset, maxFields, maxLength);
         assertFalse(futureFields.isDone());
         int last = chunks.size() - 1;
         for (int i = 0; i <= last; i++)
         {
             source.write(i == last, BufferUtil.toBuffer(chunks.get(i)), Callback.NOOP);
         }
-        Throwable cause = assertThrows(ExecutionException.class, futureFields::get).getCause();
+        Throwable cause =
+            assertThrows(ExecutionException.class, futureFields::get).getCause();
         assertThat(cause, instanceOf(expectedException));
     }
 }

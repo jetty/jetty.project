@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.plus.webapp;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
-
 import org.eclipse.jetty.ee10.plus.jndi.Transaction;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
@@ -42,20 +41,22 @@ public class PlusConfiguration extends AbstractConfiguration
     public PlusConfiguration()
     {
         super(new Builder()
-            .addDependencies(EnvConfiguration.class, WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class)
+            .addDependencies(
+                EnvConfiguration.class,
+                WebXmlConfiguration.class,
+                MetaInfConfiguration.class,
+                FragmentConfiguration.class)
             .addDependents(JettyWebXmlConfiguration.class));
     }
 
     @Override
-    public void preConfigure(WebAppContext context)
-        throws Exception
+    public void preConfigure(WebAppContext context) throws Exception
     {
         context.getObjectFactory().addDecorator(new PlusDecorator(context));
     }
 
     @Override
-    public void configure(WebAppContext context)
-        throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
         bindUserTransaction(context);
 
@@ -65,21 +66,19 @@ public class PlusConfiguration extends AbstractConfiguration
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
-        //lock this webapp's java:comp namespace as per J2EE spec
+        // lock this webapp's java:comp namespace as per J2EE spec
         lockCompEnv(context);
     }
 
     @Override
-    public void deconfigure(WebAppContext context)
-        throws Exception
+    public void deconfigure(WebAppContext context) throws Exception
     {
         unlockCompEnv(context);
         context.setAttribute(InjectionCollection.INJECTION_COLLECTION, null);
         context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, null);
     }
 
-    public void bindUserTransaction(WebAppContext context)
-        throws Exception
+    public void bindUserTransaction(WebAppContext context) throws Exception
     {
         try
         {
@@ -89,7 +88,8 @@ public class PlusConfiguration extends AbstractConfiguration
         {
             try
             {
-                org.eclipse.jetty.plus.jndi.Transaction.bindTransactionToENC(ServletContextHandler.ENVIRONMENT.getName());
+                org.eclipse.jetty.plus.jndi.Transaction.bindTransactionToENC(
+                    ServletContextHandler.ENVIRONMENT.getName());
             }
             catch (NameNotFoundException x)
             {
@@ -98,8 +98,7 @@ public class PlusConfiguration extends AbstractConfiguration
         }
     }
 
-    protected void lockCompEnv(WebAppContext wac)
-        throws Exception
+    protected void lockCompEnv(WebAppContext wac) throws Exception
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
@@ -117,8 +116,7 @@ public class PlusConfiguration extends AbstractConfiguration
         }
     }
 
-    protected void unlockCompEnv(WebAppContext wac)
-        throws Exception
+    protected void unlockCompEnv(WebAppContext wac) throws Exception
     {
         Object o = wac.removeAttribute(LOCK_JNDI_KEY);
         if (o instanceof Integer key)

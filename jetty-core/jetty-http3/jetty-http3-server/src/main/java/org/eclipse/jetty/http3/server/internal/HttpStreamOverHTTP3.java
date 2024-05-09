@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
@@ -56,7 +55,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private Content.Chunk chunk;
     private boolean committed;
 
-    public HttpStreamOverHTTP3(ServerHTTP3StreamConnection connection, HttpChannel httpChannel, HTTP3StreamServer stream)
+    public HttpStreamOverHTTP3(
+                               ServerHTTP3StreamConnection connection, HttpChannel httpChannel, HTTP3StreamServer stream)
     {
         this.connection = connection;
         this.httpChannel = httpChannel;
@@ -81,7 +81,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
             Request request = this.httpChannel.getRequest();
             listener.onRequestBegin(request);
             // Note UriCompliance is done by HandlerInvoker
-            HttpCompliance httpCompliance = httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
+            HttpCompliance httpCompliance =
+                httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
             HttpCompliance.checkHttpCompliance(requestMetaData, httpCompliance, listener);
 
             if (frame.isLast())
@@ -96,10 +97,15 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("HTTP3 request #{}/{}, {} {} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    requestMetaData.getMethod(), requestMetaData.getHttpURI(), requestMetaData.getHttpVersion(),
-                    System.lineSeparator(), fields);
+                LOG.debug(
+                    "HTTP3 request #{}/{}, {} {} {}{}{}",
+                    stream.getId(),
+                    Integer.toHexString(stream.getSession().hashCode()),
+                    requestMetaData.getMethod(),
+                    requestMetaData.getHttpURI(),
+                    requestMetaData.getHttpVersion(),
+                    System.lineSeparator(),
+                    fields);
             }
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
@@ -111,8 +117,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
                     if (stream.isClosed())
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
-                                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                            LOG.debug(
+                                "HTTP3 request #{}/{} skipped handling, stream already closed {}",
+                                stream.getId(),
+                                Integer.toHexString(stream.getSession().hashCode()),
                                 stream);
                     }
                     else
@@ -195,8 +203,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 request data available #{}/{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
+            LOG.debug(
+                "HTTP3 request data available #{}/{}",
+                stream.getId(),
+                Integer.toHexString(stream.getSession().hashCode()));
         }
 
         Stream.Data data = stream.readData();
@@ -224,9 +234,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
         HttpFields trailers = frame.getMetaData().getHttpFields().asImmutable();
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 Request #{}/{}, trailer:{}{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                System.lineSeparator(), trailers);
+            LOG.debug(
+                "HTTP3 Request #{}/{}, trailer:{}{}",
+                stream.getId(),
+                Integer.toHexString(stream.getSession().hashCode()),
+                System.lineSeparator(),
+                trailers);
         }
         try (AutoLock ignored = lock.lock())
         {
@@ -252,7 +265,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void send(
+                     MetaData.Request request,
+                     MetaData.Response response,
+                     boolean last,
+                     ByteBuffer byteBuffer,
+                     Callback callback)
     {
         ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
         if (response != null)
@@ -261,7 +279,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
             sendContent(request, content, last, callback);
     }
 
-    private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
+    private void sendHeaders(
+                             MetaData.Request request,
+                             MetaData.Response response,
+                             ByteBuffer content,
+                             boolean lastContent,
+                             Callback callback)
     {
         this.responseMetaData = response;
 
@@ -293,15 +316,18 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 if (contentLength < 0)
                 {
                     this.responseMetaData = new MetaData.Response(
-                        response.getStatus(), response.getReason(), response.getHttpVersion(),
+                        response.getStatus(),
+                        response.getReason(),
+                        response.getHttpVersion(),
                         response.getHttpFields(),
                         realContentLength,
-                        response.getTrailersSupplier()
-                    );
+                        response.getTrailersSupplier());
                 }
                 else if (hasContent && contentLength != realContentLength)
                 {
-                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                    callback.failed(new HttpException.RuntimeException(
+                        HttpStatus.INTERNAL_SERVER_ERROR_500,
+                        String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
                     return;
                 }
             }
@@ -358,10 +384,15 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 Response #{}/{}:{}{} {}{}{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                System.lineSeparator(), HttpVersion.HTTP_3, response.getStatus(),
-                System.lineSeparator(), response.getHttpFields());
+            LOG.debug(
+                "HTTP3 Response #{}/{}:{}{} {}{}{}",
+                stream.getId(),
+                Integer.toHexString(stream.getSession().hashCode()),
+                System.lineSeparator(),
+                HttpVersion.HTTP_3,
+                response.getStatus(),
+                System.lineSeparator(),
+                response.getHttpFields());
         }
 
         CompletableFuture<Stream> cf = stream.respond(headersFrame);
@@ -436,9 +467,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 Response #{}/{}: {} content bytes{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                content.remaining(), lastContent ? " (last chunk)" : "");
+            LOG.debug(
+                "HTTP3 Response #{}/{}: {} content bytes{}",
+                stream.getId(),
+                Integer.toHexString(stream.getSession().hashCode()),
+                content.remaining(),
+                lastContent ? " (last chunk)" : "");
         }
         DataFrame frame = new DataFrame(content, endStream);
         return stream.data(frame);
@@ -448,9 +482,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 Response #{}/{}: trailer{}{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                System.lineSeparator(), trailers);
+            LOG.debug(
+                "HTTP3 Response #{}/{}: trailer{}{}",
+                stream.getId(),
+                Integer.toHexString(stream.getSession().hashCode()),
+                System.lineSeparator(),
+                trailers);
         }
 
         HeadersFrame frame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
@@ -480,7 +517,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         if (getTunnelSupport() != null)
             return null;
-        Throwable result = HttpStream.consumeAvailable(this, httpChannel.getConnectionMetaData().getHttpConfiguration());
+        Throwable result = HttpStream.consumeAvailable(
+            this, httpChannel.getConnectionMetaData().getHttpConfiguration());
         if (result != null)
         {
             if (chunk != null)
@@ -506,7 +544,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
         if (!stream.isClosed())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("HTTP3 Response #{}/{}: unconsumed request content, resetting stream", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
+                LOG.debug(
+                    "HTTP3 Response #{}/{}: unconsumed request content, resetting stream",
+                    stream.getId(),
+                    Integer.toHexString(stream.getSession().hashCode()));
             stream.reset(HTTP3ErrorCode.NO_ERROR.code(), CONTENT_NOT_CONSUMED);
         }
     }
@@ -514,9 +555,15 @@ public class HttpStreamOverHTTP3 implements HttpStream
     @Override
     public void failed(Throwable x)
     {
-        HTTP3ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? HTTP3ErrorCode.NO_ERROR : HTTP3ErrorCode.REQUEST_CANCELLED_ERROR;
+        HTTP3ErrorCode errorCode =
+            x == HttpStream.CONTENT_NOT_CONSUMED ? HTTP3ErrorCode.NO_ERROR : HTTP3ErrorCode.REQUEST_CANCELLED_ERROR;
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP3 Response #{}/{} failed {}", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), errorCode, x);
+            LOG.debug(
+                "HTTP3 Response #{}/{} failed {}",
+                stream.getId(),
+                Integer.toHexString(stream.getSession().hashCode()),
+                errorCode,
+                x);
         stream.reset(errorCode.code(), x);
     }
 

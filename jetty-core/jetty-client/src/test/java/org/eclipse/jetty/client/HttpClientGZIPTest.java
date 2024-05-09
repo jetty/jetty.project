@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -40,14 +47,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class HttpClientGZIPTest extends AbstractHttpClientServerTest
 {
@@ -123,7 +122,8 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 GZIPOutputStream gzipOutput = new GZIPOutputStream(buffer);
@@ -202,7 +202,8 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 response.getHeaders().put("Content-Encoding", "gzip");
 
@@ -298,11 +299,10 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             }
         });
 
-        assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send());
+        assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
     }
 
     @ParameterizedTest
@@ -321,7 +321,8 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + StandardCharsets.US_ASCII.name());
+                response.getHeaders()
+                    .put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + StandardCharsets.US_ASCII.name());
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
                 GZIPOutputStream gzip = new GZIPOutputStream(Content.Sink.asOutputStream(response));
                 gzip.write(content);
@@ -363,7 +364,8 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + StandardCharsets.US_ASCII.name());
+                response.getHeaders()
+                    .put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + StandardCharsets.US_ASCII.name());
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
                 GZIPOutputStream gzip = new GZIPOutputStream(Content.Sink.asOutputStream(response));
                 gzip.write(content);

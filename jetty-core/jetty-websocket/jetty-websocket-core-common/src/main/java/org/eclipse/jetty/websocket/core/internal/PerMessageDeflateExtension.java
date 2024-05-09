@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -144,7 +143,11 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         }
 
         configNegotiated = new ExtensionConfig(config.getName(), paramsNegotiated);
-        LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
+        LOG.debug(
+            "config: outgoingContextTakover={}, incomingContextTakeover={} : {}",
+            outgoingContextTakeover,
+            incomingContextTakeover,
+            this);
 
         super.init(configNegotiated, components);
     }
@@ -160,14 +163,25 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
 
     private static String toDetail(Inflater inflater)
     {
-        return String.format("Inflater[finished=%b,read=%d,written=%d,remaining=%d,in=%d,out=%d]", inflater.finished(), inflater.getBytesRead(),
-            inflater.getBytesWritten(), inflater.getRemaining(), inflater.getTotalIn(), inflater.getTotalOut());
+        return String.format(
+            "Inflater[finished=%b,read=%d,written=%d,remaining=%d,in=%d,out=%d]",
+            inflater.finished(),
+            inflater.getBytesRead(),
+            inflater.getBytesWritten(),
+            inflater.getRemaining(),
+            inflater.getTotalIn(),
+            inflater.getTotalOut());
     }
 
     private static String toDetail(Deflater deflater)
     {
-        return String.format("Deflater[finished=%b,read=%d,written=%d,in=%d,out=%d]", deflater.finished(), deflater.getBytesRead(), deflater.getBytesWritten(),
-            deflater.getTotalIn(), deflater.getTotalOut());
+        return String.format(
+            "Deflater[finished=%b,read=%d,written=%d,in=%d,out=%d]",
+            deflater.finished(),
+            deflater.getBytesRead(),
+            deflater.getBytesWritten(),
+            deflater.getTotalIn(),
+            deflater.getTotalOut());
     }
 
     public static boolean endsWithTail(ByteBuffer buf)
@@ -222,7 +236,8 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     @Override
     public String toString()
     {
-        return String.format("%s[requested=\"%s\", negotiated=\"%s\"]",
+        return String.format(
+            "%s[requested=\"%s\", negotiated=\"%s\"]",
             getClass().getSimpleName(),
             configRequested.getParameterizedName(),
             configNegotiated.getParameterizedName());
@@ -310,8 +325,11 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             Deflater deflater = getDeflater();
             while (true)
             {
-                int compressed = deflater.deflate(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(),
-                    bufferSize - byteBuffer.position(), Deflater.SYNC_FLUSH);
+                int compressed = deflater.deflate(
+                    byteBuffer.array(),
+                    byteBuffer.arrayOffset() + byteBuffer.position(),
+                    bufferSize - byteBuffer.position(),
+                    Deflater.SYNC_FLUSH);
                 byteBuffer.limit(byteBuffer.limit() + compressed);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Compressed {} bytes {}", compressed, toDetail(deflater));
@@ -437,7 +455,10 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             boolean complete = false;
             while (true)
             {
-                int decompressed = inflater.inflate(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), bufferSize - byteBuffer.position());
+                int decompressed = inflater.inflate(
+                    byteBuffer.array(),
+                    byteBuffer.arrayOffset() + byteBuffer.position(),
+                    bufferSize - byteBuffer.position());
                 byteBuffer.limit(byteBuffer.limit() + decompressed);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Decompress: read {} {}", decompressed, toDetail(inflater));
@@ -470,24 +491,29 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             chunk.setFin(frame.isFin() && complete);
 
             // If we are complete we return true, then DemandingFlusher.process() will null out the Frame and Callback.
-            // The application may decide to hold onto the buffer and delay completing the callback, so we need to capture
+            // The application may decide to hold onto the buffer and delay completing the callback, so we need to
+            // capture
             // references to these in the payloadCallback and not rely on state of the flusher which may have moved on.
-            // This flusher could be failed while the application already has the payloadCallback, so we need protection against
-            // the flusher failing and the application completing the callback, that's why we use the payload AtomicReference.
+            // This flusher could be failed while the application already has the payloadCallback, so we need protection
+            // against
+            // the flusher failing and the application completing the callback, that's why we use the payload
+            // AtomicReference.
             boolean completeCallback = complete;
             AtomicReference<RetainableByteBuffer> payloadRef = _payloadRef;
-            Callback payloadCallback = Callback.from(() ->
-            {
-                releasePayload(payloadRef);
-                if (completeCallback)
-                    callback.succeeded();
-            }, t ->
-            {
-                releasePayload(payloadRef);
-                if (completeCallback)
-                    callback.failed(t);
-                failFlusher(t);
-            });
+            Callback payloadCallback = Callback.from(
+                () ->
+                {
+                    releasePayload(payloadRef);
+                    if (completeCallback)
+                        callback.succeeded();
+                },
+                t ->
+                {
+                    releasePayload(payloadRef);
+                    if (completeCallback)
+                        callback.failed(t);
+                    failFlusher(t);
+                });
 
             emitFrame(chunk, payloadCallback);
             if (LOG.isDebugEnabled())

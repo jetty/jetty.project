@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,16 +26,11 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyProtocolTest
 {
@@ -83,10 +82,7 @@ public class ProxyProtocolTest
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             String request1 =
-                "PROXY TCP4 " + remoteAddr + " 127.0.0.0 " + remotePort + " 8080\r\n" +
-                    "GET /1 HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+                "PROXY TCP4 " + remoteAddr + " 127.0.0.0 " + remotePort + " 8080\r\n" + "GET /1 HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
             OutputStream output = socket.getOutputStream();
             output.write(request1.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -102,11 +98,7 @@ public class ProxyProtocolTest
             }
 
             // Send a second request to verify that the proxied IP is retained.
-            String request2 =
-                "GET /2 HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+            String request2 = "GET /2 HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
             output.write(request2.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -125,17 +117,15 @@ public class ProxyProtocolTest
     {
         final String remoteAddr = "192.168.0.1";
         final int remotePort = 12345;
-        final byte[] customE0 = new byte[] {1, 2};
-        final byte[] customE1 = new byte[] {-1, -1, -1};
+        final byte[] customE0 = new byte[]{1, 2};
+        final byte[] customE1 = new byte[]{-1, -1, -1};
 
         start(new Handler.Abstract.NonBlocking()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                if (validateEndPoint(request) &&
-                    remoteAddr.equals(Request.getRemoteAddr(request)) &&
-                    remotePort == Request.getRemotePort(request))
+                if (validateEndPoint(request) && remoteAddr.equals(Request.getRemoteAddr(request)) && remotePort == Request.getRemotePort(request))
                     callback.succeeded();
                 else
                     callback.failed(new Throwable());
@@ -144,11 +134,10 @@ public class ProxyProtocolTest
 
             private boolean validateEndPoint(Request request)
             {
-                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                EndPoint endPoint =
+                    request.getConnectionMetaData().getConnection().getEndPoint();
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                return Arrays.equals(customE0, proxyEndPoint.getTLV(0xE0)) &&
-                    Arrays.equals(customE1, proxyEndPoint.getTLV(0xE1)) &&
-                    proxyEndPoint.getTLV(0xE2) == null;
+                return Arrays.equals(customE0, proxyEndPoint.getTLV(0xE0)) && Arrays.equals(customE1, proxyEndPoint.getTLV(0xE1)) && proxyEndPoint.getTLV(0xE2) == null;
             }
         });
 
@@ -168,10 +157,7 @@ public class ProxyProtocolTest
                     "0020" +
 
                     // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
-                    "C0A80001" +
-                    "7f000001" +
-                    "3039" +
-                    "1F90" +
+                    "C0A80001" + "7f000001" + "3039" + "1F90" +
 
                     // NOOP value 0
                     "040000" +
@@ -185,10 +171,7 @@ public class ProxyProtocolTest
                     // Custom 0xE1 {0xFF,0xFF,0xFF}
                     "E10003FFFFFF";
 
-            String request1 =
-                "GET /1 HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request1 = "GET /1 HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
             OutputStream output = socket.getOutputStream();
             output.write(StringUtil.fromHexString(proxy));
             output.write(request1.getBytes(StandardCharsets.UTF_8));
@@ -205,11 +188,7 @@ public class ProxyProtocolTest
             }
 
             // Send a second request to verify that the proxied IP is retained.
-            String request2 =
-                "GET /2 HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+            String request2 = "GET /2 HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
             output.write(request2.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -252,10 +231,7 @@ public class ProxyProtocolTest
                     "0015" +
 
                     // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
-                    "C0A80001" +
-                    "7f000001" +
-                    "3039" +
-                    "1F90" +
+                    "C0A80001" + "7f000001" + "3039" + "1F90" +
 
                     // NOOP value 0
                     "040000" +
@@ -263,10 +239,7 @@ public class ProxyProtocolTest
                     // NOOP value ABCDEF
                     "040003ABCDEF";
 
-            String request1 =
-                "GET /1 HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request1 = "GET /1 HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
             OutputStream output = socket.getOutputStream();
             output.write(StringUtil.fromHexString(proxy));
             output.write(request1.getBytes(StandardCharsets.UTF_8));
@@ -283,11 +256,7 @@ public class ProxyProtocolTest
             }
 
             // Send a second request to verify that the proxied IP is retained.
-            String request2 =
-                "GET /2 HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+            String request2 = "GET /2 HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
             output.write(request2.getBytes(StandardCharsets.UTF_8));
             output.flush();
 

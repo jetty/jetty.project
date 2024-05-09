@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
@@ -25,8 +26,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class VirtualHostRuleContainerTest extends AbstractRuleTest
 {
@@ -59,7 +58,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         String request = """
             GET /cheese/bar HTTP/1.1
             Host: cheese.com
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -78,7 +77,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         String request = """
             GET /cheese/bar HTTP/1.1
             Host: foo.com
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -98,7 +97,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         String request = """
             GET /cheese/bar HTTP/1.1
             Host: foo.com
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -110,7 +109,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         request = """
             GET /cheese/bar HTTP/1.1
             Host: foo.com
-                        
+
             """;
 
         response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -122,7 +121,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         request = """
             GET /cheese/bar HTTP/1.1
             Host: foo.com
-                        
+
             """;
 
         response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -140,7 +139,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         String request = """
             GET /cheese/bar HTTP/1.1
             Host: Foo.com
-                        
+
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -159,11 +158,12 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         {
             _virtualHostRules.setVirtualHosts(virtualHosts);
 
-            String request = """
-                GET /cheese/bar HTTP/1.1
-                Host: cheese.com
-                            
-                """;
+            String request =
+                """
+                    GET /cheese/bar HTTP/1.1
+                    Host: cheese.com
+
+                    """;
 
             HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
             assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -179,10 +179,10 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         _virtualHostRules.addRule(new RewritePatternRule("/cheese/bar/*", "/cheese/fooRule"));
 
         String request = """
-                GET /cheese/bar HTTP/1.1
-                Host: foo.com
-                            
-                """;
+            GET /cheese/bar HTTP/1.1
+            Host: foo.com
+
+            """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -191,10 +191,10 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         _virtualHostRules.addVirtualHost("foo.com");
 
         request = """
-                GET /cheese/bar HTTP/1.1
-                Host: foo.com
-                            
-                """;
+            GET /cheese/bar HTTP/1.1
+            Host: foo.com
+
+            """;
 
         response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -205,16 +205,20 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
     public void testWildcardVirtualHosts() throws Exception
     {
         testWildcardVirtualHost(true, List.of("foo.com", "*.foo.com"), List.of("foo.com", ".foo.com", "vhost.foo.com"));
-        testWildcardVirtualHost(false, List.of("foo.com", "*.foo.com"), List.of("badfoo.com", ".badfoo.com", "vhost.badfoo.com"));
+        testWildcardVirtualHost(
+            false, List.of("foo.com", "*.foo.com"), List.of("badfoo.com", ".badfoo.com", "vhost.badfoo.com"));
         testWildcardVirtualHost(false, List.of("*."), List.of("anything.anything"));
         testWildcardVirtualHost(true, List.of("*.foo.com"), List.of("vhost.foo.com", ".foo.com"));
-        testWildcardVirtualHost(false, List.of("*.foo.com"), List.of("vhost.www.foo.com", "foo.com", "www.vhost.foo.com"));
+        testWildcardVirtualHost(
+            false, List.of("*.foo.com"), List.of("vhost.www.foo.com", "foo.com", "www.vhost.foo.com"));
         testWildcardVirtualHost(true, List.of("*.sub.foo.com"), List.of("vhost.sub.foo.com", ".sub.foo.com"));
         testWildcardVirtualHost(false, List.of("*.sub.foo.com"), List.of(".foo.com", "sub.foo.com", "vhost.foo.com"));
-        testWildcardVirtualHost(false, List.of("foo.*.com", "foo.com.*"), List.of("foo.vhost.com", "foo.com.vhost", "foo.com"));
+        testWildcardVirtualHost(
+            false, List.of("foo.*.com", "foo.com.*"), List.of("foo.vhost.com", "foo.com.vhost", "foo.com"));
     }
 
-    private void testWildcardVirtualHost(boolean succeed, List<String> ruleHosts, List<String> requestHosts) throws Exception
+    private void testWildcardVirtualHost(boolean succeed, List<String> ruleHosts, List<String> requestHosts)
+        throws Exception
     {
         _rewriteHandler.addRule(_virtualHostRules);
         _virtualHostRules.setVirtualHosts(ruleHosts);
@@ -225,8 +229,9 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
             String request = """
                 GET /cheese/bar HTTP/1.1
                 Host: $H
-                            
-                """.replace("$H", requestHost);
+
+                """
+                .replace("$H", requestHost);
 
             HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
             assertEquals(HttpStatus.OK_200, response.getStatus());

@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.security.jaas.spi;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Base64;
@@ -20,7 +27,6 @@ import java.util.Collections;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
 import javax.security.auth.login.Configuration;
-
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.PropertyUserStore;
@@ -37,18 +43,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
-
 public class PropertyFileLoginModuleTest
 {
     private Server _server;
     private LocalConnector _connector;
-    
+
     @BeforeEach
     public void setUp() throws Exception
     {
@@ -56,29 +55,31 @@ public class PropertyFileLoginModuleTest
 
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-
     }
-    
+
     @AfterEach
     public void tearDown() throws Exception
     {
         _server.stop();
     }
-    
+
     @Test
     public void testPropertyFileLoginModule() throws Exception
     {
-        //configure for PropertyFileLoginModule
+        // configure for PropertyFileLoginModule
         File loginProperties = MavenTestingUtils.getTestResourceFile("login.properties");
 
         Configuration testConfig = new Configuration()
         {
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name)
-            { 
-                return new AppConfigurationEntry[]{new AppConfigurationEntry(PropertyFileLoginModule.class.getName(),
-                                                                             LoginModuleControlFlag.REQUIRED,
-                                                                             Collections.singletonMap("file", loginProperties.getAbsolutePath()))};
+            {
+                return new AppConfigurationEntry[]{
+                    new AppConfigurationEntry(
+                        PropertyFileLoginModule.class.getName(),
+                        LoginModuleControlFlag.REQUIRED,
+                        Collections.singletonMap("file", loginProperties.getAbsolutePath()))
+                };
             }
         };
 
@@ -99,22 +100,21 @@ public class PropertyFileLoginModuleTest
 
         _server.start();
 
-        //test that the manager is created when the JAASLoginService starts
+        // test that the manager is created when the JAASLoginService starts
         PropertyUserStoreManager mgr = ls.getBean(PropertyUserStoreManager.class);
         assertThat(mgr, notNullValue());
 
-        //test the PropertyFileLoginModule authentication and authorization
-        String response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
-            Base64.getEncoder().encodeToString("fred:pwd".getBytes(ISO_8859_1)) + "\n\n");
+        // test the PropertyFileLoginModule authentication and authorization
+        String response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " + Base64.getEncoder().encodeToString("fred:pwd".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
-        //Test that the PropertyUserStore is created by the PropertyFileLoginModule
+        // Test that the PropertyUserStore is created by the PropertyFileLoginModule
         PropertyUserStore store = mgr.getPropertyUserStore(loginProperties.getAbsolutePath());
         assertThat(store, is(notNullValue()));
         assertThat(store.isRunning(), is(true));
         assertThat(store.isHotReload(), is(false));
 
-        //test that the PropertyUserStoreManager is stopped and all PropertyUserStores stopped
+        // test that the PropertyUserStoreManager is stopped and all PropertyUserStores stopped
         _server.stop();
         assertThat(mgr.isStopped(), is(true));
         assertThat(mgr.getPropertyUserStore(loginProperties.getAbsolutePath()), is(nullValue()));

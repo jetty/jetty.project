@@ -35,7 +35,6 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.X509ExtendedKeyManager;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +101,8 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         return _delegate.chooseEngineClientAlias(keyType, issuers, engine);
     }
 
-    protected String chooseServerAlias(String keyType, Principal[] issuers, Collection<SNIMatcher> matchers, SSLSession session)
+    protected String chooseServerAlias(
+                                       String keyType, Principal[] issuers, Collection<SNIMatcher> matchers, SSLSession session)
     {
         // Look for the aliases that are suitable for the keyType and issuers.
         String[] mangledAliases = _delegate.getServerAliases(keyType, issuers);
@@ -132,12 +132,13 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         {
             // Find our SNIMatcher.  There should only be one and it always matches (always returns true
             // from AliasSNIMatcher.matches), but it will capture the SNI Host if one was presented.
-            host = matchers == null ? null : matchers.stream()
-                .filter(SslContextFactory.AliasSNIMatcher.class::isInstance)
-                .map(SslContextFactory.AliasSNIMatcher.class::cast)
-                .findFirst()
-                .map(SslContextFactory.AliasSNIMatcher::getHost)
-                .orElse(null);
+            host = matchers == null ? null :
+                matchers.stream()
+                    .filter(SslContextFactory.AliasSNIMatcher.class::isInstance)
+                    .map(SslContextFactory.AliasSNIMatcher.class::cast)
+                    .findFirst()
+                    .map(SslContextFactory.AliasSNIMatcher::getHost)
+                    .orElse(null);
         }
         if (session != null && host != null)
             session.putValue(SslContextFactory.Server.SNI_HOST, host);
@@ -174,7 +175,12 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
             String mangledAlias = aliasMap.get(alias);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Matched SNI {} with alias {}, certificate {} from aliases {}", host, mangledAlias, x509, aliasMap.keySet());
+                LOG.debug(
+                    "Matched SNI {} with alias {}, certificate {} from aliases {}",
+                    host,
+                    mangledAlias,
+                    x509,
+                    aliasMap.keySet());
             return mangledAlias;
         }
         catch (Throwable x)
@@ -189,28 +195,41 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
     {
         SSLSocket sslSocket = (SSLSocket)socket;
-        String alias = (socket == null)
-            ? chooseServerAlias(keyType, issuers, Collections.emptyList(), null)
-            : chooseServerAlias(keyType, issuers, sslSocket.getSSLParameters().getSNIMatchers(), sslSocket.getHandshakeSession());
+        String alias = (socket == null) ? chooseServerAlias(keyType, issuers, Collections.emptyList(), null) :
+            chooseServerAlias(
+                keyType,
+                issuers,
+                sslSocket.getSSLParameters().getSNIMatchers(),
+                sslSocket.getHandshakeSession());
         boolean delegate = alias == SniSelector.DELEGATE;
         if (delegate)
             alias = _delegate.chooseServerAlias(keyType, issuers, socket);
         if (LOG.isDebugEnabled())
-            LOG.debug("Chose {} alias={} keyType={} on {}", delegate ? "delegate" : "explicit", String.valueOf(alias), keyType, socket);
+            LOG.debug(
+                "Chose {} alias={} keyType={} on {}",
+                delegate ? "delegate" : "explicit",
+                String.valueOf(alias),
+                keyType,
+                socket);
         return alias;
     }
 
     @Override
     public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
     {
-        String alias = (engine == null)
-            ? chooseServerAlias(keyType, issuers, Collections.emptyList(), null)
-            : chooseServerAlias(keyType, issuers, engine.getSSLParameters().getSNIMatchers(), engine.getHandshakeSession());
+        String alias = (engine == null) ? chooseServerAlias(keyType, issuers, Collections.emptyList(), null) :
+            chooseServerAlias(
+                keyType, issuers, engine.getSSLParameters().getSNIMatchers(), engine.getHandshakeSession());
         boolean delegate = alias == SniSelector.DELEGATE;
         if (delegate)
             alias = _delegate.chooseEngineServerAlias(keyType, issuers, engine);
         if (LOG.isDebugEnabled())
-            LOG.debug("Chose {} alias={} keyType={} on {}", delegate ? "delegate" : "explicit", String.valueOf(alias), keyType, engine);
+            LOG.debug(
+                "Chose {} alias={} keyType={} on {}",
+                delegate ? "delegate" : "explicit",
+                String.valueOf(alias),
+                keyType,
+                engine);
         return alias;
     }
 
@@ -262,6 +281,8 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
          * nested key manager or null for no match.
          * @throws SSLHandshakeException if the TLS handshake should be aborted
          */
-        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException;
+        public String sniSelect(
+                                String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates)
+            throws SSLHandshakeException;
     }
 }

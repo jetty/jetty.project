@@ -13,21 +13,18 @@
 
 package org.eclipse.jetty.ee9.demo.simple;
 
-import java.io.IOException;
-
 import jakarta.servlet.Servlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 public class HelloWorldServlet extends HttpServlet
 {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
     {
-        resp.getOutputStream().println("HelloWorld from Servlet-" +
-            getServletContext().getMajorVersion() +
-            " with " + Servlet.class
-        );
+        resp.getOutputStream()
+            .println("HelloWorld from Servlet-" + getServletContext().getMajorVersion() + " with " + Servlet.class);
     }
 }

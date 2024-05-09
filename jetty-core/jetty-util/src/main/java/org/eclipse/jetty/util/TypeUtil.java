@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util;
 
+import static java.lang.invoke.MethodType.methodType;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -44,11 +46,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.invoke.MethodType.methodType;
 
 /**
  * TYPE Utilities.
@@ -63,7 +62,7 @@ public class TypeUtil
     public static final Class<?>[] NO_ARGS = new Class[]{};
     public static final int CR = '\r';
     public static final int LF = '\n';
-    private static final  Pattern TRAILING_DIGITS = Pattern.compile("^\\D*(\\d+)$");
+    private static final Pattern TRAILING_DIGITS = Pattern.compile("^\\D*(\\d+)$");
 
     private static final HashMap<String, Class<?>> name2Class = new HashMap<>();
 
@@ -124,7 +123,7 @@ public class TypeUtil
         class2Value.put(java.lang.Integer.TYPE, Integer::valueOf);
         class2Value.put(java.lang.Long.TYPE, Long::valueOf);
         class2Value.put(java.lang.Short.TYPE, Short::valueOf);
-  
+
         class2Value.put(java.lang.Boolean.class, Boolean::valueOf);
         class2Value.put(java.lang.Byte.class, Byte::valueOf);
         class2Value.put(java.lang.Double.class, Double::valueOf);
@@ -277,8 +276,7 @@ public class TypeUtil
             if (vos != null)
                 return vos.apply(value);
 
-            if (type.equals(java.lang.Character.TYPE) ||
-                type.equals(java.lang.Character.class))
+            if (type.equals(java.lang.Character.TYPE) || type.equals(java.lang.Character.class))
                 return value.charAt(0);
 
             Constructor<?> c = type.getConstructor(java.lang.String.class);
@@ -320,8 +318,7 @@ public class TypeUtil
      * @return the parsed integer
      * @throws NumberFormatException if the string cannot be parsed
      */
-    public static int parseInt(String s, int offset, int length, int base)
-        throws NumberFormatException
+    public static int parseInt(String s, int offset, int length, int base) throws NumberFormatException
     {
         int value = 0;
 
@@ -351,8 +348,7 @@ public class TypeUtil
      * @return the parsed integer
      * @throws NumberFormatException if the array cannot be parsed into an integer
      */
-    public static int parseInt(byte[] b, int offset, int length, int base)
-        throws NumberFormatException
+    public static int parseInt(byte[] b, int offset, int length, int base) throws NumberFormatException
     {
         int value = 0;
 
@@ -442,9 +438,7 @@ public class TypeUtil
         for (int i = offset; i < offset + len; i++)
         {
             char c = str.charAt(i);
-            if (!(c >= '0' && c <= '9') &&
-                !(c >= 'a' && c <= 'f') &&
-                !(c >= 'A' && c <= 'F'))
+            if (!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'f') && !(c >= 'A' && c <= 'F'))
                 return false;
         }
 

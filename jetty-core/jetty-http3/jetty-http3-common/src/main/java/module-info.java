@@ -16,7 +16,6 @@ module org.eclipse.jetty.http3.common
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.http;
     requires transitive org.eclipse.jetty.http3.qpack;
     requires transitive org.eclipse.jetty.quic.common;

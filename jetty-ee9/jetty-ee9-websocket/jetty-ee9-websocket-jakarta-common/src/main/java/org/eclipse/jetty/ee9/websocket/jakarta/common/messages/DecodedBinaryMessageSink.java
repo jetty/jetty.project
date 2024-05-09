@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.messages;
 
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.DecodeException;
+import jakarta.websocket.Decoder;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.List;
-
-import jakarta.websocket.CloseReason;
-import jakarta.websocket.DecodeException;
-import jakarta.websocket.Decoder;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -43,7 +42,10 @@ public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basi
     MessageSink newMessageSink(CoreSession coreSession) throws Exception
     {
         MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
-            .findVirtual(DecodedBinaryMessageSink.class, "onWholeMessage", MethodType.methodType(void.class, ByteBuffer.class))
+            .findVirtual(
+                DecodedBinaryMessageSink.class,
+                "onWholeMessage",
+                MethodType.methodType(void.class, ByteBuffer.class))
             .bindTo(this);
         return new ByteBufferMessageSink(coreSession, methodHandle, true);
     }

@@ -28,7 +28,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -71,8 +70,7 @@ public class RolloverFileOutputStream extends OutputStream
      * which is replaced with the actual date when creating and rolling over the file.
      * @throws IOException if unable to create output
      */
-    public RolloverFileOutputStream(String filename)
-        throws IOException
+    public RolloverFileOutputStream(String filename) throws IOException
     {
         this(filename, true, ROLLOVER_FILE_RETAIN_DAYS);
     }
@@ -83,8 +81,7 @@ public class RolloverFileOutputStream extends OutputStream
      * @param append If true, existing files will be appended to.
      * @throws IOException if unable to create output
      */
-    public RolloverFileOutputStream(String filename, boolean append)
-        throws IOException
+    public RolloverFileOutputStream(String filename, boolean append) throws IOException
     {
         this(filename, append, ROLLOVER_FILE_RETAIN_DAYS);
     }
@@ -96,10 +93,7 @@ public class RolloverFileOutputStream extends OutputStream
      * @param retainDays The number of days to retain files before deleting them.  0 to retain forever.
      * @throws IOException if unable to create output
      */
-    public RolloverFileOutputStream(String filename,
-                                    boolean append,
-                                    int retainDays)
-        throws IOException
+    public RolloverFileOutputStream(String filename, boolean append, int retainDays) throws IOException
     {
         this(filename, append, retainDays, TimeZone.getDefault());
     }
@@ -112,11 +106,7 @@ public class RolloverFileOutputStream extends OutputStream
      * @param zone the timezone for the output
      * @throws IOException if unable to create output
      */
-    public RolloverFileOutputStream(String filename,
-                                    boolean append,
-                                    int retainDays,
-                                    TimeZone zone)
-        throws IOException
+    public RolloverFileOutputStream(String filename, boolean append, int retainDays, TimeZone zone) throws IOException
     {
         this(filename, append, retainDays, zone, null, null, ZonedDateTime.now(zone.toZoneId()));
     }
@@ -132,18 +122,15 @@ public class RolloverFileOutputStream extends OutputStream
      * @param backupFormat The format for the file extension of backup files. The default is "HHmmssSSS".
      * @throws IOException if unable to create output
      */
-    public RolloverFileOutputStream(String filename,
-                                    boolean append,
-                                    int retainDays,
-                                    TimeZone zone,
-                                    String dateFormat,
-                                    String backupFormat)
+    public RolloverFileOutputStream(
+                                    String filename, boolean append, int retainDays, TimeZone zone, String dateFormat, String backupFormat)
         throws IOException
     {
         this(filename, append, retainDays, zone, dateFormat, backupFormat, ZonedDateTime.now(zone.toZoneId()));
     }
 
-    RolloverFileOutputStream(String filename,
+    RolloverFileOutputStream(
+                             String filename,
                              boolean append,
                              int retainDays,
                              TimeZone zone,
@@ -221,8 +208,7 @@ public class RolloverFileOutputStream extends OutputStream
         return _retainDays;
     }
 
-    void setFile(ZonedDateTime now)
-        throws IOException
+    void setFile(ZonedDateTime now) throws IOException
     {
         File oldFile = null;
         File newFile = null;
@@ -246,10 +232,10 @@ public class RolloverFileOutputStream extends OutputStream
             int datePattern = filename.toLowerCase(Locale.ENGLISH).indexOf(YYYY_MM_DD);
             if (datePattern >= 0)
             {
-                file = new File(dir,
-                    filename.substring(0, datePattern) +
-                        _fileDateFormat.format(new Date(now.toInstant().toEpochMilli())) +
-                        filename.substring(datePattern + YYYY_MM_DD.length()));
+                file = new File(
+                    dir,
+                    filename.substring(0, datePattern) + _fileDateFormat.format(
+                        new Date(now.toInstant().toEpochMilli())) + filename.substring(datePattern + YYYY_MM_DD.length()));
             }
 
             if (file.exists() && !file.canWrite())
@@ -273,7 +259,7 @@ public class RolloverFileOutputStream extends OutputStream
                     renameFile(file, backupFile);
                 }
                 _out = new FileOutputStream(file.toString(), _append);
-                //if(log.isDebugEnabled())log.debug("Opened "+_file);
+                // if(log.isDebugEnabled())log.debug("Opened "+_file);
             }
         }
 

@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class Files0Test extends AbstractUseCase
 {
@@ -35,20 +34,14 @@ public class Files0Test extends AbstractUseCase
 
         FS.ensureDirExists(baseDir.resolve("modules"));
         FS.ensureDirExists(baseDir.resolve("modules/demo"));
-        Files.write(baseDir.resolve("modules/demo.mod"),
-            Arrays.asList(
-                "[files]",
-                "basehome:modules/demo/demo-config.xml|etc/demo-config.xml"
-            ),
+        Files.write(
+            baseDir.resolve("modules/demo.mod"),
+            Arrays.asList("[files]", "basehome:modules/demo/demo-config.xml|etc/demo-config.xml"),
             StandardCharsets.UTF_8);
         FS.touch(baseDir.resolve("modules/demo/demo-config.xml"));
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
-            "--testing-mode",
-            "--create-startd",
-            "--add-modules=demo"
-        );
+        List<String> prepareArgs = Arrays.asList("--testing-mode", "--create-startd", "--add-modules=demo");
         ExecResults prepareResults = exec(prepareArgs, true);
 
         // === Execute Main
@@ -56,13 +49,12 @@ public class Files0Test extends AbstractUseCase
         ExecResults results = exec(runArgs, false);
 
         // === Validate Downloaded Files
-        List<String> expectedDownloads = Arrays.asList(
-            "basehome:modules/demo/demo-config.xml|etc/demo-config.xml"
-        );
+        List<String> expectedDownloads = Arrays.asList("basehome:modules/demo/demo-config.xml|etc/demo-config.xml");
         List<String> actualDownloads = results.getDownloads();
         assertThat("Downloads", actualDownloads, containsInAnyOrder(expectedDownloads.toArray()));
 
         // === Validate Specific Jetty Base Files/Dirs Exist
-        PathAssert.assertFileExists("Required File: etc/demo-config.xml", results.baseHome.getPath("etc/demo-config.xml"));
+        PathAssert.assertFileExists(
+            "Required File: etc/demo-config.xml", results.baseHome.getPath("etc/demo-config.xml"));
     }
 }

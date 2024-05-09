@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -23,8 +25,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * HTTP/2 server to run the 'h2spec' tool against.

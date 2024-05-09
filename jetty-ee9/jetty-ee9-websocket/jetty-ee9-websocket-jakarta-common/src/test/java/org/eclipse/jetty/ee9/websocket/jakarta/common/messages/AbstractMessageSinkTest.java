@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.messages;
 
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.Decoder;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.function.Consumer;
-
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.Decoder;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.AbstractSessionTest;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
@@ -40,7 +39,12 @@ public abstract class AbstractMessageSinkTest extends AbstractSessionTest
         else
             throw new IllegalStateException();
 
-        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build(), components));
+        return List.of(new RegisteredDecoder(
+            clazz,
+            interfaceType,
+            objectType,
+            ClientEndpointConfig.Builder.create().build(),
+            components));
     }
 
     public <T> MethodHandle getAcceptHandle(Consumer<T> copy, Class<T> type)
@@ -50,7 +54,8 @@ public abstract class AbstractMessageSinkTest extends AbstractSessionTest
             Class<?> refc = copy.getClass();
             String name = "accept";
             MethodType methodType = MethodType.methodType(void.class, type);
-            MethodHandle handle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(refc, name, methodType);
+            MethodHandle handle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
+                .findVirtual(refc, name, methodType);
             return handle.bindTo(copy);
         }
         catch (NoSuchMethodException | IllegalAccessException e)

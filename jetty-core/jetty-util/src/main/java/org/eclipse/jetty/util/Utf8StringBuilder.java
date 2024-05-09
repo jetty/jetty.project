@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.util.function.Supplier;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,30 +47,28 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     protected int _state = UTF8_ACCEPT;
 
-    private static final byte[] BYTE_TABLE =
-        {
-            // The first part of the table maps bytes to character classes that
-            // to reduce the size of the transition table and create bitmasks.
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            8, 8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-            10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3, 11, 6, 6, 6, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
-        };
+    private static final byte[] BYTE_TABLE = {
+        // The first part of the table maps bytes to character classes that
+        // to reduce the size of the transition table and create bitmasks.
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        8, 8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3, 11, 6, 6, 6, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
+    };
 
-    private static final byte[] TRANS_TABLE =
-        {
-            // The second part is a transition table that maps a combination
-            // of a state of the automaton and a character class to a state.
-            0, 12, 24, 36, 60, 96, 84, 12, 12, 12, 48, 72, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-            12, 0, 12, 12, 12, 12, 12, 0, 12, 0, 12, 12, 12, 24, 12, 12, 12, 12, 12, 24, 12, 24, 12, 12,
-            12, 12, 12, 12, 12, 12, 12, 24, 12, 12, 12, 12, 12, 24, 12, 12, 12, 12, 12, 12, 12, 24, 12, 12,
-            12, 12, 12, 12, 12, 12, 12, 36, 12, 36, 12, 12, 12, 36, 12, 12, 12, 12, 12, 36, 12, 36, 12, 12,
-            12, 36, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12
-        };
+    private static final byte[] TRANS_TABLE = {
+        // The second part is a transition table that maps a combination
+        // of a state of the automaton and a character class to a state.
+        0, 12, 24, 36, 60, 96, 84, 12, 12, 12, 48, 72, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+        12, 0, 12, 12, 12, 12, 12, 0, 12, 0, 12, 12, 12, 24, 12, 12, 12, 12, 12, 24, 12, 24, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 24, 12, 12, 12, 12, 12, 24, 12, 12, 12, 12, 12, 12, 12, 24, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 36, 12, 36, 12, 12, 12, 36, 12, 12, 12, 12, 12, 36, 12, 36, 12, 12,
+        12, 36, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12
+    };
 
     final StringBuilder _buffer;
     private int _codep;
@@ -252,13 +249,15 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("decode(state={}, b={}: {}) _codep={}, i={}, type={}, s={}",
+                LOG.debug(
+                    "decode(state={}, b={}: {}) _codep={}, i={}, type={}, s={}",
                     String.format("%2d", _state),
                     String.format("0x%02X", (b & 0xFF)),
                     String.format("%8s", Integer.toBinaryString(b & 0xFF)),
                     _codep,
-                    i, type, (next == UTF8_REJECT) ? "REJECT" : (next == UTF8_ACCEPT) ? "ACCEPT" : next
-                );
+                    i,
+                    type,
+                    (next == UTF8_REJECT) ? "REJECT" : (next == UTF8_ACCEPT) ? "ACCEPT" : next);
             }
 
             switch (next)
@@ -323,13 +322,8 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     @Override
     public String toString()
     {
-        return "%s@%x{b=%s,s=%d,cp=%d,e=%b".formatted(
-            Utf8StringBuilder.class.getSimpleName(),
-            hashCode(),
-            _buffer,
-            _state,
-            _codep,
-            _codingErrors);
+        return "%s@%x{b=%s,s=%d,cp=%d,e=%b"
+            .formatted(Utf8StringBuilder.class.getSimpleName(), hashCode(), _buffer, _state, _codep, _codingErrors);
     }
 
     /**

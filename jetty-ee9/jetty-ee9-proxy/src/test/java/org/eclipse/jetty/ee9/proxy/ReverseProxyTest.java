@@ -13,14 +13,15 @@
 
 package org.eclipse.jetty.ee9.proxy;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -31,8 +32,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReverseProxyTest
 {
@@ -110,7 +109,8 @@ public class ReverseProxyTest
         startServer(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 assertEquals("127.0.0.1", request.getServerName());
                 assertEquals(serverConnector.getLocalPort(), request.getServerPort());
@@ -119,7 +119,8 @@ public class ReverseProxyTest
         startProxy(null);
         startClient();
 
-        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort()).send();
+        ContentResponse response =
+            client.newRequest("localhost", proxyConnector.getLocalPort()).send();
         assertEquals(200, response.getStatus());
     }
 
@@ -129,7 +130,8 @@ public class ReverseProxyTest
         startServer(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws ServletException, IOException
             {
                 assertEquals("localhost", request.getServerName());
                 assertEquals(proxyConnector.getLocalPort(), request.getServerPort());
@@ -143,7 +145,8 @@ public class ReverseProxyTest
         });
         startClient();
 
-        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort()).send();
+        ContentResponse response =
+            client.newRequest("localhost", proxyConnector.getLocalPort()).send();
         assertEquals(200, response.getStatus());
     }
 }

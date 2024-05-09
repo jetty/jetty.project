@@ -15,7 +15,6 @@ package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 
@@ -30,7 +29,10 @@ public class ClientParser extends Parser
         contentParsers.put(FCGI.FrameType.STDOUT, stdOutParser);
         StreamContentParser stdErrParser = new StreamContentParser(headerParser, FCGI.StreamType.STD_ERR, listener);
         contentParsers.put(FCGI.FrameType.STDERR, stdErrParser);
-        contentParsers.put(FCGI.FrameType.END_REQUEST, new EndRequestContentParser(headerParser, new EndRequestListener(listener, stdOutParser, stdErrParser)));
+        contentParsers.put(
+            FCGI.FrameType.END_REQUEST,
+            new EndRequestContentParser(
+                headerParser, new EndRequestListener(listener, stdOutParser, stdErrParser)));
     }
 
     @Override
@@ -49,8 +51,7 @@ public class ClientParser extends Parser
         }
     }
 
-    private record EndRequestListener(Listener listener, StreamContentParser... streamParsers) implements Listener
-    {
+    private record EndRequestListener(Listener listener, StreamContentParser... streamParsers) implements Listener {
         @Override
         public void onBegin(int request, int code, String reason)
         {

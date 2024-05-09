@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -264,7 +263,10 @@ public class MessageHandler implements FrameHandler
 
     protected void onPingFrame(Frame frame, Callback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG, true, frame.getPayload()), Callback.from(() -> coreSession.demand(), callback), false);
+        coreSession.sendFrame(
+            new Frame(OpCode.PONG, true, frame.getPayload()),
+            Callback.from(() -> coreSession.demand(), callback),
+            false);
     }
 
     protected void onPongFrame(Frame frame, Callback callback)
@@ -346,9 +348,11 @@ public class MessageHandler implements FrameHandler
                     return Action.SUCCEEDED;
 
                 String part = parts[i++];
-                getCoreSession().sendFrame(new Frame(
-                        i == 1 ? OpCode.TEXT : OpCode.CONTINUATION,
-                        i == parts.length, part), this, batch);
+                getCoreSession()
+                    .sendFrame(
+                        new Frame(i == 1 ? OpCode.TEXT : OpCode.CONTINUATION, i == parts.length, part),
+                        this,
+                        batch);
                 return Action.SCHEDULED;
             }
         }.iterate();
@@ -398,9 +402,11 @@ public class MessageHandler implements FrameHandler
                     return Action.SUCCEEDED;
 
                 ByteBuffer part = parts[i++];
-                getCoreSession().sendFrame(new Frame(
-                        i == 1 ? OpCode.BINARY : OpCode.CONTINUATION,
-                        i == parts.length, part), this, batch);
+                getCoreSession()
+                    .sendFrame(
+                        new Frame(i == 1 ? OpCode.BINARY : OpCode.CONTINUATION, i == parts.length, part),
+                        this,
+                        batch);
                 return Action.SCHEDULED;
             }
         }.iterate();

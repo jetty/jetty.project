@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee10.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.FileSystemException;
@@ -28,7 +34,6 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -48,12 +53,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 @ExtendWith(WorkDirExtension.class)
 public class KeyStoreScannerTest
@@ -90,7 +89,8 @@ public class KeyStoreScannerTest
         configuration.configure(sslContextFactory);
 
         server = new Server();
-        SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+        SslConnectionFactory sslConnectionFactory =
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
         HttpConfiguration httpsConfig = new HttpConfiguration();
         httpsConfig.addCustomizer(new SecureRequestCustomizer());
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(httpsConfig);
@@ -190,13 +190,15 @@ public class KeyStoreScannerTest
         Path oldKeyStore = useKeystore("oldKeyStore", "oldKeyStore");
 
         Path symlinkKeystorePath = keystoreDir.resolve("symlinkKeystore");
-        start(sslContextFactory ->
-        {
-            Files.createSymbolicLink(symlinkKeystorePath, oldKeyStore);
-            sslContextFactory.setKeyStorePath(symlinkKeystorePath.toString());
-            sslContextFactory.setKeyStorePassword("storepwd");
-            sslContextFactory.setKeyManagerPassword("keypwd");
-        }, false);
+        start(
+            sslContextFactory ->
+            {
+                Files.createSymbolicLink(symlinkKeystorePath, oldKeyStore);
+                sslContextFactory.setKeyStorePath(symlinkKeystorePath.toString());
+                sslContextFactory.setKeyStorePassword("storepwd");
+                sslContextFactory.setKeyManagerPassword("keypwd");
+            },
+            false);
 
         // Check the original certificate expiry.
         X509Certificate cert1 = getCertificateFromServer();
@@ -287,7 +289,7 @@ public class KeyStoreScannerTest
     {
         URL serverUrl = server.getURI().toURL();
         SSLContext ctx = SSLContext.getInstance("TLS");
-        ctx.init(new KeyManager[0], new TrustManager[] {new DefaultTrustManager()}, new SecureRandom());
+        ctx.init(new KeyManager[0], new TrustManager[]{new DefaultTrustManager()}, new SecureRandom());
         SSLContext.setDefault(ctx);
 
         HttpsURLConnection connection = (HttpsURLConnection)serverUrl.openConnection();

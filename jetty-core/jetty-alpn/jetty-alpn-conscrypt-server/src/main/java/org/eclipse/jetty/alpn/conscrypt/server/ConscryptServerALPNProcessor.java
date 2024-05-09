@@ -17,7 +17,6 @@ import java.security.Security;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
-
 import org.conscrypt.ApplicationProtocolSelector;
 import org.conscrypt.Conscrypt;
 import org.conscrypt.OpenSSLProvider;

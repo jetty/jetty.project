@@ -13,16 +13,9 @@
 
 package org.eclipse.jetty.session;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -37,24 +30,24 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractSessionDataStore.class);
-    
-    public static final int DEFAULT_GRACE_PERIOD_SEC = 60 * 60; //default of 1hr
+
+    public static final int DEFAULT_GRACE_PERIOD_SEC = 60 * 60; // default of 1hr
     public static final int DEFAULT_SAVE_PERIOD_SEC = 0;
 
-    protected SessionContext _context; //context associated with this session data store
+    protected SessionContext _context; // context associated with this session data store
     protected int _gracePeriodSec = DEFAULT_GRACE_PERIOD_SEC;
-    protected long _lastExpiryCheckTime = 0; //last time in ms that getExpired was called
-    protected long _lastOrphanSweepTime = 0; //last time in ms that we deleted orphaned sessions
-    protected int _savePeriodSec = DEFAULT_SAVE_PERIOD_SEC; //time in sec between saves
-    
+    protected long _lastExpiryCheckTime = 0; // last time in ms that getExpired was called
+    protected long _lastOrphanSweepTime = 0; // last time in ms that we deleted orphaned sessions
+    protected int _savePeriodSec = DEFAULT_SAVE_PERIOD_SEC; // time in sec between saves
+
     /**
      * Check if a session for the given id exists.
-     * 
+     *
      * @param id the session id to check
      * @return true if the session exists in the persistent store, false otherwise
      */
     public abstract boolean doExists(String id) throws Exception;
-    
+
     /**
      * Store the session data persistently.
      *
@@ -75,7 +68,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     public abstract SessionData doLoad(String id) throws Exception;
 
     /**
-     * Implemented by subclasses to resolve which sessions in this context 
+     * Implemented by subclasses to resolve which sessions in this context
      * that are being managed by this node that should be expired.
      *
      * @param candidates the ids of sessions the SessionCache thinks has expired
@@ -83,21 +76,21 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      * @return the reconciled set of session ids that have been checked in the store
      */
     public abstract Set<String> doCheckExpired(Set<String> candidates, long time);
-    
+
     /**
      * Implemented by subclasses to find sessions for this context in the store
      * that expired at or before the time limit and thus not being actively
      * managed by any node. This method is only called periodically (the period
      * is configurable) to avoid putting too much load on the store.
-     * 
+     *
      * @param before the upper limit of expiry times to check. Sessions expired
      *            at or before this timestamp will match.
-     * 
+     *
      * @return the empty set if there are no sessions expired as at the time, or
      *         otherwise a set of session ids.
      */
     public abstract Set<String> doGetExpired(long before);
-    
+
     /**
      * Implemented by subclasses to delete sessions for other contexts that
      * expired at or before the timeLimit. These are 'orphaned' sessions that
@@ -105,10 +98,10 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      * sessions that do NOT belong to this context (other mechanisms such as
      * doGetExpired take care of those). As they don't belong to this context,
      * they cannot be loaded by us.
-     * 
+     *
      * This is called only periodically to avoid placing excessive load on the
      * store.
-     * 
+     *
      * @param time the upper limit of the expiry time to check in msec
      */
     public abstract void doCleanOrphans(long time);
@@ -120,7 +113,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             throw new IllegalStateException("Context set after SessionDataStore started");
         _context = context;
     }
-    
+
     /**
      * Remove all sessions for any context that expired at or before the given time.
      * @param timeLimit the time before which the sessions must have expired.
@@ -144,7 +137,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             throw new IllegalStateException("Not started");
 
         final FuturePromise<SessionData> result = new FuturePromise<>();
-        
+
         Runnable r = () ->
         {
             try
@@ -167,7 +160,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     {
         if (!isStarted())
             throw new IllegalStateException("Not started");
-        
+
         if (data == null)
             return;
 
@@ -176,30 +169,36 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Store: id={}, mdirty={}, dirty={}, lsave={}, period={}, elapsed={}", id, data.isMetaDataDirty(),
-                data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis() - lastSave));
+            LOG.debug(
+                "Store: id={}, mdirty={}, dirty={}, lsave={}, period={}, elapsed={}",
+                id,
+                data.isMetaDataDirty(),
+                data.isDirty(),
+                data.getLastSaved(),
+                savePeriodMs,
+                (System.currentTimeMillis() - lastSave));
         }
 
-        //save session if attribute changed, never been saved or metadata changed (eg expiry time) and save interval exceeded
-        if (data.isDirty() || (lastSave <= 0) ||
-            (data.isMetaDataDirty() && ((System.currentTimeMillis() - lastSave) >= savePeriodMs)))
+        // save session if attribute changed, never been saved or metadata changed (eg expiry time) and save interval
+        // exceeded
+        if (data.isDirty() || (lastSave <= 0) || (data.isMetaDataDirty() && ((System.currentTimeMillis() - lastSave) >= savePeriodMs)))
         {
-            //set the last saved time to now
+            // set the last saved time to now
             data.setLastSaved(System.currentTimeMillis());
-            
+
             final FuturePromise<Void> result = new FuturePromise<>();
             Runnable r = () ->
             {
                 try
                 {
-                    //call the specific store method, passing in previous save time
+                    // call the specific store method, passing in previous save time
                     doStore(id, data, lastSave);
-                    data.clean(); //unset all dirty flags
+                    data.clean(); // unset all dirty flags
                     result.succeeded(null);
                 }
                 catch (Exception e)
                 {
-                    //reset last save time if save failed
+                    // reset last save time if save failed
                     data.setLastSaved(lastSave);
                     result.failed(e);
                 }
@@ -234,12 +233,12 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     {
         if (!isStarted())
             throw new IllegalStateException("Not started");
-        
+
         long now = System.currentTimeMillis();
         final Set<String> expired = new HashSet<>();
 
         // 1. always verify the set of candidates we've been given
-        //by the sessioncache
+        // by the sessioncache
         Runnable r = () ->
         {
             Set<String> expiredCandidates = doCheckExpired(candidates, now);
@@ -250,7 +249,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
 
         // 2. check the backing store to find other sessions
         // in THIS context that expired long ago (ie cannot be actively managed
-        //by any node)
+        // by any node)
         try
         {
             long t = 0;
@@ -271,7 +270,10 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             if (t > 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Searching for sessions expired before {} for context {}", t, _context.getCanonicalContextPath());
+                    LOG.debug(
+                        "Searching for sessions expired before {} for context {}",
+                        t,
+                        _context.getCanonicalContextPath());
 
                 final long expiryTime = t;
                 r = () ->
@@ -288,9 +290,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             _lastExpiryCheckTime = now;
         }
 
-        // 3. Periodically but infrequently comb the backing store to delete sessions for 
+        // 3. Periodically but infrequently comb the backing store to delete sessions for
         // OTHER contexts that expired a very long time ago (ie not being actively
-        // managed by any node). As these sessions are not for our context, we 
+        // managed by any node). As these sessions are not for our context, we
         // can't load them, so they must just be forcibly deleted.
         try
         {
@@ -298,7 +300,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Cleaning orphans at {}, last sweep at {}", now, _lastOrphanSweepTime);
-                
+
                 cleanOrphans(now - TimeUnit.SECONDS.toMillis(10 * _gracePeriodSec));
             }
         }
@@ -313,7 +315,14 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        return new SessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+        return new SessionData(
+            id,
+            _context.getCanonicalContextPath(),
+            _context.getVhost(),
+            created,
+            accessed,
+            lastAccessed,
+            maxInactiveMs);
     }
 
     protected void checkStarted() throws IllegalStateException
@@ -375,6 +384,8 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public String toString()
     {
-        return String.format("%s@%x[passivating=%b,graceSec=%d]", this.getClass().getName(), this.hashCode(), isPassivating(), getGracePeriodSec());
+        return String.format(
+            "%s@%x[passivating=%b,graceSec=%d]",
+            this.getClass().getName(), this.hashCode(), isPassivating(), getGracePeriodSec());
     }
 }

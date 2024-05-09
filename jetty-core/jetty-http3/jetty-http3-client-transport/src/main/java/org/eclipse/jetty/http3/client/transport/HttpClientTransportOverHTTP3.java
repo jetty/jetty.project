@@ -19,7 +19,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
@@ -112,7 +111,8 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, destination.getClientConnectionFactory());
 
         SessionClientListener listener = new TransportSessionClientListener(context);
-        getHTTP3Client().connect(destination.getOrigin().getTransport(), address, listener, context)
+        getHTTP3Client()
+            .connect(destination.getOrigin().getTransport(), address, listener, context)
             .whenComplete(listener::onConnect);
     }
 

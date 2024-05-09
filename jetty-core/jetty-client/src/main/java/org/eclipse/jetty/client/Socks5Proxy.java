@@ -25,7 +25,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.client.ProxyConfiguration.Proxy;
 import org.eclipse.jetty.client.Socks5.NoAuthenticationFactory;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -50,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * is available to applications but must be explicitly configured and
  * added.</p>
  */
-public class Socks5Proxy extends Proxy 
+public class Socks5Proxy extends Proxy
 {
     private static final Logger LOG = LoggerFactory.getLogger(Socks5Proxy.class);
 
@@ -105,7 +104,7 @@ public class Socks5Proxy extends Proxy
     }
 
     @Override
-    public ClientConnectionFactory newClientConnectionFactory(ClientConnectionFactory connectionFactory) 
+    public ClientConnectionFactory newClientConnectionFactory(ClientConnectionFactory connectionFactory)
     {
         return new Socks5ProxyClientConnectionFactory(connectionFactory);
     }
@@ -123,14 +122,17 @@ public class Socks5Proxy extends Proxy
         {
             Destination destination = (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
-            Socks5ProxyConnection connection = new Socks5ProxyConnection(endPoint, executor, connectionFactory, context, authentications);
+            Socks5ProxyConnection connection =
+                new Socks5ProxyConnection(endPoint, executor, connectionFactory, context, authentications);
             return customize(connection, context);
         }
     }
 
-    private static class Socks5ProxyConnection extends AbstractConnection implements org.eclipse.jetty.io.Connection.UpgradeFrom
+    private static class Socks5ProxyConnection extends AbstractConnection
+        implements org.eclipse.jetty.io.Connection.UpgradeFrom
     {
-        private static final Pattern IPv4_PATTERN = Pattern.compile("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})");
+        private static final Pattern IPv4_PATTERN =
+            Pattern.compile("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})");
 
         // SOCKS5 response max length is 262 bytes.
         private final ByteBuffer byteBuffer = BufferUtil.allocate(512);
@@ -139,7 +141,12 @@ public class Socks5Proxy extends Proxy
         private final Map<Byte, Socks5.Authentication.Factory> authentications;
         private State state = State.HANDSHAKE;
 
-        private Socks5ProxyConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, Map<String, Object> context, Map<Byte, Socks5.Authentication.Factory> authentications)
+        private Socks5ProxyConnection(
+                                      EndPoint endPoint,
+                                      Executor executor,
+                                      ClientConnectionFactory connectionFactory,
+                                      Map<String, Object> context,
+                                      Map<Byte, Socks5.Authentication.Factory> authentications)
         {
             super(endPoint, executor);
             this.connectionFactory = connectionFactory;
@@ -168,9 +175,8 @@ public class Socks5Proxy extends Proxy
                 // | version (1) | num of methods (1) | methods (1..255) |
                 // +-------------+--------------------+------------------+
                 int size = authentications.size();
-                ByteBuffer byteBuffer = ByteBuffer.allocate(1 + 1 + size)
-                    .put(Socks5.VERSION)
-                    .put((byte)size);
+                ByteBuffer byteBuffer =
+                    ByteBuffer.allocate(1 + 1 + size).put(Socks5.VERSION).put((byte)size);
                 authentications.keySet().forEach(byteBuffer::put);
                 byteBuffer.flip();
                 getEndPoint().write(Callback.from(this::handshakeSent, this::fail), byteBuffer);
@@ -195,7 +201,8 @@ public class Socks5Proxy extends Proxy
                 LOG.debug("SOCKS5 failure", x);
             getEndPoint().close(x);
             @SuppressWarnings("unchecked")
-            Promise<Connection> promise = (Promise<Connection>)this.context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+            Promise<Connection> promise =
+                (Promise<Connection>)this.context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
             promise.failed(x);
         }
 
@@ -281,8 +288,7 @@ public class Socks5Proxy extends Proxy
                     {
                         byteBuffer.put((byte)Integer.parseInt(matcher.group(i)));
                     }
-                    byteBuffer.putShort(port)
-                        .flip();
+                    byteBuffer.putShort(port).flip();
                 }
                 else if (URIUtil.isValidHostRegisteredName(host))
                 {
@@ -398,7 +404,8 @@ public class Socks5Proxy extends Proxy
                 context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, inet);
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (destination.isSecure())
-                    connectionFactory = destination.getHttpClient().newSslClientConnectionFactory(null, connectionFactory);
+                    connectionFactory =
+                        destination.getHttpClient().newSslClientConnectionFactory(null, connectionFactory);
                 var newConnection = connectionFactory.newConnection(getEndPoint(), context);
                 getEndPoint().upgrade(newConnection);
                 if (LOG.isDebugEnabled())
@@ -412,7 +419,8 @@ public class Socks5Proxy extends Proxy
 
         private enum State
         {
-            HANDSHAKE, CONNECT
+            HANDSHAKE,
+            CONNECT
         }
     }
 }

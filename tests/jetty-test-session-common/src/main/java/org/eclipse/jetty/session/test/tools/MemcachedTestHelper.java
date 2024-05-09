@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
 import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.session.AbstractSessionDataStore;
@@ -112,7 +111,7 @@ public class MemcachedTestHelper
 
             return expiredIds;
         }
-        
+
         @Override
         public Set<String> doGetExpired(long timeLimit)
         {
@@ -122,7 +121,7 @@ public class MemcachedTestHelper
         @Override
         public void doCleanOrphans(long timeLimit)
         {
-            //noop
+            // noop
         }
 
         @Override
@@ -144,17 +143,18 @@ public class MemcachedTestHelper
 
     private static final Logger LOG = LoggerFactory.getLogger(MemcachedTestHelper.class);
 
-    private static final Logger MEMCACHED_LOG = LoggerFactory.getLogger("org.eclipse.jetty.memcached.sessions.MemcachedLogs");
+    private static final Logger MEMCACHED_LOG =
+        LoggerFactory.getLogger("org.eclipse.jetty.memcached.sessions.MemcachedLogs");
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    static GenericContainer memcached =
-        new GenericContainer("memcached:" + System.getProperty("memcached.docker.version", "1.6.6"))
-                .withExposedPorts(11211)
-                .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
+    static GenericContainer memcached = new GenericContainer(
+        "memcached:" + System.getProperty("memcached.docker.version", "1.6.6"))
+        .withExposedPorts(11211)
+        .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
 
     public static void shutdown() throws Exception
     {
-        //memcached.stop();
+        // memcached.stop();
     }
 
     public static SessionDataStoreFactory newSessionDataStoreFactory()
@@ -165,8 +165,11 @@ public class MemcachedTestHelper
             {
                 long start = System.currentTimeMillis();
                 memcached.start();
-                LOG.info("time to start memcache instance {}ms on {}:{}", System.currentTimeMillis() - start,
-                        memcached.getHost(), memcached.getMappedPort(11211));
+                LOG.info(
+                    "time to start memcache instance {}ms on {}:{}",
+                    System.currentTimeMillis() - start,
+                    memcached.getHost(),
+                    memcached.getMappedPort(11211));
             }
             catch (Exception e)
             {

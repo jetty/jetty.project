@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.transport.internal;
 
 import java.util.concurrent.atomic.LongAdder;
-
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
@@ -122,7 +121,8 @@ public class HttpChannelOverHTTP extends HttpChannel
             {
                 // HTTP 1.0 must close the connection unless it has
                 // an explicit keep alive or it is a CONNECT tunnel.
-                boolean keepAlive = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                boolean keepAlive =
+                    responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
                 if (!keepAlive && !isTunnel)
                     closeReason = "http/1.0";
             }
@@ -170,9 +170,6 @@ public class HttpChannelOverHTTP extends HttpChannel
     @Override
     public String toString()
     {
-        return String.format("%s[send=%s,recv=%s]",
-            super.toString(),
-            sender,
-            receiver);
+        return String.format("%s[send=%s,recv=%s]", super.toString(), sender, receiver);
     }
 }

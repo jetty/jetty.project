@@ -19,10 +19,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Stack;
-
 import org.eclipse.jetty.util.StringUtil;
 
 public class XmlAppendable

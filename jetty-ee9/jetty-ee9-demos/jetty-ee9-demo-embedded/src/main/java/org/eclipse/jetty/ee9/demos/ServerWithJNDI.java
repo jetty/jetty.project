@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.demos;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import javax.naming.NamingException;
-
 import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
@@ -38,9 +37,10 @@ public class ServerWithJNDI
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee9.demos",
-                "jetty-ee9-demo-jndi-webapp", "", "war");
-        Path testJndiWar = JettyDemos.find("jetty-ee9-demo-jndi-webapp/target/jetty-ee9-demo-jndi-webapp-@VER@.war", mavenCoordinate);
+        JettyDemos.MavenCoordinate mavenCoordinate =
+            new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee9.demos", "jetty-ee9-demo-jndi-webapp", "", "war");
+        Path testJndiWar = JettyDemos.find(
+            "jetty-ee9-demo-jndi-webapp/target/jetty-ee9-demo-jndi-webapp-@VER@.war", mavenCoordinate);
         webapp.setWarResource(webapp.getResourceFactory().newResource(testJndiWar));
         server.setHandler(webapp);
 

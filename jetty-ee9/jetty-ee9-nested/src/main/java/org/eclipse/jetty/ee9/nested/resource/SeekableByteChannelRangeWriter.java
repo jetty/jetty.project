@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 
@@ -42,7 +41,8 @@ public class SeekableByteChannelRangeWriter implements RangeWriter
         this(null, channelSupplier);
     }
 
-    public SeekableByteChannelRangeWriter(SeekableByteChannel initialChannel, SeekableByteChannelRangeWriter.ChannelSupplier channelSupplier)
+    public SeekableByteChannelRangeWriter(
+                                          SeekableByteChannel initialChannel, SeekableByteChannelRangeWriter.ChannelSupplier channelSupplier)
     {
         this.channel = initialChannel;
         this.channelSupplier = channelSupplier;

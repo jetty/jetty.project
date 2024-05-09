@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
@@ -117,7 +116,8 @@ public class URLResourceFactory implements ResourceFactory
         private URLConnection connection;
         private InputStreamReference inputStreamReference = null;
 
-        public URLResource(URI uri, int connectTimeout, int readTimeout, boolean useCaches) throws MalformedURLException
+        public URLResource(URI uri, int connectTimeout, int readTimeout, boolean useCaches)
+            throws MalformedURLException
         {
             this.uri = uri;
             this.url = uri.toURL();
@@ -330,6 +330,5 @@ public class URLResourceFactory implements ResourceFactory
                     ON_SWEEP_LISTENER.accept(in);
             }
         }
-
     }
 }

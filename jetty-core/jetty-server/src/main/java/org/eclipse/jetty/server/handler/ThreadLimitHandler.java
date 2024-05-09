@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -87,7 +86,10 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         this(null, forwardedHeader, rfc7239);
     }
 
-    public ThreadLimitHandler(@Name("handler") Handler handler, @Name("forwardedHeader") String forwardedHeader, @Name("rfc7239") boolean rfc7239)
+    public ThreadLimitHandler(
+                              @Name("handler") Handler handler,
+                              @Name("forwardedHeader") String forwardedHeader,
+                              @Name("rfc7239") boolean rfc7239)
     {
         super(handler);
         _rfc7239 = rfc7239;
@@ -165,8 +167,15 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         // We accept the request and will always handle it.
         // Use a compute method to remove the Remote instance as it is necessary for
         // the ref counter release and the removal to be atomic.
-        LimitedRequest limitedRequest = new LimitedRequest(remote, next, request, response, Callback.from(callback, () ->
-            _remotes.computeIfPresent(remote._ip, (k, v) -> v._referenceCounter.release() ? null : v)));
+        LimitedRequest limitedRequest = new LimitedRequest(
+            remote,
+            next,
+            request,
+            response,
+            Callback.from(
+                callback,
+                () -> _remotes.computeIfPresent(
+                    remote._ip, (k, v) -> v._referenceCounter.release() ? null : v)));
         limitedRequest.handle();
         return true;
     }
@@ -634,7 +643,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
                     // if unknown, clear any leftward values
                     if ("unknown".equalsIgnoreCase(value))
                         _for = null;
-                        // Otherwise accept IP or token(starting with '_') as remote keys
+                    // Otherwise accept IP or token(starting with '_') as remote keys
                     else
                         _for = value;
                 }

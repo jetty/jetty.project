@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.demos;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;

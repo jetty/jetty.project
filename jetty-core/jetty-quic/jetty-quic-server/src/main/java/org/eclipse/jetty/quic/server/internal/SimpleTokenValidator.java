@@ -17,7 +17,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 
 public class SimpleTokenValidator implements QuicheConnection.TokenValidator
@@ -52,7 +51,9 @@ public class SimpleTokenValidator implements QuicheConnection.TokenValidator
         if (!Arrays.equals(subTokenAddress, address))
             return null;
 
-        byte[] port = ByteBuffer.allocate(Short.BYTES).putShort((short)inetSocketAddress.getPort()).array();
+        byte[] port = ByteBuffer.allocate(Short.BYTES)
+            .putShort((short)inetSocketAddress.getPort())
+            .array();
         if (byteBuffer.remaining() < port.length)
             return null;
 

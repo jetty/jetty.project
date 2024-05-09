@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
@@ -47,7 +46,8 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
     }
 
     @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+        throws IOException
     {
         HTTPSessionListenerPromise listenerPromise = new HTTPSessionListenerPromise(context);
         context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, http2Client);
@@ -86,31 +86,34 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
         @Override
         public void upgrade(EndPoint endPoint, Map<String, Object> context)
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpDestination destination =
+                (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             @SuppressWarnings("unchecked")
-            Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise<HttpConnectionOverHTTP2>()
-            {
-                @Override
-                public void succeeded(HttpConnectionOverHTTP2 connection)
+            Promise<Connection> promise =
+                (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+            context.put(
+                HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise<HttpConnectionOverHTTP2>()
                 {
-                    // This code is run when the client receives the server preface reply.
-                    // Upgrade the connection to setup HTTP/2 frame listeners that will
-                    // handle the HTTP/2 response to the upgrade request.
-                    promise.succeeded(connection);
-                    connection.upgrade(context);
-                    // The connection can be used only after the upgrade that
-                    // creates stream #1 corresponding to the HTTP/1.1 upgrade
-                    // request, otherwise other requests can steal id #1.
-                    destination.accept(connection);
-                }
+                    @Override
+                    public void succeeded(HttpConnectionOverHTTP2 connection)
+                    {
+                        // This code is run when the client receives the server preface reply.
+                        // Upgrade the connection to setup HTTP/2 frame listeners that will
+                        // handle the HTTP/2 response to the upgrade request.
+                        promise.succeeded(connection);
+                        connection.upgrade(context);
+                        // The connection can be used only after the upgrade that
+                        // creates stream #1 corresponding to the HTTP/1.1 upgrade
+                        // request, otherwise other requests can steal id #1.
+                        destination.accept(connection);
+                    }
 
-                @Override
-                public void failed(Throwable x)
-                {
-                    promise.failed(x);
-                }
-            });
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        promise.failed(x);
+                    }
+                });
             upgrade(destination.getClientConnectionFactory(), endPoint, context);
         }
 

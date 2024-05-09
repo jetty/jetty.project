@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -47,10 +46,10 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 3, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class ListVsMapBenchmark
 {
-    @Param({"12"})   // Chrome has 12 for HTTP/1.1 and 16 for HTTP/2 (including meta headers)
+    @Param({"12"}) // Chrome has 12 for HTTP/1.1 and 16 for HTTP/2 (including meta headers)
     public static int size;
 
-    @Param({"11"})  // average length of known headers in HttpHeader
+    @Param({"11"}) // average length of known headers in HttpHeader
     public static int length;
 
     @Param({"1", "10", "20", "30"})
@@ -85,12 +84,12 @@ public class ListVsMapBenchmark
                 throw new IllegalStateException();
         }
 
-        for (int h = hits; h-- > 0; )
+        for (int h = hits; h-- > 0;)
         {
             trials.add(base + "-" + (h % size));
         }
 
-        for (int m = misses; m-- > 0; )
+        for (int m = misses; m-- > 0;)
         {
             trials.add(miss);
         }
@@ -206,7 +205,8 @@ public class ListVsMapBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testArrayList() throws Exception
     {
         List<Pair> list = new ArrayList<>(size);
@@ -215,7 +215,8 @@ public class ListVsMapBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testLinkedList() throws Exception
     {
         List<Pair> list = new LinkedList<>();
@@ -224,7 +225,8 @@ public class ListVsMapBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testLinkedHashMap() throws Exception
     {
         // This loses the true ordering of fields
@@ -276,7 +278,8 @@ public class ListVsMapBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testHashMapAndLinkedList() throws Exception
     {
         // This keeps the true ordering of fields
@@ -294,7 +297,8 @@ public class ListVsMapBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public long testHashMapAndArrayList() throws Exception
     {
         // This keeps the true ordering of fields
@@ -343,5 +347,3 @@ public class ListVsMapBenchmark
         new Runner(opt).run();
     }
 }
-
-

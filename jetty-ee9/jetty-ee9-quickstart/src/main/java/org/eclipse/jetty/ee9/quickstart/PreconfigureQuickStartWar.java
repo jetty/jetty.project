@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.quickstart;
 
 import java.nio.file.Files;
 import java.util.Locale;
-
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
@@ -109,14 +108,16 @@ public class PreconfigureQuickStartWar
         final Server server = new Server();
 
         WebAppContext webapp = new WebAppContext();
-        webapp.addConfiguration(new QuickStartConfiguration(),
-                                new EnvConfiguration(),
-                                new PlusConfiguration(),
-                                new AnnotationConfiguration());
+        webapp.addConfiguration(
+            new QuickStartConfiguration(),
+            new EnvConfiguration(),
+            new PlusConfiguration(),
+            new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         webapp.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "");
-        webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
-                ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/.*taglibs-standard-.*\\.jar$");
+        webapp.setAttribute(
+            MetaInfConfiguration.CONTAINER_JAR_PATTERN,
+            ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/.*taglibs-standard-.*\\.jar$");
         if (xml != null)
         {
             if (xml.isDirectory() || !xml.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
@@ -148,7 +149,8 @@ public class PreconfigureQuickStartWar
         System.err.println("Usage: java -jar PreconfigureQuickStartWar.jar <war-directory>");
         System.err.println("       java -jar PreconfigureQuickStartWar.jar <war-directory> <context-xml-file>");
         System.err.println("       java -jar PreconfigureQuickStartWar.jar <war-file> <target-war-directory>");
-        System.err.println("       java -jar PreconfigureQuickStartWar.jar <war-file> <target-war-directory> <context-xml-file>");
+        System.err.println(
+            "       java -jar PreconfigureQuickStartWar.jar <war-file> <target-war-directory> <context-xml-file>");
         System.exit(1);
     }
 }

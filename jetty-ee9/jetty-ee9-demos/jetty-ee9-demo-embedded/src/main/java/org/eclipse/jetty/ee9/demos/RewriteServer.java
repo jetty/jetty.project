@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.demos;
 
 import java.util.Arrays;
-
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.rewrite.RewriteCustomizer;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
@@ -32,12 +31,12 @@ public class RewriteServer
         rewrite.addRule(new CompactPathRule());
         rewrite.addRule(new RewriteRegexRule("(.*)foo(.*)", "$1FOO$2"));
 
-        Arrays.stream(server.getConnectors())
-            .forEach((connector) -> connector.getConnectionFactory(HttpConnectionFactory.class)
-                .getHttpConfiguration().addCustomizer(rewrite));
+        Arrays.stream(server.getConnectors()).forEach((connector) -> connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .addCustomizer(rewrite));
 
-        ServletContextHandler context = new ServletContextHandler(
-            ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 

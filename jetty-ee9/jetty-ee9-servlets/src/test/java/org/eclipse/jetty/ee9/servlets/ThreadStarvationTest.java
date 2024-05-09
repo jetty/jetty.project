@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +40,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpHeader;
@@ -58,10 +61,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ThreadStarvationTest
 {
@@ -88,7 +87,8 @@ public class ThreadStarvationTest
         Files.createDirectories(directory.toPath());
         String resourceName = "resource.bin";
         Path resourcePath = Paths.get(directory.getPath(), resourceName);
-        try (OutputStream output = Files.newOutputStream(resourcePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE))
+        try (OutputStream output =
+            Files.newOutputStream(resourcePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE))
         {
             byte[] chunk = new byte[256 * 1024];
             Arrays.fill(chunk, (byte)'X');
@@ -104,7 +104,8 @@ public class ThreadStarvationTest
         ServerConnector connector = new ServerConnector(_server, 0, 1)
         {
             @Override
-            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+            protected SocketChannelEndPoint newEndPoint(
+                                                        SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
             {
                 return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
@@ -133,10 +134,7 @@ public class ThreadStarvationTest
             Socket socket = new Socket("localhost", connector.getLocalPort());
             sockets.add(socket);
             OutputStream output = socket.getOutputStream();
-            String request =
-                "GET /" + resourceName + " HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+            String request = "GET /" + resourceName + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
         }
@@ -151,21 +149,23 @@ public class ThreadStarvationTest
         for (Socket socket : sockets)
         {
             InputStream input = socket.getInputStream();
-            totals.add(CompletableFuture.supplyAsync(() ->
-            {
-                try
+            totals.add(CompletableFuture.supplyAsync(
+                () ->
                 {
-                    HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
-                    if (response != null)
-                        return response.getContentBytes().length;
-                    return 0;
-                }
-                catch (IOException x)
-                {
-                    x.printStackTrace();
-                    return -1;
-                }
-            }, executor));
+                    try
+                    {
+                        HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
+                        if (response != null)
+                            return response.getContentBytes().length;
+                        return 0;
+                    }
+                    catch (IOException x)
+                    {
+                        x.printStackTrace();
+                        return -1;
+                    }
+                },
+                executor));
         }
 
         // Wait for all responses to arrive.
@@ -207,7 +207,8 @@ public class ThreadStarvationTest
             ServerConnector connector = new ServerConnector(_server, acceptors, selectors)
             {
                 @Override
-                protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+                protected SocketChannelEndPoint newEndPoint(
+                                                            SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
                 {
                     return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                     {
@@ -248,11 +249,12 @@ public class ThreadStarvationTest
                 Socket socket = new Socket("localhost", connector.getLocalPort());
                 sockets.add(socket);
                 OutputStream output = socket.getOutputStream();
-                String request = """
-                    GET / HTTP/1.1\r
-                    Host: localhost\r
-                    \r
-                    """;
+                String request =
+                    """
+                        GET / HTTP/1.1\r
+                        Host: localhost\r
+                        \r
+                        """;
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
             }
@@ -263,21 +265,23 @@ public class ThreadStarvationTest
             for (Socket socket : sockets)
             {
                 InputStream input = socket.getInputStream();
-                totals.add(CompletableFuture.supplyAsync(() ->
-                {
-                    try
+                totals.add(CompletableFuture.supplyAsync(
+                    () ->
                     {
-                        HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
-                        if (response != null)
-                            return response.getContentBytes().length;
-                        return input.read();
-                    }
-                    catch (Exception x)
-                    {
-                        x.printStackTrace();
-                        return -1;
-                    }
-                }, executor));
+                        try
+                        {
+                            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
+                            if (response != null)
+                                return response.getContentBytes().length;
+                            return input.read();
+                        }
+                        catch (Exception x)
+                        {
+                            x.printStackTrace();
+                            return -1;
+                        }
+                    },
+                    executor));
             }
 
             // Wait for all responses to arrive.

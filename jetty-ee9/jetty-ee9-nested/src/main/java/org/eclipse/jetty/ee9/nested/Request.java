@@ -13,6 +13,28 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.AsyncListener;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestAttributeEvent;
+import jakarta.servlet.ServletRequestAttributeListener;
+import jakarta.servlet.ServletRequestWrapper;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletMapping;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpUpgradeHandler;
+import jakarta.servlet.http.Part;
+import jakarta.servlet.http.PushBuilder;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -38,29 +60,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.AsyncListener;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletRequestAttributeEvent;
-import jakarta.servlet.ServletRequestAttributeListener;
-import jakarta.servlet.ServletRequestWrapper;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletMapping;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpUpgradeHandler;
-import jakarta.servlet.http.Part;
-import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
@@ -208,7 +207,8 @@ public class Request implements HttpServletRequest
     {
         _channel = channel;
         _input = input;
-        _crossContextDispatchSupported = _channel.getContextHandler().getCoreContextHandler().isCrossContextDispatchSupported();
+        _crossContextDispatchSupported =
+            _channel.getContextHandler().getCoreContextHandler().isCrossContextDispatchSupported();
     }
 
     public HttpFields getHttpFields()
@@ -283,7 +283,7 @@ public class Request implements HttpServletRequest
         HttpFields.Mutable fields = HttpFields.build(getHttpFields(), NOT_PUSHED_HEADERS);
 
         HttpField authField = getHttpFields().getField(HttpHeader.AUTHORIZATION);
-        //TODO check what to do for digest etc etc
+        // TODO check what to do for digest etc etc
         if (authField != null && getUserPrincipal() != null && authField.getValue().startsWith("Basic"))
             fields.add(authField);
 
@@ -382,7 +382,6 @@ public class Request implements HttpServletRequest
                 }
             }
 
-
             // Extract query string parameters; these may be replaced by a forward()
             // and may have already been extracted by mergeQueryParameters().
             if (_queryParameters == null)
@@ -436,8 +435,7 @@ public class Request implements HttpServletRequest
             if (dispatcherType != null)
             {
                 String sourceQuery = (String)_coreRequest.getAttribute(
-                    DispatcherType.valueOf(dispatcherType) == DispatcherType.FORWARD
-                    ? RequestDispatcher.FORWARD_QUERY_STRING : CrossContextDispatcher.ORIGINAL_QUERY_STRING);
+                    DispatcherType.valueOf(dispatcherType) == DispatcherType.FORWARD ? RequestDispatcher.FORWARD_QUERY_STRING : CrossContextDispatcher.ORIGINAL_QUERY_STRING);
 
                 if (!StringUtil.isBlank(sourceQuery))
                 {
@@ -488,25 +486,24 @@ public class Request implements HttpServletRequest
             if (contentLength != 0 && _inputState == INPUT_NONE)
             {
                 String baseType = HttpField.getValueParameters(contentType, null);
-                if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
-                    _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
+                if (MimeTypes.Type.FORM_ENCODED.is(baseType) && _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
                     if (_metaData != null && !isContentEncodingSupported())
                     {
-                        throw new BadMessageException(HttpStatus.UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Content-Encoding");
+                        throw new BadMessageException(
+                            HttpStatus.UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Content-Encoding");
                     }
 
                     extractFormParameters(_contentParameters);
                 }
-                else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
-                    getAttribute(MULTIPART_CONFIG_ELEMENT) != null &&
-                    _multiParts == null)
+                else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) && getAttribute(MULTIPART_CONFIG_ELEMENT) != null && _multiParts == null)
                 {
                     try
                     {
                         if (_metaData != null && !isContentEncodingSupported())
                         {
-                            throw new BadMessageException(HttpStatus.UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Content-Encoding");
+                            throw new BadMessageException(
+                                HttpStatus.UNSUPPORTED_MEDIA_TYPE_415, "Unsupported Content-Encoding");
                         }
                         getParts(_contentParameters);
                     }
@@ -544,7 +541,8 @@ public class Request implements HttpServletRequest
             if (_input.isAsync())
                 throw new IllegalStateException("Cannot extract parameters with async IO");
 
-            UrlEncoded.decodeTo(in, params::add, UrlEncoded.decodeCharset(getCharacterEncoding()), maxFormContentSize, maxFormKeys);
+            UrlEncoded.decodeTo(
+                in, params::add, UrlEncoded.decodeCharset(getCharacterEncoding()), maxFormContentSize, maxFormKeys);
         }
         catch (IOException e)
         {
@@ -755,8 +753,8 @@ public class Request implements HttpServletRequest
     @Override
     public String getContextPath()
     {
-        //During a cross context INCLUDE dispatch, the context path is that of the originating
-        //request
+        // During a cross context INCLUDE dispatch, the context path is that of the originating
+        // request
         if (_crossContextDispatchSupported)
         {
             String crossContextDispatchType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
@@ -809,7 +807,11 @@ public class Request implements HttpServletRequest
         {
             Cookie result = new Cookie(cookie.getName(), cookie.getValue());
 
-            if (getCoreRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance().allows(CookieCompliance.Violation.ATTRIBUTE_VALUES))
+            if (getCoreRequest()
+                .getConnectionMetaData()
+                .getHttpConfiguration()
+                .getRequestCookieCompliance()
+                .allows(CookieCompliance.Violation.ATTRIBUTE_VALUES))
             {
                 if (cookie.getVersion() > 0)
                     result.setVersion(cookie.getVersion());
@@ -947,18 +949,20 @@ public class Request implements HttpServletRequest
         if (acceptable.isEmpty())
             return Collections.enumeration(__defaultLocale);
 
-        List<Locale> locales = acceptable.stream().map(language ->
-        {
-            language = HttpField.stripParameters(language);
-            String country = "";
-            int dash = language.indexOf('-');
-            if (dash > -1)
+        List<Locale> locales = acceptable.stream()
+            .map(language ->
             {
-                country = language.substring(dash + 1).trim();
-                language = language.substring(0, dash).trim();
-            }
-            return new Locale(language, country);
-        }).collect(Collectors.toList());
+                language = HttpField.stripParameters(language);
+                String country = "";
+                int dash = language.indexOf('-');
+                if (dash > -1)
+                {
+                    country = language.substring(dash + 1).trim();
+                    language = language.substring(0, dash).trim();
+                }
+                return new Locale(language, country);
+            })
+            .collect(Collectors.toList());
 
         return Collections.enumeration(locales);
     }
@@ -1291,7 +1295,8 @@ public class Request implements HttpServletRequest
      */
     public StringBuilder getRootURL()
     {
-        return new StringBuilder(HttpURI.from(getScheme(), getServerName(), getServerPort(), null).asString());
+        return new StringBuilder(HttpURI.from(getScheme(), getServerName(), getServerPort(), null)
+            .asString());
     }
 
     @Override
@@ -1335,7 +1340,7 @@ public class Request implements HttpServletRequest
     @Override
     public ServletContext getServletContext()
     {
-        //TODO cross context include must return the context of the originating request
+        // TODO cross context include must return the context of the originating request
         return _context;
     }
 
@@ -1546,13 +1551,10 @@ public class Request implements HttpServletRequest
         AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
         SessionManager sessionManager = _coreRequest.getSessionManager();
         ManagedSession managedSession = _coreRequest.getManagedSession();
-        return requestedSession != null &&
-            sessionManager != null &&
-            managedSession != null &&
-            requestedSession.sessionId() != null &&
-            requestedSession.session() != null &&
-            requestedSession.session().isValid() &&
-            sessionManager.getSessionIdManager().getId(requestedSession.sessionId()).equals(managedSession.getId());
+        return requestedSession != null && sessionManager != null && managedSession != null && requestedSession.sessionId() != null && requestedSession.session() != null && requestedSession.session().isValid() && sessionManager
+            .getSessionIdManager()
+            .getId(requestedSession.sessionId())
+            .equals(managedSession.getId());
     }
 
     @Override
@@ -1726,7 +1728,8 @@ public class Request implements HttpServletRequest
         // TODO are these still needed?
         switch (name)
         {
-            case "org.eclipse.jetty.server.Request.queryEncoding" -> setQueryEncoding(value == null ? null : value.toString());
+            case "org.eclipse.jetty.server.Request.queryEncoding" -> setQueryEncoding(
+                value == null ? null : value.toString());
             case "org.eclipse.jetty.server.sendContent" -> LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
         }
 
@@ -1734,7 +1737,8 @@ public class Request implements HttpServletRequest
 
         if (!_requestAttributeListeners.isEmpty())
         {
-            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_context, this, name, oldValue == null ? value : oldValue);
+            final ServletRequestAttributeEvent event =
+                new ServletRequestAttributeEvent(_context, this, name, oldValue == null ? value : oldValue);
             for (ServletRequestAttributeListener l : _requestAttributeListeners)
             {
                 if (oldValue == null)
@@ -1781,11 +1785,13 @@ public class Request implements HttpServletRequest
             {
                 // The baseAttributes map is our ServletAttributes, so we can set the async
                 // attributes there, under any other wrappers.
-                ((ServletAttributes)baseAttributes).setAsyncAttributes(getRequestURI(),
-                    getContextPath(),
-                    getPathInContext(),
-                    getServletPathMapping(),
-                    getQueryString());
+                ((ServletAttributes)baseAttributes)
+                    .setAsyncAttributes(
+                        getRequestURI(),
+                        getContextPath(),
+                        getPathInContext(),
+                        getServletPathMapping(),
+                        getQueryString());
             }
             else
             {
@@ -1805,21 +1811,27 @@ public class Request implements HttpServletRequest
             {
                 // The baseAttributes map is our ServletAttributes, so we can set the async
                 // attributes there, under any other wrappers.
-                ((ServletAttributes)baseAttributes).setAsyncAttributes(fwdRequestURI,
-                    (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH),
-                    (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO),
-                    (ServletPathMapping)getAttribute(RequestDispatcher.FORWARD_MAPPING),
-                    (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+                ((ServletAttributes)baseAttributes)
+                    .setAsyncAttributes(
+                        fwdRequestURI,
+                        (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH),
+                        (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO),
+                        (ServletPathMapping)getAttribute(RequestDispatcher.FORWARD_MAPPING),
+                        (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
             }
             else
             {
                 // We cannot find our ServletAttributes instance, so just set directly and hope
                 // whatever non jetty wrappers that have been applied will do the right thing.
                 _attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, fwdRequestURI);
-                _attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
-                _attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
-                _attributes.setAttribute(AsyncContext.ASYNC_PATH_INFO, getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
-                _attributes.setAttribute(AsyncContext.ASYNC_QUERY_STRING, getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+                _attributes.setAttribute(
+                    AsyncContext.ASYNC_CONTEXT_PATH, getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
+                _attributes.setAttribute(
+                    AsyncContext.ASYNC_SERVLET_PATH, getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
+                _attributes.setAttribute(
+                    AsyncContext.ASYNC_PATH_INFO, getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
+                _attributes.setAttribute(
+                    AsyncContext.ASYNC_QUERY_STRING, getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
                 _attributes.setAttribute(AsyncContext.ASYNC_MAPPING, getAttribute(RequestDispatcher.FORWARD_MAPPING));
             }
         }
@@ -1928,14 +1940,16 @@ public class Request implements HttpServletRequest
     }
 
     @Override
-    public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException
+    public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse)
+        throws IllegalStateException
     {
         if (_asyncNotSupportedSource != null)
             throw new IllegalStateException("!asyncSupported: " + _asyncNotSupportedSource);
         HttpChannelState state = getHttpChannelState();
         if (_async == null)
             _async = new AsyncContextState(state);
-        AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse, getHttpURI());
+        AsyncContextEvent event =
+            new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse, getHttpURI());
         event.setDispatchContext(getServletContext());
         state.startAsync(event);
         return _async;
@@ -1957,7 +1971,8 @@ public class Request implements HttpServletRequest
     @Override
     public String toString()
     {
-        return String.format("%s%s%s %s%s@%x",
+        return String.format(
+            "%s%s%s %s%s@%x",
             getClass().getSimpleName(),
             _handled ? "[" : "(",
             getMethod(),
@@ -1969,25 +1984,25 @@ public class Request implements HttpServletRequest
     @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
-        //if already authenticated, return true
+        // if already authenticated, return true
         if (getUserPrincipal() != null && getRemoteUser() != null && getAuthType() != null)
             return true;
 
-        //do the authentication
+        // do the authentication
         if (_authentication instanceof Authentication.Deferred)
         {
             setAuthentication(((Authentication.Deferred)_authentication).authenticate(this, response));
         }
 
-        //if the authentication did not succeed
+        // if the authentication did not succeed
         if (_authentication instanceof Authentication.Deferred)
             response.sendError(HttpStatus.UNAUTHORIZED_401);
 
-        //if the authentication is incomplete, return false
+        // if the authentication is incomplete, return false
         if (!(_authentication instanceof Authentication.ResponseSent))
             return false;
 
-        //something has gone wrong
+        // something has gone wrong
         throw new ServletException("Authentication failed");
     }
 
@@ -2003,7 +2018,8 @@ public class Request implements HttpServletRequest
     {
         String contentType = getContentType();
         if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.getValueParameters(contentType, null)))
-            throw new ServletException("Unsupported Content-Type [" + contentType + "], expected [multipart/form-data]");
+            throw new ServletException(
+                "Unsupported Content-Type [" + contentType + "], expected [multipart/form-data]");
         return getParts(null);
     }
 
@@ -2015,7 +2031,7 @@ public class Request implements HttpServletRequest
             {
                 // the request prior or after dispatch may have parsed the multipart
                 Object multipart = _coreRequest.getAttribute(MultiPart.Parser.class.getName());
-                //TODO support cross environment multipart
+                // TODO support cross environment multipart
                 if (multipart instanceof MultiPart.Parser multiPartParser)
                 {
                     _multiParts = multiPartParser;
@@ -2037,11 +2053,13 @@ public class Request implements HttpServletRequest
             }
             else
             {
-                maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
+                maxFormContentSize =
+                    lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
                 maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
             }
 
-            MultiPartCompliance multiPartCompliance = getHttpChannel().getHttpConfiguration().getMultiPartCompliance();
+            MultiPartCompliance multiPartCompliance =
+                getHttpChannel().getHttpConfiguration().getMultiPartCompliance();
 
             _multiParts = newMultiParts(multiPartCompliance, config, maxFormKeys);
             Collection<Part> parts = _multiParts.getParts();
@@ -2116,16 +2134,20 @@ public class Request implements HttpServletRequest
 
     private void reportComplianceViolations()
     {
-        ComplianceViolation.Listener complianceViolationListener = org.eclipse.jetty.server.HttpChannel.from(getCoreRequest()).getComplianceViolationListener();
+        ComplianceViolation.Listener complianceViolationListener =
+            org.eclipse.jetty.server.HttpChannel.from(getCoreRequest()).getComplianceViolationListener();
         List<ComplianceViolation.Event> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
         for (ComplianceViolation.Event nc : nonComplianceWarnings)
-            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.details()));
+            complianceViolationListener.onComplianceViolation(
+                new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.details()));
     }
 
-    private MultiPart.Parser newMultiParts(MultiPartCompliance multiPartCompliance, MultipartConfigElement config, int maxParts) throws IOException
+    private MultiPart.Parser newMultiParts(
+                                           MultiPartCompliance multiPartCompliance, MultipartConfigElement config, int maxParts) throws IOException
     {
         File contextTmpDir = (_context != null ? (File)_context.getAttribute(ServletContext.TEMPDIR) : null);
-        return MultiPart.newFormDataParser(multiPartCompliance, getInputStream(), getContentType(), config, contextTmpDir, maxParts);
+        return MultiPart.newFormDataParser(
+            multiPartCompliance, getInputStream(), getContentType(), config, contextTmpDir, maxParts);
     }
 
     @Override
@@ -2133,7 +2155,8 @@ public class Request implements HttpServletRequest
     {
         if (_authentication instanceof Authentication.LoginAuthentication)
         {
-            Authentication auth = ((Authentication.LoginAuthentication)_authentication).login(username, password, this);
+            Authentication auth =
+                ((Authentication.LoginAuthentication)_authentication).login(username, password, this);
             if (auth == null)
                 throw new Authentication.Failed("Authentication failed for username '" + username + "'");
             else
@@ -2223,10 +2246,13 @@ public class Request implements HttpServletRequest
 
                     // Set the include attributes to the target mapping
                     _coreRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, servletPathMapping);
-                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletPathMapping.getServletPath());
+                    _coreRequest.setAttribute(
+                        RequestDispatcher.INCLUDE_SERVLET_PATH, servletPathMapping.getServletPath());
                     _coreRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, servletPathMapping.getPathInfo());
-                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, getContext().getContextPath());
-                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_QUERY_STRING, getHttpURI().getQuery());
+                    _coreRequest.setAttribute(
+                        RequestDispatcher.INCLUDE_CONTEXT_PATH, getContext().getContextPath());
+                    _coreRequest.setAttribute(
+                        RequestDispatcher.INCLUDE_QUERY_STRING, getHttpURI().getQuery());
                 }
             }
         }
@@ -2252,13 +2278,17 @@ public class Request implements HttpServletRequest
         ServletPathMapping mapping;
         if (_dispatcherType == DispatcherType.INCLUDE)
         {
-            if (_crossContextDispatchSupported && DispatcherType.INCLUDE.toString().equals(_coreRequest.getContext().getCrossContextDispatchType(_coreRequest)))
+            if (_crossContextDispatchSupported && DispatcherType.INCLUDE
+                .toString()
+                .equals(_coreRequest.getContext().getCrossContextDispatchType(_coreRequest)))
             {
-                mapping = (ServletPathMapping)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
+                mapping =
+                    (ServletPathMapping)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
             }
             else
             {
-                Dispatcher.IncludeAttributes include = Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
+                Dispatcher.IncludeAttributes include =
+                    Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
                 mapping = (include == null) ? _servletPathMapping : include.getSourceMapping();
             }
         }
@@ -2272,7 +2302,8 @@ public class Request implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        // TODO This is to pass the current TCK.  This has been challenged in https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
+        // TODO This is to pass the current TCK.  This has been challenged in
+        // https://github.com/eclipse-ee4j/jakartaee-tck/issues/585
         if (_dispatcherType == DispatcherType.ASYNC)
         {
             ServletPathMapping async = (ServletPathMapping)getAttribute(AsyncContext.ASYNC_MAPPING);

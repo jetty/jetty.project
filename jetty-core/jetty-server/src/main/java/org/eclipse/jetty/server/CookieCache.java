@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.function.Function;
-
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
@@ -41,9 +40,10 @@ import org.slf4j.LoggerFactory;
  * <p>Optimized stateful cookie parser.
  * If the added fields are identical to those last added (as strings), then the
  * cookies are not re-parsed.
- * 
+ *
  */
-public class CookieCache extends AbstractList<HttpCookie> implements CookieParser.Handler, ComplianceViolation.Listener
+public class CookieCache extends AbstractList<HttpCookie>
+    implements CookieParser.Handler, ComplianceViolation.Listener
 {
     /**
      * Get the core HttpCookies for a request.
@@ -61,10 +61,12 @@ public class CookieCache extends AbstractList<HttpCookie> implements CookieParse
         if (cookies != null)
             return cookies;
 
-        CookieCache cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(Request.COOKIE_ATTRIBUTE);
+        CookieCache cookieCache =
+            (CookieCache)request.getComponents().getCache().getAttribute(Request.COOKIE_ATTRIBUTE);
         if (cookieCache == null)
         {
-            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
+            cookieCache = new CookieCache(
+                request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
             request.getComponents().getCache().setAttribute(Request.COOKIE_ATTRIBUTE, cookieCache);
         }
 
@@ -96,11 +98,13 @@ public class CookieCache extends AbstractList<HttpCookie> implements CookieParse
             cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(Request.COOKIE_ATTRIBUTE);
             if (cookieCache == null)
             {
-                cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
+                cookieCache = new CookieCache(
+                    request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
                 request.getComponents().getCache().setAttribute(Request.COOKIE_ATTRIBUTE, cookieCache);
             }
 
-            cookieCache.parseCookies(request.getHeaders(), HttpChannel.from(request).getComplianceViolationListener());
+            cookieCache.parseCookies(
+                request.getHeaders(), HttpChannel.from(request).getComplianceViolationListener());
             request.setAttribute(Request.COOKIE_ATTRIBUTE, cookieCache);
         }
 
@@ -111,7 +115,7 @@ public class CookieCache extends AbstractList<HttpCookie> implements CookieParse
     protected final List<String> _rawFields = new ArrayList<>();
     private final CookieParser _parser;
     private List<HttpCookie> _httpCookies = Collections.emptyList();
-    private  Map<Class<?>, Object[]> _apiCookies;
+    private Map<Class<?>, Object[]> _apiCookies;
     private List<ComplianceViolation.Event> _violations;
 
     public CookieCache()
@@ -145,7 +149,13 @@ public class CookieCache extends AbstractList<HttpCookie> implements CookieParse
     }
 
     @Override
-    public void addCookie(String cookieName, String cookieValue, int cookieVersion, String cookieDomain, String cookiePath, String cookieComment)
+    public void addCookie(
+                          String cookieName,
+                          String cookieValue,
+                          int cookieVersion,
+                          String cookieDomain,
+                          String cookiePath,
+                          String cookieComment)
     {
         if (StringUtil.isEmpty(cookieDomain) && StringUtil.isEmpty(cookiePath) && cookieVersion <= 0 && StringUtil.isEmpty(cookieComment))
             _httpCookies.add(HttpCookie.from(cookieName, cookieValue));

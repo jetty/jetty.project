@@ -15,4 +15,3 @@
  * Jetty Util : Common Statistics Utility classes
  */
 package org.eclipse.jetty.util.statistic;
-

@@ -22,10 +22,8 @@ module org.eclipse.jetty.server
     exports org.eclipse.jetty.server;
     exports org.eclipse.jetty.server.handler;
     exports org.eclipse.jetty.server.handler.gzip;
-
     exports org.eclipse.jetty.server.handler.jmx to
-         org.eclipse.jetty.jmx;
-
+        org.eclipse.jetty.jmx;
     exports org.eclipse.jetty.server.jmx to
-         org.eclipse.jetty.jmx;
+        org.eclipse.jetty.jmx;
 }

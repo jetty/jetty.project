@@ -16,7 +16,6 @@ package org.eclipse.jetty.util.resource;
 import java.net.URI;
 import java.util.Objects;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.util.UriPatternPredicate;
 
 /**

@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.IOException;
-import java.io.PrintWriter;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 public class RegexServletTest
 {
@@ -58,7 +57,8 @@ public class RegexServletTest
     @Test
     public void testHello() throws Exception
     {
-        _servletContextHandler.addServlet(new ServletHolder(new ServletContextHandlerTest.HelloServlet()), "^/[Hh]ello");
+        _servletContextHandler.addServlet(
+            new ServletHolder(new ServletContextHandlerTest.HelloServlet()), "^/[Hh]ello");
         _server.start();
 
         assertThat(_connector.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"), containsString("Hello World"));
@@ -126,7 +126,8 @@ public class RegexServletTest
             out.printf("contextPath='%s'%n", req.getContextPath());
             out.printf("servletPath='%s'%n", req.getServletPath());
             out.printf("pathInfo='%s'%n", req.getPathInfo());
-            out.printf("mapping.mappingMatch='%s'%n", req.getHttpServletMapping().getMappingMatch());
+            out.printf(
+                "mapping.mappingMatch='%s'%n", req.getHttpServletMapping().getMappingMatch());
             out.printf("mapping.matchValue='%s'%n", req.getHttpServletMapping().getMatchValue());
             out.printf("mapping.pattern='%s'%n", req.getHttpServletMapping().getPattern());
         }

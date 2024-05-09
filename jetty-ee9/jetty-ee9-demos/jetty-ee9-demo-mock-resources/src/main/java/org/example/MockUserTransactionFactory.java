@@ -21,7 +21,7 @@ import javax.naming.spi.ObjectFactory;
 public class MockUserTransactionFactory implements ObjectFactory
 {
     /**
-     * @param obj The possibly null object containing location or reference 
+     * @param obj The possibly null object containing location or reference
      * information that can be used in creating an object.
      * @param name The name of this object relative to {@code nameCtx},
      * or null if no name is specified.
@@ -34,8 +34,9 @@ public class MockUserTransactionFactory implements ObjectFactory
      * @throws Exception
      */
     @Override
-    public Object getObjectInstance(Object obj, Name name, Context nameCtx, Hashtable<?, ?> environment) throws Exception
+    public Object getObjectInstance(Object obj, Name name, Context nameCtx, Hashtable<?, ?> environment)
+        throws Exception
     {
-        return  new MockUserTransaction();
+        return new MockUserTransaction();
     }
 }

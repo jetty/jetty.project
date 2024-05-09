@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Tests of {@link PathMappings#getMatches(String)}
@@ -35,7 +34,10 @@ public class ServletPathSpecMatchListTest
         ArrayList<Arguments> data = new ArrayList<>();
 
         // From old PathMapTest
-        data.add(Arguments.of("All matches", "/animal/bird/path.tar.gz", "[/animal/bird/*=birds, /animal/*=animals, *.tar.gz=tarball, *.gz=gzipped, /=default]"));
+        data.add(Arguments.of(
+            "All matches",
+            "/animal/bird/path.tar.gz",
+            "[/animal/bird/*=birds, /animal/*=animals, *.tar.gz=tarball, *.gz=gzipped, /=default]"));
         data.add(Arguments.of("Dir matches", "/animal/fish/", "[/animal/fish/*=fishes, /animal/*=animals, /=default]"));
         data.add(Arguments.of("Dir matches", "/animal/fish", "[/animal/fish/*=fishes, /animal/*=animals, /=default]"));
         data.add(Arguments.of("Root matches", "/", "[=root, /=default]"));

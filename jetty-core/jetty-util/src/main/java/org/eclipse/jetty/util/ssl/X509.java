@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
-
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -207,12 +206,7 @@ public class X509
     @Override
     public String toString()
     {
-        return String.format("%s@%x(%s,h=%s,a=%s,w=%s)",
-            getClass().getSimpleName(),
-            hashCode(),
-            _alias,
-            _hosts,
-            _addresses,
-            _wilds);
+        return String.format(
+            "%s@%x(%s,h=%s,a=%s,w=%s)", getClass().getSimpleName(), hashCode(), _alias, _hosts, _addresses, _wilds);
     }
 }

@@ -13,15 +13,21 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION;
+import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
+import static jakarta.servlet.RequestDispatcher.ERROR_MESSAGE;
+import static jakarta.servlet.RequestDispatcher.ERROR_REQUEST_URI;
+import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
+import static jakarta.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.UnavailableException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
@@ -30,13 +36,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
-import static jakarta.servlet.RequestDispatcher.ERROR_MESSAGE;
-import static jakarta.servlet.RequestDispatcher.ERROR_REQUEST_URI;
-import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
-import static jakarta.servlet.RequestDispatcher.ERROR_STATUS_CODE;
-
 /**
  * Implementation of AsyncContext interface that holds the state of request-response cycle.
  */
@@ -44,7 +43,8 @@ public class HttpChannelState
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
 
-    private static final long DEFAULT_TIMEOUT = Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT", 30000L);
+    private static final long DEFAULT_TIMEOUT =
+        Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT", 30000L);
 
     /*
      * The state of the HttpChannel,used to control the overall lifecycle.
@@ -58,11 +58,11 @@ public class HttpChannelState
      */
     public enum State
     {
-        IDLE,        // Idle request
-        HANDLING,    // Request dispatched to filter/servlet or Async IO callback
-        WAITING,     // Suspended and waiting
-        WOKEN,       // Dispatch to handle from ASYNC_WAIT
-        UPGRADED     // Request upgraded the connection
+        IDLE, // Idle request
+        HANDLING, // Request dispatched to filter/servlet or Async IO callback
+        WAITING, // Suspended and waiting
+        WOKEN, // Dispatch to handle from ASYNC_WAIT
+        UPGRADED // Request upgraded the connection
     }
 
     /*
@@ -85,14 +85,14 @@ public class HttpChannelState
      */
     private enum RequestState
     {
-        BLOCKING,    // Blocking request dispatched
-        ASYNC,       // AsyncContext.startAsync() has been called
-        DISPATCH,    // AsyncContext.dispatch() has been called
-        EXPIRE,      // AsyncContext timeout has happened
-        EXPIRING,    // AsyncListeners are being called
-        COMPLETE,    // AsyncContext.complete() has been called
-        COMPLETING,  // Request is being closed (maybe asynchronously)
-        COMPLETED    // Response is completed
+        BLOCKING, // Blocking request dispatched
+        ASYNC, // AsyncContext.startAsync() has been called
+        DISPATCH, // AsyncContext.dispatch() has been called
+        EXPIRE, // AsyncContext timeout has happened
+        EXPIRING, // AsyncListeners are being called
+        COMPLETE, // AsyncContext.complete() has been called
+        COMPLETING, // Request is being closed (maybe asynchronously)
+        COMPLETED // Response is completed
     }
 
     /*
@@ -100,9 +100,9 @@ public class HttpChannelState
      */
     private enum InputState
     {
-        IDLE,       // No isReady; No data
-        UNREADY,    // isReady()==false; No data
-        READY       // isReady() was false; data is available
+        IDLE, // No isReady; No data
+        UNREADY, // isReady()==false; No data
+        READY // isReady() was false; data is available
     }
 
     /*
@@ -121,16 +121,16 @@ public class HttpChannelState
      */
     public enum Action
     {
-        DISPATCH,         // handle a normal request dispatch
-        ASYNC_DISPATCH,   // handle an async request dispatch
-        SEND_ERROR,       // Generate an error page or error dispatch
-        ASYNC_ERROR,      // handle an async error
-        ASYNC_TIMEOUT,    // call asyncContext onTimeout
-        WRITE_CALLBACK,   // handle an IO write callback
-        READ_CALLBACK,    // handle an IO read callback
-        COMPLETE,         // Complete the response by closing output
-        TERMINATED,       // No further actions
-        WAIT,             // Wait for further events
+        DISPATCH, // handle a normal request dispatch
+        ASYNC_DISPATCH, // handle an async request dispatch
+        SEND_ERROR, // Generate an error page or error dispatch
+        ASYNC_ERROR, // handle an async error
+        ASYNC_TIMEOUT, // call asyncContext onTimeout
+        WRITE_CALLBACK, // handle an IO write callback
+        READ_CALLBACK, // handle an IO read callback
+        COMPLETE, // Complete the response by closing output
+        TERMINATED, // No further actions
+        WAIT, // Wait for further events
     }
 
     private final AutoLock _lock = new AutoLock();
@@ -246,15 +246,13 @@ public class HttpChannelState
 
     private String toStringLocked()
     {
-        return String.format("%s@%x{%s}",
-            getClass().getSimpleName(),
-            hashCode(),
-            getStatusStringLocked());
+        return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), getStatusStringLocked());
     }
 
     private String getStatusStringLocked()
     {
-        return String.format("s=%s rs=%s os=%s is=%s awp=%b se=%b i=%b al=%d",
+        return String.format(
+            "s=%s rs=%s os=%s is=%s awp=%b se=%b i=%b al=%d",
             _state,
             _requestState,
             _outputState,
@@ -904,7 +902,8 @@ public class HttpChannelState
 
     public void sendError(int code, String message)
     {
-        // This method is called by Response.sendError to organise for an error page to be generated when it is possible:
+        // This method is called by Response.sendError to organise for an error page to be generated when it is
+        // possible:
         //  + The response is reset and temporarily closed.
         //  + The details of the error are saved as request attributes
         //  + The _sendError boolean is set to true so that an ERROR_DISPATCH action will be generated:
@@ -1367,7 +1366,7 @@ public class HttpChannelState
             {
                 case IDLE:
                 case UNREADY:
-                case READY:  // READY->UNREADY is needed by AsyncServletIOTest.testStolenAsyncRead
+                case READY: // READY->UNREADY is needed by AsyncServletIOTest.testStolenAsyncRead
                     _inputState = InputState.UNREADY;
                     break;
 

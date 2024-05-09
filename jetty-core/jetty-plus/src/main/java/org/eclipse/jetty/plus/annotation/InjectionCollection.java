@@ -20,7 +20,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * InjectionCollection
  * Map of classname to all injections requested on that class,
  * whether by declaration in web.xml or via equivalent annotations.
- * 
+ *
  * This class is not threadsafe for concurrent modifications, but is
  * threadsafe for readers with concurrent modifications.
  */
@@ -38,7 +37,8 @@ public class InjectionCollection
 
     public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
 
-    private final ConcurrentMap<String, Set<Injection>> _injectionMap = new ConcurrentHashMap<>(); //map of classname to injections
+    private final ConcurrentMap<String, Set<Injection>> _injectionMap =
+        new ConcurrentHashMap<>(); // map of classname to injections
 
     public void add(Injection injection)
     {
@@ -62,7 +62,11 @@ public class InjectionCollection
 
         boolean added = injections.add(injection);
         if (LOG.isDebugEnabled())
-            LOG.debug("Adding injection for class={} on {} added={}", name, injection.getTarget().getName(), added);
+            LOG.debug(
+                "Adding injection for class={} on {} added={}",
+                name,
+                injection.getTarget().getName(),
+                added);
     }
 
     public Set<Injection> getInjections(String className)
@@ -118,8 +122,8 @@ public class InjectionCollection
         if (injectable == null)
             return;
 
-        //Get all injections pertinent to the Object by
-        //looking at it's class hierarchy
+        // Get all injections pertinent to the Object by
+        // looking at it's class hierarchy
         Class<?> clazz = injectable.getClass();
 
         while (clazz != null)

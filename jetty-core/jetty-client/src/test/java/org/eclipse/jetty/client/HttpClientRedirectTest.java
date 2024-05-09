@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
@@ -26,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -42,14 +49,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 {
@@ -126,8 +125,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     {
         start(scenario, new RedirectHandler());
 
-        ExecutionException x = assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
+        ExecutionException x =
+            assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
                 .method(HttpMethod.DELETE)
                 .path("/301/localhost/done")
@@ -210,8 +209,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new RedirectHandler());
         client.setMaxRedirects(1);
 
-        ExecutionException x = assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
+        ExecutionException x =
+            assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
                 .path("/303/localhost/302/localhost/done")
                 .timeout(5, TimeUnit.SECONDS)
@@ -340,19 +339,21 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
         start(scenario, new RedirectHandler());
 
-        ExecutionException e = assertThrows(ExecutionException.class,
-            () -> client.newRequest("localhost", connector.getLocalPort())
+        ExecutionException e =
+            assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
                 .path("/303/doesNotExist/done")
                 .timeout(5, TimeUnit.SECONDS)
                 .send());
 
-        assertThat("Cause", e.getCause(), Matchers.anyOf(
-            // Exception seen on some updates of OpenJDK 8
-            // Matchers.instanceOf(UnresolvedAddressException.class),
-            // Exception seen on OpenJDK 11+
-            Matchers.instanceOf(UnknownHostException.class))
-        );
+        assertThat(
+            "Cause",
+            e.getCause(),
+            Matchers.anyOf(
+                // Exception seen on some updates of OpenJDK 8
+                // Matchers.instanceOf(UnresolvedAddressException.class),
+                // Exception seen on OpenJDK 11+
+                Matchers.instanceOf(UnknownHostException.class)));
     }
 
     @ParameterizedTest
@@ -482,12 +483,16 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+                throws Exception
             {
                 if (Request.getPathInContext(request).startsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
-                    response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
+                    response.getHeaders()
+                        .put(
+                            HttpHeader.LOCATION,
+                            scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
                     // Say that we send gzipped content, but actually don't.
                     response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
                     response.write(true, ByteBuffer.wrap("redirect".getBytes(StandardCharsets.UTF_8)), callback);
@@ -521,12 +526,13 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setStatus(HttpStatus.SEE_OTHER_303);
-                response.getHeaders().put(HttpHeader.LOCATION, request.getHttpURI().asString());
+                response.getHeaders()
+                    .put(HttpHeader.LOCATION, request.getHttpURI().asString());
             }
         });
 
-        ExecutionException x = assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
+        ExecutionException x =
+            assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
                 .send());
         assertThat(x.getCause(), Matchers.instanceOf(HttpResponseException.class));
@@ -581,7 +587,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 if ("/one".equals(target))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
-                    response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://127.0.0.1:" + connector.getLocalPort() + "/two");
+                    response.getHeaders()
+                        .put(
+                            HttpHeader.LOCATION,
+                            scenario.getScheme() + "://127.0.0.1:" + connector.getLocalPort() + "/two");
                 }
                 else if ("/two".equals(target))
                 {
@@ -659,7 +668,8 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         });
     }
 
-    private void testSameMethodRedirect(final Scenario scenario, final HttpMethod method, int redirectCode) throws Exception
+    private void testSameMethodRedirect(final Scenario scenario, final HttpMethod method, int redirectCode)
+        throws Exception
     {
         testMethodRedirect(scenario, method, method, redirectCode);
     }
@@ -669,7 +679,9 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         testMethodRedirect(scenario, method, HttpMethod.GET, redirectCode);
     }
 
-    private void testMethodRedirect(final Scenario scenario, final HttpMethod requestMethod, final HttpMethod redirectMethod, int redirectCode) throws Exception
+    private void testMethodRedirect(
+                                    final Scenario scenario, final HttpMethod requestMethod, final HttpMethod redirectMethod, int redirectCode)
+        throws Exception
     {
         start(scenario, new RedirectHandler());
 
@@ -757,9 +769,12 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
         if (ret)
         {
-            LOG.warn("DNS Hijacking detected (these should not return the same host address): host1={} ({}), host2={} ({})",
-                host1, addr1,
-                host2, addr2);
+            LOG.warn(
+                "DNS Hijacking detected (these should not return the same host address): host1={} ({}), host2={} ({})",
+                host1,
+                addr1,
+                host2,
+                addr2);
         }
 
         return ret;

@@ -25,7 +25,6 @@ import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -153,11 +152,13 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
         {
             try
             {
-                GSSName serviceName = _gssManager.createName(getServiceName() + "@" + getHostName(), GSSName.NT_HOSTBASED_SERVICE);
+                GSSName serviceName =
+                    _gssManager.createName(getServiceName() + "@" + getHostName(), GSSName.NT_HOSTBASED_SERVICE);
                 Oid kerberosOid = new Oid("1.2.840.113554.1.2.2");
                 Oid spnegoOid = new Oid("1.3.6.1.5.5.2");
                 Oid[] mechanisms = new Oid[]{kerberosOid, spnegoOid};
-                GSSCredential serviceCredential = _gssManager.createCredential(serviceName, GSSCredential.DEFAULT_LIFETIME, mechanisms, GSSCredential.ACCEPT_ONLY);
+                GSSCredential serviceCredential = _gssManager.createCredential(
+                    serviceName, GSSCredential.DEFAULT_LIFETIME, mechanisms, GSSCredential.ACCEPT_ONLY);
                 SPNEGOContext context = new SPNEGOContext();
                 context._subject = subject;
                 context._serviceCredential = serviceCredential;
@@ -171,7 +172,8 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
+    public UserIdentity login(
+                              String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
     {
         Subject subject = _context._subject;
         Session httpSession = getOrCreateSession.apply(false);
@@ -301,7 +303,8 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
             options.put("storeKey", "true");
             options.put("isInitiator", "false");
             String moduleClass = "com.sun.security.auth.module.Krb5LoginModule";
-            AppConfigurationEntry config = new AppConfigurationEntry(moduleClass, AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, options);
+            AppConfigurationEntry config = new AppConfigurationEntry(
+                moduleClass, AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, options);
             return new AppConfigurationEntry[]{config};
         }
     }

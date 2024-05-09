@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 
@@ -47,7 +46,8 @@ public class WindowUpdateBodyParser extends BodyParser
                 {
                     int length = getBodyLength();
                     if (length != 4)
-                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_window_update_frame");
+                        return connectionFailure(
+                            buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_window_update_frame");
                     state = State.WINDOW_DELTA;
                     break;
                 }
@@ -104,6 +104,8 @@ public class WindowUpdateBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, WINDOW_DELTA, WINDOW_DELTA_BYTES
+        PREPARE,
+        WINDOW_DELTA,
+        WINDOW_DELTA_BYTES
     }
 }

@@ -13,14 +13,19 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Enumeration;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Enumeration;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.servlets.DoSFilter.RateTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -31,12 +36,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class DoSFilterTest extends AbstractDoSFilterTest
@@ -121,7 +120,9 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         try
         {
             RateTracker tracker = doSFilter.getRateTracker(request);
-            assertThat("tracker.id", tracker.getId(),
+            assertThat(
+                "tracker.id",
+                tracker.getId(),
                 anyOf(
                     is("[::192.9.5.5]:12345"), // short form
                     is("[0:0:0:0:0:0:c009:505]:12345") // long form

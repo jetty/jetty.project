@@ -14,7 +14,6 @@
 package org.eclipse.jetty.security;
 
 import java.util.List;
-
 import org.eclipse.jetty.util.security.Credential;
 
 /**

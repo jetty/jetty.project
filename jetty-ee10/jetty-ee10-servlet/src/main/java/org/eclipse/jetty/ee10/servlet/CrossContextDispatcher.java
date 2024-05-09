@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Set;
-
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -24,6 +20,9 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Set;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -62,8 +61,7 @@ class CrossContextDispatcher implements RequestDispatcher
         ORIGINAL_URI,
         ORIGINAL_QUERY_STRING,
         ORIGINAL_SERVLET_MAPPING,
-        ORIGINAL_CONTEXT_PATH
-    );
+        ORIGINAL_CONTEXT_PATH);
 
     private final CrossContextServletContext _targetContext;
     private final HttpURI _uri;
@@ -78,7 +76,7 @@ class CrossContextDispatcher implements RequestDispatcher
                 @Override
                 public Object getAttribute(String name)
                 {
-                    //handle cross-environment dispatch from ee8
+                    // handle cross-environment dispatch from ee8
                     if (name.startsWith("javax.servlet."))
                         name = "jakarta.servlet." + name.substring(14);
 
@@ -91,16 +89,16 @@ class CrossContextDispatcher implements RequestDispatcher
                     if (name == null)
                         return null;
 
-                    //Servlet Spec 9.3.1 no include attributes if a named dispatcher
-/*                    if (_namedServlet != null && name.startsWith(Dispatcher.__INCLUDE_PREFIX))
-                        return null;*/
+                    // Servlet Spec 9.3.1 no include attributes if a named dispatcher
+                    /*                    if (_namedServlet != null && name.startsWith(Dispatcher.__INCLUDE_PREFIX))
+                    return null;*/
 
-                    //Special include attributes refer to the target context and path
+                    // Special include attributes refer to the target context and path
                     return switch (name)
                     {
                         case RequestDispatcher.INCLUDE_MAPPING -> null;
                         case RequestDispatcher.INCLUDE_SERVLET_PATH -> null;
-                        case RequestDispatcher.INCLUDE_PATH_INFO ->  _decodedPathInContext;
+                        case RequestDispatcher.INCLUDE_PATH_INFO -> _decodedPathInContext;
                         case RequestDispatcher.INCLUDE_REQUEST_URI -> (_uri == null) ? null : _uri.getPath();
                         case RequestDispatcher.INCLUDE_CONTEXT_PATH -> _targetContext.getContextPath();
                         case RequestDispatcher.INCLUDE_QUERY_STRING -> (_uri == null) ? null : _uri.getQuery();
@@ -127,7 +125,7 @@ class CrossContextDispatcher implements RequestDispatcher
                     if (name == null)
                         return null;
 
-                    //handle cross-environment dispatch from ee8
+                    // handle cross-environment dispatch from ee8
                     if (name.startsWith("javax.servlet."))
                         name = "jakarta.servlet." + name.substring(14);
 
@@ -139,7 +137,7 @@ class CrossContextDispatcher implements RequestDispatcher
         @Override
         public HttpURI getHttpURI()
         {
-            //return the uri of the dispatch target
+            // return the uri of the dispatch target
             return _uri;
         }
     }
@@ -167,7 +165,7 @@ class CrossContextDispatcher implements RequestDispatcher
                     if (name == null)
                         return null;
 
-                    //handle cross-environment dispatch from ee8
+                    // handle cross-environment dispatch from ee8
                     if (name.startsWith("javax.servlet."))
                         name = "jakarta.servlet." + name.substring(14);
 
@@ -185,8 +183,9 @@ class CrossContextDispatcher implements RequestDispatcher
                         case RequestDispatcher.INCLUDE_QUERY_STRING -> REMOVED;
                         case RequestDispatcher.INCLUDE_SERVLET_PATH -> REMOVED;
                         case RequestDispatcher.INCLUDE_PATH_INFO -> REMOVED;
-                        //TODO
-                        //case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> httpServletRequest.getAttribute(ServletMultiPartFormData.class.getName());
+                        // TODO
+                        // case ServletContextRequest.MULTIPART_CONFIG_ELEMENT ->
+                        // httpServletRequest.getAttribute(ServletMultiPartFormData.class.getName());
                         case ContextHandler.CROSS_CONTEXT_ATTRIBUTE -> DispatcherType.FORWARD.toString();
                         default -> null;
                     };
@@ -227,7 +226,10 @@ class CrossContextDispatcher implements RequestDispatcher
 
         try (Blocker.Callback callback = Blocker.callback())
         {
-            _targetContext.getTargetContext().getContextHandler().handle(forwardRequest, new ServletCoreResponse(forwardRequest, httpResponse, false), callback);
+            _targetContext
+                .getTargetContext()
+                .getContextHandler()
+                .handle(forwardRequest, new ServletCoreResponse(forwardRequest, httpResponse, false), callback);
             callback.block();
         }
         catch (Exception e)
@@ -252,11 +254,13 @@ class CrossContextDispatcher implements RequestDispatcher
     }
 
     @Override
-    public void include(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException
+    public void include(ServletRequest servletRequest, ServletResponse servletResponse)
+        throws ServletException, IOException
     {
         HttpServletRequest httpServletRequest = (servletRequest instanceof HttpServletRequest) ? ((HttpServletRequest)servletRequest) : new ServletRequestHttpWrapper(servletRequest);
         HttpServletResponse httpServletResponse = (servletResponse instanceof HttpServletResponse) ? (HttpServletResponse)servletResponse : new ServletResponseHttpWrapper(servletResponse);
-        ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(servletResponse);
+        ServletContextResponse servletContextResponse =
+            ServletContextResponse.getServletContextResponse(servletResponse);
 
         IncludeRequest includeRequest = new IncludeRequest(httpServletRequest);
         IncludeResponse includeResponse = new IncludeResponse(includeRequest, httpServletResponse);

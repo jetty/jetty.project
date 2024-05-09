@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.tests.jpms;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.tests.testers.JPMSTester;
@@ -34,8 +35,6 @@ import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(WorkDirExtension.class)
 public class JPMSWebSocketTest
 {
@@ -47,15 +46,16 @@ public class JPMSWebSocketTest
 
         int port = Tester.freePort();
         try (JPMSTester server = new JPMSTester.Builder(workDir.getPath())
-//            .jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005")
+            //            .jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005")
             .classesDirectory(MavenPaths.targetDir().resolve("test-classes"))
-            .moduleInfo("""
-                module app.server
-                {
-                  requires org.eclipse.jetty.websocket.server;
-                  exports org.eclipse.jetty.tests.jpms;
-                }
-                """)
+            .moduleInfo(
+                """
+                    module app.server
+                    {
+                      requires org.eclipse.jetty.websocket.server;
+                      exports org.eclipse.jetty.tests.jpms;
+                    }
+                    """)
             .addToModulePath("org.eclipse.jetty.websocket:jetty-websocket-jetty-server:" + jettyVersion)
             .addToModulePath("org.eclipse.jetty.websocket:jetty-websocket-jetty-api:" + jettyVersion)
             .addToModulePath("org.eclipse.jetty:jetty-server:" + jettyVersion)
@@ -75,13 +75,14 @@ public class JPMSWebSocketTest
 
             try (JPMSTester client = new JPMSTester.Builder(workDir.getPath())
                 .classesDirectory(MavenPaths.targetDir().resolve("test-classes"))
-                .moduleInfo("""
-                    module app.client
-                    {
-                      requires org.eclipse.jetty.websocket.client;
-                      exports org.eclipse.jetty.tests.jpms;
-                    }
-                    """)
+                .moduleInfo(
+                    """
+                        module app.client
+                        {
+                          requires org.eclipse.jetty.websocket.client;
+                          exports org.eclipse.jetty.tests.jpms;
+                        }
+                        """)
                 .addToModulePath("org.eclipse.jetty.websocket:jetty-websocket-jetty-client:" + jettyVersion)
                 .addToModulePath("org.eclipse.jetty.websocket:jetty-websocket-jetty-api:" + jettyVersion)
                 .addToModulePath("org.eclipse.jetty:jetty-client:" + jettyVersion)
@@ -111,9 +112,10 @@ public class JPMSWebSocketTest
             ServerConnector connector = new ServerConnector(server);
             connector.setPort(Integer.parseInt(args[0]));
             server.addConnector(connector);
-            WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
-                container.addMapping("/echo", (request, response, callback) -> new AnnotatedServerEndPoint())
-            );
+            WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(
+                server,
+                container -> container.addMapping(
+                    "/echo", (request, response, callback) -> new AnnotatedServerEndPoint()));
             server.setHandler(wsHandler);
             server.start();
         }
@@ -138,13 +140,15 @@ public class JPMSWebSocketTest
 
             int port = Integer.parseInt(args[0]);
             ListenerClientEndPoint endPoint = new ListenerClientEndPoint();
-            Session session = client.connect(endPoint, URI.create("ws://localhost:" + port + "/echo")).get(5, TimeUnit.SECONDS);
+            Session session = client.connect(endPoint, URI.create("ws://localhost:" + port + "/echo"))
+                .get(5, TimeUnit.SECONDS);
             session.sendText("hello", Callback.NOOP);
             endPoint.thenRun(() -> System.err.println("SUCCESS"));
         }
     }
 
-    public static class ListenerClientEndPoint extends CompletableFuture<Void> implements Session.Listener.AutoDemanding
+    public static class ListenerClientEndPoint extends CompletableFuture<Void>
+        implements Session.Listener.AutoDemanding
     {
         @Override
         public void onWebSocketText(String message)

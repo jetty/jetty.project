@@ -26,7 +26,8 @@ public class ClusteredInvalidateSessionTest extends AbstractClusteredInvalidatio
 
     private static String DB_NAME = "DB" + ClusteredInvalidateSessionTest.class.getSimpleName() + System.nanoTime();
 
-    private static String COLLECTION_NAME = "COLLECTION" + ClusteredInvalidateSessionTest.class.getSimpleName() + System.nanoTime();
+    private static String COLLECTION_NAME =
+        "COLLECTION" + ClusteredInvalidateSessionTest.class.getSimpleName() + System.nanoTime();
 
     @BeforeAll
     public static void beforeClass() throws Exception

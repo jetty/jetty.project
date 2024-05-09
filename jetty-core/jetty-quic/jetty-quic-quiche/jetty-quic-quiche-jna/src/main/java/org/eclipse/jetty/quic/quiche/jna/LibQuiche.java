@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.quic.quiche.jna;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import com.sun.jna.Callback;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +74,7 @@ public interface LibQuiche extends Library
     quiche_config quiche_config_new(uint32_t version);
 
     // Sets the congestion control algorithm used.
-    void quiche_config_set_cc_algorithm(quiche_config config, int/*quiche_cc_algorithm*/ algo);
+    void quiche_config_set_cc_algorithm(quiche_config config, int /*quiche_cc_algorithm*/ algo);
 
     // Configures the given certificate chain.
     int quiche_config_load_cert_chain_from_pem_file(quiche_config config, String path);
@@ -148,10 +147,18 @@ public interface LibQuiche extends Library
     }
 
     @Structure.FieldOrder({
-        "peer_max_idle_timeout", "peer_max_udp_payload_size", "peer_initial_max_data",
-        "peer_initial_max_stream_data_bidi_local", "peer_initial_max_stream_data_bidi_remote",
-        "peer_initial_max_stream_data_uni", "peer_initial_max_streams_bidi", "peer_initial_max_streams_uni",
-        "peer_ack_delay_exponent", "peer_max_ack_delay", "peer_disable_active_migration", "peer_active_conn_id_limit",
+        "peer_max_idle_timeout",
+        "peer_max_udp_payload_size",
+        "peer_initial_max_data",
+        "peer_initial_max_stream_data_bidi_local",
+        "peer_initial_max_stream_data_bidi_remote",
+        "peer_initial_max_stream_data_uni",
+        "peer_initial_max_streams_bidi",
+        "peer_initial_max_streams_uni",
+        "peer_ack_delay_exponent",
+        "peer_max_ack_delay",
+        "peer_disable_active_migration",
+        "peer_active_conn_id_limit",
         "peer_max_datagram_frame_size"
     })
     class quiche_transport_params extends Structure
@@ -197,8 +204,19 @@ public interface LibQuiche extends Library
     }
 
     @Structure.FieldOrder({
-        "recv", "sent", "lost", "retrans", "sent_bytes", "recv_bytes", "lost_bytes", "stream_retrans_bytes", "paths_count",
-        "reset_stream_count_local", "stopped_stream_count_local", "reset_stream_count_remote", "stopped_stream_count_remote"
+        "recv",
+        "sent",
+        "lost",
+        "retrans",
+        "sent_bytes",
+        "recv_bytes",
+        "lost_bytes",
+        "stream_retrans_bytes",
+        "paths_count",
+        "reset_stream_count_local",
+        "stopped_stream_count_local",
+        "reset_stream_count_remote",
+        "stopped_stream_count_remote"
     })
     class quiche_stats extends Structure
     {
@@ -243,10 +261,24 @@ public interface LibQuiche extends Library
     }
 
     @Structure.FieldOrder({
-        "local_addr", "local_addr_len", "peer_addr", "peer_addr_len",
-        "validation_state", "active", "recv", "sent", "lost", "retrans",
-        "rtt", "cwnd", "sent_bytes", "recv_bytes", "lost_bytes",
-        "stream_retrans_bytes", "pmtu", "delivery_rate"
+        "local_addr",
+        "local_addr_len",
+        "peer_addr",
+        "peer_addr_len",
+        "validation_state",
+        "active",
+        "recv",
+        "sent",
+        "lost",
+        "retrans",
+        "rtt",
+        "cwnd",
+        "sent_bytes",
+        "recv_bytes",
+        "lost_bytes",
+        "stream_retrans_bytes",
+        "pmtu",
+        "delivery_rate"
     })
     class quiche_path_stats extends Structure
     {
@@ -310,19 +342,19 @@ public interface LibQuiche extends Library
     int quiche_enable_debug_logging(LoggingCallback cb, Pointer argp);
 
     // Creates a new client-side connection.
-    quiche_conn quiche_connect(String server_name, byte[] scid, size_t scid_len,
-                               sockaddr local, size_t local_len,
-                               sockaddr peer, size_t peer_len,
+    quiche_conn quiche_connect(
+                               String server_name,
+                               byte[] scid,
+                               size_t scid_len,
+                               sockaddr local,
+                               size_t local_len,
+                               sockaddr peer,
+                               size_t peer_len,
                                quiche_config config);
 
     interface packet_type
     {
-        byte INITIAL = 1,
-            RETRY = 2,
-            HANDSHAKE = 3,
-            ZERO_RTT = 4,
-            SHORT = 5,
-            VERSION_NEGOTIATION = 6;
+        byte INITIAL = 1, RETRY = 2, HANDSHAKE = 3, ZERO_RTT = 4, SHORT = 5, VERSION_NEGOTIATION = 6;
 
         static String typeToString(byte type)
         {
@@ -344,35 +376,53 @@ public interface LibQuiche extends Library
 
     // Extracts version, type, source / destination connection ID and address
     // verification token from the packet in |buf|.
-    int quiche_header_info(ByteBuffer buf, size_t buf_len, size_t dcil,
-                           uint32_t_pointer version, uint8_t_pointer type,
-                           byte[] scid, size_t_pointer scid_len,
-                           byte[] dcid, size_t_pointer dcid_len,
-                           byte[] token, size_t_pointer token_len);
+    int quiche_header_info(
+                           ByteBuffer buf,
+                           size_t buf_len,
+                           size_t dcil,
+                           uint32_t_pointer version,
+                           uint8_t_pointer type,
+                           byte[] scid,
+                           size_t_pointer scid_len,
+                           byte[] dcid,
+                           size_t_pointer dcid_len,
+                           byte[] token,
+                           size_t_pointer token_len);
 
     // Returns true if the given protocol version is supported.
     boolean quiche_version_is_supported(uint32_t version);
 
     // Enables qlog to the specified file path. Returns true on success.
-    boolean quiche_conn_set_qlog_path(quiche_conn conn, String path,
-                                      String log_title, String log_desc);
+    boolean quiche_conn_set_qlog_path(quiche_conn conn, String path, String log_title, String log_desc);
 
     // Writes a version negotiation packet.
-    ssize_t quiche_negotiate_version(byte[] scid, size_t scid_len,
-                                     byte[] dcid, size_t dcid_len,
-                                     ByteBuffer out, size_t out_len);
+    ssize_t quiche_negotiate_version(
+                                     byte[] scid, size_t scid_len, byte[] dcid, size_t dcid_len, ByteBuffer out, size_t out_len);
 
     // Writes a retry packet.
-    ssize_t quiche_retry(byte[] scid, size_t scid_len,
-                         byte[] dcid, size_t dcid_len,
-                         byte[] new_scid, size_t new_scid_len,
-                         byte[] token, size_t token_len,
-                         uint32_t version, ByteBuffer out, size_t out_len);
+    ssize_t quiche_retry(
+                         byte[] scid,
+                         size_t scid_len,
+                         byte[] dcid,
+                         size_t dcid_len,
+                         byte[] new_scid,
+                         size_t new_scid_len,
+                         byte[] token,
+                         size_t token_len,
+                         uint32_t version,
+                         ByteBuffer out,
+                         size_t out_len);
 
     // Creates a new server-side connection.
-    quiche_conn quiche_accept(byte[] scid, size_t scid_len, byte[] odcid, size_t odcid_len,
-                              sockaddr local, size_t local_len,
-                              sockaddr peer, size_t peer_len,
+    quiche_conn quiche_accept(
+                              byte[] scid,
+                              size_t scid_len,
+                              byte[] odcid,
+                              size_t odcid_len,
+                              sockaddr local,
+                              size_t local_len,
+                              sockaddr peer,
+                              size_t peer_len,
                               quiche_config config);
 
     // Returns the amount of time until the next timeout event, in milliseconds.
@@ -401,9 +451,8 @@ public interface LibQuiche extends Library
     ssize_t quiche_conn_send_ack_eliciting(quiche_conn conn);
 
     // Schedule an ack-eliciting packet on the specified path.
-    ssize_t quiche_conn_send_ack_eliciting_on_path(quiche_conn conn,
-                                                   sockaddr local, size_t local_len,
-                                                   sockaddr peer, size_t peer_len);
+    ssize_t quiche_conn_send_ack_eliciting_on_path(
+                                                   quiche_conn conn, sockaddr local, size_t local_len, sockaddr peer, size_t peer_len);
 
     @Structure.FieldOrder({"from", "from_len", "to", "to_len", "at"})
     class quiche_send_info extends Structure
@@ -465,7 +514,8 @@ public interface LibQuiche extends Library
 
     // Returns true if a connection error was received, and updates the provided
     // parameters accordingly.
-    boolean quiche_conn_peer_error(quiche_conn conn,
+    boolean quiche_conn_peer_error(
+                                   quiche_conn conn,
                                    bool_pointer is_app,
                                    uint64_t_pointer error_code,
                                    char_pointer reason,
@@ -473,15 +523,15 @@ public interface LibQuiche extends Library
 
     // Returns true if a connection error was queued or sent, and updates the provided
     // parameters accordingly.
-    boolean quiche_conn_local_error(quiche_conn conn,
+    boolean quiche_conn_local_error(
+                                    quiche_conn conn,
                                     bool_pointer is_app,
                                     uint64_t_pointer error_code,
                                     char_pointer reason,
                                     size_t_pointer reason_len);
 
     // Closes the connection with the given error and reason.
-    int quiche_conn_close(quiche_conn conn, boolean app, uint64_t err,
-                          String reason, size_t reason_len);
+    int quiche_conn_close(quiche_conn conn, boolean app, uint64_t err, String reason, size_t reason_len);
 
     @Structure.FieldOrder({"dummy"})
     class quiche_stream_iter extends Structure
@@ -492,17 +542,15 @@ public interface LibQuiche extends Library
     // The side of the stream to be shut down.
     interface quiche_shutdown
     {
-        int QUICHE_SHUTDOWN_READ = 0,
-            QUICHE_SHUTDOWN_WRITE = 1;
+        int QUICHE_SHUTDOWN_READ = 0, QUICHE_SHUTDOWN_WRITE = 1;
     }
 
     // Sets the priority for a stream.
-    int quiche_conn_stream_priority(quiche_conn conn, uint64_t stream_id,
-                                    uint8_t urgency, boolean incremental);
+    int quiche_conn_stream_priority(quiche_conn conn, uint64_t stream_id, uint8_t urgency, boolean incremental);
 
     // Shuts down reading or writing from/to the specified stream.
-    int quiche_conn_stream_shutdown(quiche_conn conn, uint64_t stream_id,
-                                    int /*quiche_shutdown*/ direction, uint64_t err);
+    int quiche_conn_stream_shutdown(
+                                    quiche_conn conn, uint64_t stream_id, int /*quiche_shutdown*/ direction, uint64_t err);
 
     // Returns the stream's send capacity in bytes.
     ssize_t quiche_conn_stream_capacity(quiche_conn conn, uint64_t stream_id);
@@ -540,7 +588,8 @@ public interface LibQuiche extends Library
     void quiche_stream_iter_free(quiche_stream_iter iter);
 
     // Reads contiguous data from a stream.
-    ssize_t quiche_conn_stream_recv(quiche_conn conn, uint64_t stream_id, ByteBuffer out, size_t buf_len, bool_pointer fin);
+    ssize_t quiche_conn_stream_recv(
+                                    quiche_conn conn, uint64_t stream_id, ByteBuffer out, size_t buf_len, bool_pointer fin);
 
     // Writes data to a stream.
     ssize_t quiche_conn_stream_send(quiche_conn conn, uint64_t stream_id, ByteBuffer buf, size_t buf_len, boolean fin);

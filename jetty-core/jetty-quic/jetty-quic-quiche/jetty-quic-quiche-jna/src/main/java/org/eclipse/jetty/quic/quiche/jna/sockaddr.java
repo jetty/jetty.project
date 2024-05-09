@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.quic.quiche.jna;
 
-import java.net.SocketAddress;
-
-import com.sun.jna.Pointer;
-import com.sun.jna.Structure;
-import org.eclipse.jetty.quic.quiche.jna.linux.netinet_linux;
-import org.eclipse.jetty.quic.quiche.jna.macos.netinet_macos;
-import org.eclipse.jetty.quic.quiche.jna.windows.netinet_windows;
-
 import static com.sun.jna.Platform.isLinux;
 import static com.sun.jna.Platform.isMac;
 import static com.sun.jna.Platform.isWindows;
+
+import com.sun.jna.Pointer;
+import com.sun.jna.Structure;
+import java.net.SocketAddress;
+import org.eclipse.jetty.quic.quiche.jna.linux.netinet_linux;
+import org.eclipse.jetty.quic.quiche.jna.macos.netinet_macos;
+import org.eclipse.jetty.quic.quiche.jna.windows.netinet_windows;
 
 @Structure.FieldOrder({"opaque"})
 public class sockaddr extends Structure

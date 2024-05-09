@@ -42,11 +42,14 @@ public class PongContextListener implements ServletContextListener
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
+        ServerContainer container =
+            (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
         try
         {
             ServerEndpointConfig.Configurator config = new Config();
-            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class, "/pong").configurator(config).build());
+            container.addEndpoint(ServerEndpointConfig.Builder.create(PongMessageEndpoint.class, "/pong")
+                .configurator(config)
+                .build());
         }
         catch (DeploymentException e)
         {

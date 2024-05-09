@@ -17,7 +17,6 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
@@ -103,7 +102,12 @@ public class ResponseContentParser extends StreamContentParser
             while (remaining > 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Response {} {}, state {} {}", request, FCGI.StreamType.STD_OUT, state, BufferUtil.toDetailString(buffer));
+                    LOG.debug(
+                        "Response {} {}, state {} {}",
+                        request,
+                        FCGI.StreamType.STD_OUT,
+                        state,
+                        BufferUtil.toDetailString(buffer));
 
                 switch (state)
                 {
@@ -124,9 +128,7 @@ public class ResponseContentParser extends StreamContentParser
                         // the HTTP parser will assume there is no content
                         // and will not parse it even if it is provided,
                         // so we have to parse it raw ourselves here.
-                        boolean rawContent = fields.size() == 0 ||
-                            (fields.get(HttpHeader.CONTENT_LENGTH) == null &&
-                                fields.get(HttpHeader.TRANSFER_ENCODING) == null);
+                        boolean rawContent = fields.size() == 0 || (fields.get(HttpHeader.CONTENT_LENGTH) == null && fields.get(HttpHeader.TRANSFER_ENCODING) == null);
                         state = rawContent ? State.RAW_CONTENT : State.HTTP_CONTENT;
                         break;
                     }
@@ -181,7 +183,8 @@ public class ResponseContentParser extends StreamContentParser
                         String status = parts[0];
                         int code = Integer.parseInt(status);
                         httpParser.setResponseStatus(code);
-                        String reason = parts.length > 1 ? value.substring(status.length()) : HttpStatus.getMessage(code);
+                        String reason =
+                            parts.length > 1 ? value.substring(status.length()) : HttpStatus.getMessage(code);
 
                         notifyBegin(code, reason.trim());
                         notifyHeaders(fields);
@@ -354,6 +357,9 @@ public class ResponseContentParser extends StreamContentParser
 
     private enum State
     {
-        HEADERS, CONTENT_MODE, RAW_CONTENT, HTTP_CONTENT
+        HEADERS,
+        CONTENT_MODE,
+        RAW_CONTENT,
+        HTTP_CONTENT
     }
 }

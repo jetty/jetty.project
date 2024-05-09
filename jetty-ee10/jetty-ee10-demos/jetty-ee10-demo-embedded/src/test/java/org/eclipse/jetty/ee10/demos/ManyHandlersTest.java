@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.ee10.demos;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -28,11 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-
-@Disabled //TODO
+@Disabled // TODO
 public class ManyHandlersTest extends AbstractEmbeddedTest
 {
     private Server server;
@@ -40,8 +39,8 @@ public class ManyHandlersTest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        //TODO fix me
-        //server = ManyHandlers.createServer(0);
+        // TODO fix me
+        // server = ManyHandlers.createServer(0);
         server.start();
     }
 

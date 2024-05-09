@@ -17,7 +17,6 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
@@ -65,9 +64,8 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
             try
             {
                 String serverName = bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-                
-                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) ||
-                    (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
+
+                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) || (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
                 {
                     if (bundleAdded(bundle))
                         return bundle;
@@ -103,12 +101,16 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
     protected void doStart() throws Exception
     {
         String serverName = (String)getServer().getAttribute(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-        _webappTracker = new WebAppTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), serverName);
+        _webappTracker =
+            new WebAppTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), serverName);
         _webappTracker.open();
-        //register as an osgi service for deploying bundles, advertising the name of the jetty Server instance we are related to
+        // register as an osgi service for deploying bundles, advertising the name of the jetty Server instance we are
+        // related to
         Dictionary<String, String> properties = new Hashtable<>();
         properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, serverName);
-        _serviceRegForBundles = FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(BundleProvider.class.getName(), this, properties);
+        _serviceRegForBundles = FrameworkUtil.getBundle(this.getClass())
+            .getBundleContext()
+            .registerService(BundleProvider.class.getName(), this, properties);
         super.doStart();
     }
 
@@ -117,7 +119,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
     {
         _webappTracker.close();
 
-        //unregister ourselves
+        // unregister ourselves
         if (_serviceRegForBundles != null)
         {
             try
@@ -136,24 +138,26 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
     @Override
     public boolean isDeployable(Bundle bundle)
     {
-        //is it destined for my environment?
+        // is it destined for my environment?
         if (!super.isDeployable(bundle))
             return false;
-        
-        //has a war path, could be a webapp
-        if (!StringUtil.isBlank(Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, bundle.getHeaders())))
+
+        // has a war path, could be a webapp
+        if (!StringUtil.isBlank(
+            Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, bundle.getHeaders())))
             return true;
-       
-        //has a context path header, could be a webapp
-       if (!StringUtil.isBlank(Util.getManifestHeaderValue(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH, bundle.getHeaders())))
-           return true;
-        
-       //has a web.xml, could be a webapp
-       if (bundle.getEntry("/WEB-INF/web.xml") != null)
-           return true;
-       
-       //not a webapp
-       return false;
+
+        // has a context path header, could be a webapp
+        if (!StringUtil.isBlank(
+            Util.getManifestHeaderValue(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH, bundle.getHeaders())))
+            return true;
+
+        // has a web.xml, could be a webapp
+        if (bundle.getEntry("/WEB-INF/web.xml") != null)
+            return true;
+
+        // not a webapp
+        return false;
     }
 
     /**
@@ -166,25 +170,27 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
     {
         if (bundle == null)
             return false;
-        
-        //can this bundle be deployed to my environment?
+
+        // can this bundle be deployed to my environment?
         if (!isDeployable(bundle))
             return false;
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader((ClassLoader)getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER));
+        Thread.currentThread()
+            .setContextClassLoader((ClassLoader)getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER));
         try
         {
             @SuppressWarnings("unchecked")
             Dictionary<String, String> headers = bundle.getHeaders();
-            
-            //does the bundle have a OSGiWebappConstants.JETTY_WAR_FOLDER_PATH 
-            String staticResourcesLocation = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
+
+            // does the bundle have a OSGiWebappConstants.JETTY_WAR_FOLDER_PATH
+            String staticResourcesLocation =
+                Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
             if (staticResourcesLocation != null)
             {
-                //TODO : we don't know whether an app is actually deployed, as deploymentManager swallows all
-                //exceptions inside the impl of addApp. Need to send the Event and also register as a service
-                //only if the deployment succeeded
+                // TODO : we don't know whether an app is actually deployed, as deploymentManager swallows all
+                // exceptions inside the impl of addApp. Need to send the Event and also register as a service
+                // only if the deployment succeeded
                 OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
                 app.setPathToResourceBase(staticResourcesLocation);
                 _bundleMap.put(bundle, app);
@@ -192,7 +198,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 return true;
             }
 
-            //does the bundle have a WEB-INF/web.xml
+            // does the bundle have a WEB-INF/web.xml
             if (bundle.getEntry("/WEB-INF/web.xml") != null)
             {
                 String base = ".";
@@ -203,10 +209,10 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 return true;
             }
 
-            //does the bundle define a OSGiWebappConstants.RFC66_WEB_CONTEXTPATH
+            // does the bundle define a OSGiWebappConstants.RFC66_WEB_CONTEXTPATH
             if (headers.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) != null)
             {
-                //Could be a static webapp with no web.xml
+                // Could be a static webapp with no web.xml
                 String base = ".";
                 OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle);
                 app.setPathToResourceBase(base);
@@ -215,7 +221,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 return true;
             }
 
-            //not a webapp
+            // not a webapp
             return false;
         }
         finally

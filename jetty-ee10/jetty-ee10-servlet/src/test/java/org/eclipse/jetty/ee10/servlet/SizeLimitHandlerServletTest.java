@@ -13,6 +13,17 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -22,10 +33,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -42,14 +49,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SizeLimitHandlerServletTest
 {
@@ -110,7 +109,8 @@ public class SizeLimitHandlerServletTest
                 httpFields.add(HttpHeader.CONTENT_ENCODING, "gzip");
                 httpFields.add(HttpHeader.ACCEPT_ENCODING, "gzip");
             })
-            .body(gzipContent(content)).send();
+            .body(gzipContent(content))
+            .send();
 
         assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), equalTo("gzip"));
         assertThat(response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH), lessThan((long)SIZE_LIMIT));
@@ -138,8 +138,8 @@ public class SizeLimitHandlerServletTest
         String content = "x".repeat(SIZE_LIMIT * 2);
 
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
-        ContentResponse response = _client.POST(uri)
-            .body(new StringRequestContent(content)).send();
+        ContentResponse response =
+            _client.POST(uri).body(new StringRequestContent(content)).send();
 
         assertThat(response.getStatus(), equalTo(HttpStatus.PAYLOAD_TOO_LARGE_413));
     }

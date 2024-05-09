@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
@@ -24,9 +26,6 @@ import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketUpgradeHandlerTest
 {
@@ -63,7 +62,8 @@ public class WebSocketUpgradeHandlerTest
     public void testUpgradeByWebSocketUpgradeHandler() throws Exception
     {
         TestMessageHandler clientEndpoint = new TestMessageHandler();
-        CoreSession coreSession = client.connect(clientEndpoint, serverUri.resolve("/path/echo")).get(5, TimeUnit.SECONDS);
+        CoreSession coreSession =
+            client.connect(clientEndpoint, serverUri.resolve("/path/echo")).get(5, TimeUnit.SECONDS);
         assertNotNull(coreSession);
         coreSession.close(Callback.NOOP);
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));

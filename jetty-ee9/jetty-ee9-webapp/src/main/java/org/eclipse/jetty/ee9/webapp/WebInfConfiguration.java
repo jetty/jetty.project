@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import jakarta.servlet.ServletContext;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -83,18 +82,20 @@ public class WebInfConfiguration extends AbstractConfiguration
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
-        //if it wasn't explicitly configured by the user, then unset it
+        // if it wasn't explicitly configured by the user, then unset it
         if (!(context.getAttribute(TEMPDIR_CONFIGURED) instanceof Boolean tmpdirConfigured && tmpdirConfigured))
             context.setTempDirectory(null);
 
-        //reset the base resource back to what it was before we did any unpacking of resources
+        // reset the base resource back to what it was before we did any unpacking of resources
         context.setBaseResource(_preUnpackBaseResource);
     }
 
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        Path tmpDir = Files.createTempDirectory(template.getTempDirectory().getParentFile().toPath(), WebInfConfiguration.getCanonicalNameForWebAppTmpDir(context));
+        Path tmpDir = Files.createTempDirectory(
+            template.getTempDirectory().getParentFile().toPath(),
+            WebInfConfiguration.getCanonicalNameForWebAppTmpDir(context));
         File tmpDirAsFile = tmpDir.toFile();
         tmpDirAsFile.deleteOnExit();
         context.setTempDirectory(tmpDirAsFile);
@@ -128,14 +129,13 @@ public class WebInfConfiguration extends AbstractConfiguration
      * @param context the context to resolve the temp directory from
      * @throws Exception if unable to resolve the temp directory
      */
-    public void resolveTempDirectory(WebAppContext context)
-        throws Exception
+    public void resolveTempDirectory(WebAppContext context) throws Exception
     {
-        //If a tmp directory is already set we should use it
+        // If a tmp directory is already set we should use it
         File tempDirectory = context.getTempDirectory();
         if (tempDirectory != null)
         {
-            context.setAttribute(TEMPDIR_CONFIGURED, Boolean.TRUE); //the tmp dir was set explicitly
+            context.setAttribute(TEMPDIR_CONFIGURED, Boolean.TRUE); // the tmp dir was set explicitly
             return;
         }
 
@@ -153,21 +153,20 @@ public class WebInfConfiguration extends AbstractConfiguration
         makeTempDirectory(context.getServer().getContext().getTempDirectory(), context);
     }
 
-    public void makeTempDirectory(File parent, WebAppContext context)
-        throws Exception
+    public void makeTempDirectory(File parent, WebAppContext context) throws Exception
     {
         if (parent == null || !parent.exists() || !parent.canWrite() || !parent.isDirectory())
             throw new IllegalStateException("Parent for temp dir not configured correctly: " + (parent == null ? "null" : "writeable=" + parent.canWrite()));
 
         boolean persistent = context.isPersistTempDirectory() || "work".equals(parent.toPath().getFileName().toString());
 
-        //Create a name for the webapp
+        // Create a name for the webapp
         String temp = getCanonicalNameForWebAppTmpDir(context);
         File tmpDir;
         if (persistent)
         {
-            //if it is to be persisted, make sure it will be the same name
-            //by not using File.createTempFile, which appends random digits
+            // if it is to be persisted, make sure it will be the same name
+            // by not using File.createTempFile, which appends random digits
             tmpDir = new File(parent, temp);
         }
         else
@@ -211,7 +210,12 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Try webapp={} exists={} directory={} file={}", webApp, webApp.exists(), webApp.isDirectory(), webApp.getPath());
+                LOG.debug(
+                    "Try webapp={} exists={} directory={} file={}",
+                    webApp,
+                    webApp.exists(),
+                    webApp.isDirectory(),
+                    webApp.getPath());
 
             // Track the original web_app Resource, as this could be a PathResource.
             // Later steps force the Resource to be a JarFileResource, which introduces
@@ -229,12 +233,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
 
             // If we should extract or the URL is still not usable
-            if (webApp.exists() && (
-                (context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) ||
-                    (context.isExtractWAR() && webApp.getPath() != null && !originalWarResource.isDirectory()) ||
-                    (context.isExtractWAR() && webApp.getPath() == null) ||
-                    !webApp.isDirectory())
-            )
+            if (webApp.exists() && ((context.isCopyWebDir() && webApp.getPath() != null && originalWarResource.isDirectory()) || (context.isExtractWAR() && webApp.getPath() != null && !originalWarResource.isDirectory()) || (context.isExtractWAR() && webApp.getPath() == null) || !webApp.isDirectory()))
             {
                 // Look for sibling directory.
                 Path extractedWebAppDir = null;
@@ -267,13 +266,13 @@ public class WebInfConfiguration extends AbstractConfiguration
                 }
                 else
                 {
-                    //Use a sentinel file that will exist only whilst the extraction is taking place.
-                    //This will help us detect interrupted extractions.
+                    // Use a sentinel file that will exist only whilst the extraction is taking place.
+                    // This will help us detect interrupted extractions.
                     File extractionLock = new File(context.getTempDirectory(), ".extract_lock");
 
                     if (!Files.exists(extractedWebAppDir))
                     {
-                        //it hasn't been extracted before so extract it
+                        // it hasn't been extracted before so extract it
                         extractionLock.createNewFile();
                         Files.createDirectory(extractedWebAppDir);
                         if (LOG.isDebugEnabled())
@@ -287,9 +286,13 @@ public class WebInfConfiguration extends AbstractConfiguration
                     }
                     else
                     {
-                        // Only extract if the war file is newer, or a .extract_lock file is left behind meaning a possible partial extraction
+                        // Only extract if the war file is newer, or a .extract_lock file is left behind meaning a
+                        // possible partial extraction
                         // Use the original War Resource to obtain lastModified to avoid filesystem locks on MS Windows.
-                        if (originalWarResource.lastModified().isAfter(Files.getLastModifiedTime(extractedWebAppDir).toInstant()) || extractionLock.exists())
+                        if (originalWarResource
+                            .lastModified()
+                            .isAfter(Files.getLastModifiedTime(extractedWebAppDir)
+                                .toInstant()) || extractionLock.exists())
                         {
                             extractionLock.createNewFile();
                             // Best effort delete
@@ -366,7 +369,10 @@ public class WebInfConfiguration extends AbstractConfiguration
                         IO.delete(webInfClassesDir);
                     webInfClassesDir.mkdir();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Copying WEB-INF/classes from {} to {}", webInfClasses, webInfClassesDir.getAbsolutePath());
+                        LOG.debug(
+                            "Copying WEB-INF/classes from {} to {}",
+                            webInfClasses,
+                            webInfClassesDir.getAbsolutePath());
                     webInfClasses.copyTo(webInfClassesDir.toPath());
                 }
                 webInf = context.getResourceFactory().newResource(extractedWebInfDir.getCanonicalPath());
@@ -400,7 +406,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         StringBuffer canonicalName = new StringBuffer();
         canonicalName.append("jetty-");
 
-        //get the host and the port from the first connector
+        // get the host and the port from the first connector
         Server server = context.getServer();
         if (server != null)
         {
@@ -408,7 +414,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 
             if (connectors.length > 0)
             {
-                //Get the host
+                // Get the host
                 String host = null;
                 int port = 0;
                 if (connectors != null && (connectors[0] instanceof NetworkConnector))
@@ -423,11 +429,11 @@ public class WebInfConfiguration extends AbstractConfiguration
                     host = "0.0.0.0";
                 canonicalName.append(host);
 
-                //Get the port
+                // Get the port
                 canonicalName.append("-");
 
-                //if not available (eg no connectors or connector not started),
-                //try getting one that was configured.
+                // if not available (eg no connectors or connector not started),
+                // try getting one that was configured.
                 canonicalName.append(port);
                 canonicalName.append("-");
             }
@@ -458,13 +464,13 @@ public class WebInfConfiguration extends AbstractConfiguration
             canonicalName.append("-"); // empty resourceBaseName segment
         }
 
-        //Context name
+        // Context name
         String contextPath = context.getContextPath();
         contextPath = contextPath.replace('/', '_');
         contextPath = contextPath.replace('\\', '_');
         canonicalName.append(contextPath);
 
-        //Virtual host (if there is one)
+        // Virtual host (if there is one)
         canonicalName.append("-");
         String[] vhosts = context.getVirtualHosts();
         if (vhosts == null || vhosts.length <= 0)

@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-import java.net.UnknownHostException;
-
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import java.net.UnknownHostException;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionManager;

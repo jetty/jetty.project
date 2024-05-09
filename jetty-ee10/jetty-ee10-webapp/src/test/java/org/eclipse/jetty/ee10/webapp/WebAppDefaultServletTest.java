@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.ee10.webapp;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -32,10 +35,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 @ExtendWith(WorkDirExtension.class)
 public class WebAppDefaultServletTest
 {
@@ -48,7 +47,10 @@ public class WebAppDefaultServletTest
         Path directoryPath = workDir.getEmptyPathDir();
         server = new Server();
         connector = new LocalConnector(server);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setUriCompliance(UriCompliance.UNSAFE);
         server.addConnector(connector);
 
         Path welcomeResource = directoryPath.resolve("index.html");
@@ -104,34 +106,44 @@ public class WebAppDefaultServletTest
     public static Stream<Arguments> argumentsStream()
     {
         return Stream.of(
-            Arguments.of("/WEB-INF/", new String[]{"HTTP/1.1 404 "}),
-            Arguments.of("/welcome%23/", new String[]{"HTTP/1.1 200 ", "standard hash dir welcome"}),
+            Arguments.of("/WEB-INF/", new String[]
+            {"HTTP/1.1 404 "}),
+            Arguments.of("/welcome%23/", new String[]
+            {"HTTP/1.1 200 ", "standard hash dir welcome"}),
 
             // Normal requests for the directory are redirected to the welcome page.
-            Arguments.of("/", new String[]{"HTTP/1.1 200 ", "<h1>welcome page</h1>"}),
+            Arguments.of("/", new String[]
+            {"HTTP/1.1 200 ", "<h1>welcome page</h1>"}),
 
             // We can be served other resources.
-            Arguments.of("/other.html", new String[]{"HTTP/1.1 200 ", "<h1>other resource</h1>"}),
+            Arguments.of("/other.html", new String[]
+            {"HTTP/1.1 200 ", "<h1>other resource</h1>"}),
 
             // The ContextHandler will filter these ones out as as WEB-INF is a protected target.
-            Arguments.of("/WEB-INF/one.js#/", new String[]{"HTTP/1.1 404 "}),
-            Arguments.of("/js/../WEB-INF/one.js#/", new String[]{"HTTP/1.1 404 "}),
+            Arguments.of("/WEB-INF/one.js#/", new String[]
+            {"HTTP/1.1 404 "}),
+            Arguments.of("/js/../WEB-INF/one.js#/", new String[]
+            {"HTTP/1.1 404 "}),
 
-            // Test the URI is not double decoded by the dispatcher that serves the welcome file (we get index.html not one.js).
-            Arguments.of("/%2557EB-INF/one.js%23/", new String[]{"HTTP/1.1 200 ", "this content does not matter"})
-        );
+            // Test the URI is not double decoded by the dispatcher that serves the welcome file (we get index.html
+            // not one.js).
+            Arguments.of(
+                "/%2557EB-INF/one.js%23/", new String[]
+                {"HTTP/1.1 200 ", "this content does not matter"}));
     }
 
     @ParameterizedTest
     @MethodSource("argumentsStream")
     public void testResourceService(String uri, String[] contains) throws Exception
     {
-        String request = """
-            GET %s HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """.formatted(uri);
+        String request =
+            """
+                GET %s HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """
+                .formatted(uri);
         String response = connector.getResponse(request);
         for (String s : contains)
         {

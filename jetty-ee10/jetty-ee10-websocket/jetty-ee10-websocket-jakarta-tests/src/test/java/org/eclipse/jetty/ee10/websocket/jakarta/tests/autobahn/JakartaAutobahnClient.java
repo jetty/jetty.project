@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.autobahn;
 
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.CloseReason;
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.util.Jetty;
@@ -24,9 +26,6 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * WebSocket Client for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
@@ -170,7 +169,8 @@ public class JakartaAutobahnClient
 
     public void runCaseByNumber(int caseNumber) throws Exception
     {
-        URI wsUri = baseWebsocketUri.resolve("/runCase?case=" + caseNumber + "&agent=" + UrlEncoded.encodeString(userAgent));
+        URI wsUri = baseWebsocketUri.resolve(
+            "/runCase?case=" + caseNumber + "&agent=" + UrlEncoded.encodeString(userAgent));
         LOG.info("test uri: {}", wsUri);
 
         JakartaAutobahnSocket echoHandler = new JakartaAutobahnSocket();

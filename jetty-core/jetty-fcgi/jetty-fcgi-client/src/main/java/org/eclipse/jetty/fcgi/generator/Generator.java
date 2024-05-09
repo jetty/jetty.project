@@ -14,7 +14,6 @@
 package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -43,7 +42,12 @@ public class Generator
         return useDirectByteBuffers;
     }
 
-    protected void generateContent(ByteBufferPool.Accumulator accumulator, int id, ByteBuffer content, boolean lastContent, FCGI.FrameType frameType)
+    protected void generateContent(
+                                   ByteBufferPool.Accumulator accumulator,
+                                   int id,
+                                   ByteBuffer content,
+                                   boolean lastContent,
+                                   FCGI.FrameType frameType)
     {
         id &= 0xFF_FF;
 

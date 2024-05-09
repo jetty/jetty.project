@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.server;
 
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.HTTP2Stream;
@@ -54,7 +53,8 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         super(httpConfiguration);
     }
 
-    public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
+    public HTTP2ServerConnectionFactory(
+                                        @Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
         super(httpConfiguration, protocols);
     }
@@ -110,7 +110,8 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public boolean onIdleTimeout(Session session)
         {
             long idleTimeout = getConnection().getEndPoint().getIdleTimeout();
-            return getConnection().onSessionTimeout(new TimeoutException("Session idle timeout " + idleTimeout + " ms"));
+            return getConnection()
+                .onSessionTimeout(new TimeoutException("Session idle timeout " + idleTimeout + " ms"));
         }
 
         @Override
@@ -119,7 +120,8 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             String reason = frame.tryConvertPayload();
             if (!StringUtil.isEmpty(reason))
                 reason = " (" + reason + ")";
-            EofException failure = new EofException(String.format("Close %s/%s", ErrorCode.toString(frame.getError(), null), reason));
+            EofException failure =
+                new EofException(String.format("Close %s/%s", ErrorCode.toString(frame.getError(), null), reason));
             onFailure(session, failure, callback);
         }
 

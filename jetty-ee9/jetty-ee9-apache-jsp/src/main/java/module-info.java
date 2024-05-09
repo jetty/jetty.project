@@ -24,7 +24,6 @@ module org.eclipse.jetty.ee9.apache.jsp
 
     provides org.apache.juli.logging.Log with
         org.eclipse.jetty.ee9.apache.jsp.JuliLog;
-
     provides jakarta.servlet.ServletContainerInitializer with
         org.eclipse.jetty.ee9.apache.jsp.JettyJasperInitializer;
 }

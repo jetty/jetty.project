@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.api.Session;
@@ -30,9 +32,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class ConnectionHeaderTest
 {
@@ -49,8 +48,8 @@ public class ConnectionHeaderTest
 
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
-        JettyWebSocketServletContainerInitializer.configure(contextHandler, (servletContext, container) ->
-            container.addMapping("/echo", EchoSocket.class));
+        JettyWebSocketServletContainerInitializer.configure(
+            contextHandler, (servletContext, container) -> container.addMapping("/echo", EchoSocket.class));
 
         server.setHandler(contextHandler);
         server.start();
@@ -67,7 +66,8 @@ public class ConnectionHeaderTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Upgrade", "keep-alive, Upgrade", "close, Upgrade"})
+    @ValueSource(strings =
+    {"Upgrade", "keep-alive, Upgrade", "close, Upgrade"})
     public void testConnectionKeepAlive(String connectionHeaderValue) throws Exception
     {
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
@@ -87,7 +87,8 @@ public class ConnectionHeaderTest
         };
 
         EventSocket clientEndpoint = new EventSocket();
-        try (Session session = client.connect(clientEndpoint, uri, null, upgradeListener).get(5, TimeUnit.SECONDS))
+        try (Session session =
+            client.connect(clientEndpoint, uri, null, upgradeListener).get(5, TimeUnit.SECONDS))
         {
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";

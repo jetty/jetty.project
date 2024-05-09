@@ -13,17 +13,20 @@
 
 package org.eclipse.jetty.ee9.osgi.test;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.RemoteEndpoint;
+import jakarta.websocket.Session;
+import jakarta.websocket.WebSocketContainer;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.inject.Inject;
-
-import jakarta.websocket.ContainerProvider;
-import jakarta.websocket.RemoteEndpoint;
-import jakarta.websocket.Session;
-import jakarta.websocket.WebSocketContainer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -33,10 +36,6 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
-
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 /**
  * Test using websocket in osgi
@@ -51,21 +50,34 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
-        
+
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
-        
+
         // options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-jakarta-websocket.xml"));
-        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*", "javax.activation.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
-            "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-            "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+        options.add(CoreOptions.bootDelegationPackages(
+            "org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*", "javax.activation.*"));
+        options.add(CoreOptions.systemPackages(
+            "com.sun.org.apache.xalan.internal.res",
+            "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xpath.internal",
+            "com.sun.org.apache.xpath.internal.jaxp",
+            "com.sun.org.apache.xpath.internal.objects"));
 
         TestOSGiUtil.coreJettyDependencies(options);
         TestOSGiUtil.coreJspDependencies(options);
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-java-client")
+            .versionAsInProject()
+            .start());
+        options.add(mavenBundle()
+            .groupId("org.eclipse.jetty")
+            .artifactId("jetty-alpn-client")
+            .versionAsInProject()
+            .start());
         options.addAll(testJettyWebApp());
         options.addAll(extraDependencies());
         return options.toArray(new Option[0]);
@@ -74,17 +86,30 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     public static List<Option> testJettyWebApp()
     {
         List<Option> res = new ArrayList<>();
-        //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.ee9.demos").artifactId("jetty-ee9-demo-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
+        // test webapp bundle
+        res.add(mavenBundle()
+            .groupId("org.eclipse.jetty.ee9.demos")
+            .artifactId("jetty-ee9-demo-jetty-webapp")
+            .classifier("webbundle")
+            .versionAsInProject()
+            .noStart());
         return res;
     }
 
     public static List<Option> extraDependencies()
     {
         List<Option> res = new ArrayList<>();
-        //Need an earlier version of bndlib because of tinybundles
-        res.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").version("3.5.0").start());
-        res.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
+        // Need an earlier version of bndlib because of tinybundles
+        res.add(mavenBundle()
+            .groupId("biz.aQute.bnd")
+            .artifactId("biz.aQute.bndlib")
+            .version("3.5.0")
+            .start());
+        res.add(mavenBundle()
+            .groupId("org.ops4j.pax.tinybundles")
+            .artifactId("tinybundles")
+            .versionAsInProject()
+            .start());
         return res;
     }
 

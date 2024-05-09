@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;

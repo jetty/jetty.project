@@ -15,7 +15,6 @@ package org.eclipse.jetty.alpn.conscrypt.client;
 
 import java.security.Security;
 import javax.net.ssl.SSLEngine;
-
 import org.conscrypt.Conscrypt;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.client.ALPNClientConnection;

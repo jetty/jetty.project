@@ -13,14 +13,12 @@
 
 package org.example;
 
+import jakarta.servlet.ServletRequestEvent;
+import jakarta.servlet.ServletRequestListener;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.servlet.ServletRequestEvent;
-import jakarta.servlet.ServletRequestListener;
-
-public final class AddListServletRequestListener
-    implements ServletRequestListener
+public final class AddListServletRequestListener implements ServletRequestListener
 {
 
     public void requestDestroyed(ServletRequestEvent event)

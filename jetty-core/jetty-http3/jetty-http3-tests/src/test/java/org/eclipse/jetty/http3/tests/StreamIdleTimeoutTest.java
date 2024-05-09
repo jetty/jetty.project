@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -33,11 +37,6 @@ import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StreamIdleTimeoutTest extends AbstractClientServerTest
 {
@@ -87,7 +86,8 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 }
                 else
                 {
-                    MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                    MetaData.Response response =
+                        new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
                     stream.respond(new HeadersFrame(response, true));
                     return null;
                 }
@@ -97,26 +97,32 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         long streamIdleTimeout = 1000;
         http3Client.getHTTP3Configuration().setStreamIdleTimeout(streamIdleTimeout);
 
-        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+        Session.Client clientSession = newSession(new Session.Client.Listener()
+        {
+        });
 
         CountDownLatch clientIdleLatch = new CountDownLatch(1);
-        clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Client.Listener()
-        {
-            @Override
-            public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
+        clientSession
+            .newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Client.Listener()
             {
-                clientIdleLatch.countDown();
-                // Signal to close the stream.
-                promise.succeeded(true);
-            }
-        }).get(5, TimeUnit.SECONDS);
+                @Override
+                public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
+                {
+                    clientIdleLatch.countDown();
+                    // Signal to close the stream.
+                    promise.succeeded(true);
+                }
+            })
+            .get(5, TimeUnit.SECONDS);
 
         // The server does not reply, the client must idle timeout.
         assertTrue(clientIdleLatch.await(2 * streamIdleTimeout, TimeUnit.MILLISECONDS));
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getStreams().isEmpty());
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverSessionRef.get().getStreams().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> clientSession.getStreams().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> serverSessionRef.get().getStreams().isEmpty());
 
         // The session should still be open, verify by sending another request.
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -131,8 +137,10 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getStreams().isEmpty());
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverSessionRef.get().getStreams().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> clientSession.getStreams().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> serverSessionRef.get().getStreams().isEmpty());
     }
 
     @Test
@@ -158,7 +166,8 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                     return new Stream.Server.Listener()
                     {
                         @Override
-                        public void onIdleTimeout(Stream.Server stream, TimeoutException failure, Promise<Boolean> promise)
+                        public void onIdleTimeout(
+                                                  Stream.Server stream, TimeoutException failure, Promise<Boolean> promise)
                         {
                             serverIdleLatch.countDown();
                             promise.succeeded(true);
@@ -167,17 +176,22 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 }
                 else
                 {
-                    MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                    MetaData.Response response =
+                        new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
                     stream.respond(new HeadersFrame(response, true));
                     return null;
                 }
             }
         });
-        AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
+        AbstractHTTP3ServerConnectionFactory h3 =
+            connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
         assertNotNull(h3);
         h3.getHTTP3Configuration().setStreamIdleTimeout(idleTimeout);
 
-        Session.Client clientSession = http3Client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
+        Session.Client clientSession = http3Client
+            .connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener()
+            {
+            })
             .get(5, TimeUnit.SECONDS);
 
         CountDownLatch clientFailureLatch = new CountDownLatch(1);
@@ -196,8 +210,10 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         assertTrue(serverIdleLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getStreams().isEmpty());
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverSessionRef.get().getStreams().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> clientSession.getStreams().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> serverSessionRef.get().getStreams().isEmpty());
 
         // The session should still be open, verify by sending another request.
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -212,7 +228,9 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getStreams().isEmpty());
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverSessionRef.get().getStreams().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> clientSession.getStreams().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> serverSessionRef.get().getStreams().isEmpty());
     }
 }

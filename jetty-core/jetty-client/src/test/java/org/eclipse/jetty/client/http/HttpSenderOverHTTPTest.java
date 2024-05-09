@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.client.http;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.HttpClient;
@@ -35,10 +38,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpSenderOverHTTPTest
 {
@@ -63,7 +62,8 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection =
+            new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
@@ -96,7 +96,8 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection =
+            new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         connection.send(request, null);
 
@@ -104,7 +105,8 @@ public class HttpSenderOverHTTPTest
         StringBuilder builder = new StringBuilder(endPoint.takeOutputString());
 
         // Wait for the write to complete
-        await().atMost(5, TimeUnit.SECONDS).until(() -> endPoint.toEndPointString().contains(",flush=P,"));
+        await().atMost(5, TimeUnit.SECONDS)
+            .until(() -> endPoint.toEndPointString().contains(",flush=P,"));
 
         String chunk = endPoint.takeOutputString();
         while (chunk.length() > 0)
@@ -126,7 +128,8 @@ public class HttpSenderOverHTTPTest
         endPoint.shutdownOutput();
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection =
+            new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
         request.listener(new Request.Listener()
@@ -156,7 +159,8 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection =
+            new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
         request.listener(new Request.Listener()
@@ -192,7 +196,8 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection =
+            new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content = "abcdef";
         request.body(new ByteBufferRequestContent(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8))));
@@ -227,11 +232,14 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection =
+            new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
         String content2 = "abcdef";
-        request.body(new ByteBufferRequestContent(ByteBuffer.wrap(content1.getBytes(StandardCharsets.UTF_8)), ByteBuffer.wrap(content2.getBytes(StandardCharsets.UTF_8))));
+        request.body(new ByteBufferRequestContent(
+            ByteBuffer.wrap(content1.getBytes(StandardCharsets.UTF_8)),
+            ByteBuffer.wrap(content2.getBytes(StandardCharsets.UTF_8))));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
         request.listener(new Request.Listener()
@@ -263,18 +271,22 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection =
+            new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
         String content2 = "ABCDEF";
-        request.body(new ByteBufferRequestContent(ByteBuffer.wrap(content1.getBytes(StandardCharsets.UTF_8)), ByteBuffer.wrap(content2.getBytes(StandardCharsets.UTF_8)))
-        {
-            @Override
-            public long getLength()
+        request.body(
+            new ByteBufferRequestContent(
+                ByteBuffer.wrap(content1.getBytes(StandardCharsets.UTF_8)),
+                ByteBuffer.wrap(content2.getBytes(StandardCharsets.UTF_8)))
             {
-                return -1;
-            }
-        });
+                @Override
+                public long getLength()
+                {
+                    return -1;
+                }
+            });
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
         request.listener(new Request.Listener()
@@ -295,7 +307,8 @@ public class HttpSenderOverHTTPTest
 
         String requestString = endPoint.takeOutputString();
         assertTrue(requestString.startsWith("GET "));
-        String content = Integer.toHexString(content1.length()).toUpperCase(Locale.ENGLISH) + "\r\n" + content1 + "\r\n";
+        String content =
+            Integer.toHexString(content1.length()).toUpperCase(Locale.ENGLISH) + "\r\n" + content1 + "\r\n";
         content += Integer.toHexString(content2.length()).toUpperCase(Locale.ENGLISH) + "\r\n" + content2 + "\r\n";
         content += "0\r\n\r\n";
         assertTrue(requestString.endsWith("\r\n\r\n" + content));

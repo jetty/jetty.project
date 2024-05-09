@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.client;
 
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.transport.HttpConnection;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpResponse;
@@ -29,11 +33,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 {
@@ -67,8 +66,16 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         request.onRequestSuccess(r -> successLatch.countDown())
             .onResponseHeaders(response ->
             {
-                assertEquals(0, ((DuplexConnectionPool)destination.getConnectionPool()).getIdleConnections().size());
-                assertEquals(1, ((DuplexConnectionPool)destination.getConnectionPool()).getActiveConnections().size());
+                assertEquals(
+                    0,
+                    ((DuplexConnectionPool)destination.getConnectionPool())
+                        .getIdleConnections()
+                        .size());
+                assertEquals(
+                    1,
+                    ((DuplexConnectionPool)destination.getConnectionPool())
+                        .getActiveConnections()
+                        .size());
                 headersLatch.countDown();
             })
             .send(new Response.Listener()
@@ -90,8 +97,16 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         assertTrue(headersLatch.await(30, TimeUnit.SECONDS));
         assertTrue(successLatch.await(30, TimeUnit.SECONDS));
 
-        assertEquals(1, ((DuplexConnectionPool)destination.getConnectionPool()).getIdleConnections().size());
-        assertEquals(0, ((DuplexConnectionPool)destination.getConnectionPool()).getActiveConnections().size());
+        assertEquals(
+            1,
+            ((DuplexConnectionPool)destination.getConnectionPool())
+                .getIdleConnections()
+                .size());
+        assertEquals(
+            0,
+            ((DuplexConnectionPool)destination.getConnectionPool())
+                .getActiveConnections()
+                .size());
     }
 
     @ParameterizedTest
@@ -125,17 +140,18 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             {
                 failureLatch.countDown();
             }
-        }).send(new Response.Listener()
-        {
-            @Override
-            public void onComplete(Result result)
+        })
+            .send(new Response.Listener()
             {
-                assertTrue(result.isFailed());
-                assertEquals(0, connectionPool.getIdleConnections().size());
-                assertEquals(0, connectionPool.getActiveConnections().size());
-                failureLatch.countDown();
-            }
-        });
+                @Override
+                public void onComplete(Result result)
+                {
+                    assertTrue(result.isFailed());
+                    assertEquals(0, connectionPool.getIdleConnections().size());
+                    assertEquals(0, connectionPool.getActiveConnections().size());
+                    failureLatch.countDown();
+                }
+            });
 
         assertTrue(beginLatch.await(30, TimeUnit.SECONDS));
         assertTrue(failureLatch.await(30, TimeUnit.SECONDS));
@@ -297,12 +313,11 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         server.stop();
 
         CountDownLatch failureLatch = new CountDownLatch(2);
-        request.onRequestFailure((r, x) -> failureLatch.countDown())
-            .send(result ->
-            {
-                assertTrue(result.isFailed());
-                failureLatch.countDown();
-            });
+        request.onRequestFailure((r, x) -> failureLatch.countDown()).send(result ->
+        {
+            assertTrue(result.isFailed());
+            failureLatch.countDown();
+        });
 
         assertTrue(failureLatch.await(30, TimeUnit.SECONDS));
 
@@ -317,7 +332,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
+            protected void service(
+                                   org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
             {
                 response.getHeaders().put("Connection", "close");
             }
@@ -356,14 +372,16 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testBigRequestContentResponseWithConnectionCloseHeaderRemovesConnection(Scenario scenario) throws Exception
+    public void testBigRequestContentResponseWithConnectionCloseHeaderRemovesConnection(Scenario scenario)
+        throws Exception
     {
         try (StacklessLogging ignore = new StacklessLogging(HttpConnection.class))
         {
             start(scenario, new EmptyServerHandler()
             {
                 @Override
-                protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
+                protected void service(
+                                       org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
                 {
                     response.getHeaders().put("Connection", "close");
                     // Don't read request content; this causes the server parser to be closed
@@ -387,18 +405,17 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             CountDownLatch latch = new CountDownLatch(1);
             ByteBuffer buffer = ByteBuffer.allocate(16 * 1024 * 1024);
             Arrays.fill(buffer.array(), (byte)'x');
-            request.body(new ByteBufferRequestContent(buffer))
-                .send(new Response.Listener()
+            request.body(new ByteBufferRequestContent(buffer)).send(new Response.Listener()
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        assertEquals(1, latch.getCount());
-                        assertEquals(0, idleConnections.size());
-                        assertEquals(0, activeConnections.size());
-                        latch.countDown();
-                    }
-                });
+                    assertEquals(1, latch.getCount());
+                    assertEquals(0, idleConnections.size());
+                    assertEquals(0, activeConnections.size());
+                    latch.countDown();
+                }
+            });
 
             assertTrue(latch.await(30, TimeUnit.SECONDS));
 
@@ -456,12 +473,11 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         assertEquals(0, activeConnections.size());
 
         client.setStrictEventOrdering(false);
-        ContentResponse response = request
-            .onResponseBegin(response1 ->
-            {
-                // Simulate an HTTP 1.0 response has been received.
-                ((HttpResponse)response1).version(HttpVersion.HTTP_1_0);
-            })
+        ContentResponse response = request.onResponseBegin(response1 ->
+        {
+            // Simulate an HTTP 1.0 response has been received.
+            ((HttpResponse)response1).version(HttpVersion.HTTP_1_0);
+        })
             .send();
 
         assertEquals(200, response.getStatus());

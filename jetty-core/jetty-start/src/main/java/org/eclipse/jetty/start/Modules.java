@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.util.TopologicalSort;
 
 /**
@@ -85,9 +84,7 @@ public class Modules implements Iterable<Module>
 
     public void showModules(PrintStream out, List<String> modules)
     {
-        Stream<Module> stream = (modules.contains("*") || modules.isEmpty())
-            ? _modules.stream().sorted()
-            : modules.stream().map(this::get);
+        Stream<Module> stream = (modules.contains("*") || modules.isEmpty()) ? _modules.stream().sorted() : modules.stream().map(this::get);
 
         stream.forEach(module ->
         {
@@ -193,10 +190,14 @@ public class Modules implements Iterable<Module>
         if (!included.contains("internal"))
             excluded.add("internal");
 
-        Predicate<Module> filter = m -> (included.isEmpty() || m.getTags().stream().anyMatch(included::contains)) &&
-            m.getTags().stream().noneMatch(excluded::contains);
+        Predicate<Module> filter =
+            m -> (included.isEmpty() || m.getTags().stream().anyMatch(included::contains)) && m.getTags().stream().noneMatch(excluded::contains);
 
-        Optional<Integer> max = _modules.stream().filter(filter).map(Module::getName).map(String::length).max(Integer::compareTo);
+        Optional<Integer> max = _modules.stream()
+            .filter(filter)
+            .map(Module::getName)
+            .map(String::length)
+            .max(Integer::compareTo);
         if (max.isEmpty())
             return;
         String format = "%" + max.get() + "s - %s%n";
@@ -213,7 +214,8 @@ public class Modules implements Iterable<Module>
             }
 
             List<String> description = module.getDescription();
-            out.printf(format, module.getName(), description != null && description.size() > 0 ? description.get(0) : "");
+            out.printf(
+                format, module.getName(), description != null && description.size() > 0 ? description.get(0) : "");
         });
     }
 
@@ -407,7 +409,8 @@ public class Modules implements Iterable<Module>
     {
         Module module = get(name);
         if (module == null)
-            throw new UsageException(UsageException.ERR_UNKNOWN, "Unknown module='%s'. List available with --list-modules", name);
+            throw new UsageException(
+                UsageException.ERR_UNKNOWN, "Unknown module='%s'. List available with --list-modules", name);
 
         Set<String> enabled = new HashSet<>();
         enable(enabled, module, enabledFrom, false);
@@ -445,7 +448,9 @@ public class Modules implements Iterable<Module>
                         if (p.isTransitive() && !transitive)
                             p.clearTransitiveEnable();
                         else
-                            throw new UsageException("Module %s provides %s, which is already provided by %s enabled in %s", module.getName(), name, p.getName(), p.getEnableSources());
+                            throw new UsageException(
+                                "Module %s provides %s, which is already provided by %s enabled in %s",
+                                module.getName(), name, p.getName(), p.getEnableSources());
                     }
                 }
             }
@@ -497,12 +502,18 @@ public class Modules implements Iterable<Module>
                     Path file = _baseHome.getPath("modules/" + dependentModule + ".mod");
                     if (!isConditional || Files.exists(file))
                     {
-                        registerModule(file).expandDependencies(_args.getJettyEnvironment().getProperties());
+                        registerModule(file)
+                            .expandDependencies(_args.getJettyEnvironment().getProperties());
                         providers = _provided.get(dependentModule);
                         if (providers == null || providers.isEmpty())
-                            throw new UsageException("Module %s does not provide %s", _baseHome.toShortForm(file), dependentModule);
+                            throw new UsageException(
+                                "Module %s does not provide %s", _baseHome.toShortForm(file), dependentModule);
 
-                        enable(newlyEnabled, providers.stream().findFirst().get(), "dynamic dependency of " + module.getName(), true);
+                        enable(
+                            newlyEnabled,
+                            providers.stream().findFirst().get(),
+                            "dynamic dependency of " + module.getName(),
+                            true);
                         continue;
                     }
                 }
@@ -518,7 +529,13 @@ public class Modules implements Iterable<Module>
 
             // If a provider is already enabled, then add a transitive enable
             if (providers.stream().anyMatch(Module::isEnabled))
-                providers.stream().filter(m -> m.isEnabled() && !m.equals(module)).forEach(m -> enable(newlyEnabled, m, "transitive provider of " + dependentModule + " for " + module.getName(), true));
+                providers.stream()
+                    .filter(m -> m.isEnabled() && !m.equals(module))
+                    .forEach(m -> enable(
+                        newlyEnabled,
+                        m,
+                        "transitive provider of " + dependentModule + " for " + module.getName(),
+                        true));
             else
             {
                 Optional<Module> dftProvider = findDefaultProvider(providers, dependentModule);
@@ -526,7 +543,11 @@ public class Modules implements Iterable<Module>
                 if (dftProvider.isPresent())
                 {
                     StartLog.debug("Using [%s] provider as default for [%s]", dftProvider.get(), dependentModule);
-                    enable(newlyEnabled, dftProvider.get(), "transitive provider of " + dependentModule + " for " + module.getName(), true);
+                    enable(
+                        newlyEnabled,
+                        dftProvider.get(),
+                        "transitive provider of " + dependentModule + " for " + module.getName(),
+                        true);
                 }
             }
         }
@@ -545,7 +566,9 @@ public class Modules implements Iterable<Module>
             String defaultProviderName = _providedDefaults.get(dependsOn);
             if (defaultProviderName != null)
             {
-                return providers.stream().filter(m -> m.getName().equals(defaultProviderName)).findFirst();
+                return providers.stream()
+                    .filter(m -> m.getName().equals(defaultProviderName))
+                    .findFirst();
             }
 
             // Or does a module exist with the same name as the [provides] "name"
@@ -558,7 +581,7 @@ public class Modules implements Iterable<Module>
 
     private Set<Module> getAvailableProviders(String name)
     {
-        // Get all available providers 
+        // Get all available providers
         Set<Module> providers = _provided.get(name);
         StartLog.debug("Providers of [%s] are %s", name, providers);
         if (providers == null || providers.isEmpty())
@@ -578,7 +601,7 @@ public class Modules implements Iterable<Module>
         }
 
         // Remove any that cannot be selected
-        for (Iterator<Module> i = providers.iterator(); i.hasNext(); )
+        for (Iterator<Module> i = providers.iterator(); i.hasNext();)
         {
             Module provider = i.next();
             if (!provider.isEnabled())
@@ -638,7 +661,9 @@ public class Modules implements Iterable<Module>
                         if (unsatisfied.length() > 0)
                             unsatisfied.append(',');
                         unsatisfied.append(m.getName());
-                        StartLog.error("Module [%s] requires a module providing [%s] from one of %s%n", m.getName(), d, providers);
+                        StartLog.error(
+                            "Module [%s] requires a module providing [%s] from one of %s%n",
+                            m.getName(), d, providers);
                     }
                 });
         });

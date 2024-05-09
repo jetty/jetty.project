@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.qpack;
 
 import java.util.LinkedList;
 import java.util.Queue;
-
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
 
 public class DecoderParserDebugHandler implements DecoderInstructionParser.Handler
@@ -82,7 +81,8 @@ public class DecoderParserDebugHandler implements DecoderInstructionParser.Handl
     }
 
     @Override
-    public void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
+    public void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value)
+        throws QpackException
     {
         referencedNameEntries.add(new ReferencedEntry(nameIndex, isDynamicTableIndex, value));
         if (_decoder != null)

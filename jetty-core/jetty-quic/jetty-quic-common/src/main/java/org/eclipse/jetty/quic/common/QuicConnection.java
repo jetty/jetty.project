@@ -27,7 +27,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -202,7 +201,8 @@ public abstract class QuicConnection extends AbstractConnection
         }
     }
 
-    protected abstract QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException;
+    protected abstract QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer)
+        throws IOException;
 
     public abstract InetSocketAddress getLocalInetSocketAddress();
 
@@ -244,7 +244,8 @@ public abstract class QuicConnection extends AbstractConnection
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("peer IP address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
+                    LOG.debug(
+                        "peer IP address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
 
                 QuicheConnectionId quicheConnectionId = QuicheConnectionId.fromPacket(cipherBuffer);
                 if (quicheConnectionId == null)

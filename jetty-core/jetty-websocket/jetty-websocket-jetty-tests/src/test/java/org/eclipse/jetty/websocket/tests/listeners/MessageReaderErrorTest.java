@@ -13,12 +13,18 @@
 
 package org.eclipse.jetty.websocket.tests.listeners;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.Reader;
 import java.net.URI;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -37,13 +43,6 @@ import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MessageReaderErrorTest
 {
@@ -138,8 +137,7 @@ public class MessageReaderErrorTest
     public void testReaderOnError() throws Exception
     {
         ReaderErrorEndpoint serverEndpoint = new ReaderErrorEndpoint();
-        _upgradeHandler.getServerWebSocketContainer()
-            .addMapping("/", (req, resp, cb) -> serverEndpoint);
+        _upgradeHandler.getServerWebSocketContainer().addMapping("/", (req, resp, cb) -> serverEndpoint);
 
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());
         EventSocket clientEndpoint = new EventSocket();
@@ -167,8 +165,7 @@ public class MessageReaderErrorTest
     public void testReaderOnErrorPartialRead() throws Exception
     {
         ReaderErrorEndpoint serverEndpoint = new ReaderErrorEndpoint(5);
-        _upgradeHandler.getServerWebSocketContainer()
-            .addMapping("/", (req, resp, cb) -> serverEndpoint);
+        _upgradeHandler.getServerWebSocketContainer().addMapping("/", (req, resp, cb) -> serverEndpoint);
 
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());
         EventSocket clientEndpoint = new EventSocket();

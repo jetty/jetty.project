@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee10.cdi.tests;
 
-import java.io.IOException;
-
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 import jakarta.servlet.Filter;
@@ -23,6 +21,7 @@ import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import java.io.IOException;
 
 public class MyFilter implements Filter
 {
@@ -37,7 +36,8 @@ public class MyFilter implements Filter
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+        throws IOException, ServletException
     {
         // copy attribute from MyListener to see if it was decorated.
         request.setAttribute("filter", manager);
@@ -47,6 +47,5 @@ public class MyFilter implements Filter
     @Override
     public void destroy()
     {
-
     }
 }

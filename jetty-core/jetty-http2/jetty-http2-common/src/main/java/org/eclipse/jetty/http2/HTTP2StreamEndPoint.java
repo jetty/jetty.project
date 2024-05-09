@@ -22,7 +22,6 @@ import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.io.Connection;
@@ -108,7 +107,8 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
                 case OSHUTTING:
                     if (!writeState.compareAndSet(current, WriteState.OSHUT))
                         break;
-                    Callback oshutCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, this::oshutSuccess, this::oshutFailure);
+                    Callback oshutCallback = Callback.from(
+                        Invocable.InvocationType.NON_BLOCKING, this::oshutSuccess, this::oshutFailure);
                     stream.data(new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), oshutCallback);
                     return;
                 case PENDING:
@@ -348,7 +348,10 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
                             continue;
                         // TODO: we really need a Stream primitive to write multiple frames.
                         ByteBuffer result = coalesce(buffers);
-                        Callback dataCallback = Callback.from(Invocable.getInvocationType(callback), () -> writeSuccess(callback), x -> writeFailure(x, callback));
+                        Callback dataCallback = Callback.from(
+                            Invocable.getInvocationType(callback),
+                            () -> writeSuccess(callback),
+                            x -> writeFailure(x, callback));
                         stream.data(new DataFrame(stream.getId(), result, false), dataCallback);
                     }
                     case PENDING -> callback.failed(new WritePendingException());
@@ -470,7 +473,12 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
             oldConnection.onClose(null);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("upgrading from {} to {} with data {} on {}", oldConnection, newConnection, BufferUtil.toDetailString(buffer), this);
+            LOG.debug(
+                "upgrading from {} to {} with data {} on {}",
+                oldConnection,
+                newConnection,
+                BufferUtil.toDetailString(buffer),
+                this);
 
         setConnection(newConnection);
         if (newConnection instanceof Connection.UpgradeTo && buffer != null)
@@ -508,8 +516,13 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     {
         // Do not call Stream.toString() because it stringifies the attachment,
         // which could be this instance, therefore causing a StackOverflowError.
-        return String.format("%s@%x[%s@%x#%d][w=%s]", getClass().getSimpleName(), hashCode(),
-            stream.getClass().getSimpleName(), stream.hashCode(), stream.getId(),
+        return String.format(
+            "%s@%x[%s@%x#%d][w=%s]",
+            getClass().getSimpleName(),
+            hashCode(),
+            stream.getClass().getSimpleName(),
+            stream.hashCode(),
+            stream.getId(),
             writeState);
     }
 
@@ -542,7 +555,11 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 
         private enum State
         {
-            IDLE, PENDING, OSHUTTING, OSHUT, FAILED
+            IDLE,
+            PENDING,
+            OSHUTTING,
+            OSHUT,
+            FAILED
         }
     }
 }

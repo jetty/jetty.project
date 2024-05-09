@@ -99,7 +99,12 @@ public class SecuredRedirectHandler extends Handler.Wrapper
         if (securePort > 0)
         {
             String secureScheme = httpConfig.getSecureScheme();
-            String url = URIUtil.newURI(secureScheme, Request.getServerName(request), securePort, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
+            String url = URIUtil.newURI(
+                secureScheme,
+                Request.getServerName(request),
+                securePort,
+                request.getHttpURI().getPath(),
+                request.getHttpURI().getQuery());
             // TODO need a utility for this
             response.getHeaders().put(HttpHeader.LOCATION, url);
             response.setStatus(_redirectCode);
@@ -107,7 +112,12 @@ public class SecuredRedirectHandler extends Handler.Wrapper
         }
         else
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "HttpConfiguration.securePort not configured");
+            Response.writeError(
+                request,
+                response,
+                callback,
+                HttpStatus.FORBIDDEN_403,
+                "HttpConfiguration.securePort not configured");
         }
         return true;
     }

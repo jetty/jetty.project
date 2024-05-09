@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnector;
@@ -72,7 +71,11 @@ public abstract class AbstractHttpClientServerTest
         startClient(scenario, HttpClientTransportOverHTTP::new, config);
     }
 
-    protected void startClient(Scenario scenario, Function<ClientConnector, HttpClientTransportOverHTTP> transport, Consumer<HttpClient> config) throws Exception
+    protected void startClient(
+                               Scenario scenario,
+                               Function<ClientConnector, HttpClientTransportOverHTTP> transport,
+                               Consumer<HttpClient> config)
+        throws Exception
     {
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSelectors(1);
@@ -120,10 +123,10 @@ public abstract class AbstractHttpClientServerTest
         public Stream<? extends Arguments> provideArguments(ExtensionContext context)
         {
             return Stream.of(
-                new NormalScenario(),
-                new SslScenario()
-                // TODO: add more ssl / non-ssl scenarios here
-            ).map(Arguments::of);
+                new NormalScenario(), new SslScenario()
+            // TODO: add more ssl / non-ssl scenarios here
+            )
+                .map(Arguments::of);
         }
     }
 
@@ -134,8 +137,9 @@ public abstract class AbstractHttpClientServerTest
         {
             return Stream.of(
                 new NormalScenario()
-                // TODO: add more non-ssl scenarios here
-            ).map(Arguments::of);
+            // TODO: add more non-ssl scenarios here
+            )
+                .map(Arguments::of);
         }
     }
 

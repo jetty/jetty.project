@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -21,7 +29,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
@@ -36,14 +43,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsStringIgnoringCase;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTimeoutsTest extends AbstractTest
 {
@@ -89,7 +88,9 @@ public class ServerTimeoutsTest extends AbstractTest
             .send();
 
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-        assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
+        assertThat(
+            response.getContentAsString(),
+            containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
         if (addIdleTimeoutListener)
             assertTrue(listenerCalled.get());
     }
@@ -122,8 +123,7 @@ public class ServerTimeoutsTest extends AbstractTest
         org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport))
             .timeout(IDLE_TIMEOUT * 5, TimeUnit.MILLISECONDS)
             .headers(f -> f.put(HttpHeader.CONTENT_LENGTH, 10))
-            .onResponseSuccess(s ->
-                content.close())
+            .onResponseSuccess(s -> content.close())
             .body(content);
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
@@ -144,7 +144,9 @@ public class ServerTimeoutsTest extends AbstractTest
 
         ContentResponse response = completable.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-        assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
+        assertThat(
+            response.getContentAsString(),
+            containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
 
         // listener is never called as timeout always delivered via demand
         assertFalse(listenerCalled.get());

@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.handlers;
 
-import java.nio.ByteBuffer;
-
 import jakarta.websocket.MessageHandler;
+import java.nio.ByteBuffer;
 
 /**
  * A particularly annoying type of MessageHandler. One defining 2 implementations.
  */
-public class ComboMessageHandler extends AbstractHandler implements MessageHandler.Whole<String>, MessageHandler.Partial<ByteBuffer>
+public class ComboMessageHandler extends AbstractHandler
+    implements MessageHandler.Whole<String>, MessageHandler.Partial<ByteBuffer>
 {
     @Override
     public void onMessage(ByteBuffer partialMessage, boolean last)

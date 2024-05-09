@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.demos;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.server.Server;
@@ -32,8 +31,7 @@ public class OneServletContextWithSession
         Server server = new Server(port);
 
         // Create a ServletContext, with a session handler enabled.
-        ServletContextHandler context = new ServletContextHandler(
-            ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         context.setBaseResource(baseResource);
         server.setHandler(context);
@@ -46,7 +44,7 @@ public class OneServletContextWithSession
         // but is done explicitly here for demonstration.
         // If more than one context is to be deployed, it is
         // simpler to use SessionCacheFactory and/or
-        // SessionDataStoreFactory instances set as beans on 
+        // SessionDataStoreFactory instances set as beans on
         // the server.
         SessionCache cache = new DefaultSessionCache(sessions);
         cache.setSessionDataStore(new NullSessionDataStore());

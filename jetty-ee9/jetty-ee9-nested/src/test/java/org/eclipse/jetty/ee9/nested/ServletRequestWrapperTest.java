@@ -13,7 +13,8 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.io.IOException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
@@ -21,14 +22,12 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 public class ServletRequestWrapperTest
 {
@@ -53,9 +52,7 @@ public class ServletRequestWrapperTest
     @Test
     public void testServletRequestWrapper() throws Exception
     {
-        String request = "GET / HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: whatever\r\n" + "\n";
 
         String response = _connector.getResponse(request);
         assertThat("Response", response, containsString("200"));
@@ -72,8 +69,7 @@ public class ServletRequestWrapperTest
     private class RequestHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request,
-                           HttpServletResponse response)
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
         {
             RequestWrapper requestWrapper = new RequestWrapper(request);

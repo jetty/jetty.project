@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.time.Duration;
 import java.util.List;
-
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
@@ -131,7 +130,8 @@ public class ResourceHandler extends Handler.Wrapper
             contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
-        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), getByteBufferPool());
+        contentFactory = new ValidatingCachingHttpContentFactory(
+            contentFactory, Duration.ofSeconds(1).toMillis(), getByteBufferPool());
         return contentFactory;
     }
 
@@ -405,7 +405,8 @@ public class ResourceHandler extends Handler.Wrapper
     private class HandlerResourceService extends ResourceService
     {
         @Override
-        protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
+        protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget)
+            throws Exception
         {
             HttpURI newHttpURI = HttpURI.build(request.getHttpURI()).pathQuery(welcomeTarget);
             Request newRequest = Request.serveAs(request, newHttpURI);

@@ -17,7 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
-
 import net.rubyeye.xmemcached.MemcachedClient;
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
 import net.rubyeye.xmemcached.transcoders.SerializingTranscoder;
@@ -146,7 +145,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     {
         if (isStarted())
             throw new IllegalStateException("Context set after MemcachedSessionDataMap started");
-        
+
         try
         {
             _context = context;
@@ -165,7 +164,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     {
         if (!isStarted())
             throw new IllegalStateException("Not started");
-        
+
         final FuturePromise<SessionData> result = new FuturePromise<>();
 
         Runnable r = () ->
@@ -189,7 +188,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     {
         if (!isStarted())
             throw new IllegalStateException("Not started");
-        
+
         final FuturePromise<Void> result = new FuturePromise<>();
         Runnable r = () ->
         {
@@ -211,7 +210,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     public boolean delete(String id) throws Exception
     {
         _client.delete(id);
-        return true; //delete returns false if the value didn't exist
+        return true; // delete returns false if the value didn't exist
     }
 
     @Override

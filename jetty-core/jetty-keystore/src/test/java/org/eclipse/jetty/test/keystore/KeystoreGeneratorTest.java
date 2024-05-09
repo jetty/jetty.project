@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.test.keystore;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.File;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
@@ -42,10 +45,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(WorkDirExtension.class)
 public class KeystoreGeneratorTest
 {
@@ -71,7 +70,8 @@ public class KeystoreGeneratorTest
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(myPassword.getAbsolutePath());
         sslContextFactory.setKeyStorePassword(password);
-        SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+        SslConnectionFactory sslConnectionFactory =
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
         HttpConfiguration httpsConfig = new HttpConfiguration();
         SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
         secureRequestCustomizer.setSniHostCheck(false);

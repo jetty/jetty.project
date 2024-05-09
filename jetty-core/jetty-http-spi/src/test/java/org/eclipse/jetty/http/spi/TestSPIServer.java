@@ -13,16 +13,17 @@
 
 package org.eclipse.jetty.http.spi;
 
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.List;
-import java.util.Set;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.sun.net.httpserver.BasicAuthenticator;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpServer;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.util.List;
+import java.util.Set;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -31,8 +32,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestSPIServer
 {
@@ -53,27 +52,26 @@ public class TestSPIServer
 
         try
         {
-            //ensure no InetSocketAddress is passed
+            // ensure no InetSocketAddress is passed
             server = new JettyHttpServerProvider().createHttpServer(null, 10);
 
-            final HttpContext httpContext = server.createContext("/",
-                exchange ->
-                {
-                    Headers responseHeaders = exchange.getResponseHeaders();
-                    responseHeaders.set("Content-Type", "text/plain");
-                    exchange.sendResponseHeaders(200, 0);
+            final HttpContext httpContext = server.createContext("/", exchange ->
+            {
+                Headers responseHeaders = exchange.getResponseHeaders();
+                responseHeaders.set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(200, 0);
 
-                    OutputStream responseBody = exchange.getResponseBody();
-                    Headers requestHeaders = exchange.getRequestHeaders();
-                    Set<String> keySet = requestHeaders.keySet();
-                    for (String key : keySet)
-                    {
-                        List<String> values = requestHeaders.get(key);
-                        String s = key + " = " + values.toString() + "\n";
-                        responseBody.write(s.getBytes());
-                    }
-                    responseBody.close();
-                });
+                OutputStream responseBody = exchange.getResponseBody();
+                Headers requestHeaders = exchange.getRequestHeaders();
+                Set<String> keySet = requestHeaders.keySet();
+                for (String key : keySet)
+                {
+                    List<String> values = requestHeaders.get(key);
+                    String s = key + " = " + values.toString() + "\n";
+                    responseBody.write(s.getBytes());
+                }
+                responseBody.close();
+            });
 
             httpContext.setAuthenticator(new BasicAuthenticator("Test")
             {
@@ -84,15 +82,15 @@ public class TestSPIServer
                 }
             });
 
-            //now bind one. Use port '0' to let jetty pick the
-            //address to bind so this test isn't port-specific
-            //and thus is portable and can be run concurrently on CI
-            //environments
+            // now bind one. Use port '0' to let jetty pick the
+            // address to bind so this test isn't port-specific
+            // and thus is portable and can be run concurrently on CI
+            // environments
             server.bind(new InetSocketAddress("localhost", 0), 10);
 
             server.start();
 
-            //find out the port jetty picked
+            // find out the port jetty picked
             Server jetty = ((JettyHttpServer)server).getServer();
             int port = ((NetworkConnector)jetty.getConnectors()[0]).getLocalPort();
 
@@ -102,7 +100,9 @@ public class TestSPIServer
             try
             {
                 Request request = client.newRequest("http://localhost:" + port + "/");
-                client.getAuthenticationStore().addAuthentication(new BasicAuthentication(URI.create("http://localhost:" + port), "Test", "username", "password"));
+                client.getAuthenticationStore()
+                    .addAuthentication(new BasicAuthentication(
+                        URI.create("http://localhost:" + port), "Test", "username", "password"));
                 ContentResponse response = request.send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
             }
@@ -129,30 +129,28 @@ public class TestSPIServer
 
         try
         {
-            //use an InetSocketAddress, but use port value of '0' to allow
-            //jetty to pick a free port. Ensures test is not tied to specific port number
-            //for test portability and concurrency.
-            server = new JettyHttpServerProvider().createHttpServer(new
-                InetSocketAddress("localhost", 0), 10);
+            // use an InetSocketAddress, but use port value of '0' to allow
+            // jetty to pick a free port. Ensures test is not tied to specific port number
+            // for test portability and concurrency.
+            server = new JettyHttpServerProvider().createHttpServer(new InetSocketAddress("localhost", 0), 10);
 
-            final HttpContext httpContext = server.createContext("/",
-                exchange ->
+            final HttpContext httpContext = server.createContext("/", exchange ->
+            {
+                Headers responseHeaders = exchange.getResponseHeaders();
+                responseHeaders.set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(200, 0);
+
+                OutputStream responseBody = exchange.getResponseBody();
+                Headers requestHeaders = exchange.getRequestHeaders();
+                Set<String> keySet = requestHeaders.keySet();
+                for (String key : keySet)
                 {
-                    Headers responseHeaders = exchange.getResponseHeaders();
-                    responseHeaders.set("Content-Type", "text/plain");
-                    exchange.sendResponseHeaders(200, 0);
-
-                    OutputStream responseBody = exchange.getResponseBody();
-                    Headers requestHeaders = exchange.getRequestHeaders();
-                    Set<String> keySet = requestHeaders.keySet();
-                    for (String key : keySet)
-                    {
-                        List<String> values = requestHeaders.get(key);
-                        String s = key + " = " + values.toString() + "\n";
-                        responseBody.write(s.getBytes());
-                    }
-                    responseBody.close();
-                });
+                    List<String> values = requestHeaders.get(key);
+                    String s = key + " = " + values.toString() + "\n";
+                    responseBody.write(s.getBytes());
+                }
+                responseBody.close();
+            });
 
             httpContext.setAuthenticator(new BasicAuthenticator("Test")
             {
@@ -165,7 +163,7 @@ public class TestSPIServer
 
             server.start();
 
-            //find out the port jetty picked
+            // find out the port jetty picked
             Server jetty = ((JettyHttpServer)server).getServer();
             int port = ((NetworkConnector)jetty.getConnectors()[0]).getLocalPort();
 
@@ -175,7 +173,9 @@ public class TestSPIServer
             try
             {
                 Request request = client.newRequest("http://localhost:" + port + "/");
-                client.getAuthenticationStore().addAuthentication(new BasicAuthentication(URI.create("http://localhost:" + port), "Test", "username", "password"));
+                client.getAuthenticationStore()
+                    .addAuthentication(new BasicAuthentication(
+                        URI.create("http://localhost:" + port), "Test", "username", "password"));
                 ContentResponse response = request.send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
             }

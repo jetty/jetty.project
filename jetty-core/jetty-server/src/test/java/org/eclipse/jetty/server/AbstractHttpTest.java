@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -21,7 +25,6 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -32,10 +35,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public abstract class AbstractHttpTest
 {
@@ -63,7 +62,10 @@ public abstract class AbstractHttpTest
     {
         try
         {
-            assertThat("Server leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+            assertThat(
+                "Server leaks: " + bufferPool.dumpLeaks(),
+                bufferPool.getLeaks().size(),
+                is(0));
         }
         finally
         {
@@ -89,13 +91,11 @@ public abstract class AbstractHttpTest
                 HttpTester.Response response = HttpTester.parseResponse(input);
                 assertNotNull(response);
 
-                if (httpVersion.is("HTTP/1.1") &&
-                    response.isComplete() &&
-                    response.get("content-length") == null &&
-                    response.get("transfer-encoding") == null &&
-                    !__noBodyCodes.contains(response.getStatus()))
-                    assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
-                        "it should contain connection:close", response.get("connection"), is("close"));
+                if (httpVersion.is("HTTP/1.1") && response.isComplete() && response.get("content-length") == null && response.get("transfer-encoding") == null && !__noBodyCodes.contains(response.getStatus()))
+                    assertThat(
+                        "If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " + "it should contain connection:close",
+                        response.get("connection"),
+                        is("close"));
                 return response;
             }
         }

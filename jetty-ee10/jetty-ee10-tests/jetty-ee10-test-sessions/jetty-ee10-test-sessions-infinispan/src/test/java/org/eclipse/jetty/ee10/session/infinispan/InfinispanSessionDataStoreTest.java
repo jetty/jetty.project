@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ee10.session.infinispan;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
@@ -38,9 +41,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 /**
  * InfinispanSessionDataStoreTest
  */
@@ -51,12 +51,12 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     public InfinispanTestSupport _testSupport;
 
     public WorkDir workDir;
-    
+
     public InfinispanSessionDataStoreTest() throws Exception
     {
         super();
     }
-    
+
     @BeforeEach
     public void configure() throws Exception
     {
@@ -98,7 +98,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        //Not used by testLoadSessionFails() 
+        // Not used by testLoadSessionFails()
     }
 
     @Override
@@ -126,7 +126,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     {
         setUp();
 
-        //create the SessionDataStore
+        // create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
         context.getSessionHandler().setSessionIdManager(_sessionIdManager);
@@ -137,7 +137,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         SessionContext sessionContext = new SessionContext(context.getSessionHandler());
         store.initialize(sessionContext);
 
-        //persist a session
+        // persist a session
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("222", 100, now, now - 1, -1);
         data.setLastNode(sessionContext.getWorkerName());
@@ -147,7 +147,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 
         ((InfinispanSessionDataStore)store).setCache(null);
 
-        //test that loading it fails
+        // test that loading it fails
         assertThrows(UnreadableSessionDataException.class, () -> store.load("222"));
     }
 
@@ -165,7 +165,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
             Thread.currentThread().setContextClassLoader(old);
         }
     }
-    
+
     @Test
     public void testQuery() throws Exception
     {
@@ -189,7 +189,8 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         for (int i = 0; i <= 3; i++)
         {
             long now = System.currentTimeMillis();
-            Query<InfinispanSessionData> q = qf.create("from org.eclipse.jetty.session.infinispan.InfinispanSessionData where expiry < " + now);
+            Query<InfinispanSessionData> q =
+                qf.create("from org.eclipse.jetty.session.infinispan.InfinispanSessionData where expiry < " + now);
             QueryResult<InfinispanSessionData> result = q.execute();
             assertEquals(i, result.list().size());
             Thread.sleep(1000);

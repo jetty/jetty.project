@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.websocket.server.internal;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
@@ -37,14 +36,14 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     public DelegatedServerUpgradeResponse(ServerUpgradeResponse response)
     {
         this.upgradeResponse = response;
-        this.httpServletResponse = (HttpServletResponse)response.getRequest()
-            .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+        this.httpServletResponse = (HttpServletResponse)response.getRequest().getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
     }
 
     @Override
     public void addHeader(String name, String value)
     {
-        // TODO: This should go to the httpServletResponse for headers but then it won't do interception of the websocket headers
+        // TODO: This should go to the httpServletResponse for headers but then it won't do interception of the
+        // websocket headers
         //  which are done through the jetty-core Response wrapping ServerUpgradeResponse done by websocket-core.
         upgradeResponse.getHeaders().add(name, value);
     }
@@ -70,7 +69,9 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public List<ExtensionConfig> getExtensions()
     {
-        return upgradeResponse.getExtensions().stream().map(JettyExtensionConfig::new).collect(Collectors.toList());
+        return upgradeResponse.getExtensions().stream()
+            .map(JettyExtensionConfig::new)
+            .collect(Collectors.toList());
     }
 
     @Override

@@ -18,7 +18,6 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -42,39 +41,38 @@ public class HpackEncoder
 {
     private static final Logger LOG = LoggerFactory.getLogger(HpackEncoder.class);
     private static final HttpField[] STATUSES = new HttpField[599];
-    static final EnumSet<HttpHeader> DO_NOT_HUFFMAN =
-        EnumSet.of(
-            HttpHeader.AUTHORIZATION,
-            HttpHeader.CONTENT_MD5,
-            HttpHeader.PROXY_AUTHENTICATE,
-            HttpHeader.PROXY_AUTHORIZATION);
-    static final EnumSet<HttpHeader> DO_NOT_INDEX =
-        EnumSet.of(
-            // HttpHeader.C_PATH,  // TODO more data needed
-            // HttpHeader.DATE,    // TODO more data needed
-            HttpHeader.AUTHORIZATION,
-            HttpHeader.CONTENT_MD5,
-            HttpHeader.CONTENT_RANGE,
-            HttpHeader.ETAG,
-            HttpHeader.IF_MODIFIED_SINCE,
-            HttpHeader.IF_UNMODIFIED_SINCE,
-            HttpHeader.IF_NONE_MATCH,
-            HttpHeader.IF_RANGE,
-            HttpHeader.IF_MATCH,
-            HttpHeader.LOCATION,
-            HttpHeader.RANGE,
-            HttpHeader.RETRY_AFTER,
-            // HttpHeader.EXPIRES,
-            HttpHeader.LAST_MODIFIED,
-            HttpHeader.SET_COOKIE,
-            HttpHeader.SET_COOKIE2);
+    static final EnumSet<HttpHeader> DO_NOT_HUFFMAN = EnumSet.of(
+        HttpHeader.AUTHORIZATION,
+        HttpHeader.CONTENT_MD5,
+        HttpHeader.PROXY_AUTHENTICATE,
+        HttpHeader.PROXY_AUTHORIZATION);
+    static final EnumSet<HttpHeader> DO_NOT_INDEX = EnumSet.of(
+        // HttpHeader.C_PATH,  // TODO more data needed
+        // HttpHeader.DATE,    // TODO more data needed
+        HttpHeader.AUTHORIZATION,
+        HttpHeader.CONTENT_MD5,
+        HttpHeader.CONTENT_RANGE,
+        HttpHeader.ETAG,
+        HttpHeader.IF_MODIFIED_SINCE,
+        HttpHeader.IF_UNMODIFIED_SINCE,
+        HttpHeader.IF_NONE_MATCH,
+        HttpHeader.IF_RANGE,
+        HttpHeader.IF_MATCH,
+        HttpHeader.LOCATION,
+        HttpHeader.RANGE,
+        HttpHeader.RETRY_AFTER,
+        // HttpHeader.EXPIRES,
+        HttpHeader.LAST_MODIFIED,
+        HttpHeader.SET_COOKIE,
+        HttpHeader.SET_COOKIE2);
     static final EnumSet<HttpHeader> NEVER_INDEX =
-        EnumSet.of(
-            HttpHeader.AUTHORIZATION,
-            HttpHeader.SET_COOKIE,
-            HttpHeader.SET_COOKIE2);
-    private static final EnumSet<HttpHeader> IGNORED_HEADERS = EnumSet.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE,
-        HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE);
+        EnumSet.of(HttpHeader.AUTHORIZATION, HttpHeader.SET_COOKIE, HttpHeader.SET_COOKIE2);
+    private static final EnumSet<HttpHeader> IGNORED_HEADERS = EnumSet.of(
+        HttpHeader.CONNECTION,
+        HttpHeader.KEEP_ALIVE,
+        HttpHeader.PROXY_CONNECTION,
+        HttpHeader.TRANSFER_ENCODING,
+        HttpHeader.UPGRADE);
     private static final PreEncodedHttpField TE_TRAILERS = new PreEncodedHttpField(HttpHeader.TE, "trailers");
     private static final PreEncodedHttpField C_SCHEME_HTTP = new PreEncodedHttpField(HttpHeader.C_SCHEME, "http");
     private static final PreEncodedHttpField C_SCHEME_HTTPS = new PreEncodedHttpField(HttpHeader.C_SCHEME, "https");
@@ -213,14 +211,20 @@ public class HpackEncoder
                 HttpMethod httpMethod = method == null ? null : HttpMethod.fromString(method);
                 HttpField methodField = C_METHODS.get(httpMethod);
                 encode(buffer, methodField == null ? new HttpField(HttpHeader.C_METHOD, method) : methodField);
-                encode(buffer, new HttpField(HttpHeader.C_AUTHORITY, request.getHttpURI().getAuthority()));
+                encode(
+                    buffer,
+                    new HttpField(
+                        HttpHeader.C_AUTHORITY, request.getHttpURI().getAuthority()));
                 boolean isConnect = HttpMethod.CONNECT.is(request.getMethod());
                 String protocol = request.getProtocol();
                 if (!isConnect || protocol != null)
                 {
                     String scheme = request.getHttpURI().getScheme();
                     encode(buffer, HttpScheme.HTTPS.is(scheme) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
-                    encode(buffer, new HttpField(HttpHeader.C_PATH, request.getHttpURI().getPathQuery()));
+                    encode(
+                        buffer,
+                        new HttpField(
+                            HttpHeader.C_PATH, request.getHttpURI().getPathQuery()));
                     if (protocol != null)
                         encode(buffer, new HttpField(HttpHeader.C_PROTOCOL, protocol));
                 }
@@ -291,7 +295,8 @@ public class HpackEncoder
         }
         catch (Throwable x)
         {
-            HpackException.SessionException failure = new HpackException.SessionException("Could not hpack encode %s", metadata);
+            HpackException.SessionException failure =
+                new HpackException.SessionException("Could not hpack encode %s", metadata);
             failure.initCause(x);
             throw failure;
         }
@@ -404,10 +409,7 @@ public class HpackEncoder
                     encodeValue(buffer, huffman, field.getValue());
 
                     if (_debug)
-                        encoding = "Lit" +
-                            ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitIntegerEncoder.octetsNeeded(4, _context.index(name))))) +
-                            (huffman ? "HuffV" : "LitV") +
-                            (neverIndex ? "!!Idx" : "!Idx");
+                        encoding = "Lit" + ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitIntegerEncoder.octetsNeeded(4, _context.index(name))))) + (huffman ? "HuffV" : "LitV") + (neverIndex ? "!!Idx" : "!Idx");
                 }
                 else if (fieldSize >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && !"0".equals(field.getValue()))
                 {
@@ -416,9 +418,7 @@ public class HpackEncoder
                     encodeName(buffer, (byte)0x00, 4, header.asString(), name);
                     encodeValue(buffer, true, field.getValue());
                     if (_debug)
-                        encoding = "Lit" +
-                            ((name == null) ? "HuffN" : "IdxNS" + (1 + NBitIntegerEncoder.octetsNeeded(4, _context.index(name)))) +
-                            "HuffV!Idx";
+                        encoding = "Lit" + ((name == null) ? "HuffN" : "IdxNS" + (1 + NBitIntegerEncoder.octetsNeeded(4, _context.index(name)))) + "HuffV!Idx";
                 }
                 else
                 {
@@ -428,8 +428,7 @@ public class HpackEncoder
                     encodeName(buffer, (byte)0x40, 6, header.asString(), name);
                     encodeValue(buffer, huffman, field.getValue());
                     if (_debug)
-                        encoding = ((name == null) ? "LitHuffN" : ("LitIdxN" + (name.isStatic() ? "S" : "") + (1 + NBitIntegerEncoder.octetsNeeded(6, _context.index(name))))) +
-                            (huffman ? "HuffVIdx" : "LitVIdx");
+                        encoding = ((name == null) ? "LitHuffN" : ("LitIdxN" + (name.isStatic() ? "S" : "") + (1 + NBitIntegerEncoder.octetsNeeded(6, _context.index(name))))) + (huffman ? "HuffVIdx" : "LitVIdx");
                 }
             }
 
@@ -441,7 +440,11 @@ public class HpackEncoder
         if (_debug)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("encode {}:'{}' to '{}'", encoding, field, BufferUtil.toHexString(buffer.duplicate().flip()));
+                LOG.debug(
+                    "encode {}:'{}' to '{}'",
+                    encoding,
+                    field,
+                    BufferUtil.toHexString(buffer.duplicate().flip()));
         }
     }
 

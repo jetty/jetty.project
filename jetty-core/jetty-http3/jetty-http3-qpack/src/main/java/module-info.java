@@ -14,10 +14,10 @@
 module org.eclipse.jetty.http3.qpack
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.http;
 
     exports org.eclipse.jetty.http3.qpack;
 
-    provides org.eclipse.jetty.http.HttpFieldPreEncoder with org.eclipse.jetty.http3.qpack.QpackFieldPreEncoder;
+    provides org.eclipse.jetty.http.HttpFieldPreEncoder with
+        org.eclipse.jetty.http3.qpack.QpackFieldPreEncoder;
 }

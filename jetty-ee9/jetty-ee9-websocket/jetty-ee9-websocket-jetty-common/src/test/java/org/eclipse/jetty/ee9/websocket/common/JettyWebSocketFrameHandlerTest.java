@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.ee9.websocket.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketConnectionListener;
@@ -37,11 +41,6 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketFrameHandlerTest
 {
@@ -126,9 +125,7 @@ public class JettyWebSocketFrameHandlerTest
         localEndpoint.onClosed(new CloseStatus(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
         // Validate Events
-        socket.events.assertEvents(
-            "onWebSocketConnect\\([^\\)]*\\)",
-            "onWebSocketClose\\([^\\)]*\\)");
+        socket.events.assertEvents("onWebSocketConnect\\([^\\)]*\\)", "onWebSocketClose\\([^\\)]*\\)");
     }
 
     @WebSocket
@@ -166,7 +163,8 @@ public class JettyWebSocketFrameHandlerTest
 
             // Trigger Events
             localEndpoint.onOpen(coreSession, Callback.NOOP);
-            localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello Text Stream").setFin(true), Callback.NOOP);
+            localEndpoint.onFrame(
+                new Frame(OpCode.TEXT).setPayload("Hello Text Stream").setFin(true), Callback.NOOP);
             localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
             // Await completion (of threads)
@@ -189,9 +187,12 @@ public class JettyWebSocketFrameHandlerTest
             // Trigger Events
             localEndpoint.onOpen(coreSession, Callback.NOOP);
             localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hel").setFin(false), Callback.NOOP);
-            localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("lo ").setFin(false), Callback.NOOP);
-            localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Wor").setFin(false), Callback.NOOP);
-            localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("ld").setFin(true), Callback.NOOP);
+            localEndpoint.onFrame(
+                new Frame(OpCode.CONTINUATION).setPayload("lo ").setFin(false), Callback.NOOP);
+            localEndpoint.onFrame(
+                new Frame(OpCode.CONTINUATION).setPayload("Wor").setFin(false), Callback.NOOP);
+            localEndpoint.onFrame(
+                new Frame(OpCode.CONTINUATION).setPayload("ld").setFin(true), Callback.NOOP);
             localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
             // Await completion (of threads)
@@ -229,8 +230,7 @@ public class JettyWebSocketFrameHandlerTest
             "onWebSocketPartialBinary\\(.*ByteBuffer.*Save.*, false\\)",
             "onWebSocketPartialBinary\\(.*ByteBuffer.* the .*, false\\)",
             "onWebSocketPartialBinary\\(.*ByteBuffer.*Pig.*, true\\)",
-            "onWebSocketClose\\(NORMAL, <null>\\)"
-        );
+            "onWebSocketClose\\(NORMAL, <null>\\)");
     }
 
     @Test
@@ -255,8 +255,7 @@ public class JettyWebSocketFrameHandlerTest
             "onWebSocketConnect\\([^\\)]*\\)",
             "onWebSocketText\\(\"Hello World\"\\)",
             "onWebSocketBinary\\(\\[12\\], 0, 12\\)",
-            "onWebSocketClose\\(NORMAL, \"Normal\"\\)"
-        );
+            "onWebSocketClose\\(NORMAL, \"Normal\"\\)");
     }
 
     @Test
@@ -275,8 +274,7 @@ public class JettyWebSocketFrameHandlerTest
         // Validate Events
         socket.events.assertEvents(
             "onWebSocketConnect\\([^\\)]*\\)",
-            "onWebSocketError\\(\\(RuntimeException\\) \"Nothing to see here\"\\)"
-        );
+            "onWebSocketError\\(\\(RuntimeException\\) \"Nothing to see here\"\\)");
     }
 
     @Test
@@ -305,8 +303,7 @@ public class JettyWebSocketFrameHandlerTest
             "onWebSocketFrame\\(.*BINARY@[0-9a-f]*.len=4,fin=false,.*\\)",
             "onWebSocketFrame\\(.*CONTINUATION@[0-9a-f]*.len=5,fin=false,.*\\)",
             "onWebSocketFrame\\(.*CONTINUATION@[0-9a-f]*.len=3,fin=true,.*\\)",
-            "onWebSocketFrame\\(.*CLOSE@[0-9a-f]*.len=8,fin=true,.*\\)"
-        );
+            "onWebSocketFrame\\(.*CLOSE@[0-9a-f]*.len=8,fin=true,.*\\)");
     }
 
     @Test
@@ -333,7 +330,6 @@ public class JettyWebSocketFrameHandlerTest
             "onWebSocketConnect\\([^\\)]*\\)",
             "onWebSocketPing\\(.*ByteBuffer.*You there.*\\)",
             "onWebSocketPong\\(.*ByteBuffer.*You there.*\\)",
-            "onWebSocketClose\\(NORMAL, \"Normal\"\\)"
-        );
+            "onWebSocketClose\\(NORMAL, \"Normal\"\\)");
     }
 }

@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.http.compression;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.http.HttpTokens;
-import org.eclipse.jetty.util.CharsetStringBuilder;
-
 import static org.eclipse.jetty.http.compression.Huffman.rowbits;
 import static org.eclipse.jetty.http.compression.Huffman.rowsym;
+
+import java.nio.ByteBuffer;
+import org.eclipse.jetty.http.HttpTokens;
+import org.eclipse.jetty.util.CharsetStringBuilder;
 
 /**
  * <p>Used to decoded Huffman encoded strings.</p>
@@ -29,7 +28,8 @@ import static org.eclipse.jetty.http.compression.Huffman.rowsym;
  */
 public class HuffmanDecoder
 {
-    private final CharsetStringBuilder.Iso88591StringBuilder _builder = new CharsetStringBuilder.Iso88591StringBuilder();
+    private final CharsetStringBuilder.Iso88591StringBuilder _builder =
+        new CharsetStringBuilder.Iso88591StringBuilder();
     private int _length = 0;
     private int _count = 0;
     private int _node = 0;

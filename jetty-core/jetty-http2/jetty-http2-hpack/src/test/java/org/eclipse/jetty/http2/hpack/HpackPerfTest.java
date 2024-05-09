@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.http2.hpack;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.File;
 import java.io.FileReader;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -27,8 +28,6 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class HpackPerfTest
 {
@@ -46,7 +45,9 @@ public class HpackPerfTest
     @AfterEach
     public void after()
     {
-        System.err.printf("dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n", _tableCapacity, _unencodedSize, _encodedSize, 100.0 * _encodedSize / _unencodedSize);
+        System.err.printf(
+            "dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n",
+            _tableCapacity, _unencodedSize, _encodedSize, 100.0 * _encodedSize / _unencodedSize);
     }
 
     @Test

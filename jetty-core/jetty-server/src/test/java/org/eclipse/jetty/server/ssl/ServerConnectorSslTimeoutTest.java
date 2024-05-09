@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.security.KeyStore;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-
 import org.eclipse.jetty.server.ConnectorTimeoutTest;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -47,7 +46,8 @@ public class ServerConnectorSslTimeoutTest extends ConnectorTimeoutTest
         {
             keystore.load(stream, "storepwd".toCharArray());
         }
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        TrustManagerFactory trustManagerFactory =
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("SSL");
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);

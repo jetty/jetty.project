@@ -13,23 +13,22 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.slf4j.LoggerFactory;
-
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.slf4j.LoggerFactory;
 
 @Timeout(value = 10)
 public class BlockingTest
@@ -256,7 +255,8 @@ public class BlockingTest
             {
                 throw new RuntimeException(e);
             }
-        }).start();
+        })
+            .start();
         new Thread(() ->
         {
             try (Blocker.Runnable runnable = _shared.runnable())
@@ -269,7 +269,8 @@ public class BlockingTest
             {
                 throw new RuntimeException(e);
             }
-        }).start();
+        })
+            .start();
 
         assertFalse(latch0.await(100, TimeUnit.MILLISECONDS));
         callback0.succeeded();

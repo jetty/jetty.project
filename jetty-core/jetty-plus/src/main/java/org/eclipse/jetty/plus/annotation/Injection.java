@@ -20,7 +20,6 @@ import java.util.Locale;
 import java.util.Objects;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-
 import org.eclipse.jetty.util.IntrospectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +52,8 @@ public class Injection
         _mappingName = mappingName;
     }
 
-    public Injection(Class<?> clazz, Method method, Class<?> arg, Class<?> resourceType, String jndiName, String mappingName)
+    public Injection(
+                     Class<?> clazz, Method method, Class<?> arg, Class<?> resourceType, String jndiName, String mappingName)
     {
         _targetClass = Objects.requireNonNull(clazz);
         _target = Objects.requireNonNull(method);
@@ -74,7 +74,7 @@ public class Injection
         Member tmpTarget = null;
         Class<?> tmpParamClass = null;
 
-        //first look for a javabeans style setter matching the targetName
+        // first look for a javabeans style setter matching the targetName
         String setter = "set" + target.substring(0, 1).toUpperCase(Locale.ENGLISH) + target.substring(1);
         try
         {
@@ -85,7 +85,7 @@ public class Injection
         }
         catch (NoSuchMethodException nsme)
         {
-            //try as a field
+            // try as a field
             try
             {
                 tmpTarget = IntrospectionUtil.findField(clazz, target, resourceType, true, false);
@@ -94,7 +94,8 @@ public class Injection
             catch (NoSuchFieldException nsfe)
             {
                 nsme.addSuppressed(nsfe);
-                throw new IllegalArgumentException("No such field or method " + target + " on class " + _targetClass, nsme);
+                throw new IllegalArgumentException(
+                    "No such field or method " + target + " on class " + _targetClass, nsme);
             }
         }
 
@@ -140,7 +141,7 @@ public class Injection
     }
 
     /**
-    
+     *
      * @return the mappingName
      */
     public String getMappingName()
@@ -178,8 +179,7 @@ public class Injection
      * @return the injected valud
      * @throws NamingException if unable to lookup value
      */
-    public Object lookupInjectedValue()
-        throws NamingException
+    public Object lookupInjectedValue() throws NamingException
     {
         InitialContext context = new InitialContext();
         return context.lookup("java:comp/env/" + getJndiName());

@@ -136,7 +136,8 @@ public class JettyLoggerConfiguration
         JettyLevel level = JettyLevel.strToLevel(levelStr);
         if (level == null)
         {
-            System.err.printf("Unknown JettyLogger/SLF4J Level [%s]=[%s], expecting only %s as values.%n",
+            System.err.printf(
+                "Unknown JettyLogger/SLF4J Level [%s]=[%s], expecting only %s as values.%n",
                 loggerName, levelStr, Arrays.toString(JettyLevel.values()));
         }
         return level;
@@ -227,9 +228,7 @@ public class JettyLoggerConfiguration
 
         for (String name : props.stringPropertyNames())
         {
-            if (name.startsWith("org.eclipse.jetty.logging.") ||
-                name.endsWith(".LEVEL") ||
-                name.endsWith(".STACKS"))
+            if (name.startsWith("org.eclipse.jetty.logging.") || name.endsWith(".LEVEL") || name.endsWith(".STACKS"))
             {
                 String val = props.getProperty(name);
                 // Protect against application code insertion of non-String values (returned as null).

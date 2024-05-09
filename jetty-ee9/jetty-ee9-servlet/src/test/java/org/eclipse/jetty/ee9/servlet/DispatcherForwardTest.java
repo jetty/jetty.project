@@ -13,27 +13,26 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.StringStartsWith.startsWith;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.StringStartsWith.startsWith;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("serial")
 public class DispatcherForwardTest
@@ -93,7 +92,8 @@ public class DispatcherForwardTest
         servlet1 = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
 
@@ -107,7 +107,8 @@ public class DispatcherForwardTest
         servlet2 = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
                 checkThat(req.getParameter("a"), Matchers.equalTo("1 one"));
@@ -117,10 +118,7 @@ public class DispatcherForwardTest
         prepare();
 
         String request =
-            "GET /one?" + query1 + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "GET /one?" + query1 + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(response.startsWith("HTTP/1.1 200"), response);
@@ -140,7 +138,8 @@ public class DispatcherForwardTest
         servlet1 = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
 
@@ -155,7 +154,8 @@ public class DispatcherForwardTest
         servlet2 = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query2));
                 checkThat(req.getParameter("a"), Matchers.equalTo("3 three"));
@@ -166,10 +166,7 @@ public class DispatcherForwardTest
         prepare();
 
         String request =
-            "GET /one?" + query1 + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "GET /one?" + query1 + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(response.startsWith("HTTP/1.1 200"), response);
@@ -189,7 +186,8 @@ public class DispatcherForwardTest
         servlet1 = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
 
@@ -203,7 +201,8 @@ public class DispatcherForwardTest
         servlet2 = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query2));
                 checkThat(req.getParameter("a"), Matchers.equalTo("1 one"));
@@ -214,10 +213,7 @@ public class DispatcherForwardTest
         prepare();
 
         String request =
-            "GET /one?" + query1 + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "GET /one?" + query1 + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n" + "\r\n";
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(response.startsWith("HTTP/1.1 200"), response);
@@ -237,7 +233,8 @@ public class DispatcherForwardTest
         servlet1 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
 
@@ -254,7 +251,8 @@ public class DispatcherForwardTest
         servlet2 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
                 String[] values = req.getParameterValues("a");
@@ -266,14 +264,7 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request =
-            "POST /one?" + query1 + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: " + form.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                form;
+        String request = "POST /one?" + query1 + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Content-Length: " + form.length() + "\r\n" + "Connection: close\r\n" + "\r\n" + form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));
@@ -294,7 +285,8 @@ public class DispatcherForwardTest
         servlet1 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
 
@@ -311,7 +303,8 @@ public class DispatcherForwardTest
         servlet2 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query2));
                 String[] values = req.getParameterValues("a");
@@ -323,14 +316,7 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request =
-            "POST /one?" + query1 + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: " + form.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                form;
+        String request = "POST /one?" + query1 + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Content-Length: " + form.length() + "\r\n" + "Connection: close\r\n" + "\r\n" + form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));
@@ -351,7 +337,8 @@ public class DispatcherForwardTest
         servlet1 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
 
@@ -367,7 +354,8 @@ public class DispatcherForwardTest
         servlet2 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query2));
                 checkThat(req.getParameter("a"), Matchers.equalTo("1 one"));
@@ -378,14 +366,7 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request =
-            "POST /one?" + query1 + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: " + form.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                form;
+        String request = "POST /one?" + query1 + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Content-Length: " + form.length() + "\r\n" + "Connection: close\r\n" + "\r\n" + form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));
@@ -407,7 +388,8 @@ public class DispatcherForwardTest
         servlet1 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
                 checkThat(req.getParameter("a"), Matchers.equalTo("1 one"));
@@ -425,7 +407,8 @@ public class DispatcherForwardTest
         servlet2 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query2));
                 checkThat(req.getParameter("a"), Matchers.equalTo("1 one"));
@@ -436,14 +419,7 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request =
-            "POST /one?" + query1 + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: " + form.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                form;
+        String request = "POST /one?" + query1 + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Content-Length: " + form.length() + "\r\n" + "Connection: close\r\n" + "\r\n" + form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));
@@ -458,7 +434,8 @@ public class DispatcherForwardTest
         servlet1 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
 
@@ -472,7 +449,8 @@ public class DispatcherForwardTest
         servlet2 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
                 ServletInputStream input = req.getInputStream();
@@ -485,14 +463,7 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request =
-            "POST /one?" + query1 + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: " + form.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                form;
+        String request = "POST /one?" + query1 + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Content-Length: " + form.length() + "\r\n" + "Connection: close\r\n" + "\r\n" + form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));
@@ -508,7 +479,8 @@ public class DispatcherForwardTest
         servlet1 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query1));
 
@@ -522,7 +494,8 @@ public class DispatcherForwardTest
         servlet2 = new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                throws ServletException, IOException
             {
                 checkThat(req.getQueryString(), Matchers.equalTo(query2));
                 ServletInputStream input = req.getInputStream();
@@ -536,14 +509,7 @@ public class DispatcherForwardTest
 
         prepare();
 
-        String request =
-            "POST /one?" + query1 + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: " + form.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                form;
+        String request = "POST /one?" + query1 + " HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n" + "Content-Length: " + form.length() + "\r\n" + "Connection: close\r\n" + "\r\n" + form;
         String response = connector.getResponse(request);
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, startsWith("HTTP/1.1 200"));

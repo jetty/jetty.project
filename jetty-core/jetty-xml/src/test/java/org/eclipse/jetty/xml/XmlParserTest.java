@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.xml;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import java.net.URL;
 import java.nio.file.Path;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class XmlParserTest
 {
@@ -42,7 +41,9 @@ public class XmlParserTest
             protected InputSource resolveEntity(String pid, String sid)
             {
                 InputSource inputSource = super.resolveEntity(pid, sid);
-                assertNotNull(inputSource, "You are using entities in your XML that don't match your redirectEntity mappings: pid=" + pid + ", sid=" + sid);
+                assertNotNull(
+                    inputSource,
+                    "You are using entities in your XML that don't match your redirectEntity mappings: pid=" + pid + ", sid=" + sid);
                 return inputSource;
             }
         };

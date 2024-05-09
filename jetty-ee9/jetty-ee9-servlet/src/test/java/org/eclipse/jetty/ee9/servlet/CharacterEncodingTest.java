@@ -13,14 +13,16 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
@@ -29,15 +31,13 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 public class CharacterEncodingTest
 {
     public static class CharsetChangeToJsonMimeTypeSetCharsetToNullServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
         {
             // set an unknown character encoding
             response.setCharacterEncoding("allez-les-bleus");
@@ -68,7 +68,8 @@ public class CharacterEncodingTest
         context.setContextPath("/");
         server.setHandler(context);
 
-        context.addServlet(CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/character-encoding/not-exists/*");
+        context.addServlet(
+            CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/character-encoding/not-exists/*");
 
         server.start();
     }
@@ -100,6 +101,5 @@ public class CharacterEncodingTest
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
-
     }
 }

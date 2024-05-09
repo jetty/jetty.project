@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -55,7 +54,8 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
             return false;
 
         // Split the URI path into segments, to walk down the resource tree and build the realURI of any symlink found
-        // We rebuild the realURI, segment by segment, getting the real name at each step, so that we can distinguish between
+        // We rebuild the realURI, segment by segment, getting the real name at each step, so that we can distinguish
+        // between
         // alias types.  Specifically, so we can allow a symbolic link so long as it's realpath is not protected.
         String[] segments = pathInContext.substring(1).split("/");
         StringBuilder segmentPath = new StringBuilder();
@@ -72,7 +72,8 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                 Path p = fromBase.getPath();
                 if (p != null)
                 {
-                    // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise allow.
+                    // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise
+                    // allow.
                     // This allows symlinks like /other->/WEB-INF and /external->/var/lib/docroot
                     // This does not allow symlinks like /WeB-InF->/var/lib/other
                     if (Files.isSymbolicLink(p))
@@ -89,7 +90,8 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                     {
                         p = r.getPath();
 
-                        // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise allow.
+                        // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise
+                        // allow.
                         // This allows symlinks like /other->/WEB-INF and /external->/var/lib/docroot
                         // This does not allow symlinks like /WeB-InF->/var/lib/other
                         if (Files.isSymbolicLink(p))

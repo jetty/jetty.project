@@ -14,7 +14,6 @@
 package org.eclipse.jetty.security;
 
 import java.util.List;
-
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,7 +146,10 @@ public class HashLoginService extends AbstractLoginService
         if (_userStore == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: {} refresh: {}s", _config, _reloadInterval);
+                LOG.debug(
+                    "doStart: Starting new PropertyUserStore. PropertiesFile: {} refresh: {}s",
+                    _config,
+                    _reloadInterval);
             PropertyUserStore propertyUserStore = new PropertyUserStore();
             propertyUserStore.setReloadInterval(_reloadInterval);
             propertyUserStore.setConfig(_config);

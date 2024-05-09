@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -21,15 +23,12 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ServerConnectionCloseTest
 {
@@ -87,7 +86,8 @@ public class ServerConnectionCloseTest
         testServerSendsConnectionClose(false, true, "data");
     }
 
-    private void testServerSendsConnectionClose(boolean shutdownOutput, boolean chunked, String content) throws Exception
+    private void testServerSendsConnectionClose(boolean shutdownOutput, boolean chunked, String content)
+        throws Exception
     {
         try (ServerSocket server = new ServerSocket(0))
         {
@@ -104,23 +104,15 @@ public class ServerConnectionCloseTest
                 consumeRequest(input);
 
                 OutputStream output = socket.getOutputStream();
-                String serverResponse =
-                    "HTTP/1.1 200 OK\r\n" +
-                        "Connection: close\r\n";
+                String serverResponse = "HTTP/1.1 200 OK\r\n" + "Connection: close\r\n";
                 if (chunked)
                 {
-                    serverResponse +=
-                        "Transfer-Encoding: chunked\r\n" +
-                            "\r\n";
+                    serverResponse += "Transfer-Encoding: chunked\r\n" + "\r\n";
                     for (int i = 0; i < 2; ++i)
                     {
-                        serverResponse +=
-                            Integer.toHexString(content.length()) + "\r\n" +
-                                content + "\r\n";
+                        serverResponse += Integer.toHexString(content.length()) + "\r\n" + content + "\r\n";
                     }
-                    serverResponse +=
-                        "0\r\n" +
-                            "\r\n";
+                    serverResponse += "0\r\n" + "\r\n";
                 }
                 else
                 {

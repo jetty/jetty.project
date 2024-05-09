@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
+import jakarta.websocket.server.ServerEndpointConfig;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.coders.DateDecoder;
@@ -47,8 +46,8 @@ public class AnnotatedServerEndpointTest
         server.start();
         server.getServerContainer().addEndpoint(ConfiguredEchoSocket.class);
 
-        ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder
-            .create(ConfiguredEchoSocket.class, "/override")
+        ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(
+            ConfiguredEchoSocket.class, "/override")
             .subprotocols(Collections.singletonList("override"))
             .build();
         server.getServerContainer().addEndpoint(endpointConfig);

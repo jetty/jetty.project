@@ -22,6 +22,7 @@ public class ssize_t extends IntegerType
     {
         this(0);
     }
+
     public ssize_t(long value)
     {
         super(Native.SIZE_T_SIZE, value, false);

@@ -63,7 +63,13 @@ public class SessionTestSupport
         return sessionCookie;
     }
 
-    public SessionTestSupport(int port, int maxInactivePeriod, int scavengePeriod, SessionCacheFactory cacheFactory, SessionDataStoreFactory storeFactory) throws Exception
+    public SessionTestSupport(
+                              int port,
+                              int maxInactivePeriod,
+                              int scavengePeriod,
+                              SessionCacheFactory cacheFactory,
+                              SessionDataStoreFactory storeFactory)
+        throws Exception
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;
@@ -86,8 +92,7 @@ public class SessionTestSupport
         return idManager;
     }
 
-    public SessionHandler newSessionHandler()
-        throws Exception
+    public SessionHandler newSessionHandler() throws Exception
     {
         SessionHandler h = new SessionHandler();
         SessionCache c = _cacheFactory.getSessionCache(h);
@@ -110,7 +115,7 @@ public class SessionTestSupport
     public void start() throws Exception
     {
         // server -> contexts collection -> context handler -> session handler -> servlet handler
-         _server.getTail().setHandler(_contexts);
+        _server.getTail().setHandler(_contexts);
         _server.start();
     }
 
@@ -150,7 +155,7 @@ public class SessionTestSupport
         context.setSessionHandler(sessionHandler);
         _contexts.addHandler(context);
 
-        return context; 
+        return context;
     }
 
     public Server getServer()

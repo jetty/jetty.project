@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -29,7 +35,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-
 import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
@@ -72,12 +77,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class MaxConcurrentStreamsTest extends AbstractTest
 {
     private void start(int maxConcurrentStreams, Handler handler) throws Exception
@@ -118,7 +117,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(2);
 
         // First request is sent immediately.
-        httpClient.newRequest("localhost", connector.getLocalPort())
+        httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .path("/first")
             .send(result ->
             {
@@ -127,7 +127,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             });
 
         // Second request is queued.
-        httpClient.newRequest("localhost", connector.getLocalPort())
+        httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .path("/second")
             .send(result ->
             {
@@ -154,12 +155,13 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         });
 
         int iterations = 50;
-        IntStream.range(0, concurrency).parallel().forEach(i ->
-            IntStream.range(0, iterations).forEach(j ->
+        IntStream.range(0, concurrency).parallel().forEach(i -> IntStream.range(0, iterations)
+            .forEach(j ->
             {
                 try
                 {
-                    ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+                    ContentResponse response = httpClient
+                        .newRequest("localhost", connector.getLocalPort())
                         .path("/" + i + "_" + j)
                         .timeout(5, TimeUnit.SECONDS)
                         .send();
@@ -169,8 +171,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                 {
                     throw new RuntimeException(x);
                 }
-            })
-        );
+            }));
     }
 
     @Test
@@ -198,23 +199,29 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         httpClient = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client())
         {
             @Override
-            protected void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+            protected void connect(
+                                   SocketAddress address,
+                                   ClientConnectionFactory factory,
+                                   Session.Listener listener,
+                                   Promise<Session> promise,
+                                   Map<String, Object> context)
             {
-                super.connect(address, factory, new Wrapper(listener)
-                {
-                    @Override
-                    public void onSettings(Session session, SettingsFrame frame)
+                super.connect(
+                    address,
+                    factory,
+                    new Wrapper(listener)
                     {
-                        super.onSettings(session, frame);
-                        // Send another request to simulate a request being
-                        // sent concurrently with connection establishment.
-                        // Sending this request will trigger the creation of
-                        // another connection since maxConcurrentStream=1.
-                        if (connections.incrementAndGet() == 1)
+                        @Override
+                        public void onSettings(Session session, SettingsFrame frame)
                         {
-                            httpClient.newRequest(host, port)
-                                .path("/2")
-                                .send(result ->
+                            super.onSettings(session, frame);
+                            // Send another request to simulate a request being
+                            // sent concurrently with connection establishment.
+                            // Sending this request will trigger the creation of
+                            // another connection since maxConcurrentStream=1.
+                            if (connections.incrementAndGet() == 1)
+                            {
+                                httpClient.newRequest(host, port).path("/2").send(result ->
                                 {
                                     if (result.isSucceeded())
                                     {
@@ -229,9 +236,11 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                                         failures.add(result.getFailure());
                                     }
                                 });
+                            }
                         }
-                    }
-                }, promise, context);
+                    },
+                    promise,
+                    context);
             }
         });
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
@@ -241,9 +250,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         // This request will be queued and establish the connection,
         // which will trigger the send of the second request.
-        var request = httpClient.newRequest(host, port)
-                .path("/1")
-                .timeout(5, TimeUnit.SECONDS);
+        var request = httpClient.newRequest(host, port).path("/1").timeout(5, TimeUnit.SECONDS);
         ContentResponse response = request.send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -277,7 +284,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         // Send requests up to the max allowed.
         for (int i = 0; i < maxStreams; ++i)
         {
-            httpClient.newRequest("localhost", connector.getLocalPort())
+            httpClient
+                .newRequest("localhost", connector.getLocalPort())
                 .path("/" + i)
                 .send(null);
         }
@@ -285,7 +293,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         // Send the request in excess.
         CountDownLatch latch = new CountDownLatch(1);
         String path = "/excess";
-        var request = httpClient.newRequest("localhost", connector.getLocalPort()).path(path);
+        var request =
+            httpClient.newRequest("localhost", connector.getLocalPort()).path(path);
         request.send(result ->
         {
             if (result.getResponse().getStatus() == HttpStatus.OK_200)
@@ -319,13 +328,17 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         primeConnection();
 
         // Send a request that is aborted while queued.
-        httpClient.newRequest("localhost", connector.getLocalPort())
+        httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .path("/aborted")
             .onRequestQueued(request -> request.abort(new Exception()))
             .send(null);
 
         // Must be able to send another request.
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort()).path("/check").send();
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
+            .path("/check")
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -351,7 +364,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(maxConcurrent);
         for (int i = 0; i < maxConcurrent; ++i)
         {
-            httpClient.newRequest("localhost", connector.getLocalPort())
+            httpClient
+                .newRequest("localhost", connector.getLocalPort())
                 .path("/" + i)
                 .send(result -> latch.countDown());
         }
@@ -384,7 +398,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         {
             try
             {
-                MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), 1);
+                MultiplexConnectionPool pool =
+                    new MultiplexConnectionPool(destination, httpClient.getMaxConnectionsPerDestination(), 1);
                 LifeCycle.start(pool);
                 pool.preCreateConnections(parallelism * 2).get();
                 return pool;
@@ -401,12 +416,13 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(total);
         Queue<Result> failures = new ConcurrentLinkedQueue<>();
         ForkJoinPool pool = new ForkJoinPool(parallelism);
-        pool.submit(() -> IntStream.range(0, parallelism).parallel().forEach(i ->
-            IntStream.range(0, runs).forEach(j ->
+        pool.submit(() -> IntStream.range(0, parallelism).parallel().forEach(i -> IntStream.range(0, runs)
+            .forEach(j ->
             {
                 for (int k = 0; k < iterations; ++k)
                 {
-                    httpClient.newRequest("localhost", connector.getLocalPort())
+                    httpClient
+                        .newRequest("localhost", connector.getLocalPort())
                         .path("/" + i + "_" + j + "_" + k)
                         .send(result ->
                         {
@@ -439,7 +455,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         httpClient.setMaxConnectionsPerDestination(1);
 
         CountDownLatch latch = new CountDownLatch(1);
-        httpClient.newRequest("localhost", connector.getLocalPort())
+        httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .path("/1")
             .timeout(timeout, TimeUnit.MILLISECONDS)
             .send(result ->
@@ -448,7 +465,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                     latch.countDown();
             });
 
-        ContentResponse response2 = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response2 = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .path("/2")
             .send();
 
@@ -460,35 +478,42 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testTCPCongestedStreamTimesOut() throws Exception
     {
         CountDownLatch request1Latch = new CountDownLatch(1);
-        RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener()
-        {
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+        RawHTTP2ServerConnectionFactory http2 =
+            new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener()
             {
-                MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                switch (request.getHttpURI().getPath())
+                @Override
+                public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
                 {
-                    case "/1" ->
+                    MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                    switch (request.getHttpURI().getPath())
                     {
-                        // Do not return to cause TCP congestion.
-                        assertTrue(awaitLatch(request1Latch, 15, TimeUnit.SECONDS));
-                        MetaData.Response response1 = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                        stream.headers(new HeadersFrame(stream.getId(), response1, null, true), Callback.NOOP);
+                        case "/1" ->
+                        {
+                            // Do not return to cause TCP congestion.
+                            assertTrue(awaitLatch(request1Latch, 15, TimeUnit.SECONDS));
+                            MetaData.Response response1 = new MetaData.Response(
+                                HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            stream.headers(new HeadersFrame(stream.getId(), response1, null, true), Callback.NOOP);
+                        }
+                        case "/3" ->
+                        {
+                            MetaData.Response response3 = new MetaData.Response(
+                                HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            stream.headers(new HeadersFrame(stream.getId(), response3, null, true), Callback.NOOP);
+                        }
+                        default ->
+                        {
+                            MetaData.Response response = new MetaData.Response(
+                                HttpStatus.INTERNAL_SERVER_ERROR_500,
+                                null,
+                                HttpVersion.HTTP_2,
+                                HttpFields.EMPTY);
+                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        }
                     }
-                    case "/3" ->
-                    {
-                        MetaData.Response response3 = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                        stream.headers(new HeadersFrame(stream.getId(), response3, null, true), Callback.NOOP);
-                    }
-                    default ->
-                    {
-                        MetaData.Response response = new MetaData.Response(HttpStatus.INTERNAL_SERVER_ERROR_500, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                    }
+                    return null;
                 }
-                return null;
-            }
-        });
+            });
         http2.setMaxConcurrentStreams(2);
         // Set the HTTP/2 flow control windows very large so we can
         // cause TCP congestion, not HTTP/2 flow control congestion.
@@ -516,7 +541,9 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         // First request must cause TCP congestion.
         CountDownLatch response1Latch = new CountDownLatch(1);
-        httpClient.newRequest("localhost", connector.getLocalPort()).path("/1")
+        httpClient
+            .newRequest("localhost", connector.getLocalPort())
+            .path("/1")
             .body(new BytesRequestContent(new byte[64 * 1024 * 1024]))
             .send(result ->
             {
@@ -538,21 +565,20 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         Thread.sleep(1000);
 
         // Second request cannot be sent due to TCP congestion and times out.
-        assertThrows(TimeoutException.class, () -> httpClient.newRequest("localhost", connector.getLocalPort())
+        assertThrows(TimeoutException.class, () -> httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .path("/2")
             .timeout(1000, TimeUnit.MILLISECONDS)
             .send());
 
         // Third request should succeed.
         CountDownLatch response3Latch = new CountDownLatch(1);
-        httpClient.newRequest("localhost", connector.getLocalPort())
-            .path("/3")
-            .send(result ->
-            {
-                assertTrue(result.isSucceeded(), String.valueOf(result.getFailure()));
-                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
-                response3Latch.countDown();
-            });
+        httpClient.newRequest("localhost", connector.getLocalPort()).path("/3").send(result ->
+        {
+            assertTrue(result.isSucceeded(), String.valueOf(result.getFailure()));
+            assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+            response3Latch.countDown();
+        });
 
         // Wait for the third request to generate the HTTP/2 stream.
         Thread.sleep(1000);
@@ -568,52 +594,65 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testDifferentMaxConcurrentStreamsForDifferentConnections() throws Exception
     {
         long processing = 125;
-        RawHTTP2ServerConnectionFactory http2 = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener()
-        {
-            private Session session1;
-            private Session session2;
-
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+        RawHTTP2ServerConnectionFactory http2 =
+            new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), new ServerSessionListener()
             {
-                MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                switch (request.getHttpURI().getPath())
+                private Session session1;
+                private Session session2;
+
+                @Override
+                public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
                 {
-                    case "/prime" ->
+                    MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                    switch (request.getHttpURI().getPath())
                     {
-                        session1 = stream.getSession();
-                        // Send another request from here to force the opening of the 2nd connection.
-                        httpClient.newRequest("localhost", connector.getLocalPort()).path("/prime2").send(result ->
+                        case "/prime" ->
                         {
-                            MetaData.Response response = new MetaData.Response(result.getResponse().getStatus(), null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            session1 = stream.getSession();
+                            // Send another request from here to force the opening of the 2nd connection.
+                            httpClient
+                                .newRequest("localhost", connector.getLocalPort())
+                                .path("/prime2")
+                                .send(result ->
+                                {
+                                    MetaData.Response response = new MetaData.Response(
+                                        result.getResponse().getStatus(),
+                                        null,
+                                        HttpVersion.HTTP_2,
+                                        HttpFields.EMPTY);
+                                    stream.headers(
+                                        new HeadersFrame(stream.getId(), response, null, true),
+                                        Callback.NOOP);
+                                });
+                        }
+                        case "/prime2" ->
+                        {
+                            session2 = stream.getSession();
+                            MetaData.Response response = new MetaData.Response(
+                                HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        });
+                        }
+                        case "/update_max_streams" ->
+                        {
+                            Session session = stream.getSession() == session1 ? session2 : session1;
+                            Map<Integer, Integer> settings = new HashMap<>();
+                            settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, 2);
+                            session.settings(new SettingsFrame(settings, false), Callback.NOOP);
+                            MetaData.Response response = new MetaData.Response(
+                                HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        }
+                        default ->
+                        {
+                            sleep(processing);
+                            MetaData.Response response = new MetaData.Response(
+                                HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        }
                     }
-                    case "/prime2" ->
-                    {
-                        session2 = stream.getSession();
-                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                    }
-                    case "/update_max_streams" ->
-                    {
-                        Session session = stream.getSession() == session1 ? session2 : session1;
-                        Map<Integer, Integer> settings = new HashMap<>();
-                        settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, 2);
-                        session.settings(new SettingsFrame(settings, false), Callback.NOOP);
-                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                    }
-                    default ->
-                    {
-                        sleep(processing);
-                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                    }
+                    return null;
                 }
-                return null;
-            }
-        });
+            });
         http2.setMaxConcurrentStreams(1);
         prepareServer(http2);
         server.start();
@@ -628,14 +667,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         int port = connector.getLocalPort();
 
         assertEquals(1, httpClient.getDestinations().size());
-        HttpDestination destination = (HttpDestination)httpClient.getDestinations().get(0);
+        HttpDestination destination =
+            (HttpDestination)httpClient.getDestinations().get(0);
         AbstractConnectionPool pool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(2, pool.getConnectionCount());
 
         // Send a request on one connection, which sends back a SETTINGS frame on the other connection.
-        ContentResponse response = httpClient.newRequest(host, port)
-            .path("/update_max_streams")
-            .send();
+        ContentResponse response =
+            httpClient.newRequest(host, port).path("/update_max_streams").send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // Send 4 requests at once: 1 should go on one connection, 2 on the other connection, and 1 queued.
@@ -643,23 +682,21 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
-            httpClient.newRequest(host, port)
-                .path("/" + i)
-                .send(result ->
+            httpClient.newRequest(host, port).path("/" + i).send(result ->
+            {
+                if (result.isSucceeded())
                 {
-                    if (result.isSucceeded())
-                    {
-                        int status = result.getResponse().getStatus();
-                        if (status == HttpStatus.OK_200)
-                            latch.countDown();
-                        else
-                            fail("unexpected status " + status);
-                    }
+                    int status = result.getResponse().getStatus();
+                    if (status == HttpStatus.OK_200)
+                        latch.countDown();
                     else
-                    {
-                        fail(result.getFailure());
-                    }
-                });
+                        fail("unexpected status " + status);
+                }
+                else
+                {
+                    fail(result.getFailure());
+                }
+            });
         }
 
         assertTrue(awaitLatch(latch, count * processing * 10, TimeUnit.MILLISECONDS));
@@ -668,7 +705,10 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     private void primeConnection() throws Exception
     {
         // Prime the connection so that the maxConcurrentStream setting arrives to the client.
-        httpClient.newRequest("localhost", connector.getLocalPort()).path("/prime").send();
+        httpClient
+            .newRequest("localhost", connector.getLocalPort())
+            .path("/prime")
+            .send();
         // Wait for the server to clean up and remove the stream that primes the connection.
         sleep(1000);
     }

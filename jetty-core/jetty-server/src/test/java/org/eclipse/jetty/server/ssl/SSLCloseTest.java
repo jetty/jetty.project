@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -20,7 +23,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import javax.net.ssl.SSLContext;
-
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -35,9 +37,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 
 public class SSLCloseTest
 {
@@ -77,10 +76,7 @@ public class SSLCloseTest
         Socket socket = ctx.getSocketFactory().createSocket("localhost", port);
         OutputStream os = socket.getOutputStream();
 
-        os.write((
-            "GET /test HTTP/1.1\r\n" +
-                "Host:test\r\n" +
-                "Connection:close\r\n\r\n").getBytes());
+        os.write(("GET /test HTTP/1.1\r\n" + "Host:test\r\n" + "Connection:close\r\n\r\n").getBytes());
         os.flush();
 
         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -116,9 +112,10 @@ public class SSLCloseTest
             data = data + data + data + data;
             byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
 
-            response.write(false,
-                BufferUtil.toBuffer(bytes), Callback.from(() -> response.write(true, BufferUtil.toBuffer(bytes), callback), callback::failed)
-            );
+            response.write(
+                false,
+                BufferUtil.toBuffer(bytes),
+                Callback.from(() -> response.write(true, BufferUtil.toBuffer(bytes), callback), callback::failed));
             return true;
         }
     }

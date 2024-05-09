@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpFields;
@@ -48,9 +50,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PriorKnowledgeHTTP2OverTLSTest
 {
@@ -112,7 +111,7 @@ public class PriorKnowledgeHTTP2OverTLSTest
     {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         configureSslContextFactory(sslContextFactory);
-//        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        //        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         return sslContextFactory;
     }
 
@@ -140,7 +139,13 @@ public class PriorKnowledgeHTTP2OverTLSTest
         });
 
         int port = connector.getLocalPort();
-        MetaData.Response response = http2Client.connect(http2Client.getClientConnector().getSslContextFactory(), new InetSocketAddress("localhost", port), new Session.Listener() {})
+        MetaData.Response response = http2Client
+            .connect(
+                http2Client.getClientConnector().getSslContextFactory(),
+                new InetSocketAddress("localhost", port),
+                new Session.Listener()
+                {
+                })
             .thenCompose(session ->
             {
                 CompletableFuture<MetaData.Response> responsePromise = new CompletableFuture<>();
@@ -157,7 +162,8 @@ public class PriorKnowledgeHTTP2OverTLSTest
                         MetaData.Response response = (MetaData.Response)metaData;
                         responsePromise.complete(response);
                     }
-                }).thenCompose(stream -> responsePromise);
+                })
+                    .thenCompose(stream -> responsePromise);
             })
             .get(5, TimeUnit.SECONDS);
 
@@ -179,7 +185,8 @@ public class PriorKnowledgeHTTP2OverTLSTest
             }
         });
 
-        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = httpClient
+            .newRequest("localhost", connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
             .send();

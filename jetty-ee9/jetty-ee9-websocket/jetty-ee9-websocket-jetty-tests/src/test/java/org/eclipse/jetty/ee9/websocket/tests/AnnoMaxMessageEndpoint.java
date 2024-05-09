@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.websocket.tests;
 
 import java.io.IOException;
-
 import org.eclipse.jetty.ee9.websocket.api.Session;
 import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;

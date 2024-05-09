@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpChannel;
@@ -144,10 +143,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     @Override
     public String toString()
     {
-        return String.format("%s[send=%s,recv=%s]",
-            super.toString(),
-            sender,
-            receiver);
+        return String.format("%s[send=%s,recv=%s]", super.toString(), sender, receiver);
     }
 
     private class ReleaseCallback implements Callback

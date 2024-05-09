@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.OutputStream;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-
-import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * HttpServer Tester.
@@ -64,11 +63,12 @@ public class ServerConnectorHttpServerTest extends HttpServerTestBase
         {
             OutputStream os = client.getOutputStream();
 
-            String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
+            String request =
+                """
+                    GET / HTTP/1.1\r
+                    Host: localhost\r
+                    \r
+                    """;
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
@@ -109,11 +109,12 @@ public class ServerConnectorHttpServerTest extends HttpServerTestBase
         {
             OutputStream os = client.getOutputStream();
 
-            String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
+            String request =
+                """
+                    GET / HTTP/1.1\r
+                    Host: localhost\r
+                    \r
+                    """;
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 

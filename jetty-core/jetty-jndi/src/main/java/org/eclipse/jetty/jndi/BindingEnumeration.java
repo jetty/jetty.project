@@ -31,21 +31,18 @@ public class BindingEnumeration implements NamingEnumeration<Binding>
     }
 
     @Override
-    public void close()
-        throws NamingException
+    public void close() throws NamingException
     {
     }
 
     @Override
-    public boolean hasMore()
-        throws NamingException
+    public boolean hasMore() throws NamingException
     {
         return _delegate.hasNext();
     }
 
     @Override
-    public Binding next()
-        throws NamingException
+    public Binding next() throws NamingException
     {
         Binding b = (Binding)_delegate.next();
         return new Binding(b.getName(), b.getClassName(), b.getObject(), true);

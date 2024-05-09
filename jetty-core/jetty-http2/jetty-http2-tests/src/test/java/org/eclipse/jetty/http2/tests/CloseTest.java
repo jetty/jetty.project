@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -22,7 +25,6 @@ import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -41,9 +43,6 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CloseTest extends AbstractServerTest
 {
@@ -139,7 +138,8 @@ public class CloseTest extends AbstractServerTest
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
-        generator.control(accumulator, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes(StandardCharsets.UTF_8)));
+        generator.control(
+            accumulator, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes(StandardCharsets.UTF_8)));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {

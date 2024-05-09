@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -42,7 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 public class MimeTypes
 {
-    static final  Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
+    static final Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
     private static final Set<Locale> KNOWN_LOCALES = Set.copyOf(Arrays.asList(Locale.getAvailableLocales()));
     public static final String ISO_8859_1 = StandardCharsets.ISO_8859_1.name().toLowerCase();
     public static final String UTF8 = StandardCharsets.UTF_8.name().toLowerCase();
@@ -66,41 +65,41 @@ public class MimeTypes
         MULTIPART_FORM_DATA("multipart/form-data"),
 
         TEXT_HTML("text/html")
+        {
+            @Override
+            public HttpField getContentTypeField(Charset charset)
             {
-                @Override
-                public HttpField getContentTypeField(Charset charset)
-                {
-                    if (Objects.equals(charset, StandardCharsets.UTF_8))
-                        return TEXT_HTML_UTF_8.getContentTypeField();
-                    if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
-                        return TEXT_HTML_8859_1.getContentTypeField();
-                    return super.getContentTypeField(charset);
-                }
-            },
+                if (Objects.equals(charset, StandardCharsets.UTF_8))
+                    return TEXT_HTML_UTF_8.getContentTypeField();
+                if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
+                    return TEXT_HTML_8859_1.getContentTypeField();
+                return super.getContentTypeField(charset);
+            }
+        },
         TEXT_PLAIN("text/plain")
+        {
+            @Override
+            public HttpField getContentTypeField(Charset charset)
             {
-                @Override
-                public HttpField getContentTypeField(Charset charset)
-                {
-                    if (Objects.equals(charset, StandardCharsets.UTF_8))
-                        return TEXT_PLAIN_UTF_8.getContentTypeField();
-                    if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
-                        return TEXT_PLAIN_8859_1.getContentTypeField();
-                    return super.getContentTypeField(charset);
-                }
-            },
+                if (Objects.equals(charset, StandardCharsets.UTF_8))
+                    return TEXT_PLAIN_UTF_8.getContentTypeField();
+                if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
+                    return TEXT_PLAIN_8859_1.getContentTypeField();
+                return super.getContentTypeField(charset);
+            }
+        },
         TEXT_XML("text/xml")
+        {
+            @Override
+            public HttpField getContentTypeField(Charset charset)
             {
-                @Override
-                public HttpField getContentTypeField(Charset charset)
-                {
-                    if (Objects.equals(charset, StandardCharsets.UTF_8))
-                        return TEXT_XML_UTF_8.getContentTypeField();
-                    if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
-                        return TEXT_XML_8859_1.getContentTypeField();
-                    return super.getContentTypeField(charset);
-                }
-            },
+                if (Objects.equals(charset, StandardCharsets.UTF_8))
+                    return TEXT_XML_UTF_8.getContentTypeField();
+                if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
+                    return TEXT_XML_8859_1.getContentTypeField();
+                return super.getContentTypeField(charset);
+            }
+        },
         TEXT_JSON("text/json", StandardCharsets.UTF_8),
         APPLICATION_JSON("application/json", StandardCharsets.UTF_8),
 
@@ -197,7 +196,8 @@ public class MimeTypes
         {
             if (Objects.equals(_charset, charset))
                 return _field;
-            return new HttpField(HttpHeader.CONTENT_TYPE, getContentTypeWithoutCharset(_string) + ";charset=" + charset.name());
+            return new HttpField(
+                HttpHeader.CONTENT_TYPE, getContentTypeWithoutCharset(_string) + ";charset=" + charset.name());
         }
 
         public Type getBaseType()
@@ -211,7 +211,7 @@ public class MimeTypes
         .withAll(() ->
         {
             Map<String, Type> result = new HashMap<>();
-            
+
             for (Type type : Type.values())
             {
                 String key1 = type.toString();
@@ -402,12 +402,14 @@ public class MimeTypes
 
     public Map<String, String> getInferredMap()
     {
-        return _inferredEncodings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().name()));
+        return _inferredEncodings.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().name()));
     }
 
     public Map<String, String> getAssumedMap()
     {
-        return _assumedEncodings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().name()));
+        return _assumedEncodings.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().name()));
     }
 
     public static class Mutable extends MimeTypes
@@ -550,7 +552,9 @@ public class MimeTypes
                                 if (x.contains("."))
                                     LOG.warn("ignoring invalid extension {} from mime.properties", x);
                                 else
-                                    _mimeMap.put(StringUtil.asciiToLowerCase(x), normalizeMimeType(props.getProperty(x)));
+                                    _mimeMap.put(
+                                        StringUtil.asciiToLowerCase(x),
+                                        normalizeMimeType(props.getProperty(x)));
                             });
 
                         if (_mimeMap.isEmpty())
@@ -736,8 +740,7 @@ public class MimeTypes
                     state = 10;
                     break;
                 case 10:
-                    if (!quote && (';' == b || ' ' == b) ||
-                        (quote && '"' == b))
+                    if (!quote && (';' == b || ' ' == b) || (quote && '"' == b))
                         return normalizeCharset(value, start, i - start);
                     break;
                 default:

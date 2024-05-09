@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.channels.Selector;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ManagedSelector;
@@ -35,8 +36,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class LivelockTest
 {
     public static Stream<Arguments> modes()
@@ -46,8 +45,7 @@ public class LivelockTest
             Arguments.of(true, true),
             Arguments.of(true, false),
             Arguments.of(false, true),
-            Arguments.of(false, false)
-        );
+            Arguments.of(false, false));
     }
 
     private Server server;
@@ -103,13 +101,17 @@ public class LivelockTest
 
         if (clientLiveLock)
         {
-            ManagedSelector clientSelector = client.getContainedBeans(ManagedSelector.class).stream().findAny().get();
+            ManagedSelector clientSelector = client.getContainedBeans(ManagedSelector.class).stream()
+                .findAny()
+                .get();
             busyLiveLock(busy, clientSelector);
         }
 
         if (serverLiveLock)
         {
-            ManagedSelector serverSelector = connector.getContainedBeans(ManagedSelector.class).stream().findAny().get();
+            ManagedSelector serverSelector = connector.getContainedBeans(ManagedSelector.class).stream()
+                .findAny()
+                .get();
             busyLiveLock(busy, serverSelector);
         }
 

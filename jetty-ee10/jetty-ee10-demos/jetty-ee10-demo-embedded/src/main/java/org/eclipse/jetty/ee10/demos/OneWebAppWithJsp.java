@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.demos;
 
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.security.HashLoginService;
@@ -44,8 +43,8 @@ public class OneWebAppWithJsp
         // the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee10.demos",
-                "jetty-ee10-demo-jsp-webapp", "", "war");
+        JettyDemos.MavenCoordinate mavenCoordinate =
+            new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee10.demos", "jetty-ee10-demo-jsp-webapp", "", "war");
         Path warFile = JettyDemos.find("demo-jsp-webapp/target/demo-jsp-webapp-@VER@.war", mavenCoordinate);
         webapp.setWarResource(webapp.getResourceFactory().newResource(warFile));
         webapp.setExtractWAR(true);

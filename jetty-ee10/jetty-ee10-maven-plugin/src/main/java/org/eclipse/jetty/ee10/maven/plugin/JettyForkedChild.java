@@ -13,31 +13,15 @@
 
 package org.eclipse.jetty.ee10.maven.plugin;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
-
 import org.eclipse.jetty.maven.AbstractForkedChild;
 import org.eclipse.jetty.maven.AbstractJettyEmbedder;
-import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * JettyForkedChild
  *
- * This is the class that is executed when the jetty maven plugin 
+ * This is the class that is executed when the jetty maven plugin
  * forks a process when DeploymentMode=FORKED.
  */
 public class JettyForkedChild extends AbstractForkedChild
@@ -59,8 +43,7 @@ public class JettyForkedChild extends AbstractForkedChild
         return new JettyEmbedder();
     }
 
-    public static void main(String[] args)
-        throws Exception
+    public static void main(String[] args) throws Exception
     {
         if (args == null)
             System.exit(1);

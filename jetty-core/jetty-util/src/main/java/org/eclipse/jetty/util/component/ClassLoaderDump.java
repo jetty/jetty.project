@@ -63,7 +63,8 @@ public class ClassLoaderDump implements Dumpable
             else if (parent instanceof Dumpable)
                 Dumpable.dumpObjects(out, indent, _loader, packages, Dumpable.named("parent", parent));
             else if (parent != null)
-                Dumpable.dumpObjects(out, indent, _loader, packages, Dumpable.named("parent", new ClassLoaderDump(parent)));
+                Dumpable.dumpObjects(
+                    out, indent, _loader, packages, Dumpable.named("parent", new ClassLoaderDump(parent)));
             else
                 Dumpable.dumpObjects(out, indent, _loader, packages);
         }

@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.io;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -36,9 +38,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SocketChannelEndPointInterestsTest
 {
@@ -64,15 +63,16 @@ public class SocketChannelEndPointInterestsTest
             @Override
             protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
             {
-                SocketChannelEndPoint endp = new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler())
-                {
-                    @Override
-                    protected void onIncompleteFlush()
+                SocketChannelEndPoint endp =
+                    new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler())
                     {
-                        super.onIncompleteFlush();
-                        interested.onIncompleteFlush();
-                    }
-                };
+                        @Override
+                        protected void onIncompleteFlush()
+                        {
+                            super.onIncompleteFlush();
+                            interested.onIncompleteFlush();
+                        }
+                    };
 
                 endp.setIdleTimeout(60000);
                 return endp;
@@ -138,7 +138,9 @@ public class SocketChannelEndPointInterestsTest
                         connection.fillInterested();
 
                         ByteBuffer output = ByteBuffer.allocate(size.get());
-                        endPoint.write(new Callback() {}, output);
+                        endPoint.write(new Callback()
+                        {
+                        }, output);
 
                         latch1.countDown();
                     }

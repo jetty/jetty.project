@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
@@ -37,7 +36,8 @@ public class DataGenerator
         return generateData(accumulator, frame.getStreamId(), frame.getByteBuffer(), frame.isEndStream(), maxLength);
     }
 
-    public int generateData(ByteBufferPool.Accumulator accumulator, int streamId, ByteBuffer data, boolean last, int maxLength)
+    public int generateData(
+                            ByteBufferPool.Accumulator accumulator, int streamId, ByteBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -70,7 +70,8 @@ public class DataGenerator
         if (last)
             flags |= Flags.END_STREAM;
 
-        RetainableByteBuffer header = headerGenerator.generate(FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
+        RetainableByteBuffer header =
+            headerGenerator.generate(FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
         BufferUtil.flipToFlush(header.getByteBuffer(), 0);
         accumulator.append(header);
         // Skip empty data buffers.

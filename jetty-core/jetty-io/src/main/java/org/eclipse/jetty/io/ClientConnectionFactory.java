@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 /**
@@ -106,7 +105,8 @@ public interface ClientConnectionFactory
          */
         public boolean matches(List<String> candidates, boolean secure)
         {
-            return getProtocols(secure).stream().anyMatch(p -> candidates.stream().anyMatch(c -> c.equalsIgnoreCase(p)));
+            return getProtocols(secure).stream()
+                .anyMatch(p -> candidates.stream().anyMatch(c -> c.equalsIgnoreCase(p)));
         }
 
         /**

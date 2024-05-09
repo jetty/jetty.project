@@ -21,10 +21,23 @@ import java.nio.ByteBuffer;
 public interface QuicheBinding
 {
     boolean isUsable();
+
     int priority();
 
     byte[] fromPacket(ByteBuffer packet);
-    QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException;
-    boolean negotiate(QuicheConnection.TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException;
-    QuicheConnection tryAccept(QuicheConfig quicheConfig, QuicheConnection.TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException;
+
+    QuicheConnection connect(
+                             QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength)
+        throws IOException;
+
+    boolean negotiate(QuicheConnection.TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend)
+        throws IOException;
+
+    QuicheConnection tryAccept(
+                               QuicheConfig quicheConfig,
+                               QuicheConnection.TokenValidator tokenValidator,
+                               ByteBuffer packetRead,
+                               SocketAddress local,
+                               SocketAddress peer)
+        throws IOException;
 }

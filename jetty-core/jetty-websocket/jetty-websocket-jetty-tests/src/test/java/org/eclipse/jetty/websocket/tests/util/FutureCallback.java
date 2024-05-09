@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.tests.util;
 
 import java.util.concurrent.Future;
-
 import org.eclipse.jetty.websocket.api.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

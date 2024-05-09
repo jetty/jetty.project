@@ -18,7 +18,6 @@ package org.eclipse.jetty.http.spi.util;
  */
 public enum Pool
 {
-
     DEFAULT_SIZE(0),
 
     CORE_POOL_SIZE(15),

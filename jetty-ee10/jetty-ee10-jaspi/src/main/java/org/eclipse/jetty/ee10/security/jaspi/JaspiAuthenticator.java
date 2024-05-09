@@ -13,11 +13,7 @@
 
 package org.eclipse.jetty.ee10.security.jaspi;
 
-import java.security.Principal;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import javax.security.auth.Subject;
+import static org.eclipse.jetty.ee10.security.jaspi.JaspiAuthenticatorFactory.MESSAGE_LAYER;
 
 import jakarta.security.auth.message.AuthException;
 import jakarta.security.auth.message.AuthStatus;
@@ -31,6 +27,11 @@ import jakarta.security.auth.message.config.ServerAuthContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import javax.security.auth.Subject;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.EmptyLoginService;
@@ -44,8 +45,6 @@ import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-
-import static org.eclipse.jetty.ee10.security.jaspi.JaspiAuthenticatorFactory.MESSAGE_LAYER;
 
 /**
  * Implementation of Jetty {@link LoginAuthenticator} that is a bridge from Jakarta Authentication to Jetty Security.
@@ -70,7 +69,13 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     @Deprecated
-    public JaspiAuthenticator(ServerAuthConfig authConfig, Map authProperties, ServletCallbackHandler callbackHandler, Subject serviceSubject, boolean allowLazyAuthentication, IdentityService identityService)
+    public JaspiAuthenticator(
+                              ServerAuthConfig authConfig,
+                              Map authProperties,
+                              ServletCallbackHandler callbackHandler,
+                              Subject serviceSubject,
+                              boolean allowLazyAuthentication,
+                              IdentityService identityService)
     {
         if (callbackHandler == null)
             throw new NullPointerException("No CallbackHandler");
@@ -117,7 +122,8 @@ public class JaspiAuthenticator extends LoginAuthenticator
             return _authConfig;
 
         RegistrationListener listener = (layer, appContext) -> _authConfig = null;
-        AuthConfigProvider authConfigProvider = _authConfigFactory.getConfigProvider(MESSAGE_LAYER, _appContext, listener);
+        AuthConfigProvider authConfigProvider =
+            _authConfigFactory.getConfigProvider(MESSAGE_LAYER, _appContext, listener);
         if (authConfigProvider == null)
         {
             _authConfigFactory.detachListener(listener, MESSAGE_LAYER, _appContext);
@@ -152,7 +158,8 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request request, Response response, Callback callback)
+        throws ServerAuthException
     {
         JaspiMessageInfo info = new JaspiMessageInfo(request, response, callback);
         request.setAttribute("org.eclipse.jetty.ee10.security.jaspi.info", info);
@@ -199,8 +206,10 @@ public class JaspiAuthenticator extends LoginAuthenticator
                     {
                         String principalName = principalCallback.getName();
 
-                        // TODO: if the Principal class is provided it doesn't need to be in subject, why do we enforce this here?
-                        Set<Principal> principals = principalCallback.getSubject().getPrincipals();
+                        // TODO: if the Principal class is provided it doesn't need to be in subject, why do we enforce
+                        // this here?
+                        Set<Principal> principals =
+                            principalCallback.getSubject().getPrincipals();
                         for (Principal p : principals)
                         {
                             if (p.getName().equals(principalName))
@@ -233,7 +242,11 @@ public class JaspiAuthenticator extends LoginAuthenticator
             }
             if (authStatus == AuthStatus.FAILURE)
             {
-                Response.writeError(messageInfo.getBaseRequest(), messageInfo.getBaseResponse(), messageInfo.getCallback(), HttpServletResponse.SC_FORBIDDEN);
+                Response.writeError(
+                    messageInfo.getBaseRequest(),
+                    messageInfo.getBaseResponse(),
+                    messageInfo.getCallback(),
+                    HttpServletResponse.SC_FORBIDDEN);
                 return AuthenticationState.SEND_FAILURE;
             }
             // should not happen
@@ -246,7 +259,13 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     // TODO This is not longer supported by core security
-    public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, AuthenticationState.Succeeded validatedSucceeded) throws ServerAuthException
+    public boolean secureResponse(
+                                  Request request,
+                                  Response response,
+                                  Callback callback,
+                                  boolean mandatory,
+                                  AuthenticationState.Succeeded validatedSucceeded)
+        throws ServerAuthException
     {
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         JaspiMessageInfo info = (JaspiMessageInfo)servletContextRequest.getServletApiRequest().getAttribute("org.eclipse.jetty.ee10.security.jaspi.info");
@@ -255,7 +274,8 @@ public class JaspiAuthenticator extends LoginAuthenticator
         return secureResponse(info, validatedSucceeded);
     }
 
-    public boolean secureResponse(JaspiMessageInfo messageInfo, AuthenticationState validatedUser) throws ServerAuthException
+    public boolean secureResponse(JaspiMessageInfo messageInfo, AuthenticationState validatedUser)
+        throws ServerAuthException
     {
         try
         {
@@ -266,7 +286,8 @@ public class JaspiAuthenticator extends LoginAuthenticator
             String authContextId = authConfig.getAuthContextID(messageInfo);
             ServerAuthContext authContext = authConfig.getAuthContext(authContextId, _serviceSubject, _authProperties);
             if (validatedUser instanceof AuthenticationState.Succeeded userAuthenticated)
-                authContext.cleanSubject(messageInfo, userAuthenticated.getUserIdentity().getSubject());
+                authContext.cleanSubject(
+                    messageInfo, userAuthenticated.getUserIdentity().getSubject());
             AuthStatus status = authContext.secureResponse(messageInfo, _serviceSubject);
             return (AuthStatus.SEND_SUCCESS.equals(status));
         }
@@ -274,7 +295,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
         {
             throw new ServerAuthException(e);
         }
-    }   
+    }
 
     private static class JaspiAuthenticatorConfiguration extends Configuration.Wrapper
     {

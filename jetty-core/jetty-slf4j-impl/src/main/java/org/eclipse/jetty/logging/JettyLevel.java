@@ -14,7 +14,6 @@
 package org.eclipse.jetty.logging;
 
 import java.util.Locale;
-
 import org.slf4j.event.Level;
 
 public enum JettyLevel

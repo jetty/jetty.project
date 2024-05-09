@@ -45,7 +45,6 @@ public class WebAppServletListener implements ServletContextListener
         URL url = Thread.currentThread().getContextClassLoader().getResource(res);
         System.out.println(
             format("(%sa) >> %s loaded from %s << (%sb)",
-                counter, className, url, counter)
-        );
+                counter, className, url, counter));
     }
 }

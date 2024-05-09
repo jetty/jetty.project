@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +46,7 @@ public class UriTemplatePathSpec extends AbstractPathSpec
      * Allowed Symbols in a URI Template variable
      */
     private static final String VARIABLE_SYMBOLS = "-._";
+
     private static final Set<String> FORBIDDEN_SEGMENTS;
 
     static
@@ -93,7 +93,8 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         for (String forbidden : FORBIDDEN_SEGMENTS)
         {
             if (rawSpec.contains(forbidden))
-                throw new IllegalArgumentException("Syntax Error: segment " + forbidden + " is forbidden in path spec: " + rawSpec);
+                throw new IllegalArgumentException(
+                    "Syntax Error: segment " + forbidden + " is forbidden in path spec: " + rawSpec);
         }
 
         String declaration = rawSpec;
@@ -118,7 +119,8 @@ public class UriTemplatePathSpec extends AbstractPathSpec
                 if (varNames.contains(variable))
                 {
                     // duplicate variable names
-                    throw new IllegalArgumentException("Syntax Error: variable " + variable + " is duplicated in path spec: " + rawSpec);
+                    throw new IllegalArgumentException(
+                        "Syntax Error: variable " + variable + " is duplicated in path spec: " + rawSpec);
                 }
 
                 assertIsValidVariableLiteral(variable, declaration);
@@ -133,7 +135,8 @@ public class UriTemplatePathSpec extends AbstractPathSpec
             else if (mat.find(0))
             {
                 // variable exists as partial segment
-                throw new IllegalArgumentException("Syntax Error: variable " + mat.group() + " must exist as entire path segment: " + rawSpec);
+                throw new IllegalArgumentException(
+                    "Syntax Error: variable " + mat.group() + " must exist as entire path segment: " + rawSpec);
             }
             else if ((segment.indexOf('{') >= 0) || (segment.indexOf('}') >= 0))
             {
@@ -200,8 +203,13 @@ public class UriTemplatePathSpec extends AbstractPathSpec
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Creating UriTemplatePathSpec[{}] (regex: \"{}\", signature: [{}], group: {}, variables: [{}])",
-                _declaration, regex, sig, _group, String.join(", ", _variables));
+            LOG.debug(
+                "Creating UriTemplatePathSpec[{}] (regex: \"{}\", signature: [{}], group: {}, variables: [{}])",
+                _declaration,
+                regex,
+                sig,
+                _group,
+                String.join(", ", _variables));
         }
     }
 
@@ -252,16 +260,15 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         if (!valid)
         {
             // invalid variable name
-            throw new IllegalArgumentException("Syntax Error: variable {" + variable + "} an invalid variable name: " + declaration);
+            throw new IllegalArgumentException(
+                "Syntax Error: variable {" + variable + "} an invalid variable name: " + declaration);
         }
     }
 
     private static boolean isValidBasicLiteralCodepoint(int codepoint, String declaration)
     {
         // basic letters or digits
-        if ((codepoint >= 'a' && codepoint <= 'z') ||
-            (codepoint >= 'A' && codepoint <= 'Z') ||
-            (codepoint >= '0' && codepoint <= '9'))
+        if ((codepoint >= 'a' && codepoint <= 'z') || (codepoint >= 'A' && codepoint <= 'Z') || (codepoint >= '0' && codepoint <= '9'))
             return true;
 
         // basic allowed symbols
@@ -486,11 +493,7 @@ public class UriTemplatePathSpec extends AbstractPathSpec
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[" +
-                "pathSpec=" + pathSpec +
-                ", path=\"" + path + "\"" +
-                ", matcher=" + matcher +
-                ']';
+            return getClass().getSimpleName() + "[" + "pathSpec=" + pathSpec + ", path=\"" + path + "\"" + ", matcher=" + matcher + ']';
         }
     }
 }

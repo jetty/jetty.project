@@ -13,25 +13,27 @@
 
 package org.eclipse.jetty.session;
 
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.Session;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.concurrent.TimeUnit;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
+import org.junit.jupiter.api.Test;
+
 /**
  * NullSessionCacheTest
  */
 public class NullSessionCacheTest extends AbstractSessionCacheTest
-{    
+{
     @Override
-    public AbstractSessionCacheFactory newSessionCacheFactory(int evictionPolicy, boolean saveOnCreate,
-                                                              boolean saveOnInactiveEvict, boolean removeUnloadableSessions,
+    public AbstractSessionCacheFactory newSessionCacheFactory(
+                                                              int evictionPolicy,
+                                                              boolean saveOnCreate,
+                                                              boolean saveOnInactiveEvict,
+                                                              boolean removeUnloadableSessions,
                                                               boolean flushOnResponseCommit)
     {
         NullSessionCacheFactory factory = new NullSessionCacheFactory();
@@ -42,35 +44,40 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
     }
 
     @Override
-    public void checkSessionBeforeShutdown(String id,
-                                           TestableSessionDataStore store,
-                                           SessionCache cache,
-                                           TestableSessionManager sessionManager) throws Exception
+    public void checkSessionBeforeShutdown(
+                                           String id, TestableSessionDataStore store, SessionCache cache, TestableSessionManager sessionManager)
+        throws Exception
     {
-        assertFalse(cache.contains(id)); //NullSessionCache never caches
+        assertFalse(cache.contains(id)); // NullSessionCache never caches
         assertTrue(store._map.containsKey(id));
         assertFalse(sessionManager._sessionDestroyedListenersCalled.contains(id));
         assertTrue(sessionManager._sessionPassivationListenersCalled.contains(id));
-        assertFalse(sessionManager._sessionActivationListenersCalled.contains(id)); //NullSessionCache always evicts on release, so never reactivates
+        assertFalse(sessionManager._sessionActivationListenersCalled.contains(
+            id)); // NullSessionCache always evicts on release, so never reactivates
     }
 
     @Override
-    public void checkSessionAfterShutdown(String id,
-                                          TestableSessionDataStore store,
-                                          SessionCache cache,
-                                          TestableSessionManager sessionManager) throws Exception
+    public void checkSessionAfterShutdown(
+                                          String id, TestableSessionDataStore store, SessionCache cache, TestableSessionManager sessionManager)
+        throws Exception
     {
-        assertFalse(cache.contains(id)); //NullSessionCache never caches anyway
-        assertTrue(store._map.containsKey(id)); //NullSessionCache doesn't do anything on shutdown, so session should still exit
-        assertFalse(sessionManager._sessionDestroyedListenersCalled.contains(id)); //Session should still exit
-        assertEquals(1L, sessionManager._sessionPassivationListenersCalled.stream().filter(s -> s.equals(id)).count());
-        assertFalse(sessionManager._sessionActivationListenersCalled.contains(id)); //NullSessionCache always evicts on release, so never reactivates
+        assertFalse(cache.contains(id)); // NullSessionCache never caches anyway
+        assertTrue(store._map.containsKey(
+            id)); // NullSessionCache doesn't do anything on shutdown, so session should still exit
+        assertFalse(sessionManager._sessionDestroyedListenersCalled.contains(id)); // Session should still exit
+        assertEquals(
+            1L,
+            sessionManager._sessionPassivationListenersCalled.stream()
+                .filter(s -> s.equals(id))
+                .count());
+        assertFalse(sessionManager._sessionActivationListenersCalled.contains(
+            id)); // NullSessionCache always evicts on release, so never reactivates
     }
-    
+
     @Test
     public void testNotCached() throws Exception
     {
-        //Test the NullSessionCache never contains the session
+        // Test the NullSessionCache never contains the session
         Server server = new Server();
 
         TestableSessionManager sessionManager = new TestableSessionManager();
@@ -85,33 +92,32 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         sessionManager.setServer(server);
         server.start();
 
-        //make a session
+        // make a session
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
-        ManagedSession session = cache.newSession(data); //mimic a request making a session
+        ManagedSession session = cache.newSession(data); // mimic a request making a session
         cache.add("1234", session);
-        assertFalse(cache.contains("1234")); //null cache doesn't actually retain the session
-        
-        //mimic releasing the session after the request is finished
+        assertFalse(cache.contains("1234")); // null cache doesn't actually retain the session
+
+        // mimic releasing the session after the request is finished
         cache.release(session);
         assertTrue(store.exists("1234"));
         assertFalse(cache.contains("1234"));
 
-        //simulate a new request using the previously created session
-        session = cache.get("1234"); //get the session again
-        session.access(now); //simulate a request
-        cache.release(session); //finish with the session
+        // simulate a new request using the previously created session
+        session = cache.get("1234"); // get the session again
+        session.access(now); // simulate a request
+        cache.release(session); // finish with the session
         assertFalse(cache.contains("1234"));
         assertFalse(session.isResident());
     }
-    
+
     /**
      * Test contains method.
      */
     @Test
-    public void testContains()
-        throws Exception
+    public void testContains() throws Exception
     {
         Server server = new Server();
 
@@ -126,24 +132,23 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         server.addBean(sessionManager);
         sessionManager.setServer(server);
         server.start();
-        
-        //test one that doesn't exist
+
+        // test one that doesn't exist
         assertFalse(cache.contains("1234"));
 
-        //test one that exists
+        // test one that exists
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         ManagedSession session = cache.newSession(data);
         cache.add("1234", session);
         assertFalse(cache.contains("1234"));
     }
-    
+
     /**
      * Test the exist method.
      */
     @Test
-    public void testExists()
-        throws Exception
+    public void testExists() throws Exception
     {
         Server server = new Server();
 
@@ -159,23 +164,21 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         sessionManager.setServer(server);
         server.start();
 
-
-        //test one that doesn't exist anywhere at all
+        // test one that doesn't exist anywhere at all
         assertFalse(cache.exists("1234"));
 
-        //test one that only exists in the store
+        // test one that only exists in the store
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         store.store("1234", data);
         assertTrue(cache.exists("1234"));
     }
-    
+
     /**
      * Test the delete method.
      */
     @Test
-    public void testDelete()
-        throws Exception
+    public void testDelete() throws Exception
     {
         Server server = new Server();
 
@@ -191,16 +194,18 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         sessionManager.setServer(server);
         server.start();
 
-        //test remove non-existent session
+        // test remove non-existent session
         Session session = cache.delete("1234");
         assertNull(session);
 
-        //test remove of existing session in store only
+        // test remove of existing session in store only
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         store.store("1234", data);
         session = cache.delete("1234");
-        assertNull(session); //NullSessionCache never returns the session that was removed from the cache because it was never in the cache!
+        assertNull(
+            session); // NullSessionCache never returns the session that was removed from the cache because it was
+        // never in the cache!
         assertFalse(store.exists("1234"));
         assertFalse(cache.contains("1234"));
     }

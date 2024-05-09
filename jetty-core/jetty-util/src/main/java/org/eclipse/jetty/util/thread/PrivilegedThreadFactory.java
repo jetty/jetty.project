@@ -16,7 +16,6 @@ package org.eclipse.jetty.util.thread;
 import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
 import java.util.function.Supplier;
-
 import org.eclipse.jetty.util.security.SecurityUtils;
 
 /**

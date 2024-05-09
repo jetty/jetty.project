@@ -23,7 +23,8 @@ import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 
 public class JakartaWebSocketClientFrameHandlerFactory extends JakartaWebSocketFrameHandlerFactory
 {
-    public JakartaWebSocketClientFrameHandlerFactory(JakartaWebSocketContainer container, InvokerUtils.ParamIdentifier paramIdentifier)
+    public JakartaWebSocketClientFrameHandlerFactory(
+                                                     JakartaWebSocketContainer container, InvokerUtils.ParamIdentifier paramIdentifier)
     {
         super(container, paramIdentifier);
     }
@@ -48,7 +49,8 @@ public class JakartaWebSocketClientFrameHandlerFactory extends JakartaWebSocketF
         if (endpointClass.getAnnotation(ClientEndpoint.class) == null)
             return null;
 
-        JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig, components);
+        JakartaWebSocketFrameHandlerMetadata metadata =
+            new JakartaWebSocketFrameHandlerMetadata(endpointConfig, components);
         return discoverJakartaFrameHandlerMetadata(endpointClass, metadata);
     }
 }

@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee10.test.jmx;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
+
 import java.io.File;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
@@ -25,7 +31,6 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.jmx.ConnectorServer;
@@ -38,12 +43,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
 
 @Disabled
 public class JmxIT
@@ -87,7 +86,8 @@ public class JmxIT
 
         context.addConfiguration(new AnnotationConfiguration());
 
-        context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+        context.setAttribute(
+            "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
             ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$");
         _server.setHandler(context);
 
@@ -132,7 +132,8 @@ public class JmxIT
     public void testBasic() throws Exception
     {
         URI serverURI = new URI("http://localhost:" + String.valueOf(_httpPort) + "/jmx-webapp/");
-        HttpURLConnection http = (HttpURLConnection)serverURI.resolve("ping").toURL().openConnection();
+        HttpURLConnection http =
+            (HttpURLConnection)serverURI.resolve("ping").toURL().openConnection();
         try (InputStream inputStream = http.getInputStream())
         {
             assertThat("http response", http.getResponseCode(), is(200));
@@ -167,7 +168,8 @@ public class JmxIT
     @Test
     public void testAccessToCommonComponent() throws Exception
     {
-        ObjectName commonName = new ObjectName("org.eclipse.jetty.test.jmx:type=commoncomponent,context=jmx-webapp,id=0");
+        ObjectName commonName =
+            new ObjectName("org.eclipse.jetty.test.jmx:type=commoncomponent,context=jmx-webapp,id=0");
         String name = getStringAttribute(commonName, "name");
         assertThat("Name", name, is("i am common"));
     }

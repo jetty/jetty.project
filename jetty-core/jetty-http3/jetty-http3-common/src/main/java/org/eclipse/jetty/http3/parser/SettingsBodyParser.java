@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.parser;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.VarLenInt;
@@ -73,12 +72,20 @@ public class SettingsBodyParser extends BodyParser
                     {
                         if (settings.containsKey(key))
                         {
-                            sessionFailure(buffer, HTTP3ErrorCode.SETTINGS_ERROR.code(), "settings_duplicate", new IllegalArgumentException("invalid duplicate setting"));
+                            sessionFailure(
+                                buffer,
+                                HTTP3ErrorCode.SETTINGS_ERROR.code(),
+                                "settings_duplicate",
+                                new IllegalArgumentException("invalid duplicate setting"));
                             return Result.NO_FRAME;
                         }
                         if (SettingsFrame.isReserved(key))
                         {
-                            sessionFailure(buffer, HTTP3ErrorCode.SETTINGS_ERROR.code(), "settings_reserved", new IllegalArgumentException("invalid reserved setting"));
+                            sessionFailure(
+                                buffer,
+                                HTTP3ErrorCode.SETTINGS_ERROR.code(),
+                                "settings_reserved",
+                                new IllegalArgumentException("invalid reserved setting"));
                             return Result.NO_FRAME;
                         }
                         if (length > 0)
@@ -87,7 +94,11 @@ public class SettingsBodyParser extends BodyParser
                         }
                         else
                         {
-                            sessionFailure(buffer, HTTP3ErrorCode.FRAME_ERROR.code(), "settings_invalid_format", new IllegalArgumentException("invalid setting"));
+                            sessionFailure(
+                                buffer,
+                                HTTP3ErrorCode.FRAME_ERROR.code(),
+                                "settings_invalid_format",
+                                new IllegalArgumentException("invalid setting"));
                             return Result.NO_FRAME;
                         }
                         break;
@@ -116,7 +127,11 @@ public class SettingsBodyParser extends BodyParser
                         }
                         else
                         {
-                            sessionFailure(buffer, HTTP3ErrorCode.FRAME_ERROR.code(), "settings_invalid_format", new IllegalArgumentException("invalid setting"));
+                            sessionFailure(
+                                buffer,
+                                HTTP3ErrorCode.FRAME_ERROR.code(),
+                                "settings_invalid_format",
+                                new IllegalArgumentException("invalid setting"));
                             return Result.NO_FRAME;
                         }
                         break;
@@ -140,6 +155,8 @@ public class SettingsBodyParser extends BodyParser
 
     private enum State
     {
-        INIT, KEY, VALUE
+        INIT,
+        KEY,
+        VALUE
     }
 }

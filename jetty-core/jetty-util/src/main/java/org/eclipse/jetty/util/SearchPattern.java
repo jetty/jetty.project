@@ -67,7 +67,7 @@ public class SearchPattern
         if (pattern.length == 0)
             throw new IllegalArgumentException("Empty Pattern");
 
-        //Build up the pre-processed table for this pattern.
+        // Build up the pre-processed table for this pattern.
         Arrays.fill(table, pattern.length);
         for (int i = 0; i < pattern.length - 1; ++i)
         {

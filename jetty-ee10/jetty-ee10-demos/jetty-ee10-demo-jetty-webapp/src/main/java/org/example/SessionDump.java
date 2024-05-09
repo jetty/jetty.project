@@ -13,12 +13,6 @@
 
 package org.example;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.UUID;
-
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -26,6 +20,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.UUID;
 import org.eclipse.jetty.util.MultiMap;
 
 /**
@@ -55,8 +54,7 @@ public class SessionDump extends HttpServlet
     int redirectCount = 0;
 
     @Override
-    public void init(ServletConfig config)
-        throws ServletException
+    public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
     }
@@ -92,9 +90,7 @@ public class SessionDump extends HttpServlet
     }
 
     @Override
-    public void doPost(HttpServletRequest request,
-                       HttpServletResponse response)
-        throws IOException
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         handleForm(request);
         String nextUrl = getURI(request) + "?R=" + redirectCount++;
@@ -103,9 +99,7 @@ public class SessionDump extends HttpServlet
     }
 
     @Override
-    public void doGet(HttpServletRequest request,
-                      HttpServletResponse response)
-        throws IOException
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         handleForm(request);
 

@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLEngine;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -102,11 +101,14 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
         return configure(newServerConnection(connector, endPoint, engine, negotiated, dft), connector, endPoint);
     }
 
-    protected abstract AbstractConnection newServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol);
+    protected abstract AbstractConnection newServerConnection(
+                                                              Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol);
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,%s,%s}", getClass().getSimpleName(), hashCode(), getProtocols(), getDefaultProtocol(), getNegotiatedProtocols());
+        return String.format(
+            "%s@%x{%s,%s,%s}",
+            getClass().getSimpleName(), hashCode(), getProtocols(), getDefaultProtocol(), getNegotiatedProtocols());
     }
 }

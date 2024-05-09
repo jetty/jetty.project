@@ -13,12 +13,14 @@
 
 package org.eclipse.jetty.ee9.websocket.tests;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
-
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketConfiguration;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -27,9 +29,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class JettyWebSocketWebApp extends WebAppContext
 {
@@ -65,10 +64,7 @@ public class JettyWebSocketWebApp extends WebAppContext
 
     public void createWebXml() throws IOException
     {
-        String emptyWebXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-            "<web-app xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://java.sun.com/xml/ns/javaee\" " +
-            "xsi:schemaLocation=\"http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd\" " +
-            "metadata-complete=\"false\" version=\"3.0\"></web-app>";
+        String emptyWebXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<web-app xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://java.sun.com/xml/ns/javaee\" " + "xsi:schemaLocation=\"http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd\" " + "metadata-complete=\"false\" version=\"3.0\"></web-app>";
 
         Path webXml = webInf.resolve("web.xml");
         try (FileWriter writer = new FileWriter(webXml.toFile()))

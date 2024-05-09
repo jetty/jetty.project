@@ -13,20 +13,19 @@
 
 package org.eclipse.jetty.ee10.security.jaspi.provider;
 
-import java.util.Map;
-import javax.security.auth.Subject;
-import javax.security.auth.callback.CallbackHandler;
-
 import jakarta.security.auth.message.AuthException;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.security.auth.message.config.ServerAuthContext;
 import jakarta.security.auth.message.module.ServerAuthModule;
+import java.util.Map;
+import javax.security.auth.Subject;
+import javax.security.auth.callback.CallbackHandler;
 
 /**
  * Simple implementation of the {@link ServerAuthConfig} interface.
- * 
- * This implementation wires up the given {@link ServerAuthModule} to the appropriate Jakarta Authentication {@link ServerAuthContext} responsible 
+ *
+ * This implementation wires up the given {@link ServerAuthModule} to the appropriate Jakarta Authentication {@link ServerAuthContext} responsible
  * for providing it.
  */
 @SuppressWarnings("rawtypes")
@@ -38,7 +37,12 @@ class SimpleAuthConfig implements ServerAuthConfig
     private final Map _properties;
     private final ServerAuthModule _serverAuthModule;
 
-    public SimpleAuthConfig(String messageLayer, String appContext, CallbackHandler callbackHandler, Map properties, ServerAuthModule serverAuthModule)
+    public SimpleAuthConfig(
+                            String messageLayer,
+                            String appContext,
+                            CallbackHandler callbackHandler,
+                            Map properties,
+                            ServerAuthModule serverAuthModule)
     {
         _messageLayer = messageLayer;
         _appContext = appContext;
@@ -48,7 +52,8 @@ class SimpleAuthConfig implements ServerAuthConfig
     }
 
     @Override
-    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map properties) throws AuthException
+    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map properties)
+        throws AuthException
     {
         return new SimpleServerAuthContext(_callbackHandler, _serverAuthModule, _properties);
     }
@@ -58,7 +63,7 @@ class SimpleAuthConfig implements ServerAuthConfig
     {
         return _appContext;
     }
-    
+
     @Override
     public String getAuthContextID(MessageInfo messageInfo)
     {

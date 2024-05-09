@@ -16,7 +16,6 @@ package org.eclipse.jetty.fcgi.parser;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.http.HttpField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -283,6 +282,15 @@ public class ParamsContentParser extends ContentParser
 
     private enum State
     {
-        LENGTH, NAME_LENGTH, NAME_LENGTH_BYTES, VALUE_LENGTH, VALUE_LENGTH_BYTES, NAME, NAME_BYTES, VALUE, VALUE_BYTES, PARAM
+        LENGTH,
+        NAME_LENGTH,
+        NAME_LENGTH_BYTES,
+        VALUE_LENGTH,
+        VALUE_LENGTH_BYTES,
+        NAME,
+        NAME_BYTES,
+        VALUE,
+        VALUE_BYTES,
+        PARAM
     }
 }

@@ -13,16 +13,18 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -34,9 +36,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
 public class OnMessageReturnTest

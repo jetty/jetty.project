@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.handlers;
 
-import java.io.Reader;
-
 import jakarta.websocket.MessageHandler;
+import java.io.Reader;
 
 public class ReaderWholeHandler implements MessageHandler.Whole<Reader>
 {

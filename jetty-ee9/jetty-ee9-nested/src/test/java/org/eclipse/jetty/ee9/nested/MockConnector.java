@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
-
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Server;
 

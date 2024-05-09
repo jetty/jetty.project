@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.security;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 
 public class DefaultIdentityServiceTest
 {
@@ -69,7 +69,8 @@ public class DefaultIdentityServiceTest
         }
 
         @Override
-        public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+        public AuthenticationState validateRequest(Request request, Response response, Callback callback)
+            throws ServerAuthException
         {
             return null;
         }

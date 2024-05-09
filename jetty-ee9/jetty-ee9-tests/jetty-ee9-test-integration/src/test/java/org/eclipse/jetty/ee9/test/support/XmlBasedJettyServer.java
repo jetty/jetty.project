@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.ee9.test.support;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
@@ -24,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -35,10 +38,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Allows for setting up a Jetty server for testing based on XML configuration files.
@@ -181,7 +180,9 @@ public class XmlBasedJettyServer
 
         // Find the active server port.
         this._serverPort = ((NetworkConnector)_server.getConnectors()[0]).getLocalPort();
-        assertTrue((1 <= this._serverPort) && (this._serverPort <= 65535), "Server Port is between 1 and 65535. Actually <" + _serverPort + ">");
+        assertTrue(
+            (1 <= this._serverPort) && (this._serverPort <= 65535),
+            "Server Port is between 1 and 65535. Actually <" + _serverPort + ">");
     }
 
     public int getServerPort()

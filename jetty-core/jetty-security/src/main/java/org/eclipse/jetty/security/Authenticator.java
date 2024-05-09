@@ -15,7 +15,6 @@ package org.eclipse.jetty.security;
 
 import java.util.Set;
 import java.util.function.Function;
-
 import org.eclipse.jetty.security.AuthenticationState.Succeeded;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
@@ -81,7 +80,8 @@ public interface Authenticator
      * @param getSession Function to get or create a {@link Session}.
      * @return The {@link Constraint.Authorization} to apply.
      */
-    default Constraint.Authorization getConstraintAuthentication(String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
+    default Constraint.Authorization getConstraintAuthentication(
+                                                                 String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
     {
         return existing == null ? Constraint.Authorization.ALLOWED : existing;
     }
@@ -97,7 +97,8 @@ public interface Authenticator
      * implement {@link AuthenticationState.ResponseSent}.
      * @throws ServerAuthException if unable to validate request
      */
-    AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException;
+    AuthenticationState validateRequest(Request request, Response response, Callback callback)
+        throws ServerAuthException;
 
     /**
      * Authenticator Configuration
@@ -224,7 +225,8 @@ public interface Authenticator
         }
 
         @Override
-        public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+        public AuthenticationState validateRequest(Request request, Response response, Callback callback)
+            throws ServerAuthException
         {
             return null;
         }

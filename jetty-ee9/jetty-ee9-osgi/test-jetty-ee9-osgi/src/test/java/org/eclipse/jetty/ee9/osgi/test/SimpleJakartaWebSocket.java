@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.ee9.osgi.test;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import static org.junit.Assert.fail;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
@@ -24,11 +22,11 @@ import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
+import java.util.concurrent.CountDownLatch;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import static org.junit.Assert.fail;
-
-@ClientEndpoint(
-    subprotocols = {"chat"})
+@ClientEndpoint(subprotocols = {"chat"})
 public class SimpleJakartaWebSocket
 {
     private static final Logger LOG = Logger.getLogger(SimpleJakartaWebSocket.class.getName());

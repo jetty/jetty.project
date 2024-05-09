@@ -17,7 +17,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -53,12 +52,16 @@ public class JDK9HTTP2ClientTest
             client.start();
 
             FuturePromise<Session> sessionPromise = new FuturePromise<>();
-            client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener() {}, sessionPromise);
+            client.connect(
+                sslContextFactory, new InetSocketAddress(host, port), new Session.Listener()
+                {
+                }, sessionPromise);
             Session session = sessionPromise.get(15, TimeUnit.SECONDS);
 
             HttpFields.Mutable requestFields = HttpFields.build();
             requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
-            MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
+            MetaData.Request metaData = new MetaData.Request(
+                "GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
             HeadersFrame headersFrame = new HeadersFrame(metaData, null, true);
             CountDownLatch latch = new CountDownLatch(1);
             session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener()

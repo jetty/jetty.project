@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.EnumSet;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -26,6 +25,9 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.EnumSet;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -34,9 +36,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 public class CacheControlHeaderTest
 {
@@ -62,7 +61,8 @@ public class CacheControlHeaderTest
         }
 
         @Override
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException
         {
             HttpServletResponse httpResponse = (HttpServletResponse)response;
             httpResponse.setHeader(HttpHeader.CACHE_CONTROL.asString(), "max-age=0,private");
@@ -99,7 +99,8 @@ public class CacheControlHeaderTest
         context.addServlet(servletHolder, "/*");
         if (forceFilter)
         {
-            FilterHolder filterHolder = context.addFilter(ForceCacheControlFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+            FilterHolder filterHolder =
+                context.addFilter(ForceCacheControlFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
             filterHolder.setInitParameter("FORCE_WRAPPER", Boolean.toString(forceWrapping));
         }
         server.setHandler(context);
@@ -130,13 +131,12 @@ public class CacheControlHeaderTest
             req1.append("\r\n");
 
             String response = connector.getResponse(req1.toString());
-            assertThat("Response status",
-                       response,
-                       containsString("HTTP/1.1 200 OK"));
-            assertThat("Response headers",
-                        response,
-                        containsString(HttpHeader.CACHE_CONTROL.asString() + ": max-age=0,private"));
-        } 
+            assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
+            assertThat(
+                "Response headers",
+                response,
+                containsString(HttpHeader.CACHE_CONTROL.asString() + ": max-age=0,private"));
+        }
         finally
         {
             stopServer();
@@ -158,12 +158,11 @@ public class CacheControlHeaderTest
             req1.append("\r\n");
 
             String response = connector.getResponse(req1.toString());
-            assertThat("Response status",
-                       response,
-                       containsString("HTTP/1.1 200 OK"));
-            assertThat("Response headers",
-                       response,
-                       containsString(HttpHeader.CACHE_CONTROL.asString() + ": max-age=0,private"));
+            assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
+            assertThat(
+                "Response headers",
+                response,
+                containsString(HttpHeader.CACHE_CONTROL.asString() + ": max-age=0,private"));
         }
         finally
         {
@@ -185,17 +184,15 @@ public class CacheControlHeaderTest
             req1.append("\r\n");
 
             String response = connector.getResponse(req1.toString());
-            assertThat("Response status",
-                       response,
-                       containsString("HTTP/1.1 200 OK"));
-            assertThat("Response headers",
-                       response,
-                       containsString(HttpHeader.CACHE_CONTROL.asString() + ": max-age=3600,public"));
-        } 
+            assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
+            assertThat(
+                "Response headers",
+                response,
+                containsString(HttpHeader.CACHE_CONTROL.asString() + ": max-age=3600,public"));
+        }
         finally
         {
             stopServer();
         }
     }
-
 }

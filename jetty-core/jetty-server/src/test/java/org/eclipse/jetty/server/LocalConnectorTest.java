@@ -13,22 +13,21 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LocalConnectorTest
 {
@@ -198,8 +197,7 @@ public class LocalConnectorTest
                 GET /R3 HTTP/1.1\r
                 Host: localhost\r
                 \r
-                """
-        );
+                """);
         String response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("pathInContext=/R1"));
@@ -242,8 +240,7 @@ public class LocalConnectorTest
                 GET /R3 HTTP/1.1\r
                 Host: localhost\r
                 \r
-                """
-        );
+                """);
 
         response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
@@ -266,8 +263,7 @@ public class LocalConnectorTest
                 GET /R3 HTTP/1.1\r
                 Host: localhost\r
                 \r
-                """
-        );
+                """);
         String response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("pathInContext=/R1"));
@@ -371,7 +367,8 @@ public class LocalConnectorTest
                 \r
                 """);
 
-        String response = BufferUtil.toString(endp.waitForResponse(false, 10, TimeUnit.SECONDS), StandardCharsets.ISO_8859_1);
+        String response =
+            BufferUtil.toString(endp.waitForResponse(false, 10, TimeUnit.SECONDS), StandardCharsets.ISO_8859_1);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("pathInContext=/R1"));
 

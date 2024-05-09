@@ -18,7 +18,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -31,7 +30,8 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
 
-    public SocketChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
+    public SocketChannelEndPoint(
+                                 SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
         super(scheduler, channel, selector, key);
     }

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.osgi;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 public interface ContextFactory

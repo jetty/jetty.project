@@ -19,7 +19,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-
 import org.eclipse.jetty.util.Index;
 
 /**
@@ -813,9 +812,11 @@ public interface HttpCookie
     static java.net.HttpCookie asJavaNetHttpCookie(HttpCookie httpCookie)
     {
         if (httpCookie.getSameSite() != null)
-            throw new IllegalArgumentException("SameSite attribute not supported by " + java.net.HttpCookie.class.getName());
+            throw new IllegalArgumentException(
+                "SameSite attribute not supported by " + java.net.HttpCookie.class.getName());
         if (httpCookie.isPartitioned())
-            throw new IllegalArgumentException("Partitioned attribute not supported by " + java.net.HttpCookie.class.getName());
+            throw new IllegalArgumentException(
+                "Partitioned attribute not supported by " + java.net.HttpCookie.class.getName());
         java.net.HttpCookie cookie = new java.net.HttpCookie(httpCookie.getName(), httpCookie.getValue());
         cookie.setVersion(httpCookie.getVersion());
         cookie.setComment(httpCookie.getComment());
@@ -905,7 +906,8 @@ public interface HttpCookie
      */
     static String toString(HttpCookie httpCookie)
     {
-        return "%s@%x[%s]".formatted(httpCookie.getClass().getSimpleName(), httpCookie.hashCode(), asString(httpCookie));
+        return "%s@%x[%s]"
+            .formatted(httpCookie.getClass().getSimpleName(), httpCookie.hashCode(), asString(httpCookie));
     }
 
     /**

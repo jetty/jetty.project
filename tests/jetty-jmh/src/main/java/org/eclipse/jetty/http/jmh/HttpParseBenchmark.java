@@ -16,7 +16,6 @@ package org.eclipse.jetty.http.jmh;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.BufferUtil;
@@ -59,8 +58,7 @@ public class HttpParseBenchmark
     private static final ByteBuffer GET = BufferUtil.toBuffer("GET / HTTP/1.1\r\n\r\n");
     private static final ByteBuffer POST = BufferUtil.toBuffer("POST / HTTP/1.1\r\n\r\n");
 
-    record RequestLine(String method, String uri, HttpVersion version)
-    {
+    record RequestLine(String method, String uri, HttpVersion version) {
         @Override
         public String toString()
         {
@@ -116,7 +114,8 @@ public class HttpParseBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public RequestLine testParse()
     {
         ByteBuffer request = (ThreadLocalRandom.current().nextInt(100) < hits) ? GET : POST;
@@ -124,7 +123,8 @@ public class HttpParseBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.Throughput})
+    @BenchmarkMode(
+    {Mode.Throughput})
     public RequestLine testLookAhead()
     {
         ByteBuffer request = (ThreadLocalRandom.current().nextInt(100) < hits) ? GET : POST;
@@ -145,5 +145,3 @@ public class HttpParseBenchmark
         new Runner(opt).run();
     }
 }
-
-

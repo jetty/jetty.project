@@ -19,13 +19,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.StringUtil;
 
-public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple> implements Set<InetAccessSet.PatternTuple>, Predicate<InetAccessSet.AccessTuple>
+public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple>
+    implements Set<InetAccessSet.PatternTuple>, Predicate<InetAccessSet.AccessTuple>
 {
     private ArrayList<PatternTuple> tuples = new ArrayList<>();
 
@@ -92,7 +92,9 @@ public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple> imple
             if (addrStart != addrEnd)
                 addr = pattern.substring(addrStart, addrEnd);
 
-            return new PatternTuple(connector, InetAddressPattern.from(addr),
+            return new PatternTuple(
+                connector,
+                InetAddressPattern.from(addr),
                 StringUtil.isEmpty(path) ? null : new ServletPathSpec(path));
         }
 

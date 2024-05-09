@@ -188,7 +188,7 @@ public interface CharsetStringBuilder
             _builder.setLength(0);
         }
     }
-    
+
     class UsAsciiStringBuilder implements CharsetStringBuilder
     {
         private final StringBuilder _builder = new StringBuilder();
@@ -239,7 +239,7 @@ public interface CharsetStringBuilder
         private final CharsetDecoder _decoder;
         private final StringBuilder _stringBuilder = new StringBuilder(32);
         private ByteBuffer _buffer = ByteBuffer.allocate(32);
-        
+
         public DecoderStringBuilder(CharsetDecoder charsetDecoder)
         {
             _decoder = charsetDecoder;
@@ -251,7 +251,8 @@ public interface CharsetStringBuilder
             if (space < needed)
             {
                 int position = _buffer.position();
-                _buffer = ByteBuffer.wrap(Arrays.copyOf(_buffer.array(), _buffer.capacity() + needed - space + 32)).position(position);
+                _buffer = ByteBuffer.wrap(Arrays.copyOf(_buffer.array(), _buffer.capacity() + needed - space + 32))
+                    .position(position);
             }
         }
 
@@ -352,5 +353,3 @@ public interface CharsetStringBuilder
         }
     }
 }
-
-

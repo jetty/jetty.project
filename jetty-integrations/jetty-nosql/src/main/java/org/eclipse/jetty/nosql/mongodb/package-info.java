@@ -15,4 +15,3 @@
  * Jetty NoSql : MongoDB Integration
  */
 package org.eclipse.jetty.nosql.mongodb;
-

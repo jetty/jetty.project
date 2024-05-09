@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;

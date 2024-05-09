@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -105,7 +104,8 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      * be configured during the starting phase of the {@code WebSocketUpgradeHandler}
      * @return a new {@code WebSocketUpgradeHandler}
      */
-    public static WebSocketUpgradeHandler from(Server server, ContextHandler context, Consumer<ServerWebSocketContainer> configurator)
+    public static WebSocketUpgradeHandler from(
+                                               Server server, ContextHandler context, Consumer<ServerWebSocketContainer> configurator)
     {
         WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, context);
         WebSocketMappings mappings = new WebSocketMappings(components);
@@ -130,7 +130,9 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      */
     public static WebSocketUpgradeHandler from(Server server)
     {
-        return from(server, container -> {});
+        return from(server, container ->
+        {
+        });
     }
 
     /**
@@ -182,7 +184,8 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      * @param configurator a {@link Consumer} that is called to allow the {@link ServerWebSocketContainer} to
      * be configured during the starting phase of the {@code WebSocketUpgradeHandler}
      */
-    public WebSocketUpgradeHandler(ServerWebSocketContainer container, Consumer<ServerWebSocketContainer> configurator)
+    public WebSocketUpgradeHandler(
+                                   ServerWebSocketContainer container, Consumer<ServerWebSocketContainer> configurator)
     {
         _container = container;
         _configurator = configurator;
@@ -227,7 +230,8 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         return super.handle(request, response, callback);
     }
 
-    protected boolean handle(ServerWebSocketContainer container, Request request, Response response, Callback callback)
+    protected boolean handle(
+                             ServerWebSocketContainer container, Request request, Response response, Callback callback)
     {
         try
         {
@@ -246,7 +250,8 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         if (isDynamic())
             return InvocationType.BLOCKING;
         Handler handler = getHandler();
-        InvocationType handlerInvocationType = handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
+        InvocationType handlerInvocationType =
+            handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
         return Invocable.combine(handlerInvocationType, _container.getInvocationType());
     }
 }

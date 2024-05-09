@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.util.function.ToIntFunction;
-
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -44,10 +43,15 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
 
     public MultiplexConnectionPool(Destination destination, int maxConnections, int initialMaxMultiplex)
     {
-        this(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex);
+        this(
+            destination,
+            () -> new ConcurrentPool<>(
+                ConcurrentPool.StrategyType.FIRST, maxConnections, newMaxMultiplexer(initialMaxMultiplex)),
+            initialMaxMultiplex);
     }
 
-    protected MultiplexConnectionPool(Destination destination, Pool.Factory<Connection> poolFactory, int initialMaxMultiplex)
+    protected MultiplexConnectionPool(
+                                      Destination destination, Pool.Factory<Connection> poolFactory, int initialMaxMultiplex)
     {
         super(destination, poolFactory, initialMaxMultiplex);
     }

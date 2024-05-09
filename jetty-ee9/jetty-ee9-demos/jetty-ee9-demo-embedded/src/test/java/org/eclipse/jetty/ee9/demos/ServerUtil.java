@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.ee9.demos;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.util.HashMap;
 import java.util.Map;
-
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ServerUtil
 {
@@ -46,8 +45,10 @@ public class ServerUtil
             if (connector instanceof ServerConnector)
             {
                 ServerConnector serverConnector = (ServerConnector)connector;
-                SslConnectionFactory sslConnectionFactory = serverConnector.getConnectionFactory(SslConnectionFactory.class);
-                HttpConnectionFactory httpConnectionFactory = serverConnector.getConnectionFactory(HttpConnectionFactory.class);
+                SslConnectionFactory sslConnectionFactory =
+                    serverConnector.getConnectionFactory(SslConnectionFactory.class);
+                HttpConnectionFactory httpConnectionFactory =
+                    serverConnector.getConnectionFactory(HttpConnectionFactory.class);
                 if (httpConnectionFactory != null)
                 {
                     HttpConfiguration configuration = httpConnectionFactory.getHttpConfiguration();

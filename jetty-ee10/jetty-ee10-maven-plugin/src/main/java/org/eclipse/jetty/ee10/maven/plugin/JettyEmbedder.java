@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.maven.plugin;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
@@ -27,8 +26,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
  * JettyEmbedder
- * 
- * Starts jetty within the current process. 
+ *
+ * Starts jetty within the current process.
  */
 public class JettyEmbedder extends AbstractJettyEmbedder
 {
@@ -38,29 +37,29 @@ public class JettyEmbedder extends AbstractJettyEmbedder
     {
         return contextHandlers;
     }
-    
+
     public void setWebApp(MavenWebAppContext app)
     {
         webApp = app;
     }
-    
+
     protected void redeployWebApp() throws Exception
     {
         stopWebApp();
 
-        //clear the ServletHandler, which may have
-        //remembered "durable" Servlets, Filters, Listeners
-        //from the context xml file, but as we will re-apply
-        //the context xml, we should not retain them
+        // clear the ServletHandler, which may have
+        // remembered "durable" Servlets, Filters, Listeners
+        // from the context xml file, but as we will re-apply
+        // the context xml, we should not retain them
         webApp.setServletHandler(new ServletHandler());
-        
-        //regenerate config properties
+
+        // regenerate config properties
         applyWebAppProperties();
 
         webApp.start();
     }
 
-   @Override
+    @Override
     public void stopWebApp() throws Exception
     {
         if (webApp != null && !webApp.isStopped())
@@ -73,7 +72,7 @@ public class JettyEmbedder extends AbstractJettyEmbedder
      */
     public void configureWebApp() throws Exception
     {
-        //Set up list of default Configurations to apply to a webapp
+        // Set up list of default Configurations to apply to a webapp
         Configurations.setServerDefault(server);
 
         /* Configure the webapp */
@@ -82,7 +81,7 @@ public class JettyEmbedder extends AbstractJettyEmbedder
 
         applyWebAppProperties();
 
-        //If there is a quickstart file, then quickstart the webapp.
+        // If there is a quickstart file, then quickstart the webapp.
         if (webApp.getTempDirectory() != null)
         {
             Path qs = webApp.getTempDirectory().toPath().resolve("quickstart-web.xml");
@@ -103,7 +102,7 @@ public class JettyEmbedder extends AbstractJettyEmbedder
 
     public void addWebAppToServer() throws Exception
     {
-        //add the webapp to the server
+        // add the webapp to the server
         ServerSupport.addWebApplication(server, webApp);
     }
 }

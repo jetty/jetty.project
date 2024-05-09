@@ -18,7 +18,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
@@ -152,14 +151,21 @@ public class DumpHandler extends Handler.Abstract
         writer.write("<pre>httpURI.path=" + httpURI.getPath() + "</pre><br/>\n");
         writer.write("<pre>httpURI.query=" + httpURI.getQuery() + "</pre><br/>\n");
         writer.write("<pre>httpURI.pathQuery=" + httpURI.getPathQuery() + "</pre><br/>\n");
-        writer.write("<pre>locales=" + Request.getLocales(request).stream().map(Locale::toLanguageTag).toList() + "</pre><br/>\n");
+        writer.write("<pre>locales=" + Request.getLocales(request).stream()
+            .map(Locale::toLanguageTag)
+            .toList() + "</pre><br/>\n");
         writer.write("<pre>pathInContext=" + Request.getPathInContext(request) + "</pre><br/>\n");
         writer.write("<pre>contentType=" + request.getHeaders().get(HttpHeader.CONTENT_TYPE) + "</pre><br/>\n");
         writer.write("<pre>servername=" + Request.getServerName(request) + "</pre><br/>\n");
-        writer.write("<pre>local=" + Request.getLocalAddr(request) + ":" + Request.getLocalPort(request) + "</pre><br/>\n");
+        writer.write(
+            "<pre>local=" + Request.getLocalAddr(request) + ":" + Request.getLocalPort(request) + "</pre><br/>\n");
         writer.write("<pre>remote=" + Request.getRemoteAddr(request) + ":" + Request.getRemotePort(request) + "</pre><br/>\n");
         writer.write("<h3>Header:</h3><pre>");
-        writer.write(String.format("%4s %s %s\n", request.getMethod(), httpURI.getPathQuery(), request.getConnectionMetaData().getProtocol()));
+        writer.write(String.format(
+            "%4s %s %s\n",
+            request.getMethod(),
+            httpURI.getPathQuery(),
+            request.getConnectionMetaData().getProtocol()));
         for (HttpField field : request.getHeaders())
         {
             String name = field.getName();

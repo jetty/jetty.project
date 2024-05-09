@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.ee9.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
@@ -37,10 +40,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class AliasCheckerSymlinkTest
 {
@@ -90,27 +89,37 @@ public class AliasCheckerSymlinkTest
         // Create symlink file that targets outside the webroot directory.
         _symlinkExternalFile = webRootPath.resolve("symlinkExternalFile");
         delete(_symlinkExternalFile);
-        Files.createSymbolicLink(_symlinkExternalFile, getResource("file")).toFile().deleteOnExit();
+        Files.createSymbolicLink(_symlinkExternalFile, getResource("file"))
+            .toFile()
+            .deleteOnExit();
 
         // Symlink to a directory inside of the webroot.
         _symlinkDir = webRootPath.resolve("symlinkDir");
         delete(_symlinkDir);
-        Files.createSymbolicLink(_symlinkDir, webRootPath.resolve("documents")).toFile().deleteOnExit();
+        Files.createSymbolicLink(_symlinkDir, webRootPath.resolve("documents"))
+            .toFile()
+            .deleteOnExit();
 
         // Symlink to a directory parent of the webroot.
         _symlinkParentDir = webRootPath.resolve("symlinkParentDir");
         delete(_symlinkParentDir);
-        Files.createSymbolicLink(_symlinkParentDir, webRootPath.resolve("..")).toFile().deleteOnExit();
+        Files.createSymbolicLink(_symlinkParentDir, webRootPath.resolve(".."))
+            .toFile()
+            .deleteOnExit();
 
         // Symlink to a directory outside of the webroot.
         _symlinkSiblingDir = webRootPath.resolve("symlinkSiblingDir");
         delete(_symlinkSiblingDir);
-        Files.createSymbolicLink(_symlinkSiblingDir, webRootPath.resolve("../sibling")).toFile().deleteOnExit();
+        Files.createSymbolicLink(_symlinkSiblingDir, webRootPath.resolve("../sibling"))
+            .toFile()
+            .deleteOnExit();
 
         // Symlink to the WEB-INF directory.
         _webInfSymlink = webRootPath.resolve("webInfSymlink");
         delete(_webInfSymlink);
-        Files.createSymbolicLink(_webInfSymlink, webRootPath.resolve("WEB-INF")).toFile().deleteOnExit();
+        Files.createSymbolicLink(_webInfSymlink, webRootPath.resolve("WEB-INF"))
+            .toFile()
+            .deleteOnExit();
 
         // External symlink to webroot.
         _webrootSymlink = webRootPath.resolve("../webrootSymlink");
@@ -160,50 +169,101 @@ public class AliasCheckerSymlinkTest
             return true;
         }
     }
-    
+
     public static Stream<Arguments> testCases()
     {
         AllowedResourceAliasChecker allowedResource = new AllowedResourceAliasChecker(_context.getCoreContextHandler());
-        SymlinkAllowedResourceAliasChecker symlinkAllowedResource = new SymlinkAllowedResourceAliasChecker(_context.getCoreContextHandler());
+        SymlinkAllowedResourceAliasChecker symlinkAllowedResource =
+            new SymlinkAllowedResourceAliasChecker(_context.getCoreContextHandler());
         ApproveAliases approveAliases = new ApproveAliases();
 
         return Stream.of(
-                // AllowedResourceAliasChecker that checks the target of symlinks.
-                Arguments.of(allowedResource, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
-                Arguments.of(allowedResource, "/symlinkExternalFile", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(allowedResource, "/symlinkDir/file", HttpStatus.OK_200, "This file is inside webroot/documents."),
-                Arguments.of(allowedResource, "/symlinkParentDir/webroot/file", HttpStatus.OK_200, "This file is inside webroot."),
-                Arguments.of(allowedResource, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(allowedResource, "/symlinkSiblingDir/file", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(allowedResource, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
+            // AllowedResourceAliasChecker that checks the target of symlinks.
+            Arguments.of(allowedResource, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
+            Arguments.of(allowedResource, "/symlinkExternalFile", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(
+                allowedResource,
+                "/symlinkDir/file",
+                HttpStatus.OK_200,
+                "This file is inside webroot/documents."),
+            Arguments.of(
+                allowedResource,
+                "/symlinkParentDir/webroot/file",
+                HttpStatus.OK_200,
+                "This file is inside webroot."),
+            Arguments.of(
+                allowedResource, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(allowedResource, "/symlinkSiblingDir/file", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(allowedResource, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
 
-                // SymlinkAllowedResourceAliasChecker that does not check the target of symlinks, but only approves files obtained through a symlink.
-                Arguments.of(symlinkAllowedResource, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
-                Arguments.of(symlinkAllowedResource, "/symlinkExternalFile", HttpStatus.OK_200, "This file is outside webroot."),
-                Arguments.of(symlinkAllowedResource, "/symlinkDir/file", HttpStatus.OK_200, "This file is inside webroot/documents."),
-                Arguments.of(symlinkAllowedResource, "/symlinkParentDir/webroot/file", HttpStatus.OK_200, "This file is inside webroot."),
-                Arguments.of(symlinkAllowedResource, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
-                Arguments.of(symlinkAllowedResource, "/symlinkSiblingDir/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
-                Arguments.of(symlinkAllowedResource, "/webInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
+            // SymlinkAllowedResourceAliasChecker that does not check the target of symlinks, but only approves
+            // files obtained through a symlink.
+            Arguments.of(symlinkAllowedResource, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
+            Arguments.of(
+                symlinkAllowedResource,
+                "/symlinkExternalFile",
+                HttpStatus.OK_200,
+                "This file is outside webroot."),
+            Arguments.of(
+                symlinkAllowedResource,
+                "/symlinkDir/file",
+                HttpStatus.OK_200,
+                "This file is inside webroot/documents."),
+            Arguments.of(
+                symlinkAllowedResource,
+                "/symlinkParentDir/webroot/file",
+                HttpStatus.OK_200,
+                "This file is inside webroot."),
+            Arguments.of(
+                symlinkAllowedResource,
+                "/symlinkParentDir/webroot/WEB-INF/web.xml",
+                HttpStatus.OK_200,
+                "This is the web.xml file."),
+            Arguments.of(
+                symlinkAllowedResource,
+                "/symlinkSiblingDir/file",
+                HttpStatus.OK_200,
+                "This file is inside a sibling dir to webroot."),
+            Arguments.of(
+                symlinkAllowedResource,
+                "/webInfSymlink/web.xml",
+                HttpStatus.OK_200,
+                "This is the web.xml file."),
 
-                // The ApproveAliases (approves everything regardless).
-                Arguments.of(approveAliases, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
-                Arguments.of(approveAliases, "/symlinkExternalFile", HttpStatus.OK_200, "This file is outside webroot."),
-                Arguments.of(approveAliases, "/symlinkDir/file", HttpStatus.OK_200, "This file is inside webroot/documents."),
-                Arguments.of(approveAliases, "/symlinkParentDir/webroot/file", HttpStatus.OK_200, "This file is inside webroot."),
-                Arguments.of(approveAliases, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
-                Arguments.of(approveAliases, "/symlinkSiblingDir/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
-                Arguments.of(approveAliases, "/webInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
+            // The ApproveAliases (approves everything regardless).
+            Arguments.of(approveAliases, "/symlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
+            Arguments.of(
+                approveAliases, "/symlinkExternalFile", HttpStatus.OK_200, "This file is outside webroot."),
+            Arguments.of(
+                approveAliases,
+                "/symlinkDir/file",
+                HttpStatus.OK_200,
+                "This file is inside webroot/documents."),
+            Arguments.of(
+                approveAliases,
+                "/symlinkParentDir/webroot/file",
+                HttpStatus.OK_200,
+                "This file is inside webroot."),
+            Arguments.of(
+                approveAliases,
+                "/symlinkParentDir/webroot/WEB-INF/web.xml",
+                HttpStatus.OK_200,
+                "This is the web.xml file."),
+            Arguments.of(
+                approveAliases,
+                "/symlinkSiblingDir/file",
+                HttpStatus.OK_200,
+                "This file is inside a sibling dir to webroot."),
+            Arguments.of(approveAliases, "/webInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
 
-                // No alias checker (any symlink should be an alias).
-                Arguments.of(null, "/symlinkFile", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(null, "/symlinkExternalFile", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(null, "/symlinkDir/file", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(null, "/symlinkParentDir/webroot/file", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(null, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(null, "/symlinkSiblingDir/file", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(null, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null)
-        );
+            // No alias checker (any symlink should be an alias).
+            Arguments.of(null, "/symlinkFile", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(null, "/symlinkExternalFile", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(null, "/symlinkDir/file", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(null, "/symlinkParentDir/webroot/file", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(null, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(null, "/symlinkSiblingDir/file", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(null, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null));
     }
 
     @ParameterizedTest

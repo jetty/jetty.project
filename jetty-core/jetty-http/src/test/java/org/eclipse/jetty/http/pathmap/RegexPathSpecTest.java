@@ -13,13 +13,6 @@
 
 package org.eclipse.jetty.http.pathmap;
 
-import java.util.stream.Stream;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -28,6 +21,12 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class RegexPathSpecTest
 {
@@ -116,13 +115,22 @@ public class RegexPathSpecTest
             Arguments.of("^/.*(?<info>\\/.*\\.do)$", "/a/b/c/d/e/f/g.do", "/a/b/c/d/e/f", "/g.do"),
             // Middle (with 2 named capture groups)
             // this is pretty much an all glob signature
-            Arguments.of("^(?<name>\\/.*)(?<info>\\/.*\\.action)$", "/test/info/code.action", "/test/info", "/code.action"),
-            Arguments.of("^(?<name>\\/.*)(?<info>\\/.*\\.action)$", "/a/b/c/d/e/f/g.action", "/a/b/c/d/e/f", "/g.action"),
+            Arguments.of(
+                "^(?<name>\\/.*)(?<info>\\/.*\\.action)$",
+                "/test/info/code.action",
+                "/test/info",
+                "/code.action"),
+            Arguments.of(
+                "^(?<name>\\/.*)(?<info>\\/.*\\.action)$",
+                "/a/b/c/d/e/f/g.action",
+                "/a/b/c/d/e/f",
+                "/g.action"),
             // Named groups with gap in the middle
-            Arguments.of("^(?<name>\\/.*)/x/(?<info>.*\\.action)$", "/a/b/c/x/e/f/g.action", "/a/b/c", "e/f/g.action"),
+            Arguments.of(
+                "^(?<name>\\/.*)/x/(?<info>.*\\.action)$", "/a/b/c/x/e/f/g.action", "/a/b/c", "e/f/g.action"),
             // Named groups in opposite order
-            Arguments.of("^(?<info>\\/.*)/x/(?<name>.*\\.action)$", "/a/b/c/x/e/f/g.action", "e/f/g.action", "/a/b/c")
-        );
+            Arguments.of(
+                "^(?<info>\\/.*)/x/(?<name>.*\\.action)$", "/a/b/c/x/e/f/g.action", "e/f/g.action", "/a/b/c"));
     }
 
     @ParameterizedTest(name = "[{index}] RegexPathSpec(\"{0}\").matched(\"{1}\")")
@@ -131,9 +139,13 @@ public class RegexPathSpecTest
     {
         RegexPathSpec spec = new RegexPathSpec(regex);
         MatchedPath matched = spec.matched(input);
-        assertEquals(expectedPathMatch, matched.getPathMatch(),
+        assertEquals(
+            expectedPathMatch,
+            matched.getPathMatch(),
             String.format("RegexPathSpec(\"%s\").matched(\"%s\").getPathMatch()", regex, input));
-        assertEquals(expectedPathInfo, matched.getPathInfo(),
+        assertEquals(
+            expectedPathInfo,
+            matched.getPathInfo(),
             String.format("RegexPathSpec(\"%s\").matched(\"%s\").getPathInfo()", regex, input));
     }
 

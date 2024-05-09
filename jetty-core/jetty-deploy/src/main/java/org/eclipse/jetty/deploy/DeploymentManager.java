@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
 import org.eclipse.jetty.deploy.bindings.StandardStopper;
@@ -187,7 +186,8 @@ public class DeploymentManager extends ContainerLifeCycle
     public boolean hasAppProviderFor(String environmentName)
     {
         return environmentName != null && getAppProviders().stream()
-            .map(AppProvider::getEnvironmentName).anyMatch(environmentName::equalsIgnoreCase);
+            .map(AppProvider::getEnvironmentName)
+            .anyMatch(environmentName::equalsIgnoreCase);
     }
 
     public Collection<AppProvider> getAppProviders()
@@ -527,7 +527,7 @@ public class DeploymentManager extends ContainerLifeCycle
         catch (Throwable t)
         {
             LOG.warn("Unable to reach node goal: {}", nodeName, t);
-            
+
             // migrate to FAILED node
             Node failed = _lifecycle.getNodeByName(AppLifeCycle.FAILED);
             appentry.setLifeCycleNode(failed);

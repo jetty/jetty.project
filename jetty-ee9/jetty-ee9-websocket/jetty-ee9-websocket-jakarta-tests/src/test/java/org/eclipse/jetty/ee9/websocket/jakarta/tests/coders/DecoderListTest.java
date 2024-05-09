@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import jakarta.websocket.Decoder;
 import jakarta.websocket.DeploymentException;
@@ -29,6 +27,13 @@ import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
+import java.io.IOException;
+import java.io.Reader;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.AbstractDecoder;
@@ -46,12 +51,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DecoderListTest
 {
@@ -89,8 +88,8 @@ public class DecoderListTest
 
     public void start(CheckedConsumer<ServerContainer> containerConsumer) throws Exception
     {
-        JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            containerConsumer.accept(container));
+        JakartaWebSocketServletContainerInitializer.configure(
+            contextHandler, (context, container) -> containerConsumer.accept(container));
         server.start();
         serverUri = WSURI.toWebsocket(server.getURI());
     }
@@ -101,8 +100,7 @@ public class DecoderListTest
             Arguments.of("=DecodeEquals", "DecodeEquals="),
             Arguments.of("+DecodePlus", "DecodePlus+"),
             Arguments.of("-DecodeMinus", "DecodeMinus-"),
-            Arguments.of("DecodeNoMatch", "DecodeNoMatch")
-        );
+            Arguments.of("DecodeNoMatch", "DecodeNoMatch"));
     }
 
     public static Stream<Arguments> getBinaryArguments()
@@ -112,8 +110,7 @@ public class DecoderListTest
             Arguments.of("+DecodePlus", "DecodePlus+"),
             Arguments.of("-DecodeMinus", "DecodeMinus-"),
             // No decoder accepts this message and we have no default decoder for this type, so we get no response.
-            Arguments.of("DecodeNoMatch", null)
-        );
+            Arguments.of("DecodeNoMatch", null));
     }
 
     @ParameterizedTest
@@ -122,7 +119,8 @@ public class DecoderListTest
     {
         start(container ->
         {
-            ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(TextDecoderListEndpoint.class, "/")
+            ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(
+                TextDecoderListEndpoint.class, "/")
                 .decoders(List.of(EqualsTextDecoder.class, PlusTextDecoder.class, MinusTextDecoder.class))
                 .build();
             container.addEndpoint(endpointConfig);
@@ -141,7 +139,8 @@ public class DecoderListTest
     {
         start(container ->
         {
-            ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(BinaryDecoderListEndpoint.class, "/")
+            ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(
+                BinaryDecoderListEndpoint.class, "/")
                 .decoders(List.of(EqualsBinaryDecoder.class, PlusBinaryDecoder.class, MinusBinaryDecoder.class))
                 .build();
             container.addEndpoint(endpointConfig);
@@ -159,7 +158,8 @@ public class DecoderListTest
     {
         start(container ->
         {
-            ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(TextDecoderListEndpoint.class, "/")
+            ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(
+                TextDecoderListEndpoint.class, "/")
                 .decoders(List.of(AppendingPlusDecoder.class, AppendingMinusDecoder.class))
                 .build();
             container.addEndpoint(endpointConfig);
@@ -177,22 +177,25 @@ public class DecoderListTest
     public void testStreamDecoders()
     {
         // Stream decoders will not be able to form a decoder list as they don't implement willDecode().
-        Throwable error = assertThrows(Throwable.class, () ->
-            start(container ->
+        Throwable error = assertThrows(
+            Throwable.class,
+            () -> start(container ->
             {
-                ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(TextDecoderListEndpoint.class, "/")
+                ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(
+                    TextDecoderListEndpoint.class, "/")
                     .decoders(List.of(TextStreamDecoder1.class, TextStreamDecoder2.class))
                     .build();
                 container.addEndpoint(endpointConfig);
-            })
-        );
+            }));
 
         assertThat(error, instanceOf(RuntimeException.class));
         Throwable cause = error.getCause();
         assertThat(cause, instanceOf(DeploymentException.class));
         Throwable invalidWebSocketException = cause.getCause();
         assertThat(invalidWebSocketException, instanceOf(InvalidWebSocketException.class));
-        assertThat(invalidWebSocketException.getMessage(), containsString("Multiple decoders for objectTypeclass java.lang.String"));
+        assertThat(
+            invalidWebSocketException.getMessage(),
+            containsString("Multiple decoders for objectTypeclass java.lang.String"));
     }
 
     public static class TextDecoderListEndpoint extends Endpoint

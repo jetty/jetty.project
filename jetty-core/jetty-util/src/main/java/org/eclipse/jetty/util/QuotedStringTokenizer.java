@@ -23,7 +23,10 @@ public interface QuotedStringTokenizer
     /**
      * A QuotedStringTokenizer for comma separated values with optional white space.
      */
-    QuotedStringTokenizer CSV = QuotedStringTokenizer.builder().delimiters(",").ignoreOptionalWhiteSpace().build();
+    QuotedStringTokenizer CSV = QuotedStringTokenizer.builder()
+        .delimiters(",")
+        .ignoreOptionalWhiteSpace()
+        .build();
 
     /**
      * @return A Builder for a {@link QuotedStringTokenizer}.
@@ -245,7 +248,8 @@ public interface QuotedStringTokenizer
                 throw new IllegalArgumentException("Delimiters must be provided");
             if (_singleQuotes)
                 throw new IllegalArgumentException("Single quotes not supported by RFC9110");
-            return new RFC9110QuotedStringTokenizer(_delim, _optionalWhiteSpace, _returnDelimiters, _returnQuotes, _embeddedQuotes, _escapeOnlyQuote);
+            return new RFC9110QuotedStringTokenizer(
+                _delim, _optionalWhiteSpace, _returnDelimiters, _returnQuotes, _embeddedQuotes, _escapeOnlyQuote);
         }
     }
 }

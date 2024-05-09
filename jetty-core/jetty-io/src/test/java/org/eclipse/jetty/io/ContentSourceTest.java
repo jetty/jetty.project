@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.io;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
@@ -51,18 +62,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class ContentSourceTest
 {
     public static List<Content.Source> all() throws Exception
@@ -74,22 +73,24 @@ public class ContentSourceTest
             asyncSource.write(false, UTF_8.encode("two"), Callback.NOOP);
         }
 
-        ByteBufferContentSource byteBufferSource = new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));
+        ByteBufferContentSource byteBufferSource =
+            new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));
 
-        ContentSourceTransformer transformerSource = new ContentSourceTransformer(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two")))
-        {
-            @Override
-            protected Content.Chunk transform(Content.Chunk rawChunk)
+        ContentSourceTransformer transformerSource =
+            new ContentSourceTransformer(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two")))
             {
-                return rawChunk;
-            }
+                @Override
+                protected Content.Chunk transform(Content.Chunk rawChunk)
+                {
+                    return rawChunk;
+                }
 
-            @Override
-            public String toString()
-            {
-                return "%s@%x".formatted(ContentSourceTransformer.class.getSimpleName(), hashCode());
-            }
-        };
+                @Override
+                public String toString()
+                {
+                    return "%s@%x".formatted(ContentSourceTransformer.class.getSimpleName(), hashCode());
+                }
+            };
 
         Path tmpDir = MavenTestingUtils.getTargetTestingPath();
         Files.createDirectories(tmpDir);
@@ -98,10 +99,11 @@ public class ContentSourceTest
         PathContentSource pathSource = new PathContentSource(path);
         pathSource.setBufferSize(3);
 
-        InputStreamContentSource inputSource = new InputStreamContentSource(new ByteArrayInputStream("onetwo".getBytes(UTF_8)));
+        InputStreamContentSource inputSource =
+            new InputStreamContentSource(new ByteArrayInputStream("onetwo".getBytes(UTF_8)));
 
-        InputStreamContentSource inputSource2 =
-            new InputStreamContentSource(new ContentSourceInputStream(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"))));
+        InputStreamContentSource inputSource2 = new InputStreamContentSource(
+            new ContentSourceInputStream(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"))));
 
         return List.of(asyncSource, byteBufferSource, transformerSource, pathSource, inputSource, inputSource2);
     }
@@ -272,8 +274,8 @@ public class ContentSourceTest
     public void testDemandCallbackThrows(Content.Source source) throws Exception
     {
         // TODO fix for OSCS
-//        if (source instanceof OutputStreamContentSource)
-//            return;
+        //        if (source instanceof OutputStreamContentSource)
+        //            return;
 
         Content.Chunk chunk = nextChunk(source);
         assertNotNull(chunk);
@@ -430,7 +432,8 @@ public class ContentSourceTest
             {
                 complete.countDown();
             }
-        }).start();
+        })
+            .start();
 
         long wait = System.currentTimeMillis() + 1000;
         Runnable todo = source.takeDemand();
@@ -482,7 +485,8 @@ public class ContentSourceTest
             {
                 complete.countDown();
             }
-        }).start();
+        })
+            .start();
 
         long wait = System.currentTimeMillis() + 1000;
         Runnable todo = source.takeDemand();
@@ -513,7 +517,8 @@ public class ContentSourceTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
+    @ValueSource(booleans =
+    {true, false})
     public void testInputStreamCloseWithAvailableEOF(boolean eofAvailable) throws Exception
     {
         AtomicReference<Throwable> failed = new AtomicReference<>();
@@ -550,7 +555,8 @@ public class ContentSourceTest
             {
                 complete.countDown();
             }
-        }).start();
+        })
+            .start();
 
         Runnable todo = source.takeDemand();
         assertNull(todo);
@@ -599,7 +605,8 @@ public class ContentSourceTest
             {
                 complete.countDown();
             }
-        }).start();
+        })
+            .start();
 
         Runnable todo = source.takeDemand();
         assertNull(todo);

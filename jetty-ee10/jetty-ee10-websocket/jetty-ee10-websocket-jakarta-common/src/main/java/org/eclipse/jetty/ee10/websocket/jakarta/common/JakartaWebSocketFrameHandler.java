@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.MessageHandler;
+import jakarta.websocket.PongMessage;
+import jakarta.websocket.server.ServerEndpointConfig;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
@@ -22,14 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-
-import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.CloseReason;
-import jakarta.websocket.Decoder;
-import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.MessageHandler;
-import jakarta.websocket.PongMessage;
-import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedBinaryMessageSink;
@@ -78,12 +77,15 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     private CoreSession coreSession;
     protected byte dataType = OpCode.UNDEFINED;
 
-    public JakartaWebSocketFrameHandler(JakartaWebSocketContainer container,
-                                      UpgradeRequest upgradeRequest,
+    public JakartaWebSocketFrameHandler(
+                                        JakartaWebSocketContainer container,
+                                        UpgradeRequest upgradeRequest,
                                         Object endpointInstance,
-                                        MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-                                      JakartaWebSocketMessageMetadata textMetadata,
-                                      JakartaWebSocketMessageMetadata binaryMetadata,
+                                        MethodHandle openHandle,
+                                        MethodHandle closeHandle,
+                                        MethodHandle errorHandle,
+                                        JakartaWebSocketMessageMetadata textMetadata,
+                                        JakartaWebSocketMessageMetadata binaryMetadata,
                                         MethodHandle pongHandle,
                                         EndpointConfig endpointConfig)
     {
@@ -156,7 +158,8 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
                 textMetadata = actualTextMetadata;
             }
 
-            JakartaWebSocketMessageMetadata actualBinaryMetadata = JakartaWebSocketMessageMetadata.copyOf(binaryMetadata);
+            JakartaWebSocketMessageMetadata actualBinaryMetadata =
+                JakartaWebSocketMessageMetadata.copyOf(binaryMetadata);
             if (actualBinaryMetadata != null)
             {
                 if (actualBinaryMetadata.isMaxMessageSizeSet())
@@ -182,14 +185,16 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
         catch (Throwable cause)
         {
-            Exception wse = new WebSocketException(endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause);
+            Exception wse = new WebSocketException(
+                endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause);
             callback.failed(wse);
         }
     }
 
     private EndpointConfig getWrappedEndpointConfig()
     {
-        final Map<String, Object> listenerMap = new PutListenerMap(this.endpointConfig.getUserProperties(), this::configListener);
+        final Map<String, Object> listenerMap =
+            new PutListenerMap(this.endpointConfig.getUserProperties(), this::configListener);
 
         EndpointConfig wrappedConfig;
         if (endpointConfig instanceof ServerEndpointConfig)
@@ -291,7 +296,8 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         {
             if (closeHandle != null)
             {
-                CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(closeStatus.getCode()), closeStatus.getReason());
+                CloseReason closeReason = new CloseReason(
+                    CloseReason.CloseCodes.getCloseCode(closeStatus.getCode()), closeStatus.getReason());
                 closeHandle.invoke(closeReason);
             }
 
@@ -299,7 +305,8 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
         catch (Throwable cause)
         {
-            callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " CLOSE method error: " + cause.getMessage(), cause));
+            callback.failed(new WebSocketException(
+                endpointInstance.getClass().getSimpleName() + " CLOSE method error: " + cause.getMessage(), cause));
         }
     }
 
@@ -316,7 +323,8 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
         catch (Throwable t)
         {
-            WebSocketException wsError = new WebSocketException(endpointInstance.getClass().getSimpleName() + " ERROR method error: " + cause.getMessage(), t);
+            WebSocketException wsError = new WebSocketException(
+                endpointInstance.getClass().getSimpleName() + " ERROR method error: " + cause.getMessage(), t);
             wsError.addSuppressed(cause);
             callback.failed(wsError);
         }
@@ -349,7 +357,10 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         try
         {
             MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
-                .findVirtual(MessageHandler.Partial.class, "onMessage", MethodType.methodType(void.class, Object.class, boolean.class))
+                .findVirtual(
+                    MessageHandler.Partial.class,
+                    "onMessage",
+                    MethodType.methodType(void.class, Object.class, boolean.class))
                 .bindTo(handler);
 
             JakartaWebSocketMessageMetadata metadata = new JakartaWebSocketMessageMetadata();
@@ -373,9 +384,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
             }
             else
             {
-                throw new RuntimeException(
-                    "Unable to add " + handler.getClass().getName() + " with type " + clazz + ": only supported types byte[], " + ByteBuffer.class.getName() +
-                        ", " + String.class.getName());
+                throw new RuntimeException("Unable to add " + handler.getClass().getName() + " with type " + clazz + ": only supported types byte[], " + ByteBuffer.class.getName() + ", " + String.class.getName());
             }
 
             // Register the Metadata as a MessageHandler.
@@ -387,7 +396,8 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
         catch (IllegalAccessException e)
         {
-            throw new IllegalStateException("Unable to access " + handler.getClass().getName(), e);
+            throw new IllegalStateException(
+                "Unable to access " + handler.getClass().getName(), e);
         }
     }
 
@@ -396,7 +406,8 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         try
         {
             MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
-                .findVirtual(MessageHandler.Whole.class, "onMessage", MethodType.methodType(void.class, Object.class))
+                .findVirtual(
+                    MessageHandler.Whole.class, "onMessage", MethodType.methodType(void.class, Object.class))
                 .bindTo(handler);
 
             if (PongMessage.class.isAssignableFrom(clazz))
@@ -454,7 +465,8 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
         catch (IllegalAccessException e)
         {
-            throw new IllegalStateException("Unable to access " + handler.getClass().getName(), e);
+            throw new IllegalStateException(
+                "Unable to access " + handler.getClass().getName(), e);
         }
     }
 
@@ -478,12 +490,13 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
 
         if (messageImpl != null)
         {
-            throw new IllegalStateException("Cannot register " + replacement.getClass().getName() +
-                ": Basic WebSocket type " + OpCode.name(basicWebSocketType) + " is already registered");
+            throw new IllegalStateException(
+                "Cannot register " + replacement.getClass().getName() + ": Basic WebSocket type " + OpCode.name(basicWebSocketType) + " is already registered");
         }
     }
 
-    private void registerMessageHandler(Class<?> clazz, MessageHandler handler, byte basicMessageType, JakartaWebSocketMessageMetadata metadata)
+    private void registerMessageHandler(
+                                        Class<?> clazz, MessageHandler handler, byte basicMessageType, JakartaWebSocketMessageMetadata metadata)
     {
         assertBasicTypeNotRegistered(basicMessageType, handler);
         MessageSink messageSink = JakartaWebSocketFrameHandlerFactory.createMessageSink(session, metadata);
@@ -502,18 +515,19 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    private <T> MessageSink registerMessageHandler(byte basicWebSocketMessageType, Class<T> handlerType, MessageHandler handler, MessageSink messageSink)
+    private <T> MessageSink registerMessageHandler(
+                                                   byte basicWebSocketMessageType, Class<T> handlerType, MessageHandler handler, MessageSink messageSink)
     {
         try (AutoLock l = lock.lock())
         {
             RegisteredMessageHandler registeredHandler = messageHandlerMap.get(basicWebSocketMessageType);
             if (registeredHandler != null)
             {
-                throw new IllegalStateException(String.format("Cannot register %s: Basic WebSocket type %s is already registered to %s",
+                throw new IllegalStateException(String.format(
+                    "Cannot register %s: Basic WebSocket type %s is already registered to %s",
                     handler.getClass().getName(),
                     OpCode.name(basicWebSocketMessageType),
-                    registeredHandler.getMessageHandler().getClass().getName()
-                ));
+                    registeredHandler.getMessageHandler().getClass().getName()));
             }
 
             registeredHandler = new RegisteredMessageHandler(basicWebSocketMessageType, handlerType, handler);
@@ -591,16 +605,21 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
 
     public void onPing(Frame frame, Callback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(frame.getPayload()), Callback.from(() ->
-        {
-            callback.succeeded();
-            coreSession.demand();
-        }, x ->
-        {
-            // Ignore failures, as we might be OSHUT but receive a PING.
-            callback.succeeded();
-            coreSession.demand();
-        }), false);
+        coreSession.sendFrame(
+            new Frame(OpCode.PONG).setPayload(frame.getPayload()),
+            Callback.from(
+                () ->
+                {
+                    callback.succeeded();
+                    coreSession.demand();
+                },
+                x ->
+                {
+                    // Ignore failures, as we might be OSHUT but receive a PING.
+                    callback.succeeded();
+                    coreSession.demand();
+                }),
+            false);
     }
 
     public void onPong(Frame frame, Callback callback)
@@ -621,7 +640,9 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
             }
             catch (Throwable cause)
             {
-                callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause));
+                callback.failed(new WebSocketException(
+                    endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(),
+                    cause));
             }
         }
         else
@@ -653,7 +674,8 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         {
             case OpCode.TEXT -> onText(frame, callback);
             case OpCode.BINARY -> onBinary(frame, callback);
-            default -> callback.failed(new ProtocolException("Unable to process continuation during dataType " + dataType));
+            default -> callback.failed(
+                new ProtocolException("Unable to process continuation during dataType " + dataType));
         }
     }
 

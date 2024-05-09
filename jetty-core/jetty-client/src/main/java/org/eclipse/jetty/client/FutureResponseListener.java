@@ -20,7 +20,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.client.internal.HttpContentResponse;
 
 /**
@@ -102,7 +101,8 @@ public class FutureResponseListener extends BufferingResponseListener implements
     }
 
     @Override
-    public ContentResponse get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+    public ContentResponse get(long timeout, TimeUnit unit)
+        throws InterruptedException, ExecutionException, TimeoutException
     {
         boolean expired = !latch.await(timeout, unit);
         if (expired)

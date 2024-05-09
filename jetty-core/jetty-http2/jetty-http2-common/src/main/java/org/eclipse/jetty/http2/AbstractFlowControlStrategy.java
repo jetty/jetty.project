@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
@@ -100,7 +99,11 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
             {
                 updateRecvWindow(stream, delta);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Updated initial stream recv window {} -> {} for {}", previousInitialStreamWindow, initialStreamWindow, stream);
+                    LOG.debug(
+                        "Updated initial stream recv window {} -> {} for {}",
+                        previousInitialStreamWindow,
+                        initialStreamWindow,
+                        stream);
             }
             else
             {
@@ -140,13 +143,23 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     {
         int oldSize = updateRecvWindow(session, -length);
         if (LOG.isDebugEnabled())
-            LOG.debug("Data received, {} bytes, updated session recv window {} -> {} for {}", length, oldSize, oldSize - length, session);
+            LOG.debug(
+                "Data received, {} bytes, updated session recv window {} -> {} for {}",
+                length,
+                oldSize,
+                oldSize - length,
+                session);
 
         if (stream != null)
         {
             oldSize = updateRecvWindow(stream, -length);
             if (LOG.isDebugEnabled())
-                LOG.debug("Data received, {} bytes, updated stream recv window {} -> {} for {}", length, oldSize, oldSize - length, stream);
+                LOG.debug(
+                    "Data received, {} bytes, updated stream recv window {} -> {} for {}",
+                    length,
+                    oldSize,
+                    oldSize - length,
+                    stream);
         }
     }
 
@@ -261,7 +274,8 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     {
         long pastStallTime = streamsStallTime.get();
         long now = NanoTime.now();
-        long currentStallTime = streamsStalls.values().stream().reduce(0L, (result, time) -> NanoTime.elapsed(time, now));
+        long currentStallTime =
+            streamsStalls.values().stream().reduce(0L, (result, time) -> NanoTime.elapsed(time, now));
         return TimeUnit.NANOSECONDS.toMillis(pastStallTime + currentStallTime);
     }
 

@@ -13,15 +13,14 @@
 
 package org.example;
 
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.StringTokenizer;
-
 import jakarta.servlet.jsp.JspContext;
 import jakarta.servlet.jsp.JspException;
 import jakarta.servlet.jsp.tagext.JspFragment;
 import jakarta.servlet.jsp.tagext.SimpleTagSupport;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.StringTokenizer;
 
 public class Date2Tag extends SimpleTagSupport
 {
@@ -36,8 +35,7 @@ public class Date2Tag extends SimpleTagSupport
     public void doTag() throws JspException, IOException
     {
         String formatted =
-            new SimpleDateFormat("long".equals(format) ? "EEE 'the' d:MMM:yyyy" : "d:MM:yy")
-                .format(new Date());
+            new SimpleDateFormat("long".equals(format) ? "EEE 'the' d:MMM:yyyy" : "d:MM:yy").format(new Date());
         StringTokenizer tok = new StringTokenizer(formatted, ":");
         JspContext context = getJspContext();
         context.setAttribute("day", tok.nextToken());
@@ -48,4 +46,3 @@ public class Date2Tag extends SimpleTagSupport
         fragment.invoke(null);
     }
 }
-

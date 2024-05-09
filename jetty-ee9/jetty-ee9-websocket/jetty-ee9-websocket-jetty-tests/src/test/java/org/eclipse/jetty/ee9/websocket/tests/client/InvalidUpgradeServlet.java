@@ -27,7 +27,8 @@ public class InvalidUpgradeServlet extends HttpServlet
         String pathInfo = req.getPathInfo();
         if (pathInfo.contains("only-accept"))
         {
-            // Force 200 response, no response body content, incomplete websocket response headers, no actual upgrade for this test
+            // Force 200 response, no response body content, incomplete websocket response headers, no actual upgrade
+            // for this test
             resp.setStatus(HttpServletResponse.SC_OK);
             String key = req.getHeader(HttpHeader.SEC_WEBSOCKET_KEY.toString());
             resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), WebSocketUtils.hashKey(key));

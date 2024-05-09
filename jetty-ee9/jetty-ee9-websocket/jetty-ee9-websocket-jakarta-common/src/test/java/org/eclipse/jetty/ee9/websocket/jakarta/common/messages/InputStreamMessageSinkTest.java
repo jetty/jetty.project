@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common.messages;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +29,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-
 import org.eclipse.jetty.ee9.websocket.jakarta.common.AbstractSessionTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
@@ -35,11 +39,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
 import org.junit.jupiter.api.Test;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
 {
     @Test
@@ -47,7 +46,8 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
+        InputStreamMessageSink sink =
+            new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
 
         FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = BufferUtil.toBuffer("Hello World", UTF_8);
@@ -64,7 +64,8 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
+        InputStreamMessageSink sink =
+            new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
 
         FutureCallback fin1Callback = new FutureCallback();
         ByteBuffer data1 = BufferUtil.toBuffer("Hello World", UTF_8);
@@ -92,7 +93,8 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
+        InputStreamMessageSink sink =
+            new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();
@@ -110,11 +112,13 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     }
 
     @Test
-    public void testInputStream1Message4FramesEmptyFin() throws InterruptedException, ExecutionException, TimeoutException
+    public void testInputStream1Message4FramesEmptyFin()
+        throws InterruptedException, ExecutionException, TimeoutException
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
+        InputStreamMessageSink sink =
+            new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();
@@ -156,7 +160,8 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
             }
         }
 
-        public ByteArrayOutputStream poll(long time, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+        public ByteArrayOutputStream poll(long time, TimeUnit unit)
+            throws InterruptedException, ExecutionException, TimeoutException
         {
             return Objects.requireNonNull(streams.poll(time, unit)).get(time, unit);
         }

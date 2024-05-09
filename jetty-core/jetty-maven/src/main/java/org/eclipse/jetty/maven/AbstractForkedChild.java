@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -36,13 +35,13 @@ import org.slf4j.LoggerFactory;
 /**
  * JettyForkedChild
  *
- * This is the class that is executed when the jetty maven plugin 
+ * This is the class that is executed when the jetty maven plugin
  * forks a process when DeploymentMode=FORKED.
  */
 public abstract class AbstractForkedChild extends ContainerLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractForkedChild.class);
-    
+
     protected AbstractJettyEmbedder jetty;
     protected File tokenFile; // TODO: convert to Path
     protected Scanner scanner;
@@ -53,8 +52,7 @@ public abstract class AbstractForkedChild extends ContainerLifeCycle
      * @param args arguments that were passed to main
      * @throws Exception if unable to configure
      */
-    public AbstractForkedChild(String[] args)
-        throws Exception
+    public AbstractForkedChild(String[] args) throws Exception
     {
         jetty = newJettyEmbedder();
         configure(args);
@@ -69,32 +67,31 @@ public abstract class AbstractForkedChild extends ContainerLifeCycle
 
     /**
      * Based on the args passed to the program, configure jetty.
-     * 
+     *
      * @param args args that were passed to the program.
      * @throws Exception if unable to load webprops
      */
-    public void configure(String[] args)
-        throws Exception
+    public void configure(String[] args) throws Exception
     {
         Map<String, String> jettyProperties = new HashMap<>();
-        
+
         for (int i = 0; i < args.length; i++)
         {
-            //--stop-port
+            // --stop-port
             if ("--stop-port".equals(args[i]))
             {
                 jetty.setStopPort(Integer.parseInt(args[++i]));
                 continue;
             }
 
-            //--stop-key
+            // --stop-key
             if ("--stop-key".equals(args[i]))
             {
                 jetty.setStopKey(args[++i]);
                 continue;
             }
 
-            //--jettyXml
+            // --jettyXml
             if ("--jetty-xml".equals(args[i]))
             {
                 List<File> jettyXmls = new ArrayList<>();
@@ -106,18 +103,18 @@ public abstract class AbstractForkedChild extends ContainerLifeCycle
                 jetty.setJettyXmlFiles(jettyXmls);
                 continue;
             }
-            //--webprops
+            // --webprops
             if ("--webprops".equals(args[i]))
             {
                 webAppPropsFile = new File(args[++i].trim());
                 jetty.setWebAppProperties(loadWebAppProps());
                 continue;
             }
-            
-            //--token
+
+            // --token
             if ("--token".equals(args[i]))
             {
-                tokenFile = new File(args[++i].trim()); 
+                tokenFile = new File(args[++i].trim());
                 continue;
             }
 
@@ -128,9 +125,9 @@ public abstract class AbstractForkedChild extends ContainerLifeCycle
                 scanner.setReportExistingFilesOnStartup(false);
                 scanner.setScanInterval(scanInterval);
                 scanner.addListener(new Scanner.BulkListener()
-                {   
+                {
                     public void filesChanged(Set<String> changes)
-                    {                       
+                    {
                         if (!Objects.isNull(scanner))
                         {
                             try
@@ -152,7 +149,7 @@ public abstract class AbstractForkedChild extends ContainerLifeCycle
                 continue;
             }
 
-            //assume everything else is a jetty property to be passed in
+            // assume everything else is a jetty property to be passed in
             String[] tmp = args[i].trim().split("=");
             if (tmp.length == 2)
             {
@@ -167,7 +164,7 @@ public abstract class AbstractForkedChild extends ContainerLifeCycle
     /**
      * Load properties from a file describing the webapp if one is
      * present.
-     * 
+     *
      * @return file contents as properties
      * @throws FileNotFoundException if there is a file not found problem
      * @throws IOException if there is an IO problem
@@ -184,25 +181,24 @@ public abstract class AbstractForkedChild extends ContainerLifeCycle
      * Start a jetty instance and webapp. This thread will
      * wait until jetty exits.
      */
-    public void doStart()
-        throws Exception
+    public void doStart() throws Exception
     {
         super.doStart();
 
-        //Start the embedded jetty instance
+        // Start the embedded jetty instance
         jetty.start();
 
-        //touch file to signify start of jetty
+        // touch file to signify start of jetty
         Path tokenPath = tokenFile.toPath();
         Files.createFile(tokenPath);
 
-        //Start a watcher on a file that will change if the
-        //webapp is regenerated; stop the webapp, apply the
-        //properties and restart it.
+        // Start a watcher on a file that will change if the
+        // webapp is regenerated; stop the webapp, apply the
+        // properties and restart it.
         if (scanner != null)
             scanner.start();
 
-        //wait for jetty to finish
+        // wait for jetty to finish
         jetty.join();
     }
 }

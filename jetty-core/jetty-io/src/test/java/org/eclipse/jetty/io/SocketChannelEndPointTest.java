@@ -13,6 +13,17 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -37,7 +48,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
-
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.BufferUtil;
@@ -58,17 +68,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 @SuppressWarnings("Duplicates")
 public class SocketChannelEndPointTest
 {
@@ -78,7 +77,12 @@ public class SocketChannelEndPointTest
     {
         Socket newClient(ServerSocketChannel connector) throws IOException;
 
-        Connection newConnection(SelectableChannel channel, EndPoint endPoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount);
+        Connection newConnection(
+                                 SelectableChannel channel,
+                                 EndPoint endPoint,
+                                 Executor executor,
+                                 AtomicInteger blockAt,
+                                 AtomicInteger writeCount);
     }
 
     public static Stream<Arguments> scenarios() throws Exception
@@ -350,7 +354,8 @@ public class SocketChannelEndPointTest
 
                         e.printStackTrace();
                     }
-                }).start();
+                })
+                    .start();
 
                 // Write client to server
                 for (int i = 1; i < writes; i++)
@@ -360,7 +365,7 @@ public class SocketChannelEndPointTest
                     out.write('\n');
                     if (i % 1000 == 0)
                     {
-                        //System.err.println(i+"/"+writes);
+                        // System.err.println(i+"/"+writes);
                         out.flush();
                     }
                     Thread.yield();
@@ -370,7 +375,7 @@ public class SocketChannelEndPointTest
                 long last = latch.getCount();
                 while (!latch.await(5, TimeUnit.SECONDS))
                 {
-                    //System.err.println(latch.getCount());
+                    // System.err.println(latch.getCount());
                     if (latch.getCount() == last)
                         fail("Latch failure");
                     last = latch.getCount();
@@ -515,7 +520,8 @@ public class SocketChannelEndPointTest
                 {
                     closed.countDown();
                 }
-            }).start();
+            })
+                .start();
         }
 
         // unblock the handling
@@ -577,7 +583,8 @@ public class SocketChannelEndPointTest
 
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
         {
-            SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
+            SocketChannelEndPoint endPoint =
+                new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
             endPoint.setIdleTimeout(60000);
             _lastEndPoint = endPoint;
             _lastEndPointLatch.countDown();
@@ -596,11 +603,17 @@ public class SocketChannelEndPointTest
         @Override
         public Socket newClient(ServerSocketChannel connector) throws IOException
         {
-            return new Socket(connector.socket().getInetAddress(), connector.socket().getLocalPort());
+            return new Socket(
+                connector.socket().getInetAddress(), connector.socket().getLocalPort());
         }
 
         @Override
-        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
+        public Connection newConnection(
+                                        SelectableChannel channel,
+                                        EndPoint endpoint,
+                                        Executor executor,
+                                        AtomicInteger blockAt,
+                                        AtomicInteger writeCount)
         {
             return new TestConnection(endpoint, executor, blockAt, writeCount);
         }
@@ -636,7 +649,12 @@ public class SocketChannelEndPointTest
         }
 
         @Override
-        public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
+        public Connection newConnection(
+                                        SelectableChannel channel,
+                                        EndPoint endpoint,
+                                        Executor executor,
+                                        AtomicInteger blockAt,
+                                        AtomicInteger writeCount)
         {
             SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
@@ -644,7 +662,8 @@ public class SocketChannelEndPointTest
             sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
             SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-            Connection appConnection = _normalScenario.newConnection(channel, sslEndPoint, executor, blockAt, writeCount);
+            Connection appConnection =
+                _normalScenario.newConnection(channel, sslEndPoint, executor, blockAt, writeCount);
             sslEndPoint.setConnection(appConnection);
             return sslConnection;
         }

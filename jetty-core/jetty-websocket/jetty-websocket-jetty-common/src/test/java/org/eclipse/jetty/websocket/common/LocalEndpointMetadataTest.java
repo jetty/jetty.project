@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.internal.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -25,14 +33,6 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class LocalEndpointMetadataTest
 {
@@ -53,7 +53,8 @@ public class LocalEndpointMetadataTest
     }
 
     private final WebSocketComponents components = new WebSocketComponents();
-    private final JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container, components);
+    private final JettyWebSocketFrameHandlerFactory endpointFactory =
+        new JettyWebSocketFrameHandlerFactory(container, components);
 
     private JettyWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass)
     {
@@ -67,8 +68,11 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadDuplicateBinarySocket() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(EndPoints.BadDuplicateBinarySocket.class));
-        assertThat(e.getMessage(), allOf(containsString("Cannot replace previously assigned"), containsString("BINARY Handler")));
+        Exception e = assertThrows(
+            InvalidWebSocketException.class, () -> createMetadata(EndPoints.BadDuplicateBinarySocket.class));
+        assertThat(
+            e.getMessage(),
+            allOf(containsString("Cannot replace previously assigned"), containsString("BINARY Handler")));
     }
 
     /**
@@ -78,7 +82,8 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadDuplicateFrameSocket() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(DuplicateAnnotationException.class, () -> createMetadata(EndPoints.BadDuplicateFrameSocket.class));
+        Exception e = assertThrows(
+            DuplicateAnnotationException.class, () -> createMetadata(EndPoints.BadDuplicateFrameSocket.class));
         assertThat(e.getMessage(), containsString("Duplicate @OnWebSocketFrame"));
     }
 
@@ -89,7 +94,8 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadSignatureNonVoidReturn() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidSignatureException.class, () -> createMetadata(EndPoints.BadBinarySignatureSocket.class));
+        Exception e = assertThrows(
+            InvalidSignatureException.class, () -> createMetadata(EndPoints.BadBinarySignatureSocket.class));
         assertThat(e.getMessage(), containsString("must be void"));
     }
 
@@ -100,14 +106,16 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadSignatureStatic() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidSignatureException.class, () -> createMetadata(EndPoints.BadTextSignatureSocket.class));
+        Exception e = assertThrows(
+            InvalidSignatureException.class, () -> createMetadata(EndPoints.BadTextSignatureSocket.class));
         assertThat(e.getMessage(), containsString("must not be static"));
     }
 
     @Test
     public void testAnnotatedBadAutoDemandWithInputStream()
     {
-        assertThrows(InvalidWebSocketException.class, () -> createMetadata(EndPoints.BadAutoDemandWithInputStream.class));
+        assertThrows(
+            InvalidWebSocketException.class, () -> createMetadata(EndPoints.BadAutoDemandWithInputStream.class));
     }
 
     @Test

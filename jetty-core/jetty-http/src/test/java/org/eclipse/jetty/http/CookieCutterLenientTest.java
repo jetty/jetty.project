@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Tests of poor various name=value scenarios and expectations of results
@@ -129,23 +128,33 @@ public class CookieCutterLenientTest
             Arguments.of("foo=\"bar;baz\"", "foo", "bar;baz"),
             Arguments.of("z=a;b,c:d;e/f[g]", "z", "a"),
             Arguments.of("z=\"a;b,c:d;e/f[g]\"", "z", "a;b,c:d;e/f[g]"),
-            Arguments.of("name=quoted=\"\\\"badly\\\"\"", "name", "quoted=\"\\\"badly\\\"\""), // someone attempting to escape a DQUOTE from within a DQUOTED pair)
+            Arguments.of(
+                "name=quoted=\"\\\"badly\\\"\"",
+                "name",
+                "quoted=\"\\\"badly\\\"\""), // someone attempting to escape a DQUOTE from within a DQUOTED
+            // pair)
 
             // Quoted with other Cookie keywords
             Arguments.of("x=\"$Version=0\"", "x", "$Version=0"),
             Arguments.of("x=\"$Path=/\"", "x", "$Path=/"),
             Arguments.of("x=\"$Path=/ $Domain=.foo.com\"", "x", "$Path=/ $Domain=.foo.com"),
             Arguments.of("x=\" $Path=/ $Domain=.foo.com \"", "x", " $Path=/ $Domain=.foo.com "),
-            Arguments.of("a=\"b; $Path=/a; c=d; $PATH=/c; e=f\"; $Path=/e/", "a", "b; $Path=/a; c=d; $PATH=/c; e=f"), // VIOLATES RFC6265
+            Arguments.of(
+                "a=\"b; $Path=/a; c=d; $PATH=/c; e=f\"; $Path=/e/",
+                "a",
+                "b; $Path=/a; c=d; $PATH=/c; e=f"), // VIOLATES RFC6265
 
             // Lots of equals signs
             Arguments.of("query=b=c&d=e", "query", "b=c&d=e"),
 
             // Escaping
-            Arguments.of("query=%7B%22sessionCount%22%3A5%2C%22sessionTime%22%3A14151%7D", "query", "%7B%22sessionCount%22%3A5%2C%22sessionTime%22%3A14151%7D"),
+            Arguments.of(
+                "query=%7B%22sessionCount%22%3A5%2C%22sessionTime%22%3A14151%7D",
+                "query", "%7B%22sessionCount%22%3A5%2C%22sessionTime%22%3A14151%7D"),
 
             // Google cookies (seen in wild, has `tspecials` of ':' in value)
-            Arguments.of("GAPS=1:A1aaaAaAA1aaAAAaa1a11a:aAaaAa-aaA1-", "GAPS", "1:A1aaaAaAA1aaAAAaa1a11a:aAaaAa-aaA1-"),
+            Arguments.of(
+                "GAPS=1:A1aaaAaAA1aaAAAaa1a11a:aAaaAa-aaA1-", "GAPS", "1:A1aaaAaAA1aaAAAaa1a11a:aAaaAa-aaA1-"),
 
             // Strong abuse of cookie spec (lots of tspecials) - VIOLATION of RFC6265
             Arguments.of("$Version=0; rToken=F_TOKEN''!--\"</a>=&{()}", "rToken", "F_TOKEN''!--\"</a>=&{()}"),
@@ -153,8 +162,7 @@ public class CookieCutterLenientTest
             // Commas that were not commas
             Arguments.of("name=foo,bar", "name", "foo,bar"),
             Arguments.of("name=foo , bar", "name", "foo , bar"),
-            Arguments.of("name=foo , bar, bob", "name", "foo , bar, bob")
-        );
+            Arguments.of("name=foo , bar, bob", "name", "foo , bar, bob"));
     }
 
     @ParameterizedTest
@@ -191,7 +199,13 @@ public class CookieCutterLenientTest
         }
 
         @Override
-        public void addCookie(String cookieName, String cookieValue, int cookieVersion, String cookieDomain, String cookiePath, String cookieComment)
+        public void addCookie(
+                              String cookieName,
+                              String cookieValue,
+                              int cookieVersion,
+                              String cookieDomain,
+                              String cookiePath,
+                              String cookieComment)
         {
             names.add(cookieName);
             values.add(cookieValue);

@@ -22,6 +22,7 @@ public class UnreadableSessionDataException extends Exception
      *
      */
     private static final long serialVersionUID = 1806303483488966566L;
+
     private String _id;
     private SessionContext _sessionContext;
 

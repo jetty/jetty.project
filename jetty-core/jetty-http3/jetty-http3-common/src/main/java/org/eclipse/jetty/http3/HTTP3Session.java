@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
@@ -439,7 +438,10 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (stream != null)
             stream.onData(frame);
         else
-            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
+            onSessionFailure(
+                HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(),
+                "invalid_frame_sequence",
+                new IllegalStateException("invalid frame sequence"));
     }
 
     @Override
@@ -487,9 +489,10 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                         {
                             goAwaySent = newGoAwayFrame(false);
                             GoAwayFrame goAwayFrame = goAwaySent;
-                            zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(() ->
-                                terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away")
-                            ));
+                            zeroStreamsAction = () -> writeControlFrame(
+                                goAwayFrame,
+                                Callback.from(
+                                    () -> terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away")));
                         }
                         else
                         {
@@ -672,18 +675,17 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         getProtocolSession().outwardClose(error, reason);
     }
 
-    private void failStreams(Predicate<HTTP3Stream> predicate, long error, String reason, boolean close, Throwable failure)
+    private void failStreams(
+                             Predicate<HTTP3Stream> predicate, long error, String reason, boolean close, Throwable failure)
     {
-        streams.values().stream()
-            .filter(predicate)
-            .forEach(stream ->
-            {
-                if (close)
-                    stream.reset(error, failure);
-                // Since the stream failure was generated
-                // by a GOAWAY, notify the application.
-                stream.onFailure(error, failure);
-            });
+        streams.values().stream().filter(predicate).forEach(stream ->
+        {
+            if (close)
+                stream.reset(error, failure);
+            // Since the stream failure was generated
+            // by a GOAWAY, notify the application.
+            stream.onFailure(error, failure);
+        });
     }
 
     /**
@@ -817,7 +819,12 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     public void onStreamFailure(long streamId, long error, Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("stream failure 0x{}/{} for stream #{} on {}", Long.toHexString(error), failure.getMessage(), streamId, this);
+            LOG.debug(
+                "stream failure 0x{}/{} for stream #{} on {}",
+                Long.toHexString(error),
+                failure.getMessage(),
+                streamId,
+                this);
         HTTP3Stream stream = getStream(streamId);
         if (stream != null)
             stream.onFailure(error, failure);
@@ -856,12 +863,17 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     @Override
     public String toString()
     {
-        return String.format("%s@%x[streams=%d,%s]", getClass().getSimpleName(), hashCode(), streamCount.get(), closeState);
+        return String.format(
+            "%s@%x[streams=%d,%s]", getClass().getSimpleName(), hashCode(), streamCount.get(), closeState);
     }
 
     private enum CloseState
     {
-        NOT_CLOSED, LOCALLY_CLOSED, REMOTELY_CLOSED, CLOSING, CLOSED
+        NOT_CLOSED,
+        LOCALLY_CLOSED,
+        REMOTELY_CLOSED,
+        CLOSING,
+        CLOSED
     }
 
     private class StreamTimeouts extends CyclicTimeouts<HTTP3Stream>
@@ -883,11 +895,15 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         protected boolean onExpired(HTTP3Stream stream)
         {
             TimeoutException timeout = new TimeoutException("idle timeout " + stream.getIdleTimeout() + " ms elapsed");
-            stream.onIdleTimeout(timeout, Promise.from(timedOut ->
-            {
-                if (timedOut)
-                    removeStream(stream, timeout);
-            }, x -> removeStream(stream, timeout)));
+            stream.onIdleTimeout(
+                timeout,
+                Promise.from(
+                    timedOut ->
+                    {
+                        if (timedOut)
+                            removeStream(stream, timeout);
+                    },
+                    x -> removeStream(stream, timeout)));
             // The iterator returned from the method above does not support removal.
             return false;
         }

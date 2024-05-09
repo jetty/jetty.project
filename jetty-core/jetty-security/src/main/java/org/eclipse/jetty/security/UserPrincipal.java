@@ -16,15 +16,14 @@ package org.eclipse.jetty.security;
 import java.io.Serializable;
 import java.security.Principal;
 import javax.security.auth.Subject;
-
 import org.eclipse.jetty.util.security.Credential;
 
 /**
  * UserPrincipal
- * 
+ *
  * Represents a user with a credential.
  * Instances of this class can be added to a Subject to
- * present the user, while the credentials can be added 
+ * present the user, while the credentials can be added
  * directly to the Subject.
  */
 public class UserPrincipal implements Principal, Serializable
@@ -48,7 +47,7 @@ public class UserPrincipal implements Principal, Serializable
     {
         return (_credential != null && c != null && _credential.equals(c));
     }
-    
+
     public boolean authenticate(UserPrincipal u)
     {
         return (u != null && authenticate(u._credential));
@@ -61,7 +60,7 @@ public class UserPrincipal implements Principal, Serializable
 
         subject.getPrincipals().add(this);
         if (_credential != null)
-            subject.getPrivateCredentials().add(_credential); 
+            subject.getPrivateCredentials().add(_credential);
     }
 
     public void deconfigureSubject(Subject subject)

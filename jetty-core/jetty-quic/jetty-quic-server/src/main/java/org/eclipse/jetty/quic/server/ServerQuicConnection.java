@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
@@ -82,7 +81,8 @@ public class ServerQuicConnection extends QuicConnection
     {
         if (socketAddress instanceof InetSocketAddress inet)
             return inet;
-        return remoteSocketAddresses.computeIfAbsent(socketAddress, key -> new InetSocketAddress(InetAddress.getLoopbackAddress(), 0xFA93));
+        return remoteSocketAddresses.computeIfAbsent(
+            socketAddress, key -> new InetSocketAddress(InetAddress.getLoopbackAddress(), 0xFA93));
     }
 
     @Override
@@ -91,7 +91,8 @@ public class ServerQuicConnection extends QuicConnection
         InetSocketAddress inetRemote = toInetSocketAddress(remoteAddress);
         ByteBufferPool bufferPool = getByteBufferPool();
         // TODO make the token validator configurable
-        QuicheConnection quicheConnection = QuicheConnection.tryAccept(newQuicheConfig(), new SimpleTokenValidator(inetRemote), cipherBuffer, inetLocalAddress, inetRemote);
+        QuicheConnection quicheConnection = QuicheConnection.tryAccept(
+            newQuicheConfig(), new SimpleTokenValidator(inetRemote), cipherBuffer, inetLocalAddress, inetRemote);
         if (quicheConnection == null)
         {
             RetainableByteBuffer negotiationBuffer = bufferPool.acquire(getOutputBufferSize(), true);
@@ -123,7 +124,14 @@ public class ServerQuicConnection extends QuicConnection
 
     protected ServerQuicSession newQuicSession(SocketAddress remoteAddress, QuicheConnection quicheConnection)
     {
-        return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector());
+        return new ServerQuicSession(
+            getExecutor(),
+            getScheduler(),
+            getByteBufferPool(),
+            quicheConnection,
+            this,
+            remoteAddress,
+            getQuicServerConnector());
     }
 
     @Override
@@ -199,9 +207,7 @@ public class ServerQuicConnection extends QuicConnection
         @Override
         protected Iterator<ServerQuicSession> iterator()
         {
-            return getQuicSessions().stream()
-                .map(ServerQuicSession.class::cast)
-                .iterator();
+            return getQuicSessions().stream().map(ServerQuicSession.class::cast).iterator();
         }
 
         @Override

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -20,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -45,8 +46,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 /**
  * Default Handler.
  *
@@ -60,7 +59,8 @@ public class DefaultHandler extends Handler.Abstract
     private static final Logger LOG = LoggerFactory.getLogger(DefaultHandler.class);
 
     private final long _faviconModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
-    private final HttpField _faviconModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_faviconModifiedMs));
+    private final HttpField _faviconModified =
+        new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_faviconModifiedMs));
     private ByteBuffer _favicon;
     private boolean _serveFavIcon = true;
     private boolean _showContexts = true;
@@ -70,7 +70,7 @@ public class DefaultHandler extends Handler.Abstract
         this(true, true);
     }
 
-    public DefaultHandler(@Name("serveFavIcon") boolean serveFavIcon, @Name("showContexts")boolean showContexts)
+    public DefaultHandler(@Name("serveFavIcon") boolean serveFavIcon, @Name("showContexts") boolean showContexts)
     {
         super(InvocationType.NON_BLOCKING);
         _serveFavIcon = serveFavIcon;
@@ -154,7 +154,8 @@ public class DefaultHandler extends Handler.Abstract
             writer.append("<html lang=\"en\">\n<head>\n");
             writer.append("<title>Error 404 - Not Found</title>\n");
             writer.append("<meta charset=\"utf-8\">\n");
-            writer.append("<style>body { font-family: sans-serif; } table, td { border: 1px solid #333; } td, th { padding: 5px; } thead, tfoot { background-color: #333; color: #fff; } </style>\n");
+            writer.append(
+                "<style>body { font-family: sans-serif; } table, td { border: 1px solid #333; } td, th { padding: 5px; } thead, tfoot { background-color: #333; color: #fff; } </style>\n");
             writer.append("</head>\n<body>\n");
             writer.append("<h2>Error 404 - Not Found.</h2>\n");
             writer.append("<p>No context on this server matched or handled this request.</p>\n");
@@ -168,7 +169,8 @@ public class DefaultHandler extends Handler.Abstract
             writer.append("</tr></thead><tbody>\n");
 
             Server server = getServer();
-            List<ContextHandler> handlers = server == null ? Collections.emptyList() : server.getDescendants(ContextHandler.class);
+            List<ContextHandler> handlers =
+                server == null ? Collections.emptyList() : server.getDescendants(ContextHandler.class);
 
             for (ContextHandler context : handlers)
             {
@@ -259,6 +261,7 @@ public class DefaultHandler extends Handler.Abstract
     public String toString()
     {
         String name = TypeUtil.toShortName(getClass());
-        return String.format("%s@%x{showContext=%b,favIcon=%b,%s}", name, hashCode(), _showContexts, _serveFavIcon, getState());
+        return String.format(
+            "%s@%x{showContext=%b,favIcon=%b,%s}", name, hashCode(), _showContexts, _serveFavIcon, getState());
     }
 }

@@ -28,7 +28,11 @@ public class JaspiConfiguration extends AbstractConfiguration
 
     public JaspiConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
+        addDependencies(
+            WebXmlConfiguration.class,
+            MetaInfConfiguration.class,
+            WebInfConfiguration.class,
+            FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
 
         hide("jakarta.security.auth.message.");

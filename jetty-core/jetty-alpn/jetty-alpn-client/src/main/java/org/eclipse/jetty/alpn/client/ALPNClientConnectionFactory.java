@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
-
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -38,7 +37,8 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
     private final Executor executor;
     private final List<String> protocols;
 
-    public ALPNClientConnectionFactory(Executor executor, ClientConnectionFactory connectionFactory, List<String> protocols)
+    public ALPNClientConnectionFactory(
+                                       Executor executor, ClientConnectionFactory connectionFactory, List<String> protocols)
     {
         super(connectionFactory);
         if (protocols.isEmpty())
@@ -97,8 +97,8 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} for {} on {}", processor, engine, endPoint);
-                ALPNClientConnection connection = new ALPNClientConnection(endPoint, executor, getClientConnectionFactory(),
-                    engine, context, protocols);
+                ALPNClientConnection connection = new ALPNClientConnection(
+                    endPoint, executor, getClientConnectionFactory(), engine, context, protocols);
                 processor.configure(engine, connection);
                 return customize(connection, context);
             }

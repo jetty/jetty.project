@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import static org.eclipse.jetty.ee9.nested.ContextHandler.DEFAULT_MAX_FORM_KEYS;
+
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.Part;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -34,10 +39,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.Part;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MultiPartCompliance;
@@ -50,8 +51,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.ee9.nested.ContextHandler.DEFAULT_MAX_FORM_KEYS;
 
 /**
  * MultiPartInputStream
@@ -95,7 +94,12 @@ public class MultiPartFormInputStream implements MultiPart.Parser
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormInputStream.class);
-    private static final QuotedStringTokenizer QUOTED_STRING_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEscapeOnlyForQuotes().allowEmbeddedQuotes().build();
+    private static final QuotedStringTokenizer QUOTED_STRING_TOKENIZER = QuotedStringTokenizer.builder()
+        .delimiters(";")
+        .ignoreOptionalWhiteSpace()
+        .allowEscapeOnlyForQuotes()
+        .allowEmbeddedQuotes()
+        .build();
 
     private final AutoLock _lock = new AutoLock();
     private final MultiMap<Part> _parts = new MultiMap<>();
@@ -142,7 +146,9 @@ public class MultiPartFormInputStream implements MultiPart.Parser
         @Override
         public String toString()
         {
-            return String.format("Part{n=%s,fn=%s,ct=%s,s=%d,tmp=%b,file=%s}", _name, _filename, _contentType, _size, _temporary, _file);
+            return String.format(
+                "Part{n=%s,fn=%s,ct=%s,s=%d,tmp=%b,file=%s}",
+                _name, _filename, _contentType, _size, _temporary, _file);
         }
 
         protected void setContentType(String contentType)
@@ -177,8 +183,7 @@ public class MultiPartFormInputStream implements MultiPart.Parser
             if (MultiPartFormInputStream.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartFormInputStream.this._config.getMaxFileSize())
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
 
-            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 &&
-                _size + 1 > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
+            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 && _size + 1 > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
                 createFile();
 
             _out.write(b);
@@ -190,8 +195,7 @@ public class MultiPartFormInputStream implements MultiPart.Parser
             if (MultiPartFormInputStream.this._config.getMaxFileSize() > 0 && _size + length > MultiPartFormInputStream.this._config.getMaxFileSize())
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
 
-            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 &&
-                _size + length > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
+            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 && _size + length > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
                 createFile();
 
             _out.write(bytes, offset, length);
@@ -374,7 +378,8 @@ public class MultiPartFormInputStream implements MultiPart.Parser
      * @param config MultipartConfigElement
      * @param contextTmpDir {@value jakarta.servlet.ServletContext#TEMPDIR}
      */
-    public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
+    public MultiPartFormInputStream(
+                                    InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
         this(in, contentType, config, contextTmpDir, DEFAULT_MAX_FORM_KEYS);
     }
@@ -386,14 +391,15 @@ public class MultiPartFormInputStream implements MultiPart.Parser
      * @param contextTmpDir {@value jakarta.servlet.ServletContext#TEMPDIR}
      * @param maxParts the maximum number of parts that can be parsed from the multipart content (0 for no parts allowed, -1 for unlimited parts).
      */
-    public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, int maxParts)
+    public MultiPartFormInputStream(
+                                    InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, int maxParts)
     {
         // Must be a multipart request.
         _contentType = contentType;
         if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
             throw new IllegalArgumentException("content type is not multipart/form-data");
 
-        _contextTmpDir =  (contextTmpDir != null) ? contextTmpDir : new File(System.getProperty("java.io.tmpdir"));
+        _contextTmpDir = (contextTmpDir != null) ? contextTmpDir : new File(System.getProperty("java.io.tmpdir"));
         _config = (config != null) ? config : new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
         _maxParts = maxParts;
 
@@ -577,7 +583,8 @@ public class MultiPartFormInputStream implements MultiPart.Parser
             {
                 int bend = _contentType.indexOf(";", bstart);
                 bend = (bend < 0 ? _contentType.length() : bend);
-                contentTypeBoundary = HttpField.PARAMETER_TOKENIZER.unquote(value(_contentType.substring(bstart, bend)).trim());
+                contentTypeBoundary = HttpField.PARAMETER_TOKENIZER.unquote(
+                    value(_contentType.substring(bstart, bend)).trim());
             }
 
             parser = new MultiPartParser(new Handler(), contentTypeBoundary);
@@ -599,11 +606,13 @@ public class MultiPartFormInputStream implements MultiPart.Parser
                 len = _in.read(data);
                 if (len > 0)
                 {
-                    // keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize
+                    // keep running total of size of bytes read from input and throw an exception if exceeds
+                    // MultipartConfigElement._maxRequestSize
                     total += len;
                     if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
                     {
-                        _err = new IllegalStateException("Request exceeds maxRequestSize (" + _config.getMaxRequestSize() + ")");
+                        _err = new IllegalStateException(
+                            "Request exceeds maxRequestSize (" + _config.getMaxRequestSize() + ")");
                         return;
                     }
 
@@ -704,7 +713,10 @@ public class MultiPartFormInputStream implements MultiPart.Parser
             if (key.equalsIgnoreCase("content-transfer-encoding"))
             {
                 if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
-                    _nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.RFC7578, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value));
+                    _nonComplianceWarnings.add(new ComplianceViolation.Event(
+                        MultiPartCompliance.RFC7578,
+                        MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
+                        value));
             }
         }
 
@@ -817,7 +829,8 @@ public class MultiPartFormInputStream implements MultiPart.Parser
             reset();
             _numParts++;
             if (_maxParts >= 0 && _numParts > _maxParts)
-                throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", _numParts, _maxParts));
+                throw new IllegalStateException(
+                    String.format("Form with too many keys [%d > %d]", _numParts, _maxParts));
         }
 
         @Override

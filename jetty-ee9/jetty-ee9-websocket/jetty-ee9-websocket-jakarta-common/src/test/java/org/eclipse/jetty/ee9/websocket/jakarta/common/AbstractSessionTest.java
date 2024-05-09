@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractSessionTest
 {
@@ -42,8 +41,11 @@ public abstract class AbstractSessionTest
         Object websocketPojo = new DummyEndpoint();
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         JakartaWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
-        session = new JakartaWebSocketSession(container, coreSession, frameHandler, container.getFrameHandlerFactory()
-            .newDefaultEndpointConfig(websocketPojo.getClass()));
+        session = new JakartaWebSocketSession(
+            container,
+            coreSession,
+            frameHandler,
+            container.getFrameHandlerFactory().newDefaultEndpointConfig(websocketPojo.getClass()));
     }
 
     @AfterAll

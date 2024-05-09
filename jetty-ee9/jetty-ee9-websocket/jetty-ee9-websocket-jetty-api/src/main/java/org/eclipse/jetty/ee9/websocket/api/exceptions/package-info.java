@@ -15,4 +15,3 @@
  * Jetty WebSocket API : Exception Types
  */
 package org.eclipse.jetty.ee9.websocket.api.exceptions;
-

@@ -44,5 +44,4 @@ public class CloseableDoSFilterTest extends AbstractDoSFilterTest
     {
         super.testEvenLowRateIP();
     }
-
 }

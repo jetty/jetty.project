@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ChunksContentSource;
@@ -28,11 +32,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
 {
@@ -52,10 +51,11 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
 
         Exception failure = new NumberFormatException();
         TestContent content = new TestContent(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
-            Content.Chunk.from(failure, true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), false),
+            Content.Chunk.from(failure, true));
 
         try
         {
@@ -94,11 +94,13 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
 
         Exception failure = new NumberFormatException();
         TestContent content = new TestContent(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), false),
             Content.Chunk.from(failure, false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {3}), true));
 
         try
         {
@@ -137,11 +139,13 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
 
         Exception failure = new TimeoutException();
         TestContent content = new TestContent(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), false),
             Content.Chunk.from(failure, false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {3}), true));
 
         try
         {
@@ -180,10 +184,11 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
 
         Exception failure = new TimeoutException();
         TestContent content = new TestContent(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
-            Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
-            Content.Chunk.from(failure, true)
-        );
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]
+            {2}), false),
+            Content.Chunk.from(failure, true));
 
         try
         {
@@ -206,7 +211,8 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         content.close();
     }
 
-    public static class TestContent extends ChunksContentSource implements Closeable, org.eclipse.jetty.client.Request.Content
+    public static class TestContent extends ChunksContentSource
+        implements Closeable, org.eclipse.jetty.client.Request.Content
     {
         private Content.Chunk[] chunks;
 

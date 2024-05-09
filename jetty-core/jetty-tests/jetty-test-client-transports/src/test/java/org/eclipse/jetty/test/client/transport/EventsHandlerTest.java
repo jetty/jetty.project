@@ -13,6 +13,18 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
@@ -22,7 +34,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.StringRequestContent;
@@ -40,18 +51,6 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class EventsHandlerTest extends AbstractTest
 {
@@ -120,23 +119,24 @@ public class EventsHandlerTest extends AbstractTest
         String longString = "A".repeat(65536);
 
         StringBuffer innerStringBuffer = new StringBuffer();
-        EventsHandler innerEventsHandler = new EventsHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
+        EventsHandler innerEventsHandler =
+            new EventsHandler(new Handler.Abstract.NonBlocking()
             {
-                response.write(true, ByteBuffer.wrap(longString.getBytes(StandardCharsets.US_ASCII)), callback);
-                return true;
-            }
-        })
-        {
-            @Override
-            protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    response.write(true, ByteBuffer.wrap(longString.getBytes(StandardCharsets.US_ASCII)), callback);
+                    return true;
+                }
+            })
             {
-                if (content != null)
-                    innerStringBuffer.append(BufferUtil.toString(content));
-            }
-        };
+                @Override
+                protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+                {
+                    if (content != null)
+                        innerStringBuffer.append(BufferUtil.toString(content));
+                }
+            };
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setHandler(innerEventsHandler);
         AtomicInteger outerBytesCounter = new AtomicInteger();
@@ -165,32 +165,37 @@ public class EventsHandlerTest extends AbstractTest
     {
         StringBuffer stringBuffer = new StringBuffer();
         List<Throwable> failures = new CopyOnWriteArrayList<>();
-        EventsHandler eventsHandler = new EventsHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
+        EventsHandler eventsHandler =
+            new EventsHandler(new Handler.Abstract()
             {
-                response.write(false, ByteBuffer.wrap("ABCDEF".getBytes(StandardCharsets.US_ASCII)),
-                    Callback.from(() -> response.write(false, null,
-                        Callback.from(() -> response.write(true, null, callback), callback::failed))));
-                return true;
-            }
-        })
-        {
-            @Override
-            protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    response.write(
+                        false,
+                        ByteBuffer.wrap("ABCDEF".getBytes(StandardCharsets.US_ASCII)),
+                        Callback.from(() -> response.write(
+                            false,
+                            null,
+                            Callback.from(() -> response.write(true, null, callback), callback::failed))));
+                    return true;
+                }
+            })
             {
-                if (content != null)
-                    stringBuffer.append(BufferUtil.toString(content));
-            }
+                @Override
+                protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+                {
+                    if (content != null)
+                        stringBuffer.append(BufferUtil.toString(content));
+                }
 
-            @Override
-            protected void onResponseWriteComplete(Request request, Throwable failure)
-            {
-                if (failure != null)
-                    failures.add(failure);
-            }
-        };
+                @Override
+                protected void onResponseWriteComplete(Request request, Throwable failure)
+                {
+                    if (failure != null)
+                        failures.add(failure);
+                }
+            };
         startServer(transport, eventsHandler);
         startClient(transport);
 
@@ -220,13 +225,19 @@ public class EventsHandlerTest extends AbstractTest
             case HTTP:
             case HTTPS:
             case FCGI:
-                await().atMost(5, TimeUnit.SECONDS).until(() -> eventsHandler.exceptions.size() / 4, allOf(greaterThanOrEqualTo(10), lessThanOrEqualTo(11)));
+                await().atMost(5, TimeUnit.SECONDS)
+                    .until(
+                        () -> eventsHandler.exceptions.size() / 4,
+                        allOf(greaterThanOrEqualTo(10), lessThanOrEqualTo(11)));
                 break;
             // One read, maybe one null read, one write, one write complete.
             case H2:
             case H2C:
             case H3:
-                await().atMost(5, TimeUnit.SECONDS).until(() -> eventsHandler.exceptions.size() / 4, allOf(greaterThanOrEqualTo(7), lessThanOrEqualTo(8)));
+                await().atMost(5, TimeUnit.SECONDS)
+                    .until(
+                        () -> eventsHandler.exceptions.size() / 4,
+                        allOf(greaterThanOrEqualTo(7), lessThanOrEqualTo(8)));
                 break;
             default:
                 fail("Missing assertion for transport " + transport);
@@ -257,7 +268,10 @@ public class EventsHandlerTest extends AbstractTest
 
         assertThat(latch.await(5, TimeUnit.SECONDS), is(true));
         assertThat(status.get(), is(200));
-        await().atMost(5, TimeUnit.SECONDS).until(() -> eventsHandler.exceptions.size() / 4, allOf(greaterThanOrEqualTo(10), lessThanOrEqualTo(12)));
+        await().atMost(5, TimeUnit.SECONDS)
+            .until(
+                () -> eventsHandler.exceptions.size() / 4,
+                allOf(greaterThanOrEqualTo(10), lessThanOrEqualTo(12)));
     }
 
     @ParameterizedTest
@@ -275,7 +289,8 @@ public class EventsHandlerTest extends AbstractTest
                 {
                     sleep(query, "succeeding");
                     callback.succeeded();
-                }).start();
+                })
+                    .start();
                 return true;
             }
 
@@ -303,15 +318,22 @@ public class EventsHandlerTest extends AbstractTest
         ContentResponse response = client.GET(uri);
         assertThat(response.getStatus(), is(200));
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> eventsHandler.getEvents().size(), is(4));
+        await().atMost(1, TimeUnit.SECONDS)
+            .until(() -> eventsHandler.getEvents().size(), is(4));
         assertThat(eventsHandler.getEvents().get(0).name, equalTo("onBeforeHandling"));
         assertThat(eventsHandler.getEvents().get(0).delayInNs, greaterThan(0L));
         assertThat(eventsHandler.getEvents().get(1).name, equalTo("onAfterHandling"));
-        assertThat(eventsHandler.getEvents().get(1).delayInNs - eventsHandler.getEvents().get(0).delayInNs, both(greaterThan(500_000_000L)).and(lessThan(600_000_000L)));
+        assertThat(
+            eventsHandler.getEvents().get(1).delayInNs - eventsHandler.getEvents().get(0).delayInNs,
+            both(greaterThan(500_000_000L)).and(lessThan(600_000_000L)));
         assertThat(eventsHandler.getEvents().get(2).name, equalTo("onResponseBegin"));
-        assertThat(eventsHandler.getEvents().get(2).delayInNs - eventsHandler.getEvents().get(1).delayInNs, both(greaterThan(500_000_000L)).and(lessThan(600_000_000L)));
+        assertThat(
+            eventsHandler.getEvents().get(2).delayInNs - eventsHandler.getEvents().get(1).delayInNs,
+            both(greaterThan(500_000_000L)).and(lessThan(600_000_000L)));
         assertThat(eventsHandler.getEvents().get(3).name, equalTo("onComplete"));
-        assertThat(eventsHandler.getEvents().get(3).delayInNs - eventsHandler.getEvents().get(2).delayInNs, greaterThan(0L));
+        assertThat(
+            eventsHandler.getEvents().get(3).delayInNs - eventsHandler.getEvents().get(2).delayInNs,
+            greaterThan(0L));
     }
 
     private static class TestEventsRecordingHandler extends EventsHandler
@@ -377,8 +399,7 @@ public class EventsHandlerTest extends AbstractTest
             addEvent("onComplete");
         }
 
-        record Event(String name, long delayInNs)
-        {
+        record Event(String name, long delayInNs) {
         }
     }
 
@@ -394,56 +415,56 @@ public class EventsHandlerTest extends AbstractTest
         @Override
         protected void onBeforeHandling(Request request)
         {
-//            System.out.println("onBeforeHandling");
+            //            System.out.println("onBeforeHandling");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onRequestRead(Request request, Content.Chunk chunk)
         {
-//            System.out.println("onRequestRead " + chunk);
+            //            System.out.println("onRequestRead " + chunk);
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onAfterHandling(Request request, boolean handled, Throwable failure)
         {
-//            System.out.println("onAfterHandling");
+            //            System.out.println("onAfterHandling");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onResponseBegin(Request request, int status, HttpFields headers)
         {
-//            System.out.println("onResponseBegin");
+            //            System.out.println("onResponseBegin");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
         {
-//            System.out.println("onResponseWrite");
+            //            System.out.println("onResponseWrite");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onResponseWriteComplete(Request request, Throwable failure)
         {
-//            System.out.println("onResponseWriteComplete");
+            //            System.out.println("onResponseWriteComplete");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onResponseTrailersComplete(Request request, HttpFields trailers)
         {
-//            System.out.println("onResponseTrailersComplete");
+            //            System.out.println("onResponseTrailersComplete");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
         {
-//            System.out.println("onComplete");
+            //            System.out.println("onComplete");
             useForbiddenMethods(request, exceptions);
         }
 
@@ -459,7 +480,9 @@ public class EventsHandlerTest extends AbstractTest
             }
             try
             {
-                request.demand(() -> {});
+                request.demand(() ->
+                {
+                });
             }
             catch (Throwable x)
             {

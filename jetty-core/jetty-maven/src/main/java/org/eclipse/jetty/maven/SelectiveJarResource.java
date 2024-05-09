@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
-
 import org.codehaus.plexus.util.SelectorUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
@@ -46,13 +45,12 @@ import org.slf4j.LoggerFactory;
 public class SelectiveJarResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(SelectiveJarResource.class);
-    
+
     /**
      * Default matches every resource.
      */
-    public static final List<String> DEFAULT_INCLUDES = 
-        Arrays.asList(new String[]{"**"});
-    
+    public static final List<String> DEFAULT_INCLUDES = Arrays.asList(new String[]{"**"});
+
     /**
      * Default is to exclude nothing.
      */
@@ -181,9 +179,9 @@ public class SelectiveJarResource extends Resource
         if (_excludes == null)
             _excludes = DEFAULT_EXCLUDES;
 
-        //Copy contents of the jar file to the given directory, 
-        //using the includes and excludes patterns to control which
-        //parts of the jar file are copied
+        // Copy contents of the jar file to the given directory,
+        // using the includes and excludes patterns to control which
+        // parts of the jar file are copied
         if (!exists())
             return;
 
@@ -233,7 +231,7 @@ public class SelectiveJarResource extends Resource
                 }
                 else
                 {
-                    //entry is a file, is it included?
+                    // entry is a file, is it included?
                     if (isIncluded(entryName))
                     {
                         if (!isExcluded(entryName))

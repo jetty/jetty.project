@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.ee9.security.jaspi;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+
+import jakarta.security.auth.message.config.AuthConfigFactory;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Base64;
@@ -20,11 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import jakarta.security.auth.message.config.AuthConfigFactory;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.nested.AbstractHandler;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.Request;
@@ -45,10 +48,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static java.nio.charset.StandardCharsets.ISO_8859_1;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
 
 public class JaspiTest
 {
@@ -71,13 +70,15 @@ public class JaspiTest
             _users.put(username, userPrincipal);
             if (roles != null)
             {
-                List<RolePrincipal> rps = Arrays.stream(roles).map(RolePrincipal::new).collect(Collectors.toList());
+                List<RolePrincipal> rps =
+                    Arrays.stream(roles).map(RolePrincipal::new).collect(Collectors.toList());
                 _roles.put(username, rps);
             }
         }
 
         @Override
-        protected List<org.eclipse.jetty.security.RolePrincipal> loadRoleInfo(org.eclipse.jetty.security.UserPrincipal user)
+        protected List<org.eclipse.jetty.security.RolePrincipal> loadRoleInfo(
+                                                                              org.eclipse.jetty.security.UserPrincipal user)
         {
             return _roles.get(user.getName());
         }
@@ -94,16 +95,29 @@ public class JaspiTest
     {
         AuthConfigFactory factory = new DefaultAuthConfigFactory();
 
-        factory.registerConfigProvider("org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider",
-            Map.of("ServerAuthModule", "org.eclipse.jetty.ee9.security.jaspi.modules.BasicAuthenticationAuthModule",
-                "AppContextID", "server /ctx",
-                "org.eclipse.jetty.ee9.security.jaspi.modules.RealmName", "TestRealm"),
-            "HttpServlet", "server /ctx", "a test provider");
+        factory.registerConfigProvider(
+            "org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider",
+            Map.of(
+                "ServerAuthModule",
+                "org.eclipse.jetty.ee9.security.jaspi.modules.BasicAuthenticationAuthModule",
+                "AppContextID",
+                "server /ctx",
+                "org.eclipse.jetty.ee9.security.jaspi.modules.RealmName",
+                "TestRealm"),
+            "HttpServlet",
+            "server /ctx",
+            "a test provider");
 
-        factory.registerConfigProvider("org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider",
-            Map.of("ServerAuthModule", "org.eclipse.jetty.ee9.security.jaspi.HttpHeaderAuthModule",
-                "AppContextID", "server /other"),
-            "HttpServlet", "server /other", "another test provider");
+        factory.registerConfigProvider(
+            "org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider",
+            Map.of(
+                "ServerAuthModule",
+                "org.eclipse.jetty.ee9.security.jaspi.HttpHeaderAuthModule",
+                "AppContextID",
+                "server /other"),
+            "HttpServlet",
+            "server /other",
+            "another test provider");
 
         AuthConfigFactory.setFactory(factory);
     }
@@ -125,8 +139,8 @@ public class JaspiTest
         _server.setHandler(contexts);
 
         TestLoginService loginService = new TestLoginService("TestRealm");
-        loginService.putUser("user", new Password("password"), new String[] {"users"});
-        loginService.putUser("admin", new Password("secret"), new String[] {"users", "admins"});
+        loginService.putUser("user", new Password("password"), new String[]{"users"});
+        loginService.putUser("admin", new Password("secret"), new String[]{"users", "admins"});
         _server.addBean(loginService);
 
         ContextHandler context = new ContextHandler();
@@ -186,8 +200,7 @@ public class JaspiTest
     @Test
     public void testConstraintWrongAuth() throws Exception
     {
-        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
-                Base64.getEncoder().encodeToString("user:wrong".getBytes(ISO_8859_1)) + "\n\n");
+        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " + Base64.getEncoder().encodeToString("user:wrong".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
         assertThat(response, Matchers.containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
     }
@@ -195,8 +208,7 @@ public class JaspiTest
     @Test
     public void testConstraintAuth() throws Exception
     {
-        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
-                Base64.getEncoder().encodeToString("user:password".getBytes(ISO_8859_1)) + "\n\n");
+        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " + Base64.getEncoder().encodeToString("user:password".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
@@ -219,7 +231,7 @@ public class JaspiTest
 
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException, ServletException
+            throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             response.setStatus(200);

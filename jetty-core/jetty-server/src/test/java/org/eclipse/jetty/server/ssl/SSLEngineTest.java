@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -33,7 +40,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
-
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -57,50 +63,38 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.condition.OS.LINUX;
-
 /**
  *
  */
 public class SSLEngineTest
 {
     // Useful constants
-    private static final String HELLO_WORLD = "Hello world. The quick brown fox jumped over the lazy dog. How now brown cow. The rain in spain falls mainly on the plain.\n";
+    private static final String HELLO_WORLD =
+        "Hello world. The quick brown fox jumped over the lazy dog. How now brown cow. The rain in spain falls mainly on the plain.\n";
     private static final String JETTY_VERSION = Server.getVersion();
     private static final String PROTOCOL_VERSION = "2.0";
 
     /**
      * The request.
      */
-    private static final String REQUEST0_HEADER = "POST /r0 HTTP/1.1\n" + "Host: localhost\n" + "Content-Type: text/xml\n" + "Content-Length: ";
-    private static final String REQUEST1_HEADER = "POST /r1 HTTP/1.1\n" + "Host: localhost\n" + "Content-Type: text/xml\n" + "Connection: close\n" + "Content-Length: ";
-    private static final String REQUEST_CONTENT =
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-            "<requests xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-            "        xsi:noNamespaceSchemaLocation=\"commander.xsd\" version=\"" + PROTOCOL_VERSION + "\">\n" +
-            "</requests>";
+    private static final String REQUEST0_HEADER =
+        "POST /r0 HTTP/1.1\n" + "Host: localhost\n" + "Content-Type: text/xml\n" + "Content-Length: ";
 
-    private static final String REQUEST0 = REQUEST0_HEADER + REQUEST_CONTENT.getBytes().length + "\n\n" + REQUEST_CONTENT;
-    private static final String REQUEST1 = REQUEST1_HEADER + REQUEST_CONTENT.getBytes().length + "\n\n" + REQUEST_CONTENT;
+    private static final String REQUEST1_HEADER = "POST /r1 HTTP/1.1\n" + "Host: localhost\n" + "Content-Type: text/xml\n" + "Connection: close\n" + "Content-Length: ";
+    private static final String REQUEST_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<requests xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + "        xsi:noNamespaceSchemaLocation=\"commander.xsd\" version=\"" + PROTOCOL_VERSION + "\">\n" + "</requests>";
+
+    private static final String REQUEST0 =
+        REQUEST0_HEADER + REQUEST_CONTENT.getBytes().length + "\n\n" + REQUEST_CONTENT;
+    private static final String REQUEST1 =
+        REQUEST1_HEADER + REQUEST_CONTENT.getBytes().length + "\n\n" + REQUEST_CONTENT;
 
     /**
      * The expected response.
      */
-    private static final String RESPONSE0 = "HTTP/1.1 200 OK\n" +
-        "Content-Length: " + HELLO_WORLD.length() + "\n" +
-        '\n' +
-        HELLO_WORLD;
+    private static final String RESPONSE0 =
+        "HTTP/1.1 200 OK\n" + "Content-Length: " + HELLO_WORLD.length() + "\n" + '\n' + HELLO_WORLD;
 
-    private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" +
-        "Content-Length: " + HELLO_WORLD.length() + "\n" +
-        "Connection: close\n" +
-        '\n' +
-        HELLO_WORLD;
+    private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" + "Content-Length: " + HELLO_WORLD.length() + "\n" + "Connection: close\n" + '\n' + HELLO_WORLD;
 
     private Server server;
     private ServerConnector connector;
@@ -121,7 +115,10 @@ public class SSLEngineTest
         http.getHttpConfiguration().setSendServerVersion(false);
         connector = new ServerConnector(server, sslContextFactory, http);
         connector.setPort(0);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
+        connector
+            .getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setSendDateHeader(false);
 
         server.addConnector(connector);
     }
@@ -147,11 +144,7 @@ public class SSLEngineTest
         Socket client = ctx.getSocketFactory().createSocket("localhost", port);
         OutputStream os = client.getOutputStream();
 
-        String request =
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost:" + port + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost:" + port + "\r\n" + "Connection: close\r\n" + "\r\n";
 
         os.write(request.getBytes());
         os.flush();
@@ -176,11 +169,7 @@ public class SSLEngineTest
         Socket client = ctx.getSocketFactory().createSocket("localhost", port);
         OutputStream os = client.getOutputStream();
 
-        String request =
-            "GET /?dump=102400 HTTP/1.1\r\n" +
-                "Host: localhost:" + port + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+        String request = "GET /?dump=102400 HTTP/1.1\r\n" + "Host: localhost:" + port + "\r\n" + "Connection: close\r\n" + "\r\n";
 
         os.write(request.getBytes());
         os.flush();
@@ -201,10 +190,18 @@ public class SSLEngineTest
             @Override
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(
+                    connector.getByteBufferPool(),
+                    connector.getExecutor(),
+                    getSslContextFactory(),
+                    endPoint,
+                    engine,
+                    isDirectBuffersForEncryption(),
+                    isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                    protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output)
+                        throws SSLException
                     {
                         unwraps.incrementAndGet();
                         return super.unwrap(sslEngine, input, output);
@@ -222,12 +219,12 @@ public class SSLEngineTest
         Arrays.fill(bytes, (byte)1);
 
         bytes[0] = 22; // record type
-        bytes[1] = 3;  // major version
-        bytes[2] = 3;  // minor version
+        bytes[1] = 3; // major version
+        bytes[2] = 3; // minor version
         bytes[3] = 78; // record length 2 bytes / 0x4E20 / decimal 20,000
         bytes[4] = 32; // record length
-        bytes[5] = 1;  // message type
-        bytes[6] = 0;  // message length 3 bytes / 0x004E17 / decimal 19,991
+        bytes[5] = 1; // message type
+        bytes[6] = 0; // message length 3 bytes / 0x004E17 / decimal 19,991
         bytes[7] = 78;
         bytes[8] = 23;
 
@@ -294,7 +291,10 @@ public class SSLEngineTest
                         // Read the response.
                         String responses = readResponse(client[i]);
                         // Check the responses
-                        assertThat(String.format("responses loop=%d connection=%d", l, i), RESPONSE0 + RESPONSE0 + RESPONSE1, is(responses));
+                        assertThat(
+                            String.format("responses loop=%d connection=%d", l, i),
+                            RESPONSE0 + RESPONSE0 + RESPONSE1,
+                            is(responses));
                     }
                 }
                 finally
@@ -305,7 +305,10 @@ public class SSLEngineTest
                         {
                             try
                             {
-                                assertThat("Client should read EOF", client[i].getInputStream().read(), is(-1));
+                                assertThat(
+                                    "Client should read EOF",
+                                    client[i].getInputStream().read(),
+                                    is(-1));
                             }
                             catch (SocketException e)
                             {
@@ -367,7 +370,8 @@ public class SSLEngineTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            EndPoint.SslSessionData sslData = (EndPoint.SslSessionData)request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE);
+            EndPoint.SslSessionData sslData =
+                (EndPoint.SslSessionData)request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE);
             String sslId = sslData.sslSessionId();
             assertNotNull(sslId);
 

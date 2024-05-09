@@ -13,13 +13,15 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import com.acme.websocket.LargeEchoDefaultSocket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import com.acme.websocket.LargeEchoDefaultSocket;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -31,9 +33,6 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 /**
  * Test Echo of Large messages, targeting the {@link jakarta.websocket.WebSocketContainer#setDefaultMaxTextMessageBufferSize(int)} functionality
@@ -69,7 +68,8 @@ public class LargeContainerTest
                 coreSession.setMaxTextMessageSize(128 * 1024);
                 try
                 {
-                    // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket specifies
+                    // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket
+                    // specifies
                     byte[] txt = new byte[100 * 1024];
                     Arrays.fill(txt, (byte)'o');
                     String msg = new String(txt, StandardCharsets.UTF_8);

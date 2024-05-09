@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -24,17 +29,12 @@ import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class GzipModuleTests extends AbstractJettyHomeTest
 {
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    // @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings =
+    {"ee10"})
     public void testGzipDefault(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -55,11 +55,10 @@ public class GzipModuleTests extends AbstractJettyHomeTest
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart = {
-                "jetty.http.port=" + httpPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort};
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact(
+                "org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
             distribution.installWar(war, "demo");
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -76,7 +75,8 @@ public class GzipModuleTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings =
+    {"ee9", "ee10"})
     public void testGzipDefaultExcludedMimeType(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -89,7 +89,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
         int httpPort = Tester.freePort();
 
         String[] argsConfig = {
-            "--add-modules=gzip,http," +  toEnvironment("deploy", env) + "," + toEnvironment("webapp", env)
+            "--add-modules=gzip,http," + toEnvironment("deploy", env) + "," + toEnvironment("webapp", env)
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -97,11 +97,10 @@ public class GzipModuleTests extends AbstractJettyHomeTest
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            String[] argsStart = {
-                "jetty.http.port=" + httpPort
-            };
+            String[] argsStart = {"jetty.http.port=" + httpPort};
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact(
+                "org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
             distribution.installWar(war, "demo");
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -112,14 +111,21 @@ public class GzipModuleTests extends AbstractJettyHomeTest
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/jetty.webp");
                 String responseDetails = toResponseDetails(response);
                 assertEquals(HttpStatus.OK_200, response.getStatus(), responseDetails);
-                assertThat(responseDetails, response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("image/webp"));
-                assertThat(responseDetails, response.getHeaders().get(HttpHeader.CONTENT_ENCODING), not(containsString("gzip")));
+                assertThat(
+                    responseDetails,
+                    response.getHeaders().get(HttpHeader.CONTENT_TYPE),
+                    containsString("image/webp"));
+                assertThat(
+                    responseDetails,
+                    response.getHeaders().get(HttpHeader.CONTENT_ENCODING),
+                    not(containsString("gzip")));
             }
         }
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings =
+    {"ee9", "ee10"})
     public void testGzipAddWebappSpecificExcludeMimeType(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -132,7 +138,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
         int httpPort = Tester.freePort();
 
         String[] argsConfig = {
-            "--add-modules=gzip,http," +  toEnvironment("deploy", env) + "," + toEnvironment("webapp", env)
+            "--add-modules=gzip,http," + toEnvironment("deploy", env) + "," + toEnvironment("webapp", env)
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
@@ -141,11 +147,11 @@ public class GzipModuleTests extends AbstractJettyHomeTest
             assertEquals(0, runConfig.getExitValue());
 
             String[] argsStart = {
-                "jetty.http.port=" + httpPort,
-                "jetty.gzip.excludedMimeTypeList=image/vnd.microsoft.icon"
+                "jetty.http.port=" + httpPort, "jetty.gzip.excludedMimeTypeList=image/vnd.microsoft.icon"
             };
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact(
+                "org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
             distribution.installWar(war, "demo");
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -156,8 +162,14 @@ public class GzipModuleTests extends AbstractJettyHomeTest
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/jetty.icon");
                 String responseDetails = toResponseDetails(response);
                 assertEquals(HttpStatus.OK_200, response.getStatus(), responseDetails);
-                assertThat(responseDetails, response.getHeaders().get(HttpHeader.CONTENT_ENCODING), not(containsString("gzip")));
-                assertThat(responseDetails, response.getHeaders().get(HttpHeader.CONTENT_TYPE), containsString("image/vnd.microsoft.icon"));
+                assertThat(
+                    responseDetails,
+                    response.getHeaders().get(HttpHeader.CONTENT_ENCODING),
+                    not(containsString("gzip")));
+                assertThat(
+                    responseDetails,
+                    response.getHeaders().get(HttpHeader.CONTENT_TYPE),
+                    containsString("image/vnd.microsoft.icon"));
             }
         }
     }

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session.infinispan;
 
 import java.io.UncheckedIOException;
-
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.infinispan.protostream.SerializationContextInitializer;

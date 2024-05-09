@@ -26,7 +26,6 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
-
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.jaas.JAASRole;
 import org.eclipse.jetty.security.jaas.callback.ObjectCallback;
@@ -51,7 +50,7 @@ public abstract class AbstractLoginModule implements LoginModule
     {
         private final UserPrincipal _user;
         private List<JAASRole> _roles;
-        
+
         public JAASUser(UserPrincipal u)
         {
             _user = u;
@@ -98,7 +97,7 @@ public abstract class AbstractLoginModule implements LoginModule
             if (rolenames != null)
                 _roles = rolenames.stream().map(JAASRole::new).collect(Collectors.toList());
         }
-        
+
         public abstract List<String> doFetchRoles() throws Exception;
     }
 
@@ -186,7 +185,8 @@ public abstract class AbstractLoginModule implements LoginModule
         Callback[] callbacks = new Callback[3];
         callbacks[0] = new NameCallback("Enter user name");
         callbacks[1] = new ObjectCallback();
-        callbacks[2] = new PasswordCallback("Enter password", false); //only used if framework does not support the ObjectCallback
+        callbacks[2] = new PasswordCallback(
+            "Enter password", false); // only used if framework does not support the ObjectCallback
         return callbacks;
     }
 
@@ -217,9 +217,10 @@ public abstract class AbstractLoginModule implements LoginModule
             String webUserName = ((NameCallback)callbacks[0]).getName();
             Object webCredential = null;
 
-            webCredential = ((ObjectCallback)callbacks[1]).getObject(); //first check if ObjectCallback has the credential
+            webCredential =
+                ((ObjectCallback)callbacks[1]).getObject(); // first check if ObjectCallback has the credential
             if (webCredential == null)
-                webCredential = ((PasswordCallback)callbacks[2]).getPassword(); //use standard PasswordCallback
+                webCredential = ((PasswordCallback)callbacks[2]).getPassword(); // use standard PasswordCallback
 
             if ((webUserName == null) || (webCredential == null))
             {
@@ -283,8 +284,8 @@ public abstract class AbstractLoginModule implements LoginModule
      * @see LoginModule#initialize(Subject, CallbackHandler, Map, Map)
      */
     @Override
-    public void initialize(Subject subject, CallbackHandler callbackHandler,
-                           Map<String, ?> sharedState, Map<String, ?> options)
+    public void initialize(
+                           Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
     {
         this.callbackHandler = callbackHandler;
         this.subject = subject;

@@ -16,7 +16,6 @@ package org.eclipse.jetty.util;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Properties;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +32,7 @@ public class Jetty
      * a formatted build timestamp with pattern yyyy-MM-dd'T'HH:mm:ssXXX
      */
     public static final String BUILD_TIMESTAMP;
+
     private static final Properties __buildProperties = new Properties();
 
     static
@@ -40,7 +40,7 @@ public class Jetty
         try
         {
             try (InputStream inputStream = //
-                     Jetty.class.getResourceAsStream("/org/eclipse/jetty/version/build.properties"))
+                Jetty.class.getResourceAsStream("/org/eclipse/jetty/version/build.properties"))
             {
                 __buildProperties.load(inputStream);
             }
@@ -60,9 +60,7 @@ public class Jetty
         // using __buildProperties.getProperty("version") will contain version from the pom
 
         Package pkg = Jetty.class.getPackage();
-        if (pkg != null &&
-            "Eclipse Jetty Project".equals(pkg.getImplementationVendor()) &&
-            pkg.getImplementationVersion() != null)
+        if (pkg != null && "Eclipse Jetty Project".equals(pkg.getImplementationVendor()) && pkg.getImplementationVersion() != null)
             VERSION = pkg.getImplementationVersion();
         else
             VERSION = System.getProperty("jetty.version", __buildProperties.getProperty("version", "10.0.z-SNAPSHOT"));

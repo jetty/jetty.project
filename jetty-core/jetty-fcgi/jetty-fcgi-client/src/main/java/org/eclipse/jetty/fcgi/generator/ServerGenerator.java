@@ -18,7 +18,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -46,7 +45,8 @@ public class ServerGenerator extends Generator
         this.sendStatus200 = sendStatus200;
     }
 
-    public void generateResponseHeaders(ByteBufferPool.Accumulator accumulator, int request, int code, String reason, HttpFields fields)
+    public void generateResponseHeaders(
+                                        ByteBufferPool.Accumulator accumulator, int request, int code, String reason, HttpFields fields)
     {
         request &= 0xFF_FF;
 
@@ -97,7 +97,12 @@ public class ServerGenerator extends Generator
         generateContent(accumulator, request, byteBuffer, false, FCGI.FrameType.STDOUT);
     }
 
-    public void generateResponseContent(ByteBufferPool.Accumulator accumulator, int request, ByteBuffer content, boolean lastContent, boolean aborted)
+    public void generateResponseContent(
+                                        ByteBufferPool.Accumulator accumulator,
+                                        int request,
+                                        ByteBuffer content,
+                                        boolean lastContent,
+                                        boolean aborted)
     {
         if (aborted)
         {

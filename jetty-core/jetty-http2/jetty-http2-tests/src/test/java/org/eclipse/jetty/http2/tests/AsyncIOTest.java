@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
@@ -32,9 +34,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class AsyncIOTest extends AbstractTest
 {
@@ -54,7 +53,9 @@ public class AsyncIOTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
@@ -89,7 +90,9 @@ public class AsyncIOTest extends AbstractTest
             }
         });
 
-        Session session = newClientSession(new Session.Listener() {});
+        Session session = newClientSession(new Session.Listener()
+        {
+        });
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
@@ -118,7 +121,7 @@ public class AsyncIOTest extends AbstractTest
     public void testSomeContentAvailableAfterServiceReturns()
     {
         fail();
-/*
+        /*
         final AtomicInteger count = new AtomicInteger();
         start(new Handler.Abstract()
         {
@@ -146,9 +149,9 @@ public class AsyncIOTest extends AbstractTest
                 });
             }
         });
-
+        
         Session session = newClient(new Session.Listener() {});
-
+        
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
@@ -163,19 +166,19 @@ public class AsyncIOTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-
+        
         // Wait until service() returns.
         Thread.sleep(1000);
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
-
+        
         // Wait until onDataAvailable() returns.
         Thread.sleep(1000);
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
-
+        
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         // Make sure onDataAvailable() has been called twice
         assertEquals(2, count.get());
-*/
+        */
     }
 
     @Test
@@ -183,7 +186,7 @@ public class AsyncIOTest extends AbstractTest
     public void testDirectAsyncWriteThenComplete()
     {
         fail();
-/*
+        /*
         // Use a small flow control window to stall the server writes.
         int clientWindow = 16;
         start(new EmptyHttpServlet()
@@ -200,12 +203,12 @@ public class AsyncIOTest extends AbstractTest
                     {
                         // The write is too large and will stall.
                         output.write(ByteBuffer.wrap(new byte[2 * clientWindow]));
-
+        
                         // We can now call complete() now before checking for isReady().
                         // This will asynchronously complete when the write is finished.
                         asyncContext.complete();
                     }
-
+        
                     @Override
                     public void onError(Throwable t)
                     {
@@ -213,7 +216,7 @@ public class AsyncIOTest extends AbstractTest
                 });
             }
         });
-
+        
         Session session = newClient(new Session.Listener()
         {
             @Override
@@ -224,7 +227,7 @@ public class AsyncIOTest extends AbstractTest
                 return settings;
             }
         });
-
+        
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
@@ -238,7 +241,7 @@ public class AsyncIOTest extends AbstractTest
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
-*/
+        */
     }
 
     private static void sleep(long ms) throws InterruptedIOException

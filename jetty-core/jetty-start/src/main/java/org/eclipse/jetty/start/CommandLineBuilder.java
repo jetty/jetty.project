@@ -77,18 +77,7 @@ public class CommandLineBuilder
             char c = input.charAt(i++);
 
             // needs quoting unless a limited set of known good characters
-            needsQuoting = !(
-                (c >= 'A' && c <= 'Z') ||
-                (c >= 'a' && c <= 'z') ||
-                (c >= '0' && c <= '9') ||
-                c == '/' ||
-                c == ':' ||
-                c == '.' ||
-                c == ',' ||
-                c == '+' ||
-                c == '-' ||
-                c == '_'
-                );
+            needsQuoting = !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '/' || c == ':' || c == '.' || c == ',' || c == '+' || c == '-' || c == '_');
         }
 
         if (!needsQuoting)
@@ -193,7 +182,11 @@ public class CommandLineBuilder
         else if ((value != null) && (value.length() > 0))
         {
             args.add(option + name + "=" + value);
-            commandLine.append(option).append(shellQuoteIfNeeded(name)).append('=').append(shellQuoteIfNeeded(value));
+            commandLine
+                .append(option)
+                .append(shellQuoteIfNeeded(name))
+                .append('=')
+                .append(shellQuoteIfNeeded(value));
         }
         else
         {

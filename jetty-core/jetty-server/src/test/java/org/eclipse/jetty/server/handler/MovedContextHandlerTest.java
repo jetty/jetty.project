@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -21,12 +27,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class MovedContextHandlerTest
 {
@@ -60,11 +60,12 @@ public class MovedContextHandlerTest
         handler.setDiscardQuery(true);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET /ctx/path?query HTTP/1.1
-            Host: localhost
-                        
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                GET /ctx/path?query HTTP/1.1
+                Host: localhost
+
+                """));
 
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         String location = response.get(HttpHeader.LOCATION);
@@ -82,11 +83,12 @@ public class MovedContextHandlerTest
         handler.setDiscardQuery(true);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET /ctx/path?query HTTP/1.1
-            Host: localhost
-                        
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                GET /ctx/path?query HTTP/1.1
+                Host: localhost
+
+                """));
 
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         String location = response.get(HttpHeader.LOCATION);
@@ -104,11 +106,12 @@ public class MovedContextHandlerTest
         handler.setDiscardQuery(false);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET /ctx/path?query HTTP/1.1
-            Host: localhost
-                        
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                GET /ctx/path?query HTTP/1.1
+                Host: localhost
+
+                """));
 
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         String location = response.get(HttpHeader.LOCATION);
@@ -126,11 +129,12 @@ public class MovedContextHandlerTest
         handler.setDiscardQuery(false);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET /ctx/path?query HTTP/1.1
-            Host: localhost
-                        
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                GET /ctx/path?query HTTP/1.1
+                Host: localhost
+
+                """));
 
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         String location = response.get(HttpHeader.LOCATION);
@@ -148,11 +152,12 @@ public class MovedContextHandlerTest
         handler.setDiscardQuery(false);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET /ctx/path?query HTTP/1.1
-            Host: localhost
-                        
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                GET /ctx/path?query HTTP/1.1
+                Host: localhost
+
+                """));
 
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         String location = response.get(HttpHeader.LOCATION);
@@ -168,11 +173,12 @@ public class MovedContextHandlerTest
         handler.setRedirectURI("/moved");
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET /ctx/path?query HTTP/1.1
-            Host: localhost
-                        
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                GET /ctx/path?query HTTP/1.1
+                Host: localhost
+
+                """));
 
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         String location = response.get(HttpHeader.LOCATION);
@@ -182,11 +188,12 @@ public class MovedContextHandlerTest
 
         handler.setCacheControl("max-age=5");
 
-        response = HttpTester.parseResponse(connector.getResponse("""
-            GET /ctx/path?query HTTP/1.1
-            Host: localhost
-                        
-            """));
+        response = HttpTester.parseResponse(connector.getResponse(
+            """
+                GET /ctx/path?query HTTP/1.1
+                Host: localhost
+
+                """));
 
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         location = response.get(HttpHeader.LOCATION);
@@ -206,11 +213,12 @@ public class MovedContextHandlerTest
         handler.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
-            GET /ctx/path?query HTTP/1.1
-            Host: localhost
-                        
-            """));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(
+            """
+                GET /ctx/path?query HTTP/1.1
+                Host: localhost
+
+                """));
 
         assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
         String location = response.get(HttpHeader.LOCATION);

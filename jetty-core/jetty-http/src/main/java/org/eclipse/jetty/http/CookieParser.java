@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.List;
-
 import static org.eclipse.jetty.http.CookieCompliance.Violation.BAD_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.Listener;
+
+import java.util.List;
 
 /**
  * <p>Cookie parser.</p>

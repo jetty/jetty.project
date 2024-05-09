@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -95,12 +94,13 @@ public class ResourceListing
         }
 
         // Perform sort
-        Comparator<? super Resource> sort = switch (sortColumn)
-        {
-            case "M" -> ResourceCollators.byLastModified(sortOrderAscending);
-            case "S" -> ResourceCollators.bySize(sortOrderAscending);
-            default -> ResourceCollators.byFileName(sortOrderAscending);
-        };
+        Comparator<? super Resource> sort =
+            switch (sortColumn)
+            {
+                case "M" -> ResourceCollators.byLastModified(sortOrderAscending);
+                case "S" -> ResourceCollators.bySize(sortOrderAscending);
+                default -> ResourceCollators.byFileName(sortOrderAscending);
+            };
         listing.sort(sort);
 
         String decodedBase = URIUtil.decodePath(base);
@@ -110,11 +110,12 @@ public class ResourceListing
 
         // Doctype Declaration + XHTML. The spec says the encoding MUST be "utf-8" in all cases at it is ignored;
         // see: https://html.spec.whatwg.org/multipage/semantics.html#attr-meta-charset
-        buf.append("""
-            <?xml version="1.0" encoding="utf-8"?>
-            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-            <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
-            """);
+        buf.append(
+            """
+                <?xml version="1.0" encoding="utf-8"?>
+                <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+                <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+                """);
 
         // HTML Header
         buf.append("<head>\n");
@@ -171,7 +172,9 @@ public class ResourceListing
             }
         }
 
-        buf.append("<th class=\"lastmodified\"><a href=\"?C=M&amp;O=").append(order).append("\">");
+        buf.append("<th class=\"lastmodified\"><a href=\"?C=M&amp;O=")
+            .append(order)
+            .append("\">");
         buf.append("Last Modified").append(arrow);
         buf.append("</a></th>");
 
@@ -203,7 +206,8 @@ public class ResourceListing
         {
             // Name
             buf.append("<tr><td class=\"name\"><a href=\"");
-            // TODO This produces an absolute link from the /context/<listing-dir> path, investigate if we can use relative links reliably now
+            // TODO This produces an absolute link from the /context/<listing-dir> path, investigate if we can use
+            // relative links reliably now
             buf.append(URIUtil.addPaths(encodedBase, "../"));
             buf.append("\">Parent Directory</a></td>");
             // Last Modified
@@ -222,7 +226,8 @@ public class ResourceListing
             // Listings always return non-composite Resource entries
             String name = item.getFileName();
             if (StringUtil.isBlank(name))
-                continue; // a resource either not backed by a filename (eg: MemoryResource), or has no filename (eg: a segment-less root "/")
+                continue; // a resource either not backed by a filename (eg: MemoryResource), or has no filename (eg: a
+            // segment-less root "/")
 
             // Ensure name has a slash if it's a directory
             if (item.isDirectory() && !name.endsWith("/"))

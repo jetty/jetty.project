@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.List;
-
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 public class ByteRangeTest
 {
@@ -71,7 +70,8 @@ public class ByteRangeTest
     public void testHeader416RangeString()
     {
         assertEquals("bytes */100", ByteRange.toNonSatisfiableHeaderValue(100), "416 Header on size 100");
-        assertEquals("bytes */123456789", ByteRange.toNonSatisfiableHeaderValue(123456789), "416 Header on size 123456789");
+        assertEquals(
+            "bytes */123456789", ByteRange.toNonSatisfiableHeaderValue(123456789), "416 Header on size 123456789");
     }
 
     @Test
