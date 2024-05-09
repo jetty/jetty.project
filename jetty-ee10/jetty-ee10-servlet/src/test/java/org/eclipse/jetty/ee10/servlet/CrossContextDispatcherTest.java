@@ -332,17 +332,14 @@ public class CrossContextDispatcherTest
     public void testCrossContextForwardAndFilter() throws Exception
     {
         FilterHolder filterHolder = new FilterHolder(
-            new Filter() {
-                @Override
-                public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-                {
-                    // verify that expected RequestURL is still sane during Filter.
-                    HttpServletRequest httpRequest = (HttpServletRequest)request;
-                    HttpServletResponse httpResponse = (HttpServletResponse)response;
-                    StringBuffer requestUrl = httpRequest.getRequestURL();
-                    httpResponse.addHeader("X-Filter-RequestURL", requestUrl.toString());
-                    chain.doFilter(httpRequest, httpResponse);
-                }
+            (request, response, chain) ->
+            {
+                // verify that expected RequestURL is still sane during Filter.
+                HttpServletRequest httpRequest = (HttpServletRequest)request;
+                HttpServletResponse httpResponse = (HttpServletResponse)response;
+                StringBuffer requestUrl = httpRequest.getRequestURL();
+                httpResponse.addHeader("X-Filter-RequestURL", requestUrl.toString());
+                chain.doFilter(httpRequest, httpResponse);
             }
         );
         _targetServletContextHandler.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.FORWARD));
