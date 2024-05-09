@@ -154,6 +154,7 @@ class CrossContextDispatcher implements RequestDispatcher
 
     private class ForwardRequest extends ServletCoreRequest
     {
+         private HttpURI _fullyQualifiedURI;
         /**
          * @param httpServletRequest the request to wrap
          */
@@ -198,12 +199,13 @@ class CrossContextDispatcher implements RequestDispatcher
                     return ATTRIBUTES;
                 }
             });
+            _fullyQualifiedURI = HttpURI.build(httpServletRequest.getRequestURL().toString()).pathQuery(_uri.getPathQuery()).asImmutable();
         }
 
         @Override
         public HttpURI getHttpURI()
         {
-            return _uri;
+            return _fullyQualifiedURI;
         }
     }
 

@@ -187,6 +187,7 @@ public class CrossContextDispatcherTest
         assertThat(content, containsString("jakarta.servlet.forward.query_string=forward=/verify"));
         assertThat(content, containsString("jakarta.servlet.forward.request_uri=/context/dispatch/"));
         //verify request values
+        assertThat(content, containsString("REQUEST_URL=http://localhost/foreign/"));
         assertThat(content, containsString("CONTEXT_PATH=/foreign"));
         assertThat(content, containsString("SERVLET_PATH=/verify"));
         assertThat(content, containsString("PATH_INFO=/pinfo"));
@@ -914,6 +915,7 @@ public class CrossContextDispatcherTest
                 res.getWriter().println(RequestDispatcher.FORWARD_REQUEST_URI + "=" + req.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI));
                 res.getWriter().println("----------- REQUEST");
                 HttpServletRequest httpServletRequest = (HttpServletRequest)req;
+                res.getWriter().println("REQUEST_URL=" + httpServletRequest.getRequestURL());
                 res.getWriter().println("CONTEXT_PATH=" + httpServletRequest.getServletContext().getContextPath());
                 res.getWriter().println("SERVLET_PATH=" + httpServletRequest.getServletPath());
                 res.getWriter().println("PATH_INFO=" + httpServletRequest.getPathInfo());
