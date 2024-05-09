@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app 
+   xmlns="https://jakarta.ee/xml/ns/jakartaee"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+   metadata-complete="false"
+   version="5.0"> 
+
+  <display-name>EE9 Demo Jakarta WebSocket WebApp</display-name>
+  
+  <servlet>
+    <servlet-name>WSChat</servlet-name>
+    <servlet-class>org.example.WebSocketChatServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>WSChat</servlet-name>
+    <url-pattern>/jetty.websocket/*</url-pattern>
+  </servlet-mapping>
+  
+</web-app>
+
+
