@@ -155,6 +155,7 @@ class CrossContextDispatcher implements RequestDispatcher
     private class ForwardRequest extends ServletCoreRequest
     {
          private HttpURI _fullyQualifiedURI;
+
         /**
          * @param httpServletRequest the request to wrap
          */
