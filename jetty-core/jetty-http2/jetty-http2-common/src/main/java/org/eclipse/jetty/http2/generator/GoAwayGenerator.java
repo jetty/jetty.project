@@ -13,16 +13,13 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
 
 public class GoAwayGenerator extends FrameGenerator
 {
@@ -32,13 +29,13 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Accumulator accumulator, Frame frame)
+    public int generate(RetainableByteBuffer.Mutable accumulator, Frame frame)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
         return generateGoAway(accumulator, goAwayFrame.getLastStreamId(), goAwayFrame.getError(), goAwayFrame.getPayload());
     }
 
-    public int generateGoAway(ByteBufferPool.Accumulator accumulator, int lastStreamId, int error, byte[] payload)
+    public int generateGoAway(RetainableByteBuffer.Mutable accumulator, int lastStreamId, int error, byte[] payload)
     {
         if (lastStreamId < 0)
             lastStreamId = 0;
@@ -52,17 +49,13 @@ public class GoAwayGenerator extends FrameGenerator
             payload = Arrays.copyOfRange(payload, 0, maxPayloadLength);
 
         int length = fixedLength + (payload != null ? payload.length : 0);
-        RetainableByteBuffer header = generateHeader(FrameType.GO_AWAY, length, Flags.NONE, 0);
-        ByteBuffer byteBuffer = header.getByteBuffer();
+        generateHeader(accumulator, FrameType.GO_AWAY, length, Flags.NONE, 0);
 
-        byteBuffer.putInt(lastStreamId);
-        byteBuffer.putInt(error);
+        accumulator.putInt(lastStreamId);
+        accumulator.putInt(error);
 
         if (payload != null)
-            byteBuffer.put(payload);
-
-        BufferUtil.flipToFlush(byteBuffer, 0);
-        accumulator.append(header);
+            accumulator.put(payload, 0, payload.length);
 
         return Frame.HEADER_LENGTH + length;
     }

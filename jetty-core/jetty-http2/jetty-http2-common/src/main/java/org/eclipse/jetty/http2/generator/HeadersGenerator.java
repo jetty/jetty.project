@@ -23,7 +23,6 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -47,13 +46,13 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException
+    public int generate(RetainableByteBuffer.Mutable accumulator, Frame frame) throws HpackException
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
         return generateHeaders(accumulator, headersFrame.getStreamId(), headersFrame.getMetaData(), headersFrame.getPriority(), headersFrame.isEndStream());
     }
 
-    public int generateHeaders(ByteBufferPool.Accumulator accumulator, int streamId, MetaData metaData, PriorityFrame priority, boolean endStream) throws HpackException
+    public int generateHeaders(RetainableByteBuffer.Mutable accumulator, int streamId, MetaData metaData, PriorityFrame priority, boolean endStream) throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -65,8 +64,8 @@ public class HeadersGenerator extends FrameGenerator
 
         RetainableByteBuffer hpack = encode(encoder, metaData, getMaxFrameSize());
         ByteBuffer hpackByteBuffer = hpack.getByteBuffer();
-        int hpackLength = hpackByteBuffer.position();
         BufferUtil.flipToFlush(hpackByteBuffer, 0);
+        int hpackLength = hpackByteBuffer.remaining();
 
         // Split into CONTINUATION frames if necessary.
         if (maxHeaderBlockFragment > 0 && hpackLength > maxHeaderBlockFragment)
@@ -78,13 +77,10 @@ public class HeadersGenerator extends FrameGenerator
             if (priority != null)
                 length += PriorityFrame.PRIORITY_LENGTH;
 
-            RetainableByteBuffer header = generateHeader(FrameType.HEADERS, length, flags, streamId);
-            ByteBuffer headerByteBuffer = header.getByteBuffer();
-            generatePriority(headerByteBuffer, priority);
-            BufferUtil.flipToFlush(headerByteBuffer, 0);
-            accumulator.append(header);
+            generateHeader(accumulator, FrameType.HEADERS, length, flags, streamId);
+            generatePriority(accumulator, priority);
             hpackByteBuffer.limit(maxHeaderBlockFragment);
-            accumulator.append(RetainableByteBuffer.wrap(hpackByteBuffer.slice()));
+            accumulator.add(RetainableByteBuffer.wrap(hpackByteBuffer.slice()));
 
             int totalLength = Frame.HEADER_LENGTH + length;
 
@@ -93,10 +89,7 @@ public class HeadersGenerator extends FrameGenerator
             while (limit < hpackLength)
             {
                 hpackByteBuffer.position(position).limit(limit);
-                header = generateHeader(FrameType.CONTINUATION, maxHeaderBlockFragment, Flags.NONE, streamId);
-                headerByteBuffer = header.getByteBuffer();
-                BufferUtil.flipToFlush(headerByteBuffer, 0);
-                accumulator.append(header);
+                generateHeader(accumulator, FrameType.CONTINUATION, maxHeaderBlockFragment, Flags.NONE, streamId);
                 accumulator.append(RetainableByteBuffer.wrap(hpackByteBuffer.slice()));
                 position += maxHeaderBlockFragment;
                 limit += maxHeaderBlockFragment;
@@ -104,11 +97,8 @@ public class HeadersGenerator extends FrameGenerator
             }
 
             hpackByteBuffer.position(position).limit(hpackLength);
-            header = generateHeader(FrameType.CONTINUATION, hpack.remaining(), Flags.END_HEADERS, streamId);
-            headerByteBuffer = header.getByteBuffer();
-            BufferUtil.flipToFlush(headerByteBuffer, 0);
-            accumulator.append(header);
-            accumulator.append(hpack);
+            generateHeader(accumulator, FrameType.CONTINUATION, hpack.remaining(), Flags.END_HEADERS, streamId);
+            accumulator.add(hpack);
             totalLength += Frame.HEADER_LENGTH + hpack.remaining();
 
             return totalLength;
@@ -123,22 +113,19 @@ public class HeadersGenerator extends FrameGenerator
             if (priority != null)
                 length += PriorityFrame.PRIORITY_LENGTH;
 
-            RetainableByteBuffer header = generateHeader(FrameType.HEADERS, length, flags, streamId);
-            ByteBuffer headerByteBuffer = header.getByteBuffer();
-            generatePriority(headerByteBuffer, priority);
-            BufferUtil.flipToFlush(headerByteBuffer, 0);
-            accumulator.append(header);
-            accumulator.append(hpack);
+            generateHeader(accumulator, FrameType.HEADERS, length, flags, streamId);
+            generatePriority(accumulator, priority);
+            accumulator.add(hpack);
 
             return Frame.HEADER_LENGTH + length;
         }
     }
 
-    private void generatePriority(ByteBuffer header, PriorityFrame priority)
+    private void generatePriority(RetainableByteBuffer.Mutable buffer, PriorityFrame priority)
     {
         if (priority != null)
         {
-            priorityGenerator.generatePriorityBody(header, priority.getStreamId(),
+            priorityGenerator.generatePriorityBody(buffer, priority.getStreamId(),
                 priority.getParentStreamId(), priority.getWeight(), priority.isExclusive());
         }
     }

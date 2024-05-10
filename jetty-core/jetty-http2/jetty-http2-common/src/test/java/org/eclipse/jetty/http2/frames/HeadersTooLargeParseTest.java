@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,17 +77,12 @@ public class HeadersTooLargeParseTest
         });
 
         int streamId = 48;
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
         int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
-        {
-            while (buffer.hasRemaining() && failure.get() == 0)
-            {
-                parser.parse(buffer);
-            }
-        }
+        UnknownParseTest.parse(parser, accumulator);
+        accumulator.release();
 
         assertTrue(len > maxHeaderSize);
         assertEquals(ErrorCode.PROTOCOL_ERROR.code, failure.get());
