@@ -243,7 +243,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     @Override
     public void onData(DataFrame frame)
     {
-        RetainableByteBuffer.Appendable networkBuffer = producer.networkBuffer;
+        RetainableByteBuffer.Mutable networkBuffer = producer.networkBuffer;
         session.onData(new StreamData(frame, networkBuffer));
     }
 
@@ -315,7 +315,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
         private final Callback fillableCallback = new FillableCallback();
-        private RetainableByteBuffer.Appendable networkBuffer;
+        private RetainableByteBuffer.Mutable networkBuffer;
         private boolean shutdown;
         private boolean failed;
 
@@ -408,14 +408,14 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             }
         }
 
-        private RetainableByteBuffer.Appendable newNetworkBuffer()
+        private RetainableByteBuffer.Mutable newNetworkBuffer()
         {
-            return bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asAppendable();
+            return bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
         }
 
         private void reacquireNetworkBuffer()
         {
-            RetainableByteBuffer.Appendable currentBuffer = networkBuffer;
+            RetainableByteBuffer.Mutable currentBuffer = networkBuffer;
             if (currentBuffer == null)
                 throw new IllegalStateException();
 
@@ -430,7 +430,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
         private void releaseNetworkBuffer()
         {
-            RetainableByteBuffer.Appendable currentBuffer = networkBuffer;
+            RetainableByteBuffer.Mutable currentBuffer = networkBuffer;
             if (currentBuffer == null)
                 throw new IllegalStateException();
 
