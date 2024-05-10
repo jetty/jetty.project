@@ -124,7 +124,7 @@ public class DetectorConnectionTest
             public RetainableByteBuffer acquire(int size, boolean direct)
             {
                 _bufferLeaks.incrementAndGet();
-                return new RetainableByteBuffer.Appendable.Wrapper(super.acquire(size, direct).asAppendable())
+                return new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct).asMutable())
                 {
                     @Override
                     public boolean release()

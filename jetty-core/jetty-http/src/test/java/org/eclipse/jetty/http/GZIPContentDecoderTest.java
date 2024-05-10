@@ -53,7 +53,7 @@ public class GZIPContentDecoderTest
             public RetainableByteBuffer acquire(int size, boolean direct)
             {
                 counter.incrementAndGet();
-                return new RetainableByteBuffer.Appendable.Wrapper(super.acquire(size, direct))
+                return new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
                 {
                     @Override
                     public boolean release()

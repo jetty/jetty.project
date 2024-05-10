@@ -20,14 +20,14 @@ import org.eclipse.jetty.util.Promise;
 
 public class ContentSourceRetainableByteBuffer implements Runnable
 {
-    private final RetainableByteBuffer.Appendable _appendable;
+    private final RetainableByteBuffer.Mutable _mutable;
     private final Content.Source _source;
     private final Promise<RetainableByteBuffer> _promise;
 
     public ContentSourceRetainableByteBuffer(Content.Source source, ByteBufferPool pool, boolean direct, int maxSize, Promise<RetainableByteBuffer> promise)
     {
         _source = source;
-        _appendable = new RetainableByteBuffer.Appendable.DynamicCapacity(pool, direct, maxSize);
+        _mutable = new RetainableByteBuffer.Mutable.DynamicCapacity(pool, direct, maxSize);
         _promise = promise;
     }
 
@@ -52,22 +52,22 @@ public class ContentSourceRetainableByteBuffer implements Runnable
                 return;
             }
 
-            boolean appended = _appendable.append(chunk);
+            boolean appended = _mutable.append(chunk);
             chunk.release();
 
             if (!appended)
             {
-                IllegalStateException ise = new IllegalStateException("Max size (" + _appendable.capacity() + ") exceeded");
+                IllegalStateException ise = new IllegalStateException("Max size (" + _mutable.capacity() + ") exceeded");
                 _promise.failed(ise);
-                _appendable.release();
+                _mutable.release();
                 _source.fail(ise);
                 return;
             }
 
             if (chunk.isLast())
             {
-                _promise.succeeded(_appendable);
-                _appendable.release();
+                _promise.succeeded(_mutable);
+                _mutable.release();
                 return;
             }
         }

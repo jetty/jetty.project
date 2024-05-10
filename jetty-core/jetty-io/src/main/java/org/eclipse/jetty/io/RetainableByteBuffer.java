@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -22,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -41,9 +43,9 @@ import org.eclipse.jetty.util.IteratingNestedCallback;
  *     <li>out of pool and retained; in this case {@link #isRetained()}
  *     returns {@code true} and calling {@link #release()} returns {@code false}</li>
  * </ul>
- * <p>The API read-only, even if the underlying {@link ByteBuffer} is read-write.  The {@link Appendable} sub-interface
- * provides a read-write API.  All provided implementation implement {@link Appendable}, but may only present as
- * a {@code RetainableByteBuffer}.  The {@link #asAppendable()} method can be used to access the read-write version of the
+ * <p>The API read-only, even if the underlying {@link ByteBuffer} is read-write.  The {@link Mutable} sub-interface
+ * provides a read-write API.  All provided implementation implement {@link Mutable}, but may only present as
+ * a {@code RetainableByteBuffer}.  The {@link #asMutable()} method can be used to access the read-write version of the
  * API.</p>
  */
 public interface RetainableByteBuffer extends Retainable
@@ -114,14 +116,16 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * @return An {@link Appendable} representation of this buffer with same data and pointers.
-     * @throws ReadOnlyBufferException If the buffer is not {@link Appendable} or the backing {@link ByteBuffer} is
+     * @return An {@link Mutable} representation of this buffer with same data and pointers.
+     * @throws ReadOnlyBufferException If the buffer is not {@link Mutable} or the backing {@link ByteBuffer} is
      * {@link ByteBuffer#isReadOnly() read-only}.
      */
-    default Appendable asAppendable() throws ReadOnlyBufferException
+    default Mutable asMutable() throws ReadOnlyBufferException
     {
-        if (this instanceof Appendable appendable)
-            return appendable;
+        if (isRetained())
+            throw new ReadOnlyBufferException();
+        if (this instanceof Mutable mutable)
+            return mutable;
         return new FixedCapacity(getByteBuffer(), this);
     }
 
@@ -167,6 +171,19 @@ public interface RetainableByteBuffer extends Retainable
     default byte get() throws BufferUnderflowException
     {
         return getByteBuffer().get();
+    }
+
+    /**
+     * Returns a byte from this RetainableByteBuffer at a specific index
+     *
+     * @param index The index relative to the current start of unconsumed data in the buffer.
+     * @return the byte
+     * @throws IndexOutOfBoundsException if the index is too large.
+     */
+    default byte get(long index) throws IndexOutOfBoundsException
+    {
+        ByteBuffer buffer = getByteBuffer();
+        return buffer.get(buffer.position() + Math.toIntExact(index));
     }
 
     /**
@@ -279,6 +296,18 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * <p>Limit the buffer size to the given number of bytes.</p>
+     *
+     * @param limit the maximum number of bytes to skip
+     */
+    default void limit(long limit)
+    {
+        ByteBuffer byteBuffer = getByteBuffer();
+        limit = Math.min(limit, byteBuffer.remaining());
+        byteBuffer.limit(byteBuffer.position() + Math.toIntExact(limit));
+    }
+
+    /**
      * Get a slice of the buffer.
      * @return A sliced {@link RetainableByteBuffer} sharing this buffers data and reference count, but
      *         with independent position. The buffer is {@link #retain() retained} by this call.
@@ -294,6 +323,7 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * Get a partial slice of the buffer.
+     * This is equivalent, but more efficient, than a {@link #slice()}.{@link #limit(long)}.
      * @param length The number of bytes to slice, which may contain some byte beyond the limit and less than the capacity
      * @return A sliced {@link RetainableByteBuffer} sharing the first {@code length} bytes of this buffers data and
      * reference count, but with independent position. The buffer is {@link #retain() retained} by this call.
@@ -351,9 +381,24 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Extends the {@link RetainableByteBuffer} API with optimized append methods.
+     * Asynchronously writes and consumes the contents of this retainable byte buffer into given sink.
+     * @param sink the destination sink.
+     * @param last true if this is the last write.
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
      */
-    interface Appendable extends RetainableByteBuffer
+    default void writeTo(Content.Sink sink, boolean last) throws IOException
+    {
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            sink.write(last, getByteBuffer(), callback);
+            callback.block();
+        }
+    }
+
+    /**
+     * Extends the {@link RetainableByteBuffer} API with optimized mutator methods.
+     */
+    interface Mutable extends RetainableByteBuffer
     {
         /**
          * @return the number of bytes left for appending in the {@code ByteBuffer}
@@ -465,12 +510,21 @@ public interface RetainableByteBuffer extends Retainable
         {
             put(bytes, 0, bytes.length);
         }
+
+        /**
+         * Put a {@code byte} to the buffer at a given index.
+         * @param index The index relative to the current start of unconsumed data in the buffer.
+         * @param b the {@code byte} to put
+         * @throws ReadOnlyBufferException if this buffer is read only.
+         * @throws BufferOverflowException if this buffer cannot fit the byte
+         */
+        void put(long index, byte b);
     }
 
     /**
      * A wrapper for {@link RetainableByteBuffer} instances
      */
-    class Wrapper extends Retainable.Wrapper implements RetainableByteBuffer.Appendable
+    class Wrapper extends Retainable.Wrapper implements Mutable
     {
         public Wrapper(RetainableByteBuffer wrapped)
         {
@@ -549,6 +603,12 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public byte get(long index)
+        {
+            return getWrapped().get(index);
+        }
+
+        @Override
         public int get(byte[] bytes, int offset, int length)
         {
             return getWrapped().get(bytes, offset, length);
@@ -585,7 +645,7 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public Appendable asAppendable()
+        public Mutable asMutable()
         {
             return this;
         }
@@ -593,74 +653,80 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public boolean isFull()
         {
-            return getWrapped().asAppendable().isFull();
+            return getWrapped().asMutable().isFull();
         }
 
         @Override
         public long space()
         {
-            return getWrapped().asAppendable().space();
+            return getWrapped().asMutable().space();
         }
 
         @Override
         public boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
         {
-            return getWrapped().asAppendable().append(bytes);
+            return getWrapped().asMutable().append(bytes);
         }
 
         @Override
         public boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException
         {
-            return getWrapped().asAppendable().append(bytes);
+            return getWrapped().asMutable().append(bytes);
         }
 
         @Override
         public boolean add(ByteBuffer bytes) throws ReadOnlyBufferException
         {
-            return getWrapped().asAppendable().add(bytes);
+            return getWrapped().asMutable().add(bytes);
         }
 
         @Override
         public boolean add(RetainableByteBuffer bytes) throws ReadOnlyBufferException
         {
-            return getWrapped().asAppendable().add(bytes);
+            return getWrapped().asMutable().add(bytes);
         }
 
         @Override
         public void put(byte b)
         {
-            getWrapped().asAppendable().put(b);
+            getWrapped().asMutable().put(b);
+        }
+
+        @Override
+        public void put(long index, byte b)
+        {
+            getWrapped().asMutable().put(index, b);
         }
 
         @Override
         public void putShort(short s)
         {
-            getWrapped().asAppendable().putShort(s);
+            getWrapped().asMutable().putShort(s);
         }
 
         @Override
         public void putInt(int i)
         {
-            getWrapped().asAppendable().putInt(i);
+            getWrapped().asMutable().putInt(i);
         }
 
         @Override
         public void putLong(long l)
         {
-            getWrapped().asAppendable().putLong(l);
+            getWrapped().asMutable().putLong(l);
         }
 
         @Override
         public void put(byte[] bytes, int offset, int length)
         {
-            getWrapped().asAppendable().put(bytes, offset, length);
+            getWrapped().asMutable().put(bytes, offset, length);
         }
     }
 
     /**
      * An abstract implementation of {@link RetainableByteBuffer} that provides the basic {@link Retainable} functionality
      */
-    abstract class Abstract implements RetainableByteBuffer.Appendable
+    abstract class Abstract implements Mutable
     {
         private final Retainable _retainable;
 
@@ -746,7 +812,11 @@ public interface RetainableByteBuffer extends Retainable
 
         protected void addValueString(StringBuilder buf, RetainableByteBuffer value)
         {
-            if (value.canRetain())
+            if (value instanceof FixedCapacity)
+            {
+                BufferUtil.appendDebugString(buf, value.getByteBuffer());
+            }
+            else if (value.canRetain())
             {
                 RetainableByteBuffer slice = value.slice();
                 try
@@ -778,24 +848,18 @@ public interface RetainableByteBuffer extends Retainable
                     slice.release();
                 }
             }
-            else if (value instanceof FixedCapacity)
-            {
-                buf.append("<<<");
-                BufferUtil.appendDebugString(buf, value.getByteBuffer());
-                buf.append(">>>");
-            }
             else
             {
-                buf.append("<!canRetain>");
+                buf.append("<unknown>");
             }
         }
     }
 
     /**
-     * A fixed capacity {@link Appendable} {@link RetainableByteBuffer} backed by a single
+     * A fixed capacity {@link Mutable} {@link RetainableByteBuffer} backed by a single
      * {@link ByteBuffer}.
      */
-    class FixedCapacity extends Abstract implements Appendable
+    class FixedCapacity extends Abstract implements Mutable
     {
         private final ByteBuffer _byteBuffer;
         /*
@@ -824,9 +888,9 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public Appendable asAppendable()
+        public Mutable asMutable()
         {
-            if (_byteBuffer.isReadOnly())
+            if (_byteBuffer.isReadOnly() || isRetained())
                 throw new ReadOnlyBufferException();
             return this;
         }
@@ -930,6 +994,20 @@ public interface RetainableByteBuffer extends Retainable
                 _flipPosition = BufferUtil.flipToFill(_byteBuffer);
 
             _byteBuffer.put(b);
+        }
+
+        @Override
+        public void put(long index, byte b)
+        {
+            assert !isRetained();
+
+            // Ensure buffer is flipped to fill mode (and left that way)
+            if (_flipPosition < 0)
+                _flipPosition = BufferUtil.flipToFill(_byteBuffer);
+            int remaining = _byteBuffer.position() - _flipPosition;
+            if (index > remaining)
+                throw new IndexOutOfBoundsException();
+            _byteBuffer.put(_flipPosition + Math.toIntExact(index), b);
         }
 
         /**
@@ -1048,7 +1126,7 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * An {@link Appendable} {@link RetainableByteBuffer} that can grow its capacity, backed by a chain of {@link ByteBuffer},
+     * An {@link Mutable} {@link RetainableByteBuffer} that can grow its capacity, backed by a chain of {@link ByteBuffer},
      * which may grow either by aggregation and/or retention.
      * When retaining, a chain of zero copy buffers are kept.
      * When aggregating, this class avoid repetitive copies of the same data during growth by aggregating
@@ -1056,7 +1134,7 @@ public interface RetainableByteBuffer extends Retainable
      * If the {@code minRetainSize} is {code 0}, then appending to this buffer will always retain and accumulate.
      * If the {@code minRetainSize} is {@link Integer#MAX_VALUE}, then appending to this buffer will always aggregate.
      */
-    class DynamicCapacity extends Abstract implements Appendable
+    class DynamicCapacity extends Abstract implements Mutable
     {
         private final ByteBufferPool _pool;
         private final boolean _direct;
@@ -1064,7 +1142,7 @@ public interface RetainableByteBuffer extends Retainable
         private final List<RetainableByteBuffer> _buffers;
         private final int _aggregationSize;
         private final int _minRetainSize;
-        private Appendable _aggregate;
+        private Mutable _aggregate;
 
         /**
          * A buffer with no size limit and default aggregation and retention settings.
@@ -1144,8 +1222,10 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public Appendable asAppendable()
+        public Mutable asMutable()
         {
+            if (isRetained())
+                throw new ReadOnlyBufferException();
             return this;
         }
 
@@ -1279,6 +1359,19 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public byte get(long index) throws IndexOutOfBoundsException
+        {
+            for (RetainableByteBuffer buffer : _buffers)
+            {
+                long size = buffer.size();
+                if (index < size)
+                    return buffer.get(Math.toIntExact(index));
+                index -= size;
+            }
+            throw new IndexOutOfBoundsException();
+        }
+
+        @Override
         public int get(byte[] bytes, int offset, int length)
         {
             int got = 0;
@@ -1335,7 +1428,32 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public RetainableByteBuffer.Appendable slice()
+        public void limit(long limit)
+        {
+            for (Iterator<RetainableByteBuffer> i = _buffers.iterator(); i.hasNext();)
+            {
+                RetainableByteBuffer buffer = i.next();
+
+                long size = buffer.size();
+                if (limit == 0)
+                {
+                    buffer.release();
+                    i.remove();
+                }
+                else if (limit < size)
+                {
+                    buffer.asMutable().limit(limit);
+                    limit = 0;
+                }
+                else
+                {
+                    limit -= size;
+                }
+            }
+        }
+
+        @Override
+        public Mutable slice()
         {
             List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
             for (RetainableByteBuffer rbb : _buffers)
@@ -1344,7 +1462,7 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public RetainableByteBuffer.Appendable slice(long length)
+        public Mutable slice(long length)
         {
             List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
             for (Iterator<RetainableByteBuffer> i = _buffers.iterator(); i.hasNext();)
@@ -1366,10 +1484,10 @@ public interface RetainableByteBuffer extends Retainable
             return newSlice(buffers);
         }
 
-        private RetainableByteBuffer.Appendable newSlice(List<RetainableByteBuffer> buffers)
+        private Mutable newSlice(List<RetainableByteBuffer> buffers)
         {
             retain();
-            Appendable parent = this;
+            Mutable parent = this;
             return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize)
             {
                 @Override
@@ -1515,12 +1633,12 @@ public interface RetainableByteBuffer extends Retainable
             // We will aggregate, either into the last buffer or a newly allocated one.
             if (!existing &&
                 !_buffers.isEmpty() &&
-                _buffers.get(_buffers.size() - 1) instanceof Appendable appendable &&
-                appendable.space() >= length &&
-                !appendable.isRetained())
+                _buffers.get(_buffers.size() - 1) instanceof Mutable mutable &&
+                mutable.space() >= length &&
+                !mutable.isRetained())
             {
                 // We can use the last buffer as the aggregate
-                _aggregate = appendable;
+                _aggregate = mutable;
                 checkAggregateLimit(space);
             }
             else
@@ -1531,7 +1649,7 @@ public interface RetainableByteBuffer extends Retainable
                 // If we cannot grow, allow a single allocation only if we have not already retained.
                 if (aggregateSize == 0 && _buffers.isEmpty() && _maxSize < Integer.MAX_VALUE)
                     aggregateSize = (int)_maxSize;
-                _aggregate = _pool.acquire(Math.max(length, aggregateSize), _direct).asAppendable();
+                _aggregate = _pool.acquire(Math.max(length, aggregateSize), _direct).asMutable();
                 checkAggregateLimit(space);
                 _buffers.add(_aggregate);
             }
@@ -1549,7 +1667,7 @@ public interface RetainableByteBuffer extends Retainable
                 byteBuffer.limit(limit + Math.toIntExact(space));
                 byteBuffer = byteBuffer.slice();
                 byteBuffer.limit(limit);
-                _aggregate = RetainableByteBuffer.wrap(byteBuffer, _aggregate).asAppendable();
+                _aggregate = RetainableByteBuffer.wrap(byteBuffer, _aggregate).asMutable();
             }
         }
 
@@ -1636,6 +1754,22 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public void put(long index, byte b)
+        {
+            for (RetainableByteBuffer buffer : _buffers)
+            {
+                long size = buffer.size();
+                if (index < size)
+                {
+                    buffer.asMutable().put(index, b);
+                    return;
+                }
+                index -= size;
+            }
+            throw new IndexOutOfBoundsException();
+        }
+
+        @Override
         public void putShort(short s)
         {
             ensure(2).putShort(s);
@@ -1660,7 +1794,7 @@ public interface RetainableByteBuffer extends Retainable
             ensure(length).put(bytes, offset, length);
         }
 
-        private Appendable ensure(int needed) throws BufferOverflowException
+        private Mutable ensure(int needed) throws BufferOverflowException
         {
             long size = size();
             long space = _maxSize - size;
@@ -1672,11 +1806,11 @@ public interface RetainableByteBuffer extends Retainable
                     return _aggregate;
             }
             else if (!_buffers.isEmpty() &&
-                _buffers.get(_buffers.size() - 1) instanceof Appendable appendable &&
-                appendable.space() >= needed &&
-                !appendable.isRetained())
+                _buffers.get(_buffers.size() - 1) instanceof Mutable mutable &&
+                mutable.space() >= needed &&
+                !mutable.isRetained())
             {
-                _aggregate = appendable;
+                _aggregate = mutable;
                 return _aggregate;
             }
 
@@ -1686,7 +1820,7 @@ public interface RetainableByteBuffer extends Retainable
             // If we cannot grow, allow a single allocation only if we have not already retained.
             if (aggregateSize == 0 && _buffers.isEmpty() && _maxSize < Integer.MAX_VALUE)
                 aggregateSize = (int)_maxSize;
-            _aggregate = _pool.acquire(Math.max(needed, aggregateSize), _direct).asAppendable();
+            _aggregate = _pool.acquire(Math.max(needed, aggregateSize), _direct).asMutable();
 
             // If the new aggregate buffer is larger than the space available, then adjust the capacity
             checkAggregateLimit(space);

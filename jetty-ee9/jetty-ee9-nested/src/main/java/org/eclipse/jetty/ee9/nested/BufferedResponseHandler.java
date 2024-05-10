@@ -203,7 +203,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         private final Interceptor _next;
         private final HttpChannel _channel;
         private Boolean _aggregating;
-        private RetainableByteBuffer.Appendable _aggregate;
+        private RetainableByteBuffer.Mutable _aggregate;
 
         public ArrayBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
         {

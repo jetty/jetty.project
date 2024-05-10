@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -523,6 +524,43 @@ public class Content
                         {
                             closed = true;
                             out.close();
+                        }
+                        callback.succeeded();
+                    }
+                    catch (Throwable t)
+                    {
+                        callback.failed(t);
+                    }
+                }
+            };
+        }
+
+        /**
+         * <p>Wraps the given {@link OutputStream} as a {@link Sink}.
+         * @param channel The ByteChannel to wrap
+         * @return A sink wrapping the stream
+         */
+        static Sink from(ByteChannel channel)
+        {
+            return new Sink()
+            {
+                boolean closed;
+
+                @Override
+                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                {
+                    if (closed)
+                    {
+                        callback.failed(new EOFException());
+                        return;
+                    }
+                    try
+                    {
+                        channel.write(byteBuffer);
+                        if (last)
+                        {
+                            closed = true;
+                            channel.close();
                         }
                         callback.succeeded();
                     }

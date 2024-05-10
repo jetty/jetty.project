@@ -17,15 +17,18 @@ import java.io.ByteArrayOutputStream;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.io.RetainableByteBuffer.Mutable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -45,6 +48,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -107,36 +111,68 @@ public class RetainableByteBufferTest
             return rbb;
         });
 
-        list.add(() ->
+
+        // Test each of the mutables in various states
+        int mutables = 0;
+        while (true)
         {
-            RetainableByteBuffer.DynamicCapacity dynamic = new RetainableByteBuffer.DynamicCapacity(_pool, false, 1024);
-            dynamic.append(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH));
-            return dynamic;
-        });
+            Mutable m = mutable(mutables);
+            if (m == null)
+                break;
+            mutables++;
+            m.release();
+        }
 
-        list.add(() ->
+        for (int i = 0; i < mutables; i++)
         {
-            RetainableByteBuffer.DynamicCapacity dynamic = new RetainableByteBuffer.DynamicCapacity(_pool, false, 1024, 1024, 0);
+            final int index = i;
 
-            RetainableByteBuffer.Appendable rbb = _pool.acquire(1024, true).asAppendable();
-            rbb.append(BufferUtil.toBuffer("xxxT"));
-            rbb.skip(TEST_OFFSET);
-            dynamic.append(rbb);
-            rbb.release();
+            list.add(() ->
+            {
+                Mutable mutable = Objects.requireNonNull(mutable(index));
+                mutable.put(TEST_EXPECTED_BYTES);
+                return mutable;
+            });
 
-            rbb = _pool.acquire(1024, true).asAppendable();
-            rbb.append(BufferUtil.toBuffer(TEST_TEXT_BYTES));
-            ByteBuffer byteBuffer = rbb.getByteBuffer();
-            byteBuffer.position(byteBuffer.position() + TEST_OFFSET + 1);
-            byteBuffer.limit(byteBuffer.limit() - 3);
-            dynamic.append(rbb);
-            rbb.release();
+            list.add(() ->
+            {
+                Mutable mutable = Objects.requireNonNull(mutable(index));
+                mutable.append(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH));
+                return mutable;
+            });
 
-            rbb = RetainableByteBuffer.wrap(BufferUtil.toBuffer("123")).asAppendable();
-            dynamic.append(rbb);
-            rbb.release();
-            return dynamic;
-        });
+            list.add(() ->
+            {
+                Mutable mutable = Objects.requireNonNull(mutable(index));
+                mutable.append(BufferUtil.toBuffer(TEST_TEXT_BYTES));
+                mutable.skip(3);
+                return mutable;
+            });
+
+            list.add(() ->
+            {
+                Mutable mutable = Objects.requireNonNull(mutable(index));
+                mutable.put(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH);
+                return mutable;
+            });
+
+            list.add(() ->
+            {
+                Mutable mutable = Objects.requireNonNull(mutable(index));
+                mutable.put(TEST_TEXT_BYTES);
+                mutable.skip(3);
+                return mutable;
+            });
+
+            list.add(() ->
+            {
+                Mutable mutable = Objects.requireNonNull(mutable(index));
+                for (byte b : TEST_TEXT_BYTES)
+                    mutable.add(BufferUtil.toBuffer(new byte[]{b}));
+                mutable.skip(TEST_OFFSET);
+                return mutable;
+            });
+        }
 
         return list.stream().map(Arguments::of);
     }
@@ -174,15 +210,33 @@ public class RetainableByteBufferTest
         RetainableByteBuffer buffer = supplier.get();
         Utf8StringBuilder builder = new Utf8StringBuilder();
         for (int i = buffer.remaining(); i-- > 0; )
-        {
             builder.append(buffer.get());
-        }
+
         assertTrue(buffer.isEmpty());
         assertFalse(buffer.hasRemaining());
         assertThat(buffer.size(), is(0L));
         assertThat(buffer.remaining(), is(0));
         assertThat(builder.toCompleteString(), is(TEST_EXPECTED));
         assertThrows(BufferUnderflowException.class, buffer::get);
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testGetAtIndex(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        Utf8StringBuilder builder = new Utf8StringBuilder();
+
+        for (int i = 0; i < buffer.remaining(); i++)
+            builder.append(buffer.get(i));
+
+        assertFalse(buffer.isEmpty());
+        assertTrue(buffer.hasRemaining());
+        assertThat(buffer.size(), is((long)TEST_EXPECTED_BYTES.length));
+        assertThat(buffer.remaining(), is(TEST_EXPECTED_BYTES.length));
+        assertThat(builder.toCompleteString(), is(TEST_EXPECTED));
+
         buffer.release();
     }
 
@@ -285,6 +339,32 @@ public class RetainableByteBufferTest
         slice.release();
 
         testing = new byte[1024];
+        assertThat(buffer.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length));
+        assertThat(BufferUtil.toString(BufferUtil.toBuffer(testing, 0, TEST_EXPECTED_BYTES.length)), equalTo(TEST_EXPECTED));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testLimitLess(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        buffer.limit(buffer.size() - 2);
+
+        byte[] testing = new byte[1024];
+        assertThat(buffer.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length - 2));
+        assertThat(BufferUtil.toString(BufferUtil.toBuffer(testing, 0, TEST_EXPECTED_BYTES.length - 2)), equalTo(TEST_EXPECTED.substring(0, TEST_EXPECTED.length() - 2)));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testLimitMore(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        buffer.limit(buffer.size() + 2);
+
+        byte[] testing = new byte[1024];
         assertThat(buffer.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length));
         assertThat(BufferUtil.toString(BufferUtil.toBuffer(testing, 0, TEST_EXPECTED_BYTES.length)), equalTo(TEST_EXPECTED));
         buffer.release();
@@ -443,6 +523,20 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
+    public void testWriteToBlocking(Supplier<RetainableByteBuffer> supplier) throws Exception
+    {
+        RetainableByteBuffer buffer = supplier.get();
+
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        Content.Sink sink = Content.Sink.from(bout);
+        buffer.writeTo(sink, true);
+        assertThat(bout.toString(StandardCharsets.UTF_8), is(TEST_EXPECTED));
+
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
     public void testToDetailString(Supplier<RetainableByteBuffer> supplier)
     {
         RetainableByteBuffer buffer = supplier.get();
@@ -450,42 +544,65 @@ public class RetainableByteBufferTest
         assertThat(detailString, containsString(buffer.getClass().getSimpleName()));
         assertThat(detailString, anyOf(
             containsString("<<<" + TEST_EXPECTED + ">>>"),
-            containsString("<<<T>>><<<esting >>><<<123>>>")
+            containsString("<<<T>>><<<esting >>><<<123>>>"),
+            containsString("<<<T>>><<<e>>><<<s>>><<<t>>>")
         ));
         buffer.release();
     }
 
-    public static Stream<Arguments> appendable()
+    public static Mutable mutable(int index)
     {
-        return Stream.of(
-            Arguments.of(new RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(MAX_CAPACITY))),
-            Arguments.of(new RetainableByteBuffer.FixedCapacity(BufferUtil.allocateDirect(MAX_CAPACITY))),
-            Arguments.of(new RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0))),
-            Arguments.of(new RetainableByteBuffer.FixedCapacity(BufferUtil.allocateDirect(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0))),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, -1)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 0, -1)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 32, -1)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 32, -1)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 0, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 32, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 32, 0)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, 2)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 0, 2)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 32, 2)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 32, 2)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, Integer.MAX_VALUE)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 0, Integer.MAX_VALUE)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, true, MAX_CAPACITY, 32, Integer.MAX_VALUE)),
-            Arguments.of(new RetainableByteBuffer.Appendable.DynamicCapacity(_pool, false, MAX_CAPACITY, 32, Integer.MAX_VALUE))
-        );
+        return switch (index)
+        {
+            case 0 -> new RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(MAX_CAPACITY));
+            case 1 -> new RetainableByteBuffer.FixedCapacity(BufferUtil.allocateDirect(MAX_CAPACITY));
+            case 2 -> new RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0));
+            case 3 -> new RetainableByteBuffer.FixedCapacity(BufferUtil.allocateDirect(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0));
+            case 4 -> new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY);
+            case 5 -> new Mutable.DynamicCapacity(_pool, false, MAX_CAPACITY);
+            case 6 -> new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, -1);
+            case 7 -> new Mutable.DynamicCapacity(_pool, false, MAX_CAPACITY, 0, -1);
+            case 8 -> new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY, 32, -1);
+            case 9 -> new Mutable.DynamicCapacity(_pool, false, MAX_CAPACITY, 32, -1);
+            case 10 -> new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, 0);
+            case 11 -> new Mutable.DynamicCapacity(_pool, false, MAX_CAPACITY, 0, 0);
+            case 12 -> new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY, 32, 0);
+            case 13 -> new Mutable.DynamicCapacity(_pool, false, MAX_CAPACITY, 32, 0);
+            case 14 -> new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, 2);
+            case 15 -> new Mutable.DynamicCapacity(_pool, false, MAX_CAPACITY, 0, 2);
+            case 16 -> new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY, 32, 2);
+            case 17 -> new Mutable.DynamicCapacity(_pool, false, MAX_CAPACITY, 32, 2);
+            case 18 -> new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, Integer.MAX_VALUE);
+            case 19 -> new Mutable.DynamicCapacity(_pool, false, MAX_CAPACITY, 0, Integer.MAX_VALUE);
+            case 20 -> new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY, 32, Integer.MAX_VALUE);
+            case 21 -> new Mutable.DynamicCapacity(_pool, false, MAX_CAPACITY, 32, Integer.MAX_VALUE);
+            case 22 ->
+            {
+                Mutable withAggregatable = new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, 0);
+                assertTrue(withAggregatable.add(_pool.acquire(MAX_CAPACITY, false)));
+                yield withAggregatable;
+            }
+            default -> null;
+        };
+    }
+
+    public static Stream<Arguments> mutables()
+    {
+        List<Arguments> list = new ArrayList<>();
+        int i = 0;
+        while (true)
+        {
+            Mutable m = mutable(i++);
+            if (m == null)
+                break;
+            list.add(Arguments.of(m));
+        }
+        return list.stream();
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testEmptyAppendableBuffer(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testEmptyMutablesBuffer(Mutable buffer)
     {
         assertThat(buffer.size(), is(0L));
         assertThat(buffer.remaining(), is(0));
@@ -500,8 +617,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testAppendOneByte(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testAppendOneByte(Mutable buffer)
     {
         byte[] bytes = new byte[]{'-', 'X', '-'};
         while (!buffer.isFull())
@@ -514,8 +631,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testSpace(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testSpace(Mutable buffer)
     {
         assertThat(buffer.space(), equalTo(buffer.maxSize()));
         assertThat(buffer.space(), equalTo((long)buffer.capacity()));
@@ -527,8 +644,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testAppendOneByteRetainable(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testAppendOneByteRetainable(Mutable buffer)
     {
         RetainableByteBuffer toAppend = _pool.acquire(1, true);
         BufferUtil.append(toAppend.getByteBuffer(), (byte)'X');
@@ -540,8 +657,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testAppendMoreBytesThanCapacity(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testAppendMoreBytesThanCapacity(Mutable buffer)
     {
         byte[] bytes = new byte[MAX_CAPACITY * 2];
         Arrays.fill(bytes, (byte)'X');
@@ -564,8 +681,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testAppendMoreBytesThanCapacityRetainable(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testAppendMoreBytesThanCapacityRetainable(Mutable buffer)
     {
         RetainableByteBuffer toAppend = _pool.acquire(MAX_CAPACITY * 2, true);
         int pos = BufferUtil.flipToFill(toAppend.getByteBuffer());
@@ -592,8 +709,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testAppendSmallByteBuffer(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testAppendSmallByteBuffer(Mutable buffer)
     {
         byte[] bytes = new byte[]{'-', 'X', '-'};
         ByteBuffer from = ByteBuffer.wrap(bytes, 1, 1);
@@ -609,8 +726,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testAppendBigByteBuffer(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testAppendBigByteBuffer(Mutable buffer)
     {
         ByteBuffer from = BufferUtil.toBuffer("X".repeat(MAX_CAPACITY * 2));
         assertFalse(buffer.append(from));
@@ -623,8 +740,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testAddOneByteRetainable(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testAddOneByteRetainable(Mutable buffer)
     {
         RetainableByteBuffer toAdd = _pool.acquire(1, true);
         BufferUtil.append(toAdd.getByteBuffer(), (byte)'X');
@@ -641,8 +758,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testAddMoreBytesThanCapacity(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testAddMoreBytesThanCapacity(Mutable buffer)
     {
         byte[] bytes = new byte[MAX_CAPACITY * 2];
         Arrays.fill(bytes, (byte)'X');
@@ -654,8 +771,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testAddMoreBytesThanCapacityRetainable(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testAddMoreBytesThanCapacityRetainable(Mutable buffer)
     {
         RetainableByteBuffer toAdd = _pool.acquire(MAX_CAPACITY * 2, true);
         int pos = BufferUtil.flipToFill(toAdd.getByteBuffer());
@@ -673,10 +790,9 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testAddSmallByteBuffer(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testAddSmallByteBuffer(Mutable buffer)
     {
-        System.err.println(buffer);
         while (!buffer.isFull())
         {
             byte[] bytes = new byte[]{'-', 'X', '-'};
@@ -689,8 +805,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testNonRetainableWriteTo(RetainableByteBuffer.Appendable buffer) throws Exception
+    @MethodSource("mutables")
+    public void testNonRetainableWriteTo(Mutable buffer) throws Exception
     {
         buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello")));
         buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" ")));
@@ -705,8 +821,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testRetainableWriteTo(RetainableByteBuffer.Appendable buffer) throws Exception
+    @MethodSource("mutables")
+    public void testRetainableWriteTo(Mutable buffer) throws Exception
     {
         CountDownLatch released = new CountDownLatch(3);
         RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
@@ -726,8 +842,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testCopyAppendable(RetainableByteBuffer.Appendable original)
+    @MethodSource("mutables")
+    public void testCopyMutables(Mutable original)
     {
         ByteBuffer bytes = ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8));
         original.append(bytes);
@@ -744,8 +860,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testCopyAppendableThenModifyOriginal(RetainableByteBuffer.Appendable original)
+    @MethodSource("mutables")
+    public void testCopyMutablesThenModifyOriginal(Mutable original)
     {
         original.append(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
         RetainableByteBuffer copy = original.copy();
@@ -762,8 +878,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testPutPrimitives(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testPutPrimitives(Mutable buffer)
     {
         // Test aligned
         buffer.putLong(0x00010203_04050607L);
@@ -783,8 +899,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testPutByte(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testPutByte(Mutable buffer)
     {
         while (buffer.space() >= 1)
             buffer.put((byte)0xAB);
@@ -796,8 +912,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testPutShort(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testPutShort(Mutable buffer)
     {
         while (buffer.space() >= 2)
             buffer.putShort((short)0x1234);
@@ -817,8 +933,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testPutInt(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testPutInt(Mutable buffer)
     {
         while (buffer.space() >= 4)
             buffer.putInt(0x1234ABCD);
@@ -838,8 +954,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testPutLong(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testPutLong(Mutable buffer)
     {
         while (buffer.space() >= 8)
             buffer.putLong(0x0123456789ABCDEFL);
@@ -859,8 +975,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testPutBytes(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testPutBytes(Mutable buffer)
     {
         while (buffer.space() >= 7)
             buffer.put(StringUtil.fromHexString("000F1E2D3C4B5A6000"), 1, 7);
@@ -872,8 +988,21 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testToStringAppendable(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testPutByteAtIndex(Mutable buffer)
+    {
+        buffer.append(BufferUtil.toBuffer("Hello "));
+        long size = buffer.size();
+        buffer.add(BufferUtil.toBuffer("world!"));
+        buffer.put(size, (byte)'W');
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("Hello World!"));
+        assertThrows(IndexOutOfBoundsException.class, () -> buffer.put(buffer.size() + 1, (byte)0));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testToStringMutables(Mutable buffer)
     {
         assertTrue(buffer.append(BufferUtil.toBuffer("0123456789ABCDEF")));
         assertTrue(buffer.append(BufferUtil.toBuffer("xxxxxxxxxxxxxxxx")));
@@ -887,8 +1016,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testTakeByteBuffer(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testTakeByteBuffer(Mutable buffer)
     {
         if (buffer instanceof RetainableByteBuffer.DynamicCapacity dynamic)
         {
@@ -906,8 +1035,8 @@ public class RetainableByteBufferTest
     }
 
     @ParameterizedTest
-    @MethodSource("appendable")
-    public void testTakeRetainableByteBuffer(RetainableByteBuffer.Appendable buffer)
+    @MethodSource("mutables")
+    public void testTakeRetainableByteBuffer(Mutable buffer)
     {
         if (buffer instanceof RetainableByteBuffer.DynamicCapacity dynamic)
         {
@@ -924,4 +1053,14 @@ public class RetainableByteBufferTest
         assertTrue(buffer.release());
     }
 
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testAsMutable(Mutable buffer)
+    {
+        assertThat(buffer.asMutable(), sameInstance(buffer));
+        buffer.retain();
+        assertThrows(ReadOnlyBufferException.class, buffer::asMutable);
+        assertFalse(buffer.release());
+        assertTrue(buffer.release());
+    }
 }
