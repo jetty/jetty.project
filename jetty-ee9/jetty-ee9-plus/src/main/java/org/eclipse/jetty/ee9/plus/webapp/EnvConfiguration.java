@@ -257,21 +257,18 @@ public class EnvConfiguration extends AbstractConfiguration
      */
     private Resource resolveJettyEnvXml(Resource webInf)
     {
-        String xmlFile = JETTY_EE9_ENV_XML;
-
         try
         {
             if (webInf == null || !webInf.isDirectory())
                 return null;
 
             //try to find jetty-ee9-env.xml
-            Resource xmlResource = webInf.resolve(xmlFile);
+            Resource xmlResource = webInf.resolve(JETTY_EE9_ENV_XML);
             if (!Resources.missing(xmlResource))
                 return xmlResource;
 
             //failing that, look for jetty-env.xml
-            xmlFile = JETTY_ENV_XML;
-            xmlResource = webInf.resolve(xmlFile);
+            xmlResource = webInf.resolve(JETTY_ENV_XML);
             if (!Resources.missing(xmlResource))
                 return xmlResource;
 
@@ -280,7 +277,7 @@ public class EnvConfiguration extends AbstractConfiguration
         catch (Exception e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Error resolving WEB-INF/" + xmlFile, e);
+                LOG.debug("Error resolving", e);
             return null;
         }
     }
