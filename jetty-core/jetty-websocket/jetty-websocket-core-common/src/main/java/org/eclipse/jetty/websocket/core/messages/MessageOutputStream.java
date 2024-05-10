@@ -161,7 +161,7 @@ public class MessageOutputStream extends OutputStream
             if (closed)
                 throw new IOException("Stream is closed");
 
-            while (!buffer.asAppendable().append(data))
+            while (!buffer.asMutable().append(data))
                 flush(false);
         }
     }

@@ -754,7 +754,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             public RetainableByteBuffer slice()
             {
                 RetainableByteBuffer slice = super.slice();
-                return new RetainableByteBuffer.Appendable.Wrapper(slice)
+                return new Mutable.Wrapper(slice)
                 {
                     @Override
                     public boolean release()
@@ -768,7 +768,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             public RetainableByteBuffer slice(long length)
             {
                 RetainableByteBuffer slice = super.slice(length);
-                return new RetainableByteBuffer.Appendable.Wrapper(slice)
+                return new Mutable.Wrapper(slice)
                 {
                     @Override
                     public boolean release()

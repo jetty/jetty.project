@@ -342,7 +342,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     public void onUpgradeTo(ByteBuffer buffer)
     {
         acquireEncryptedInput();
-        if (!_encryptedInput.asAppendable().append(buffer))
+        if (!_encryptedInput.asMutable().append(buffer))
             throw new IllegalStateException("too much to upgrade");
     }
 

@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.Promise;
 
 public class ContentSourceByteBuffer implements Runnable
 {
-    private final RetainableByteBuffer.Appendable.DynamicCapacity dynamic = new RetainableByteBuffer.Appendable.DynamicCapacity();
+    private final RetainableByteBuffer.Mutable.DynamicCapacity dynamic = new RetainableByteBuffer.Mutable.DynamicCapacity();
     private final Content.Source source;
     private final Promise<ByteBuffer> promise;
 
