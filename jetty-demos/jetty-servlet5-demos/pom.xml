@@ -15,6 +15,7 @@
   <modules>
     <module>jetty-servlet5-demo-async-rest</module>
     <module>jetty-servlet5-demo-jaas-webapp</module>
+    <module>jetty-servlet5-demo-jetty-webapp</module>
     <module>jetty-servlet5-demo-jndi-webapp</module>
     <module>jetty-servlet5-demo-jsp-webapp</module>
     <module>jetty-servlet5-demo-mock-resources</module>

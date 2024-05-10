@@ -1,7 +1,7 @@
 <assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0" 
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
-  <id>webbundle</id>
+  <id>webbundle-ee11</id>
   <formats>
     <format>jar</format>
   </formats>
@@ -16,23 +16,8 @@
       </includes>
       <excludes>
         <exclude>WEB-INF/lib/**</exclude>
-        <exclude>WEB-INF/jetty-web.xml</exclude>
+        <exclude>WEB-INF/jetty-web-ee11.xml</exclude>
       </excludes>
     </fileSet>
   </fileSets>
-<!-- Removed until PropertyUserStore supports packed realm.properties -->
-<!--
-  <files>
-    <file>
-      <source>src/main/assembly/embedded-jetty-web-for-webbundle.xml</source>
-      <outputDirectory>WEB-INF</outputDirectory>
-      <destName>jetty-web.xml</destName>
-    </file>
-    <file>
-      <source>src/main/config/demo-base/etc/realm.properties</source>
-      <outputDirectory>WEB-INF</outputDirectory>
-      <destName>realm.properties</destName>
-    </file>
-  </files>
--->
 </assembly>
