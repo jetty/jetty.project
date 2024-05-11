@@ -12,7 +12,7 @@
   <description>Jetty JAAS support</description>
 
   <properties>
-    <apache.directory.api.version>2.1.5</apache.directory.api.version>
+    <apache.directory.api.version>2.1.6</apache.directory.api.version>
     <apacheds.version>2.0.0.AM27</apacheds.version>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.jaas.*</spotbugs.onlyAnalyze>

@@ -23,7 +23,7 @@ The xref:og-session-usecases[scenarios] go into more detail on this.
 [[og-session-cache-hash]]
 ===== Caching in Memory
 
-If you wish to change any of the default configuration values you should enable the `session-cache-hash` xref:startup-modules[module].
+If you wish to change any of the default configuration values you should enable the `session-cache-hash` xref:og-modules[module].
 The name `"hash"` harks back to historical Jetty session implementations, whereby sessions were kept in memory using a HashMap.
 
 ====== Configuration
