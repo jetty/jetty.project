@@ -1,10 +1,105 @@
-jetty-12.0.7-SNAPSHOT
+jetty-12.0.10-SNAPSHOT
+
+jetty-12.0.9 - 03 May 2024
+ + 5944 Introduce alias --files for --download
+ + 5945 Introduce alias --skip-create-files to replace --skip-file-validation
+ + 5946 Introduce alias for --include-jetty-dir
+ + 9487 Jetty 12 - Upgrade Infinispan to version 15.x
+ + 11026 Start Stop issue with Jetty 12 - state file not deleted every time
+ + 11420 HTTP/3 Race with Dynamic Table referencing in QPackDecoder
+ + 11488 Inconsistent default port number in HttpURI and HostPort
+ + 11490 CustomRequestLog.ignorePath doesn't work as documented
+ + 11514 Start properties `jetty.webapp.addServerClasses` and
+   `jetty.webapp.addSystemClasses` are not applied during ee8/ee9 deployments
+ + 11573 Introduce new `disable-urlcache` module to globally disable JVM URL
+   caching of `jar` protocol references
+ + 11597 Document Request Customizers
+ + 11631 NPE in error handling leading to 100% CPU
+ + 11634 Socks5Proxy does not support IP addresses with IP segments above 127
+ + 11642 Restore jetty-ee8-runner
+ + 11648 Introduce new HttpDateTime class for parsing obsolete Date formats in
+   HTTP and Cookie
+ + 11656 Upgrade jetty-quiche-native to version 0.21.0
+ + 11659 HTTP Fields with OWS (Optional WhiteSpace) in value are not properly
+   parsed in Jetty 12
+ + 11679 Jetty 12.0.8 seems to leak connection when it encounters earlyEOF
+ + 11687 `HttpFields$Mutable$Wrapper.computeField()` incorrectly calls
+   `onAddField()` when null is returned by `computeFn`
+ + 11699 new IllegalStateException when attempting to access Request/Response
+   outside of Request Lifecycle
+ + 11705 jetty-decorate.xml and jetty-web-decorate.xml in jetty-deploy
+   reference ee specific classes
+
+jetty-12.0.8 - 29 March 2024
+ + 5857 Deprecate AbstractConnectionPool "callback" methods
+ + 7647 Document org.eclipse.jetty.client.Socks4Proxy "secure" parameter
+ + 10387 Fix or suppress javadoc warnings
+ + 10805 Jetty response with an invalid HTTP2 packet if the client set the
+   hpack table size as 0
+ + 11263 Using `jetty.version` override from jetty-start does not use version
+   for various environment libs.
+ + 11411 Allow non existant resources to be obtained from Resource.resolve()
+ + 11482 The StatisticsHandler doesn't count 2xx codes
+ + 11495 Add UriCompliance rules that follow the HTTP / URI / Servlet specs for
+   illegal & suspicious characters
+ + 11510 Occasional NPE in ClassMatcher.match() from
+   WebAppClassLoader.loadClass() usage
+ + 11513 Perf regression in the HTTP parser caused by long look-ahead
+ + 11527 Reduce ByteBuffer churning in HttpOutput
+ + 11539 `Resource.copyTo(Resource)` has different behavior from Jetty 9/10/11
+ + 11548 java.nio.file.ClosedFileSystemException on hot redeploy
+ + 11553 Restore startWebapp() to WebAppContext
+ + 11558 New tmp directory should be created on every `WebAppContext` start, if
+   not explicitly configured
+ + 11563 HttpClient InputStream.read() hangs intermittently before end of
+   response
+ + 11567 DefaultServlet should resolve its resourceBase relative to the
+   ServletContextHandler resourceBase
+ + 11572 Deploy behaves differently when both WAR and XML exist in
+   ${jetty.base}/webapps/ and you update the XML vs updating the WAR.
+ + 11574 shibboleth idp webapp under jetty 12.0.7
+
+jetty-12.0.7 - 29 February 2024
+ + 6140 Report total number of keys in SelectorManager
+ + 7750 HttpURI.toURI() does not copy fragment
+ + 8887 Jetty-12 client calls onDataAvailable with producing thread
+ + 8979 Jetty 12 - HttpClientTransport network "modes"
+ + 10805 Jetty response with an invalid HTTP2 packet if the client set the
+   hpack table size as 0
+ + 11278 500 response when trying to display symlinked directory
+ + 11310 Uploading big multipart files via jetty 12.0.5 with spring boot 3.2.1
+   cause problems
+ + 11353 The default virtual thread executor should created named threads
+ + 11356 Allow ServerWebSocketContainer to be created without ContextHandler
+ + 11361 Update UriCompliance.checkUriCompliance
+ + 11363 ContentSourcePublisher throws from request
+ + 11370 IllegalStateException when last write fails
+ + 11371 Review ArrayByteBufferPool eviction
+ + 11372 Scheduler queue in the HTTP client grows infinitely when a server
+   times out
+ + 11377 Jetty 12 fails to start WebApp Bundle with OSGi Boot bundle (or when
+   packaged)
+ + 11387 Reintroduce MultiPartCompliance.LEGACY (not as default) too allow for
+   parsing of non-compliant `multipart/form-data`
+ + 11396 NullPointerException when getting parts from HttpServletRequest
+ + 11398 WebSocket ClosedChannelException when demanding frames in onOpen
+ + 11401 Replace StringBuffer with StringBuilder
+ + 11403 Expose `SslEndPoint` in `SslHandshakeListener`
+ + 11410 PathMappingsHandler does not start ResourceHandler properly
+ + 11414 When producing URI/URL strings follow spec and produce lowercase
+   schemes and drop default ports
+ + 11424 What is the `jetty.deploy.scanInterval` default?  module, ini, code
+   and documentation do not agree.
+ + 11432 Review number of acceptor threads
+ + 11441 Quote escaping in HTML file
+ + 11448 UriCompliance.Violation ignored despite being set
+ + 11465 HttpURI.toURI() sets userInfo to null
 
 jetty-12.0.6 - 29 January 2024
  + 10220 Implement CrossOriginHandler
  + 10870 How to set HttpConfiguration.securePort when the HTTPS port is
    dynamic?
- + 11080 Can't able to make multipart request and getting error.
+ + 11080 Can't able to make multipart request and getting error
  + 11081 Dropped WebSocket messages due to race condition in WebSocket frame
    handling
  + 11095 Jetty 12.0.5 (ee10) throws IllegalStateException for completed
@@ -18,9 +113,10 @@ jetty-12.0.6 - 29 January 2024
  + 11223 WebSocketClient.connect with URI including query parameters don't work
    for HTTP2 connector
  + 11230 Problem with parsing of form parameters without values in Jetty 12?
- + 11253 Jetty 12 ComplianceViolation.Listener not notified for URI, Cookie,
-   and Multipart violations.
+ + 11253 Jetty 12 ComplianceViolation.Listener not notified for URI, Cookie and
+   Multipart violations.
  + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
+   (CVE-2024-22201)
  + 11260 QuickStartConfiguration cannot be mixed with contexts that do not have
    a `WEB-INF/quickstart-web.xml`
  + 11263 Using `jetty.version` override from jetty-start does not use version
@@ -198,8 +294,9 @@ jetty-12.0.1 - 29 August 2023
 jetty-9.4.54.v20240208 - 08 February 2024
  + 1256 DoSFilter leaks USER_AUTH entries
  + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
+   (CVE-2024-22201)
  + 11389 Strip default ports on ws/wss scheme uris too
- 
+
 jetty-11.0.20 - 29 January 2024
  + 11081 Dropped WebSocket messages due to race condition in WebSocket frame
    handling

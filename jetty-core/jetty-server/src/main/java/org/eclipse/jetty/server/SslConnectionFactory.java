@@ -56,7 +56,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
         super("SSL");
         _sslContextFactory = factory == null ? new SslContextFactory.Server() : factory;
         _nextProtocol = nextProtocol;
-        addBean(_sslContextFactory);
+        installBean(_sslContextFactory);
     }
 
     public SslContextFactory.Server getSslContextFactory()
@@ -169,7 +169,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     }
 
     @Override
-    protected AbstractConnection configure(AbstractConnection connection, Connector connector, EndPoint endPoint)
+    protected <T extends AbstractConnection> T configure(T connection, Connector connector, EndPoint endPoint)
     {
         if (connection instanceof SslConnection sslConnection)
         {

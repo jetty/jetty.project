@@ -50,6 +50,7 @@ import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
@@ -67,6 +68,7 @@ import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -88,7 +90,6 @@ import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsH
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
@@ -665,7 +666,7 @@ public class ResourceHandlerTest
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
-                HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+                HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
@@ -1629,7 +1630,7 @@ public class ResourceHandlerTest
                 \r
                 """);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-            assertThat("Response.status", response.getStatus(), anyOf(is(HttpStatus.NOT_FOUND_404), is(HttpStatus.INTERNAL_SERVER_ERROR_500)));
+            assertThat("Response.status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
             assertThat("Response.content", response.getContent(), is(not(containsString(docRoot.toString()))));
         }
     }
@@ -2026,6 +2027,8 @@ public class ResourceHandlerTest
     {
         FS.ensureEmpty(docRoot);
 
+        _contextHandler.addAliasCheck(new AllowedResourceAliasChecker(_contextHandler));
+
         // Create file with UTF-8 NFC format
         String filename = "swedish-" + new String(StringUtil.fromHexString("C3A5"), UTF_8) + ".txt";
         Files.writeString(docRoot.resolve(filename), "hi a-with-circle", UTF_8);
@@ -2072,6 +2075,8 @@ public class ResourceHandlerTest
     public void testGetUtf8NfdFile() throws Exception
     {
         FS.ensureEmpty(docRoot);
+
+        _contextHandler.addAliasCheck(new AllowedResourceAliasChecker(_contextHandler));
 
         // Create file with UTF-8 NFD format
         String filename = "swedish-a" + new String(StringUtil.fromHexString("CC8A"), UTF_8) + ".txt";
@@ -3935,10 +3940,20 @@ public class ResourceHandlerTest
 
     private void setupQuestionMarkDir(Path base) throws IOException
     {
-        Path dirQ = base.resolve("dir?");
-        Files.createDirectories(dirQ);
-        Path welcome = dirQ.resolve("welcome.txt");
-        Files.writeString(welcome, "Hello");
+        boolean filesystemSupportsQuestionMarkDir = false;
+        try
+        {
+            Path dirQ = base.resolve("dir?");
+            Files.createDirectories(dirQ);
+            Path welcome = dirQ.resolve("welcome.txt");
+            Files.writeString(welcome, "Hello");
+            filesystemSupportsQuestionMarkDir = true;
+        }
+        catch (InvalidPathException e)
+        {
+            filesystemSupportsQuestionMarkDir = false;
+        }
+        Assumptions.assumeTrue(filesystemSupportsQuestionMarkDir);
     }
 
     private void setupSimpleText(Path base) throws IOException

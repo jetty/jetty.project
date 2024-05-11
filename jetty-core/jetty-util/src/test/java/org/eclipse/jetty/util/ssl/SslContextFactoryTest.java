@@ -43,6 +43,8 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -381,6 +383,7 @@ public class SslContextFactoryTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Will result in java.net.SocketException: An established connection was aborted by the software in your host machine during IO.readBytes(input)")
     public void testSNIWithPKIX() throws Exception
     {
         SslContextFactory.Server serverTLS = new SslContextFactory.Server()

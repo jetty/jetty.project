@@ -74,7 +74,6 @@ public class End2EndClientTest
         {
             keyStore.load(is, "storepwd".toCharArray());
         }
-
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStore(keyStore);
         sslContextFactory.setKeyStorePassword("storepwd");
@@ -84,6 +83,7 @@ public class End2EndClientTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
+        // Use the deprecated APIs for backwards compatibility testing.
         connector = new QuicServerConnector(server, sslContextFactory, http1, http2);
         connector.getQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
         server.addConnector(connector);
@@ -100,9 +100,9 @@ public class End2EndClientTest
 
         server.start();
 
+        // Use the deprecated APIs for backwards compatibility testing.
         ClientConnector clientConnector = new ClientConnector(new QuicClientConnectorConfigurator());
-        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
-        clientSslContextFactory.setTrustStore(keyStore);
+        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client(true);
         clientConnector.setSslContextFactory(clientSslContextFactory);
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));

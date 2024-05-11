@@ -181,13 +181,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _server = Objects.requireNonNull(server);
 
         _executor = executor != null ? executor : _server.getThreadPool();
-        addBean(_executor, executor != null);
+        installBean(_executor, executor != null);
 
         _scheduler = scheduler != null ? scheduler : _server.getScheduler();
-        addBean(_scheduler, scheduler != null);
+        installBean(_scheduler, scheduler != null);
 
         _bufferPool = bufferPool != null ? bufferPool : server.getByteBufferPool();
-        addBean(_bufferPool, bufferPool != null);
+        installBean(_bufferPool, bufferPool != null);
 
         for (ConnectionFactory factory : factories)
         {
@@ -196,7 +196,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
         int cores = ProcessorUtils.availableProcessors();
         if (acceptors < 0)
-            acceptors = Math.max(1, Math.min(4, cores / 8));
+            acceptors = 1;
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: {} ", this);
         _acceptors = new Thread[acceptors];

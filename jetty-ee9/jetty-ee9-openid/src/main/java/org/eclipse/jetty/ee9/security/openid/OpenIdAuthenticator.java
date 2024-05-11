@@ -43,7 +43,7 @@ import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.openid.OpenIdConfiguration;
 import org.eclipse.jetty.security.openid.OpenIdCredentials;
 import org.eclipse.jetty.security.openid.OpenIdLoginService;
-import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
@@ -512,12 +512,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             if (jUri.equals(buf.toString()))
                             {
                                 @SuppressWarnings("unchecked")
-                                MultiMap<String> jPost = (MultiMap<String>)session.getAttribute(J_POST);
+                                Fields jPost = (Fields)session.getAttribute(J_POST);
                                 if (jPost != null)
                                 {
                                     if (LOG.isDebugEnabled())
                                         LOG.debug("auth rePOST {}->{}", authentication, jUri);
-                                    baseRequest.setContentParameters(jPost);
+                                    baseRequest.setContentFields(jPost);
                                 }
                                 session.removeAttribute(J_URI);
                                 session.removeAttribute(J_METHOD);
@@ -700,7 +700,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
         private final String _uri;
         private final String _method;
-        private final MultiMap<String> _formParameters;
+        private final Fields _formParameters;
 
         public UriRedirectInfo(Request request)
         {
@@ -709,7 +709,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
             if (MimeTypes.Type.FORM_ENCODED.is(request.getContentType()) && HttpMethod.POST.is(request.getMethod()))
             {
-                MultiMap<String> formParameters = new MultiMap<>();
+                Fields formParameters = new Fields(true);
                 request.extractFormParameters(formParameters);
                 _formParameters = formParameters;
             }
@@ -729,7 +729,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             return _method;
         }
 
-        public MultiMap<String> getFormParameters()
+        public Fields getFormParameters()
         {
             return _formParameters;
         }

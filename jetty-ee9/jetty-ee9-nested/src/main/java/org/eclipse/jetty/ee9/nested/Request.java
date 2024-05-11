@@ -26,9 +26,7 @@ import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
-import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -65,7 +63,6 @@ import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -78,10 +75,13 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.UserIdentity;
+import org.eclipse.jetty.server.CookieCache;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
@@ -89,6 +89,7 @@ import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
@@ -125,8 +126,8 @@ public class Request implements HttpServletRequest
     private static final int INPUT_NONE = 0;
     private static final int INPUT_STREAM = 1;
     private static final int INPUT_READER = 2;
-    private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
-    private static final MultiMap<String> BAD_PARAMS = new MultiMap<>();
+    private static final Fields NO_PARAMS = Fields.EMPTY;
+    private static final Fields BAD_PARAMS = new Fields(true);
 
     /**
      * Compare inputParameters to NO_PARAMS by Reference
@@ -134,7 +135,7 @@ public class Request implements HttpServletRequest
      * @param inputParameters The parameters to compare to NO_PARAMS
      * @return True if the inputParameters reference is equal to NO_PARAMS otherwise False
      */
-    private static boolean isNoParams(MultiMap<String> inputParameters)
+    private static boolean isNoParams(Fields inputParameters)
     {
         @SuppressWarnings("ReferenceEquality")
         boolean isNoParams = (inputParameters == NO_PARAMS);
@@ -172,6 +173,7 @@ public class Request implements HttpServletRequest
     private ContextHandler.APIContext _context;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
+    private final boolean _crossContextDispatchSupported;
     private ContextHandler.CoreContextRequest _coreRequest;
     private MetaData.Request _metaData;
     private HttpFields _httpFields;
@@ -183,7 +185,6 @@ public class Request implements HttpServletRequest
     private Object _asyncNotSupportedSource = null;
     private boolean _secure;
     private boolean _handled = false;
-    private boolean _contentParamsExtracted;
     private Attributes _attributes;
     private Authentication _authentication;
     private String _contentType;
@@ -192,13 +193,13 @@ public class Request implements HttpServletRequest
     private int _inputState = INPUT_NONE;
     private BufferedReader _reader;
     private String _readerEncoding;
-    private MultiMap<String> _queryParameters;
-    private MultiMap<String> _contentParameters;
-    private MultiMap<String> _parameters;
+    private Fields _queryParameters;
+    private Fields _contentParameters;
+    private Fields _parameters;
     private Charset _queryEncoding;
     private UserIdentityScope _scope;
     private long _timeStamp;
-    private MultiPartFormInputStream _multiParts; //if the request is a multi-part mime
+    private MultiPart.Parser _multiParts; // parser for multipart/form-data request content
     private AsyncContextState _async;
     private String _lastPathInContext;
     private ContextHandler.APIContext _lastContext;
@@ -207,6 +208,7 @@ public class Request implements HttpServletRequest
     {
         _channel = channel;
         _input = input;
+        _crossContextDispatchSupported = _channel.getContextHandler().getCoreContextHandler().isCrossContextDispatchSupported();
     }
 
     public HttpFields getHttpFields()
@@ -352,14 +354,18 @@ public class Request implements HttpServletRequest
             throw new IllegalArgumentException(listener.getClass().toString());
     }
 
-    private MultiMap<String> getParameters()
+    Fields peekParameters()
     {
-        if (!_contentParamsExtracted)
-        {
-            // content parameters need boolean protection as they can only be read
-            // once, but may be reset to null by a reset
-            _contentParamsExtracted = true;
+        return _parameters;
+    }
 
+    private Fields getParameters()
+    {
+        // protect against calls to recycled requests (which is illegal, but
+        // this gives better failures
+        Fields parameters = _parameters;
+        if (parameters == null)
+        {
             // Extract content parameters; these cannot be replaced by a forward()
             // once extracted and may have already been extracted by getParts() or
             // by a processing happening after a form-based authentication.
@@ -375,46 +381,71 @@ public class Request implements HttpServletRequest
                     throw new BadMessageException("Unable to parse form content", e);
                 }
             }
+
+
+            // Extract query string parameters; these may be replaced by a forward()
+            // and may have already been extracted by mergeQueryParameters().
+            if (_queryParameters == null)
+                extractQueryParameters();
+
+            // Do parameters need to be combined?
+            if (isNoParams(_queryParameters) || _queryParameters.getSize() == 0)
+                _parameters = _contentParameters;
+            else if (isNoParams(_contentParameters) || _contentParameters.getSize() == 0)
+                _parameters = _queryParameters;
+            else if (_parameters == null)
+            {
+                _parameters = new Fields(true);
+                _parameters.addAll(_queryParameters);
+                _parameters.addAll(_contentParameters);
+            }
+            parameters = _parameters;
         }
 
-        // Extract query string parameters; these may be replaced by a forward()
-        // and may have already been extracted by mergeQueryParameters().
-        if (_queryParameters == null)
-            extractQueryParameters();
-
-        // Do parameters need to be combined?
-        if (isNoParams(_queryParameters) || _queryParameters.size() == 0)
-            _parameters = _contentParameters;
-        else if (isNoParams(_contentParameters) || _contentParameters.size() == 0)
-            _parameters = _queryParameters;
-        else if (_parameters == null)
-        {
-            _parameters = new MultiMap<>();
-            _parameters.addAllValues(_queryParameters);
-            _parameters.addAllValues(_contentParameters);
-        }
-
-        // protect against calls to recycled requests (which is illegal, but
-        // this gives better failures
-        MultiMap<String> parameters = _parameters;
         return parameters == null ? NO_PARAMS : parameters;
     }
 
     private void extractQueryParameters()
     {
-        if (_uri == null || StringUtil.isEmpty(_uri.getQuery()))
+        if (_uri == null)
+        {
+            _queryParameters = NO_PARAMS;
+            return;
+        }
+
+        String query = _uri.getQuery();
+        if (StringUtil.isEmpty(query))
             _queryParameters = NO_PARAMS;
         else
         {
             try
             {
-                _queryParameters = new MultiMap<>();
-                UrlEncoded.decodeTo(_uri.getQuery(), _queryParameters, _queryEncoding);
+                _queryParameters = new Fields(true);
+                UrlEncoded.decodeTo(query, _queryParameters::add, _queryEncoding);
             }
             catch (IllegalStateException | IllegalArgumentException e)
             {
                 _queryParameters = BAD_PARAMS;
                 throw new BadMessageException("Unable to parse URI query", e);
+            }
+        }
+
+        if (_crossContextDispatchSupported)
+        {
+            String dispatcherType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+            if (dispatcherType != null)
+            {
+                String sourceQuery = (String)_coreRequest.getAttribute(
+                    DispatcherType.valueOf(dispatcherType) == DispatcherType.FORWARD
+                    ? RequestDispatcher.FORWARD_QUERY_STRING : CrossContextDispatcher.ORIGINAL_QUERY_STRING);
+
+                if (!StringUtil.isBlank(sourceQuery))
+                {
+                    if (_queryParameters == NO_PARAMS)
+                        _queryParameters = new Fields(true);
+
+                    UrlEncoded.decodeTo(sourceQuery, _queryParameters::add, _queryEncoding);
+                }
             }
         }
     }
@@ -435,7 +466,24 @@ public class Request implements HttpServletRequest
             _contentParameters = NO_PARAMS;
         else
         {
-            _contentParameters = new MultiMap<>();
+            if (_crossContextDispatchSupported && _coreRequest.getContext().isCrossContextDispatch(_coreRequest))
+            {
+                try
+                {
+                    _contentParameters = FormFields.get(_coreRequest).get();
+                    return;
+                }
+                catch (RuntimeException e)
+                {
+                    throw e;
+                }
+                catch (Throwable t)
+                {
+                    throw new RuntimeException(t);
+                }
+            }
+
+            _contentParameters = new Fields(true);
             int contentLength = getContentLength();
             if (contentLength != 0 && _inputState == INPUT_NONE)
             {
@@ -474,7 +522,7 @@ public class Request implements HttpServletRequest
         }
     }
 
-    public void extractFormParameters(MultiMap<String> params)
+    public void extractFormParameters(Fields params)
     {
         try
         {
@@ -496,7 +544,7 @@ public class Request implements HttpServletRequest
             if (_input.isAsync())
                 throw new IllegalStateException("Cannot extract parameters with async IO");
 
-            UrlEncoded.decodeTo(in, params, UrlEncoded.decodeCharset(getCharacterEncoding()), maxFormContentSize, maxFormKeys);
+            UrlEncoded.decodeTo(in, params::add, UrlEncoded.decodeCharset(getCharacterEncoding()), maxFormContentSize, maxFormKeys);
         }
         catch (IOException e)
         {
@@ -566,6 +614,8 @@ public class Request implements HttpServletRequest
                 return _channel;
             if (Connection.class.getName().equals(name))
                 return _channel.getCoreRequest().getConnectionMetaData().getConnection();
+            if (MultiPart.Parser.class.getName().equals(name))
+                return _multiParts;
         }
         return (_attributes == null) ? null : _attributes.getAttribute(name);
     }
@@ -705,7 +755,18 @@ public class Request implements HttpServletRequest
     @Override
     public String getContextPath()
     {
-        // The context path returned is normally for the current context.  Except during a cross context
+        //During a cross context INCLUDE dispatch, the context path is that of the originating
+        //request
+        if (_crossContextDispatchSupported)
+        {
+            String crossContextDispatchType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+            if (DispatcherType.INCLUDE.toString().equals(crossContextDispatchType))
+            {
+                return (String)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_CONTEXT_PATH);
+            }
+        }
+
+        // The context path returned is normally for the current context.  Except during an
         // INCLUDE dispatch, in which case this method returns the context path of the source context,
         // which we recover from the IncludeAttributes wrapper.
         ContextHandler.APIContext context;
@@ -739,22 +800,40 @@ public class Request implements HttpServletRequest
     @Override
     public Cookie[] getCookies()
     {
-        ContextHandler.CoreContextRequest coreRequest = getCoreRequest();
-        if (coreRequest == null)
-            return null;
+        return CookieCache.getApiCookies(getCoreRequest(), Cookie.class, this::convertCookie);
+    }
 
-        List<HttpCookie> httpCookies = org.eclipse.jetty.server.Request.getCookies(coreRequest);
-        if (httpCookies.isEmpty())
-            return null;
+    private Cookie convertCookie(HttpCookie cookie)
+    {
+        try
+        {
+            Cookie result = new Cookie(cookie.getName(), cookie.getValue());
 
-        if (httpCookies instanceof ServletCookieList servletCookieList)
-            return servletCookieList.getServletCookies();
+            if (getCoreRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance().allows(CookieCompliance.Violation.ATTRIBUTE_VALUES))
+            {
+                if (cookie.getVersion() > 0)
+                    result.setVersion(cookie.getVersion());
 
-        ServletCookieList servletCookieList = new ServletCookieList(httpCookies, coreRequest.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
-        coreRequest.setAttribute(org.eclipse.jetty.server.Request.COOKIE_ATTRIBUTE, servletCookieList);
-        if (coreRequest.getComponents().getCache().getAttribute(org.eclipse.jetty.server.Request.CACHE_ATTRIBUTE) instanceof CookieCache cookieCache)
-            cookieCache.replaceCookieList(servletCookieList);
-        return servletCookieList.getServletCookies();
+                String path = cookie.getPath();
+                if (StringUtil.isNotBlank(path))
+                    result.setPath(path);
+
+                String domain = cookie.getDomain();
+                if (StringUtil.isNotBlank(domain))
+                    result.setDomain(domain);
+
+                String comment = cookie.getComment();
+                if (StringUtil.isNotBlank(comment))
+                    result.setComment(comment);
+            }
+            return result;
+        }
+        catch (Exception x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Bad Cookie", x);
+        }
+        return null;
     }
 
     @Override
@@ -928,7 +1007,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getParameter(String name)
     {
-        return getParameters().getValue(name, 0);
+        return getParameters().getValue(name);
     }
 
     @Override
@@ -940,7 +1019,7 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<String> getParameterNames()
     {
-        return Collections.enumeration(getParameters().keySet());
+        return Collections.enumeration(getParameters().getNames());
     }
 
     @Override
@@ -952,19 +1031,37 @@ public class Request implements HttpServletRequest
         return vals.toArray(new String[0]);
     }
 
+    @Deprecated
     public MultiMap<String> getQueryParameters()
+    {
+        return _queryParameters == null ? null : _queryParameters.toMultiMap();
+    }
+
+    public Fields getQueryFields()
     {
         return _queryParameters;
     }
 
-    public void setQueryParameters(MultiMap<String> queryParameters)
+    public void setQueryFields(Fields queryParameters)
     {
         _queryParameters = queryParameters;
     }
 
-    public void setContentParameters(MultiMap<String> contentParameters)
+    @Deprecated
+    public void setQueryParameters(MultiMap<String> queryParameters)
+    {
+        _queryParameters = queryParameters == null ? null : new Fields(queryParameters);
+    }
+
+    public void setContentFields(Fields contentParameters)
     {
         _contentParameters = contentParameters;
+    }
+
+    @Deprecated
+    public void setContentParameters(MultiMap<String> contentParameters)
+    {
+        _contentParameters = contentParameters == null ? NO_PARAMS : new Fields(contentParameters);
     }
 
     public void resetParameters()
@@ -1025,6 +1122,15 @@ public class Request implements HttpServletRequest
     @Override
     public String getQueryString()
     {
+        if (_crossContextDispatchSupported)
+        {
+            String crossContextDispatchType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+            if (DispatcherType.INCLUDE.toString().equals(crossContextDispatchType))
+            {
+                return (String)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_QUERY_STRING);
+            }
+        }
+
         return _uri == null ? null : _uri.getQuery();
     }
 
@@ -1146,6 +1252,14 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestURI()
     {
+        if (_crossContextDispatchSupported)
+        {
+            String crossContextDispatchType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+            if (DispatcherType.INCLUDE.toString().equals(crossContextDispatchType))
+            {
+                return (String)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_URI);
+            }
+        }
         return _uri == null ? null : _uri.getPath();
     }
 
@@ -1221,6 +1335,7 @@ public class Request implements HttpServletRequest
     @Override
     public ServletContext getServletContext()
     {
+        //TODO cross context include must return the context of the originating request
         return _context;
     }
 
@@ -1270,7 +1385,8 @@ public class Request implements HttpServletRequest
         {
             try
             {
-                _multiParts.deleteParts();
+                if (!_crossContextDispatchSupported || !_coreRequest.getContext().isCrossContextDispatch(_coreRequest))
+                    _multiParts.deleteParts();
             }
             catch (Throwable e)
             {
@@ -1547,7 +1663,6 @@ public class Request implements HttpServletRequest
         _asyncNotSupportedSource = null;
         _secure = false;
         _handled = false;
-        _contentParamsExtracted = false;
         _attributes = null;
         _authentication = Authentication.NOT_CHECKED;
         _contentType = null;
@@ -1892,10 +2007,22 @@ public class Request implements HttpServletRequest
         return getParts(null);
     }
 
-    private Collection<Part> getParts(MultiMap<String> params) throws IOException
+    private Collection<Part> getParts(Fields params) throws IOException
     {
         if (_multiParts == null)
         {
+            if (_crossContextDispatchSupported)
+            {
+                // the request prior or after dispatch may have parsed the multipart
+                Object multipart = _coreRequest.getAttribute(MultiPart.Parser.class.getName());
+                //TODO support cross environment multipart
+                if (multipart instanceof MultiPart.Parser multiPartParser)
+                {
+                    _multiParts = multiPartParser;
+                    return _multiParts.getParts();
+                }
+            }
+
             MultipartConfigElement config = (MultipartConfigElement)getAttribute(MULTIPART_CONFIG_ELEMENT);
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
@@ -1914,7 +2041,9 @@ public class Request implements HttpServletRequest
                 maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
             }
 
-            _multiParts = newMultiParts(config, maxFormKeys);
+            MultiPartCompliance multiPartCompliance = getHttpChannel().getHttpConfiguration().getMultiPartCompliance();
+
+            _multiParts = newMultiParts(multiPartCompliance, config, maxFormKeys);
             Collection<Part> parts = _multiParts.getParts();
             reportComplianceViolations();
 
@@ -1971,12 +2100,15 @@ public class Request implements HttpServletRequest
 
                         String content = os.toString(charset == null ? defaultCharset : Charset.forName(charset));
                         if (_contentParameters == null)
-                            _contentParameters = params == null ? new MultiMap<>() : params;
+                            _contentParameters = params == null ? new Fields(true) : params;
                         _contentParameters.add(p.getName(), content);
                     }
                     os.reset();
                 }
             }
+
+            if (_crossContextDispatchSupported)
+                _coreRequest.setAttribute(MultiPart.Parser.class.getName(), _multiParts);
         }
 
         return _multiParts.getParts();
@@ -1985,15 +2117,15 @@ public class Request implements HttpServletRequest
     private void reportComplianceViolations()
     {
         ComplianceViolation.Listener complianceViolationListener = org.eclipse.jetty.server.HttpChannel.from(getCoreRequest()).getComplianceViolationListener();
-        List<MultiPartFormInputStream.NonCompliance> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
-        for (MultiPartFormInputStream.NonCompliance nc : nonComplianceWarnings)
-            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.detail()));
+        List<ComplianceViolation.Event> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
+        for (ComplianceViolation.Event nc : nonComplianceWarnings)
+            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.details()));
     }
 
-    private MultiPartFormInputStream newMultiParts(MultipartConfigElement config, int maxParts) throws IOException
+    private MultiPart.Parser newMultiParts(MultiPartCompliance multiPartCompliance, MultipartConfigElement config, int maxParts) throws IOException
     {
-        return new MultiPartFormInputStream(getInputStream(), getContentType(), config,
-            (_context != null ? (File)_context.getAttribute(ServletContext.TEMPDIR) : null), maxParts);
+        File contextTmpDir = (_context != null ? (File)_context.getAttribute(ServletContext.TEMPDIR) : null);
+        return MultiPart.newFormDataParser(multiPartCompliance, getInputStream(), getContentType(), config, contextTmpDir, maxParts);
     }
 
     @Override
@@ -2022,21 +2154,21 @@ public class Request implements HttpServletRequest
 
     public void mergeQueryParameters(String oldQuery, String newQuery)
     {
-        MultiMap<String> newQueryParams = null;
+        Fields newQueryParams = null;
         // Have to assume ENCODING because we can't know otherwise.
         if (newQuery != null)
         {
-            newQueryParams = new MultiMap<>();
-            UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING);
+            newQueryParams = new Fields(true);
+            UrlEncoded.decodeTo(newQuery, newQueryParams::add, UrlEncoded.ENCODING);
         }
 
-        MultiMap<String> oldQueryParams = _queryParameters;
+        Fields oldQueryParams = _queryParameters;
         if (oldQueryParams == null && oldQuery != null)
         {
-            oldQueryParams = new MultiMap<>();
+            oldQueryParams = new Fields(true);
             try
             {
-                UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryCharset());
+                UrlEncoded.decodeTo(oldQuery, oldQueryParams::add, getQueryCharset());
             }
             catch (Throwable th)
             {
@@ -2045,19 +2177,19 @@ public class Request implements HttpServletRequest
             }
         }
 
-        MultiMap<String> mergedQueryParams;
-        if (newQueryParams == null || newQueryParams.size() == 0)
+        Fields mergedQueryParams;
+        if (newQueryParams == null || newQueryParams.getSize() == 0)
             mergedQueryParams = oldQueryParams == null ? NO_PARAMS : oldQueryParams;
-        else if (oldQueryParams == null || oldQueryParams.size() == 0)
+        else if (oldQueryParams == null || oldQueryParams.getSize() == 0)
             mergedQueryParams = newQueryParams;
         else
         {
             // Parameters values are accumulated.
-            mergedQueryParams = new MultiMap<>(newQueryParams);
-            mergedQueryParams.addAllValues(oldQueryParams);
+            mergedQueryParams = new Fields(newQueryParams);
+            mergedQueryParams.addAll(oldQueryParams);
         }
 
-        setQueryParameters(mergedQueryParams);
+        setQueryFields(mergedQueryParams);
         resetParameters();
     }
 
@@ -2074,6 +2206,30 @@ public class Request implements HttpServletRequest
      */
     public void setServletPathMapping(ServletPathMapping servletPathMapping)
     {
+        // Change request to cross context dispatch
+        if (_crossContextDispatchSupported && _dispatcherType == DispatcherType.REQUEST && _servletPathMapping == null)
+        {
+            String crossContextDispatchType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+            if (crossContextDispatchType != null)
+            {
+                _dispatcherType = DispatcherType.valueOf(crossContextDispatchType);
+                if (_dispatcherType == DispatcherType.INCLUDE)
+                {
+                    // make a ServletPathMapping with the original data returned by findServletPathMapping method
+                    Object attribute = _coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
+                    ServletPathMapping originalMapping = ServletPathMapping.from(attribute);
+                    if (originalMapping != attribute)
+                        _coreRequest.setAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING, originalMapping);
+
+                    // Set the include attributes to the target mapping
+                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, servletPathMapping);
+                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletPathMapping.getServletPath());
+                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, servletPathMapping.getPathInfo());
+                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, getContext().getContextPath());
+                    _coreRequest.setAttribute(RequestDispatcher.INCLUDE_QUERY_STRING, getHttpURI().getQuery());
+                }
+            }
+        }
         _servletPathMapping = servletPathMapping;
     }
 
@@ -2096,8 +2252,15 @@ public class Request implements HttpServletRequest
         ServletPathMapping mapping;
         if (_dispatcherType == DispatcherType.INCLUDE)
         {
-            Dispatcher.IncludeAttributes include = Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
-            mapping = (include == null) ? _servletPathMapping : include.getSourceMapping();
+            if (_crossContextDispatchSupported && DispatcherType.INCLUDE.toString().equals(_coreRequest.getContext().getCrossContextDispatchType(_coreRequest)))
+            {
+                mapping = (ServletPathMapping)_coreRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING);
+            }
+            else
+            {
+                Dispatcher.IncludeAttributes include = Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
+                mapping = (include == null) ? _servletPathMapping : include.getSourceMapping();
+            }
         }
         else
         {
@@ -2121,80 +2284,5 @@ public class Request implements HttpServletRequest
         // INCLUDE dispatch, in which case this method returns the mapping of the source servlet,
         // which we recover from the IncludeAttributes wrapper.
         return findServletPathMapping();
-    }
-
-    /**
-     * Extended list of HttpCookies that converts and caches a servlet Cookie array.
-     */
-    private static class ServletCookieList extends AbstractList<HttpCookie>
-    {
-        private final List<HttpCookie> _httpCookies;
-        private final Cookie[] _cookies;
-
-        ServletCookieList(List<HttpCookie> httpCookies, CookieCompliance compliance)
-        {
-            _httpCookies = httpCookies;
-            Cookie[] cookies = new Cookie[_httpCookies.size()];
-            int i = 0;
-            for (HttpCookie httpCookie : _httpCookies)
-            {
-                Cookie cookie = convertCookie(httpCookie, compliance);
-                if (cookie == null)
-                    cookies = Arrays.copyOf(cookies, cookies.length - 1);
-                else
-                    cookies[i++] = cookie;
-            }
-            _cookies = cookies;
-        }
-
-        @Override
-        public HttpCookie get(int index)
-        {
-            return _httpCookies.get(index);
-        }
-
-        public Cookie[] getServletCookies()
-        {
-            return _cookies;
-        }
-
-        @Override
-        public int size()
-        {
-            return _cookies.length;
-        }
-
-        private static Cookie convertCookie(HttpCookie cookie, CookieCompliance compliance)
-        {
-            try
-            {
-                Cookie result = new Cookie(cookie.getName(), cookie.getValue());
-
-                if (compliance.allows(CookieCompliance.Violation.ATTRIBUTE_VALUES))
-                {
-                    if (cookie.getVersion() > 0)
-                        result.setVersion(cookie.getVersion());
-
-                    String path = cookie.getPath();
-                    if (StringUtil.isNotBlank(path))
-                        result.setPath(path);
-
-                    String domain = cookie.getDomain();
-                    if (StringUtil.isNotBlank(domain))
-                        result.setDomain(domain);
-
-                    String comment = cookie.getComment();
-                    if (StringUtil.isNotBlank(comment))
-                        result.setComment(comment);
-                }
-                return result;
-            }
-            catch (Exception x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Bad Cookie", x);
-            }
-            return null;
-        }
     }
 }

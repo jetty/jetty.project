@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.osgi.boot;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -354,9 +353,11 @@ public class EE9Activator implements BundleActivator
         public ContextHandler createContextHandler(AbstractContextProvider provider, App app)
             throws Exception
         {
-            OSGiApp osgiApp = OSGiApp.class.cast(app);
+            if (!(app instanceof OSGiApp osgiApp))
+                throw new IllegalArgumentException("App is not OSGi");
+
             String jettyHome = (String)app.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
-            Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
+            Path jettyHomePath = StringUtil.isBlank(jettyHome) ? null : ResourceFactory.of(provider.getServer()).newResource(jettyHome).getPath();
 
             WebAppContext webApp = new WebAppContext();
 

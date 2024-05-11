@@ -67,7 +67,7 @@ public class GZIPContentDecoder implements Destroyable
         _inflaterEntry = inflaterPool.acquire();
         _inflater = _inflaterEntry.get();
         _bufferSize = bufferSize;
-        _pool = byteBufferPool != null ? byteBufferPool : new ByteBufferPool.NonPooling();
+        _pool = byteBufferPool != null ? byteBufferPool : ByteBufferPool.NON_POOLING;
         reset();
     }
 

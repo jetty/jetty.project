@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
@@ -112,7 +113,7 @@ public class RequestListenersTest
             """));
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertThat(history, contains("zero", "one", "two", "three", "four"));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> history, contains("zero", "one", "two", "three", "four"));
     }
 
     @Test

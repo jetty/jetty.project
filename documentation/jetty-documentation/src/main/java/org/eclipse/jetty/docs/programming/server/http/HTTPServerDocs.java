@@ -31,6 +31,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -48,9 +50,10 @@ import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
-import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
@@ -62,6 +65,8 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.MemoryConnector;
+import org.eclipse.jetty.server.MemoryTransport;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -87,7 +92,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -227,8 +231,10 @@ public class HTTPServerDocs
         sslContextFactory.setKeyStorePath("/path/to/keystore");
         sslContextFactory.setKeyStorePassword("secret");
 
-        // Create an HTTP3ServerConnector instance.
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory());
+        // Create a QuicServerConnector instance.
+        Path pemWorkDir = Path.of("/path/to/pem/dir");
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
+        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
 
         // The port to listen to.
         connector.setPort(8080);
@@ -238,6 +244,31 @@ public class HTTPServerDocs
         server.addConnector(connector);
         server.start();
         // end::configureConnectorQuic[]
+    }
+
+    public void memoryConnector() throws Exception
+    {
+        // tag::memoryConnector[]
+        Server server = new Server();
+
+        // Create a MemoryConnector instance that speaks HTTP/1.1.
+        MemoryConnector connector = new MemoryConnector(server, new HttpConnectionFactory());
+
+        server.addConnector(connector);
+        server.start();
+
+        // The code above is the server-side.
+        // ----
+        // The code below is the client-side.
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        ContentResponse response = httpClient.newRequest("http://localhost/")
+            // Use the memory Transport to communicate with the server-side.
+            .transport(new MemoryTransport(connector))
+            .send();
+        // end::memoryConnector[]
     }
 
     public void configureConnectors() throws Exception
@@ -293,27 +324,25 @@ public class HTTPServerDocs
         server.addConnector(plainConnector);
 
         // Third, create the connector for HTTP/3.
-        HTTP3ServerConnectionFactory http3 = new HTTP3ServerConnectionFactory(secureConfig);
-        HTTP3ServerConnector http3Connector = new HTTP3ServerConnector(server, sslContextFactory, http3);
+        Path pemWorkDir = Path.of("/path/to/pem/dir");
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
+        QuicServerConnector http3Connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         server.addConnector(http3Connector);
 
         // Set up a listener so that when the secure connector starts,
         // it configures the other connectors that have not started yet.
-        secureConnector.addEventListener(new LifeCycle.Listener()
+        secureConnector.addEventListener(new NetworkConnector.Listener()
         {
             @Override
-            public void lifeCycleStarted(LifeCycle lifeCycle)
+            public void onOpen(NetworkConnector connector)
             {
-                if (lifeCycle instanceof NetworkConnector networkConnector)
-                {
-                    int port = networkConnector.getLocalPort();
+                int port = connector.getLocalPort();
 
-                    // Configure the plain connector for secure redirects from http to https.
-                    plainConfig.setSecurePort(port);
+                // Configure the plain connector for secure redirects from http to https.
+                plainConfig.setSecurePort(port);
 
-                    // Configure the HTTP3 connector port to be the same as HTTPS/HTTP2.
-                    http3Connector.setPort(port);
-                }
+                // Configure the HTTP3 connector port to be the same as HTTPS/HTTP2.
+                http3Connector.setPort(port);
             }
         });
 
@@ -528,11 +557,11 @@ public class HTTPServerDocs
         httpConfig.addCustomizer(new SecureRequestCustomizer());
 
         // Create and configure the HTTP/3 connector.
-        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(httpConfig));
+        // It is mandatory to configure the PEM directory.
+        Path pemWorkDir = Path.of("/path/to/pem/dir");
+        ServerQuicConfiguration serverQuicConfig = new ServerQuicConfiguration(sslContextFactory, pemWorkDir);
+        QuicServerConnector connector = new QuicServerConnector(server, serverQuicConfig, new HTTP3ServerConnectionFactory(serverQuicConfig));
         connector.setPort(843);
-
-        // It is mandatory to set the PEM directory.
-        connector.getQuicConfiguration().setPemWorkDirectory(Path.of("/path/to/pem/dir"));
 
         server.addConnector(connector);
 
@@ -1101,6 +1130,8 @@ public class HTTPServerDocs
 
         // Add the CrossOriginHandler to protect from CSRF attacks.
         CrossOriginHandler crossOriginHandler = new CrossOriginHandler();
+        crossOriginHandler.setAllowedOriginPatterns(Set.of("http://domain.com"));
+        crossOriginHandler.setAllowCredentials(true);
         server.setHandler(crossOriginHandler);
 
         // Create a ServletContextHandler with contextPath.
@@ -1351,14 +1382,14 @@ public class HTTPServerDocs
             }
 
             @Override
-            protected void onComplete(Request request, Throwable failure)
+            protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
             {
                 // Retrieve the before handling nanoTime.
                 long beforeHandlingNanoTime = (long)request.getAttribute("beforeHandlingNanoTime");
 
-                // Record the request processing time.
+                // Record the request processing time and the status that was sent back to the client.
                 long processingTime = NanoTime.millisSince(beforeHandlingNanoTime);
-                System.getLogger("trackTime").log(INFO, "processing request %s took %d ms", request, processingTime);
+                System.getLogger("trackTime").log(INFO, "processing request %s took %d ms and ended with status code %d", request, processingTime, status);
             }
         }
 
@@ -1561,5 +1592,33 @@ public class HTTPServerDocs
             }
         }
         // end::continue100[]
+    }
+
+    public void requestCustomizer() throws Exception
+    {
+        // tag::requestCustomizer[]
+        Server server = new Server();
+
+        // Configure the secure connector.
+        HttpConfiguration httpsConfig = new HttpConfiguration();
+
+        // Add the SecureRequestCustomizer.
+        httpsConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // Configure the SslContextFactory with the KeyStore information.
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+        // Configure the Connector to speak HTTP/1.1 and HTTP/2.
+        HttpConnectionFactory h1 = new HttpConnectionFactory(httpsConfig);
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(h1.getProtocol());
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
+        ServerConnector connector = new ServerConnector(server, ssl, alpn, h2, h1);
+        server.addConnector(connector);
+
+        server.start();
+        // end::requestCustomizer[]
     }
 }

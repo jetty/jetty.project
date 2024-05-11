@@ -34,25 +34,33 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * A {@link HttpServletResponse} wrapped as a core {@link Response}.
  * All write operations are internally converted to blocking writes on the servlet API.
  */
-class ServletCoreResponse implements Response
+public class ServletCoreResponse implements Response
 {
-    private final HttpServletResponse _response;
+    public Response wrap(Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
+    {
+        return new ServletCoreResponse(coreRequest, httpServletResponse, included);
+    }
+
+    private final HttpServletResponse _httpServletResponse;
     private final Request _coreRequest;
     private final HttpFields.Mutable _httpFields;
     private final boolean _included;
     private final ServletContextResponse _servletContextResponse;
+    private final boolean _wrapped;
 
-    public ServletCoreResponse(Request coreRequest, HttpServletResponse response, boolean included)
+    ServletCoreResponse(Request coreRequest, HttpServletResponse httpServletResponse, boolean included)
     {
         _coreRequest = coreRequest;
-        _response = response;
-        _servletContextResponse = ServletContextResponse.getServletContextResponse(response);
-        HttpFields.Mutable fields = new HttpServletResponseHttpFields(response);
+        _httpServletResponse = httpServletResponse;
+        _servletContextResponse = ServletContextResponse.getServletContextResponse(httpServletResponse);
+        _wrapped = !(httpServletResponse instanceof ServletApiResponse);
+        HttpFields.Mutable fields = new HttpServletResponseHttpFields(httpServletResponse);
         if (included)
         {
             // If included, accept but ignore mutations.
@@ -61,6 +69,12 @@ class ServletCoreResponse implements Response
                 @Override
                 public HttpField onAddField(HttpField field)
                 {
+                    String name = field == null ? null : field.getName();
+                    if (!StringUtil.isBlank(name) && name.startsWith(Dispatcher.JETTY_INCLUDE_HEADER_PREFIX))
+                    {
+                        return new HttpField(name.substring(Dispatcher.JETTY_INCLUDE_HEADER_PREFIX.length()), field.getValue());
+                    }
+
                     return null;
                 }
 
@@ -68,6 +82,12 @@ class ServletCoreResponse implements Response
                 public boolean onRemoveField(HttpField field)
                 {
                     return false;
+                }
+
+                @Override
+                public HttpField onReplaceField(HttpField oldField, HttpField newField)
+                {
+                    return oldField;
                 }
             };
         }
@@ -83,7 +103,7 @@ class ServletCoreResponse implements Response
 
     public HttpServletResponse getServletResponse()
     {
-        return _response;
+        return _httpServletResponse;
     }
 
     @Override
@@ -101,7 +121,7 @@ class ServletCoreResponse implements Response
     @Override
     public boolean isCommitted()
     {
-        return _response.isCommitted();
+        return _httpServletResponse.isCommitted();
     }
 
     private boolean isWriting()
@@ -116,29 +136,36 @@ class ServletCoreResponse implements Response
             last = false;
         try
         {
-            if (BufferUtil.hasContent(byteBuffer))
+            if (!_wrapped && !_servletContextResponse.isWritingOrStreaming())
             {
-                if (isWriting())
-                {
-                    String characterEncoding = _response.getCharacterEncoding();
-                    try (ByteBufferInputStream bbis = new ByteBufferInputStream(byteBuffer);
-                         InputStreamReader reader = new InputStreamReader(bbis, characterEncoding))
-                    {
-                        IO.copy(reader, _response.getWriter());
-                    }
-
-                    if (last)
-                        _response.getWriter().close();
-                }
-                else
-                {
-                    BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
-                    if (last)
-                        _response.getOutputStream().close();
-                }
+                _servletContextResponse.write(last, byteBuffer, callback);
             }
+            else
+            {
+                if (BufferUtil.hasContent(byteBuffer))
+                {
+                    if (isWriting())
+                    {
+                        String characterEncoding = _httpServletResponse.getCharacterEncoding();
+                        try (ByteBufferInputStream bbis = new ByteBufferInputStream(byteBuffer);
+                             InputStreamReader reader = new InputStreamReader(bbis, characterEncoding))
+                        {
+                            IO.copy(reader, _httpServletResponse.getWriter());
+                        }
 
-            callback.succeeded();
+                        if (last)
+                            _httpServletResponse.getWriter().close();
+                    }
+                    else
+                    {
+                        BufferUtil.writeTo(byteBuffer, _httpServletResponse.getOutputStream());
+                        if (last)
+                            _httpServletResponse.getOutputStream().close();
+                    }
+                }
+
+                callback.succeeded();
+            }
         }
         catch (Throwable t)
         {
@@ -155,7 +182,7 @@ class ServletCoreResponse implements Response
     @Override
     public int getStatus()
     {
-        return _response.getStatus();
+        return _httpServletResponse.getStatus();
     }
 
     @Override
@@ -163,7 +190,7 @@ class ServletCoreResponse implements Response
     {
         if (_included)
             return;
-        _response.setStatus(code);
+        _httpServletResponse.setStatus(code);
     }
 
     @Override
@@ -180,19 +207,19 @@ class ServletCoreResponse implements Response
     @Override
     public void reset()
     {
-        _response.reset();
+        _httpServletResponse.reset();
     }
 
     @Override
     public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
     {
-        throw new UnsupportedOperationException();
+        return _servletContextResponse.writeInterim(status, headers);
     }
 
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _response);
+        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _httpServletResponse);
     }
 
     private static class HttpServletResponseHttpFields implements HttpFields.Mutable

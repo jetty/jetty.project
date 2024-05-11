@@ -61,7 +61,6 @@ public interface Attributes
      * Get the immutable set of attribute names.
      * @return Set of attribute names
      */
-    // TODO: change to getAttributeNames() once jetty-core is cleaned of servlet-api usages
     Set<String> getAttributeNameSet();
 
     default Map<String, Object> asAttributeMap()
@@ -566,14 +565,14 @@ public interface Attributes
      * but is instead calculated as needed. Modifications to synthetic attributes are maintained
      * in a separate layer and no modifications are made to the backing {@link Attributes}.
      * <p>
-     * Non synthetic attributes are handled normally by the backing {@link Attributes}
+     * Non-synthetic attributes are handled normally by the backing {@link Attributes}
      * <p>
      * Uses of this class must provide implementations for
      * {@link #getSyntheticNameSet()} amd {@link #getSyntheticAttribute(String)}.
      */
     abstract class Synthetic extends Wrapper
     {
-        private static final Object REMOVED = new Object()
+        protected static final Object REMOVED = new Object()
         {
             @Override
             public String toString()
@@ -622,6 +621,8 @@ public interface Attributes
 
             // Is there a synthetic value for the attribute? We just as for the value rather than checking the name.
             Object s = getSyntheticAttribute(name);
+            if (s == REMOVED)
+                return null;
             if (s != null)
                 return s;
 
@@ -696,9 +697,15 @@ public interface Attributes
                     if (l == REMOVED)
                         // it has been removed
                         names.remove(s);
-                    else if (l != null || getSyntheticAttribute(s) != null)
-                        // else it was modified or has an original value
+                    else if (l != null)
+                        // else it was modified
                         names.add(s);
+                    else
+                    {
+                        Object v = getSyntheticAttribute(s);
+                        if (v != null && v != REMOVED)
+                            names.add(s);
+                    }
                 }
             }
 

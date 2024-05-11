@@ -98,6 +98,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         Object attr = request.getAttribute(FormFields.class.getName());
         if (attr instanceof FormFields futureFormFields)
             return futureFormFields;
+        else if (attr instanceof Fields fields)
+            return CompletableFuture.completedFuture(fields);
         return EMPTY;
     }
 
@@ -221,7 +223,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         _maxFields = maxFields;
         _maxLength = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);
-        _fields = new Fields();
+        _fields = new Fields(true);
     }
 
     @Override

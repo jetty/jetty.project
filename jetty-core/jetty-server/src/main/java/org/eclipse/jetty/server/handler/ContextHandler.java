@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -73,6 +74,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
 
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
+
+    /**
+     * The attribute name that is set as a {@link Request} attribute to indicate the request is a cross context
+     * dispatch.  The value can be set to a ServletDispatcher type if the target is known to be a servlet context.
+     */
+    public static final String CROSS_CONTEXT_ATTRIBUTE = "org.eclipse.jetty.CrossContextDispatch";
 
     /**
      * Get the current Context if any.
@@ -136,6 +143,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private File _tempDirectory;
     private boolean _tempDirectoryPersisted = false;
     private boolean _tempDirectoryCreated = false;
+    private boolean _crossContextDispatchSupported = false;
 
     public enum Availability
     {
@@ -388,8 +396,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     @ManagedAttribute(value = "Virtual hosts accepted by the context", readonly = true)
     public List<String> getVirtualHosts()
     {
-        if (_vhosts == null)
-            return null;
         return _vhosts.stream().map(VHost::getName).collect(Collectors.toList());
     }
 
@@ -469,6 +475,83 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if ("/".equals(_contextPath))
             return "ROOT";
         return _contextPath;
+    }
+
+    /**
+     * Get if this context support cross context dispatch, either as originator or target.
+     * @return True if this context supports cross context dispatch.
+     */
+    @ManagedAttribute(value = "Cross context dispatch is support by the context")
+    public boolean isCrossContextDispatchSupported()
+    {
+        return _crossContextDispatchSupported;
+    }
+
+    /**
+     * Set if this context support cross context dispatch, either as originator or target.
+     * @param crossContextDispatchSupported True if this context supports cross context dispatch.
+     */
+    public void setCrossContextDispatchSupported(boolean crossContextDispatchSupported)
+    {
+        _crossContextDispatchSupported = crossContextDispatchSupported;
+    }
+
+    /**
+     * If {@link #isCrossContextDispatchSupported() cross context dispatch is supported} by this context
+     * then find a context by  {@link #getContextPath() contextPath} that also supports cross context dispatch.
+     * If more than one context is found, then those with disjoint {@link #getVirtualHosts() virtual hosts} are
+     * excluded and the first remaining context returned.
+     *
+     * @param path The path that will be served by the context
+     * @return The found {@link ContextHandler} or null.
+     */
+    public ContextHandler getCrossContextHandler(String path)
+    {
+        if (!isCrossContextDispatchSupported())
+            return null;
+
+        List<ContextHandler> contexts = new ArrayList<>();
+        for (ContextHandler contextHandler : getServer().getDescendants(ContextHandler.class))
+        {
+            if (contextHandler == null || !contextHandler.isCrossContextDispatchSupported())
+                continue;
+            String contextPath = contextHandler.getContextPath();
+            if (path.equals(contextPath) ||
+                (path.startsWith(contextPath) && path.charAt(contextPath.length()) == '/') ||
+                "/".equals(contextPath))
+                contexts.add(contextHandler);
+        }
+
+        if (contexts.isEmpty())
+            return null;
+        if (contexts.size() == 1)
+            return contexts.get(0);
+
+        // Remove non-matching virtual hosts
+        List<String> vhosts = getVirtualHosts();
+        if (vhosts != null && !vhosts.isEmpty())
+        {
+            for (ListIterator<ContextHandler> i = contexts.listIterator(); i.hasNext(); )
+            {
+                ContextHandler ch = i.next();
+
+                List<String> targetVhosts = ch.getVirtualHosts();
+                if (targetVhosts == null || targetVhosts.isEmpty() || Collections.disjoint(vhosts, targetVhosts))
+                    i.remove();
+            }
+        }
+
+        if (contexts.isEmpty())
+            return null;
+
+        // return the first longest
+        ContextHandler contextHandler = null;
+        for (ContextHandler c : contexts)
+        {
+            if (contextHandler == null || c.getContextPath().length() > contextHandler.getContextPath().length())
+                contextHandler = c;
+        }
+        return contextHandler;
     }
 
     /**
@@ -688,14 +771,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     protected void doStop() throws Exception
     {
         _context.call(super::doStop, null);
+        cleanupAfterStop();
+        _tempDirectoryCreated = false;
+    }
 
+    protected void cleanupAfterStop() throws Exception
+    {
         File tempDirectory = getTempDirectory();
 
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
             IO.delete(tempDirectory);
-
-        _tempDirectoryCreated = false;
     }
 
     public boolean checkVirtualHost(Request request)
@@ -1044,7 +1130,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         b.append(",b=").append(getBaseResource());
         b.append(",a=").append(_availability);
 
-        if (vhosts != null && !vhosts.isEmpty())
+        if (!vhosts.isEmpty())
         {
             b.append(",vh=[");
             b.append(String.join(",", vhosts));
@@ -1221,7 +1307,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         @Override
         public void execute(Runnable runnable)
         {
-            getServer().getContext().execute(() -> run(runnable));
+            execute(runnable, null);
+        }
+
+        public void execute(Runnable runnable, Request request)
+        {
+            getServer().getContext().execute(() -> run(runnable, request));
         }
 
         protected DecoratedObjectFactory getDecoratedObjectFactory()
@@ -1253,6 +1344,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         public String getPathInContext(String canonicallyEncodedPath)
         {
             return _rootContext ? canonicallyEncodedPath : Context.getPathInContext(_contextPath, canonicallyEncodedPath);
+        }
+
+        @Override
+        public boolean isCrossContextDispatch(Request request)
+        {
+            return isCrossContextDispatchSupported() && request.getAttribute(CROSS_CONTEXT_ATTRIBUTE) != null;
+        }
+
+        @Override
+        public String getCrossContextDispatchType(Request request)
+        {
+            return isCrossContextDispatchSupported() ? (String)request.getAttribute(CROSS_CONTEXT_ATTRIBUTE) : null;
         }
     }
 

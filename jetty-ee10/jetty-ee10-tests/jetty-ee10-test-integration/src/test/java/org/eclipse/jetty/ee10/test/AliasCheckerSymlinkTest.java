@@ -253,8 +253,12 @@ public class AliasCheckerSymlinkTest
                 Arguments.of(null, "/symlinkParentDir/webroot/file", HttpStatus.NOT_FOUND_404, null),
                 Arguments.of(null, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.NOT_FOUND_404, null),
                 Arguments.of(null, "/symlinkSiblingDir/file", HttpStatus.NOT_FOUND_404, null),
-                Arguments.of(null, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null)
-        );
+                Arguments.of(null, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
+
+                // We should only be able to list contents of a symlinked directory if the alias checker is installed.
+                Arguments.of(null, "/symlinkDir", HttpStatus.NOT_FOUND_404, null),
+                Arguments.of(allowedResource, "/symlinkDir", HttpStatus.OK_200, null)
+            );
     }
 
     public static Stream<Arguments> combinedResourceTestCases()

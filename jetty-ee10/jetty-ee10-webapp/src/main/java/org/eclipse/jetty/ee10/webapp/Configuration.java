@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.ServiceLoader;
 
+import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.TopologicalSort;
 
 /**
@@ -43,8 +44,8 @@ import org.eclipse.jetty.util.TopologicalSort;
  * (eg {@link JndiConfiguration}, {@link JaasConfiguration}} etc.) can be added or removed without concern
  * for ordering.
  * </p>
- * <p>Also since Jetty-9.4, Configurations are responsible for providing {@link #getServerClasses()} and
- * {@link #getSystemClasses()} to configure the {@link WebAppClassLoader} for each context.
+ * <p>Also since Jetty-9.4, Configurations are responsible for providing {@link #getHiddenClasses()} and
+ * {@link #getProtectedClasses()} to configure the {@link WebAppClassLoader} for each context.
  * </p>
  */
 public interface Configuration
@@ -93,23 +94,41 @@ public interface Configuration
     }
 
     /**
-     * Get the system classes associated with this Configuration.
+     * Get the system (protected) classes associated with this Configuration.
      *
      * @return ClassMatcher of system classes.
      */
-    default ClassMatcher getSystemClasses()
+    default ClassMatcher getProtectedClasses()
     {
         return new ClassMatcher();
     }
 
     /**
-     * Get the system classes associated with this Configuration.
+     * Get the server (hidden) classes associated with this Configuration.
      *
      * @return ClassMatcher of server classes.
      */
-    default ClassMatcher getServerClasses()
+    default ClassMatcher getHiddenClasses()
     {
         return new ClassMatcher();
+    }
+
+    /**
+     * @deprecated use {@link #getProtectedClasses()} instead
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
+    default org.eclipse.jetty.ee10.webapp.ClassMatcher getSystemClasses()
+    {
+        return new org.eclipse.jetty.ee10.webapp.ClassMatcher(getProtectedClasses());
+    }
+
+    /**
+     * @deprecated use {@link #getHiddenClasses()} instead
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
+    default org.eclipse.jetty.ee10.webapp.ClassMatcher getServerClasses()
+    {
+        return new org.eclipse.jetty.ee10.webapp.ClassMatcher(getHiddenClasses());
     }
 
     /**

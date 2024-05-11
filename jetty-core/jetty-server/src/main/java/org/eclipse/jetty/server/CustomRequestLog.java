@@ -336,7 +336,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     {
         _formatString = formatString;
         _requestLogWriter = writer;
-        addBean(_requestLogWriter);
+        installBean(_requestLogWriter);
 
         try
         {
@@ -369,7 +369,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     {
         try
         {
-            if (_ignorePathMap != null && _ignorePathMap.getMatched(request.getHttpURI().toString()) != null)
+            if (_ignorePathMap != null && _ignorePathMap.getMatched(request.getHttpURI().getCanonicalPath()) != null)
                 return;
 
             if (_filter != null && !_filter.test(request, response))

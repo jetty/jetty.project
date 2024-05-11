@@ -95,6 +95,7 @@ public class End2EndClientWithClientCertAuthTest
         httpConfiguration.addCustomizer(new SecureRequestCustomizer());
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
+        // Use the deprecated APIs for backwards compatibility testing.
         connector = new QuicServerConnector(server, serverSslContextFactory, http1, http2);
         connector.getQuicConfiguration().setPemWorkDirectory(serverWorkPath);
         server.addConnector(connector);
@@ -111,6 +112,7 @@ public class End2EndClientWithClientCertAuthTest
 
         server.start();
 
+        // Use the deprecated APIs for backwards compatibility testing.
         QuicClientConnectorConfigurator configurator = new QuicClientConnectorConfigurator();
         configurator.getQuicConfiguration().setPemWorkDirectory(clientWorkPath);
         ClientConnector clientConnector = new ClientConnector(configurator);
@@ -154,7 +156,7 @@ public class End2EndClientWithClientCertAuthTest
         server.start();
 
         assertThrows(TimeoutException.class, () -> client.newRequest("https://localhost:" + connector.getLocalPort())
-            .timeout(5, TimeUnit.SECONDS)
+            .timeout(1, TimeUnit.SECONDS)
             .send());
     }
 }

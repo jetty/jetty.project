@@ -42,7 +42,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -299,8 +298,6 @@ public class CreationTest
      * session in it too. Check that both sessions exist after the response
      * completes.
      */
-    //TODO - no cross context support in jetty-12
-    @Disabled
     @Test
     public void testSessionCreateForward() throws Exception
     {
@@ -317,8 +314,10 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
+        contextHandler.setCrossContextDispatchSupported(true);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
+        ctxB.setCrossContextDispatchSupported(true);
         ctxB.addServlet(TestServletB.class, servletMapping);
         server1.start();
         int port1 = server1.getPort();
@@ -348,8 +347,6 @@ public class CreationTest
      * in it, then invalidate the session in the original context: that should invalidate the
      * session in both contexts and no session should exist after the response completes.
      */
-    //TODO no cross context dispatch in jetty-12
-    @Disabled
     @Test
     public void testSessionCreateForwardAndInvalidate() throws Exception
     {
@@ -367,8 +364,10 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
+        contextHandler.setCrossContextDispatchSupported(true);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
+        ctxB.setCrossContextDispatchSupported(true);
         ctxB.addServlet(TestServletB.class, servletMapping);
         server1.start();
         int port1 = server1.getPort();

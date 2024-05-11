@@ -20,12 +20,16 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HpackEncoderTest
@@ -315,5 +319,28 @@ public class HpackEncoderTest
         encoder.setMaxTableCapacity(tableCapacity);
         encoder.setTableCapacity(tableCapacity);
         return encoder;
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, HpackContext.DEFAULT_MAX_TABLE_CAPACITY})
+    public void testAlwaysSendInitialSize(int size) throws Exception
+    {
+        HpackEncoder encoder = newHpackEncoder(size);
+        ByteBuffer buffer = BufferUtil.allocate(4096);
+
+        // Index zero content length
+        int pos = BufferUtil.flipToFill(buffer);
+        encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY));
+        BufferUtil.flipToFlush(buffer, pos);
+
+        byte b = buffer.get(buffer.position());
+        byte f = (byte)((b & 0xF0) >> 4);
+        assertThat((int)f, Matchers.either(is(2)).or(is(3)));
+
+        NBitIntegerDecoder decoder = new NBitIntegerDecoder();
+        decoder.setPrefix(5);
+        int s = decoder.decodeInt(buffer);
+
+        assertThat(s, is(size));
     }
 }

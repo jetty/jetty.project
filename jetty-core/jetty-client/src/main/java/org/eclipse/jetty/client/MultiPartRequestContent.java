@@ -34,12 +34,12 @@ import org.eclipse.jetty.io.Content;
  *         .send();
  * </pre>
  * <p>The above example would be the equivalent of submitting this form:</p>
- * <pre>
- * &lt;form method="POST" enctype="multipart/form-data"  accept-charset="UTF-8"&gt;
- *     &lt;input type="text" name="field" value="foo" /&gt;
- *     &lt;input type="file" name="icon" /&gt;
- * &lt;/form&gt;
- * </pre>
+ * <pre>{@code
+ * <form method="POST" enctype="multipart/form-data"  accept-charset="UTF-8">
+ *     <input type="text" name="field" value="foo" />
+ *     <input type="file" name="icon" />
+ * </form>
+ * }</pre>
  */
 public class MultiPartRequestContent extends MultiPartFormData.ContentSource implements Request.Content
 {

@@ -25,6 +25,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.eclipse.jetty.maven.ConsoleReader;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -235,7 +236,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
                     warArtifacts = null;
                     configureScanner();
                 }
-                embedder.getWebApp().stop();
+                embedder.stopWebApp();
                 configureWebApp();
                 embedder.redeployWebApp();
                 scanner.start();

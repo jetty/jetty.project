@@ -214,7 +214,7 @@ public class HttpClientContinueTest extends AbstractTest
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        if (EnumSet.of(Transport.HTTP, Transport.HTTPS, Transport.UNIX_DOMAIN).contains(transport))
+        if (EnumSet.of(Transport.HTTP, Transport.HTTPS).contains(transport))
             assertTrue(response.getHeaders().contains(HttpHeader.TRANSFER_ENCODING, "chunked"));
 
         int index = 0;

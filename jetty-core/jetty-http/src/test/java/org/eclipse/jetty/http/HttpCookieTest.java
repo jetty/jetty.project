@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.time.Instant;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -90,7 +89,7 @@ public class HttpCookieTest
     public static List<Arguments> invalidAttributes()
     {
         return List.of(
-            Arguments.of("Expires", "blah", DateTimeParseException.class),
+            Arguments.of("Expires", "blah", IllegalArgumentException.class),
             Arguments.of("HttpOnly", "blah", IllegalArgumentException.class),
             Arguments.of("Max-Age", "blah", NumberFormatException.class),
             Arguments.of("SameSite", "blah", IllegalArgumentException.class),
@@ -105,4 +104,5 @@ public class HttpCookieTest
         assertThrows(failure, () -> HttpCookie.build("A", "1")
             .attribute(name, value));
     }
+
 }

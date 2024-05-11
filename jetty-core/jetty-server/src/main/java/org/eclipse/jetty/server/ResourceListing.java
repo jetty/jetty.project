@@ -72,7 +72,7 @@ public class ResourceListing
         // check for query
         if (query != null)
         {
-            Fields params = new Fields();
+            Fields params = new Fields(true);
             UrlEncoded.decodeUtf8To(query, 0, query.length(), params);
 
             String paramO = params.getValue("O");

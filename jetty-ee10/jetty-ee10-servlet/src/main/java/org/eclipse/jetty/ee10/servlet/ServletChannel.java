@@ -279,7 +279,9 @@ public class ServletChannel
     public ServletContextResponse getServletContextResponse()
     {
         ServletContextRequest request = _servletContextRequest;
-        return request == null ? null : request.getServletContextResponse();
+        if (_servletContextRequest == null)
+            throw new IllegalStateException("Request/Response does not exist (likely recycled)");
+        return request.getServletContextResponse();
     }
 
     /**
@@ -291,6 +293,8 @@ public class ServletChannel
      */
     public Response getResponse()
     {
+        if (_response == null)
+            throw new IllegalStateException("Response does not exist (likely recycled)");
         return _response;
     }
 
@@ -384,9 +388,10 @@ public class ServletChannel
      */
     void recycle(Throwable x)
     {
-        _state.recycle();
+        // _httpInput must be recycled before _state.
         _httpInput.recycle();
         _httpOutput.recycle();
+        _state.recycle();
         _servletContextRequest = null;
         _request = null;
         _response = null;
@@ -499,15 +504,24 @@ public class ServletChannel
                                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform error handling, aborting", cause);
-                            if (_state.isResponseCommitted())
+
+                            try
                             {
-                                // Perform the same behavior as when the callback is failed.
-                                _state.errorHandlingComplete(cause);
+                                if (_state.isResponseCommitted())
+                                {
+                                    // Perform the same behavior as when the callback is failed.
+                                    _state.errorHandlingComplete(cause);
+                                }
+                                else
+                                {
+                                    getServletContextResponse().resetContent();
+                                    sendErrorResponseAndComplete();
+                                }
                             }
-                            else
+                            catch (Throwable t)
                             {
-                                getServletContextResponse().resetContent();
-                                sendErrorResponseAndComplete();
+                                ExceptionUtil.addSuppressedIfNotAssociated(t, cause);
+                                abort(t);
                             }
                         }
                         finally
@@ -777,6 +791,11 @@ public class ServletChannel
     protected void execute(Runnable task)
     {
         _context.execute(task);
+    }
+
+    protected void execute(Runnable task, Request request)
+    {
+        _context.execute(task, request);
     }
 
     /**

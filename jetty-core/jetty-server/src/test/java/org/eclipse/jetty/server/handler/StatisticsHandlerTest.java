@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -47,6 +48,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -305,6 +307,87 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getHandleActiveMax());
         assertEquals(2, _statsHandler.getResponses2xx());
         assertEquals(0, _statsHandler.getFailures());
+    }
+
+    @Test
+    public void testIncompleteContentRecordsStatus200() throws Exception
+    {
+        _statsHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+                POST / HTTP/1.1
+                Host: localhost
+                Transfer-Encoding: chunked
+                Connection: close
+                
+                0a
+                0123456789
+                """;
+
+        String response = _connector.getResponse(request);
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Connection: close"));
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses2xx, is(1));
+    }
+
+    @Test
+    public void testInvalidContentLengthRecordsStatus500() throws Exception
+    {
+        _statsHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.getHeaders().put("content-length", 1L);
+                callback.succeeded();
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """;
+
+        String response = _connector.getResponse(request);
+        assertThat(response, is(nullValue()));
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses5xx, is(1));
+    }
+
+    @Test
+    public void testImplicitStatus200Recorded() throws Exception
+    {
+        _statsHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Do not explicitly set status to 200.
+                response.write(true, ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)), callback);
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """;
+        String response = _connector.getResponse(request);
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses2xx, is(1));
     }
 
     @Test

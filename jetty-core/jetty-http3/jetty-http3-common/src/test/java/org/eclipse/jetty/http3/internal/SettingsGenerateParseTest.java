@@ -46,7 +46,7 @@ public class SettingsGenerateParseTest
     {
         SettingsFrame input = new SettingsFrame(settings);
 
-        ByteBufferPool.NonPooling bufferPool = new ByteBufferPool.NonPooling();
+        ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         new ControlGenerator(bufferPool, true).generate(accumulator, 0, input, null);
 
