@@ -31,9 +31,11 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
@@ -458,12 +460,40 @@ public class HTTP2ServerTest extends AbstractServerTest
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
 
-            // Take the HeadersFrame header and set the length to zero.
-            generator.control(new ChangeIntAccumulator(accumulator, 0x0000_00FF, 0x0000_0000),
-                new HeadersFrame(1, metaData, null, true));
+            System.err.println("preface and settings " + accumulator);
 
-            // Insert a CONTINUATION frame header for the body of the HEADERS frame.
-            // TODO accumulator.add(RetainableByteBuffer.wrap(buffers.get(4).slice()));
+            long startOfHeaders = accumulator.size();
+            generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
+
+            System.err.println("with headers         " + accumulator);
+
+            // Take the headers body and limit the original
+            RetainableByteBuffer body = accumulator.take(startOfHeaders + 9);
+
+            System.err.println("header               " + accumulator);
+            System.err.println("body                 " + body);
+
+            // Create a CONTINUATION FRAME same size as HeaderFrame
+            byte[] continuationHeader = new byte[9];
+            continuationHeader[0] = accumulator.get(startOfHeaders);
+            continuationHeader[1] = accumulator.get(startOfHeaders + 1);
+            continuationHeader[2] = accumulator.get(startOfHeaders + 2);
+            continuationHeader[3] = (byte)FrameType.CONTINUATION.getType();
+            continuationHeader[4] = Flags.END_HEADERS;
+            continuationHeader[5] = 0x00;
+            continuationHeader[6] = 0x00;
+            continuationHeader[7] = 0x00;
+            continuationHeader[8] = accumulator.get(startOfHeaders + 8);
+            accumulator.add(BufferUtil.toBuffer(continuationHeader));
+            accumulator.add(body);
+
+            // Set the HeadersFrame length to zero.
+            accumulator.put(startOfHeaders, (byte)0);
+            accumulator.put(startOfHeaders + 1, (byte)0);
+            accumulator.put(startOfHeaders + 2, (byte)0);
+
+            System.err.println("Final               " + accumulator);
+
             return accumulator;
         });
     }

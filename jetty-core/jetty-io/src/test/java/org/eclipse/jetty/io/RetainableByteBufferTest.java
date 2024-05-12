@@ -42,6 +42,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -161,6 +162,16 @@ public class RetainableByteBufferTest
                 Mutable mutable = Objects.requireNonNull(mutable(index));
                 mutable.put(TEST_TEXT_BYTES);
                 mutable.skip(3);
+                return mutable;
+            });
+
+            list.add(() ->
+            {
+                Mutable mutable = Objects.requireNonNull(mutable(index));
+                mutable.append(BufferUtil.toBuffer(TEST_TEXT_BYTES, 0, 6));
+                mutable.add(BufferUtil.toBuffer(TEST_TEXT_BYTES, 6, 4));
+                mutable.put(TEST_TEXT_BYTES, 6 + 4, TEST_LENGTH + TEST_OFFSET - 6 - 4);
+                mutable.skip(TEST_OFFSET);
                 return mutable;
             });
 
@@ -537,15 +548,16 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testToDetailString(Supplier<RetainableByteBuffer> supplier)
+    public void testToString(Supplier<RetainableByteBuffer> supplier)
     {
         RetainableByteBuffer buffer = supplier.get();
-        String detailString = buffer.toString();
-        assertThat(detailString, containsString(buffer.getClass().getSimpleName()));
-        assertThat(detailString, anyOf(
-            containsString("<<<" + TEST_EXPECTED + ">>>"),
-            containsString("<<<T>>><<<esting >>><<<123>>>"),
-            containsString("<<<T>>><<<e>>><<<s>>><<<t>>>")
+        String string = buffer.toString();
+        assertThat(string, containsString(buffer.getClass().getSimpleName()));
+        assertThat(string, anyOf(
+            containsString("<" + TEST_EXPECTED + ">>>"),
+            allOf(containsString("<T>>>"), containsString("<e>>>"), containsString("<s>>>"), containsString("<t>>>")),
+            allOf(containsString("<Tes>>>"), containsString("<ting 123>>>")),
+            allOf(containsString("<Tes>>>"), containsString("<ting>>>"), containsString("< 123>>>"))
         ));
         buffer.release();
     }
@@ -1008,8 +1020,8 @@ public class RetainableByteBufferTest
         assertTrue(buffer.append(BufferUtil.toBuffer("xxxxxxxxxxxxxxxx")));
         assertTrue(buffer.append(BufferUtil.toBuffer("xxxxxxxxxxxxxxxx")));
         assertTrue(buffer.append(BufferUtil.toBuffer("abcdefghijklmnop")));
-        assertThat(buffer.toString(), containsString("<<<0123456789ABCDEF"));
-        assertThat(buffer.toString(), Matchers.anyOf(containsString(">>><<<"), containsString("...")));
+        assertThat(buffer.toString(), containsString("<0123456789ABCDEF"));
+        assertThat(buffer.toString(), Matchers.anyOf(containsString(">>><<"), containsString("...")));
         assertThat(buffer.toString(), containsString("abcdefghijklmnop>>>"));
 
         buffer.release();
@@ -1036,20 +1048,35 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("mutables")
-    public void testTakeRetainableByteBuffer(Mutable buffer)
+    public void testTake(Mutable buffer)
     {
-        if (buffer instanceof RetainableByteBuffer.DynamicCapacity dynamic)
-        {
-            dynamic.put("Hello".getBytes(StandardCharsets.UTF_8));
-            dynamic.put((byte)' ');
-            CountDownLatch released = new CountDownLatch(1);
-            dynamic.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
-            RetainableByteBuffer result = dynamic.takeRetainableByteBuffer();
-            assertThat(BufferUtil.toString(result.getByteBuffer()), is("Hello world!"));
-            assertThat(buffer.remaining(), is(0));
-            assertTrue(result.release());
-        }
+        buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
+        buffer.put((byte)' ');
+        CountDownLatch released = new CountDownLatch(1);
+        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        RetainableByteBuffer result = buffer.take();
+        assertThat(BufferUtil.toString(result.getByteBuffer()), is("Hello world!"));
+        assertThat(buffer.remaining(), is(0));
+        result.release();
+        assertTrue(buffer.release());
+    }
 
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testTakeFrom(Mutable buffer)
+    {
+        buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
+        buffer.put((byte)' ');
+        CountDownLatch released = new CountDownLatch(1);
+        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        RetainableByteBuffer space = buffer.take(5);
+        RetainableByteBuffer cruelWorld = space.take(1);
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("Hello"));
+        assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
+        assertThat(BufferUtil.toString(cruelWorld.getByteBuffer()), is("cruel world!"));
+        space.release();
+        cruelWorld.release();
         assertTrue(buffer.release());
     }
 

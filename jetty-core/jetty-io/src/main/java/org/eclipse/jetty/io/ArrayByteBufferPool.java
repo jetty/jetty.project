@@ -718,7 +718,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 .collect(Collectors.joining(System.lineSeparator()));
         }
 
-        public class Buffer extends RetainableByteBuffer.Wrapper
+        public class Buffer extends RetainableByteBuffer.FixedCapacity
         {
             private final int size;
             private final Instant acquireInstant;
@@ -729,7 +729,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
             private Buffer(RetainableByteBuffer wrapped, int size)
             {
-                super(wrapped);
+                super(wrapped.getByteBuffer(), wrapped);
                 this.size = size;
                 this.acquireInstant = Instant.now();
                 this.acquireStack = new Throwable();
@@ -828,7 +828,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 {
                     overReleaseStack.printStackTrace(pw);
                 }
-                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getWrapped(), w);
+                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getRetainable(), w);
             }
         }
     }

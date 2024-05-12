@@ -307,7 +307,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
         try (AutoLock ignored = _lock.lock())
         {
-            taken = _buffer.takeRetainableByteBuffer().getByteBuffer();
+            taken = _buffer.take().getByteBuffer();
         }
         getWriteFlusher().completeWrite();
         return taken;
@@ -332,7 +332,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 if (!_hasOutput.await(time, unit))
                     return null;
             }
-            taken = _buffer.takeRetainableByteBuffer().getByteBuffer();
+            taken = _buffer.take().getByteBuffer();
         }
         getWriteFlusher().completeWrite();
         return taken;
