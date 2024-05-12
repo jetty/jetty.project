@@ -85,7 +85,9 @@
             <loginServices>
               <loginService implementation="org.eclipse.jetty.security.HashLoginService">
                 <name>Test Realm</name>
-                <config>src/etc/realm.properties</config>
+                <config implementation="org.eclipse.jetty.maven.MavenResource">
+                  <resourceAsString>src/etc/realm.properties</resourceAsString>
+                </config>
               </loginService>
             </loginServices>
           </configuration>
