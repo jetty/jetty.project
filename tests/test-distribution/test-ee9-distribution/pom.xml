@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-distribution</artifactId>
-    <version>12.0.9-SNAPSHOT</version>
+    <version>12.0.10-SNAPSHOT</version>
   </parent>
   <artifactId>test-ee9-distribution</artifactId>
   <packaging>jar</packaging>

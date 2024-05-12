@@ -1,3 +1,35 @@
+jetty-12.0.10-SNAPSHOT
+
+jetty-12.0.9 - 03 May 2024
+ + 5944 Introduce alias --files for --download
+ + 5945 Introduce alias --skip-create-files to replace --skip-file-validation
+ + 5946 Introduce alias for --include-jetty-dir
+ + 9487 Jetty 12 - Upgrade Infinispan to version 15.x
+ + 11026 Start Stop issue with Jetty 12 - state file not deleted every time
+ + 11420 HTTP/3 Race with Dynamic Table referencing in QPackDecoder
+ + 11488 Inconsistent default port number in HttpURI and HostPort
+ + 11490 CustomRequestLog.ignorePath doesn't work as documented
+ + 11514 Start properties `jetty.webapp.addServerClasses` and
+   `jetty.webapp.addSystemClasses` are not applied during ee8/ee9 deployments
+ + 11573 Introduce new `disable-urlcache` module to globally disable JVM URL
+   caching of `jar` protocol references
+ + 11597 Document Request Customizers
+ + 11631 NPE in error handling leading to 100% CPU
+ + 11634 Socks5Proxy does not support IP addresses with IP segments above 127
+ + 11642 Restore jetty-ee8-runner
+ + 11648 Introduce new HttpDateTime class for parsing obsolete Date formats in
+   HTTP and Cookie
+ + 11656 Upgrade jetty-quiche-native to version 0.21.0
+ + 11659 HTTP Fields with OWS (Optional WhiteSpace) in value are not properly
+   parsed in Jetty 12
+ + 11679 Jetty 12.0.8 seems to leak connection when it encounters earlyEOF
+ + 11687 `HttpFields$Mutable$Wrapper.computeField()` incorrectly calls
+   `onAddField()` when null is returned by `computeFn`
+ + 11699 new IllegalStateException when attempting to access Request/Response
+   outside of Request Lifecycle
+ + 11705 jetty-decorate.xml and jetty-web-decorate.xml in jetty-deploy
+   reference ee specific classes
+
 jetty-12.0.8 - 29 March 2024
  + 5857 Deprecate AbstractConnectionPool "callback" methods
  + 7647 Document org.eclipse.jetty.client.Socks4Proxy "secure" parameter

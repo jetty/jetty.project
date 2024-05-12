@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.9-SNAPSHOT</version>
+  <version>12.0.10-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -165,11 +165,11 @@
     <build-helper.maven.plugin.version>3.5.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
-    <checkstyle.version>10.15.0</checkstyle.version>
-    <commons-codec.version>1.16.1</commons-codec.version>
+    <checkstyle.version>10.16.0</checkstyle.version>
+    <commons-codec.version>1.17.0</commons-codec.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
     <commons.compress.version>1.26.1</commons.compress.version>
-    <commons.io.version>2.16.0</commons.io.version>
+    <commons.io.version>2.16.1</commons.io.version>
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
     <compiler.target>17</compiler.target>
@@ -180,7 +180,7 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.26.1</google.errorprone.version>
+    <google.errorprone.version>2.27.1</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
     <grpc.version>1.63.0</grpc.version>
     <gson.version>2.10.1</gson.version>
@@ -201,6 +201,7 @@
     <jacoco.maven.plugin.version>0.8.12</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
     <jboss-logmanager.version>3.0.5.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>3.0.6.Final</jboss-logmanager.version>
     <jboss-threads.version>3.6.1.Final</jboss-threads.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
@@ -250,19 +251,19 @@
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
     <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.6.1</maven.dependency.plugin.version>
-    <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
+    <maven.deploy.plugin.version>3.1.2</maven.deploy.plugin.version>
     <maven.deps.version>3.9.6</maven.deps.version>
     <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.2.0</maven.exec.plugin.version>
-    <maven.gpg.plugin.version>3.2.2</maven.gpg.plugin.version>
-    <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
+    <maven.gpg.plugin.version>3.2.4</maven.gpg.plugin.version>
+    <maven.install.plugin.version>3.1.2</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.6.1</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.4.1</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.6.3</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.12.0</maven.plugin-tools.version>
     <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.2.0</maven.remote-resources-plugin.version>
-    <maven.resolver.version>1.9.18</maven.resolver.version>
+    <maven.resolver.version>1.9.20</maven.resolver.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.5.3</maven.shade.plugin.version>
     <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
@@ -303,7 +304,7 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <slf4j.version>2.0.12</slf4j.version>
     <spifly.version>1.3.7</spifly.version>
-    <spotbugs.maven.plugin.version>4.8.3.1</spotbugs.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.8.4.0</spotbugs.maven.plugin.version>
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <swissbox.version>1.8.3</swissbox.version>
@@ -311,7 +312,7 @@
     <tinybundles.version>3.0.0</tinybundles.version>
     <versions.maven.plugin.version>2.16.2</versions.maven.plugin.version>
     <wildfly.common.version>1.7.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.3.1.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.4.1.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.8</xmemcached.version>
   </properties>
 
