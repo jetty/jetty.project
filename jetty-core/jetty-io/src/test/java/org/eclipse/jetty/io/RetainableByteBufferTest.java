@@ -674,7 +674,10 @@ public class RetainableByteBufferTest
     {
         byte[] bytes = new byte[MAX_CAPACITY * 2];
         Arrays.fill(bytes, (byte)'X');
+        bytes[0] = '!';
+        bytes[1] = '>';
         ByteBuffer b = ByteBuffer.wrap(bytes);
+        b.get();
 
         if (buffer.append(b))
         {
@@ -684,10 +687,10 @@ public class RetainableByteBufferTest
         else
         {
             assertFalse(BufferUtil.isEmpty(b));
-            assertThat(b.remaining(), is(MAX_CAPACITY * 2 - buffer.capacity()));
+            assertThat(b.remaining(), is(MAX_CAPACITY * 2 - buffer.capacity() - 1));
         }
 
-        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is(">" + "X".repeat(buffer.capacity() - 1)));
         assertTrue(buffer.isFull());
         buffer.release();
     }
@@ -742,11 +745,15 @@ public class RetainableByteBufferTest
     public void testAppendBigByteBuffer(Mutable buffer)
     {
         ByteBuffer from = BufferUtil.toBuffer("X".repeat(MAX_CAPACITY * 2));
+        from.put(0, (byte)'!');
+        from.put(1, (byte)'>');
+        from.get();
+
         assertFalse(buffer.append(from));
         assertTrue(from.hasRemaining());
-        assertThat(from.remaining(), equalTo(MAX_CAPACITY));
+        assertThat(from.remaining(), equalTo(MAX_CAPACITY - 1));
         assertThat(buffer.remaining(), equalTo(MAX_CAPACITY));
-        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("X".repeat(buffer.capacity())));
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is(">" + "X".repeat(buffer.capacity() - 1)));
         assertTrue(buffer.isFull());
         buffer.release();
     }
