@@ -3,6 +3,7 @@ jetty-10.0.21-SNAPSHOT
 jetty-9.4.54.v20240208 - 08 February 2024
  + 1256 DoSFilter leaks USER_AUTH entries
  + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
+   (CVE-2024-22201)
  + 11389 Strip default ports on ws/wss scheme uris too
  
 jetty-10.0.20 - 29 January 2024
