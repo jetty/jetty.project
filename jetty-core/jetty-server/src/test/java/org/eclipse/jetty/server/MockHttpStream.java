@@ -198,7 +198,7 @@ public class MockHttpStream implements HttpStream
                     _responseTrailers = HttpFields.build(trailers);
             }
 
-            if (!_out.compareAndSet(null, _accumulator.takeRetainableByteBuffer().getByteBuffer()))
+            if (!_out.compareAndSet(null, _accumulator.take().getByteBuffer()))
             {
                 if (response != null || content != null)
                 {

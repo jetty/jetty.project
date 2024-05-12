@@ -49,7 +49,7 @@ public class ByteBufferOutputStream2 extends OutputStream
      */
     public RetainableByteBuffer takeByteBuffer()
     {
-        return _accumulator.takeRetainableByteBuffer();
+        return _accumulator.take();
     }
 
     /**

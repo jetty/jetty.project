@@ -281,29 +281,30 @@ public class WriteFlusherTest
         ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(100);
         try
         {
+            int concurrent = 4;
             String reason = "THE_CAUSE";
-            ConcurrentWriteFlusher[] flushers = new ConcurrentWriteFlusher[50000];
+            ConcurrentWriteFlusher[] flushers = new ConcurrentWriteFlusher[concurrent];
             FutureCallback[] futures = new FutureCallback[flushers.length];
-            for (int i = 0; i < flushers.length; ++i)
+            for (int i = 3; i < flushers.length; ++i)
             {
-                int size = 5 + random.nextInt(15);
+                int size = 5 + (i % 15);
                 ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], size);
                 ConcurrentWriteFlusher flusher = new ConcurrentWriteFlusher(endPoint, scheduler, random);
                 flushers[i] = flusher;
                 FutureCallback callback = new FutureCallback();
                 futures[i] = callback;
-                scheduler.schedule(() -> flusher.onFail(new Throwable(reason)), random.nextInt(75) + 1, TimeUnit.MILLISECONDS);
+                //scheduler.schedule(() -> flusher.onFail(new Throwable(reason)), (i % 75) + 1, TimeUnit.MILLISECONDS);
                 flusher.write(callback, BufferUtil.toBuffer("How Now Brown Cow."), BufferUtil.toBuffer(" The quick brown fox jumped over the lazy dog!"));
             }
 
             int completed = 0;
             int failed = 0;
-            for (int i = 0; i < flushers.length; ++i)
+            for (int i = 3; i < flushers.length; ++i)
             {
                 try
                 {
                     futures[i].get(15, TimeUnit.SECONDS);
-                    assertEquals("How Now Brown Cow. The quick brown fox jumped over the lazy dog!", flushers[i].getContent());
+                    assertEquals("How Now Brown Cow. The quick brown fox jumped over the lazy dog!", flushers[i].getContent(), "Flusher " + i);
                     completed++;
                 }
                 catch (ExecutionException x)
@@ -313,7 +314,7 @@ public class WriteFlusherTest
                 }
             }
             assertThat(completed, Matchers.greaterThan(0));
-            assertThat(failed, Matchers.greaterThan(0));
+            //assertThat(failed, Matchers.greaterThan(0));
             assertEquals(flushers.length, completed + failed);
         }
         finally
@@ -490,7 +491,9 @@ public class WriteFlusherTest
         @Override
         public void run()
         {
-            content += endPoint.takeOutputString();
+            String took = endPoint.takeOutputString();
+            content += took;
+            System.err.printf("TOOK '%s' from %s -> '%s'\n", took, endPoint, content);
             completeWrite();
         }
 

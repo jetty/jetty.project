@@ -61,7 +61,7 @@ public class ChunkAccumulator
 
     public byte[] take()
     {
-        RetainableByteBuffer buffer = _accumulator.takeRetainableByteBuffer();
+        RetainableByteBuffer buffer = _accumulator.take();
         if (buffer.isEmpty())
             return BufferUtil.EMPTY_BUFFER.array();
         return BufferUtil.toArray(buffer.getByteBuffer());
@@ -69,7 +69,7 @@ public class ChunkAccumulator
 
     public RetainableByteBuffer take(ByteBufferPool pool, boolean direct)
     {
-        RetainableByteBuffer buffer = _accumulator.takeRetainableByteBuffer();
+        RetainableByteBuffer buffer = _accumulator.take();
         RetainableByteBuffer to = Objects.requireNonNullElse(pool, ByteBufferPool.NON_POOLING).acquire(buffer.remaining(), direct);
         buffer.appendTo(to);
         return buffer;

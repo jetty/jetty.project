@@ -267,7 +267,7 @@ public class RawHTTP2ProxyTest
                     stream.demand();
                     return;
                 }
-                RetainableByteBuffer buffer = aggregator.takeRetainableByteBuffer();
+                RetainableByteBuffer buffer = aggregator.take();
                 assertNotNull(buffer);
                 assertEquals(buffer1.slice(), buffer.getByteBuffer());
                 buffer.release();
