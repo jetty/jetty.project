@@ -1269,6 +1269,7 @@ public class BufferUtil
     {
         // Take a readonly copy so we can adjust the limit
         buffer = buffer.asReadOnlyBuffer();
+        int limit = -1;
         try
         {
             for (int i = 0; i < buffer.position(); i++)
@@ -1291,7 +1292,7 @@ public class BufferUtil
                 }
             }
             buf.append(">>>");
-            int limit = buffer.limit();
+            limit = buffer.limit();
             buffer.limit(buffer.capacity());
             for (int i = limit; i < buffer.capacity(); i++)
             {
@@ -1308,6 +1309,11 @@ public class BufferUtil
         {
             LOG.trace("IGNORED", x);
             buf.append("!!concurrent mod!!");
+        }
+        finally
+        {
+            if (limit >= 0)
+                buffer.limit(limit);
         }
     }
 

@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -815,7 +816,24 @@ public interface RetainableByteBuffer extends Retainable
                 buf.append(maxSize());
             addDetailString(buf);
             buf.append(",");
-            buf.append(getRetainable());
+            Retainable retainable = getRetainable();
+            if (retainable instanceof RetainableByteBuffer)
+            {
+                // avoid reentrant toString
+                buf.append(retainable.getClass().getSimpleName()).append("@");
+                try
+                {
+                    TypeUtil.toHex(retainable.hashCode(), buf);
+                }
+                catch (IOException e)
+                {
+                    buf.append("?");
+                }
+            }
+            else
+            {
+                buf.append(retainable);
+            }
             buf.append("]");
             addValueString(buf);
             return buf.toString();
@@ -837,13 +855,26 @@ public interface RetainableByteBuffer extends Retainable
             if (value instanceof FixedCapacity fixed)
             {
                 ByteBuffer byteBuffer = fixed._byteBuffer;
-                buf.append("<<")
-                    .append(fixed._flipPosition >= 0 ? fixed._flipPosition : byteBuffer.position())
-                    .append('-')
-                    .append(fixed._flipPosition >= 0 ? byteBuffer.position() : byteBuffer.limit())
-                    .append('/')
-                    .append(byteBuffer.capacity())
-                    .append('<');
+                if (fixed._flipPosition >= 0)
+                {
+                    buf.append("<<~")
+                        .append(fixed._flipPosition)
+                        .append('-')
+                        .append(byteBuffer.position())
+                        .append('/')
+                        .append(byteBuffer.capacity())
+                        .append('<');
+                }
+                else
+                {
+                    buf.append("<<")
+                        .append(byteBuffer.position())
+                        .append('-')
+                        .append(byteBuffer.limit())
+                        .append('/')
+                        .append(byteBuffer.capacity())
+                        .append('<');
+                }
             }
             else
             {
@@ -925,6 +956,25 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public boolean isDirect()
+        {
+            return _byteBuffer.isDirect();
+        }
+
+        @Override
+        public int capacity()
+        {
+            return _byteBuffer.capacity();
+        }
+
+        @Override
+        public byte get(long index) throws IndexOutOfBoundsException
+        {
+            int offset = _flipPosition < 0 ? _byteBuffer.position() : _flipPosition;
+            return _byteBuffer.get(offset + Math.toIntExact(index));
+        }
+
+        @Override
         public ByteBuffer getByteBuffer()
         {
             // Ensure buffer is in flush mode if accessed externally
@@ -946,7 +996,7 @@ public interface RetainableByteBuffer extends Retainable
             // No space for the whole buffer, so put as much as we can
             int space = _byteBuffer.remaining();
             int position = _byteBuffer.position();
-            _byteBuffer.put(position, bytes, 0, space);
+            _byteBuffer.put(position, bytes, bytes.position(), space);
             _byteBuffer.position(position + space);
             bytes.position(bytes.position() + space);
             return false;
@@ -969,7 +1019,7 @@ public interface RetainableByteBuffer extends Retainable
                 _flipPosition = BufferUtil.flipToFill(_byteBuffer);
 
             int length = bytes.remaining();
-            int space = _byteBuffer.limit() - _byteBuffer.position();
+            int space = _byteBuffer.remaining();
             if (space == 0)
                 return length == 0;
 
