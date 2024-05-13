@@ -64,6 +64,7 @@
       <artifactId>jetty-servlet5-demo-simple-webapp</artifactId>
       <type>war</type>
       <scope>test</scope>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
