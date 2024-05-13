@@ -72,10 +72,10 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -547,7 +547,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 });
 
             ByteBufferPool bufferPool = new ArrayByteBufferPool();
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             Generator generator = new Generator(bufferPool);
 
             try (Socket socket = server.accept())
@@ -598,7 +598,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         try
                         {
                             // Write the frames.
-                            accumulator.writeTo(Content.Sink.from(output), false);
+                            for (ByteBuffer buffer : accumulator.getByteBuffers())
+                            {
+                                output.write(BufferUtil.toArray(buffer));
+                            }
                             accumulator.release();
                         }
                         catch (Throwable x)

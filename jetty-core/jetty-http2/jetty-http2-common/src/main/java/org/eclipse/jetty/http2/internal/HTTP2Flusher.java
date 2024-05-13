@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2.internal;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,8 +30,8 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 public class HTTP2Flusher extends IteratingCallback implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Flusher.class);
+    private static final ByteBuffer[] EMPTY_BYTE_BUFFERS = new ByteBuffer[0];
 
     private final AutoLock lock = new AutoLock();
     private final Queue<WindowEntry> windows = new ArrayDeque<>();
@@ -48,8 +50,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private final Queue<HTTP2Session.Entry> pendingEntries = new ArrayDeque<>();
     private final Collection<HTTP2Session.Entry> processedEntries = new ArrayList<>();
     private final HTTP2Session session;
-    private final RetainableByteBuffer.Mutable accumulator;
-    private boolean released;
+    private final ByteBufferPool.Accumulator accumulator;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
     private Throwable terminated;
     private HTTP2Session.Entry stalledEntry;
@@ -57,7 +58,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public HTTP2Flusher(HTTP2Session session)
     {
         this.session = session;
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(session.getGenerator().getByteBufferPool());
+        this.accumulator = new ByteBufferPool.Accumulator();
     }
 
     @Override
@@ -264,7 +265,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 break;
 
             int writeThreshold = session.getWriteThreshold();
-            if (accumulator.size() >= writeThreshold)
+            if (accumulator.getTotalLength() >= writeThreshold)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Write threshold {} exceeded", writeThreshold);
@@ -272,21 +273,23 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             }
         }
 
-        if (accumulator.isEmpty())
+        List<ByteBuffer> byteBuffers = accumulator.getByteBuffers();
+        if (byteBuffers.isEmpty())
         {
             finish();
             return Action.IDLE;
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Writing {} bytes - entries processed/pending {}/{}: {}/{}",
-                accumulator.size(),
+            LOG.debug("Writing {} buffers ({} bytes) - entries processed/pending {}/{}: {}/{}",
+                byteBuffers.size(),
+                accumulator.getTotalLength(),
                 processedEntries.size(),
                 pendingEntries.size(),
                 processedEntries,
                 pendingEntries);
 
-        accumulator.writeTo(session.getEndPoint(), false, this);
+        session.getEndPoint().write(this, byteBuffers.toArray(EMPTY_BYTE_BUFFERS));
         return Action.SCHEDULED;
     }
 
@@ -303,7 +306,8 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public void succeeded()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Written - entries processed/pending {}/{}: {}/{}",
+            LOG.debug("Written {} buffers - entries processed/pending {}/{}: {}/{}",
+                accumulator.getByteBuffers().size(),
                 processedEntries.size(),
                 pendingEntries.size(),
                 processedEntries,
@@ -314,7 +318,8 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     private void finish()
     {
-        release();
+        accumulator.release();
+
         processedEntries.forEach(HTTP2Session.Entry::succeeded);
         processedEntries.clear();
         invocationType = InvocationType.NON_BLOCKING;
@@ -334,15 +339,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         }
     }
 
-    private void release()
-    {
-        if (!released)
-        {
-            released = true;
-            accumulator.release();
-        }
-    }
-
     @Override
     protected void onCompleteSuccess()
     {
@@ -352,7 +348,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     @Override
     protected void onCompleteFailure(Throwable x)
     {
-        release();
+        accumulator.release();
 
         Throwable closed;
         Set<HTTP2Session.Entry> allEntries;

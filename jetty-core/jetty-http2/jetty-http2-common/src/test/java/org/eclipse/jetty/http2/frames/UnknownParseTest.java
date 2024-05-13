@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.frames;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -23,8 +22,6 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -97,35 +94,5 @@ public class UnknownParseTest
         }
 
         assertFalse(failure.get());
-    }
-
-    static void parse(Parser parser, RetainableByteBuffer buffer)
-    {
-        Callback.Completable callback = new Callback.Completable();
-        buffer.writeTo((l, b, c) ->
-        {
-            try
-            {
-                parser.parse(b);
-                c.succeeded();
-            }
-            catch (Throwable t)
-            {
-                c.failed(t);
-            }
-        }, false, callback);
-
-        try
-        {
-            callback.get(10, TimeUnit.SECONDS);
-        }
-        catch (Error | RuntimeException e)
-        {
-            throw e;
-        }
-        catch (Throwable t)
-        {
-            throw new RuntimeException(t);
-        }
     }
 }

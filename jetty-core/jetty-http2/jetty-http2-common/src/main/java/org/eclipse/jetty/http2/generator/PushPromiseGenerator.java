@@ -22,6 +22,7 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -36,13 +37,13 @@ public class PushPromiseGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Frame frame) throws HpackException
+    public int generate(ByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException
     {
         PushPromiseFrame pushPromiseFrame = (PushPromiseFrame)frame;
         return generatePushPromise(accumulator, pushPromiseFrame.getStreamId(), pushPromiseFrame.getPromisedStreamId(), pushPromiseFrame.getMetaData());
     }
 
-    public int generatePushPromise(RetainableByteBuffer.Mutable accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
+    public int generatePushPromise(ByteBufferPool.Accumulator accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -62,9 +63,13 @@ public class PushPromiseGenerator extends FrameGenerator
         int length = hpackLength + extraSpace;
         int flags = Flags.END_HEADERS;
 
-        generateHeader(accumulator, FrameType.PUSH_PROMISE, length, flags, streamId);
-        accumulator.putInt(promisedStreamId);
-        accumulator.append(hpack); // TODO add?
+        RetainableByteBuffer header = generateHeader(FrameType.PUSH_PROMISE, length, flags, streamId);
+        ByteBuffer headerByteBuffer = header.getByteBuffer();
+        headerByteBuffer.putInt(promisedStreamId);
+        BufferUtil.flipToFlush(headerByteBuffer, 0);
+
+        accumulator.append(header);
+        accumulator.append(hpack);
 
         return Frame.HEADER_LENGTH + length;
     }

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +22,6 @@ import org.eclipse.jetty.http2.generator.PriorityGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,12 +54,17 @@ public class PriorityGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
 
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(buffer);
+                }
+            }
         }
 
         assertEquals(1, frames.size());
@@ -94,12 +99,17 @@ public class PriorityGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
 
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+                }
+            }
 
             assertEquals(1, frames.size());
             PriorityFrame frame = frames.get(0);
