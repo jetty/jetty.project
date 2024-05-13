@@ -10,7 +10,7 @@
   <packaging>war</packaging>
   <name>Servlet 5 :: Demo :: Jetty WebApp</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet5.jetty.webapp</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>
@@ -32,12 +32,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-servlets</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
       <version>${ee9.jetty.servlet.api.version}</version>
@@ -49,82 +43,8 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-webapp</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.jetty.ee9</groupId>
-          <artifactId>jetty-ee9-maven-plugin</artifactId>
-          <version>${project.version}</version>
-          <configuration>
-            <stopPort>8087</stopPort>
-            <stopKey>foo</stopKey>
-            <scan>1</scan>
-            <systemProperties>
-              <fooprop>222</fooprop>
-            </systemProperties>
-            <webApp>
-              <contextPath>/test</contextPath>
-              <tempDirectory>${project.build.directory}/work</tempDirectory>
-            </webApp>
-            <loginServices>
-              <loginService implementation="org.eclipse.jetty.security.HashLoginService">
-                <name>Test Realm</name>
-                <config>src/test/resources/test-realm.properties</config>
-              </loginService>
-            </loginServices>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.eclipse.jetty</groupId>
-              <artifactId>jetty-client</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.eclipse.jetty.ee9</groupId>
-              <artifactId>jetty-ee9-servlets</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.felix</groupId>

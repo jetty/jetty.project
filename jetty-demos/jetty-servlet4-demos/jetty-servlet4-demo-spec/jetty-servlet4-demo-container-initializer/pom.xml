@@ -10,7 +10,7 @@
   <packaging>jar</packaging>
   <name>Servlet 4 :: Demo :: Servlet Spec :: ServletContainerInitializer Jar</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.sci</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet4.sci</bundle-symbolic-name>
     <ee9.module>jetty-servlet5-demo-spec/jetty-servlet5-demo-container-initializer</ee9.module>
   </properties>
   <dependencies>

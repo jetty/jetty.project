@@ -6,35 +6,12 @@
    metadata-complete="false"
    version="5.0"> 
 
-  <display-name>EE9 Demo Jetty WebApp</display-name>
-  
-  <context-param>
-    <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
-    <param-value>PushFilter,QoSFilter,TransparentProxy.ThreadPool,TransparentProxy.HttpClient</param-value>
-  </context-param>
+  <display-name>Servlet 5 Demo Jetty WebApp</display-name>
   
   <!-- Declare TestListener, which declares TestFilter -->
   <listener>
     <listener-class>org.example.TestListener</listener-class>
   </listener>
-
-  <!-- filter>
-    <filter-name>QoSFilter</filter-name>
-    <filter-class>org.eclipse.jetty.ee9.servlets.QoSFilter</filter-class>
-    <async-supported>true</async-supported>
-    <init-param>
-      <param-name>maxRequests</param-name>
-      <param-value>10000</param-value>
-    </init-param>
-    <init-param>
-      <param-name>managedAttr</param-name>
-      <param-value>true</param-value>
-    </init-param>
-  </filter>  
-  <filter-mapping>
-    <filter-name>QoSFilter</filter-name>
-    <url-pattern>/*</url-pattern>
-  </filter-mapping -->
 
   <servlet>
     <servlet-name>Login</servlet-name>

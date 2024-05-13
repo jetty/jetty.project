@@ -10,7 +10,7 @@
   <packaging>war</packaging>
   <name>Servlet 4 :: Demo :: JNDI WebApp</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jndi</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet4.jndi</bundle-symbolic-name>
     <ee9.module>jetty-servlet5-demo-jndi-webapp</ee9.module>
   </properties>
   <dependencies>
@@ -36,30 +36,6 @@
     </dependency>
   </dependencies>
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-maven-plugin</artifactId>
-          <version>${project.version}</version>
-          <configuration>
-            <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
-            <webApp>
-              <war>src/main/webapp</war>
-              <descriptor>${project.build.directory}/webapp/WEB-INF/web.xml</descriptor>
-              <contextPath>/test-jndi</contextPath>
-            </webApp>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.eclipse.jetty.demos</groupId>
-              <artifactId>jetty-servlet4-demo-mock-resources</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

@@ -12,7 +12,7 @@
   <name>Servlet 4 :: Demo :: JSP WebApp</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jsp</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet4.jsp</bundle-symbolic-name>
     <ee9.module>jetty-servlet5-demo-jsp-webapp</ee9.module>
   </properties>
 
@@ -86,6 +86,7 @@
     </plugins>
   </build>
 
+  <!-- TODO
   <profiles>
     <profile>
       <id>precompile-jsp</id>
@@ -108,14 +109,12 @@
                 <goals>
                   <goal>jspc</goal>
                 </goals>
-                <!-- example configuration
                  <configuration>
                    <includes>**/*.foo</includes>
                    <excludes>**/*.fff</excludes>
                    <sourceVersion>1.8</sourceVersion>
                    <targetVersion>1.8</targetVersion>
                  </configuration>
-                 -->
               </execution>
             </executions>
           </plugin>
@@ -123,5 +122,5 @@
       </build>
     </profile>
   </profiles>
-
+  -->
 </project>

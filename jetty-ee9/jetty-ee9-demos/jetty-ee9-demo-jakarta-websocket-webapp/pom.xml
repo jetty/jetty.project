@@ -14,33 +14,12 @@
   </properties>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.jetty.ee9</groupId>
-          <artifactId>jetty-ee9-maven-plugin</artifactId>
-          <version>${project.version}</version>
-          <configuration>
-            <scan>1</scan>
-            <webApp>
-              <contextPath>/ee9-demo-jakarta-websocket</contextPath>
-              <tempDirectory>${project.build.directory}/work</tempDirectory>
-            </webApp>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.felix</groupId>

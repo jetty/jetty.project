@@ -10,7 +10,7 @@
   <packaging>war</packaging>
   <name>Servlet 5 :: Demo :: JAAS WebApp</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet5.jaas</bundle-symbolic-name>
   </properties>
   <build>
     <!-- pluginManagement>

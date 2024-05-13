@@ -13,7 +13,7 @@
   <name>Servlet 5 :: Demo :: Servlet Spec :: Fragment Jar</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.spec.fragment</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet5.spec.fragment</bundle-symbolic-name>
   </properties>
 
   <dependencies>

@@ -12,7 +12,7 @@
   <name>Servlet 4 :: Demo :: Simple WebApp</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.simple</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet4.simple</bundle-symbolic-name>
     <ee9.module>jetty-servlet5-demo-simple-webapp</ee9.module>
   </properties>
 

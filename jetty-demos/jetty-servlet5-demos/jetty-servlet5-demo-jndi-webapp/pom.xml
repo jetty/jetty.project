@@ -10,7 +10,7 @@
   <packaging>war</packaging>
   <name>Servlet 5 :: Demo :: JNDI WebApp</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jndi</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet5.jndi</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>
@@ -39,35 +39,6 @@
     </dependency>
   </dependencies>
   <build>
-    <pluginManagement>
-      <plugins>
-        <!-- plugin>
-          <groupId>org.eclipse.jetty.ee9</groupId>
-          <artifactId>jetty-ee9-maven-plugin</artifactId>
-          <version>${project.version}</version>
-          <configuration>
-            <contextXml>src/main/templates/plugin-context.xml</contextXml>
-            <webApp>
-              <war>src/main/webapp</war>
-              <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
-              <contextPath>/test-jndi</contextPath>
-            </webApp>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.eclipse.jetty.ee9</groupId>
-              <artifactId>jetty-ee9-jndi</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>org.eclipse.jetty.demos</groupId>
-              <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-          </dependencies>
-        </plugin -->
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

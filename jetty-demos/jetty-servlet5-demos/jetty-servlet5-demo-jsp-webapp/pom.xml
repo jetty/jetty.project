@@ -12,7 +12,7 @@
   <name>Servlet 5 :: Demo :: JSP WebApp</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jsp</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet5.jsp</bundle-symbolic-name>
   </properties>
 
   <dependencies>

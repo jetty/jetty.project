@@ -13,7 +13,6 @@
 
   <modules>
     <module>jetty-servlet5-demo-async-rest-jar</module>
-    <!-- module>jetty-servlet5-demo-async-rest-server</module -->
     <module>jetty-servlet5-demo-async-rest-webapp</module>
   </modules>
 

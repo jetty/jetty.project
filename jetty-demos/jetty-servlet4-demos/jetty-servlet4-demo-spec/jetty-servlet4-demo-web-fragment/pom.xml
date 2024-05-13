@@ -12,7 +12,7 @@
   <name>Servlet 4 :: Demo :: Servlet Spec :: Fragment Jar</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.spec.fragment</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet4.spec.fragment</bundle-symbolic-name>
     <ee9.module>jetty-servlet5-demo-spec/jetty-servlet5-demo-web-fragment</ee9.module>
   </properties>
 

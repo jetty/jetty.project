@@ -12,7 +12,7 @@
   <name>Servlet 5 :: Demo :: Async Rest :: Jar</name>
 
   <properties>
-    <bundle-symbolic-name>${project.parent.groupId}.async.rest</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.parent.groupId}.servlet5.async.rest</bundle-symbolic-name>
   </properties>
 
   <dependencies>

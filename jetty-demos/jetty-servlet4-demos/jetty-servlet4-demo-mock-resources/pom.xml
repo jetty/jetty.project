@@ -10,7 +10,7 @@
   <packaging>jar</packaging>
   <name>Servlet 4 :: Demo :: Mock Resources</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.mocks</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet4.mocks</bundle-symbolic-name>
     <ee9.module>jetty-servlet5-demo-mock-resources</ee9.module>
   </properties>
   <dependencies>

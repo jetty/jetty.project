@@ -10,7 +10,7 @@
   <packaging>jar</packaging>
   <name>Servlet 5 :: Demo :: Mock Resources</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.mocks</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet5.mocks</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>

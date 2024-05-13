@@ -12,7 +12,7 @@
   <name>Servlet 4 :: Demo :: Async Rest :: Jar</name>
 
   <properties>
-    <bundle-symbolic-name>${project.parent.groupId}.async.rest</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.parent.groupId}.servlet4.async.rest</bundle-symbolic-name>
     <ee9.module>jetty-servlet5-demo-async-rest/jetty-servlet5-demo-async-rest-jar</ee9.module>
   </properties>
 

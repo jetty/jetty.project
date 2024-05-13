@@ -12,7 +12,7 @@
   <name>Servlet 5 :: Demo :: Simple WebApp</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.simple</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet5.simple</bundle-symbolic-name>
   </properties>
 
   <dependencies>
