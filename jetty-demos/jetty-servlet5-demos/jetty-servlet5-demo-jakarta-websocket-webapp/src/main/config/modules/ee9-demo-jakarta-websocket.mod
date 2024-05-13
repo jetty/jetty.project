@@ -19,4 +19,4 @@ ee9-websocket-jakarta
 [files]
 basehome:modules/demo.d/ee9-demo-jakarta-websocket.xml|webapps/ee9-demo-jakarta-websocket.xml
 basehome:modules/demo.d/ee9-demo-jakarta-websocket.properties|webapps/ee9-demo-jakarta-websocket.properties
-maven://org.eclipse.jetty.ee9.demos/jetty-ee9-demo-jakarta-websocket-webapp/${jetty.version}/war|webapps/ee9-demo-jakarta-websocket.war
+maven://org.eclipse.jetty.demos/jetty-servlet5-demo-jakarta-websocket-webapp/${jetty.version}/war|webapps/ee9-demo-jakarta-websocket.war
