@@ -61,7 +61,7 @@
     <jakarta.xml.ws.api.version>${ee10.jakarta.xml.ws.api.version}</jakarta.xml.ws.api.version>
     <jersey.version>${ee10.jersey.version}</jersey.version>
     <jsp.impl.version>${ee10.jsp.impl.version}</jsp.impl.version>
-    <mail.impl.version>${ee10.main.impl.version}</mail.impl.version>
+    <mail.impl.version>${ee10.mail.impl.version}</mail.impl.version>
     <sonar.skip>true</sonar.skip>
     <weld.version>${ee10.weld.version}</weld.version>
   </properties>

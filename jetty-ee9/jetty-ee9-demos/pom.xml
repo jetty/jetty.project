@@ -13,9 +13,8 @@
   <name>EE9 :: Demos</name>
 
   <modules>
-    <module>jetty-ee9-demo-embedded</module>
+    <!-- module>jetty-ee9-demo-embedded</module -->
     <module>jetty-ee9-demo-jakarta-websocket-webapp</module>
-    <module>jetty-ee9-demo-jetty-webapp</module>
     <module>jetty-ee9-demo-jetty-websocket-webapp</module>
     <module>jetty-ee9-demo-proxy-webapp</module>
     <module>jetty-ee9-demo-template</module>

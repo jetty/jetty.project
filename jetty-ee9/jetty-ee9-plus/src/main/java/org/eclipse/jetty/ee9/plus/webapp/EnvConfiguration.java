@@ -50,7 +50,7 @@ public class EnvConfiguration extends AbstractConfiguration
 
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
     private static final String JETTY_ENV_XML = "jetty-env.xml";
-    private static final String JETTY_EE9_ENV_XML = "jetty-ee9-env.xml";
+    private static final String JETTY_EE_ENV_XML = "jetty-ee9-env.xml";
     private Resource jettyEnvXmlResource;
     private NamingDump _dumper;
     private ResourceFactory.Closeable _resourceFactory;
@@ -263,7 +263,7 @@ public class EnvConfiguration extends AbstractConfiguration
                 return null;
 
             //try to find jetty-ee9-env.xml
-            Resource xmlResource = webInf.resolve(JETTY_EE9_ENV_XML);
+            Resource xmlResource = webInf.resolve(JETTY_EE_ENV_XML);
             if (!Resources.missing(xmlResource))
                 return xmlResource;
 
