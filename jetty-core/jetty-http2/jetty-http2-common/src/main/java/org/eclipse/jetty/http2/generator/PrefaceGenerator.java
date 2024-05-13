@@ -17,20 +17,21 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
 public class PrefaceGenerator extends FrameGenerator
 {
+    private static final RetainableByteBuffer PREFACE = RetainableByteBuffer.wrap(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES));
+
     public PrefaceGenerator()
     {
         super(null);
     }
 
     @Override
-    public int generate(ByteBufferPool.Accumulator accumulator, Frame frame)
+    public int generate(RetainableByteBuffer.Mutable accumulator, Frame frame)
     {
-        accumulator.append(RetainableByteBuffer.wrap(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES)));
-        return PrefaceFrame.PREFACE_BYTES.length;
+        accumulator.append(PREFACE.slice());
+        return PREFACE.remaining();
     }
 }

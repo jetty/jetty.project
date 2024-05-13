@@ -438,7 +438,7 @@ public interface Stream
     /**
      * <p>A {@link Retainable} wrapper of a {@link DataFrame}.</p>
      */
-    public abstract static class Data implements Retainable
+    abstract class Data implements Retainable
     {
         public static Data eof(int streamId)
         {
