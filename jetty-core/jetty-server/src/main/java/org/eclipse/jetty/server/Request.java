@@ -486,13 +486,9 @@ public interface Request extends Attributes, Content.Source
             return authority.getPort();
 
         // Is there a scheme with a default port?
-        String rawScheme = uri.getScheme();
-        if (StringUtil.isNotBlank(rawScheme))
-        {
-            HttpScheme scheme = HttpScheme.CACHE.get(rawScheme);
-            if (scheme != null && scheme.getDefaultPort() > 0)
-                return scheme.getDefaultPort();
-        }
+        HttpScheme scheme = HttpScheme.CACHE.get(request.getHttpURI().getScheme());
+        if (scheme != null && scheme.getDefaultPort() > 0)
+            return scheme.getDefaultPort();
 
         // Is there a local port?
         SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
