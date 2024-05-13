@@ -65,8 +65,8 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee8.demos</groupId>
-      <artifactId>jetty-ee8-demo-mock-resources</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-mock-resources</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -310,21 +310,21 @@
     <!--      <scope>test</scope>-->
     <!--    </dependency>-->
     <dependency>
-      <groupId>org.eclipse.jetty.ee8.demos</groupId>
-      <artifactId>jetty-ee8-demo-container-initializer</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-container-initializer</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee8.demos</groupId>
-      <artifactId>jetty-ee8-demo-jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee8.demos</groupId>
-      <artifactId>jetty-ee8-demo-jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle</classifier>
       <scope>test</scope>
@@ -332,15 +332,15 @@
 
     <!-- Eclipse OSGi Deps -->
     <dependency>
-      <groupId>org.eclipse.jetty.ee8.demos</groupId>
-      <artifactId>jetty-ee8-demo-jsp-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee8.demos</groupId>
-      <artifactId>jetty-ee8-demo-spec-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>

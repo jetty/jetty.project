@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.demos</groupId>
+    <artifactId>jetty-servlet4-demos</artifactId>
+    <version>12.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-servlet4-demo-jsp-webapp</artifactId>
+  <packaging>war</packaging>
+  <name>Servlet 4 :: Demo :: JSP WebApp</name>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.jsp</bundle-symbolic-name>
+    <ee9.module>jetty-servlet5-demo-jsp-webapp</ee9.module>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.servlet.jsp</groupId>
+      <artifactId>jakarta.servlet.jsp-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet.jsp.jstl</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <supportedProjectTypes>
+            <supportedProjectType>war</supportedProjectType>
+          </supportedProjectTypes>
+          <instructions>
+            <!--Import-Package>javax.servlet.jsp.*;version="[2,3)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package-->
+            <Import-Package>javax.servlet.jsp;version="[2.2.0,4.1)",javax.servlet.jsp.tagext;version="[2.2.0,4.1)",java.io,java.lang,java.text,java.util,javax.servlet;version="[4.0.0,5)",javax.servlet.http;version="[4.0.0,5)"</Import-Package>
+            <Export-Package>!org.example.*</Export-Package>
+            <Web-ContextPath>/ee8-demo-jsp</Web-ContextPath>
+            <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
+            <Jetty-Environment>ee8</Jetty-Environment>
+          </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>web-bundle-assembly</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/web-bundle.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- also make this webapp an osgi bundle -->
+      <plugin>
+        <artifactId>maven-war-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>precompile-jsp</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-war-plugin</artifactId>
+            <configuration>
+              <webXml>${basedir}/target/web.xml</webXml>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.eclipse.jetty.ee8</groupId>
+            <artifactId>jetty-ee8-jspc-maven-plugin</artifactId>
+            <version>${project.version}</version>
+            <executions>
+              <execution>
+                <id>jspc</id>
+                <goals>
+                  <goal>jspc</goal>
+                </goals>
+                <!-- example configuration
+                 <configuration>
+                   <includes>**/*.foo</includes>
+                   <excludes>**/*.fff</excludes>
+                   <sourceVersion>1.8</sourceVersion>
+                   <targetVersion>1.8</targetVersion>
+                 </configuration>
+                 -->
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>

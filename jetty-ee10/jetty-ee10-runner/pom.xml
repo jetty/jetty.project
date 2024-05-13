@@ -60,10 +60,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>jetty-ee10-demo-simple-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-simple-webapp</artifactId>
       <type>war</type>
       <scope>test</scope>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
