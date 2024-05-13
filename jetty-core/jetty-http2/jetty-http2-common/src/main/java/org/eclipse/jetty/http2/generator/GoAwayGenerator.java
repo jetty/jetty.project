@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.util.Arrays;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -45,17 +43,16 @@ public class GoAwayGenerator extends FrameGenerator
 
         // Make sure we don't exceed the default frame max length.
         int maxPayloadLength = Frame.DEFAULT_MAX_SIZE - fixedLength;
-        if (payload != null && payload.length > maxPayloadLength)
-            payload = Arrays.copyOfRange(payload, 0, maxPayloadLength);
+        int payloadLength = Math.min(payload == null ? 0 : payload.length, maxPayloadLength);
 
-        int length = fixedLength + (payload != null ? payload.length : 0);
+        int length = fixedLength + payloadLength;
         generateHeader(accumulator, FrameType.GO_AWAY, length, Flags.NONE, 0);
 
         accumulator.putInt(lastStreamId);
         accumulator.putInt(error);
 
         if (payload != null)
-            accumulator.put(payload, 0, payload.length);
+            accumulator.put(payload, 0, payloadLength);
 
         return Frame.HEADER_LENGTH + length;
     }

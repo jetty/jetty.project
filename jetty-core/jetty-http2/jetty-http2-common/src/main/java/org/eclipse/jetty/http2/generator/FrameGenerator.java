@@ -32,11 +32,6 @@ public abstract class FrameGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public HeaderGenerator getHeaderGenerator()
-    {
-        return headerGenerator;
-    }
-
     public abstract int generate(RetainableByteBuffer.Mutable accumulator, Frame frame) throws HpackException;
 
     protected void generateHeader(RetainableByteBuffer.Mutable accumulator, FrameType frameType, int length, int flags, int streamId)
