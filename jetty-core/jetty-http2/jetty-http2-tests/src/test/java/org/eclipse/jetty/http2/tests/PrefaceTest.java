@@ -23,7 +23,6 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -51,7 +50,9 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -154,7 +155,7 @@ public class PrefaceTest extends AbstractTest
             socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
             Generator generator = new Generator(bufferPool);
-            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 0);
@@ -162,8 +163,7 @@ public class PrefaceTest extends AbstractTest
             // The PING frame just to make sure the client stops reading.
             generator.control(accumulator, new PingFrame(true));
 
-            List<ByteBuffer> buffers = accumulator.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[0]));
+            accumulator.writeTo(Content.Sink.from(socket), false);
             accumulator.release();
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
@@ -297,13 +297,12 @@ public class PrefaceTest extends AbstractTest
 
             // After the 101, the client must send the connection preface.
             Generator generator = new Generator(bufferPool);
-            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 1);
             generator.control(accumulator, new SettingsFrame(clientSettings, false));
-            List<ByteBuffer> buffers = accumulator.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[0]));
+            accumulator.writeTo(Content.Sink.from(socket), false);
 
             // However, we should not call onPreface() again.
             assertFalse(serverPrefaceLatch.get().await(1, TimeUnit.SECONDS));

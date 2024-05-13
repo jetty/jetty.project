@@ -13,16 +13,13 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
 
 public class SettingsGenerator extends FrameGenerator
 {
@@ -32,13 +29,13 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Accumulator accumulator, Frame frame)
+    public int generate(RetainableByteBuffer.Mutable accumulator, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame.getSettings(), settingsFrame.isReply());
     }
 
-    public int generateSettings(ByteBufferPool.Accumulator accumulator, Map<Integer, Integer> settings, boolean reply)
+    public int generateSettings(RetainableByteBuffer.Mutable accumulator, Map<Integer, Integer> settings, boolean reply)
     {
         // Two bytes for the identifier, four bytes for the value.
         int entryLength = 2 + 4;
@@ -46,17 +43,12 @@ public class SettingsGenerator extends FrameGenerator
         if (length > getMaxFrameSize())
             throw new IllegalArgumentException("Invalid settings, too big");
 
-        RetainableByteBuffer header = generateHeader(FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
-        ByteBuffer byteBuffer = header.getByteBuffer();
-
+        generateHeader(accumulator, FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
         for (Map.Entry<Integer, Integer> entry : settings.entrySet())
         {
-            byteBuffer.putShort(entry.getKey().shortValue());
-            byteBuffer.putInt(entry.getValue());
+            accumulator.putShort(entry.getKey().shortValue());
+            accumulator.putInt(entry.getValue());
         }
-
-        BufferUtil.flipToFlush(byteBuffer, 0);
-        accumulator.append(header);
 
         return Frame.HEADER_LENGTH + length;
     }
