@@ -71,6 +71,6 @@ public class DataGenerator
         headerGenerator.generate(accumulator, FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
         // Skip empty data buffers.
         if (data.remaining() > 0)
-            accumulator.append(RetainableByteBuffer.wrap(data));
+            accumulator.add(data);
     }
 }

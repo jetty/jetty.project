@@ -293,8 +293,6 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     public void onStreamFailure(int streamId, int error, String reason)
     {
         session.onStreamFailure(streamId, error, reason);
-        if (producer.networkBuffer != null)
-            producer.releaseNetworkBuffer();
     }
 
     @Override
@@ -302,8 +300,6 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     {
         producer.failed = true;
         session.onConnectionFailure(error, reason);
-        if (producer.networkBuffer != null)
-            producer.releaseNetworkBuffer();
     }
 
     @Override
@@ -402,15 +398,10 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         {
             if (networkBuffer == null)
             {
-                networkBuffer = newNetworkBuffer();
+                networkBuffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Acquired {}", networkBuffer);
             }
-        }
-
-        private RetainableByteBuffer.Mutable newNetworkBuffer()
-        {
-            return bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
         }
 
         private void reacquireNetworkBuffer()
@@ -423,7 +414,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                 throw new IllegalStateException();
 
             currentBuffer.release();
-            networkBuffer = newNetworkBuffer();
+            networkBuffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
             if (LOG.isDebugEnabled())
                 LOG.debug("Reacquired {}<-{}", currentBuffer, networkBuffer);
         }
