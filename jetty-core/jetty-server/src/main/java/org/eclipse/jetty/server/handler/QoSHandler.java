@@ -185,10 +185,18 @@ public class QoSHandler extends ConditionalHandler.Abstract
     @Override
     public boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
+        return process(request, response, callback);
+    }
+
+    private boolean process(Request request, Response response, Callback callback) throws Exception
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} handling {}", this, request);
+            LOG.debug("{} processing {}", this, request);
 
         boolean expired = false;
+
+        // The read lock allows concurrency with resume(),
+        // which is the common case, but not with expire().
         lock.readLock().lock();
         try
         {
@@ -302,10 +310,11 @@ public class QoSHandler extends ConditionalHandler.Abstract
 
     private void resume(Throwable x)
     {
+        // Allows concurrency with process(), but not with expire().
         lock.readLock().lock();
         try
         {
-            // See correspondent state machine logic in handle() and expire().
+            // See correspondent state machine logic in process() and expire().
             int permits = state.incrementAndGet();
             if (permits > 0)
             {
@@ -320,7 +329,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
                     return;
 
                 // Found no suspended requests yet, but there will be.
-                // This covers the small race window in handle(), where
+                // This covers the small race window in process(), where
                 // the state is updated and then the request suspended.
                 Thread.onSpinWait();
             }
@@ -382,8 +391,8 @@ public class QoSHandler extends ConditionalHandler.Abstract
         {
             boolean removed;
             // It should be rare that requests expire.
-            // Grab the write lock to atomically operate on the queue
-            // and the state, avoiding concurrency with resume().
+            // Grab the write lock to atomically operate on the queue and
+            // the state, avoiding concurrency with process() and resume().
             lock.writeLock().lock();
             try
             {
@@ -392,7 +401,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
                 // The remove() may fail to a concurrent resume().
                 if (removed)
                 {
-                    // See correspondent state machine logic in handle() and resume().
+                    // See correspondent state machine logic in process() and resume().
                     state.incrementAndGet();
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} timeout {}", QoSHandler.this, request);
