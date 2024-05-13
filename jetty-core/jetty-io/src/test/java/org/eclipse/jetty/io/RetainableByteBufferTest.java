@@ -14,10 +14,13 @@
 package org.eclipse.jetty.io;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
+import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +37,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -548,6 +552,132 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
+    public void testWriteToEndPoint(Supplier<RetainableByteBuffer> supplier) throws Exception
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        StringBuilder out = new StringBuilder();
+
+        try (EndPoint endPoint = new AbstractEndPoint(new TimerScheduler())
+        {
+            @Override
+            public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+            {
+                for (ByteBuffer buffer : buffers)
+                {
+                    out.append(BufferUtil.toString(buffer));
+                    buffer.limit(buffer.position());
+                }
+
+                callback.succeeded();
+            }
+
+            @Override
+            public SocketAddress getLocalSocketAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public SocketAddress getRemoteSocketAddress()
+            {
+                return null;
+            }
+
+            @Override
+            protected void onIncompleteFlush()
+            {
+
+            }
+
+            @Override
+            protected void needsFillInterest() throws IOException
+            {
+
+            }
+
+            @Override
+            public Object getTransport()
+            {
+                return null;
+            }
+        })
+        {
+            Callback.Completable callback = new Callback.Completable();
+            buffer.writeTo(endPoint, false, callback);
+            endPoint.write(true, BufferUtil.toBuffer(" OK!"), Callback.NOOP);
+            callback.get(5, TimeUnit.SECONDS);
+        }
+
+        assertThat(out.toString(), is(TEST_EXPECTED + " OK!"));
+
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testWriteToEndPointLast(Supplier<RetainableByteBuffer> supplier) throws Exception
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        StringBuilder out = new StringBuilder();
+
+        try (EndPoint endPoint = new AbstractEndPoint(new TimerScheduler())
+        {
+            @Override
+            public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+            {
+                for (ByteBuffer buffer : buffers)
+                {
+                    out.append(BufferUtil.toString(buffer));
+                    buffer.limit(buffer.position());
+                }
+
+                callback.succeeded();
+            }
+
+            @Override
+            public SocketAddress getLocalSocketAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public SocketAddress getRemoteSocketAddress()
+            {
+                return null;
+            }
+
+            @Override
+            protected void onIncompleteFlush()
+            {
+
+            }
+
+            @Override
+            protected void needsFillInterest() throws IOException
+            {
+
+            }
+
+            @Override
+            public Object getTransport()
+            {
+                return null;
+            }
+        })
+        {
+            Callback.Completable callback = new Callback.Completable();
+            buffer.writeTo(endPoint, true, callback);
+            callback.get(5, TimeUnit.SECONDS);
+            assertFalse(endPoint.isOpen());
+        }
+
+        assertThat(out.toString(), is(TEST_EXPECTED));
+
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
     public void testToString(Supplier<RetainableByteBuffer> supplier)
     {
         RetainableByteBuffer buffer = supplier.get();
@@ -591,7 +721,7 @@ public class RetainableByteBufferTest
             case 22 ->
             {
                 Mutable withAggregatable = new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY, 0, 0);
-                assertTrue(withAggregatable.add(_pool.acquire(MAX_CAPACITY, false)));
+                withAggregatable.add(_pool.acquire(MAX_CAPACITY, false));
                 yield withAggregatable;
             }
             default -> null;
@@ -653,6 +783,29 @@ public class RetainableByteBufferTest
         assertThat(buffer.space(), equalTo(buffer.maxSize() - 1L));
         assertThat((int)buffer.space(), equalTo(buffer.capacity() - 1));
         buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testAppendRetainable(Mutable buffer)
+    {
+        CountDownLatch release = new CountDownLatch(3);
+        RetainableByteBuffer hello = RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello"), release::countDown);
+        RetainableByteBuffer cruel = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel "), release::countDown);
+        RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!"), release::countDown);
+        RetainableByteBuffer.Mutable cruelWorld = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+        cruelWorld.add(cruel);
+        cruelWorld.add(world);
+
+        assertTrue(buffer.append(hello));
+        assertTrue(buffer.append(cruelWorld));
+
+        assertThat(BufferUtil.toString(buffer.getByteBuffer(), StandardCharsets.UTF_8), is("Hello cruel world!"));
+
+        hello.release();
+        cruelWorld.release();
+        buffer.release();
+        assertThat(release.getCount(), is(0L));
     }
 
     @ParameterizedTest
@@ -760,13 +913,34 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("mutables")
+    public void testAddRetainable(Mutable buffer)
+    {
+        CountDownLatch release = new CountDownLatch(3);
+        RetainableByteBuffer hello = RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello"), release::countDown);
+        RetainableByteBuffer cruel = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel "), release::countDown);
+        RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!"), release::countDown);
+        RetainableByteBuffer.Mutable cruelWorld = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+        cruelWorld.add(cruel);
+        cruelWorld.add(world);
+
+        buffer.add(hello);
+        buffer.add(cruelWorld);
+
+        assertThat(BufferUtil.toString(buffer.getByteBuffer(), StandardCharsets.UTF_8), is("Hello cruel world!"));
+
+        buffer.release();
+        assertThat(release.getCount(), is(0L));
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
     public void testAddOneByteRetainable(Mutable buffer)
     {
         RetainableByteBuffer toAdd = _pool.acquire(1, true);
         BufferUtil.append(toAdd.getByteBuffer(), (byte)'X');
 
         toAdd.retain();
-        assertThat(buffer.add(toAdd), is(true));
+        buffer.add(toAdd);
         if (toAdd.release())
             assertThat(toAdd.remaining(), is(0));
         else
@@ -783,7 +957,7 @@ public class RetainableByteBufferTest
         byte[] bytes = new byte[MAX_CAPACITY * 2];
         Arrays.fill(bytes, (byte)'X');
         ByteBuffer b = ByteBuffer.wrap(bytes);
-        assertFalse(buffer.add(b));
+        assertThrows(BufferOverflowException.class, () -> buffer.add(b));
         assertThat(b.remaining(), is(MAX_CAPACITY * 2));
         assertThat(buffer.size(), is(0L));
         buffer.release();
@@ -800,7 +974,7 @@ public class RetainableByteBufferTest
         toAdd.getByteBuffer().put(bytes);
         BufferUtil.flipToFlush(toAdd.getByteBuffer(), pos);
 
-        assertFalse(buffer.add(toAdd));
+        assertThrows(BufferOverflowException.class, () -> buffer.add(toAdd));
         assertThat(toAdd.remaining(), is(MAX_CAPACITY * 2));
         assertFalse(toAdd.isRetained());
         assertThat(buffer.size(), is(0L));
@@ -1095,6 +1269,44 @@ public class RetainableByteBufferTest
         buffer.retain();
         assertThrows(ReadOnlyBufferException.class, buffer::asMutable);
         assertFalse(buffer.release());
+        assertTrue(buffer.release());
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testAppendEmpty(Mutable buffer)
+    {
+        assertTrue(buffer.append(BufferUtil.EMPTY_BUFFER));
+        assertTrue(buffer.append(RetainableByteBuffer.EMPTY));
+        assertThat(buffer.remaining(), is(0));
+
+        while (!buffer.isFull())
+            buffer.append(BufferUtil.toBuffer("text to fill up the buffer"));
+
+        long size = buffer.size();
+        assertTrue(buffer.append(BufferUtil.EMPTY_BUFFER));
+        assertTrue(buffer.append(RetainableByteBuffer.EMPTY));
+        assertThat(buffer.size(), is(size));
+
+        assertTrue(buffer.release());
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testAddEmpty(Mutable buffer)
+    {
+        buffer.add(BufferUtil.EMPTY_BUFFER);
+        buffer.add(RetainableByteBuffer.EMPTY);
+        assertThat(buffer.remaining(), is(0));
+
+        while (!buffer.isFull())
+            buffer.append(BufferUtil.toBuffer("text to fill up the buffer"));
+
+        long size = buffer.size();
+        buffer.add(BufferUtil.EMPTY_BUFFER);
+        buffer.add(RetainableByteBuffer.EMPTY);
+        assertThat(buffer.size(), is(size));
+
         assertTrue(buffer.release());
     }
 }

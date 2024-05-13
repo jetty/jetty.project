@@ -445,44 +445,48 @@ public interface RetainableByteBuffer extends Retainable
         /**
          * Copies the contents of the given byte buffer to the end of this buffer, growing this buffer if
          * necessary and possible.
-         * Copies can be avoided by {@link RetainableByteBuffer#wrap(ByteBuffer) wrapping} the buffer and
-         * calling {@link #append(RetainableByteBuffer)}
          * @param bytes the byte buffer to copy from, which is consumed.
          * @return true if all bytes of the given buffer were copied, false otherwise.
          * @throws ReadOnlyBufferException if this buffer is read only.
+         * @see #add(ByteBuffer)
          */
         boolean append(ByteBuffer bytes) throws ReadOnlyBufferException;
 
         /**
          * Retain or copy the contents of the given retainable byte buffer to the end of this buffer,
          * growing this buffer if necessary and possible.
-         * The implementation will heuristically decide to retain or copy the contents.
+         * The implementation will heuristically decide to retain or copy the contents
+         * Unlike the similar {@link #add(RetainableByteBuffer)}, implementations of this method must
+         * {@link RetainableByteBuffer#retain()} the passed buffer if they keep a reference to it.
          * @param bytes the retainable byte buffer to copy from, which is consumed.
          * @return true if all bytes of the given buffer were copied, false otherwise.
          * @throws ReadOnlyBufferException if this buffer is read only.
+         * @see #add(RetainableByteBuffer)
          */
         boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException;
 
         /**
          * Add the passed {@link ByteBuffer} to this buffer, growing this buffer if necessary and possible.
-         * The source {@link ByteBuffer} is passed by reference and the caller gives up ownership, so implementations of this
-         * method may avoid copies by keeping a reference to the buffer.
+         * The source {@link ByteBuffer} is passed by reference and the caller gives up "ownership", so implementations of
+         * this method may choose to avoid copies by keeping a reference to the buffer.
          * @param bytes the byte buffer to add, which is passed by reference and is not necessarily consumed by the add.
-         * @return true if the bytes were added else false if they were not.
          * @throws ReadOnlyBufferException if this buffer is read only.
+         * @throws BufferOverflowException if this buffer cannot fit the byte
+         * @see #append(ByteBuffer)
          */
-        boolean add(ByteBuffer bytes) throws ReadOnlyBufferException;
+        void add(ByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException;
 
         /**
          * Add the passed {@link RetainableByteBuffer} to this buffer, growing this buffer if necessary and possible.
-         * The source {@link RetainableByteBuffer} is passed by reference and the caller gives up ownership, so implementations
-         * of this method may avoid copies by keeping a reference to the buffer, but they must ultimately
-         * {@link RetainableByteBuffer#release()} the buffer.
+         * The source {@link RetainableByteBuffer} is passed by reference and the caller gives up ownership, so
+         * implementations of this method may avoid copies by keeping a reference to the buffer.
+         * Unlike the similar {@link #append(RetainableByteBuffer)}, implementations of this method need not call
+         * {@link #retain()} if keeping a reference, but they must ultimately call {@link #release()} the passed buffer.
          * @param bytes the byte buffer to add, which is passed by reference and is not necessarily consumed by the add.
-         * @return true if the bytes were added else false if they were not.
          * @throws ReadOnlyBufferException if this buffer is read only.
+         * @throws BufferOverflowException if this buffer cannot fit the byte
          */
-        boolean add(RetainableByteBuffer bytes) throws ReadOnlyBufferException;
+        void add(RetainableByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException;
 
         /**
          * Put a {@code byte} to the buffer, growing this buffer if necessary and possible.
@@ -701,15 +705,15 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public boolean add(ByteBuffer bytes) throws ReadOnlyBufferException
+        public void add(ByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
         {
-            return getWrapped().asMutable().add(bytes);
+            getWrapped().asMutable().add(bytes);
         }
 
         @Override
-        public boolean add(RetainableByteBuffer bytes) throws ReadOnlyBufferException
+        public void add(RetainableByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
         {
-            return getWrapped().asMutable().add(bytes);
+            getWrapped().asMutable().add(bytes);
         }
 
         @Override
@@ -990,16 +994,31 @@ public interface RetainableByteBuffer extends Retainable
         public boolean append(ByteBuffer bytes) throws ReadOnlyBufferException
         {
             // Try to add the whole buffer
-            if (add(bytes))
-                return true;
+            assert !isRetained();
 
-            // No space for the whole buffer, so put as much as we can
+            // Ensure buffer is flipped to fill mode (and left that way)
+            if (_flipPosition < 0)
+                _flipPosition = BufferUtil.flipToFill(_byteBuffer);
+
+            int length = bytes.remaining();
             int space = _byteBuffer.remaining();
-            int position = _byteBuffer.position();
-            _byteBuffer.put(position, bytes, bytes.position(), space);
-            _byteBuffer.position(position + space);
-            bytes.position(bytes.position() + space);
-            return false;
+
+            if (space == 0)
+                return length == 0;
+
+            if (length > space)
+            {
+                // No space for the whole buffer, so put as much as we can
+                int position = _byteBuffer.position();
+                _byteBuffer.put(position, bytes, bytes.position(), space);
+                _byteBuffer.position(position + space);
+                bytes.position(bytes.position() + space);
+                return false;
+            }
+
+            if (length > 0)
+                _byteBuffer.put(bytes);
+            return true;
         }
 
         @Override
@@ -1010,7 +1029,7 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public boolean add(ByteBuffer bytes) throws ReadOnlyBufferException
+        public void add(ByteBuffer bytes) throws ReadOnlyBufferException
         {
             assert !isRetained();
 
@@ -1020,43 +1039,40 @@ public interface RetainableByteBuffer extends Retainable
 
             int length = bytes.remaining();
             int space = _byteBuffer.remaining();
-            if (space == 0)
-                return length == 0;
 
-            if (length <= space)
-            {
+            if (length > space)
+                throw new BufferOverflowException();
+
+            if (length > 0)
                 _byteBuffer.put(bytes);
-                return true;
-            }
-
-            return false;
         }
 
         @Override
-        public boolean add(RetainableByteBuffer bytes) throws ReadOnlyBufferException
+        public void add(RetainableByteBuffer bytes) throws ReadOnlyBufferException
         {
             assert !isRetained();
 
             if (bytes instanceof DynamicCapacity dynamic)
             {
-                for (RetainableByteBuffer buffer : dynamic._buffers)
+                int length = bytes.remaining();
+                int space = _byteBuffer.remaining();
+
+                if (length > space)
+                    throw new BufferOverflowException();
+                if (length > 0)
                 {
-                    buffer.retain();
-                    if (!add(buffer))
+                    for (RetainableByteBuffer buffer : dynamic._buffers)
                     {
-                        buffer.release();
-                        return false;
+                        buffer.retain();
+                        add(buffer);
                     }
                 }
-                return true;
+                bytes.release();
+                return;
             }
 
-            if (add(bytes.getByteBuffer()))
-            {
-                bytes.release();
-                return true;
-            }
-            return false;
+            add(bytes.getByteBuffer());
+            bytes.release();
         }
 
         /**
@@ -1196,13 +1212,6 @@ public interface RetainableByteBuffer extends Retainable
         public NonRetainableByteBuffer(ByteBuffer byteBuffer)
         {
             super(byteBuffer, NON_RETAINABLE);
-        }
-
-        protected void addValueString(StringBuilder stringBuilder)
-        {
-            stringBuilder.append("={");
-            addValueString(stringBuilder, this);
-            stringBuilder.append("}");
         }
     }
 
@@ -1905,15 +1914,15 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public boolean add(ByteBuffer bytes) throws ReadOnlyBufferException
+        public void add(ByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("add BB {} <- {}", this, BufferUtil.toDetailString(bytes));
-            return add(RetainableByteBuffer.wrap(bytes));
+            add(RetainableByteBuffer.wrap(bytes));
         }
 
         @Override
-        public boolean add(RetainableByteBuffer bytes) throws ReadOnlyBufferException
+        public void add(RetainableByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("add RBB {} <- {}", this, bytes);
@@ -1921,17 +1930,16 @@ public interface RetainableByteBuffer extends Retainable
             long space = _maxSize - size;
             long length = bytes.size();
             if (space < length)
-                return false;
+                throw new BufferOverflowException();
 
             if (shouldAggregate(bytes, length) && append(bytes))
             {
                 bytes.release();
-                return true;
+                return;
             }
 
             _buffers.add(bytes);
             _aggregate = null;
-            return true;
         }
 
         @Override

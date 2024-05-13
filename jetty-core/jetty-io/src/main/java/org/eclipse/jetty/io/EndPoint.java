@@ -334,7 +334,7 @@ public interface EndPoint extends Closeable, Content.Sink
                 {
                     callback.failed(t);
                 }
-            }, callback::failed));
+            }, callback::failed), byteBuffer);
         }
         else
         {
