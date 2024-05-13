@@ -31,9 +31,6 @@ import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -76,17 +73,10 @@ public class ContinuationParseTest
                 .put("User-Agent", "Jetty");
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generateHeaders(accumulator, streamId, metaData, null, true);
 
-            List<ByteBuffer> byteBuffers = new ArrayList<>();
-            accumulator.writeTo((l, b, c) ->
-            {
-                byteBuffers.add(BufferUtil.copy(b));
-                BufferUtil.clear(b);
-                c.succeeded();
-            }, false, Callback.NOOP);
-            assertTrue(accumulator.release());
+            List<ByteBuffer> byteBuffers = accumulator.getByteBuffers();
             assertEquals(2, byteBuffers.size());
 
             ByteBuffer headersBody = byteBuffers.remove(1);
@@ -143,13 +133,14 @@ public class ContinuationParseTest
             byteBuffers.add(headersBody.slice());
 
             frames.clear();
-            for (ByteBuffer buffer : byteBuffers)
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
                     parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
                 }
             }
+            accumulator.release();
 
             assertEquals(1, frames.size());
             HeadersFrame frame = frames.get(0);
@@ -199,37 +190,31 @@ public class ContinuationParseTest
             .put("User-Agent", "Jetty");
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-        RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateHeaders(accumulator, streamId, metaData, null, true);
 
-        int start = 9;
-        int length = accumulator.remaining() - start;
+        List<ByteBuffer> byteBuffers = accumulator.getByteBuffers();
+        assertEquals(2, byteBuffers.size());
+
+        ByteBuffer headersBody = byteBuffers.remove(1);
+        int start = headersBody.position();
+        int length = headersBody.remaining();
         int firstHalf = length / 2;
         int lastHalf = length - firstHalf;
 
-        RetainableByteBuffer.DynamicCapacity split = new RetainableByteBuffer.DynamicCapacity();
-
-        // Create the split HEADERS frame.
-        split.put((byte)((firstHalf >>> 16) & 0xFF));
-        split.put((byte)((firstHalf >>> 8) & 0xFF));
-        split.put((byte)(firstHalf & 0xFF));
-        accumulator.skip(3);
-        split.put(accumulator.get());
+        // Adjust the length of the HEADERS frame.
+        ByteBuffer headersHeader = byteBuffers.get(0);
+        headersHeader.put(0, (byte)((firstHalf >>> 16) & 0xFF));
+        headersHeader.put(1, (byte)((firstHalf >>> 8) & 0xFF));
+        headersHeader.put(2, (byte)(firstHalf & 0xFF));
 
         // Remove the END_HEADERS flag from the HEADERS header.
-        split.put((byte)(accumulator.get() & ~Flags.END_HEADERS));
-
-        split.put(accumulator.get());
-        split.put(accumulator.get());
-        split.put(accumulator.get());
-        split.put(accumulator.get());
+        headersHeader.put(4, (byte)(headersHeader.get(4) & ~Flags.END_HEADERS));
 
         // New HEADERS body.
-        split.add(accumulator.slice(firstHalf));
-
-        parser.parse(split.getByteBuffer());
-        split.release();
-        long beginNanoTime = parser.getBeginNanoTime();
+        headersBody.position(start);
+        headersBody.limit(start + firstHalf);
+        byteBuffers.add(headersBody.slice());
 
         // Split the rest of the HEADERS body into a CONTINUATION frame.
         byte[] continuationHeader = new byte[9];
@@ -242,12 +227,20 @@ public class ContinuationParseTest
         continuationHeader[6] = 0x00;
         continuationHeader[7] = 0x00;
         continuationHeader[8] = (byte)streamId;
-
-        parser.parse(BufferUtil.toBuffer(continuationHeader));
-
+        byteBuffers.add(ByteBuffer.wrap(continuationHeader));
         // CONTINUATION body.
-        accumulator.skip(firstHalf);
-        parser.parse(accumulator.getByteBuffer());
+        headersBody.position(start + firstHalf);
+        headersBody.limit(start + length);
+        byteBuffers.add(headersBody.slice());
+
+        byteBuffers = accumulator.getByteBuffers();
+        assertEquals(4, byteBuffers.size());
+        parser.parse(byteBuffers.get(0));
+        long beginNanoTime = parser.getBeginNanoTime();
+        parser.parse(byteBuffers.get(1));
+        parser.parse(byteBuffers.get(2));
+        parser.parse(byteBuffers.get(3));
+
         accumulator.release();
 
         assertEquals(1, frames.size());
@@ -288,10 +281,10 @@ public class ContinuationParseTest
             .put("User-Agent", "Jetty".repeat(256));
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateHeaders(accumulator, streamId, metaData, null, true);
-        assertThat(accumulator.remaining(), greaterThan(maxHeadersSize));
+        List<ByteBuffer> byteBuffers = accumulator.getByteBuffers();
+        assertThat(byteBuffers.stream().mapToInt(ByteBuffer::remaining).sum(), greaterThan(maxHeadersSize));
 
         AtomicBoolean failed = new AtomicBoolean();
         parser.init(new Parser.Listener()
@@ -306,7 +299,12 @@ public class ContinuationParseTest
         // the failure is due to accumulation, not decoding.
         parser.getHpackDecoder().setMaxHeaderListSize(10 * maxHeadersSize);
 
-        parser.parse(accumulator.getByteBuffer());
+        for (ByteBuffer byteBuffer : byteBuffers)
+        {
+            parser.parse(byteBuffer);
+            if (failed.get())
+                break;
+        }
         accumulator.release();
 
         assertTrue(failed.get());

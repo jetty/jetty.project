@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -22,7 +23,6 @@ import org.eclipse.jetty.http2.generator.PingGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
@@ -56,12 +56,17 @@ public class PingGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generatePing(accumulator, payload, true);
 
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(buffer);
+                }
+            }
         }
 
         assertEquals(1, frames.size());
@@ -92,12 +97,17 @@ public class PingGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generatePing(accumulator, payload, true);
 
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+                }
+            }
 
             assertEquals(1, frames.size());
             PingFrame frame = frames.get(0);
@@ -122,12 +132,17 @@ public class PingGenerateParseTest
             }
         });
 
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         PingFrame ping = new PingFrame(NanoTime.now(), true);
         generator.generate(accumulator, ping);
 
-        UnknownParseTest.parse(parser, accumulator);
-        accumulator.release();
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
+        {
+            while (buffer.hasRemaining())
+            {
+                parser.parse(buffer);
+            }
+        }
 
         assertEquals(1, frames.size());
         PingFrame pong = frames.get(0);

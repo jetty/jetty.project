@@ -19,7 +19,9 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class DataGenerator
 {
@@ -30,12 +32,12 @@ public class DataGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public int generate(RetainableByteBuffer.Mutable accumulator, DataFrame frame, int maxLength)
+    public int generate(ByteBufferPool.Accumulator accumulator, DataFrame frame, int maxLength)
     {
         return generateData(accumulator, frame.getStreamId(), frame.getByteBuffer(), frame.isEndStream(), maxLength);
     }
 
-    public int generateData(RetainableByteBuffer.Mutable accumulator, int streamId, ByteBuffer data, boolean last, int maxLength)
+    public int generateData(ByteBufferPool.Accumulator accumulator, int streamId, ByteBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -60,7 +62,7 @@ public class DataGenerator
         return Frame.HEADER_LENGTH + length;
     }
 
-    private void generateFrame(RetainableByteBuffer.Mutable accumulator, int streamId, ByteBuffer data, boolean last)
+    private void generateFrame(ByteBufferPool.Accumulator accumulator, int streamId, ByteBuffer data, boolean last)
     {
         int length = data.remaining();
 
@@ -68,9 +70,11 @@ public class DataGenerator
         if (last)
             flags |= Flags.END_STREAM;
 
-        headerGenerator.generate(accumulator, FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
+        RetainableByteBuffer header = headerGenerator.generate(FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
+        BufferUtil.flipToFlush(header.getByteBuffer(), 0);
+        accumulator.append(header);
         // Skip empty data buffers.
         if (data.remaining() > 0)
-            accumulator.add(data);
+            accumulator.append(RetainableByteBuffer.wrap(data));
     }
 }

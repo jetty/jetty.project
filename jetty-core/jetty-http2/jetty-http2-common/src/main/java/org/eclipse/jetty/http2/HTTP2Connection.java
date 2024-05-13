@@ -243,7 +243,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     @Override
     public void onData(DataFrame frame)
     {
-        RetainableByteBuffer.Mutable networkBuffer = producer.networkBuffer;
+        NetworkBuffer networkBuffer = producer.networkBuffer;
         session.onData(new StreamData(frame, networkBuffer));
     }
 
@@ -311,15 +311,15 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
         private final Callback fillableCallback = new FillableCallback();
-        private RetainableByteBuffer.Mutable networkBuffer;
+        private NetworkBuffer networkBuffer;
         private boolean shutdown;
         private boolean failed;
 
         private void setInputBuffer(ByteBuffer byteBuffer)
         {
             acquireNetworkBuffer();
-            if (!networkBuffer.append(byteBuffer))
-                LOG.warn("overflow");
+            // TODO handle buffer overflow?
+            networkBuffer.put(byteBuffer);
         }
 
         @Override
@@ -346,7 +346,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                     {
                         while (networkBuffer.hasRemaining())
                         {
-                            session.getParser().parse(networkBuffer.getByteBuffer());
+                            session.getParser().parse(networkBuffer.getBuffer());
                             if (failed)
                                 return null;
                         }
@@ -364,7 +364,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
                     // Here we know that this.networkBuffer is not retained by
                     // application code: either it has been released, or it's a new one.
-                    int filled = fill(getEndPoint(), networkBuffer.getByteBuffer());
+                    int filled = fill(getEndPoint(), networkBuffer.getBuffer());
                     if (LOG.isDebugEnabled())
                         LOG.debug("Filled {} bytes in {}", filled, networkBuffer);
 
@@ -398,7 +398,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         {
             if (networkBuffer == null)
             {
-                networkBuffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
+                networkBuffer = new NetworkBuffer();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Acquired {}", networkBuffer);
             }
@@ -406,7 +406,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
         private void reacquireNetworkBuffer()
         {
-            RetainableByteBuffer.Mutable currentBuffer = networkBuffer;
+            NetworkBuffer currentBuffer = networkBuffer;
             if (currentBuffer == null)
                 throw new IllegalStateException();
 
@@ -414,14 +414,14 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                 throw new IllegalStateException();
 
             currentBuffer.release();
-            networkBuffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
+            networkBuffer = new NetworkBuffer();
             if (LOG.isDebugEnabled())
                 LOG.debug("Reacquired {}<-{}", currentBuffer, networkBuffer);
         }
 
         private void releaseNetworkBuffer()
         {
-            RetainableByteBuffer.Mutable currentBuffer = networkBuffer;
+            NetworkBuffer currentBuffer = networkBuffer;
             if (currentBuffer == null)
                 throw new IllegalStateException();
 
@@ -479,12 +479,6 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         }
 
         @Override
-        public boolean isRetained()
-        {
-            return retainable.isRetained();
-        }
-
-        @Override
         public void retain()
         {
             retainable.retain();
@@ -494,6 +488,60 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         public boolean release()
         {
             return retainable.release();
+        }
+    }
+
+    private class NetworkBuffer implements Retainable
+    {
+        private final RetainableByteBuffer delegate;
+
+        private NetworkBuffer()
+        {
+            delegate = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers());
+        }
+
+        public ByteBuffer getBuffer()
+        {
+            return delegate.getByteBuffer();
+        }
+
+        public boolean isRetained()
+        {
+            return delegate.isRetained();
+        }
+
+        public boolean hasRemaining()
+        {
+            return delegate.hasRemaining();
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return delegate.canRetain();
+        }
+
+        @Override
+        public void retain()
+        {
+            delegate.retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            if (delegate.release())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released retained {}", this);
+                return true;
+            }
+            return false;
+        }
+
+        private void put(ByteBuffer source)
+        {
+            BufferUtil.append(delegate.getByteBuffer(), source);
         }
     }
 }

@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.http2.generator;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class HeaderGenerator
 {
@@ -45,11 +48,18 @@ public class HeaderGenerator
         return useDirectByteBuffers;
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, FrameType frameType, int capacity, int length, int flags, int streamId)
+    public RetainableByteBuffer generate(FrameType frameType, int capacity, int length, int flags, int streamId)
     {
-        accumulator.putInt((length & 0x00_FF_FF_FF) << 8 | (frameType.getType() & 0xFF));
-        accumulator.put((byte)flags);
-        accumulator.putInt(streamId);
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(capacity, isUseDirectByteBuffers());
+        ByteBuffer header = buffer.getByteBuffer();
+        BufferUtil.clearToFill(header);
+        header.put((byte)((length & 0x00_FF_00_00) >>> 16));
+        header.put((byte)((length & 0x00_00_FF_00) >>> 8));
+        header.put((byte)((length & 0x00_00_00_FF)));
+        header.put((byte)frameType.getType());
+        header.put((byte)flags);
+        header.putInt(streamId);
+        return buffer;
     }
 
     public int getMaxFrameSize()

@@ -27,7 +27,6 @@ import org.eclipse.jetty.http2.generator.SettingsGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,19 +84,24 @@ public class SettingsGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generateSettings(accumulator, settings, reply);
 
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(buffer);
+                }
+            }
         }
 
         return frames;
     }
 
     @Test
-    public void testGenerateParseInvalidSettingsOneByteAtATime()
+    public void testGenerateParseInvalidSettings()
     {
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator(bufferPool));
 
@@ -114,15 +118,19 @@ public class SettingsGenerateParseTest
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateSettings(accumulator, settings1, false);
-        System.err.println(accumulator);
         // Modify the length of the frame to make it invalid
-        ByteBuffer bytes = accumulator.getByteBuffer();
+        ByteBuffer bytes = accumulator.getByteBuffers().get(0);
         bytes.putShort(1, (short)(bytes.getShort(1) - 1));
 
-        while (bytes.hasRemaining())
-            parser.parse(ByteBuffer.wrap(new byte[]{bytes.get()}));
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
+        {
+            while (buffer.hasRemaining())
+            {
+                parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+            }
+        }
 
         assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, errorRef.get());
     }
@@ -151,15 +159,17 @@ public class SettingsGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generateSettings(accumulator, settings1, false);
 
             frames.clear();
-
-            ByteBuffer bytes = accumulator.getByteBuffer();
-            while (bytes.hasRemaining())
-                parser.parse(ByteBuffer.wrap(new byte[]{bytes.get()}));
-            accumulator.release();
+            for (ByteBuffer buffer : accumulator.getByteBuffers())
+            {
+                while (buffer.hasRemaining())
+                {
+                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+                }
+            }
 
             assertEquals(1, frames.size());
             SettingsFrame frame = frames.get(0);
@@ -194,10 +204,16 @@ public class SettingsGenerateParseTest
             settings.put(i + 10, i);
         }
 
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generateSettings(accumulator, settings, false);
-        UnknownParseTest.parse(parser, accumulator);
-        accumulator.release();
+
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
+        {
+            while (buffer.hasRemaining())
+            {
+                parser.parse(buffer);
+            }
+        }
 
         assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }
@@ -266,14 +282,19 @@ public class SettingsGenerateParseTest
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(13, 17);
 
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         for (int i = 0; i < maxSettingsKeys + 1; ++i)
         {
             generator.generateSettings(accumulator, settings, false);
         }
 
-        UnknownParseTest.parse(parser, accumulator);
-        accumulator.release();
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
+        {
+            while (buffer.hasRemaining())
+            {
+                parser.parse(buffer);
+            }
+        }
 
         assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }

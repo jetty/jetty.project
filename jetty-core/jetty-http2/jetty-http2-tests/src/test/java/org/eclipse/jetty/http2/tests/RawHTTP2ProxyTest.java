@@ -44,6 +44,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferAggregator;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -62,6 +63,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -243,7 +245,7 @@ public class RawHTTP2ProxyTest
         CountDownLatch latch1 = new CountDownLatch(1);
         Stream stream1 = clientSession.newStream(new HeadersFrame(request1, null, false), new Stream.Listener()
         {
-            private final RetainableByteBuffer.DynamicCapacity aggregator = new RetainableByteBuffer.DynamicCapacity(client.getByteBufferPool(), true, data1.length * 2);
+            private final ByteBufferAggregator aggregator = new ByteBufferAggregator(client.getByteBufferPool(), true, data1.length, data1.length * 2);
 
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -260,14 +262,14 @@ public class RawHTTP2ProxyTest
                 DataFrame frame = data.frame();
                 if (LOGGER.isDebugEnabled())
                     LOGGER.debug("CLIENT1 received {}", frame);
-                assertTrue(aggregator.append(frame.getByteBuffer()));
+                assertFalse(aggregator.aggregate(frame.getByteBuffer()));
                 data.release();
                 if (!data.frame().isEndStream())
                 {
                     stream.demand();
                     return;
                 }
-                RetainableByteBuffer buffer = aggregator.take();
+                RetainableByteBuffer buffer = aggregator.takeRetainableByteBuffer();
                 assertNotNull(buffer);
                 assertEquals(buffer1.slice(), buffer.getByteBuffer());
                 buffer.release();

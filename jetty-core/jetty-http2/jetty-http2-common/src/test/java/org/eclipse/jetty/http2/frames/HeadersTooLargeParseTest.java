@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -26,25 +25,21 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class HeadersTooLargeParseTest
 {
     private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     @Test
-    public void testProtocolErrorURITooLong() throws Exception
+    public void testProtocolErrorURITooLong() throws HpackException
     {
         HttpFields fields = HttpFields.build()
                 .put("B", "test");
@@ -55,7 +50,7 @@ public class HeadersTooLargeParseTest
     }
 
     @Test
-    public void testProtocolErrorCumulativeHeaderSize() throws Exception
+    public void testProtocolErrorCumulativeHeaderSize() throws HpackException
     {
         HttpFields fields = HttpFields.build()
                 .put("X-Large-Header", "lorem-ipsum-dolor-sit")
@@ -66,7 +61,7 @@ public class HeadersTooLargeParseTest
         assertProtocolError(maxHeaderSize, metaData);
     }
 
-    private void assertProtocolError(int maxHeaderSize, MetaData.Request metaData) throws Exception
+    private void assertProtocolError(int maxHeaderSize, MetaData.Request metaData) throws HpackException
     {
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
@@ -82,30 +77,17 @@ public class HeadersTooLargeParseTest
         });
 
         int streamId = 48;
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
         int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
-        Callback.Completable callback = new Callback.Completable();
-        accumulator.writeTo((l, b, c) ->
+        for (ByteBuffer buffer : accumulator.getByteBuffers())
         {
-            parser.parse(b);
-            if (failure.get() != 0)
-                c.failed(new Throwable("Expected"));
-            else
-                c.succeeded();
-        }, false, callback);
-
-        try
-        {
-            callback.get(10, TimeUnit.SECONDS);
-            fail();
+            while (buffer.hasRemaining() && failure.get() == 0)
+            {
+                parser.parse(buffer);
+            }
         }
-        catch (ExecutionException e)
-        {
-            assertThat(e.getCause().getMessage(), is("Expected"));
-        }
-        accumulator.release();
 
         assertTrue(len > maxHeaderSize);
         assertEquals(ErrorCode.PROTOCOL_ERROR.code, failure.get());

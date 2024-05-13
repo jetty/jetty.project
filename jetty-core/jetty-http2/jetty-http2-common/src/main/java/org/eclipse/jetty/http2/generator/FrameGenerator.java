@@ -20,6 +20,7 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -32,11 +33,11 @@ public abstract class FrameGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public abstract int generate(RetainableByteBuffer.Mutable accumulator, Frame frame) throws HpackException;
+    public abstract int generate(ByteBufferPool.Accumulator accumulator, Frame frame) throws HpackException;
 
-    protected void generateHeader(RetainableByteBuffer.Mutable accumulator, FrameType frameType, int length, int flags, int streamId)
+    protected RetainableByteBuffer generateHeader(FrameType frameType, int length, int flags, int streamId)
     {
-        headerGenerator.generate(accumulator, frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
+        return headerGenerator.generate(frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
     }
 
     public int getMaxFrameSize()
