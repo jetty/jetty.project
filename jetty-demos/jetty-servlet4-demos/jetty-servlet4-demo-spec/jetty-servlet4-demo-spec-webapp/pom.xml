@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-servlet4-demo-spec-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EE8 :: Demo :: Servlet Spec :: WebApp</name>
+  <name>Servlet 4 :: Demo :: Servlet Spec :: WebApp</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlet4.spec.webapp</bundle-symbolic-name>
     <ee9.module>jetty-servlet5-demo-spec/jetty-servlet5-demo-spec-webapp</ee9.module>
@@ -18,29 +18,35 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet4-demo-container-initializer</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet4-demo-web-fragment</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
+      <version>${ee8.jakarta.annotation.api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.transaction</groupId>
       <artifactId>jakarta.transaction-api</artifactId>
+      <version>${ee8.jakarta.transaction-api.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-servlet-api</artifactId>
+      <version>${ee8.jetty.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
 
   </dependencies>
   <build>
+    <plugins>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>

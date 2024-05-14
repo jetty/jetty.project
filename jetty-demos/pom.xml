@@ -14,7 +14,7 @@
 
   <modules>
     <!-- TBD -->
-    <!-- module>jetty-servlet4-demos</module -->
+    <module>jetty-servlet4-demos</module>
     <module>jetty-servlet5-demos</module>
     <!-- module>jetty-servlet6-demos</module -->
     <!-- module>jetty-servlet61-demos</module -->

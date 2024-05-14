@@ -13,6 +13,4 @@
     <bundle-symbolic-name>${project.groupId}.servlet4.jaas</bundle-symbolic-name>
     <ee9.module>jetty-servlet5-demo-jaas-webapp</ee9.module>
   </properties>
-  <build>
-  </build>
 </project>
