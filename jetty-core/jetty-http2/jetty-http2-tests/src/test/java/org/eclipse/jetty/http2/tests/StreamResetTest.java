@@ -884,7 +884,7 @@ public class StreamResetTest extends AbstractTest
             WriteFlusher flusher = flusherRef.get();
             waitUntilTCPCongested(flusher);
 
-            accumulator.release();
+            accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
             accumulator.writeTo(Content.Sink.from(socket), false);
             accumulator.release();
@@ -980,7 +980,7 @@ public class StreamResetTest extends AbstractTest
             assertTrue(requestLatch1.await(5, TimeUnit.SECONDS));
 
             // Now reset the second request, which has not started writing yet.
-            accumulator.release();
+            accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
             accumulator.writeTo(Content.Sink.from(socket), false);
             accumulator.release();
