@@ -142,7 +142,20 @@ public class RetainableByteBufferTest
             list.add(() ->
             {
                 Mutable mutable = Objects.requireNonNull(mutable(index));
-                mutable.append(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH));
+                mutable.add(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH));
+                return mutable;
+            });
+
+            list.add(() ->
+            {
+                Mutable mutable = Objects.requireNonNull(mutable(index));
+                int half = TEST_LENGTH / 2;
+                RetainableByteBuffer first = _pool.acquire(half, mutable.isDirect());
+                first.asMutable().append(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, half));
+                mutable.add(first);
+                RetainableByteBuffer second = _pool.acquire(TEST_LENGTH - half, mutable.isDirect());
+                second.asMutable().append(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET + half, TEST_LENGTH - half));
+                mutable.add(second);
                 return mutable;
             });
 
@@ -151,31 +164,6 @@ public class RetainableByteBufferTest
                 Mutable mutable = Objects.requireNonNull(mutable(index));
                 mutable.append(BufferUtil.toBuffer(TEST_TEXT_BYTES));
                 mutable.skip(3);
-                return mutable;
-            });
-
-            list.add(() ->
-            {
-                Mutable mutable = Objects.requireNonNull(mutable(index));
-                mutable.put(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH);
-                return mutable;
-            });
-
-            list.add(() ->
-            {
-                Mutable mutable = Objects.requireNonNull(mutable(index));
-                mutable.put(TEST_TEXT_BYTES);
-                mutable.skip(3);
-                return mutable;
-            });
-
-            list.add(() ->
-            {
-                Mutable mutable = Objects.requireNonNull(mutable(index));
-                mutable.append(BufferUtil.toBuffer(TEST_TEXT_BYTES, 0, 6));
-                mutable.add(BufferUtil.toBuffer(TEST_TEXT_BYTES, 6, 4));
-                mutable.put(TEST_TEXT_BYTES, 6 + 4, TEST_LENGTH + TEST_OFFSET - 6 - 4);
-                mutable.skip(TEST_OFFSET);
                 return mutable;
             });
 
@@ -555,8 +543,8 @@ public class RetainableByteBufferTest
     public void testWriteToEndPoint(Supplier<RetainableByteBuffer> supplier) throws Exception
     {
         RetainableByteBuffer buffer = supplier.get();
-        StringBuilder out = new StringBuilder();
 
+        StringBuilder out = new StringBuilder();
         try (EndPoint endPoint = new AbstractEndPoint(new TimerScheduler())
         {
             @Override
@@ -565,7 +553,7 @@ public class RetainableByteBufferTest
                 for (ByteBuffer buffer : buffers)
                 {
                     out.append(BufferUtil.toString(buffer));
-                    buffer.limit(buffer.position());
+                    buffer.position(buffer.limit());
                 }
 
                 callback.succeeded();
@@ -686,8 +674,7 @@ public class RetainableByteBufferTest
         assertThat(string, anyOf(
             containsString("<" + TEST_EXPECTED + ">>>"),
             allOf(containsString("<T>>>"), containsString("<e>>>"), containsString("<s>>>"), containsString("<t>>>")),
-            allOf(containsString("<Tes>>>"), containsString("<ting 123>>>")),
-            allOf(containsString("<Tes>>>"), containsString("<ting>>>"), containsString("< 123>>>"))
+            allOf(containsString("<Testi>>>"), containsString("<ng 123>>>"))
         ));
         buffer.release();
     }
@@ -1176,6 +1163,12 @@ public class RetainableByteBufferTest
         assertThrows(BufferOverflowException.class, () -> buffer.put(StringUtil.fromHexString("000F1E2D3C4B5A6000"), 1, 7));
         assertThat(BufferUtil.toHexString(buffer.getByteBuffer()), equalToIgnoringCase(
             "0F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A60"));
+
+        buffer.clear();
+        buffer.put((byte)0xFF);
+        buffer.put(StringUtil.fromHexString("0F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A"));
+        assertThat(BufferUtil.toHexString(buffer.getByteBuffer()), equalToIgnoringCase(
+            "FF0F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A600F1E2D3C4B5A"));
 
         buffer.release();
     }
