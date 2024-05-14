@@ -92,7 +92,7 @@ DEPLOY_OPTS="-DskipTests"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 # Uncomment for Java 1.7
-export MAVEN_OPTS="-Xmx2g"
+export MAVEN_OPTS="-Xmx4g"
 
 echo ""
 echo "-----------------------------------------------"
