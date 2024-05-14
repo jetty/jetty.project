@@ -31,11 +31,9 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
@@ -244,9 +242,10 @@ public class HTTP2ServerTest extends AbstractServerTest
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
-
-        // Modify the length of the frame to a wrong one.
-        generator.control(new ChangeIntAccumulator(accumulator, 0x0000_FFFF, 0x0007_0000), new PingFrame(new byte[8], false));
+        long offset = accumulator.size();
+        generator.control(accumulator, new PingFrame(new byte[8], false));
+        accumulator.put(offset, (byte)0x00);
+        accumulator.put(offset, (byte)0x07);
 
         CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -394,7 +393,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 {
                     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
                     // Invalid header name, the connection must be closed.
-                    response.getHeaders().put("Euro_(\u20AC)", "42");
+                    response.getHeaders().put("Euro_(€)", "42");
                     callback.succeeded();
                     return true;
                 }
@@ -459,41 +458,26 @@ public class HTTP2ServerTest extends AbstractServerTest
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-
-            // TODO remove these printlns
-            System.err.println("preface and settings " + accumulator);
-
-            long startOfHeaders = accumulator.size();
+            long offset = accumulator.size();
             generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
 
-            System.err.println("with headers         " + accumulator);
-
-            // Take the headers body and limit the original
-            RetainableByteBuffer body = accumulator.take(startOfHeaders + 9);
-
-            System.err.println("header               " + accumulator);
-            System.err.println("body                 " + body);
-
-            // Create a CONTINUATION FRAME same size as HeaderFrame
-            byte[] continuationHeader = new byte[9];
-            continuationHeader[0] = accumulator.get(startOfHeaders);
-            continuationHeader[1] = accumulator.get(startOfHeaders + 1);
-            continuationHeader[2] = accumulator.get(startOfHeaders + 2);
-            continuationHeader[3] = (byte)FrameType.CONTINUATION.getType();
-            continuationHeader[4] = Flags.END_HEADERS;
-            continuationHeader[5] = 0x00;
-            continuationHeader[6] = 0x00;
-            continuationHeader[7] = 0x00;
-            continuationHeader[8] = accumulator.get(startOfHeaders + 8);
-            accumulator.add(BufferUtil.toBuffer(continuationHeader));
-            accumulator.add(body);
+            // Remember the Headers frame size
+            int dataSize = ((accumulator.get(offset) * 0xFF) << 16) + ((accumulator.get(offset + 1) & 0xFF) << 8) + (accumulator.get(offset + 2) & 0xFF);
 
             // Set the HeadersFrame length to zero.
-            accumulator.put(startOfHeaders, (byte)0);
-            accumulator.put(startOfHeaders + 1, (byte)0);
-            accumulator.put(startOfHeaders + 2, (byte)0);
+            accumulator.put(offset, (byte)0x00);
+            accumulator.put(offset + 1, (byte)0x00);
+            accumulator.put(offset + 2, (byte)0x00);
 
-            System.err.println("Final               " + accumulator);
+            // Take the body of the headers frame and all following frames
+            RetainableByteBuffer remainder = accumulator.take(offset + 9);
+
+            // Copy the continuation frame after the first payload.
+            for (int i = 0; i < 9; i++)
+                accumulator.put(remainder.get(dataSize + i));
+
+            // Add the remainder back
+            accumulator.add(remainder);
 
             return accumulator;
         });
@@ -509,13 +493,27 @@ public class HTTP2ServerTest extends AbstractServerTest
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
+            long offset = accumulator.size();
+            generator.control(accumulator, new HeadersFrame(1, metaData, priority, true));
 
-            // Take the HeadersFrame header and set the length to just the priority frame.
-            generator.control(new ChangeIntAccumulator(accumulator, 0x0000_00FF, PriorityFrame.PRIORITY_LENGTH << 8),
-                new HeadersFrame(1, metaData, priority, true));
+            // Remember the Headers frame size
+            int dataSize = ((accumulator.get(offset) * 0xFF) << 16) + ((accumulator.get(offset + 1) & 0xFF) << 8) + (accumulator.get(offset + 2) & 0xFF);
 
-            // Insert a CONTINUATION frame header for the body of the HEADERS frame.
-            // TODO accumulator.add(RetainableByteBuffer.wrap(buffers.get(4).slice()));
+            // Set the HeadersFrame length to just the priority.
+            accumulator.put(offset, (byte)0x00);
+            accumulator.put(offset + 1, (byte)0x00);
+            accumulator.put(offset + 2, (byte)PriorityFrame.PRIORITY_LENGTH);
+
+            // Take the body of the headers frame and all following frames
+            RetainableByteBuffer remainder = accumulator.take(offset + 9 + PriorityFrame.PRIORITY_LENGTH);
+
+            // Copy the continuation frame after the first payload.
+            for (int i = 0; i < 9; i++)
+                accumulator.put(remainder.get(dataSize + i - PriorityFrame.PRIORITY_LENGTH));
+
+            // Add the remainder back
+            accumulator.add(remainder);
+
             return accumulator;
         });
     }
@@ -629,32 +627,6 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
             assertFalse(closed);
-        }
-    }
-
-    class ChangeIntAccumulator extends RetainableByteBuffer.Wrapper
-    {
-        final int mask;
-        final int value;
-        boolean changed;
-
-        public ChangeIntAccumulator(RetainableByteBuffer accumulator, int mask, int value)
-        {
-            super(accumulator);
-            this.mask = mask;
-            this.value = value;
-        }
-
-        @Override
-        public void putInt(int i)
-        {
-            if (!changed)
-            {
-                changed = true;
-                // Modify the length of the frame to a wrong one.
-                i = (mask & i) | value;
-            }
-            super.putInt(i);
         }
     }
 }

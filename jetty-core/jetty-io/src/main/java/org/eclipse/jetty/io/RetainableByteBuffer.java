@@ -885,18 +885,18 @@ public interface RetainableByteBuffer extends Retainable
                 buf.append("<<<");
             }
             long size = value.size();
-            if (size <= 32)
+            if (size <= 48)
             {
                 for (int i = 0; i < size; i++)
                     BufferUtil.appendDebugByte(buf, value.get(i));
             }
             else
             {
-                for (int i = 0; i < 16; i++)
+                for (int i = 0; i < 24; i++)
                     BufferUtil.appendDebugByte(buf, value.get(i));
                 buf.append("...");
-                for (int i = 0; i < 16; i++)
-                    BufferUtil.appendDebugByte(buf, value.get(size - 16 + i));
+                for (int i = 0; i < 24; i++)
+                    BufferUtil.appendDebugByte(buf, value.get(size - 24 + i));
             }
             buf.append(">>>");
         }
