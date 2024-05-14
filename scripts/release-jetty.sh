@@ -92,7 +92,7 @@ DEPLOY_OPTS="-DskipTests"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 # Uncomment for Java 1.7
-export MAVEN_OPTS="-Xmx2g"
+export MAVEN_OPTS="-Xmx4g"
 
 echo ""
 echo "-----------------------------------------------"
@@ -134,7 +134,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     mvn clean install -pl build-resources
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
-        mvn -N -Pupdate-version generate-resources
+        mvn -N -Pupdate-version generate-resources -e
         cp VERSION.txt VERSION.txt.backup
         cat VERSION.txt.backup | sed -e "s/$VER_CURRENT/$VER_RELEASE/" > VERSION.txt
         rm VERSION.txt.backup
@@ -149,7 +149,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
             -Peclipse-release \
             -DoldVersion="$VER_CURRENT" \
             -DnewVersion="$VER_RELEASE" \
-            -DprocessAllModules=true 
+            -DprocessAllModules=true -e
     fi
     if proceedyn "Commit $VER_RELEASE updates? (Y/n)" y; then
         git commit -a -m "Updating to version $VER_RELEASE"
@@ -175,7 +175,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
             -Peclipse-release \
             -DoldVersion="$VER_RELEASE" \
             -DnewVersion="$VER_NEXT" \
-            -DprocessAllModules=true 
+            -DprocessAllModules=true -e
         echo "Commit $VER_NEXT"
         if proceedyn "Commit updates in working directory for $VER_NEXT? (Y/n)" y; then
             git commit -a -m "Updating to version $VER_NEXT"
