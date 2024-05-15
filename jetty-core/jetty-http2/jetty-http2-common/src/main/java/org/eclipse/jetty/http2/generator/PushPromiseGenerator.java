@@ -64,7 +64,7 @@ public class PushPromiseGenerator extends FrameGenerator
 
         generateHeader(accumulator, FrameType.PUSH_PROMISE, length, flags, streamId);
         accumulator.putInt(promisedStreamId);
-        accumulator.append(hpack); // TODO add?
+        accumulator.add(hpack);
 
         return Frame.HEADER_LENGTH + length;
     }
