@@ -513,13 +513,13 @@ public class CallbackCompletionHandler extends Handler.Wrapper
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            Dumpable demandDumpable = demandCallbackTimeout == null ?
-                (o, i) -> o.append("demands not tracked\n") :
-                new DumpableCollection("demands", demandCallbacks);
+            Dumpable demandDumpable = demandCallbackTimeout == null
+                ? (o, i) -> o.append("demands not tracked\n")
+                : new DumpableCollection("demands", demandCallbacks);
 
-            Dumpable writeDumpable = writeTimeout == null && writeCallbackTimeout == null ?
-                (o, i) -> o.append("writes not tracked\n") :
-                new DumpableCollection("writes", writeCallbacks);
+            Dumpable writeDumpable = writeTimeout == null && writeCallbackTimeout == null
+                ? (o, i) -> o.append("writes not tracked\n")
+                : new DumpableCollection("writes", writeCallbacks);
 
             Dumpable.dumpObjects(out, indent, request.toString(), handlerCallback, demandDumpable, writeDumpable);
         }
