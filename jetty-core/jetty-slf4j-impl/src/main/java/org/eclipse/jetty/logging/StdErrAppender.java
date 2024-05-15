@@ -207,7 +207,9 @@ public class StdErrAppender implements JettyAppender
         builder.append(EOL).append(indent);
         if (visited.contains(cause))
         {
-            builder.append("[CIRCULAR REFERENCE: ").append(cause).append("]");
+            builder.append("[CIRCULAR REFERENCE: ");
+            appendEscaped(builder, cause.toString());
+            builder.append("]");
             return;
         }
         visited.add(cause);
