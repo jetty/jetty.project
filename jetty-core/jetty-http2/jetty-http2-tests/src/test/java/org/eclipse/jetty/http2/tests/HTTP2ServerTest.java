@@ -285,21 +285,15 @@ public class HTTP2ServerTest extends AbstractServerTest
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
-        generator.control(new RetainableByteBuffer.Wrapper(accumulator)
-        {
-            int putIntCount;
+        long offset = accumulator.size();
 
-            @Override
-            public void putInt(int i)
-            {
-                if (putIntCount++ == 1)
-                {
-                    // Modify the streamId of the frame to non zero.
-                    i = 1;
-                }
-                super.putInt(i);
-            }
-        }, new PingFrame(new byte[8], false));
+        generator.control(accumulator, new PingFrame(new byte[8], false));
+
+        // Modify the streamId of the frame to non zero.
+        accumulator.put(offset + 5, (byte)0);
+        accumulator.put(offset + 6, (byte)0);
+        accumulator.put(offset + 7, (byte)0);
+        accumulator.put(offset + 8, (byte)1);
 
         CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
