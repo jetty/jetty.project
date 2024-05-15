@@ -53,7 +53,10 @@ public class PriorityGenerator extends FrameGenerator
 
         if (exclusive)
             parentStreamId |= 0x80_00_00_00;
+
         accumulator.putInt(parentStreamId);
+        // SPEC: for RFC 7540 weight is 1..256, for RFC 9113 is an unused value.
         accumulator.put((byte)(weight - 1));
+
     }
 }

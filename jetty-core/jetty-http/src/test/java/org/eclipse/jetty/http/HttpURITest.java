@@ -1109,6 +1109,8 @@ public class HttpURITest
             Arguments.of("hTTps", "example.org", 443, "/", null, null, "https://example.org/"),
             Arguments.of("WS", "example.org", 8282, "/", null, null, "ws://example.org:8282/"),
             Arguments.of("wsS", "example.org", 8383, "/", null, null, "wss://example.org:8383/"),
+            // Undefined scheme
+            Arguments.of(null, "example.org", 8181, "/", null, null, "//example.org:8181/"),
             // Undefined Ports
             Arguments.of("http", "example.org", 0, "/", null, null, "http://example.org/"),
             Arguments.of("https", "example.org", -1, "/", null, null, "https://example.org/"),
