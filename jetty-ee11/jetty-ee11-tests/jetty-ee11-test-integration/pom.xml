@@ -75,6 +75,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-jetty-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-annotations</artifactId>
       <scope>test</scope>
@@ -88,12 +95,6 @@
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-test-webapp-rfc2616</artifactId>
       <version>${project.version}</version>
-      <type>war</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-jetty-webapp</artifactId>
       <type>war</type>
       <scope>test</scope>
     </dependency>
@@ -140,8 +141,8 @@
                   <destFileName>ee11-test-rfc2616.war</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.ee11.demos</groupId>
-                  <artifactId>jetty-ee11-demo-jetty-webapp</artifactId>
+                  <groupId>org.eclipse.jetty.demos</groupId>
+                  <artifactId>jetty-servlet4-demo-jetty-webapp</artifactId>
                   <type>war</type>
                   <destFileName>ee11-demo-jetty.war</destFileName>
                 </artifactItem>

@@ -62,9 +62,9 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-simple-webapp</artifactId>
+      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
-      <version>${project.version}</version>
     </dependency>
   </dependencies>
 

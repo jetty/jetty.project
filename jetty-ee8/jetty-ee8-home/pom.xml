@@ -17,73 +17,6 @@
   </properties>
 
   <dependencies>
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty.ee8</groupId>-->
-    <!--      <artifactId>jetty-ee8-cdi</artifactId>-->
-    <!--      <optional>true</optional>-->
-    <!--    </dependency>-->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-annotations</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-apache-jsp</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-glassfish-jstl</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>jakarta.el</groupId>
-          <artifactId>jakarta.el-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>xalan</groupId>
-          <artifactId>xalan</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty.ee8</groupId>-->
-    <!--      <artifactId>jetty-ee8-jaspi</artifactId>-->
-    <!--      <optional>true</optional>-->
-    <!--    </dependency>-->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-jndi</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-openid</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-plus</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-proxy</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-quickstart</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-servlet</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-servlets</artifactId>
-    </dependency>
     <!-- Servlet 4 Demo Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
@@ -156,19 +89,86 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee8</groupId>-->
+    <!--      <artifactId>jetty-ee8-cdi</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-apache-jsp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-glassfish-jstl</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.el</groupId>
+          <artifactId>el-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>xalan</groupId>
+          <artifactId>xalan</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>org.eclipse.jetty.ee8</groupId>-->
+    <!--      <artifactId>jetty-ee8-jaspi</artifactId>-->
+    <!--      <optional>true</optional>-->
+    <!--    </dependency>-->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-jndi</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-openid</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-plus</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-proxy</artifactId>
+    </dependency>
 
-    <!-- Demo ee8 Apps -->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-quickstart</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-servlets</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8.demos</groupId>
-      <artifactId>jetty-ee8-demo-proxy-webapp</artifactId>
+      <artifactId>jetty-ee8-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>
       <optional>true</optional>
     </dependency>
+
+    <!-- Demo ee8 Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee8.demos</groupId>
-      <artifactId>jetty-ee8-demo-jetty-websocket-webapp</artifactId>
+      <artifactId>jetty-ee8-demo-proxy-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>
