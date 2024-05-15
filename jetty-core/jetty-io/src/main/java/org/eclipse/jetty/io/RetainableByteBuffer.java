@@ -119,13 +119,28 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * Check if the underlying implementation is mutable.
+     * Note that the immutable {@link RetainableByteBuffer} API may be backed by a mutable {@link ByteBuffer} or
+     * the {@link Mutable} API may be backed by an immutable {@link ByteBuffer}.
+     * @return whether this buffers implementation is mutable
+     * @see #asMutable()
+     */
+    default boolean isMutable()
+    {
+        return !getByteBuffer().isReadOnly();
+    }
+
+    /**
+     * Access this buffer via the {@link Mutable} API.
+     * Note that the {@link Mutable} API may be backed by an immutable {@link ByteBuffer}.
      * @return An {@link Mutable} representation of this buffer with same data and pointers.
      * @throws ReadOnlyBufferException If the buffer is not {@link Mutable} or the backing {@link ByteBuffer} is
      * {@link ByteBuffer#isReadOnly() read-only}.
+     * @see #isMutable()
      */
     default Mutable asMutable() throws ReadOnlyBufferException
     {
-        if (isRetained())
+        if (!isMutable() || isRetained())
             throw new ReadOnlyBufferException();
         if (this instanceof Mutable mutable)
             return mutable;
@@ -937,7 +952,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public Mutable asMutable()
         {
-            if (_byteBuffer.isReadOnly() || isRetained())
+            if (!isMutable() || isRetained())
                 throw new ReadOnlyBufferException();
             return this;
         }
@@ -1311,6 +1326,12 @@ public interface RetainableByteBuffer extends Retainable
 
             if (_aggregationSize == 0 && _maxSize >= Integer.MAX_VALUE && _minRetainSize != 0)
                 throw new IllegalArgumentException("must always retain if cannot aggregate");
+        }
+
+        @Override
+        public boolean isMutable()
+        {
+            return true;
         }
 
         @Override
@@ -1792,6 +1813,7 @@ public interface RetainableByteBuffer extends Retainable
             if (!existing &&
                 !_buffers.isEmpty() &&
                 _buffers.get(_buffers.size() - 1) instanceof Mutable mutable &&
+                mutable.isMutable() &&
                 mutable.space() >= length &&
                 !mutable.isRetained())
             {
@@ -2006,6 +2028,7 @@ public interface RetainableByteBuffer extends Retainable
             }
             else if (!_buffers.isEmpty() &&
                 _buffers.get(_buffers.size() - 1) instanceof Mutable mutable &&
+                mutable.isMutable() &&
                 mutable.space() >= needed &&
                 !mutable.isRetained())
             {
