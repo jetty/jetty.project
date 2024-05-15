@@ -38,7 +38,7 @@ public class StdErrAppenderTest
 
         appender.emit(logger, Level.INFO, System.currentTimeMillis(), "tname", thrown, "the message");
 
-        output.assertContains("[CIRCULAR REFERENCE: java.lang.Throwable]");
+        output.assertContains("CIRCULAR REFERENCE");
     }
 
     @Test

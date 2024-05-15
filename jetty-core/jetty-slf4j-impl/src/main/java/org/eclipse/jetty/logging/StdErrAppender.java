@@ -14,7 +14,8 @@
 package org.eclipse.jetty.logging;
 
 import java.io.PrintStream;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
@@ -177,7 +178,7 @@ public class StdErrAppender implements JettyAppender
             }
             else
             {
-                appendCause(builder, new HashSet<>(), cause, "");
+                appendCause(builder, cause, "", Collections.newSetFromMap(new IdentityHashMap<>()));
             }
         }
     }
@@ -201,12 +202,12 @@ public class StdErrAppender implements JettyAppender
         }
     }
 
-    private void appendCause(StringBuilder builder, Set<Throwable> visited, Throwable cause, String indent)
+    private void appendCause(StringBuilder builder, Throwable cause, String indent, Set<Throwable> visited)
     {
         builder.append(EOL).append(indent);
         if (visited.contains(cause))
         {
-            builder.append("[CIRCULAR REFERENCE: ").append(cause.getClass().getName()).append("]");
+            builder.append("[CIRCULAR REFERENCE: ").append(cause).append("]");
             return;
         }
         visited.add(cause);
@@ -222,14 +223,14 @@ public class StdErrAppender implements JettyAppender
         for (Throwable suppressed : cause.getSuppressed())
         {
             builder.append(EOL).append(indent).append("Suppressed: ");
-            appendCause(builder, visited, suppressed, "\t|" + indent);
+            appendCause(builder, suppressed, "\t|" + indent, visited);
         }
 
         Throwable by = cause.getCause();
         if (by != null && by != cause)
         {
             builder.append(EOL).append(indent).append("Caused by: ");
-            appendCause(builder, visited, by, indent);
+            appendCause(builder, by, indent, visited);
         }
     }
 
