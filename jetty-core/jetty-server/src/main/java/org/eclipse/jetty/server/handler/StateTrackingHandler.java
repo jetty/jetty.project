@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
@@ -40,10 +39,13 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 /**
- * <p>A troubleshooting {@link Handler.Wrapper} that tracks whether various
- * APIs are properly used by applications.</p>
- * <p>The violation of tracked APIs are reported to a {@link Listener}
+ * <p>A troubleshooting {@link Handler.Wrapper} that tracks whether
+ * {@link Handler}/{@link Request}/{@link Response} asynchronous APIs
+ * are properly used by applications.</p>
+ * <p>The violation of these tracked APIs are reported to a {@link Listener}
  * instance; the default listener implementation emits warning logs.</p>
  * <p>{@code StateTrackingHandler} can be linked in at any point in
  * the {@code Handler} chain, and even be present in multiple instances,
@@ -60,7 +62,8 @@ import org.slf4j.LoggerFactory;
  * {@code Handler} implementation.
  * This is because the {@code write(...)} call propagates outwards.
  * In this way, {@code StateTrackingHandler} can wrap the {@code write(...)}
- * call before calling outer {@code Handler}s, and verify that it is called correctly.</p>
+ * call before forwarding it to outer {@code Handler}s and eventually to the
+ * Jetty implementation, and verify that it is eventually completed.</p>
  *
  * @see Listener
  */
@@ -71,11 +74,11 @@ public class StateTrackingHandler extends Handler.Wrapper
 
     private final Map<Request, StateInfo> stateInfos = new ConcurrentHashMap<>();
     private final Listener listener;
-    private Duration handlerCallbackTimeout;
+    private long handlerCallbackTimeout;
     private boolean completeHandlerCallbackAtTimeout;
-    private Duration demandCallbackTimeout;
-    private Duration writeTimeout;
-    private Duration writeCallbackTimeout;
+    private long demandCallbackTimeout;
+    private long writeTimeout;
+    private long writeCallbackTimeout;
 
     /**
      * <p>Creates a new instance with a default {@link Listener}
@@ -97,17 +100,17 @@ public class StateTrackingHandler extends Handler.Wrapper
     }
 
     /**
-     * @return the timeout for the completion of the {@link #handle(Request, Response, Callback)} callback
+     * @return the timeout in ms for the completion of the {@link #handle(Request, Response, Callback)} callback
      */
-    @ManagedAttribute("The timeout for the completion of the handle() callback")
-    public Duration getHandlerCallbackTimeout()
+    @ManagedAttribute("The timeout in ms for the completion of the handle() callback")
+    public long getHandlerCallbackTimeout()
     {
         return handlerCallbackTimeout;
     }
 
-    public void setHandlerCallbackTimeout(Duration timeout)
+    public void setHandlerCallbackTimeout(long timeout)
     {
-        this.handlerCallbackTimeout = Objects.requireNonNull(timeout);
+        this.handlerCallbackTimeout = timeout;
     }
 
     /**
@@ -127,45 +130,45 @@ public class StateTrackingHandler extends Handler.Wrapper
     }
 
     /**
-     * @return the timeout for the execution of the demand callback passed to {@link Request#demand(Runnable)}
+     * @return the timeout in ms for the execution of the demand callback passed to {@link Request#demand(Runnable)}
      */
-    @ManagedAttribute("The timeout for the execution of the demand callback")
-    public Duration getDemandCallbackTimeout()
+    @ManagedAttribute("The timeout in ms for the execution of the demand callback")
+    public long getDemandCallbackTimeout()
     {
         return demandCallbackTimeout;
     }
 
-    public void setDemandCallbackTimeout(Duration timeout)
+    public void setDemandCallbackTimeout(long timeout)
     {
-        this.demandCallbackTimeout = Objects.requireNonNull(timeout);
+        this.demandCallbackTimeout = timeout;
     }
 
     /**
-     * @return the timeout for the execution of a {@link Response#write(boolean, ByteBuffer, Callback)} call
+     * @return the timeout in ms for the execution of a {@link Response#write(boolean, ByteBuffer, Callback)} call
      */
-    @ManagedAttribute("The timeout for the execution of a response write")
-    public Duration getWriteTimeout()
+    @ManagedAttribute("The timeout in ms for the execution of a response write")
+    public long getWriteTimeout()
     {
         return writeTimeout;
     }
 
-    public void setWriteTimeout(Duration timeout)
+    public void setWriteTimeout(long timeout)
     {
-        this.writeTimeout = Objects.requireNonNull(timeout);
+        this.writeTimeout = timeout;
     }
 
     /**
-     * @return the timeout for the execution of the response write callback passed to {@link Response#write(boolean, ByteBuffer, Callback)}
+     * @return the timeout in ms for the execution of the response write callback passed to {@link Response#write(boolean, ByteBuffer, Callback)}
      */
-    @ManagedAttribute("The timeout for the execution of the response write callback")
-    public Duration getWriteCallbackTimeout()
+    @ManagedAttribute("The timeout in ms for the execution of the response write callback")
+    public long getWriteCallbackTimeout()
     {
         return writeCallbackTimeout;
     }
 
-    public void setWriteCallbackTimeout(Duration timeout)
+    public void setWriteCallbackTimeout(long timeout)
     {
-        this.writeCallbackTimeout = Objects.requireNonNull(timeout);
+        this.writeCallbackTimeout = timeout;
     }
 
     @Override
@@ -176,11 +179,11 @@ public class StateTrackingHandler extends Handler.Wrapper
         Request.addCompletionListener(originalRequest, x -> stateInfos.remove(originalRequest));
 
         Request request = originalRequest;
-        if (demandCallbackTimeout != null)
+        if (demandCallbackTimeout > 0)
             request = new RequestWrapper(stateInfo);
 
         Response response = originalResponse;
-        if (writeTimeout != null || writeCallbackTimeout != null)
+        if (writeTimeout > 0 || writeCallbackTimeout > 0)
             response = new ResponseWrapper(stateInfo, originalResponse);
 
         HandlerCallback callback = new HandlerCallback(stateInfo, originalCallback);
@@ -567,13 +570,13 @@ public class StateTrackingHandler extends Handler.Wrapper
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            Dumpable demandDumpable = demandCallbackTimeout == null
-                ? (o, i) -> o.append("demands not tracked\n")
-                : new DumpableCollection("demands", demandCallbacks);
+            Dumpable demandDumpable = demandCallbackTimeout > 0
+                ? new DumpableCollection("demands", demandCallbacks)
+                : (o, i) -> o.append("demands not tracked\n");
 
-            Dumpable writeDumpable = writeTimeout == null && writeCallbackTimeout == null
-                ? (o, i) -> o.append("writes not tracked\n")
-                : new DumpableCollection("writes", writeCallbacks);
+            Dumpable writeDumpable = writeTimeout > 0 || writeCallbackTimeout > 0
+                ? new DumpableCollection("writes", writeCallbacks)
+                : (o, i) -> o.append("writes not tracked\n");
 
             Dumpable.dumpObjects(out, indent, request.toString(), handlerCallback, demandDumpable, writeDumpable);
         }
@@ -593,8 +596,8 @@ public class StateTrackingHandler extends Handler.Wrapper
         {
             super(callback);
             this.request = stateInfo.request;
-            Duration timeout = getHandlerCallbackTimeout();
-            this.task = timeout == null ? () -> true : request.getComponents().getScheduler().schedule(this, timeout);
+            long timeout = getHandlerCallbackTimeout();
+            this.task = timeout > 0 ? request.getComponents().getScheduler().schedule(this, timeout, MILLISECONDS) : () -> true;
             this.handleThread = Thread.currentThread();
         }
 
@@ -720,7 +723,7 @@ public class StateTrackingHandler extends Handler.Wrapper
             public void run()
             {
                 demandRunner = Thread.currentThread();
-                Scheduler.Task task = getComponents().getScheduler().schedule(this::expired, getDemandCallbackTimeout());
+                Scheduler.Task task = getComponents().getScheduler().schedule(this::expired, getDemandCallbackTimeout(), MILLISECONDS);
                 try
                 {
                     callback.run();
@@ -816,8 +819,8 @@ public class StateTrackingHandler extends Handler.Wrapper
                 super(callback);
                 this.writeThread = Thread.currentThread();
                 this.writeThreadInfo = new ThreadInfo(writeThread);
-                Duration writeTimeout = getWriteTimeout();
-                this.writeTask = writeTimeout == null ? null : stateInfo.request.getComponents().getScheduler().schedule(this::writeExpired, writeTimeout);
+                long writeTimeout = getWriteTimeout();
+                this.writeTask = writeTimeout > 0 ? stateInfo.request.getComponents().getScheduler().schedule(this::writeExpired, writeTimeout, MILLISECONDS) : null;
             }
 
             private void writeComplete(Throwable failure)
@@ -850,8 +853,8 @@ public class StateTrackingHandler extends Handler.Wrapper
                     writeTask.cancel();
 
                 callbackRunner = Thread.currentThread();
-                Duration timeout = getWriteCallbackTimeout();
-                Scheduler.Task task = timeout == null ? null : stateInfo.request.getComponents().getScheduler().schedule(() -> callbackExpired(null), timeout);
+                long timeout = getWriteCallbackTimeout();
+                Scheduler.Task task = timeout > 0 ? stateInfo.request.getComponents().getScheduler().schedule(() -> callbackExpired(null), timeout, MILLISECONDS) : null;
                 try
                 {
                     super.succeeded();
@@ -875,8 +878,8 @@ public class StateTrackingHandler extends Handler.Wrapper
                     writeTask.cancel();
 
                 callbackRunner = Thread.currentThread();
-                Duration timeout = getWriteCallbackTimeout();
-                Scheduler.Task task = timeout == null ? null : stateInfo.request.getComponents().getScheduler().schedule(() -> callbackExpired(x), timeout);
+                long timeout = getWriteCallbackTimeout();
+                Scheduler.Task task = timeout > 0 ? stateInfo.request.getComponents().getScheduler().schedule(() -> callbackExpired(x), timeout, MILLISECONDS) : null;
                 try
                 {
                     super.failed(x);

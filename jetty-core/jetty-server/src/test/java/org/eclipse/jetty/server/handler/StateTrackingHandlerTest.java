@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -71,8 +70,8 @@ public class StateTrackingHandlerTest
     {
         CountDownLatch latch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -82,7 +81,7 @@ public class StateTrackingHandlerTest
                 return true;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
@@ -102,8 +101,8 @@ public class StateTrackingHandlerTest
         long delay = 500;
         CountDownLatch latch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -113,7 +112,7 @@ public class StateTrackingHandlerTest
                 return true;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
@@ -132,8 +131,8 @@ public class StateTrackingHandlerTest
     {
         CountDownLatch latch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -143,7 +142,7 @@ public class StateTrackingHandlerTest
                 return false;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
@@ -173,8 +172,8 @@ public class StateTrackingHandlerTest
                 threadInfoRef.set(completionThreadInfo);
             }
         };
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -188,7 +187,7 @@ public class StateTrackingHandlerTest
                 return false;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
@@ -217,9 +216,9 @@ public class StateTrackingHandlerTest
                 threadInfoRef.set(handlerThreadInfo);
             }
         };
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setHandlerCallbackTimeout(Duration.ofMillis(timeout));
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setHandlerCallbackTimeout(timeout);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -228,7 +227,7 @@ public class StateTrackingHandlerTest
                 return true;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         String response = connector.getResponse("""
             GET / HTTP/1.1
@@ -247,10 +246,10 @@ public class StateTrackingHandlerTest
     {
         long timeout = 1000;
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setHandlerCallbackTimeout(Duration.ofMillis(timeout));
-        completionHandler.setCompleteHandlerCallbackAtTimeout(true);
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setHandlerCallbackTimeout(timeout);
+        stateTrackingHandler.setCompleteHandlerCallbackAtTimeout(true);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -259,7 +258,7 @@ public class StateTrackingHandlerTest
                 return true;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
@@ -288,9 +287,9 @@ public class StateTrackingHandlerTest
                 threadInfoRef.set(handlerThreadInfo);
             }
         };
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setHandlerCallbackTimeout(Duration.ofMillis(timeout));
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setHandlerCallbackTimeout(timeout);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -301,7 +300,7 @@ public class StateTrackingHandlerTest
                 return true;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         String response = connector.getResponse("""
             GET / HTTP/1.1
@@ -322,9 +321,9 @@ public class StateTrackingHandlerTest
         long timeout = 1000;
         CountDownLatch latch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setDemandCallbackTimeout(Duration.ofMillis(timeout));
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setDemandCallbackTimeout(timeout);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -359,7 +358,7 @@ public class StateTrackingHandlerTest
                 return true;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
             POST / HTTP/1.1
@@ -411,10 +410,10 @@ public class StateTrackingHandlerTest
 
         long timeout = 1000;
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        wrapper.setHandler(completionHandler);
-        completionHandler.setWriteTimeout(Duration.ofMillis(timeout));
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        wrapper.setHandler(stateTrackingHandler);
+        stateTrackingHandler.setWriteTimeout(timeout);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -464,11 +463,11 @@ public class StateTrackingHandlerTest
 
         long timeout = 1000;
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setWriteTimeout(Duration.ofMillis(timeout));
-        completionHandler.setHandlerCallbackTimeout(Duration.ofMillis(2 * timeout));
-        wrapper.setHandler(completionHandler);
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setWriteTimeout(timeout);
+        stateTrackingHandler.setHandlerCallbackTimeout(2 * timeout);
+        wrapper.setHandler(stateTrackingHandler);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -498,9 +497,9 @@ public class StateTrackingHandlerTest
         long timeout = 1000;
         CountDownLatch latch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setWriteCallbackTimeout(Duration.ofMillis(timeout));
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setWriteCallbackTimeout(timeout);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -521,7 +520,7 @@ public class StateTrackingHandlerTest
                 return true;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
             GET / HTTP/1.1
@@ -545,9 +544,9 @@ public class StateTrackingHandlerTest
         long timeout = 1000;
         CountDownLatch demandLatch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setDemandCallbackTimeout(Duration.ofMillis(timeout));
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setDemandCallbackTimeout(timeout);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -587,7 +586,7 @@ public class StateTrackingHandlerTest
                 return true;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
             POST / HTTP/1.1
@@ -602,7 +601,7 @@ public class StateTrackingHandlerTest
 
             // Wait to detect the blocked demand callback, then add the last chunk of content.
             await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(listener::events, contains("demand-blocked"));
-            assertThat(completionHandler.dump(), containsString("demands size=2"));
+            assertThat(stateTrackingHandler.dump(), containsString("demands size=2"));
             demandLatch.countDown();
             endPoint.addInputAndExecute("B");
 
@@ -618,9 +617,9 @@ public class StateTrackingHandlerTest
         long timeout = 1000;
         CountDownLatch writeLatch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setWriteCallbackTimeout(Duration.ofMillis(timeout));
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setWriteCallbackTimeout(timeout);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -643,7 +642,7 @@ public class StateTrackingHandlerTest
                 return true;
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
             GET / HTTP/1.1
@@ -653,7 +652,7 @@ public class StateTrackingHandlerTest
         {
             // Wait to detect the blocked demand callback, then add the last chunk of content.
             await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(listener::events, contains("write-callback-blocked"));
-            assertThat(completionHandler.dump(), containsString("writes size=2"));
+            assertThat(stateTrackingHandler.dump(), containsString("writes size=2"));
             writeLatch.countDown();
             endPoint.addInputAndExecute("B");
 
@@ -668,8 +667,8 @@ public class StateTrackingHandlerTest
     public void testHandlerThrows() throws Exception
     {
         EventsListener listener = new EventsListener();
-        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
-        completionHandler.setHandler(new Handler.Abstract()
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -677,7 +676,7 @@ public class StateTrackingHandlerTest
                 throw new QuietException.RuntimeException();
             }
         });
-        start(completionHandler);
+        start(stateTrackingHandler);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
