@@ -538,6 +538,131 @@ public class CallbackCompletionHandlerTest
         }
     }
 
+    @Test
+    public void testDemandCallbackCallsRequestDemand() throws Exception
+    {
+        long timeout = 1000;
+        CountDownLatch demandLatch = new CountDownLatch(1);
+        EventsListener listener = new EventsListener();
+        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        completionHandler.setDemandCallbackTimeout(Duration.ofMillis(timeout));
+        completionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                request.demand(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            while (true)
+                            {
+                                Content.Chunk chunk = request.read();
+                                if (chunk == null)
+                                {
+                                    request.demand(this);
+                                    // Bad behavior: must not block a demand
+                                    // callback because they are serialized.
+                                    demandLatch.await();
+                                    return;
+                                }
+                                chunk.release();
+                                if (chunk.isLast())
+                                {
+                                    callback.succeeded();
+                                    return;
+                                }
+                            }
+                        }
+                        catch (Throwable x)
+                        {
+                            callback.failed(x);
+                        }
+                    }
+                });
+                return true;
+            }
+        });
+        start(completionHandler);
+
+        try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
+            POST / HTTP/1.1
+            Host: localhost
+            Content-Length: 2
+            
+            """))
+        {
+            // Wait to return from handle(), then send the first chunk of content.
+            Thread.sleep(500);
+            endPoint.addInputAndExecute("A");
+
+            // Wait to detect the blocked demand callback, then add the last chunk of content.
+            await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(listener::events, contains("demand-blocked"));
+            assertThat(completionHandler.dump(), containsString("demands size=2"));
+            demandLatch.countDown();
+            endPoint.addInputAndExecute("B");
+
+            HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
+
+    @Test
+    public void testWriteCallbackCallsResponseWrite() throws Exception
+    {
+        long timeout = 1000;
+        CountDownLatch writeLatch = new CountDownLatch(1);
+        EventsListener listener = new EventsListener();
+        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        completionHandler.setWriteCallbackTimeout(Duration.ofMillis(timeout));
+        completionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // This write should call the callback synchronously.
+                Content.Sink.write(response, false, "A", Callback.from(() ->
+                {
+                    try
+                    {
+                        Content.Sink.write(response, true, "B", callback);
+                        // Bad behavior: must not block a write
+                        // callback because they are serialized.
+                        writeLatch.await();
+                    }
+                    catch (Throwable x)
+                    {
+                        callback.failed(x);
+                    }
+                }, callback::failed));
+                return true;
+            }
+        });
+        start(completionHandler);
+
+        try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
+            GET / HTTP/1.1
+            Host: localhost
+            
+            """))
+        {
+            // Wait to detect the blocked demand callback, then add the last chunk of content.
+            await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(listener::events, contains("write-callback-blocked"));
+            assertThat(completionHandler.dump(), containsString("writes size=2"));
+            writeLatch.countDown();
+            endPoint.addInputAndExecute("B");
+
+            HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("AB", response.getContent());
+        }
+    }
+
     private static class EventsListener implements CallbackCompletionHandler.Listener
     {
         private final List<String> events = new CopyOnWriteArrayList<>();

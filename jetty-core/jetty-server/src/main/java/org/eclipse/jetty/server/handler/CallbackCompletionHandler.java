@@ -19,7 +19,9 @@ import java.time.Duration;
 import java.util.EventListener;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -180,7 +182,7 @@ public class CallbackCompletionHandler extends Handler.Wrapper
 
         HandlerCallback callback = new HandlerCallback(stateInfo, originalCallback);
         stateInfo.handlerCallback = callback;
-        // TODO: what is super.handle() throws?
+        // TODO: what if super.handle() throws?
         boolean handled = super.handle(request, response, callback);
         callback.setHandled(handled);
 
@@ -498,10 +500,10 @@ public class CallbackCompletionHandler extends Handler.Wrapper
 
     private class StateInfo implements Dumpable
     {
+        private final Queue<RequestWrapper.DemandCallback> demandCallbacks = new ConcurrentLinkedQueue<>();
+        private final Queue<ResponseWrapper.WriteCallback> writeCallbacks = new ConcurrentLinkedQueue<>();
         private final Request request;
         private volatile HandlerCallback handlerCallback;
-        private volatile RequestWrapper.DemandCallback demandCallback;
-        private volatile ResponseWrapper.WriteCallback writeCallback;
 
         private StateInfo(Request request)
         {
@@ -511,23 +513,22 @@ public class CallbackCompletionHandler extends Handler.Wrapper
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            Dumpable demandDumpable = demandCallback;
-            if (demandDumpable == null)
-                demandDumpable = (o, i) -> o.append("demand: %s\n".formatted(demandCallbackTimeout == null ? "not tracked" : "none"));
+            Dumpable demandDumpable = demandCallbackTimeout == null ?
+                (o, i) -> o.append("demands not tracked\n") :
+                new DumpableCollection("demands", demandCallbacks);
 
-            Dumpable writeDumpable = writeCallback;
-            if (writeDumpable == null)
-                writeDumpable = (o, i) -> o.append("write: %s\n".formatted(writeCallbackTimeout == null ? "not tracked" : "none"));
+            Dumpable writeDumpable = writeTimeout == null && writeCallbackTimeout == null ?
+                (o, i) -> o.append("writes not tracked\n") :
+                new DumpableCollection("writes", writeCallbacks);
 
             Dumpable.dumpObjects(out, indent, request.toString(), handlerCallback, demandDumpable, writeDumpable);
         }
     }
 
-    private class HandlerCallback implements Callback, Runnable, Dumpable
+    private class HandlerCallback extends Callback.Nested implements Runnable, Dumpable
     {
         private final AtomicBoolean completed = new AtomicBoolean();
         private final Request request;
-        private final Callback callback;
         private final Scheduler.Task task;
         private final Thread handleThread;
         private volatile Boolean handled;
@@ -536,8 +537,8 @@ public class CallbackCompletionHandler extends Handler.Wrapper
 
         private HandlerCallback(StateInfo stateInfo, Callback callback)
         {
+            super(callback);
             this.request = stateInfo.request;
-            this.callback = callback;
             Duration timeout = getHandlerCallbackTimeout();
             this.task = timeout == null ? () -> true : request.getComponents().getScheduler().schedule(this, timeout);
             this.handleThread = Thread.currentThread();
@@ -552,14 +553,14 @@ public class CallbackCompletionHandler extends Handler.Wrapper
         public void succeeded()
         {
             if (completed(null))
-                callback.succeeded();
+                super.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
             if (completed(x))
-                callback.failed(x);
+                super.failed(x);
         }
 
         private boolean completed(Throwable failure)
@@ -607,7 +608,7 @@ public class CallbackCompletionHandler extends Handler.Wrapper
             notifyHandlerCallbackNotCompleted(request, handlerThreadInfo);
 
             if (isCompleteHandlerCallbackAtTimeout())
-                callback.failed(new TimeoutException());
+                super.failed(new TimeoutException());
         }
 
         @Override
@@ -624,7 +625,7 @@ public class CallbackCompletionHandler extends Handler.Wrapper
             if (handleThreadInfo != null)
                 out.append(indent).append(handleThreadInfo.toString(indent));
 
-            out.append(indent).append("handler callback: %s\n".formatted(Objects.toString(completion, "not completed")));
+            out.append(indent).append("handler callback: %s [%s]\n".formatted(Objects.toString(completion, "not completed"), getCallback()));
             if (completionThreadInfo != null)
                 out.append(indent).append(completionThreadInfo.toString(indent));
         }
@@ -644,7 +645,7 @@ public class CallbackCompletionHandler extends Handler.Wrapper
         public void demand(Runnable reader)
         {
             DemandCallback demandCallback = new DemandCallback(reader);
-            stateInfo.demandCallback = demandCallback;
+            stateInfo.demandCallbacks.offer(demandCallback);
             super.demand(demandCallback);
         }
 
@@ -673,7 +674,7 @@ public class CallbackCompletionHandler extends Handler.Wrapper
                 finally
                 {
                     demandRunner = this;
-                    stateInfo.demandCallback = null;
+                    stateInfo.demandCallbacks.remove(this);
                     task.cancel();
                 }
             }
@@ -701,12 +702,12 @@ public class CallbackCompletionHandler extends Handler.Wrapper
                 Object demandRunner = this.demandRunner;
                 if (demandRunner instanceof Thread runThread)
                 {
-                    out.append("demand: running\n");
+                    out.append("demand: running [%s]\n".formatted(callback));
                     out.append(indent).append(new ThreadInfo(runThread).toString(indent));
                 }
                 else
                 {
-                    out.append("demand: %s\n".formatted(demandRunner == null ? "pending" : "none"));
+                    out.append("demand: %s [%s]\n".formatted(demandRunner == null ? "pending" : "none", callback));
                 }
             }
         }
@@ -726,7 +727,7 @@ public class CallbackCompletionHandler extends Handler.Wrapper
         public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
             WriteCallback writeCallback = new WriteCallback(callback);
-            stateInfo.writeCallback = writeCallback;
+            stateInfo.writeCallbacks.offer(writeCallback);
             try
             {
                 super.write(last, byteBuffer, writeCallback);
@@ -745,9 +746,9 @@ public class CallbackCompletionHandler extends Handler.Wrapper
             private final Thread writeThread;
             private final ThreadInfo writeThreadInfo;
             private final Scheduler.Task writeTask;
-            // Tri-state: null -> in write, this -> write succeeded, Throwable -> write failed.
+            // Tri-state: null -> write pending, this -> write succeeded, Throwable -> write failed.
             private volatile Object writeCompleted;
-            // Tri-state: null -> write pending, thread -> running callback, this -> done running callback.
+            // Tri-state: null -> callback pending, thread -> callback running, this -> callback completed.
             private volatile Object callbackRunner;
 
             private WriteCallback(Callback callback)
@@ -798,7 +799,7 @@ public class CallbackCompletionHandler extends Handler.Wrapper
                 finally
                 {
                     callbackRunner = this;
-                    stateInfo.writeCallback = null;
+                    stateInfo.writeCallbacks.remove(this);
                     if (task != null)
                         task.cancel();
                 }
@@ -823,7 +824,7 @@ public class CallbackCompletionHandler extends Handler.Wrapper
                 finally
                 {
                     callbackRunner = this;
-                    stateInfo.writeCallback = null;
+                    stateInfo.writeCallbacks.remove(this);
                     if (task != null)
                         task.cancel();
                 }
@@ -861,12 +862,12 @@ public class CallbackCompletionHandler extends Handler.Wrapper
                 Object callbackRunner = this.callbackRunner;
                 if (callbackRunner instanceof Thread callbackThread)
                 {
-                    out.append(indent).append("write callback: running\n");
+                    out.append(indent).append("write callback: running [%s]\n".formatted(getCallback()));
                     out.append(indent).append(new ThreadInfo(callbackThread).toString(indent));
                 }
                 else
                 {
-                    out.append(indent).append("write callback: %s\n".formatted(callbackRunner == null ? "pending" : "none"));
+                    out.append(indent).append("write callback: %s [%s]\n".formatted(callbackRunner == null ? "pending" : "completed", getCallback()));
                 }
             }
         }
