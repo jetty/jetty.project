@@ -505,6 +505,8 @@ public interface RetainableByteBuffer extends Retainable
          * implementations of this method may avoid copies by keeping a reference to the buffer.
          * Unlike the similar {@link #append(RetainableByteBuffer)}, implementations of this method need not call
          * {@link #retain()} if keeping a reference, but they must ultimately call {@link #release()} the passed buffer.
+         * Callers should use {@code add} rather than {@link #append(RetainableByteBuffer)} if they already have an obligation
+         * to release the buffer and wish to delegate that obligation to this buffer.
          * @param bytes the byte buffer to add, which is passed by reference and is not necessarily consumed by the add.
          * @throws ReadOnlyBufferException if this buffer is read only.
          * @throws BufferOverflowException if this buffer cannot fit the byte

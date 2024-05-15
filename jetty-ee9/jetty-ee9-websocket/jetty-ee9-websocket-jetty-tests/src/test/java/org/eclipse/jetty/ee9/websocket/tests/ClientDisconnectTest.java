@@ -43,6 +43,7 @@ public class ClientDisconnectTest
     private final CompletableFuture<ServerSocket> _serverSocketFuture = new CompletableFuture<>();
     private final Duration _serverIdleTimeout = Duration.ofSeconds(5);
     private final int _messageSize = 5 * 1024 * 1024;
+    private ArrayByteBufferPool.Tracking _byteBufferPool;
     private Server _server;
     private ServerConnector _connector;
     private WebSocketClient _client;
