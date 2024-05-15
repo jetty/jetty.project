@@ -38,7 +38,6 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.thread.TimerScheduler;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,6 +52,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -671,6 +671,18 @@ public class RetainableByteBufferTest
         RetainableByteBuffer buffer = supplier.get();
         String string = buffer.toString();
         assertThat(string, containsString(buffer.getClass().getSimpleName()));
+        assertThat(string, not(containsString("={")));
+        assertThat(string, containsString("[11/"));
+        buffer.release();
+    }
+
+    @ParameterizedTest
+    @MethodSource("buffers")
+    public void testToDetailString(Supplier<RetainableByteBuffer> supplier)
+    {
+        RetainableByteBuffer buffer = supplier.get();
+        String string = buffer.toDetailString();
+        assertThat(string, containsString(buffer.getClass().getSimpleName()));
         assertThat(string, anyOf(
             containsString("<" + TEST_EXPECTED + ">>>"),
             allOf(containsString("<T>>>"), containsString("<e>>>"), containsString("<s>>>"), containsString("<t>>>")),
@@ -1183,21 +1195,6 @@ public class RetainableByteBufferTest
         buffer.put(size, (byte)'W');
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("Hello World!"));
         assertThrows(IndexOutOfBoundsException.class, () -> buffer.put(buffer.size() + 1, (byte)0));
-        buffer.release();
-    }
-
-    @ParameterizedTest
-    @MethodSource("mutables")
-    public void testToStringMutables(Mutable buffer)
-    {
-        assertTrue(buffer.append(BufferUtil.toBuffer("0123456789ABCDEF")));
-        assertTrue(buffer.append(BufferUtil.toBuffer("xxxxxxxxxxxxxxxx")));
-        assertTrue(buffer.append(BufferUtil.toBuffer("xxxxxxxxxxxxxxxx")));
-        assertTrue(buffer.append(BufferUtil.toBuffer("abcdefghijklmnop")));
-        assertThat(buffer.toString(), containsString("<0123456789ABCDEF"));
-        assertThat(buffer.toString(), Matchers.anyOf(containsString(">>><<"), containsString("...")));
-        assertThat(buffer.toString(), containsString("abcdefghijklmnop>>>"));
-
         buffer.release();
     }
 

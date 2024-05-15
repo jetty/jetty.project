@@ -437,6 +437,14 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * @return A string showing the info and detail about this buffer
+     */
+    default String toDetailString()
+    {
+        return toString();
+    }
+
+    /**
      * Extends the {@link RetainableByteBuffer} API with optimized mutator methods.
      */
     interface Mutable extends RetainableByteBuffer
@@ -766,6 +774,12 @@ public interface RetainableByteBuffer extends Retainable
         {
             getWrapped().asMutable().put(bytes, offset, length);
         }
+
+        @Override
+        public String toDetailString()
+        {
+            return getWrapped().toDetailString();
+        }
     }
 
     /**
@@ -815,105 +829,92 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         /**
-         * Convert Buffer to a detail debug string of pointers and content
-         *
-         * @return A string showing the pointers and content of the buffer
+         * @return A string showing the info about this buffer
          */
+        @Override
         public String toString()
         {
-            StringBuilder buf = new StringBuilder();
+            StringBuilder builder = new StringBuilder();
+            addStringInfo(builder);
+            return builder.toString();
+        }
 
-            buf.append(getClass().getSimpleName());
-            buf.append("@");
-            buf.append(Integer.toHexString(System.identityHashCode(this)));
-            buf.append("[");
-            buf.append(size());
-            buf.append("/");
+        /**
+         * @return A string showing the info and detail about this buffer
+         */
+        @Override
+        public String toDetailString()
+        {
+            StringBuilder builder = new StringBuilder();
+            addStringInfo(builder);
+            builder.append("={");
+            addValueString(builder);
+            builder.append("}");
+            return builder.toString();
+        }
+
+        protected void addStringInfo(StringBuilder builder)
+        {
+            builder.append(getClass().getSimpleName());
+            builder.append("@");
+            builder.append(Integer.toHexString(System.identityHashCode(this)));
+            builder.append("[");
+            builder.append(size());
+            builder.append("/");
             if (maxSize() >= Integer.MAX_VALUE)
-                buf.append("-");
+                builder.append("-");
             else
-                buf.append(maxSize());
-            addDetailString(buf);
-            buf.append(",");
+                builder.append(maxSize());
+            addExtraStringInfo(builder);
+            builder.append(",");
             Retainable retainable = getRetainable();
             if (retainable instanceof RetainableByteBuffer)
             {
                 // avoid reentrant toString
-                buf.append(retainable.getClass().getSimpleName()).append("@");
+                builder.append(retainable.getClass().getSimpleName()).append("@");
                 try
                 {
-                    TypeUtil.toHex(retainable.hashCode(), buf);
+                    TypeUtil.toHex(retainable.hashCode(), builder);
                 }
                 catch (IOException e)
                 {
-                    buf.append("?");
+                    builder.append("?");
                 }
             }
             else
             {
-                buf.append(retainable);
+                builder.append(retainable);
             }
-            buf.append("]");
-            addValueString(buf);
-            return buf.toString();
+            builder.append("]");
         }
 
-        protected void addDetailString(StringBuilder stringBuilder)
+        protected void addExtraStringInfo(StringBuilder builder)
         {
         }
 
-        protected void addValueString(StringBuilder stringBuilder)
+        protected void addValueString(StringBuilder builder)
         {
-            stringBuilder.append("={");
-            addValueString(stringBuilder, this);
-            stringBuilder.append("}");
-        }
-
-        protected void addValueString(StringBuilder buf, RetainableByteBuffer value)
-        {
-            if (value instanceof FixedCapacity fixed)
-            {
-                ByteBuffer byteBuffer = fixed._byteBuffer;
-                if (fixed._flipPosition >= 0)
-                {
-                    buf.append("<<~")
-                        .append(fixed._flipPosition)
-                        .append('-')
-                        .append(byteBuffer.position())
-                        .append('/')
-                        .append(byteBuffer.capacity())
-                        .append('<');
-                }
-                else
-                {
-                    buf.append("<<")
-                        .append(byteBuffer.position())
-                        .append('-')
-                        .append(byteBuffer.limit())
-                        .append('/')
-                        .append(byteBuffer.capacity())
-                        .append('<');
-                }
-            }
-            else
-            {
-                buf.append("<<<");
-            }
-            long size = value.size();
+            addValueMarker(builder, true);
+            long size = size();
             if (size <= 48)
             {
                 for (int i = 0; i < size; i++)
-                    BufferUtil.appendDebugByte(buf, value.get(i));
+                    BufferUtil.appendDebugByte(builder, get(i));
             }
             else
             {
                 for (int i = 0; i < 24; i++)
-                    BufferUtil.appendDebugByte(buf, value.get(i));
-                buf.append("...");
+                    BufferUtil.appendDebugByte(builder, get(i));
+                builder.append("...");
                 for (int i = 0; i < 24; i++)
-                    BufferUtil.appendDebugByte(buf, value.get(size - 24 + i));
+                    BufferUtil.appendDebugByte(builder, get(size - 24 + i));
             }
-            buf.append(">>>");
+            addValueMarker(builder, false);
+        }
+
+        protected void addValueMarker(StringBuilder builder, boolean beginning)
+        {
+            builder.append(beginning ? "<<<" : ">>>");
         }
     }
 
@@ -1194,6 +1195,38 @@ public interface RetainableByteBuffer extends Retainable
                 _flipPosition = BufferUtil.flipToFill(_byteBuffer);
 
             _byteBuffer.put(bytes, offset, length);
+        }
+
+        @Override
+        protected void addValueMarker(StringBuilder builder, boolean beginning)
+        {
+            if (beginning)
+            {
+                if (_flipPosition >= 0)
+                {
+                    builder.append("<<~")
+                        .append(_flipPosition)
+                        .append('-')
+                        .append(_byteBuffer.position())
+                        .append('/')
+                        .append(_byteBuffer.capacity())
+                        .append('<');
+                }
+                else
+                {
+                    builder.append("<<")
+                        .append(_byteBuffer.position())
+                        .append('-')
+                        .append(_byteBuffer.limit())
+                        .append('/')
+                        .append(_byteBuffer.capacity())
+                        .append('<');
+                }
+            }
+            else
+            {
+                builder.append(">>>");
+            }
         }
     }
 
@@ -2166,25 +2199,38 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        protected void addDetailString(StringBuilder stringBuilder)
+        protected void addExtraStringInfo(StringBuilder builder)
         {
-            super.addDetailString(stringBuilder);
-            stringBuilder.append(",aggSize=");
-            stringBuilder.append(_aggregationSize);
-            stringBuilder.append(",minRetain=");
-            stringBuilder.append(_minRetainSize);
+            super.addExtraStringInfo(builder);
+            builder.append(",aggSize=");
+            builder.append(_aggregationSize);
+            builder.append(",minRetain=");
+            builder.append(_minRetainSize);
+            builder.append(",buffers=");
+            builder.append(_buffers.size());
         }
 
         @Override
-        protected void addValueString(StringBuilder stringBuilder)
+        protected void addValueString(StringBuilder builder)
         {
-            if (canRetain())
+            for (RetainableByteBuffer buffer : _buffers)
             {
-                stringBuilder.append("={");
-                for (RetainableByteBuffer buffer : _buffers)
-                    addValueString(stringBuilder, buffer);
-                stringBuilder.append("}");
+                builder.append('@');
+                builder.append(Integer.toHexString(System.identityHashCode(buffer)));
+                if (buffer instanceof Abstract abstractBuffer)
+                    abstractBuffer.addValueString(builder);
+                else
+                    builder.append("???");
             }
+        }
+
+        @Override
+        protected void addValueMarker(StringBuilder builder, boolean beginning)
+        {
+            if (beginning)
+                builder.append("<<").append(_buffers.size()).append('<');
+            else
+                builder.append(">>>");
         }
     }
 }
