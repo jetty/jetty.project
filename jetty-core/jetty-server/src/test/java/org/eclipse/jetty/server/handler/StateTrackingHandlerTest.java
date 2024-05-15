@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -43,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CallbackCompletionHandlerTest
+public class StateTrackingHandlerTest
 {
     private Server server;
     private LocalConnector connector;
@@ -70,7 +71,7 @@ public class CallbackCompletionHandlerTest
     {
         CountDownLatch latch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -101,7 +102,7 @@ public class CallbackCompletionHandlerTest
         long delay = 500;
         CountDownLatch latch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -131,7 +132,7 @@ public class CallbackCompletionHandlerTest
     {
         CountDownLatch latch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -162,17 +163,17 @@ public class CallbackCompletionHandlerTest
         long delay = 500;
         String threadName = "cch-test";
         CountDownLatch latch = new CountDownLatch(2);
-        AtomicReference<CallbackCompletionHandler.ThreadInfo> threadInfoRef = new AtomicReference<>();
+        AtomicReference<StateTrackingHandler.ThreadInfo> threadInfoRef = new AtomicReference<>();
         EventsListener listener = new EventsListener()
         {
             @Override
-            public void onInvalidHandlerReturnValue(Request request, CallbackCompletionHandler.ThreadInfo completionThreadInfo)
+            public void onInvalidHandlerReturnValue(Request request, StateTrackingHandler.ThreadInfo completionThreadInfo)
             {
                 super.onInvalidHandlerReturnValue(request, completionThreadInfo);
                 threadInfoRef.set(completionThreadInfo);
             }
         };
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -206,17 +207,17 @@ public class CallbackCompletionHandlerTest
     public void testHandlerReturnsTrueHandlerCallbackNotCompleted() throws Exception
     {
         long timeout = 1000;
-        AtomicReference<CallbackCompletionHandler.ThreadInfo> threadInfoRef = new AtomicReference<>();
+        AtomicReference<StateTrackingHandler.ThreadInfo> threadInfoRef = new AtomicReference<>();
         EventsListener listener = new EventsListener()
         {
             @Override
-            public void onHandlerCallbackNotCompleted(Request request, CallbackCompletionHandler.ThreadInfo handlerThreadInfo)
+            public void onHandlerCallbackNotCompleted(Request request, StateTrackingHandler.ThreadInfo handlerThreadInfo)
             {
                 super.onHandlerCallbackNotCompleted(request, handlerThreadInfo);
                 threadInfoRef.set(handlerThreadInfo);
             }
         };
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setHandlerCallbackTimeout(Duration.ofMillis(timeout));
         completionHandler.setHandler(new Handler.Abstract()
         {
@@ -246,7 +247,7 @@ public class CallbackCompletionHandlerTest
     {
         long timeout = 1000;
         EventsListener listener = new EventsListener();
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setHandlerCallbackTimeout(Duration.ofMillis(timeout));
         completionHandler.setCompleteHandlerCallbackAtTimeout(true);
         completionHandler.setHandler(new Handler.Abstract()
@@ -277,17 +278,17 @@ public class CallbackCompletionHandlerTest
         long timeout = 1000;
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<String> threadNameRef = new AtomicReference<>();
-        AtomicReference<CallbackCompletionHandler.ThreadInfo> threadInfoRef = new AtomicReference<>();
+        AtomicReference<StateTrackingHandler.ThreadInfo> threadInfoRef = new AtomicReference<>();
         EventsListener listener = new EventsListener()
         {
             @Override
-            public void onHandlerCallbackNotCompleted(Request request, CallbackCompletionHandler.ThreadInfo handlerThreadInfo)
+            public void onHandlerCallbackNotCompleted(Request request, StateTrackingHandler.ThreadInfo handlerThreadInfo)
             {
                 super.onHandlerCallbackNotCompleted(request, handlerThreadInfo);
                 threadInfoRef.set(handlerThreadInfo);
             }
         };
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setHandlerCallbackTimeout(Duration.ofMillis(timeout));
         completionHandler.setHandler(new Handler.Abstract()
         {
@@ -321,7 +322,7 @@ public class CallbackCompletionHandlerTest
         long timeout = 1000;
         CountDownLatch latch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setDemandCallbackTimeout(Duration.ofMillis(timeout));
         completionHandler.setHandler(new Handler.Abstract()
         {
@@ -410,7 +411,7 @@ public class CallbackCompletionHandlerTest
 
         long timeout = 1000;
         EventsListener listener = new EventsListener();
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         wrapper.setHandler(completionHandler);
         completionHandler.setWriteTimeout(Duration.ofMillis(timeout));
         completionHandler.setHandler(new Handler.Abstract()
@@ -453,7 +454,7 @@ public class CallbackCompletionHandlerTest
                     public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
                     {
                         // The callback parameter is the write callback from
-                        // CallbackCompletionHandler that will not be completed.
+                        // StateTrackingHandler that will not be completed.
                         super.write(last, byteBuffer, Callback.NOOP);
                     }
                 };
@@ -463,7 +464,7 @@ public class CallbackCompletionHandlerTest
 
         long timeout = 1000;
         EventsListener listener = new EventsListener();
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setWriteTimeout(Duration.ofMillis(timeout));
         completionHandler.setHandlerCallbackTimeout(Duration.ofMillis(2 * timeout));
         wrapper.setHandler(completionHandler);
@@ -497,7 +498,7 @@ public class CallbackCompletionHandlerTest
         long timeout = 1000;
         CountDownLatch latch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setWriteCallbackTimeout(Duration.ofMillis(timeout));
         completionHandler.setHandler(new Handler.Abstract()
         {
@@ -544,7 +545,7 @@ public class CallbackCompletionHandlerTest
         long timeout = 1000;
         CountDownLatch demandLatch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setDemandCallbackTimeout(Duration.ofMillis(timeout));
         completionHandler.setHandler(new Handler.Abstract()
         {
@@ -617,7 +618,7 @@ public class CallbackCompletionHandlerTest
         long timeout = 1000;
         CountDownLatch writeLatch = new CountDownLatch(1);
         EventsListener listener = new EventsListener();
-        CallbackCompletionHandler completionHandler = new CallbackCompletionHandler(listener);
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
         completionHandler.setWriteCallbackTimeout(Duration.ofMillis(timeout));
         completionHandler.setHandler(new Handler.Abstract()
         {
@@ -663,7 +664,32 @@ public class CallbackCompletionHandlerTest
         }
     }
 
-    private static class EventsListener implements CallbackCompletionHandler.Listener
+    @Test
+    public void testHandlerThrows() throws Exception
+    {
+        EventsListener listener = new EventsListener();
+        StateTrackingHandler completionHandler = new StateTrackingHandler(listener);
+        completionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                throw new QuietException.RuntimeException();
+            }
+        });
+        start(completionHandler);
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+            GET / HTTP/1.1
+            Host: localhost
+            
+            """, 5, TimeUnit.SECONDS));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+        assertThat(listener.events(), contains("exception"));
+    }
+
+    private static class EventsListener implements StateTrackingHandler.Listener
     {
         private final List<String> events = new CopyOnWriteArrayList<>();
 
@@ -673,37 +699,43 @@ public class CallbackCompletionHandlerTest
         }
 
         @Override
-        public void onInvalidHandlerReturnValue(Request request, CallbackCompletionHandler.ThreadInfo completionThreadInfo)
+        public void onInvalidHandlerReturnValue(Request request, StateTrackingHandler.ThreadInfo completionThreadInfo)
         {
             events.add("invalid");
         }
 
         @Override
-        public void onHandlerCallbackNotCompleted(Request request, CallbackCompletionHandler.ThreadInfo handlerThreadInfo)
+        public void onHandlerException(Request request, Throwable failure, StateTrackingHandler.ThreadInfo completionThreadInfo)
+        {
+            events.add("exception");
+        }
+
+        @Override
+        public void onHandlerCallbackNotCompleted(Request request, StateTrackingHandler.ThreadInfo handlerThreadInfo)
         {
             events.add("handler");
         }
 
         @Override
-        public void onDemandCallbackBlocked(Request request, CallbackCompletionHandler.ThreadInfo demandThreadInfo, CallbackCompletionHandler.ThreadInfo runThreadInfo)
+        public void onDemandCallbackBlocked(Request request, StateTrackingHandler.ThreadInfo demandThreadInfo, StateTrackingHandler.ThreadInfo runThreadInfo)
         {
             events.add("demand-blocked");
         }
 
         @Override
-        public void onWriteBlocked(Request request, CallbackCompletionHandler.ThreadInfo writeThreadInfo, CallbackCompletionHandler.ThreadInfo writingThreadInfo)
+        public void onWriteBlocked(Request request, StateTrackingHandler.ThreadInfo writeThreadInfo, StateTrackingHandler.ThreadInfo writingThreadInfo)
         {
             events.add("write-blocked");
         }
 
         @Override
-        public void onWriteCallbackNotCompleted(Request request, Throwable writeFailure, CallbackCompletionHandler.ThreadInfo writeThreadInfo)
+        public void onWriteCallbackNotCompleted(Request request, Throwable writeFailure, StateTrackingHandler.ThreadInfo writeThreadInfo)
         {
             events.add("write-callback");
         }
 
         @Override
-        public void onWriteCallbackBlocked(Request request, Throwable writeFailure, CallbackCompletionHandler.ThreadInfo writeThreadInfo, CallbackCompletionHandler.ThreadInfo callbackThreadInfo)
+        public void onWriteCallbackBlocked(Request request, Throwable writeFailure, StateTrackingHandler.ThreadInfo writeThreadInfo, StateTrackingHandler.ThreadInfo callbackThreadInfo)
         {
             events.add("write-callback-blocked");
         }
