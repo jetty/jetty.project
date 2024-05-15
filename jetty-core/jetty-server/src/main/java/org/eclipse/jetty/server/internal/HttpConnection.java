@@ -808,7 +808,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (_head || _generator.isNoContent())
                         {
                             if (_chunk != null)
-                                _chunk.clear();
+                                BufferUtil.clear(chunkByteBuffer);
                             BufferUtil.clear(_content);
                         }
 
