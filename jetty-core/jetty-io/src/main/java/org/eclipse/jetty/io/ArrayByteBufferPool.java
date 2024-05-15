@@ -732,7 +732,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 super(wrapped.getByteBuffer(), wrapped);
                 this.size = size;
                 this.acquireInstant = Instant.now();
-                this.acquireStack = new Throwable();
+                this.acquireStack = new Throwable(Thread.currentThread().getName());
             }
 
             public int getSize()
@@ -782,7 +782,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             public void retain()
             {
                 super.retain();
-                retainStacks.add(new Throwable());
+                retainStacks.add(new Throwable(Thread.currentThread().getName()));
             }
 
             @Override
@@ -803,7 +803,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 catch (IllegalStateException e)
                 {
                     buffers.add(this);
-                    overReleaseStacks.add(new Throwable());
+                    overReleaseStacks.add(new Throwable(Thread.currentThread().getName()));
                     throw e;
                 }
             }
