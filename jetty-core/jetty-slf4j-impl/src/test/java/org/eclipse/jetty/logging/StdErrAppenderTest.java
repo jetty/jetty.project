@@ -21,6 +21,27 @@ import org.slf4j.event.Level;
 public class StdErrAppenderTest
 {
     @Test
+    public void testCircularThrowable()
+    {
+        JettyLoggerConfiguration config = new JettyLoggerConfiguration();
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
+        CapturedStream output = new CapturedStream();
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
+        appender.setStream(output);
+        JettyLogger logger = factory.getJettyLogger("org.eclipse.jetty.logging.LogTest");
+
+        // Build an exception with circular refs.
+        IllegalArgumentException commonCause = new IllegalArgumentException();
+        Throwable thrown = new Throwable(commonCause);
+        RuntimeException suppressed = new RuntimeException(thrown);
+        thrown.addSuppressed(suppressed);
+
+        appender.emit(logger, Level.INFO, System.currentTimeMillis(), "tname", thrown, "the message");
+
+        output.assertContains("[CIRCULAR REFERENCE: java.lang.Throwable]");
+    }
+
+    @Test
     public void testStdErrLogFormat()
     {
         Properties props = new Properties();

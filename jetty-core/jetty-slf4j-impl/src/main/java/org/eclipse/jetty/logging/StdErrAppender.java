@@ -14,7 +14,9 @@
 package org.eclipse.jetty.logging;
 
 import java.io.PrintStream;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TimeZone;
 
 import org.slf4j.event.Level;
@@ -175,7 +177,7 @@ public class StdErrAppender implements JettyAppender
             }
             else
             {
-                appendCause(builder, cause, "");
+                appendCause(builder, new HashSet<>(), cause, "");
             }
         }
     }
@@ -199,9 +201,16 @@ public class StdErrAppender implements JettyAppender
         }
     }
 
-    private void appendCause(StringBuilder builder, Throwable cause, String indent)
+    private void appendCause(StringBuilder builder, Set<Throwable> visited, Throwable cause, String indent)
     {
         builder.append(EOL).append(indent);
+        if (visited.contains(cause))
+        {
+            builder.append("[CIRCULAR REFERENCE: ").append(cause.getClass().getName()).append("]");
+            return;
+        }
+        visited.add(cause);
+
         appendEscaped(builder, cause.toString());
         StackTraceElement[] elements = cause.getStackTrace();
         for (int i = 0; elements != null && i < elements.length; i++)
@@ -213,14 +222,14 @@ public class StdErrAppender implements JettyAppender
         for (Throwable suppressed : cause.getSuppressed())
         {
             builder.append(EOL).append(indent).append("Suppressed: ");
-            appendCause(builder, suppressed, "\t|" + indent);
+            appendCause(builder, visited, suppressed, "\t|" + indent);
         }
 
         Throwable by = cause.getCause();
         if (by != null && by != cause)
         {
             builder.append(EOL).append(indent).append("Caused by: ");
-            appendCause(builder, by, indent);
+            appendCause(builder, visited, by, indent);
         }
     }
 
