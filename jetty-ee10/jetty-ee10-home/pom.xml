@@ -92,18 +92,18 @@
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-servlets</artifactId>
     </dependency>
-    <!-- Demo EE10 Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>jetty-ee10-demo-proxy-webapp</artifactId>
+      <artifactId>jetty-ee10-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>
       <optional>true</optional>
     </dependency>
+    <!-- Demo EE10 Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
-      <artifactId>jetty-ee10-demo-jetty-websocket-webapp</artifactId>
+      <artifactId>jetty-ee10-demo-proxy-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>
