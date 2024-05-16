@@ -56,6 +56,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
@@ -555,7 +556,13 @@ public class DefaultServlet extends HttpServlet
         if (includedServletPath != null)
             return encodePath(getIncludedPathInContext(req, includedServletPath, !isDefaultMapping(req)));
         else if (!isDefaultMapping(req))
-            return encodePath(req.getPathInfo());
+        {
+            String path = req.getPathInfo();
+            if (StringUtil.isEmpty(path))
+                path = req.getServletPath();
+
+            return encodePath(path);
+        }
         else if (req instanceof ServletApiRequest apiRequest)
             return Context.getPathInContext(req.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
         else
