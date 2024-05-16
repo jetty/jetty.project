@@ -25,11 +25,11 @@ import static org.hamcrest.Matchers.is;
 
 public class InstructionGeneratorTest
 {
-    private final ByteBufferPool _bufferPool = new ByteBufferPool.NonPooling();
+    private final ByteBufferPool _bufferPool = ByteBufferPool.NON_POOLING;
 
     private String toHexString(Instruction instruction)
     {
-        ByteBufferPool.Accumulator lease = new ByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator lease = new ByteBufferPool.Accumulator(); // TODO
         instruction.encode(_bufferPool, lease);
         assertThat(lease.getSize(), is(1));
         return BufferUtil.toHexString(lease.getByteBuffers().get(0));

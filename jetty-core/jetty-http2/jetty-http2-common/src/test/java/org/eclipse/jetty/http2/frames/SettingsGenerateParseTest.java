@@ -116,7 +116,6 @@ public class SettingsGenerateParseTest
         settings1.put(13, 17);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
         generator.generateSettings(accumulator, settings1, false);
-        System.err.println(accumulator);
         // Modify the length of the frame to make it invalid
         ByteBuffer bytes = accumulator.getByteBuffer();
         bytes.putShort(1, (short)(bytes.getShort(1) - 1));
