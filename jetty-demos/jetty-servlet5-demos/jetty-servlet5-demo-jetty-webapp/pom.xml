@@ -30,6 +30,16 @@
       <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
       <version>${ee9.jakarta.servlet.jsp.jstl.api.version}</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>jakarta.servlet</groupId>
+          <artifactId>jakarta.servlet-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
