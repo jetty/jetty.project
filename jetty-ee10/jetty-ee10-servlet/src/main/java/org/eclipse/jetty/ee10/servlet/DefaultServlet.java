@@ -560,14 +560,10 @@ public class DefaultServlet extends HttpServlet
             //a match via an extension mapping will more than likely
             //have no path info
             String path = req.getPathInfo();
-            if (MappingMatch.EXTENSION.equals(req.getHttpServletMapping().getMappingMatch()))
-            {
-                if (StringUtil.isEmpty(path))
-                    return encodePath(req.getServletPath());
-                else
-                    return encodePath(path);
-            }
-
+            if (StringUtil.isEmpty(path) && 
+                MappingMatch.EXTENSION.equals(req.getHttpServletMapping().getMappingMatch()))
+                path = req.getServletPath();
+          
             return encodePath(path);
         }
         else if (req instanceof ServletApiRequest apiRequest)
