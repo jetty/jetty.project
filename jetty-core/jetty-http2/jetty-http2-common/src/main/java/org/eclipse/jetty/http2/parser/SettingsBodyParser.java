@@ -110,13 +110,13 @@ public class SettingsBodyParser extends BodyParser
                 }
                 case SETTING_ID:
                 {
+                    if (length < 6)
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_settings_frame");
                     if (buffer.remaining() >= 2)
                     {
                         settingId = buffer.getShort() & 0xFF_FF;
                         state = State.SETTING_VALUE;
                         length -= 2;
-                        if (length <= 0)
-                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_settings_frame");
                     }
                     else
                     {
@@ -132,12 +132,8 @@ public class SettingsBodyParser extends BodyParser
                     --cursor;
                     settingId += currByte << (8 * cursor);
                     --length;
-                    if (length <= 0)
-                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_settings_frame");
                     if (cursor == 0)
-                    {
                         state = State.SETTING_VALUE;
-                    }
                     break;
                 }
                 case SETTING_VALUE:
@@ -168,8 +164,6 @@ public class SettingsBodyParser extends BodyParser
                     --cursor;
                     settingValue += currByte << (8 * cursor);
                     --length;
-                    if (cursor > 0 && length <= 0)
-                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_settings_frame");
                     if (cursor == 0)
                     {
                         if (LOG.isDebugEnabled())
