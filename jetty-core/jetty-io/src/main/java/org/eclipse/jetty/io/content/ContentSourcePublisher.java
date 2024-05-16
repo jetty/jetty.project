@@ -236,7 +236,9 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
                 // As per rule 3.13, Subscription.cancel() MUST request the Publisher to eventually
                 // drop any references to the corresponding subscriber.
                 this.demand.set(NO_MORE_DEMAND);
-                this.content.fail(reason);
+                // TODO: HttpChannelState does not satisfy the contract of Content.Source "If read() has returned a last chunk, this is a no operation."
+                if (finalSignal != FinalSignal.COMPLETE)
+                    this.content.fail(reason);
                 this.content = null;
                 try
                 {
