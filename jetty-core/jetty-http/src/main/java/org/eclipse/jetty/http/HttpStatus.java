@@ -246,7 +246,7 @@ public class HttpStatus
          */
         public boolean isRedirection()
         {
-            return HttpStatus.isRedirectWithLocation(this._code);
+            return HttpStatus.isRedirection(this._code);
         }
 
         /**
@@ -381,7 +381,7 @@ public class HttpStatus
      * @return true if within range of codes that belongs to
      * <code>Redirection</code> messages.
      */
-    public static boolean isRedirect(int code)
+    public static boolean isRedirection(int code)
     {
         return ((300 <= code) && (code <= 399));
     }
@@ -397,9 +397,9 @@ public class HttpStatus
      * @return true if within range of codes that belongs to
      * <code>Redirection</code> messages and not a {@code 304}
      */
-    public static boolean isRedirectWithLocation(int code)
+    public static boolean isRedirectionWithLocation(int code)
     {
-        return isRedirect(code) && code != 304;
+        return isRedirection(code) && code != 304;
     }
 
     /**

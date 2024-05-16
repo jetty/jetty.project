@@ -72,7 +72,7 @@ public class RedirectPatternRule extends PatternRule
      */
     public void setStatusCode(int statusCode)
     {
-        if (!HttpStatus.isRedirectWithLocation(statusCode))
+        if (!HttpStatus.isRedirectionWithLocation(statusCode))
             throw new IllegalArgumentException("Invalid redirect status code " + statusCode + " (must be a value between 300 and 399)");
         _statusCode = statusCode;
     }

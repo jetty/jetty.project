@@ -52,7 +52,7 @@ public class SecuredRedirectHandler extends HandlerWrapper
      */
     public SecuredRedirectHandler(final int code)
     {
-        if (!HttpStatus.isRedirectWithLocation(code))
+        if (!HttpStatus.isRedirectionWithLocation(code))
             throw new IllegalArgumentException("Not a 3xx redirect code");
         _redirectCode = code;
     }

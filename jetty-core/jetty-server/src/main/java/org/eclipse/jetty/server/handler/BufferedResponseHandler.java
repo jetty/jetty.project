@@ -119,7 +119,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
             return false;
 
         int status = response.getStatus();
-        if (HttpStatus.hasNoBody(status) || HttpStatus.isRedirectWithLocation(status))
+        if (HttpStatus.hasNoBody(status) || HttpStatus.isRedirectionWithLocation(status))
             return false;
 
         String ct = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
