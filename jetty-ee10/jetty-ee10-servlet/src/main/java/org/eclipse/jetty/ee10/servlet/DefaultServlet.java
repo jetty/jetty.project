@@ -557,9 +557,16 @@ public class DefaultServlet extends HttpServlet
             return encodePath(getIncludedPathInContext(req, includedServletPath, !isDefaultMapping(req)));
         else if (!isDefaultMapping(req))
         {
+            //a match via an extension mapping will more than likely
+            //have no path info
             String path = req.getPathInfo();
-            if (StringUtil.isEmpty(path))
-                path = req.getServletPath();
+            if (MappingMatch.EXTENSION.equals(req.getHttpServletMapping().getMappingMatch()))
+            {
+                if (StringUtil.isEmpty(path))
+                    return encodePath(req.getServletPath());
+                else
+                    return encodePath(path);
+            }
 
             return encodePath(path);
         }
