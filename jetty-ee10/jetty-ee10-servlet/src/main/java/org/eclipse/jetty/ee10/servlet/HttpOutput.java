@@ -177,7 +177,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void reopen()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             _softClose = false;
         }
@@ -211,7 +211,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         boolean wake = false;
         Callback closedCallback = null;
         ByteBuffer closeContent = null;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (LOG.isDebugEnabled())
                 state = stateString();
@@ -313,7 +313,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void softClose()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             _softClose = true;
         }
@@ -332,7 +332,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         boolean succeeded = false;
         Throwable error = null;
         ByteBuffer content = null;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             // First check the API state for any unrecoverable situations
             switch (_apiState)
@@ -441,7 +441,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void completed(Throwable failure)
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             _state = State.CLOSED;
             releaseBuffer();
@@ -453,7 +453,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         ByteBuffer content = null;
         Blocker.Callback blocker = null;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_softClose)
                 return;
@@ -574,7 +574,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public ByteBuffer getByteBuffer()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             return acquireBuffer().getByteBuffer();
         }
@@ -600,7 +600,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public boolean isClosed()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             return _softClose || (_state != State.OPEN);
         }
@@ -608,18 +608,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public boolean isAsync()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
-            switch (_apiState)
+            return switch (_apiState)
             {
-                case ASYNC:
-                case READY:
-                case PENDING:
-                case UNREADY:
-                    return true;
-                default:
-                    return false;
-            }
+                case ASYNC, READY, PENDING, UNREADY -> true;
+                default -> false;
+            };
         }
     }
 
@@ -627,7 +622,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public void flush() throws IOException
     {
         ByteBuffer content = null;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             switch (_state)
             {
@@ -712,7 +707,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         // Async or Blocking ?
         boolean async;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
             long written = _written + len;
@@ -847,7 +842,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         // Async or Blocking ?
         boolean async;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
             long written = _written + len;
@@ -926,7 +921,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         // Async or Blocking ?
 
         boolean async = false;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
             long written = _written + 1;
@@ -1184,7 +1179,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private boolean prepareSendContent(int len, Callback callback)
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_aggregate != null && _aggregate.hasRemaining())
             {
@@ -1261,7 +1256,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void recycle()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
@@ -1283,7 +1278,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void resetBuffer()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_aggregate != null)
                 _aggregate.clear();
@@ -1297,7 +1292,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (!_servletChannel.getServletRequestState().isAsync())
             throw new IllegalStateException("!ASYNC: " + stateString());
         boolean wake;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_apiState != ApiState.BLOCKING)
                 throw new IllegalStateException("!OPEN" + stateString());
@@ -1312,29 +1307,23 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public boolean isReady()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
-            switch (_apiState)
+            return switch (_apiState)
             {
-                case BLOCKING:
-                case READY:
-                    return true;
-
-                case ASYNC:
+                case BLOCKING, READY -> true;
+                case ASYNC ->
+                {
                     _apiState = ApiState.READY;
-                    return true;
-
-                case PENDING:
+                    yield true;
+                }
+                case PENDING ->
+                {
                     _apiState = ApiState.UNREADY;
-                    return false;
-
-                case BLOCKED:
-                case UNREADY:
-                    return false;
-
-                default:
-                    throw new IllegalStateException(stateString());
-            }
+                    yield false;
+                }
+                case BLOCKED, UNREADY -> false;
+            };
         }
     }
 
@@ -1343,7 +1332,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         Throwable error = null;
 
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_onError != null)
             {
@@ -1394,7 +1383,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public String toString()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             return String.format("%s@%x{%s}", this.getClass().getSimpleName(), hashCode(), stateString());
         }

@@ -29,8 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Holder
- *
  * Specialization of AbstractHolder for servlet-related classes that
  * have init-params etc
  *
@@ -41,7 +39,7 @@ public abstract class Holder<T> extends BaseHolder<T>
 {
     private static final Logger LOG = LoggerFactory.getLogger(Holder.class);
 
-    private final Map<String, String> _initParams = new HashMap<String, String>(3);
+    private final Map<String, String> _initParams = new HashMap<>(3);
     private String _displayName;
     private boolean _asyncSupported;
     private String _name;
@@ -69,15 +67,11 @@ public abstract class Holder<T> extends BaseHolder<T>
 
     public String getInitParameter(String param)
     {
-        if (_initParams == null)
-            return null;
-        return (String)_initParams.get(param);
+        return _initParams.get(param);
     }
 
     public Enumeration<String> getInitParameterNames()
     {
-        if (_initParams == null)
-            return Collections.enumeration(Collections.EMPTY_LIST);
         return Collections.enumeration(_initParams.keySet());
     }
 
@@ -96,7 +90,7 @@ public abstract class Holder<T> extends BaseHolder<T>
     @Override
     protected void setInstance(T instance)
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             super.setInstance(instance);
             if (getName() == null)
@@ -277,7 +271,7 @@ public abstract class Holder<T> extends BaseHolder<T>
                 if (Holder.this.getInitParameter(entry.getKey()) != null)
                 {
                     if (clash == null)
-                        clash = new HashSet<String>();
+                        clash = new HashSet<>();
                     clash.add(entry.getKey());
                 }
             }

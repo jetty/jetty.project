@@ -62,7 +62,6 @@ public class Invoker extends HttpServlet
 
     private ContextHandler _contextHandler;
     private ServletHandler _servletHandler;
-    private ServletHandler.MappedServlet _invokerEntry;
     private Map<String, String> _parameters;
     private boolean _nonContextServlets;
     private boolean _verbose;
@@ -83,16 +82,16 @@ public class Invoker extends HttpServlet
             String lvalue = value.toLowerCase(Locale.ENGLISH);
             if ("nonContextServlets".equals(param))
             {
-                _nonContextServlets = value.length() > 0 && lvalue.startsWith("t");
+                _nonContextServlets = !value.isEmpty() && lvalue.startsWith("t");
             }
             if ("verbose".equals(param))
             {
-                _verbose = value.length() > 0 && lvalue.startsWith("t");
+                _verbose = !value.isEmpty() && lvalue.startsWith("t");
             }
             else
             {
                 if (_parameters == null)
-                    _parameters = new HashMap<String, String>();
+                    _parameters = new HashMap<>();
                 _parameters.put(param, value);
             }
         }
@@ -145,25 +144,25 @@ public class Invoker extends HttpServlet
             // look for a class mapping
             if (servlet.endsWith(".class"))
                 servlet = servlet.substring(0, servlet.length() - 6);
-            if (servlet == null || servlet.length() == 0)
+            if (servlet.isEmpty())
             {
                 response.sendError(404);
                 return;
             }
 
-            try (AutoLock l = _servletHandler.lock())
+            try (AutoLock ignored = _servletHandler.lock())
             {
                 // find the entry for the invoker (me)
-                _invokerEntry = _servletHandler.getMappedServlet(servletPath);
+                ServletHandler.MappedServlet invokerEntry = _servletHandler.getMappedServlet(servletPath);
 
                 // Check for existing mapping (avoid threaded race).
                 String path = URIUtil.addPaths(servletPath, servlet);
                 ServletHandler.MappedServlet entry = _servletHandler.getMappedServlet(path);
 
-                if (entry != null && !entry.equals(_invokerEntry))
+                if (entry != null && !entry.equals(invokerEntry))
                 {
                     // Use the holder
-                    holder = (ServletHolder)entry.getServletHolder();
+                    holder = entry.getServletHolder();
                 }
                 else
                 {
@@ -225,7 +224,7 @@ public class Invoker extends HttpServlet
         }
     }
 
-    class InvokedRequest extends HttpServletRequestWrapper
+    static class InvokedRequest extends HttpServletRequestWrapper
     {
         String _servletPath;
         String _pathInfo;
@@ -241,7 +240,7 @@ public class Invoker extends HttpServlet
             _included = included;
             _servletPath = URIUtil.addPaths(servletPath, name);
             _pathInfo = pathInfo.substring(name.length() + 1);
-            if (_pathInfo.length() == 0)
+            if (_pathInfo.isEmpty())
                 _pathInfo = null;
         }
 
@@ -266,12 +265,13 @@ public class Invoker extends HttpServlet
         {
             if (_included)
             {
-                if (name.equals(Dispatcher.INCLUDE_REQUEST_URI))
-                    return URIUtil.addPaths(URIUtil.addPaths(getContextPath(), _servletPath), _pathInfo);
-                if (name.equals(Dispatcher.INCLUDE_PATH_INFO))
-                    return _pathInfo;
-                if (name.equals(Dispatcher.INCLUDE_SERVLET_PATH))
-                    return _servletPath;
+                return switch (name)
+                {
+                    case Dispatcher.INCLUDE_REQUEST_URI -> URIUtil.addPaths(URIUtil.addPaths(getContextPath(), _servletPath), _pathInfo);
+                    case Dispatcher.INCLUDE_PATH_INFO -> _pathInfo;
+                    case Dispatcher.INCLUDE_SERVLET_PATH -> _servletPath;
+                    default -> super.getAttribute(name);
+                };
             }
             return super.getAttribute(name);
         }

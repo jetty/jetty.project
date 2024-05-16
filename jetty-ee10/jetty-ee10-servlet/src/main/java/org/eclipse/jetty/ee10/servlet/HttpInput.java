@@ -59,7 +59,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public void recycle()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("recycle {}", this);
@@ -70,7 +70,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public void reopen()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("reopen {}", this);
@@ -117,7 +117,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public long getContentReceived()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return _contentProducer.getBytesArrived();
         }
@@ -125,7 +125,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean consumeAvailable()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("consumeAll {}", this);
@@ -142,7 +142,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean isError()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             boolean error = _contentProducer.isError();
             if (LOG.isDebugEnabled())
@@ -172,7 +172,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public boolean isReady()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             boolean ready = _contentProducer.isReady();
             if (LOG.isDebugEnabled())
@@ -201,7 +201,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean onContentProducible()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return _contentProducer.onContentProducible();
         }
@@ -210,7 +210,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public int read() throws IOException
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             int read = read(_oneByteBuffer, 0, 1);
             if (read == 0)
@@ -232,7 +232,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private int read(ByteBuffer buffer, byte[] b, int off, int len) throws IOException
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             // Don't try to get content if no bytes were requested to be read.
             if (len == 0)
@@ -292,7 +292,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public boolean hasContent()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             // Do not call _contentProducer.available() as it calls HttpChannel.produceContent()
             // which is forbidden by this method's contract.
@@ -306,7 +306,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public int available()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             int available = _contentProducer.available();
             if (LOG.isDebugEnabled())
@@ -325,7 +325,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public void run()
     {
         Content.Chunk chunk;
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             // Call isReady() to make sure that if not ready we register for fill interest.
             if (!_contentProducer.isReady())

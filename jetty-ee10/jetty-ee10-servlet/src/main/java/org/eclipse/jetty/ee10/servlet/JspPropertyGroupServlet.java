@@ -39,14 +39,12 @@ public class JspPropertyGroupServlet extends GenericServlet
 
     public static final String NAME = "__org.eclipse.jetty.servlet.JspPropertyGroupServlet__";
     private final ServletHandler _servletHandler;
-    private final ContextHandler _contextHandler;
     private ServletHolder _dftServlet;
     private ServletHolder _jspServlet;
     private boolean _starJspMapped;
 
     public JspPropertyGroupServlet(ContextHandler context, ServletHandler servletHandler)
     {
-        _contextHandler = context;
         _servletHandler = servletHandler;
     }
 
@@ -69,7 +67,10 @@ public class JspPropertyGroupServlet extends GenericServlet
                     for (String path : paths)
                     {
                         if ("*.jsp".equals(path) && !NAME.equals(m.getServletName()))
+                        {
                             servletMapping = m;
+                            break;
+                        }
                     }
                 }
             }
@@ -88,14 +89,14 @@ public class JspPropertyGroupServlet extends GenericServlet
     @Override
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
     {
-        HttpServletRequest request = null;
+        HttpServletRequest request;
         if (req instanceof HttpServletRequest)
             request = (HttpServletRequest)req;
         else
             throw new ServletException("Request not HttpServletRequest");
 
-        String servletPath = null;
-        String pathInfo = null;
+        String servletPath;
+        String pathInfo;
         if (request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI) != null)
         {
             servletPath = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
@@ -124,7 +125,6 @@ public class JspPropertyGroupServlet extends GenericServlet
         }
         else
         {
-
             Resource resource = null; // TODO: _contextHandler.getResource(pathInContext);
             if (resource != null && resource.isDirectory())
                 _dftServlet.getServlet().service(req, res);

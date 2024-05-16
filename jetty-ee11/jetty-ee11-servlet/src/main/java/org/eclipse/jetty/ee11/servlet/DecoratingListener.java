@@ -145,7 +145,9 @@ public class DecoratingListener implements ServletContextAttributeListener
         {
             try
             {
-                return (T)_decorate.invoke(_object, o);
+                @SuppressWarnings("unchecked")
+                T decorated = (T)_decorate.invoke(_object, o);
+                return decorated;
             }
             catch (Throwable t)
             {

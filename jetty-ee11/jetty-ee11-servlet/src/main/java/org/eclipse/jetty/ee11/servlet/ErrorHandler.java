@@ -52,7 +52,6 @@ public class ErrorHandler implements Request.Handler
 {
     // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
-    public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
     public static final String ERROR_CHARSET = "org.eclipse.jetty.server.error_charset";
 
@@ -68,15 +67,11 @@ public class ErrorHandler implements Request.Handler
 
     public boolean errorPageForMethod(String method)
     {
-        switch (method)
+        return switch (method)
         {
-            case "GET":
-            case "POST":
-            case "HEAD":
-                return true;
-            default:
-                return false;
-        }
+            case "GET", "POST", "HEAD" -> true;
+            default -> false;
+        };
     }
 
     @Override

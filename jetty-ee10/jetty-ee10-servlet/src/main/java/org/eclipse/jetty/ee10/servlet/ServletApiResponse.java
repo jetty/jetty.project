@@ -532,6 +532,7 @@ public class ServletApiResponse implements HttpServletResponse
         }
 
         @Override
+        @Deprecated(forRemoval = true, since = "12.1.0")
         public String getComment()
         {
             return _cookie.getComment();
@@ -574,6 +575,7 @@ public class ServletApiResponse implements HttpServletResponse
         }
 
         @Override
+        @Deprecated(forRemoval = true, since = "12.1.0")
         public int getVersion()
         {
             return _cookie.getVersion();
@@ -612,7 +614,7 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public boolean equals(Object obj)
         {
-            return HttpCookie.equals(this, obj);
+            return obj instanceof HttpCookie that && HttpCookie.equals(this, that);
         }
 
         @Override
