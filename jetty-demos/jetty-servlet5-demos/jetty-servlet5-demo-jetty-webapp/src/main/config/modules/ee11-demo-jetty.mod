@@ -22,7 +22,7 @@ ee11-demo-rewrite
 demo-realm
 
 [files]
-webapps/demo-jetty.d/
+webapps/ee11-demo-jetty.d/
 basehome:modules/demo.d/ee11-demo-jetty.xml|webapps/ee11-demo-jetty.xml
 basehome:modules/demo.d/override-web.xml|webapps/ee11-demo-jetty.d/override-web.xml
 basehome:modules/demo.d/ee11-demo-jetty.properties|webapps/ee11-demo-jetty.properties

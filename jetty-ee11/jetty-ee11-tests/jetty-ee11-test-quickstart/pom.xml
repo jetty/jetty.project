@@ -35,27 +35,27 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-jetty-webapp</artifactId>
+      <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-jndi-webapp</artifactId>
+      <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-mock-resources</artifactId>
+      <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-spec-webapp</artifactId>
+      <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
@@ -131,7 +131,7 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
-                  <artifactId>jetty-servlet4-demo-jndi-webapp</artifactId>
+                  <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
@@ -141,7 +141,7 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
-                  <artifactId>jetty-servlet4-demo-spec-webapp</artifactId>
+                  <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
@@ -151,7 +151,7 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
-                  <artifactId>jetty-servlet4-demo-jetty-webapp</artifactId>
+                  <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
