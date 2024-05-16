@@ -16,8 +16,6 @@ package org.eclipse.jetty.ee11.servlet;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * Source
- *
  * The source of a web artifact: servlet, filter, mapping etc
  */
 public class Source

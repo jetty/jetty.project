@@ -21,8 +21,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
- * ListenerHolder
- *
  * Specialization of BaseHolder for servlet listeners. This
  * allows us to record where the listener originated - web.xml,
  * annotation, api etc.
@@ -105,7 +103,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
     @Override
     protected EventListener createInstance() throws Exception
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             EventListener listener = super.createInstance();
             if (listener == null)

@@ -144,7 +144,7 @@ class CrossContextDispatcher implements RequestDispatcher
         }
     }
 
-    private class IncludeResponse extends ServletCoreResponse
+    private static class IncludeResponse extends ServletCoreResponse
     {
         public IncludeResponse(Request coreRequest, HttpServletResponse httpServletResponse)
         {
@@ -256,7 +256,6 @@ class CrossContextDispatcher implements RequestDispatcher
     {
         HttpServletRequest httpServletRequest = (servletRequest instanceof HttpServletRequest) ? ((HttpServletRequest)servletRequest) : new ServletRequestHttpWrapper(servletRequest);
         HttpServletResponse httpServletResponse = (servletResponse instanceof HttpServletResponse) ? (HttpServletResponse)servletResponse : new ServletResponseHttpWrapper(servletResponse);
-        ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(servletResponse);
 
         IncludeRequest includeRequest = new IncludeRequest(httpServletRequest);
         IncludeResponse includeResponse = new IncludeResponse(includeRequest, httpServletResponse);

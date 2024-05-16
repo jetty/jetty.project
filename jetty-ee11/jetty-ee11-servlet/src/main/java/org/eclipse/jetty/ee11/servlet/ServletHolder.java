@@ -77,7 +77,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     private ServletHolder.Registration _registration;
     private JspContainer _jspContainer;
 
-    private volatile Servlet _servlet;
+    private Servlet _servlet;
     private Config _config;
     private boolean _enabled = true;
 
@@ -201,31 +201,31 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
      * Comparator by init order.
      */
     @Override
-    public int compareTo(ServletHolder sh)
+    public int compareTo(ServletHolder servletHolder)
     {
-        if (sh == this)
+        if (servletHolder == this)
             return 0;
 
-        if (sh._initOrder < _initOrder)
+        if (servletHolder._initOrder < _initOrder)
             return 1;
 
-        if (sh._initOrder > _initOrder)
+        if (servletHolder._initOrder > _initOrder)
             return -1;
 
         // consider getClassName(), need to position properly when one is configured but not the other
         int c;
-        if (getClassName() == null && sh.getClassName() == null)
+        if (getClassName() == null && servletHolder.getClassName() == null)
             c = 0;
         else if (getClassName() == null)
             c = -1;
-        else if (sh.getClassName() == null)
+        else if (servletHolder.getClassName() == null)
             c = 1;
         else
-            c = getClassName().compareTo(sh.getClassName());
+            c = getClassName().compareTo(servletHolder.getClassName());
 
         // if _initOrder and getClassName() are the same, consider the getName()
         if (c == 0)
-            c = getName().compareTo(sh.getName());
+            c = getName().compareTo(servletHolder.getName());
 
         return c;
     }
@@ -252,7 +252,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
      */
     public void setUserRoleLink(String name, String link)
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (_roleMap == null)
                 _roleMap = new HashMap<>();
@@ -269,7 +269,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
      */
     public String getUserRoleLink(String name)
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (_roleMap == null)
                 return name;
@@ -281,7 +281,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     public Map<String, String> getRoleLinks()
     {
         if (_roleMap == null)
-            return Collections.EMPTY_MAP;
+            return Collections.emptyMap();
         
         return Collections.unmodifiableMap(_roleMap);
     }
@@ -416,7 +416,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     public void initialize()
         throws Exception
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (_servlet == null && (_initOnStartup || isInstance()))
             {
@@ -430,7 +430,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     public void doStop()
         throws Exception
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             Servlet servlet = _servlet;
             if (servlet != null)
@@ -487,7 +487,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         Servlet servlet = _servlet;
         if (servlet == null)
         {
-            try (AutoLock l = lock())
+            try (AutoLock ignored = lock())
             {
                 if (_servlet == null && isRunning())
                 {
@@ -549,7 +549,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
 
     private Servlet makeUnavailable(UnavailableException e)
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (_servlet instanceof UnavailableServlet)
             {
@@ -863,7 +863,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         String jspPackageName = null;
 
         if (getServletHandler() != null && getServletHandler().getServletContext() != null)
-            jspPackageName = (String)getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME);
+            jspPackageName = getServletHandler().getServletContext().getInitParameter(JSP_GENERATED_PACKAGE_NAME);
 
         if (jspPackageName == null)
             jspPackageName = "org.apache.jsp";
@@ -901,7 +901,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     {
         if (StringUtil.isBlank(element))
             return;
-        if (path.length() > 0)
+        if (!path.isEmpty())
             path.append(".");
         path.append(element);
     }
@@ -1027,9 +1027,9 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         @Override
         public void destroy()
         {
-            try (AutoLock l = lock())
+            try (AutoLock ignored = lock())
             {
-                while (_stack.size() > 0)
+                while (!_stack.isEmpty())
                 {
                     Servlet servlet = _stack.pop();
                     try
@@ -1059,9 +1059,9 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         @Override
         public void init(ServletConfig config) throws ServletException
         {
-            try (AutoLock l = lock())
+            try (AutoLock ignored = lock())
             {
-                if (_stack.size() == 0)
+                if (_stack.isEmpty())
                 {
                     try
                     {
@@ -1085,10 +1085,10 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             Servlet s;
-            try (AutoLock l = lock())
+            try (AutoLock ignored1 = lock())
             {
-                if (_stack.size() > 0)
-                    s = (Servlet)_stack.pop();
+                if (!_stack.isEmpty())
+                    s = _stack.pop();
                 else
                 {
                     try
@@ -1113,7 +1113,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
             }
             finally
             {
-                try (AutoLock l = lock())
+                try (AutoLock ignored = lock())
                 {
                     _stack.push(s);
                 }
@@ -1137,7 +1137,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     @Override
     protected Servlet createInstance() throws Exception
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             Servlet servlet = super.createInstance();
             if (servlet == null)
@@ -1217,7 +1217,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
                 }
                 else if (_unavailableStart.compareAndSet(start, 0))
                 {
-                    try (AutoLock l = lock())
+                    try (AutoLock ignored = lock())
                     {
                         _servlet = getWrapped();
                     }
@@ -1304,7 +1304,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         @Override
         public String toString()
         {
-            return String.format("%s:%s", this.getClass().getSimpleName(), _wrappedServlet.toString());
+            return String.format("%s:%s", this.getClass().getSimpleName(), _wrappedServlet);
         }
     }
     

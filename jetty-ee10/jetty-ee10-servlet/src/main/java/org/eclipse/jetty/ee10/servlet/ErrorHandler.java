@@ -68,15 +68,11 @@ public class ErrorHandler implements Request.Handler
 
     public boolean errorPageForMethod(String method)
     {
-        switch (method)
+        return switch (method)
         {
-            case "GET":
-            case "POST":
-            case "HEAD":
-                return true;
-            default:
-                return false;
-        }
+            case "GET", "POST", "HEAD" -> true;
+            default -> false;
+        };
     }
 
     @Override

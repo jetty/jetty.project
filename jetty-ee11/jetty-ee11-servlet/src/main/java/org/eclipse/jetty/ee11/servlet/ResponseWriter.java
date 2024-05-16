@@ -18,6 +18,7 @@ import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.util.Formatter;
 import java.util.Locale;
+import java.util.Objects;
 
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,6 +42,7 @@ public class ResponseWriter extends PrintWriter
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseWriter.class);
 
+    private final Object _lock;
     private final WriteThroughWriter _writer;
     private final Locale _locale;
     private final String _encoding;
@@ -51,6 +53,7 @@ public class ResponseWriter extends PrintWriter
     public ResponseWriter(WriteThroughWriter writer, Locale locale, String encoding)
     {
         super(writer, false);
+        _lock = lock;
         _writer = writer;
         _locale = locale;
         _encoding = encoding;
@@ -62,12 +65,12 @@ public class ResponseWriter extends PrintWriter
             return false;
         if (_encoding == null && encoding != null)
             return false;
-        return _encoding.equalsIgnoreCase(encoding) && _locale.equals(locale);
+        return Objects.equals(_encoding, encoding) && Objects.equals(_locale, locale); 
     }
 
     public void reopen()
     {
-        synchronized (lock)
+        synchronized (_lock)
         {
             _isClosed = false;
             clearError();
@@ -78,7 +81,7 @@ public class ResponseWriter extends PrintWriter
     @Override
     protected void clearError()
     {
-        synchronized (lock)
+        synchronized (_lock)
         {
             _ioException = null;
             super.clearError();
@@ -88,7 +91,7 @@ public class ResponseWriter extends PrintWriter
     @Override
     public boolean checkError()
     {
-        synchronized (lock)
+        synchronized (_lock)
         {
             return _ioException != null || super.checkError();
         }
@@ -138,7 +141,7 @@ public class ResponseWriter extends PrintWriter
     {
         try
         {
-            synchronized (lock)
+            synchronized (_lock)
             {
                 isOpen();
                 out.flush();
@@ -155,7 +158,7 @@ public class ResponseWriter extends PrintWriter
     {
         try
         {
-            synchronized (lock)
+            synchronized (_lock)
             {
                 out.close();
                 _isClosed = true;
@@ -172,7 +175,7 @@ public class ResponseWriter extends PrintWriter
      */
     void markAsClosed()
     {
-        synchronized (lock)
+        synchronized (_lock)
         {
             _isClosed = true;
         }
@@ -183,7 +186,7 @@ public class ResponseWriter extends PrintWriter
     {
         try
         {
-            synchronized (lock)
+            synchronized (_lock)
             {
                 isOpen();
                 out.write(c);
@@ -206,7 +209,7 @@ public class ResponseWriter extends PrintWriter
     {
         try
         {
-            synchronized (lock)
+            synchronized (_lock)
             {
                 isOpen();
                 out.write(buf, off, len);
@@ -235,7 +238,7 @@ public class ResponseWriter extends PrintWriter
     {
         try
         {
-            synchronized (lock)
+            synchronized (_lock)
             {
                 isOpen();
                 out.write(s, off, len);
@@ -320,7 +323,7 @@ public class ResponseWriter extends PrintWriter
     {
         try
         {
-            synchronized (lock)
+            synchronized (_lock)
             {
                 isOpen();
                 out.write(System.lineSeparator());
@@ -349,7 +352,7 @@ public class ResponseWriter extends PrintWriter
     {
         try
         {
-            synchronized (lock)
+            synchronized (_lock)
             {
                 isOpen();
                 out.write(c);
@@ -397,7 +400,7 @@ public class ResponseWriter extends PrintWriter
     {
         try
         {
-            synchronized (lock)
+            synchronized (_lock)
             {
                 isOpen();
                 out.write(s, 0, s.length);
@@ -424,7 +427,7 @@ public class ResponseWriter extends PrintWriter
 
         try
         {
-            synchronized (lock)
+            synchronized (_lock)
             {
                 isOpen();
                 out.write(s, 0, s.length());
@@ -478,7 +481,7 @@ public class ResponseWriter extends PrintWriter
             if (locale == null)
                 locale = _locale;
 
-            synchronized (lock)
+            synchronized (_lock)
             {
                 isOpen();
 

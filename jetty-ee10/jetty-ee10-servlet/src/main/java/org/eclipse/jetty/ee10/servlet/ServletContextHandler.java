@@ -510,37 +510,31 @@ public class ServletContextHandler extends ContextHandler
      */
     public void contextDestroyed() throws Exception
     {
-        switch (_contextStatus)
+        if (Objects.requireNonNull(_contextStatus) == ContextStatus.INITIALIZED)
         {
-            case INITIALIZED:
+            try
             {
-                try
+                //Call context listeners
+                Throwable multiException = null;
+                ServletContextEvent event = new ServletContextEvent(getServletContext());
+                Collections.reverse(_destroyServletContextListeners);
+                for (ServletContextListener listener : _destroyServletContextListeners)
                 {
-                    //Call context listeners
-                    Throwable multiException = null;
-                    ServletContextEvent event = new ServletContextEvent(getServletContext());
-                    Collections.reverse(_destroyServletContextListeners);
-                    for (ServletContextListener listener : _destroyServletContextListeners)
+                    try
                     {
-                        try
-                        {
-                            callContextDestroyed(listener, event);
-                        }
-                        catch (Exception x)
-                        {
-                            multiException = ExceptionUtil.combine(multiException, x);
-                        }
+                        callContextDestroyed(listener, event);
                     }
-                    ExceptionUtil.ifExceptionThrow(multiException);
+                    catch (Exception x)
+                    {
+                        multiException = ExceptionUtil.combine(multiException, x);
+                    }
                 }
-                finally
-                {
-                    _contextStatus = ContextStatus.DESTROYED;
-                }
-                break;
+                ExceptionUtil.ifExceptionThrow(multiException);
             }
-            default:
-                break;
+            finally
+            {
+                _contextStatus = ContextStatus.DESTROYED;
+            }
         }
     }
 
@@ -630,7 +624,7 @@ public class ServletContextHandler extends ContextHandler
             contextPath = contextPath.substring(0, contextPath.length() - 1);
         }
 
-        if (contextPath.length() == 0)
+        if (contextPath.isEmpty())
         {
             LOG.warn("Empty contextPath");
             contextPath = "/";
@@ -2768,7 +2762,7 @@ public class ServletContextHandler extends ContextHandler
             path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
-            if (path.length() == 0)
+            if (path.isEmpty())
                 path = "/";
             else if (path.charAt(0) != '/')
                 path = "/" + path;

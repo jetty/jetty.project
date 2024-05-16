@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.Callback;
  */
 public class ServletContextResponse extends ContextResponse implements ServletContextHandler.ServletResponseInfo
 {
-    protected enum OutputType
+    public enum OutputType
     {
         NONE, STREAM, WRITER
     }
@@ -515,7 +515,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         return isWriting() || isStreaming();
     }
 
-    protected enum EncodingFrom
+    public enum EncodingFrom
     {
         /**
          * Character encoding was not set, or the encoding was cleared with {@code setCharacterEncoding(null)}.

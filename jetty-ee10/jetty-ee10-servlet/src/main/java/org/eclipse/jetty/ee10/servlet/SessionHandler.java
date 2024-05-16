@@ -105,6 +105,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     public final class CookieConfig implements SessionCookieConfig
     {
         @Override
+        @Deprecated(forRemoval = true, since = "12.0.1")
         public String getComment()
         {
             return getSessionComment();
@@ -203,6 +204,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         }
 
         @Override
+        @Deprecated(forRemoval = true, since = "12.1.0")
         public void setComment(String comment)
         {
             checkState();
