@@ -15,7 +15,7 @@
           <Property name="jetty.sessionIdManager.workerName">
             <Default>node<Env name="JETTY_WORKER_INSTANCE">
                            <Default>
-                             <Env name="GAE_INSTANCE">
+                             <Env name="GAE_INSTANCE" deprecated="GAE_MODULE_INSTANCE">
                                <Default>0</Default>
                              </Env>
                            </Default>
