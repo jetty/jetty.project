@@ -26,6 +26,16 @@
       <groupId>jakarta.servlet.jsp.jstl</groupId>
       <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
       <version>${ee9.jakarta.servlet.jsp.jstl.api.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>jakarta.servlet</groupId>
+          <artifactId>jakarta.servlet-api</artifactId>
+        </exclusion>
+      </exclusions>
       <scope>provided</scope>
     </dependency>
     <dependency>
