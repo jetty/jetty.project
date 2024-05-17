@@ -8,17 +8,6 @@
 
   <display-name>EE9 Demo Jakarta WebSocket WebApp</display-name>
   
-  <servlet>
-    <servlet-name>WSChat</servlet-name>
-    <servlet-class>org.example.WebSocketChatServlet</servlet-class>
-    <load-on-startup>1</load-on-startup>
-  </servlet>
-
-  <servlet-mapping>
-    <servlet-name>WSChat</servlet-name>
-    <url-pattern>/jetty.websocket/*</url-pattern>
-  </servlet-mapping>
-  
 </web-app>
 
 

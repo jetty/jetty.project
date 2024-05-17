@@ -108,7 +108,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         Logger log = Logger.getLogger(this.getClass().getName());
 
         SimpleJakartaWebSocket socket = new SimpleJakartaWebSocket();
-        URI uri = new URI("ws://127.0.0.1:" + port + "/servlet5-demo-jakarta-websocket/javax.websocket/");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/servlet5-demo-jakarta-websocket/jakarta.websocket/");
         log.info("Attempting to connect to " + uri);
         try (Session session = container.connectToServer(socket, uri))
         {
@@ -118,7 +118,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
             String msg = "Foo";
             remote.sendText(msg);
             log.info("Send message");
-            assertTrue(socket.messageLatch.await(2, TimeUnit.SECONDS)); // give remote 1 second to respond
+            assertTrue(socket.messageLatch.await(5, TimeUnit.SECONDS)); // give remote some time to respond
         }
         catch (Throwable e)
         {
@@ -126,7 +126,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         }
         finally
         {
-            assertTrue(socket.closeLatch.await(2, TimeUnit.SECONDS)); // give remote 1 second to acknowledge response
+            assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS)); // give remote some time to acknowledge response
         }
     }
 

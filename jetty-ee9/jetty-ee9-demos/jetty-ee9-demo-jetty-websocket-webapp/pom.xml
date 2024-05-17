@@ -10,7 +10,7 @@
   <packaging>war</packaging>
   <name>EE9 :: Demo :: Jetty Websocket WebApp</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.jetty.websocket.webapp</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>
