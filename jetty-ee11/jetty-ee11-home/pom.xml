@@ -94,20 +94,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-jetty-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
       <artifactId>jetty-ee11-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
