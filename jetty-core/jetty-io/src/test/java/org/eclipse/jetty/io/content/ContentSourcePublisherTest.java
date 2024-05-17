@@ -21,7 +21,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.io.Content;
 import org.reactivestreams.tck.TestEnvironment;
 import org.reactivestreams.tck.flow.FlowPublisherVerification;
+import org.testng.annotations.Test;
 
+@Test
 public final class ContentSourcePublisherTest extends FlowPublisherVerification<Content.Chunk>
 {
     public ContentSourcePublisherTest()
