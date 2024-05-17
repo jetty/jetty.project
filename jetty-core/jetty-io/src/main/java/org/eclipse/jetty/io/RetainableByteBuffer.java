@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,13 +71,12 @@ public interface RetainableByteBuffer extends Retainable
      * that may delegate calls to {@link #retain()}.</p>
      *
      * @param byteBuffer the {@code ByteBuffer} to wrap
-     * @return a {@link NonPooled} buffer wrapping the passed {@link ByteBuffer}
-     * @see NonPooled
+     * @return a {@link FixedCapacity} buffer wrapping the passed {@link ByteBuffer}
      * @see ByteBufferPool.NonPooling
      */
-    static RetainableByteBuffer.NonPooled wrap(ByteBuffer byteBuffer)
+    static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
     {
-        return new NonPooled(byteBuffer);
+        return new FixedCapacity(byteBuffer);
     }
 
     /**
@@ -87,13 +85,12 @@ public interface RetainableByteBuffer extends Retainable
      *
      * @param byteBuffer the {@code ByteBuffer} to wrap
      * @param retainable the associated {@link Retainable}.
-     * @return a {@link NonPooled} buffer wrapping the passed {@link ByteBuffer}
-     * @see NonPooled
+     * @return a {@link FixedCapacity} buffer wrapping the passed {@link ByteBuffer}
      * @see ByteBufferPool.NonPooling
      */
-    static RetainableByteBuffer.NonPooled wrap(ByteBuffer byteBuffer, Retainable retainable)
+    static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Retainable retainable)
     {
-        return new NonPooled(byteBuffer, retainable);
+        return new FixedCapacity(byteBuffer, retainable);
     }
 
     /**
@@ -102,11 +99,11 @@ public interface RetainableByteBuffer extends Retainable
      *
      * @param byteBuffer the {@code ByteBuffer} to wrap
      * @param releaser a {@link Runnable} to call when the buffer is released.
-     * @return a {@link NonPooled} buffer wrapping the passed {@link ByteBuffer}
+     * @return a {@link FixedCapacity} buffer wrapping the passed {@link ByteBuffer}
      */
-    static RetainableByteBuffer.NonPooled wrap(ByteBuffer byteBuffer, Runnable releaser)
+    static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Runnable releaser)
     {
-        return new NonPooled(byteBuffer)
+        return new FixedCapacity(byteBuffer)
         {
             @Override
             public boolean release()
@@ -333,17 +330,14 @@ public interface RetainableByteBuffer extends Retainable
      */
     default RetainableByteBuffer slice()
     {
-        if (!canRetain())
-            return new NonRetainableByteBuffer(getByteBuffer().slice());
-
-        retain();
-        return RetainableByteBuffer.wrap(getByteBuffer().slice(), this);
+        return slice(Long.MAX_VALUE);
     }
 
     /**
      * Get a partial slice of the buffer.
      * This is equivalent, but more efficient, than a {@link #slice()}.{@link #limit(long)}.
-     * @param length The number of bytes to slice, which may contain some byte beyond the limit and less than the capacity
+     * @param length The number of bytes to slice, which may beyond the limit and less than the capacity, in which case
+     * it will ensure some spare capacity in the slice.
      * @return A sliced {@link RetainableByteBuffer} sharing the first {@code length} bytes of this buffers data and
      * reference count, but with independent position. The buffer is {@link #retain() retained} by this call.
      */
@@ -352,22 +346,12 @@ public interface RetainableByteBuffer extends Retainable
         int size = remaining();
         ByteBuffer byteBuffer = getByteBuffer();
         int limit = byteBuffer.limit();
-        ByteBuffer slice;
 
-        if (length <= size)
-        {
-            byteBuffer.limit(byteBuffer.position() + Math.toIntExact(length));
-            slice = byteBuffer.slice();
-            byteBuffer.limit(limit);
-        }
-        else
-        {
-            length = Math.min(length, byteBuffer.capacity() - byteBuffer.position());
-            byteBuffer.limit(byteBuffer.position() + Math.toIntExact(length));
-            slice = byteBuffer.slice();
-            byteBuffer.limit(limit);
+        byteBuffer.limit(byteBuffer.position() + Math.toIntExact(Math.min(length, size)));
+        ByteBuffer slice = byteBuffer.slice();
+        byteBuffer.limit(limit);
+        if (length > size)
             slice.limit(size);
-        }
 
         if (!canRetain())
             return new NonRetainableByteBuffer(slice);
@@ -384,7 +368,7 @@ public interface RetainableByteBuffer extends Retainable
     default RetainableByteBuffer take(long fromIndex)
     {
         if (fromIndex > size())
-            throw new IllegalStateException();
+            throw new IllegalArgumentException("%d > %d".formatted(fromIndex, size()));
         RetainableByteBuffer slice = slice();
         limit(fromIndex);
         slice.skip(fromIndex);
@@ -450,6 +434,7 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * Extends the {@link RetainableByteBuffer} API with optimized mutator methods.
+     *
      */
     interface Mutable extends RetainableByteBuffer
     {
@@ -662,6 +647,12 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public RetainableByteBuffer slice(long length)
+        {
+            return getWrapped().slice(length);
+        }
+
+        @Override
         public byte get(long index)
         {
             return getWrapped().get(index);
@@ -791,10 +782,8 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * An abstract implementation of {@link RetainableByteBuffer} that provides the basic {@link Retainable} functionality
      */
-    abstract class Abstract implements Mutable
+    abstract class Abstract extends Retainable.Wrapper implements Mutable
     {
-        private final Retainable _retainable;
-
         public Abstract()
         {
             this(new ReferenceCounter());
@@ -802,36 +791,7 @@ public interface RetainableByteBuffer extends Retainable
 
         public Abstract(Retainable retainable)
         {
-            _retainable = Objects.requireNonNull(retainable);
-        }
-
-        protected Retainable getRetainable()
-        {
-            return _retainable;
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return _retainable.canRetain();
-        }
-
-        @Override
-        public void retain()
-        {
-            _retainable.retain();
-        }
-
-        @Override
-        public boolean release()
-        {
-            return _retainable.release();
-        }
-
-        @Override
-        public boolean isRetained()
-        {
-            return _retainable.isRetained();
+            super(retainable);
         }
 
         /**
@@ -872,25 +832,8 @@ public interface RetainableByteBuffer extends Retainable
             else
                 builder.append(maxSize());
             addExtraStringInfo(builder);
-            builder.append(",");
-            Retainable retainable = getRetainable();
-            if (retainable instanceof RetainableByteBuffer)
-            {
-                // avoid reentrant toString
-                builder.append(retainable.getClass().getSimpleName()).append("@");
-                try
-                {
-                    TypeUtil.toHex(retainable.hashCode(), builder);
-                }
-                catch (IOException e)
-                {
-                    builder.append("?");
-                }
-            }
-            else
-            {
-                builder.append(retainable);
-            }
+            builder.append(",r=");
+            builder.append(getRetained());
             builder.append("]");
         }
 
@@ -1237,31 +1180,58 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * A {@link FixedCapacity} buffer that is not pooled, but may be {@link Retainable#canRetain() retained}.
-     * A {@code NonPooled} buffer, that is not {@link #isRetained() retained} can have its internal buffers taken
-     * without retention (e.g. {@link DynamicCapacity#takeByteArray()}).  The {@code wrap} methods return {@code NonPooled}
-     * buffers.
-     * @see #wrap(ByteBuffer)
-     * @see #wrap(ByteBuffer, Runnable)
-     * @see #wrap(ByteBuffer, Retainable)
+     * A {@link ByteBufferPool pooled} buffer that knows the pool from which it was allocated.
+     * Any methods that may need to allocated additional buffers (e.g. {@link #copy()}) will use the pool.
      */
-    class NonPooled extends FixedCapacity
+    class Pooled extends FixedCapacity
     {
-        public NonPooled(ByteBuffer byteBuffer)
+        private final ByteBufferPool _pool;
+
+        public Pooled(ByteBufferPool pool, ByteBuffer byteBuffer)
         {
             super(byteBuffer);
+            _pool = pool;
         }
 
-        protected NonPooled(ByteBuffer byteBuffer, Retainable retainable)
+        protected Pooled(ByteBufferPool pool, ByteBuffer byteBuffer, Retainable retainable)
         {
             super(byteBuffer, retainable);
+            _pool = pool;
+        }
+
+        @Override
+        public RetainableByteBuffer slice(long length)
+        {
+            int size = remaining();
+            ByteBuffer byteBuffer = getByteBuffer();
+            int limit = byteBuffer.limit();
+
+            byteBuffer.limit(byteBuffer.position() + Math.toIntExact(Math.min(length, size)));
+            ByteBuffer slice = byteBuffer.slice();
+            byteBuffer.limit(limit);
+            if (length > size)
+                slice.limit(size);
+
+            if (!canRetain())
+                return new NonRetainableByteBuffer(slice);
+
+            retain();
+            return new Pooled(_pool, slice, this);
+        }
+
+        @Override
+        public RetainableByteBuffer copy()
+        {
+            RetainableByteBuffer copy = _pool.acquire(remaining(), isDirect());
+            copy.asMutable().append(getByteBuffer().slice());
+            return copy;
         }
     }
 
     /**
      * a {@link FixedCapacity} buffer that is neither not pooled nor {@link Retainable#canRetain() retainable}.
      */
-    class NonRetainableByteBuffer extends NonPooled
+    class NonRetainableByteBuffer extends FixedCapacity
     {
         public NonRetainableByteBuffer(ByteBuffer byteBuffer)
         {
@@ -1367,6 +1337,21 @@ public interface RetainableByteBuffer extends Retainable
                 throw new IllegalArgumentException("must always retain if cannot aggregate");
         }
 
+        public long getMaxSize()
+        {
+            return _maxSize;
+        }
+
+        public int getAggregationSize()
+        {
+            return _aggregationSize;
+        }
+
+        public int getMinRetainSize()
+        {
+            return _minRetainSize;
+        }
+
         @Override
         public boolean isMutable()
         {
@@ -1402,7 +1387,7 @@ public interface RetainableByteBuffer extends Retainable
                     BufferUtil.flipToFill(byteBuffer);
                     for (RetainableByteBuffer buffer : _buffers)
                     {
-                        byteBuffer.put(buffer.getByteBuffer().slice());
+                        byteBuffer.put(buffer.getByteBuffer());
                         buffer.release();
                     }
                     BufferUtil.flipToFlush(byteBuffer, 0);
@@ -1422,89 +1407,60 @@ public interface RetainableByteBuffer extends Retainable
             if (fromIndex > size())
                 throw new IndexOutOfBoundsException();
 
-            return switch (_buffers.size())
+            if (_buffers.isEmpty())
+                return RetainableByteBuffer.EMPTY;
+
+            List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
+            _aggregate = null;
+
+            for (ListIterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
-                case 0 -> RetainableByteBuffer.EMPTY;
-                case 1 ->
-                {
-                    RetainableByteBuffer buffer = _buffers.get(0);
-                    _aggregate = null;
-                    if (fromIndex > 0)
-                        yield buffer.take(fromIndex);
+                RetainableByteBuffer buffer = i.next();
 
-                    _buffers.clear();
-                    yield buffer;
+                long size = buffer.size();
+                if (fromIndex >= size)
+                {
+                    // the sub buffer stays with this RBB
+                    fromIndex -= size;
                 }
-                default ->
+                else if (fromIndex == 0)
                 {
-                    List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
-                    _aggregate = null;
-
-                    for (ListIterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
+                    // the sub buffer is added to the new RBB
+                    i.remove();
+                    // if it is retained, we have to copy it
+                    if (buffer.isRetained())
                     {
-                        RetainableByteBuffer buffer = i.next();
-
-                        long size = buffer.size();
-                        if (fromIndex >= size)
-                        {
-                            // the sub buffer stays with this RBB
-                            fromIndex -= size;
-                        }
-                        else if (fromIndex == 0)
-                        {
-                            // the sub buffer is added to the new RBB
-                            i.remove();
-                            buffers.add(buffer);
-                        }
-                        else
-                        {
-                            // the sub buffer is split between this RBB and the new RBB
-                            if (fromIndex > (buffer.size() / 2))
-                            {
-                                // copy only the small part at the end
-                                buffers.add(buffer.take(fromIndex));
-                            }
-                            else
-                            {
-                                // copy only the small part at the beginning
-                                RetainableByteBuffer slice = buffer.slice();
-                                slice.limit(fromIndex);
-                                i.set(slice.copy());
-                                buffer.skip(fromIndex);
-                                buffers.add(buffer);
-                            }
-                            fromIndex = 0;
-                        }
+                        buffers.add(buffer.copy());
+                        buffer.release();
                     }
-                    yield new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
+                    else
+                    {
+                        // transfer it
+                        buffers.add(buffer);
+                    }
                 }
-            };
-        }
-
-        @Override
-        public RetainableByteBuffer take()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("take {}", this);
-            return switch (_buffers.size())
-            {
-                case 0 -> RetainableByteBuffer.EMPTY;
-                case 1 ->
+                else
                 {
-                    RetainableByteBuffer buffer = _buffers.get(0);
-                    _aggregate = null;
-                    _buffers.clear();
-                    yield buffer;
+                    // the sub buffer is split between this RBB and the new RBB
+                    if (fromIndex > (buffer.size() / 2) || buffer.isRetained())
+                    {
+                        // copy the tail of the buffer into the new RBB
+                        buffers.add(buffer.take(fromIndex));
+                    }
+                    else
+                    {
+                        // copy the head of the buffer and keep in this RBB, add the original buffer to the new RBB
+                        RetainableByteBuffer slice = buffer.slice();
+                        slice.limit(fromIndex);
+                        i.set(slice.copy());
+                        slice.release();
+                        buffer.skip(fromIndex);
+                        buffers.add(buffer);
+                    }
+                    fromIndex = 0;
                 }
-                default ->
-                {
-                    List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers);
-                    _aggregate = null;
-                    _buffers.clear();
-
-                    yield new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
-                }
-            };
+            }
+            return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
         }
 
         /**
@@ -1526,7 +1482,7 @@ public interface RetainableByteBuffer extends Retainable
                     _buffers.clear();
 
                     // The array within the buffer can be used if it is not pooled, is not shared and it exits
-                    byte[] array = (buffer instanceof NonPooled && !buffer.isRetained() && !buffer.isDirect())
+                    byte[] array = (!(buffer instanceof Pooled) && !buffer.isRetained() && !buffer.isDirect())
                         ? buffer.getByteBuffer().array() : BufferUtil.toArray(buffer.getByteBuffer());
 
                     buffer.release();
@@ -1941,6 +1897,20 @@ public interface RetainableByteBuffer extends Retainable
             // Cannot mutate contents if retained
             assert !isRetained();
 
+            // Optimize appending dynamics
+            if (retainableBytes instanceof DynamicCapacity dynamicCapacity)
+            {
+                for (Iterator<RetainableByteBuffer> i = dynamicCapacity._buffers.iterator(); i.hasNext();)
+                {
+                    RetainableByteBuffer buffer = i.next();
+                    if (!append(buffer))
+                        return false;
+                    buffer.release();
+                    i.remove();
+                }
+                return true;
+            }
+
             // handle empty appends
             if (retainableBytes == null)
                 return true;
@@ -2240,9 +2210,15 @@ public interface RetainableByteBuffer extends Retainable
                 builder.append('@');
                 builder.append(Integer.toHexString(System.identityHashCode(buffer)));
                 if (buffer instanceof Abstract abstractBuffer)
+                {
+                    builder.append("/r=");
+                    builder.append(abstractBuffer.getRetained());
                     abstractBuffer.addValueString(builder);
+                }
                 else
+                {
                     builder.append("???");
+                }
             }
         }
 

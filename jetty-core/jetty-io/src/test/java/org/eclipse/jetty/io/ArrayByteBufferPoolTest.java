@@ -365,6 +365,7 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
+    @Deprecated(forRemoval = true)
     public void testQuadraticPool()
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic();

@@ -666,16 +666,28 @@ public class Content
     public interface Chunk extends RetainableByteBuffer
     {
         /**
-         * <p>An empty, non-last, chunk.</p>
+         * <p>An empty chunk.</p>
          */
-        Chunk EMPTY = new Chunk()
+        interface Empty extends Chunk
         {
             @Override
-            public ByteBuffer getByteBuffer()
+            default ByteBuffer getByteBuffer()
             {
                 return BufferUtil.EMPTY_BUFFER;
             }
 
+            @Override
+            default RetainableByteBuffer slice(long length)
+            {
+                return this;
+            }
+        }
+
+        /**
+         * <p>An empty, non-last, chunk instance.</p>
+         */
+        Chunk EMPTY = new Empty()
+        {
             @Override
             public boolean isLast()
             {
@@ -692,14 +704,8 @@ public class Content
         /**
          * <p>An empty, last, chunk.</p>
          */
-        Content.Chunk EOF = new Chunk()
+        Content.Chunk EOF = new Empty()
         {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return BufferUtil.EMPTY_BUFFER;
-            }
-
             @Override
             public boolean isLast()
             {
@@ -814,17 +820,11 @@ public class Content
          */
         static Chunk from(Throwable failure, boolean last)
         {
-            return new Chunk()
+            return new Empty()
             {
                 public Throwable getFailure()
                 {
                     return failure;
-                }
-
-                @Override
-                public ByteBuffer getByteBuffer()
-                {
-                    return BufferUtil.EMPTY_BUFFER;
                 }
 
                 @Override

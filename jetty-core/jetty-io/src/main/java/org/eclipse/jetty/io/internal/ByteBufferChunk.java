@@ -20,23 +20,17 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Retainable;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
-public abstract class ByteBufferChunk implements Content.Chunk
+public abstract class ByteBufferChunk extends RetainableByteBuffer.FixedCapacity implements Content.Chunk
 {
-    private final ByteBuffer byteBuffer;
     private final boolean last;
 
     public ByteBufferChunk(ByteBuffer byteBuffer, boolean last)
     {
-        this.byteBuffer = Objects.requireNonNull(byteBuffer);
+        super(Objects.requireNonNull(byteBuffer));
         this.last = last;
-    }
-
-    @Override
-    public ByteBuffer getByteBuffer()
-    {
-        return byteBuffer;
     }
 
     @Override

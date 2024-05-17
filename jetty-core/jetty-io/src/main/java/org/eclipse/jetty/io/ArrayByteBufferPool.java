@@ -215,7 +215,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             bucket.recordPooled();
             RetainableByteBuffer buffer = entry.getPooled();
-            ((Buffer)buffer).acquire();
+            ((PooledBuffer)buffer).acquire();
             return buffer;
         }
 
@@ -237,7 +237,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         // Add the buffer to the new entry.
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         BufferUtil.reset(byteBuffer);
-        Buffer pooledBuffer = new Buffer(byteBuffer, b -> release(bucket, entry));
+        PooledBuffer pooledBuffer = new PooledBuffer(this, byteBuffer, b -> release(bucket, entry));
         if (entry.enable(pooledBuffer, false))
         {
             checkMaxMemory(bucket, buffer.isDirect());
@@ -257,7 +257,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         BufferUtil.reset(buffer.getByteBuffer());
 
         // Release the buffer and check the memory 1% of the times.
-        int used = ((Buffer)buffer).use();
+        int used = ((PooledBuffer)buffer).use();
         if (entry.release())
         {
             if (used % 100 == 0)
@@ -312,7 +312,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<RetainableByteBuffer> releaser)
     {
         ByteBuffer buffer = BufferUtil.allocate(capacity, direct);
-        Buffer retainableByteBuffer = new Buffer(buffer, releaser);
+        PooledBuffer retainableByteBuffer = new PooledBuffer(this, buffer, releaser);
         retainableByteBuffer.acquire();
         return retainableByteBuffer;
     }
@@ -581,17 +581,16 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private static class Buffer extends RetainableByteBuffer.FixedCapacity
+    private static class PooledBuffer extends RetainableByteBuffer.Pooled
     {
         private final Consumer<RetainableByteBuffer> _releaser;
         private final ReferenceCounter _referenceCounter;
         private int _usages;
 
-        private Buffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
+        private PooledBuffer(ByteBufferPool pool, ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
         {
-            super(buffer, new ReferenceCounter(0));
-
-            if (getRetainable() instanceof  ReferenceCounter referenceCounter)
+            super(pool, buffer, new ReferenceCounter(0));
+            if (getWrapped() instanceof  ReferenceCounter referenceCounter)
                 _referenceCounter = referenceCounter;
             else
                 throw new IllegalArgumentException();
@@ -630,7 +629,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      * A variant of the {@link ArrayByteBufferPool} that
      * uses buckets of buffers that increase in size by a power of
      * 2 (e.g. 1k, 2k, 4k, 8k, etc.).
+     * @deprecated Usage of {@code Quadratic} is often wasteful of additional space and can increase contention on
+     * the larger buffers.
      */
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public static class Quadratic extends ArrayByteBufferPool
     {
         public Quadratic()
@@ -828,7 +830,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 {
                     overReleaseStack.printStackTrace(pw);
                 }
-                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getRetainable(), w);
+                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getRetained(), w);
             }
         }
     }

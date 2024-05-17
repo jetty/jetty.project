@@ -94,6 +94,15 @@ public interface Retainable
     }
 
     /**
+     * <p>Get the retained count. This value is volatile and should only be used for informational/debugging purposes.</p>
+     * @return the retained count
+     */
+    default int getRetained()
+    {
+        return -1;
+    }
+
+    /**
      * A wrapper of {@link Retainable} instances.
      */
     class Wrapper implements Retainable
@@ -114,6 +123,12 @@ public interface Retainable
         public boolean canRetain()
         {
             return getWrapped().canRetain();
+        }
+
+        @Override
+        public int getRetained()
+        {
+            return getWrapped().getRetained();
         }
 
         @Override
@@ -218,6 +233,12 @@ public interface Retainable
         public boolean isRetained()
         {
             return references.get() > 1;
+        }
+
+        @Override
+        public int getRetained()
+        {
+            return references.get();
         }
 
         @Override

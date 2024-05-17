@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
@@ -578,7 +577,7 @@ public class RetainableByteBufferTest
             }
 
             @Override
-            protected void needsFillInterest() throws IOException
+            protected void needsFillInterest()
             {
 
             }
@@ -641,7 +640,7 @@ public class RetainableByteBufferTest
             }
 
             @Override
-            protected void needsFillInterest() throws IOException
+            protected void needsFillInterest()
             {
 
             }
@@ -801,9 +800,9 @@ public class RetainableByteBufferTest
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer(), StandardCharsets.UTF_8), is("Hello cruel world!"));
 
-        hello.release();
         cruelWorld.release();
         buffer.release();
+        hello.release();
         assertThat(release.getCount(), is(0L));
     }
 
@@ -1234,12 +1233,61 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("mutables")
+    public void testTakeRetained(Mutable buffer)
+    {
+        buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
+        buffer.put((byte)' ');
+        CountDownLatch released = new CountDownLatch(1);
+        RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown);
+        world.retain();
+        buffer.add(world);
+
+        RetainableByteBuffer result = buffer.take();
+        assertThat(BufferUtil.toString(result.getByteBuffer()), is("Hello world!"));
+        assertThat(buffer.remaining(), is(0));
+        result.release();
+        assertTrue(buffer.release());
+        assertTrue(world.release());
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
     public void testTakeFrom(Mutable buffer)
     {
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
-        CountDownLatch released = new CountDownLatch(1);
+        CountDownLatch released = new CountDownLatch(2);
         buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
         buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
+
+        RetainableByteBuffer space = buffer.take(5);
+        RetainableByteBuffer bang = space.take(space.size() - 1);
+        RetainableByteBuffer cruelWorld = space.take(1);
+
+        assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("Hello"));
+        assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
+        assertThat(BufferUtil.toString(cruelWorld.getByteBuffer()), is("cruel world"));
+        assertThat(BufferUtil.toString(bang.getByteBuffer()), is("!"));
+
+        space.release();
+        cruelWorld.release();
+        bang.release();
+        assertTrue(buffer.release());
+
+        assertThat(released.getCount(), is(0L));
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testTakeFromRetained(Mutable buffer)
+    {
+        buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
+        CountDownLatch released = new CountDownLatch(2);
+        RetainableByteBuffer cruel = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown);
+        cruel.retain();
+        buffer.add(cruel);
+        RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown);
+        world.retain();
+        buffer.add(world);
         RetainableByteBuffer space = buffer.take(5);
 
         RetainableByteBuffer bang = space.take(space.size() - 1);
@@ -1253,6 +1301,9 @@ public class RetainableByteBufferTest
         cruelWorld.release();
         bang.release();
         assertTrue(buffer.release());
+        assertTrue(cruel.release());
+        assertTrue(world.release());
+        assertThat(released.getCount(), is(0L));
     }
 
     @ParameterizedTest

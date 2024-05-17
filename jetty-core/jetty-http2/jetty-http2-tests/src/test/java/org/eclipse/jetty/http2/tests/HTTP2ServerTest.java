@@ -515,6 +515,58 @@ public class HTTP2ServerTest extends AbstractServerTest
     }
 
     @Test
+    public void testDemoRBB() throws Exception
+    {
+        startServer(new ServerSessionListener() {});
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, false, -1, -1, 0);
+        // RetainableByteBuffer.Mutable accumulator = bufferPool.acquire(8 * 1024, false).asMutable();
+        generator.control(accumulator, new PrefaceFrame());
+        long settings = accumulator.size();
+        generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
+        generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
+
+        System.err.println("--");
+        System.err.println(accumulator.toDetailString());
+
+        RetainableByteBuffer taken = accumulator.take(settings);
+        System.err.println("-- take after settings");
+        System.err.println(accumulator.toDetailString());
+        System.err.println(taken.toDetailString());
+
+        RetainableByteBuffer headersHeader = taken;
+        taken = taken.take(9);
+        System.err.println("-- take 9");
+        System.err.println(accumulator.toDetailString());
+        System.err.println(headersHeader.toDetailString());
+        System.err.println(taken.toDetailString());
+
+        RetainableByteBuffer last = taken.take(taken.size() - 4);
+
+        System.err.println("-- take last");
+        System.err.println(accumulator.toDetailString());
+        System.err.println(headersHeader.toDetailString());
+        System.err.println(taken.toDetailString());
+        System.err.println(last.toDetailString());
+
+        accumulator.add(headersHeader);
+        accumulator.add(taken);
+        accumulator.add(last);
+        System.err.println("-- adds");
+        System.err.println(accumulator.toDetailString());
+        System.err.println(headersHeader.toDetailString());
+        System.err.println(taken.toDetailString());
+        System.err.println(last.toDetailString());
+
+        accumulator.release();
+        System.err.println("-- accumulator.release");
+        System.err.println(accumulator.toDetailString());
+        System.err.println(headersHeader.toDetailString());
+        System.err.println(taken.toDetailString());
+        System.err.println(last.toDetailString());
+    }
+
+    @Test
     public void testRequestWithContinuationFramesWithEmptyContinuationFrame() throws Exception
     {
         testRequestWithContinuationFrames(null, () ->

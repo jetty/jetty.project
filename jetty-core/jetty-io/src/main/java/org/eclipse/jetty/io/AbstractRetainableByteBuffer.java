@@ -28,7 +28,7 @@ public abstract class AbstractRetainableByteBuffer extends RetainableByteBuffer.
     public AbstractRetainableByteBuffer(ByteBuffer byteBuffer)
     {
         super(byteBuffer, new ReferenceCounter(0));
-        _refCount = (ReferenceCounter)getRetainable();
+        _refCount = (ReferenceCounter)getWrapped();
     }
 
     /**
