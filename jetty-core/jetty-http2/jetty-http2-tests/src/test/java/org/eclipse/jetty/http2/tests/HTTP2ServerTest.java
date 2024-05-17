@@ -553,8 +553,6 @@ public class HTTP2ServerTest extends AbstractServerTest
             generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
 
             RetainableByteBuffer headers = accumulator.take(offset);
-            System.err.println(accumulator.toDetailString());
-            System.err.println(headers.toDetailString());
 
             // Take the last CONTINUATION frame and reset the flag.
             offset = 0;
