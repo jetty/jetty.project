@@ -80,7 +80,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-jetty-webapp</artifactId>
+      <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
@@ -152,9 +152,9 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.demos</groupId>
-                  <artifactId>jetty-servlet4-demo-jetty-webapp</artifactId>
+                  <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
                   <type>war</type>
-                  <destFileName>ee9-demo-jetty.war</destFileName>
+                  <destFileName>servlet5-demo-jetty.war</destFileName>
                 </artifactItem>
               </artifactItems>
               <stripVersion>true</stripVersion>
