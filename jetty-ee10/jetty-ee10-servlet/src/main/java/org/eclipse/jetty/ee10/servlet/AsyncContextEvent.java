@@ -20,6 +20,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class AsyncContextEvent extends AsyncEvent implements Runnable
@@ -149,9 +150,6 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
 
     public void addThrowable(Throwable e)
     {
-        if (_throwable == null)
-            _throwable = e;
-        else if (e != _throwable)
-            _throwable.addSuppressed(e);
+        _throwable = ExceptionUtil.combine(_throwable, e);
     }
 }
