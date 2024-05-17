@@ -1237,17 +1237,21 @@ public class RetainableByteBufferTest
     public void testTakeFrom(Mutable buffer)
     {
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
-        buffer.put((byte)' ');
         CountDownLatch released = new CountDownLatch(1);
-        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
         buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
         RetainableByteBuffer space = buffer.take(5);
+
+        RetainableByteBuffer bang = space.take(space.size() - 1);
         RetainableByteBuffer cruelWorld = space.take(1);
+
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("Hello"));
         assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
-        assertThat(BufferUtil.toString(cruelWorld.getByteBuffer()), is("cruel world!"));
+        assertThat(BufferUtil.toString(cruelWorld.getByteBuffer()), is("cruel world"));
+        assertThat(BufferUtil.toString(bang.getByteBuffer()), is("!"));
         space.release();
         cruelWorld.release();
+        bang.release();
         assertTrue(buffer.release());
     }
 

@@ -21,6 +21,7 @@ import java.nio.ReadOnlyBufferException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.Blocker;
@@ -144,7 +145,7 @@ public interface RetainableByteBuffer extends Retainable
             throw new ReadOnlyBufferException();
         if (this instanceof Mutable mutable)
             return mutable;
-        return new FixedCapacity(getByteBuffer(), this);
+        throw new ReadOnlyBufferException();
     }
 
     /**
@@ -377,7 +378,8 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * Take the contents of this buffer from an index.
-     * @return A buffer with the contents of this buffer from the index, avoiding copies if possible.
+     * @return A buffer with the contents of this buffer from the index, avoiding copies if possible, but with
+     * no shared internal buffers.
      */
     default RetainableByteBuffer take(long fromIndex)
     {
@@ -386,7 +388,9 @@ public interface RetainableByteBuffer extends Retainable
         RetainableByteBuffer slice = slice();
         limit(fromIndex);
         slice.skip(fromIndex);
-        return slice;
+        RetainableByteBuffer copy = slice.copy();
+        slice.release();
+        return copy;
     }
 
     /**
@@ -1436,23 +1440,39 @@ public interface RetainableByteBuffer extends Retainable
                     List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
                     _aggregate = null;
 
-                    for (Iterator<RetainableByteBuffer> i = _buffers.iterator(); i.hasNext();)
+                    for (ListIterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
                     {
                         RetainableByteBuffer buffer = i.next();
 
                         long size = buffer.size();
                         if (fromIndex >= size)
                         {
+                            // the sub buffer stays with this RBB
                             fromIndex -= size;
                         }
                         else if (fromIndex == 0)
                         {
+                            // the sub buffer is added to the new RBB
                             i.remove();
                             buffers.add(buffer);
                         }
                         else
                         {
-                            buffers.add(buffer.take(fromIndex));
+                            // the sub buffer is split between this RBB and the new RBB
+                            if (fromIndex > (buffer.size() / 2))
+                            {
+                                // copy only the small part at the end
+                                buffers.add(buffer.take(fromIndex));
+                            }
+                            else
+                            {
+                                // copy only the small part at the beginning
+                                RetainableByteBuffer slice = buffer.slice();
+                                slice.limit(fromIndex);
+                                i.set(slice.copy());
+                                buffer.skip(fromIndex);
+                                buffers.add(buffer);
+                            }
                             fromIndex = 0;
                         }
                     }

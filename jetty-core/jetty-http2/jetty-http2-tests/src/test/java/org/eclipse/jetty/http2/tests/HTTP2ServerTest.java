@@ -31,9 +31,11 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
@@ -521,20 +523,18 @@ public class HTTP2ServerTest extends AbstractServerTest
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
+
+            long offset = accumulator.size();
             generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
 
-            // Take the ContinuationFrame header, duplicate it, and set the length to zero.
-            /* TODO
-            List<ByteBuffer> buffers = accumulator.getByteBuffers();
-            ByteBuffer continuationFrameHeader = buffers.get(4);
-            ByteBuffer duplicate = ByteBuffer.allocate(continuationFrameHeader.remaining());
-            duplicate.put(continuationFrameHeader).flip();
-            continuationFrameHeader.flip();
-            continuationFrameHeader.put(0, (byte)0);
-            continuationFrameHeader.putShort(1, (short)0);
-            // Insert a CONTINUATION frame header for the body of the previous CONTINUATION frame.
-            accumulator.add(RetainableByteBuffer.wrap(duplicate));
-            */
+            RetainableByteBuffer headers = accumulator.take(offset);
+            RetainableByteBuffer.Mutable continuation = headers.copy().asMutable();
+            accumulator.add(headers);
+            continuation.limit(9);
+            continuation.put(0, (byte)0x00);
+            continuation.put(1, (byte)0x00);
+            continuation.put(2, (byte)0x00);
+            accumulator.add(continuation);
             return accumulator;
         });
     }
@@ -548,22 +548,40 @@ public class HTTP2ServerTest extends AbstractServerTest
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-            generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
-            /* TODO
-            // Take the last CONTINUATION frame and reset the flag.
-            List<ByteBuffer> buffers = accumulator.getByteBuffers();
-            ByteBuffer continuationFrameHeader = buffers.get(buffers.size() - 2);
-            continuationFrameHeader.put(4, (byte)0);
-            // Add a last, empty, CONTINUATION frame.
-            ByteBuffer last = ByteBuffer.wrap(new byte[]{
-                0, 0, 0, // Length
-                (byte)FrameType.CONTINUATION.getType(),
-                (byte)Flags.END_HEADERS,
-                0, 0, 0, 1 // Stream ID
-            });
-            accumulator.append(RetainableByteBuffer.wrap(last));
 
-             */
+            long offset = accumulator.size();
+            generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
+
+            RetainableByteBuffer headers = accumulator.take(offset);
+            System.err.println(accumulator.toDetailString());
+            System.err.println(headers.toDetailString());
+
+            // Take the last CONTINUATION frame and reset the flag.
+            offset = 0;
+            while (true)
+            {
+                int length = ((headers.get(offset) & 0xFF) << 16) + ((headers.get(offset + 1) & 0xFF) << 8) + (headers.get(offset + 2) & 0xFF);
+                byte flag = headers.get(offset + 4);
+                if (flag == 0x04)
+                {
+                    RetainableByteBuffer.Mutable last = headers.take(offset).asMutable();
+                    accumulator.add(headers);
+                    last.put(4, (byte)0);
+                    accumulator.add(last);
+                    break;
+                }
+                offset += 9 + length;
+            }
+
+            // Add a last, empty, CONTINUATION frame.
+            accumulator.add(
+                ByteBuffer.wrap(new byte[]{
+                    0, 0, 0, // Length
+                    (byte)FrameType.CONTINUATION.getType(),
+                    (byte)Flags.END_HEADERS,
+                    0, 0, 0, 1 // Stream ID
+                }));
+
             return accumulator;
         });
     }
