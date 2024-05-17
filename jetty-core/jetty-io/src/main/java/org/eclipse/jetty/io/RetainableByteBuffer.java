@@ -314,13 +314,13 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * <p>Limit the buffer size to the given number of bytes.</p>
      *
-     * @param limit the maximum number of bytes to skip
+     * @param size the new size of the buffer
      */
-    default void limit(long limit)
+    default void limit(long size)
     {
         ByteBuffer byteBuffer = getByteBuffer();
-        limit = Math.min(limit, byteBuffer.remaining());
-        byteBuffer.limit(byteBuffer.position() + Math.toIntExact(limit));
+        size = Math.min(size, byteBuffer.remaining());
+        byteBuffer.limit(byteBuffer.position() + Math.toIntExact(size));
     }
 
     /**
@@ -434,6 +434,16 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * Extends the {@link RetainableByteBuffer} API with optimized mutator methods.
+     * The mutator methods come in the following styles:
+     * <ul>
+     *     <li>{@code Put} methods are used for putting raw bytes into the buffer and are
+     *     similar to {@link ByteBuffer#put(byte)} etc. {@code Put} methods may be used in fluent style.</li>
+     *     <li>{@code Add} methods are used for handing over an external buffer to be managed by
+     *     this buffer. External buffers are passed by reference and the caller will not longer manage the added buffer.
+     *     {@code Add} methods may be used in fluent style.</li>
+     *     <li>{@code append} methods are used for handing over the content of a buffer to be included in this buffer.
+     *     The caller may still use the passed buffer and is responsible for eventually releasing it.</li>
+     * </ul>
      *
      */
     interface Mutable extends RetainableByteBuffer
@@ -453,6 +463,33 @@ public interface RetainableByteBuffer extends Retainable
         {
             return space() == 0;
         }
+
+        /**
+         * Add the passed {@link ByteBuffer} to this buffer, growing this buffer if necessary and possible.
+         * The source {@link ByteBuffer} is passed by reference and the caller gives up "ownership", so implementations of
+         * this method may choose to avoid copies by keeping a reference to the buffer.
+         * @param bytes the byte buffer to add, which is passed by reference and is not necessarily consumed by the add.
+         * @return {@code this} buffer.
+         * @throws ReadOnlyBufferException if this buffer is read only.
+         * @throws BufferOverflowException if this buffer cannot fit the byte
+         * @see #append(ByteBuffer)
+         */
+        Mutable add(ByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException;
+
+        /**
+         * Add the passed {@link RetainableByteBuffer} to this buffer, growing this buffer if necessary and possible.
+         * The source {@link RetainableByteBuffer} is passed by reference and the caller gives up ownership, so
+         * implementations of this method may avoid copies by keeping a reference to the buffer.
+         * Unlike the similar {@link #append(RetainableByteBuffer)}, implementations of this method need not call
+         * {@link #retain()} if keeping a reference, but they must ultimately call {@link #release()} the passed buffer.
+         * Callers should use {@code add} rather than {@link #append(RetainableByteBuffer)} if they already have an obligation
+         * to release the buffer and wish to delegate that obligation to this buffer.
+         * @param bytes the byte buffer to add, which is passed by reference and is not necessarily consumed by the add.
+         * @return {@code this} buffer.
+         * @throws ReadOnlyBufferException if this buffer is read only.
+         * @throws BufferOverflowException if this buffer cannot fit the byte
+         */
+        Mutable add(RetainableByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException;
 
         /**
          * Copies the contents of the given byte buffer to the end of this buffer, growing this buffer if
@@ -478,91 +515,73 @@ public interface RetainableByteBuffer extends Retainable
         boolean append(RetainableByteBuffer bytes) throws ReadOnlyBufferException;
 
         /**
-         * Add the passed {@link ByteBuffer} to this buffer, growing this buffer if necessary and possible.
-         * The source {@link ByteBuffer} is passed by reference and the caller gives up "ownership", so implementations of
-         * this method may choose to avoid copies by keeping a reference to the buffer.
-         * @param bytes the byte buffer to add, which is passed by reference and is not necessarily consumed by the add.
-         * @throws ReadOnlyBufferException if this buffer is read only.
-         * @throws BufferOverflowException if this buffer cannot fit the byte
-         * @see #append(ByteBuffer)
-         */
-        void add(ByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException;
-
-        /**
-         * Add the passed {@link RetainableByteBuffer} to this buffer, growing this buffer if necessary and possible.
-         * The source {@link RetainableByteBuffer} is passed by reference and the caller gives up ownership, so
-         * implementations of this method may avoid copies by keeping a reference to the buffer.
-         * Unlike the similar {@link #append(RetainableByteBuffer)}, implementations of this method need not call
-         * {@link #retain()} if keeping a reference, but they must ultimately call {@link #release()} the passed buffer.
-         * Callers should use {@code add} rather than {@link #append(RetainableByteBuffer)} if they already have an obligation
-         * to release the buffer and wish to delegate that obligation to this buffer.
-         * @param bytes the byte buffer to add, which is passed by reference and is not necessarily consumed by the add.
-         * @throws ReadOnlyBufferException if this buffer is read only.
-         * @throws BufferOverflowException if this buffer cannot fit the byte
-         */
-        void add(RetainableByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException;
-
-        /**
          * Put a {@code byte} to the buffer, growing this buffer if necessary and possible.
          * @param b the {@code byte} to put
+         * @return {@code this} buffer.
          * @throws ReadOnlyBufferException if this buffer is read only.
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
-        void put(byte b);
+        Mutable put(byte b);
 
         /**
          * Put a {@code short} to the buffer, growing this buffer if necessary and possible.
          * @param s the {@code short} to put
+         * @return {@code this} buffer.
          * @throws ReadOnlyBufferException if this buffer is read only.
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
-        void putShort(short s);
+        Mutable putShort(short s);
 
         /**
          * Put an {@code int} to the buffer, growing this buffer if necessary and possible.
          * @param i the {@code int} to put
+         * @return {@code this} buffer.
          * @throws ReadOnlyBufferException if this buffer is read only
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
-        void putInt(int i);
+        Mutable putInt(int i);
 
         /**
          * Put a {@code long} to the buffer, growing this buffer if necessary and possible.
          * @param l the {@code long} to put
+         * @return {@code this} buffer.
          * @throws ReadOnlyBufferException if this buffer is read only
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
-        void putLong(long l);
+        Mutable putLong(long l);
 
         /**
          * Put a {@code byte} array to the buffer, growing this buffer if necessary and possible.
          * @param bytes the {@code byte} array to put
          * @param offset the offset into the array
          * @param length the length in bytes to put
+         * @return {@code this} buffer.
          * @throws ReadOnlyBufferException if this buffer is read only
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
-        void put(byte[] bytes, int offset, int length);
+        Mutable put(byte[] bytes, int offset, int length);
 
         /**
          * Put a {@code byte} array to the buffer, growing this buffer if necessary and possible.
          * @param bytes the {@code byte} array to put
+         * @return {@code this} buffer.
          * @throws ReadOnlyBufferException if this buffer is read only
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
-        default void put(byte[] bytes)
+        default Mutable put(byte[] bytes)
         {
-            put(bytes, 0, bytes.length);
+            return put(bytes, 0, bytes.length);
         }
 
         /**
          * Put a {@code byte} to the buffer at a given index.
          * @param index The index relative to the current start of unconsumed data in the buffer.
          * @param b the {@code byte} to put
+         * @return {@code this} buffer.
          * @throws ReadOnlyBufferException if this buffer is read only.
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
-        void put(long index, byte b);
+        Mutable put(long index, byte b);
     }
 
     /**
@@ -725,51 +744,59 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public void add(ByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
+        public Mutable add(ByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
         {
             getWrapped().asMutable().add(bytes);
+            return this;
         }
 
         @Override
-        public void add(RetainableByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
+        public Mutable add(RetainableByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
         {
             getWrapped().asMutable().add(bytes);
+            return this;
         }
 
         @Override
-        public void put(byte b)
+        public Mutable put(byte b)
         {
             getWrapped().asMutable().put(b);
+            return this;
         }
 
         @Override
-        public void put(long index, byte b)
+        public Mutable put(long index, byte b)
         {
             getWrapped().asMutable().put(index, b);
+            return this;
         }
 
         @Override
-        public void putShort(short s)
+        public Mutable putShort(short s)
         {
             getWrapped().asMutable().putShort(s);
+            return this;
         }
 
         @Override
-        public void putInt(int i)
+        public Mutable putInt(int i)
         {
             getWrapped().asMutable().putInt(i);
+            return this;
         }
 
         @Override
-        public void putLong(long l)
+        public Mutable putLong(long l)
         {
             getWrapped().asMutable().putLong(l);
+            return this;
         }
 
         @Override
-        public void put(byte[] bytes, int offset, int length)
+        public Mutable put(byte[] bytes, int offset, int length)
         {
             getWrapped().asMutable().put(bytes, offset, length);
+            return this;
         }
 
         @Override
@@ -994,7 +1021,7 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public void add(ByteBuffer bytes) throws ReadOnlyBufferException
+        public Mutable add(ByteBuffer bytes) throws ReadOnlyBufferException
         {
             assert !isRetained();
 
@@ -1010,10 +1037,12 @@ public interface RetainableByteBuffer extends Retainable
 
             if (length > 0)
                 _byteBuffer.put(bytes);
+
+            return this;
         }
 
         @Override
-        public void add(RetainableByteBuffer bytes) throws ReadOnlyBufferException
+        public Mutable add(RetainableByteBuffer bytes) throws ReadOnlyBufferException
         {
             assert !isRetained();
 
@@ -1033,11 +1062,12 @@ public interface RetainableByteBuffer extends Retainable
                     }
                 }
                 bytes.release();
-                return;
+                return this;
             }
 
             add(bytes.getByteBuffer());
             bytes.release();
+            return this;
         }
 
         /**
@@ -1047,7 +1077,7 @@ public interface RetainableByteBuffer extends Retainable
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
         @Override
-        public void put(byte b)
+        public Mutable put(byte b)
         {
             assert !isRetained();
 
@@ -1056,10 +1086,11 @@ public interface RetainableByteBuffer extends Retainable
                 _flipPosition = BufferUtil.flipToFill(_byteBuffer);
 
             _byteBuffer.put(b);
+            return this;
         }
 
         @Override
-        public void put(long index, byte b)
+        public Mutable put(long index, byte b)
         {
             assert !isRetained();
 
@@ -1070,6 +1101,7 @@ public interface RetainableByteBuffer extends Retainable
             if (index > remaining)
                 throw new IndexOutOfBoundsException();
             _byteBuffer.put(_flipPosition + Math.toIntExact(index), b);
+            return this;
         }
 
         /**
@@ -1079,7 +1111,7 @@ public interface RetainableByteBuffer extends Retainable
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
         @Override
-        public void putShort(short s)
+        public Mutable putShort(short s)
         {
             assert !isRetained();
 
@@ -1088,6 +1120,7 @@ public interface RetainableByteBuffer extends Retainable
                 _flipPosition = BufferUtil.flipToFill(_byteBuffer);
 
             _byteBuffer.putShort(s);
+            return this;
         }
 
         /**
@@ -1097,7 +1130,7 @@ public interface RetainableByteBuffer extends Retainable
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
         @Override
-        public void putInt(int i)
+        public Mutable putInt(int i)
         {
             assert !isRetained();
 
@@ -1106,6 +1139,7 @@ public interface RetainableByteBuffer extends Retainable
                 _flipPosition = BufferUtil.flipToFill(_byteBuffer);
 
             _byteBuffer.putInt(i);
+            return this;
         }
 
         /**
@@ -1115,7 +1149,7 @@ public interface RetainableByteBuffer extends Retainable
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
         @Override
-        public void putLong(long l)
+        public Mutable putLong(long l)
         {
             assert !isRetained();
 
@@ -1124,6 +1158,7 @@ public interface RetainableByteBuffer extends Retainable
                 _flipPosition = BufferUtil.flipToFill(_byteBuffer);
 
             _byteBuffer.putLong(l);
+            return this;
         }
 
         /**
@@ -1135,7 +1170,7 @@ public interface RetainableByteBuffer extends Retainable
          * @throws BufferOverflowException if this buffer cannot fit the byte
          */
         @Override
-        public void put(byte[] bytes, int offset, int length)
+        public Mutable put(byte[] bytes, int offset, int length)
         {
             assert !isRetained();
 
@@ -1144,6 +1179,7 @@ public interface RetainableByteBuffer extends Retainable
                 _flipPosition = BufferUtil.flipToFill(_byteBuffer);
 
             _byteBuffer.put(bytes, offset, length);
+            return this;
         }
 
         @Override
@@ -1951,15 +1987,16 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public void add(ByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
+        public Mutable add(ByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("add BB {} <- {}", this, BufferUtil.toDetailString(bytes));
             add(RetainableByteBuffer.wrap(bytes));
+            return this;
         }
 
         @Override
-        public void add(RetainableByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
+        public Mutable add(RetainableByteBuffer bytes) throws ReadOnlyBufferException, BufferOverflowException
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("add RBB {} <- {}", this, bytes);
@@ -1972,21 +2009,23 @@ public interface RetainableByteBuffer extends Retainable
             if (shouldAggregate(bytes, length) && append(bytes))
             {
                 bytes.release();
-                return;
+                return this;
             }
 
             _buffers.add(bytes);
             _aggregate = null;
+            return this;
         }
 
         @Override
-        public void put(byte b)
+        public Mutable put(byte b)
         {
             ensure(1).put(b);
+            return this;
         }
 
         @Override
-        public void put(long index, byte b)
+        public Mutable put(long index, byte b)
         {
             for (RetainableByteBuffer buffer : _buffers)
             {
@@ -1994,7 +2033,7 @@ public interface RetainableByteBuffer extends Retainable
                 if (index < size)
                 {
                     buffer.asMutable().put(index, b);
-                    return;
+                    return this;
                 }
                 index -= size;
             }
@@ -2002,25 +2041,28 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public void putShort(short s)
+        public Mutable putShort(short s)
         {
             ensure(2).putShort(s);
+            return this;
         }
 
         @Override
-        public void putInt(int i)
+        public Mutable putInt(int i)
         {
             ensure(4).putInt(i);
+            return this;
         }
 
         @Override
-        public void putLong(long l)
+        public Mutable putLong(long l)
         {
             ensure(8).putLong(l);
+            return this;
         }
 
         @Override
-        public void put(byte[] bytes, int offset, int length)
+        public Mutable put(byte[] bytes, int offset, int length)
         {
             // Use existing aggregate if the length is large and there is space for at least half
             if (length >= 16 && _aggregate != null)
@@ -2036,6 +2078,7 @@ public interface RetainableByteBuffer extends Retainable
             }
 
             ensure(length).put(bytes, offset, length);
+            return this;
         }
 
         private Mutable ensure(int needed) throws BufferOverflowException

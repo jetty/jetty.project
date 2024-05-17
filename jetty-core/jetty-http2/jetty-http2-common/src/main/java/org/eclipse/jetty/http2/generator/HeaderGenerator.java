@@ -47,9 +47,9 @@ public class HeaderGenerator
 
     public void generate(RetainableByteBuffer.Mutable accumulator, FrameType frameType, int capacity, int length, int flags, int streamId)
     {
-        accumulator.putInt((length & 0x00_FF_FF_FF) << 8 | (frameType.getType() & 0xFF));
-        accumulator.put((byte)flags);
-        accumulator.putInt(streamId);
+        accumulator.putInt((length & 0x00_FF_FF_FF) << 8 | (frameType.getType() & 0xFF))
+            .put((byte)flags)
+            .putInt(streamId);
     }
 
     public int getMaxFrameSize()

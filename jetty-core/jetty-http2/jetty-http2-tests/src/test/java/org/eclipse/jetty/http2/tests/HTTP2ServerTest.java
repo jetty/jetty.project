@@ -246,8 +246,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         long offset = accumulator.size();
         generator.control(accumulator, new PingFrame(new byte[8], false));
-        accumulator.put(offset, (byte)0x00);
-        accumulator.put(offset, (byte)0x07);
+        accumulator.put(offset, (byte)0x00).put(offset, (byte)0x07);
 
         CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -292,10 +291,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         generator.control(accumulator, new PingFrame(new byte[8], false));
 
         // Modify the streamId of the frame to non zero.
-        accumulator.put(offset + 5, (byte)0);
-        accumulator.put(offset + 6, (byte)0);
-        accumulator.put(offset + 7, (byte)0);
-        accumulator.put(offset + 8, (byte)1);
+        accumulator.put(offset + 5, (byte)0).put(offset + 6, (byte)0).put(offset + 7, (byte)0).put(offset + 8, (byte)1);
 
         CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -496,9 +492,9 @@ public class HTTP2ServerTest extends AbstractServerTest
             int dataSize = ((accumulator.get(offset) * 0xFF) << 16) + ((accumulator.get(offset + 1) & 0xFF) << 8) + (accumulator.get(offset + 2) & 0xFF);
 
             // Set the HeadersFrame length to just the priority.
-            accumulator.put(offset, (byte)0x00);
-            accumulator.put(offset + 1, (byte)0x00);
-            accumulator.put(offset + 2, (byte)PriorityFrame.PRIORITY_LENGTH);
+            accumulator.put(offset, (byte)0x00)
+                .put(offset + 1, (byte)0x00)
+                .put(offset + 2, (byte)PriorityFrame.PRIORITY_LENGTH);
 
             // Take the body of the headers frame and all following frames
             RetainableByteBuffer remainder = accumulator.take(offset + 9 + PriorityFrame.PRIORITY_LENGTH);
@@ -549,9 +545,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         System.err.println(taken.toDetailString());
         System.err.println(last.toDetailString());
 
-        accumulator.add(headersHeader);
-        accumulator.add(taken);
-        accumulator.add(last);
+        accumulator.add(headersHeader).add(taken).add(last);
         System.err.println("-- adds");
         System.err.println(accumulator.toDetailString());
         System.err.println(headersHeader.toDetailString());
@@ -583,9 +577,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             RetainableByteBuffer.Mutable continuation = headers.copy().asMutable();
             accumulator.add(headers);
             continuation.limit(9);
-            continuation.put(0, (byte)0x00);
-            continuation.put(1, (byte)0x00);
-            continuation.put(2, (byte)0x00);
+            continuation.put(0, (byte)0x00).put(1, (byte)0x00).put(2, (byte)0x00);
             accumulator.add(continuation);
             return accumulator;
         });

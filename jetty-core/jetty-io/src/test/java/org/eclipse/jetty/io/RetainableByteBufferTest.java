@@ -151,10 +151,9 @@ public class RetainableByteBufferTest
                 int half = TEST_LENGTH / 2;
                 RetainableByteBuffer first = _pool.acquire(half, mutable.isDirect());
                 first.asMutable().append(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, half));
-                mutable.add(first);
                 RetainableByteBuffer second = _pool.acquire(TEST_LENGTH - half, mutable.isDirect());
                 second.asMutable().append(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET + half, TEST_LENGTH - half));
-                mutable.add(second);
+                mutable.add(first).add(second);
                 return mutable;
             });
 
@@ -918,11 +917,9 @@ public class RetainableByteBufferTest
         RetainableByteBuffer cruel = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel "), release::countDown);
         RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!"), release::countDown);
         RetainableByteBuffer.Mutable cruelWorld = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
-        cruelWorld.add(cruel);
-        cruelWorld.add(world);
+        cruelWorld.add(cruel).add(world);
 
-        buffer.add(hello);
-        buffer.add(cruelWorld);
+        buffer.add(hello).add(cruelWorld);
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer(), StandardCharsets.UTF_8), is("Hello cruel world!"));
 
