@@ -275,32 +275,37 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
+      <artifactId>jetty-servlet5-demo-jakarta-websocket-webapp</artifactId>
       <version>${project.version}</version>
-      <type>war</type>
+      <classifier>webbundle-ee10</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee9</classifier>
+      <classifier>webbundle-ee10</classifier>
       <scope>test</scope>
     </dependency>
-
-    <!-- Eclipse OSGi Deps -->
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee9</classifier>
+      <classifier>webbundle-ee10</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
-      <type>war</type>
+      <classifier>webbundle-ee10</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
+      <artifactId>jetty-ee10-demo-jetty-websocket-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>webbundle</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>

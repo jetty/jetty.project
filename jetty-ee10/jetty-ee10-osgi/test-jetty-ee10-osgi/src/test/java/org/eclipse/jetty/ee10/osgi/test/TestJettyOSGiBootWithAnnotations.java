@@ -77,7 +77,7 @@ public class TestJettyOSGiBootWithAnnotations
     {
         List<Option> res = new ArrayList<>();
         res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-container-initializer").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servletservlet5-demo-mock-resources").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-mock-resources").versionAsInProject());
         //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-spec-webapp").classifier("webbundle-ee10").versionAsInProject());
         return res;
@@ -96,20 +96,20 @@ public class TestJettyOSGiBootWithAnnotations
             String port = System.getProperty("boot.annotations.port");
             assertNotNull(port);
 
-            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/ee10-demo-spec/index.html");
+            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/index.html");
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
 
             String content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content, "Demo Specification WebApp");
 
-            Request req = client.POST("http://127.0.0.1:" + port + "/ee10-demo-spec/test");
+            Request req = client.POST("http://127.0.0.1:" + port + "/test");
             response = req.send();
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content,
                 "<p><b>Result: <span class=\"pass\">PASS</span></p>");
 
-            response = client.GET("http://127.0.0.1:" + port + "/ee10-demo-spec/frag.html");
+            response = client.GET("http://127.0.0.1:" + port + "/frag.html");
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content, "<h1>FRAGMENT</h1>");
@@ -117,7 +117,7 @@ public class TestJettyOSGiBootWithAnnotations
             multiPart.addPart(new MultiPart.ContentSourcePart("field", null, HttpFields.EMPTY, new StringRequestContent("foo")));
             multiPart.close();
 
-            response = client.newRequest("http://127.0.0.1:" + port + "/ee10-demo-spec/multi").method("POST")
+            response = client.newRequest("http://127.0.0.1:" + port + "/multi").method("POST")
                 .body(multiPart).send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
