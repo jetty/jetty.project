@@ -55,6 +55,22 @@
           <argLine>@{argLine} ${jetty.surefire.argLine} 
             --add-reads org.eclipse.jetty.io=org.eclipse.jetty.logging</argLine>
         </configuration>
+        <dependencies>
+          <!--
+          surefire plugin currently does not support junit5 with testng out of the box: https://maven.apache.org/surefire/maven-surefire-plugin/examples/testng.html#running-testng-and-junit-tests
+          We need to specify providers explicitly: https://maven.apache.org/surefire/maven-surefire-plugin/examples/providers.html
+          -->
+          <dependency>
+            <groupId>org.apache.maven.surefire</groupId>
+            <artifactId>surefire-junit-platform</artifactId>
+            <version>${maven.surefire.plugin.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.apache.maven.surefire</groupId>
+            <artifactId>surefire-testng</artifactId>
+            <version>${maven.surefire.plugin.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>
