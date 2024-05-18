@@ -146,17 +146,22 @@ public class HttpParser
             {
                 HttpField field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type);
                 map.put(field.toString(), field);
+                map.put(field.toString().replace(": ", ":"), field);
 
                 for (String charset : new String[]{"utf-8", "iso-8859-1"})
                 {
                     PreEncodedHttpField field1 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + ";charset=" + charset);
                     map.put(field1.toString(), field1);
+                    map.put(field1.toString().replace(": ", ":"), field1);
                     PreEncodedHttpField field2 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + "; charset=" + charset);
                     map.put(field2.toString(), field2);
+                    map.put(field1.toString().replace(": ", ":"), field2);
                     PreEncodedHttpField field3 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + ";charset=" + charset.toUpperCase(Locale.ENGLISH));
                     map.put(field3.toString(), field3);
+                    map.put(field1.toString().replace(": ", ":"), field3);
                     PreEncodedHttpField field4 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + "; charset=" + charset.toUpperCase(Locale.ENGLISH));
                     map.put(field4.toString(), field4);
+                    map.put(field1.toString().replace(": ", ":"), field4);
                 }
             }
             return map;
@@ -167,7 +172,8 @@ public class HttpParser
             for (HttpHeader h : HttpHeader.values())
             {
                 HttpField httpField = new HttpField(h, UNMATCHED_VALUE);
-                map.put(httpField.toString(), httpField);
+                map.put(h + ": ", httpField);
+                map.put(h + ":", httpField);
             }
             return map;
         })
