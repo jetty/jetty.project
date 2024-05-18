@@ -514,8 +514,8 @@ public class HTTP2ServerTest extends AbstractServerTest
     public void testDemoRBB() throws Exception
     {
         startServer(new ServerSessionListener() {});
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, false, -1, -1, 0);
-        // RetainableByteBuffer.Mutable accumulator = bufferPool.acquire(8 * 1024, false).asMutable();
+        // RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, false, -1, -1, 0);
+        RetainableByteBuffer.Mutable accumulator = bufferPool.acquire(8 * 1024, false).asMutable();
         generator.control(accumulator, new PrefaceFrame());
         long settings = accumulator.size();
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
@@ -532,25 +532,30 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         RetainableByteBuffer headersHeader = taken;
         taken = taken.take(9);
-        System.err.println("-- take 9");
+        System.err.println("-- take headers header");
         System.err.println(accumulator.toDetailString());
         System.err.println(headersHeader.toDetailString());
         System.err.println(taken.toDetailString());
 
         RetainableByteBuffer last = taken.take(taken.size() - 4);
 
-        System.err.println("-- take last");
+        System.err.println("-- take last, make fake");
         System.err.println(accumulator.toDetailString());
         System.err.println(headersHeader.toDetailString());
         System.err.println(taken.toDetailString());
         System.err.println(last.toDetailString());
 
-        accumulator.add(headersHeader).add(taken).add(last);
-        System.err.println("-- adds");
+        RetainableByteBuffer fakeContinuation = headersHeader.copy().asMutable()
+            .put(0, (byte)0).put(1, (byte)0x01).put(2, (byte)0xff);
+        System.err.println(fakeContinuation.toDetailString());
+
+        accumulator.add(headersHeader).add(taken).add(last).add(fakeContinuation);
+        System.err.println("-- add parts");
         System.err.println(accumulator.toDetailString());
         System.err.println(headersHeader.toDetailString());
         System.err.println(taken.toDetailString());
         System.err.println(last.toDetailString());
+        System.err.println(fakeContinuation.toDetailString());
 
         accumulator.release();
         System.err.println("-- accumulator.release");
@@ -558,6 +563,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         System.err.println(headersHeader.toDetailString());
         System.err.println(taken.toDetailString());
         System.err.println(last.toDetailString());
+        System.err.println(fakeContinuation.toDetailString());
     }
 
     @Test

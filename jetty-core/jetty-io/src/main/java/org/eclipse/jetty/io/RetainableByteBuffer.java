@@ -361,17 +361,18 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Take the contents of this buffer from an index.
-     * @return A buffer with the contents of this buffer from the index, avoiding copies if possible, but with
-     * no shared internal buffers.
+     * Take the contents of this buffer, after skipping some bytes, which remain in this buffer.
+     * @param skip The of bytes to skip before taking the contents
+     * @return A buffer with the contents of this buffer after skipping bytes, avoiding copies if possible,
+     * but with no shared internal buffers.
      */
-    default RetainableByteBuffer take(long fromIndex)
+    default RetainableByteBuffer take(long skip)
     {
-        if (fromIndex > size())
-            throw new IllegalArgumentException("%d > %d".formatted(fromIndex, size()));
+        if (skip > size())
+            throw new IllegalArgumentException("%d > %d".formatted(skip, size()));
         RetainableByteBuffer slice = slice();
-        limit(fromIndex);
-        slice.skip(fromIndex);
+        limit(skip);
+        slice.skip(skip);
         RetainableByteBuffer copy = slice.copy();
         slice.release();
         return copy;
@@ -398,7 +399,7 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Asynchronously writes and consumes the contents of this retainable byte buffer into given sink.
+     * Asynchronously writes and consumes the contents of this retainable byte buffer into the given sink.
      * @param sink the destination sink.
      * @param last true if this is the last write.
      * @param callback the callback to call upon the write completion.
@@ -410,7 +411,7 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Asynchronously writes and consumes the contents of this retainable byte buffer into given sink.
+     * Writes and consumes the contents of this retainable byte buffer into the given sink.
      * @param sink the destination sink.
      * @param last true if this is the last write.
      * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
@@ -425,7 +426,7 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * @return A string showing the info and detail about this buffer
+     * @return A string showing the info and detail about this buffer, as well as a summary of the contents
      */
     default String toDetailString()
     {
@@ -433,12 +434,12 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Extends the {@link RetainableByteBuffer} API with optimized mutator methods.
+     * Extended {@link RetainableByteBuffer} API with mutator methods.
      * The mutator methods come in the following styles:
      * <ul>
-     *     <li>{@code Put} methods are used for putting raw bytes into the buffer and are
+     *     <li>{@code put} methods are used for putting raw bytes into the buffer and are
      *     similar to {@link ByteBuffer#put(byte)} etc. {@code Put} methods may be used in fluent style.</li>
-     *     <li>{@code Add} methods are used for handing over an external buffer to be managed by
+     *     <li>{@code add} methods are used for handing over an external buffer to be managed by
      *     this buffer. External buffers are passed by reference and the caller will not longer manage the added buffer.
      *     {@code Add} methods may be used in fluent style.</li>
      *     <li>{@code append} methods are used for handing over the content of a buffer to be included in this buffer.
@@ -449,7 +450,7 @@ public interface RetainableByteBuffer extends Retainable
     interface Mutable extends RetainableByteBuffer
     {
         /**
-         * @return the number of bytes left for appending in the {@code ByteBuffer}
+         * @return the number of bytes that can be added, appended or put into this buffer.
          */
         default long space()
         {
@@ -457,7 +458,8 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         /**
-         * @return whether the {@code ByteBuffer} has remaining bytes left for appending
+         * @return true if the {@link #size()} is equals to the {@link #maxSize()} and no more bytes can be added, appended
+         * or put to this buffer.
          */
         default boolean isFull()
         {
@@ -1436,11 +1438,11 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public RetainableByteBuffer take(long fromIndex)
+        public RetainableByteBuffer take(long skip)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("take {} {}", this, fromIndex);
-            if (fromIndex > size())
+                LOG.debug("take {} {}", this, skip);
+            if (skip > size())
                 throw new IndexOutOfBoundsException();
 
             if (_buffers.isEmpty())
@@ -1454,12 +1456,12 @@ public interface RetainableByteBuffer extends Retainable
                 RetainableByteBuffer buffer = i.next();
 
                 long size = buffer.size();
-                if (fromIndex >= size)
+                if (skip >= size)
                 {
                     // the sub buffer stays with this RBB
-                    fromIndex -= size;
+                    skip -= size;
                 }
-                else if (fromIndex == 0)
+                else if (skip == 0)
                 {
                     // the sub buffer is added to the new RBB
                     i.remove();
@@ -1478,22 +1480,22 @@ public interface RetainableByteBuffer extends Retainable
                 else
                 {
                     // the sub buffer is split between this RBB and the new RBB
-                    if (fromIndex > (buffer.size() / 2) || buffer.isRetained())
+                    if (skip > (buffer.size() / 2) || buffer.isRetained())
                     {
                         // copy the tail of the buffer into the new RBB
-                        buffers.add(buffer.take(fromIndex));
+                        buffers.add(buffer.take(skip));
                     }
                     else
                     {
                         // copy the head of the buffer and keep in this RBB, add the original buffer to the new RBB
                         RetainableByteBuffer slice = buffer.slice();
-                        slice.limit(fromIndex);
+                        slice.limit(skip);
                         i.set(slice.copy());
                         slice.release();
-                        buffer.skip(fromIndex);
+                        buffer.skip(skip);
                         buffers.add(buffer);
                     }
-                    fromIndex = 0;
+                    skip = 0;
                 }
             }
             return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
