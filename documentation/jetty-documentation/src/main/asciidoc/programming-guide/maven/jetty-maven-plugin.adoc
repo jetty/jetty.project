@@ -955,7 +955,7 @@ Here's an example of setting up the `HashLoginService` for a webapp:
       <loginService implementation="org.eclipse.jetty.security.HashLoginService">
         <name>Test Realm</name>
         <config implementation="org.eclipse.jetty.maven.MavenResource">
-          <resourceAsString>${basedir}/src/etc/realm.properties</resourceAsString>
+          <resourceAsString>${project.basedir}/src/etc/realm.properties</resourceAsString>
         </config>
       </loginService>
     </loginServices>

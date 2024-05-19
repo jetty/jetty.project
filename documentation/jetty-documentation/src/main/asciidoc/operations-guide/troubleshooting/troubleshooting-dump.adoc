@@ -14,7 +14,7 @@
 [[og-troubleshooting-dump]]
 ==== Server Dump
 
-The Jetty Server Dump is obtained by invoking, via JMX, the `Server.dump()` operation, as shown below.
+The Jetty Server Dump is obtained by invoking, via JMX, the `Server.dump()` operation, as shown below using link:https://adoptium.net/jmc.html[Java Mission Control (JMC)]:
 
 image::jmc-server-dump.png[]
 

@@ -696,7 +696,7 @@ public interface Request extends Attributes, Content.Source
     /**
      * <p>A wrapper for {@code Request} instances.</p>
      */
-    class Wrapper implements Request, Attributes
+    class Wrapper implements Request
     {
         /**
          * Implementation note: {@link Request.Wrapper} does not extend from {@link Attributes.Wrapper}
