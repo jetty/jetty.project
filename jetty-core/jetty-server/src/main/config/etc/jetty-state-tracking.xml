@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New class="org.eclipse.jetty.server.handler.StateTrackingHandler">
+        <Set name="handlerCallbackTimeout" property="jetty.stateTracking.handlerCallbackTimeout" />
+        <Set name="completeHandlerCallbackAtTimeout" property="jetty.stateTracking.completeHandlerCallbackAtTimeout" />
+        <Set name="demandCallbackTimeout" property="jetty.stateTracking.demandCallbackTimeout" />
+        <Set name="writeTimeout" property="jetty.stateTracking.writeTimeout" />
+        <Set name="writeCallbackTimeout" property="jetty.stateTracking.writeCallbackTimeout" />
+      </New>
+    </Arg>
+  </Call>
+</Configure>
