@@ -1074,6 +1074,22 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public int hashCode()
+        {
+            // Override the implementation from the base class,
+            // and align with the implementation of Request.Wrapper.
+            return System.identityHashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            // Override the implementation from the base class,
+            // and align with the implementation of Request.Wrapper.
+            return this == obj;
+        }
+
+        @Override
         public String toString()
         {
             return String.format("%s@%x %s %s", getMethod(), hashCode(), getHttpURI(), _metaData.getHttpVersion());
@@ -1460,6 +1476,9 @@ public class HttpChannelState implements HttpChannel, Components
 
             try (AutoLock ignored = _request._lock.lock())
             {
+                if (lockedCompleteCallback())
+                    return;
+
                 request = _request;
                 httpChannelState = _request._httpChannelState;
                 response = httpChannelState._response;
@@ -1470,9 +1489,6 @@ public class HttpChannelState implements HttpChannel, Components
                     failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
                 if (response.lockedIsWriting())
                     failure = ExceptionUtil.combine(failure, new IllegalStateException("write pending"));
-
-                if (lockedCompleteCallback())
-                    return;
 
                 assert httpChannelState._callbackFailure == null;
 

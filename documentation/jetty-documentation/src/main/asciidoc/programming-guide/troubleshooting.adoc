@@ -72,22 +72,34 @@ java -Dorg.eclipse.jetty.http2.LEVEL=DEBUG --class-path ...
 === JVM Thread Dump
 TODO
 
+[[pg-troubleshooting-state-tracking]]
+=== `StateTrackingHandler`
+
+`StateTrackingHandler` (described xref:pg-server-http-handler-use-state-tracking[here]) is a troubleshooting `Handler` that can be inserted in the `Handler` chain to track usages of `Handler`/`Request`/`Response` asynchronous APIs.
+
+xref:pg-troubleshooting-component-dump[Dumping the Jetty component tree] will dump the `StateTrackingHandler`, which will dump the state of the current requests.
+
+This will help detecting whether requests are not completed due to callbacks not being completed, or whether callback code is stuck while invoking blocking APIs, etc.
+
+Thread stack traces (including virtual threads) of operations that have been started but not completed, or are stuck in blocking code are provided in the component tree dump.
+
 [[pg-troubleshooting-component-dump]]
-=== Jetty Component Tree Dump
+=== Component Tree Dump
 
 Jetty components are organized in a xref:pg-arch-bean[component tree].
 
 At the root of the component tree there is typically a `ContainerLifeCycle` instance -- typically a `Server` instance on the server and an `HttpClient` instance on the client.
 
-`ContainerLifeCycle` has built-in _dump_ APIs that can be invoked either directly or xref:pg-arch-jmx[via JMX].
+`ContainerLifeCycle` has built-in _dump_ APIs that can be invoked either directly on the `Server` instance, or xref:pg-arch-jmx[via JMX].
 
-// TODO: images from JMC?
-// TODO: Command line JMX will be in JMX section.
+You can invoke `Server.dump()` via JMX using a JMX console such as link:https://adoptium.net/jmc.html[Java Mission Control (JMC)]:
+
+image::jmc-server-dump.png[]
 
 TIP: You can get more details from a Jetty's `QueuedThreadPool` dump by enabling detailed dumps via `queuedThreadPool.setDetailedDump(true)`.
 
 [[pg-troubleshooting-debugging]]
-=== Debugging
+=== Remote Debugging
 
 Sometimes, in order to figure out a problem, enabling xref:pg-troubleshooting-logging[DEBUG logging] is not enough and you really need to debug the code with a debugger.
 
