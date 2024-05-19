@@ -370,11 +370,6 @@ public class HttpParserTest
         assertThat(HttpParser.CACHE.getBest("Content-Type: unknown\n").toString(), is("Content-Type: \u0000"));
         assertThat(HttpParser.CACHE.getBest("content-type: unknown\r\n").toString(), is("Content-Type: \u0000"));
         assertThat(HttpParser.CACHE.getBest("content-type: unknown\n").toString(), is("Content-Type: \u0000"));
-
-        assertThat(HttpParser.CACHE.getBest("Content-Type:text/plain\r\n").toString(), is("Content-Type: \u0000"));
-        assertThat(HttpParser.CACHE.getBest("Content-Type:text/plain\n").toString(), is("Content-Type: \u0000"));
-        assertThat(HttpParser.CACHE.getBest("content-type:unknown\r\n").toString(), is("Content-Type: \u0000"));
-        assertThat(HttpParser.CACHE.getBest("content-type:unknown\n").toString(), is("Content-Type: \u0000"));
     }
 
     @ParameterizedTest

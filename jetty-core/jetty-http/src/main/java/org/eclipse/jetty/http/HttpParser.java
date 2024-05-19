@@ -168,7 +168,6 @@ public class HttpParser
             {
                 HttpField httpField = new HttpField(h, UNMATCHED_VALUE);
                 map.put(h + ": ", httpField);
-                map.put(h + ":", httpField);
             }
             return map;
         })
