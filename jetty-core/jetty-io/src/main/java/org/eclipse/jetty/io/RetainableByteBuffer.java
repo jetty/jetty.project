@@ -32,24 +32,43 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>A {@link ByteBuffer} which maintains a reference count that is
- * incremented with {@link #retain()} and decremented with {@link #release()}.</p>
- * <p>The {@code ByteBuffer} is released to a {@link ByteBufferPool}
- * when {@link #release()} is called one more time than {@link #retain()};
- * in such case, the call to {@link #release()} returns {@code true}.</p>
- * <p>A {@code RetainableByteBuffer} can either be:</p>
+ * <p>An abstraction over {@link ByteBuffer}s which provides:
  * <ul>
- *     <li>in pool; in this case {@link #isRetained()} returns {@code false}
- *     and calling {@link #release()} throws {@link IllegalStateException}</li>
- *     <li>out of pool but not retained; in this case {@link #isRetained()}
- *     returns {@code false} and calling {@link #release()} returns {@code true}</li>
- *     <li>out of pool and retained; in this case {@link #isRetained()}
- *     returns {@code true} and calling {@link #release()} returns {@code false}</li>
+ *     <li>{@link Retainable Retainability} so that reference counts can be maintained for shared buffers.</li>
+ *     <li>{@link Pooled Pooled} buffers that use the {@link ByteBufferPool} for any operations and which are returned to the
+ *         {@link ByteBufferPool} when fully {@link #release() released}.</li>
+ *     <li>Either {@link FixedCapacity fixed capacity} buffers over a single {@link ByteBuffer} or
+ *         {@link DynamicCapacity dynamic capacity} over possible multiple {@link ByteBuffer}s.</li>
+ *     <li>Access APIs to {@link #get() get}, {@link #slice() slice} or {@link #take() take} from
+ *         the buffer</li>
+ *     <li>A {@link Mutable Mutable} API variant to {@link Mutable#put(byte) put},
+ *         {@link Mutable#append(RetainableByteBuffer) append} or {@link Mutable#add(RetainableByteBuffer) add}
+ *         to the buffer</li>
  * </ul>
- * <p>The API read-only, even if the underlying {@link ByteBuffer} is read-write.  The {@link Mutable} sub-interface
- * provides a read-write API.  All provided implementation implement {@link Mutable}, but may only present as
- * a {@code RetainableByteBuffer}.  The {@link #asMutable()} method can be used to access the read-write version of the
- * API.</p>
+ * <p>When possible and optimal, implementations will avoid data copies. However, copies may be favoured over retaining
+ * large buffers with small content.
+ * </p>
+ * <p>Accessing data in the buffer can be achieved via:
+ * <ul>
+ *     <li>The {@link #get()}/{@link #get(long)}/{@link #get(byte[], int, int)} methods provide direct access to bytes
+ *         within the buffer.</li>
+ *     <li>The {@link #slice()}/{@link #slice(long)} methods for shared access to common backing buffers, but with
+ *         independent indexes.</li>
+ *     <li>The {@link #take()}/{@link #take(long)} methods for minimal copy extraction of bulk data.</li>
+ *     <li>Accessing the underlying {@link ByteBuffer} via {@link #getByteBuffer()}, which may coalesce multiple buffers
+ *     into a single.</li>
+ * </ul>
+ * </p>
+ * <p>The {@code RetainableByteBuffer} APIs are non-modal, meaning that there is no need for any {@link ByteBuffer#flip() flip}
+ * operation between a mutable method and an accessor method.
+ * {@link ByteBuffer} returned or passed to this API should be in "flush" mode, with valid data between the
+ * {@link ByteBuffer#position() position} and {@link ByteBuffer#limit() limit}.  The {@link ByteBuffer} returned from
+ * {@link #getByteBuffer()} may used directly and switched to "fill" mode, but it is the callers responsibility to
+ * {@link ByteBuffer#flip() flip} back to "flush" mode, before any {@code RetainableByteBuffer} APIs are used.</p>
+ * <p>The {@code RetainableByteBuffer} APIs hide any notion of unused space before or after valid data. All indexing is relative
+ * to the first byte of data in the buffer and no manipulation of data pointers is directly supported.</p>
+ * <p>The buffer may be large and the {@link #size()} is represented as a {@code long} in new APIs.  However, APIs that
+ * are tied to a single backing {@link ByteBuffer} may use integer representations of size and indexes.</p>
  */
 public interface RetainableByteBuffer extends Retainable
 {
@@ -183,6 +202,8 @@ public interface RetainableByteBuffer extends Retainable
      *
      * @return the byte
      * @throws BufferUnderflowException if the buffer is empty.
+     * @see #get(byte[], int, int)
+     * @see #get(long)
      */
     default byte get() throws BufferUnderflowException
     {
@@ -222,6 +243,9 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * Get the wrapped, not {@code null}, {@code ByteBuffer}.
+     * <p>If the implementation contains multiple buffers, they are coalesced to a single buffer before being returned.
+     * If the content is too large for a single {@link ByteBuffer}, then the content should be access with
+     * {@link #writeTo(Content.Sink, boolean)}.</p>
      * @return the wrapped, not {@code null}, {@code ByteBuffer}
      * @throws BufferOverflowException if the contents is too large for a single {@link ByteBuffer}
      */
@@ -312,7 +336,7 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * <p>Limit the buffer size to the given number of bytes.</p>
+     * <p>Limit this buffer's contents to the size.</p>
      *
      * @param size the new size of the buffer
      */
@@ -327,6 +351,7 @@ public interface RetainableByteBuffer extends Retainable
      * Get a slice of the buffer.
      * @return A sliced {@link RetainableByteBuffer} sharing this buffers data and reference count, but
      *         with independent position. The buffer is {@link #retain() retained} by this call.
+     * @see #slice(long).
      */
     default RetainableByteBuffer slice()
     {
@@ -335,7 +360,7 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * Get a partial slice of the buffer.
-     * This is equivalent, but more efficient, than a {@link #slice()}.{@link #limit(long)}.
+     * This is equivalent to {@link #slice()}.{@link #limit(long)}, but may be implemented more efficiently.
      * @param length The number of bytes to slice, which may beyond the limit and less than the capacity, in which case
      * it will ensure some spare capacity in the slice.
      * @return A sliced {@link RetainableByteBuffer} sharing the first {@code length} bytes of this buffers data and
@@ -362,6 +387,7 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * Take the contents of this buffer, after skipping some bytes, which remain in this buffer.
+     * This is equivalent to {@link #slice()}{@link .#skip(long)}{@link .#copy()}, but can be implemented more efficiently.
      * @param skip The of bytes to skip before taking the contents
      * @return A buffer with the contents of this buffer after skipping bytes, avoiding copies if possible,
      * but with no shared internal buffers.
@@ -381,6 +407,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * Take the contents of this buffer, leaving it clear.
      * @return A buffer with the contents of this buffer, avoiding copies if possible.
+     * @see #take(long)
      */
     default RetainableByteBuffer take()
     {
@@ -970,6 +997,15 @@ public interface RetainableByteBuffer extends Retainable
         {
             int offset = _flipPosition < 0 ? _byteBuffer.position() : _flipPosition;
             return _byteBuffer.get(offset + Math.toIntExact(index));
+        }
+
+        @Override
+        public void limit(long size)
+        {
+            if (_flipPosition < 0)
+                super.limit(size);
+            else
+                _byteBuffer.position(_flipPosition + Math.toIntExact(Math.min(size, size())));
         }
 
         @Override
