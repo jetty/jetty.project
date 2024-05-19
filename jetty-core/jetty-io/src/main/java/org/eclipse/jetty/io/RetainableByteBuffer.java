@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>An abstraction over {@link ByteBuffer}s which provides:
+ * <p>An abstraction over {@link ByteBuffer}s which provides:</p>
  * <ul>
  *     <li>{@link Retainable Retainability} so that reference counts can be maintained for shared buffers.</li>
  *     <li>{@link Pooled Pooled} buffers that use the {@link ByteBufferPool} for any operations and which are returned to the
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * <p>When possible and optimal, implementations will avoid data copies. However, copies may be favoured over retaining
  * large buffers with small content.
  * </p>
- * <p>Accessing data in the buffer can be achieved via:
+ * <p>Accessing data in the buffer can be achieved via:</p>
  * <ul>
  *     <li>The {@link #get()}/{@link #get(long)}/{@link #get(byte[], int, int)} methods provide direct access to bytes
  *         within the buffer.</li>
@@ -58,7 +58,6 @@ import org.slf4j.LoggerFactory;
  *     <li>Accessing the underlying {@link ByteBuffer} via {@link #getByteBuffer()}, which may coalesce multiple buffers
  *     into a single.</li>
  * </ul>
- * </p>
  * <p>The {@code RetainableByteBuffer} APIs are non-modal, meaning that there is no need for any {@link ByteBuffer#flip() flip}
  * operation between a mutable method and an accessor method.
  * {@link ByteBuffer} returned or passed to this API should be in "flush" mode, with valid data between the
@@ -351,7 +350,7 @@ public interface RetainableByteBuffer extends Retainable
      * Get a slice of the buffer.
      * @return A sliced {@link RetainableByteBuffer} sharing this buffers data and reference count, but
      *         with independent position. The buffer is {@link #retain() retained} by this call.
-     * @see #slice(long).
+     * @see #slice(long)
      */
     default RetainableByteBuffer slice()
     {
@@ -387,7 +386,7 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * Take the contents of this buffer, after skipping some bytes, which remain in this buffer.
-     * This is equivalent to {@link #slice()}{@link .#skip(long)}{@link .#copy()}, but can be implemented more efficiently.
+     * This is equivalent to {@link #slice()}.{@link #skip(long)}.{@link #copy()}, but can be implemented more efficiently.
      * @param skip The of bytes to skip before taking the contents
      * @return A buffer with the contents of this buffer after skipping bytes, avoiding copies if possible,
      * but with no shared internal buffers.
