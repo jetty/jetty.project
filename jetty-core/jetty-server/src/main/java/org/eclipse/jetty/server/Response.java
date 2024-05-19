@@ -347,7 +347,7 @@ public interface Response extends Content.Sink
             String body = """
             <!DOCTYPE html>
             <html lang="en">
-            <head><meta charset="ISO-8859-1"/><meta http-equiv="refresh" content="0; URL=%s/"/><title>Redirecting...</title></head>
+            <head><meta charset="ISO-8859-1"/><meta http-equiv="refresh" content="0; URL=%s"/><title>Redirecting...</title></head>
             <body><p>If you are not redirected, <a href="%s">click here</a>.</p></body>
             </html>
             """.formatted(location, location);
