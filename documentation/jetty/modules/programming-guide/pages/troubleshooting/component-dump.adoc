@@ -1,0 +1,25 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Jetty Component Tree Dump
+
+Jetty components are organized in a xref:arch/bean.adoc[component tree].
+
+At the root of the component tree there is typically a `ContainerLifeCycle` instance -- typically a `Server` instance on the server and an `HttpClient` instance on the client.
+
+`ContainerLifeCycle` has built-in _dump_ APIs that can be invoked either directly or xref:arch/jmx.adoc[via JMX].
+
+// TODO: images from JMC?
+// TODO: Command line JMX will be in JMX section.
+
+TIP: You can get more details from a Jetty's `QueuedThreadPool` dump by enabling detailed dumps via `queuedThreadPool.setDetailedDump(true)`.

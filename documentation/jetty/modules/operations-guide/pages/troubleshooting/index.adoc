@@ -1,0 +1,232 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Troubleshooting
+
+To troubleshoot Jetty when used as a production server, there are two main tools: the Jetty Server Dump and enabling DEBUG level logging.
+
+Jetty is based on components organized as a tree, with the `Server` instance at the root of the tree.
+
+As explained in the xref:jmx/index.adoc[JMX section], these components can be exported as JMX MBeans and therefore be accessible from JMX Consoles such as Java Missions Control (JMC).
+
+Being able to take a snapshot of the state of Jetty while it is running is the most useful information that can be attached when reporting an issue.
+Such state includes:
+
+* The thread pool configuration and its current state, including how many threads are in use, and their stack trace.
+* The TLS configuration.
+* The I/O configuration and its current state, including the ports Jetty listens to, how many connections are currently open, and he state of each connection, and the state of the request/response handling for each connection.
+* The `Handler` structure and its configuration.
+* The web applications deployed and their configurations, including the class loader information.
+
+The prerequisite for troubleshooting is to enable JMX, so that Jetty -- possibly a production server -- can be accessed from a remote location to obtain the information exported via JMX, and possibly be able to reconfigure Jetty to solve the issue.
+
+IMPORTANT: Make sure you read about how to secure the access to Jetty when using xref:jmx/index.adoc#remote[remote JMX].
+
+[[dump]]
+== Server Dump
+
+The Jetty Server Dump is obtained by invoking, via JMX, the `Server.dump()` operation, as shown below.
+
+image::jmc-server-dump.png[]
+
+Find the `Server` MBean in the MBean Tree, under `org.eclipse.jetty.server:type=server,id=0`.
+Then click on the "Operations" tab, select the `dump()` operation, and then click the `Execute` button.
+In the bottom panel you will see the result of the invocation, that you can copy into a text editor and save to your file system.
+
+[CAUTION]
+====
+Taking a Jetty Server Dump is a relatively expensive operation, as it dumps the state of all connections (which can be thousands), and the state of all threads.
+
+The result of the invocation may produce a large string, possibly few MiB, that may impact the server memory usage.
+
+Furthermore, dumping the state of the I/O Jetty components takes a little CPU time off the handling of the actual I/O, possibly slowing it down temporarily.
+
+While the slow-down caused by taking the Jetty Server Dump may be noticeable on highly loaded systems, it is typically a very small price to pay to obtain the information about the Jetty state that may be critical to the resolution of an issue.
+====
+
+[NOTE]
+====
+The format of the Jetty Server Dump output is subject to change at any time, as Jetty developers modify the Jetty code and decide to include more state, or remove state that is no longer relevant.
+
+The Jetty Server Dump is organized in a tree whose structure is similar to the runtime Jetty component tree.
+
+At the end of the dump output there is a legend that explains the type of tree node: whether it is a node that represent a _managed_ component, or an _array_ node (or a _map_ node) that represent some component state, etc.
+====
+
+[[dump-start-stop]]
+=== Dump at Server Start/Stop
+
+The `Server.dump()` operation may also be invoked just after the `Server` starts (to log the state of the freshly started server), and just before the `Server` stops (which may be useful to log the state of server that is not working properly).
+
+You can temporarily enable the Jetty Server Dump at start time by overriding the `jetty.server.dumpAfterStart` property on the command line:
+
+[source,subs=quotes]
+----
+$ java -jar $JETTY_HOME/start.jar *jetty.server.dumpAfterStart=true*
+----
+
+To make this change persistent across server restarts, see the xref:modules/standard.adoc#server[`server` module] configuration for more information about how to configure the server to dump at start/stop time.
+
+[[dump-detailed]]
+=== Detailed ThreadPool Information
+
+By default, the dump of the thread pool will only dump the topmost stack frame of each thread.
+It is possible to configure the thread pool to dump the whole stack trace for each thread; while this may be a little more expensive, it provides complete information about the state of each thread, which may be important to diagnose the issue.
+
+See the xref:modules/standard.adoc#threadpool[`threadpool` module] configuration for more information about how to configure the thread pool to dump detailed thread information.
+
+Detailed thread pool information can also be turned on/off on-the-fly via JMX, by finding the `ThreadPool` MBean under `org.eclipse.jetty.util.thread:type=queuedthreadpool,id=0`, then selecting the `detailedDump` attribute and setting it to `true`. You can now perform the `Server.dump()` operation as explained above, and then set `detailedDump` back to `false`.
+
+[[dump-example]]
+=== Dump Example
+
+Below you can find a simple example of a Jetty Server Dump, with annotations for the principal components:
+
+[jetty.small%nowrap]
+....
+[jetty]
+setupArgs=--add-modules=http
+args=jetty.http.selectors=1 jetty.http.acceptors=1 jetty.threadPool.minThreads=4 jetty.server.dumpAfterStart=true
+delete=^[0-9]\{4}
+callouts= <$N>,Server@,= QueuedThreadPool,HandlerList@,= ServerConnector,ManagedSelector@,keys @,startJarLoader@,unmanaged
+....
+ifdef::run-jetty[]
+<1> The `Server` instance at the root of the tree
+<2> The thread pool component
+<3> The root of the `Handler` structure
+<4> The connector listening on port `8080` for the HTTP/1.1 protocol
+<5> A selector component that manages connections
+<6> The connections currently managed by the selector component
+<7> The server `ClassLoader` and its classpath
+<8> The legend for the dump nodes
+endif::[]
+
+[[logging]]
+== Enabling DEBUG Logging
+
+Enabling DEBUG level logging for the `org.eclipse.jetty` logger name provides the maximum amount of information to troubleshoot Jetty issues.
+
+Refer to the xref:server/index.adoc#logging[logging section] for more information about how to configure logging in Jetty.
+
+[CAUTION]
+====
+Enabling DEBUG level logging for `org.eclipse.jetty` is very, *very* expensive.
+
+Your server could be slowed down to almost a halt, especially if it is under heavy load.
+Furthermore, the log file could quickly fill up the entire filesystem (unless configured to roll over), so you want to be really careful using DEBUG logging.
+
+For production servers, consider using the <<dump,Jetty Server Dump>> first, and enable DEBUG logging only as a last resort.
+====
+
+However, sometimes issues are such that only DEBUG logging can really tell what's going on in the system, and enabling DEBUG logging is your best chance to figure the issue out.
+Below you can find few suggestions that can help you reduce the impact when you have to enable DEBUG logging.
+
+[[logging-backend]]
+=== Jetty Behind a Load Balancer
+
+If Jetty instances are behind a load balancer, you may configure the load balancer to send less load to a particular Jetty instance, and enable DEBUG logging in that instance only.
+
+[[logging-jmx]]
+=== Enabling DEBUG Logging for a Short Time
+
+In certain cases the issue can be reproduced reliably, but only in the production environment.
+
+You can use JMX to temporarily enable DEBUG logging, reproduce the issue, and then disable DEBUG logging.
+
+Alternatively, if you cannot reliably reproduce the issue, but you _know_ it is happening, you can temporarily enable DEBUG logging for a small period of time, let's say 10-60 seconds, and then disable DEBUG logging.
+
+Changing the log level at runtime is a feature of the logging implementation that you are using.
+
+The Jetty SLF4J implementation, used by default, exposes via JMX method `boolean JettyLoggerFactoryMBean.setLoggerLevel(String loggerName, String levelName)` that you can invoke via a JMX console to change the level for the specified logger name.
+The method returns `true` if the logger level was successfully changed.
+
+For example, you can pass the string `org.eclipse.jetty` as the first parameter, and the string `DEBUG` (upper case) as the second parameter.
+You can then use the string `INFO` or `WARN` (upper case) to restore the logging level to its previous value.
+
+[[logging-subpackages]]
+=== Enabling DEBUG Logging for SubPackages
+
+Enabling DEBUG logging for the `org.eclipse.jetty` logger name implies that all children logger names, recursively, inherit the DEBUG level.
+
+Processing a single HTTP request involves many Jetty components: the I/O subsystem (under `org.eclipse.jetty.io`), the thread pool (under `org.eclipse.jetty.util`), the HTTP/1.1 parsing (under `org.eclipse.jetty.http`), etc.
+
+If you can cut the amount of DEBUG logging to just what you need to troubleshoot the issue, the impact of enabling DEBUG logging will be much less than enabling it for all Jetty components.
+
+For example, if you need to troubleshoot a client that sends bad HTTP/1.1 requests, it may be enough to enable only the `org.eclipse.jetty.http` logger name, therefore saving the large amount of DEBUG logging produced by the I/O subsystem and by the thread pool.
+
+In another case, you may need to troubleshoot only HTTP/2 requests, and therefore enabling only the `org.eclipse.jetty.http2` logger name could be enough.
+
+[[debugging]]
+== Remote Debugging
+
+The Java Virtual Machines allows remote processes on different hosts to connect for debugging purposes, by using specific command line options.
+
+[CAUTION]
+====
+While it is possible to enable remote debugging on a Jetty server, it is typically not recommended for security and performance reasons.
+Only enable remote debugging on a Jetty server as a last resort to troubleshoot issues that could not be troubleshot otherwise.
+====
+
+You can easily create a custom Jetty module (see xref:modules/custom.adoc[this section]) with the following content:
+
+.remote-debug.mod
+----
+include::code:example$jetty-modules/remote-debug.mod[]
+----
+
+The `[exec]` directive (documented xref:modules/index.adoc#directive-exec[here]) is necessary to pass the `-agentlib:jdwp` JVM option to the forked JVM that runs Jetty, so that you can attach with a debugger.
+
+[NOTE]
+====
+The `address` parameter of the `-agentlib:jdwp` command line option specifies the network address and port the Jetty JVM listens on for remote debugging.
+
+Please refer to the https://docs.oracle.com/en/java/javase/17/docs/specs/jpda/conninv.html[Java Debug Wire Protocol documentation] for additional information about the `-agentlib:jdwp` command line option and its parameters.
+====
+
+You can now enable the `remote-debug` Jetty module with the following command issued from the `$JETTY_BASE` directory:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=server,remote-debug
+----
+
+The command above minimally adds a Jetty server without connectors (via the `server` Jetty module) and the `remote-debug` Jetty module, and produces the following `$JETTY_BASE` directory structure:
+
+[source,subs=normal]
+----
+$JETTY_BASE
+├── modules
+│   └── remote-debug.mod
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── ##remote-debug.ini##
+    └── server.ini
+----
+
+You can easily disable the `remote-debug` Jetty module as explained in xref:start/index.adoc#configure-disable[this section].
+
+Alternatively, you can enable the `remote-debug` module on the command line, as explained in xref:start/index.adoc#configure-enable-command-line[this section].
+
+Starting the Jetty server with the `remote-debug` module enabled yields:
+
+[jetty%nowrap]
+....
+[jetty]
+setupModules=code:example$jetty-modules/remote-debug.mod
+setupArgs=--add-modules=server,remote-debug
+highlight=5005
+....
+
+Note how the JVM is listening on port `5005` to allow remote debuggers to connect.
+
+If you want to avoid to fork a second JVM to pass the `-agentlib:jdwp` JVM option, please read xref:start/index.adoc#configure-dry-run[this section].

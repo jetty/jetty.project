@@ -1,0 +1,363 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Jetty Server
+
+The Jetty `Server` object is the central component that links protocol connectors to web applications.
+
+The `Server` component is defined by the xref:modules/standard.adoc#server[`server` Jetty module], that in turn depends on other Jetty modules that provide key functionalities, in particular:
+
+* <<logging,Logging>>
+* xref:modules/standard.adoc#bytebufferpool[`ByteBuffer` pooling]
+* <<threadpool,`Thread` pooling>>
+
+[[logging]]
+== Logging
+
+There are two types of logging that can be configured in Jetty:
+
+* The logging of Jetty itself, that logs the server activity
+* The HTTP request logging, that logs information about HTTP requests and responses processed by Jetty
+
+[[logging-server]]
+=== Server Logging
+
+The Jetty code uses the http://slf4j.org/[SLF4J] API for its logging.
+
+Thanks to the SLF4J library, the logging of the Jetty server can therefore be directed to the implementation (called SLF4J _binding_) of your choice.
+
+The Jetty project provides an SLF4J binding (via the `jetty-slf4j-impl` Maven artifact) that is used as the default SLF4J binding.
+
+The logging of the Jetty server itself is enabled by default with the `logging` Jetty module, which is a transitive dependency of the `server` module and therefore it is typically always enabled.
+
+The `logging` Jetty module is a _virtual_ module (see xref:modules/index.adoc#names[this section]) and its default implementation is provided by the `logging-jetty` Jetty module, which uses the Jetty SLF4J binding.
+
+[[logging-server-default]]
+==== Default Configuration
+
+The Jetty SLF4J binding is configured with an appender (`org.eclipse.jetty.logging.StdErrAppender`) that directs the logging to `System.err`, and reads its configuration from a file named `jetty-logging.properties` that must be found in the class-path.
+
+The `StdErrAppender` format is:
+
+----
+<datetime>:<level>:<logger name>:<thread name>:<message>
+----
+
+where `<datetime>=yyyy-MM-dd HH:mm:ss.SSS`.
+
+You can configure `StdErrAppender` by specifying the following properties in `jetty-logging.properties`:
+
+org.eclipse.jetty.logging.appender.NAME_CONDENSE=<boolean>::
+Specifies whether to condense logger names, so that for example `org.eclipse.jetty.util.QueuedThreadPool` becomes `oeju.QueuedThreadPool`.
+Default value is `true`.
+
+org.eclipse.jetty.logging.appender.MESSAGE_ALIGN=<integer>::
+Specifies the column at which the logging `<message>` should be printed.
+The value `0` specifies no alignment.
+Default value is `0`.
+
+org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE=<boolean>::
+Specifies whether to escape ISO control characters such as `\r` or `\n` present in the message.
+Character `\r` is replaced with `<` and character `\n` is replaced with `|`; all other ISO control characters are replaced with `?`.
+Default value is `false`.
+
+org.eclipse.jetty.logging.appender.ZONE_ID=<timezone id>::
+Specifies the timezone ID (such as `PST`, or `America/Los_Angeles` or `GMT-8:00`) for the `<datetime>` part of the logging line.
+The empty string specifies the `UTC` timezone.
+Default value is the local timezone.
+
+The `logging-jetty` Jetty module, enabled transitively, provides the configuration file `$JETTY_BASE/resources/jetty-logging.properties` to configure the logging levels, for example:
+
+----
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar --add-modules=http
+----
+
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    └── http.ini
+----
+
+.jetty-logging.properties
+[,properties]
+----
+# Do not condense logger names.
+org.eclipse.jetty.logging.appender.NAME_CONDENSE=false
+
+# By default, log at INFO level all Jetty loggers.
+org.eclipse.jetty.LEVEL=INFO
+
+# However, the Jetty client loggers log at DEBUG level.
+org.eclipse.jetty.client.LEVEL=DEBUG
+----
+
+The logging levels that you can specify in the `jetty-logging.properties` file are the usual SLF4J logging levels, `TRACE`, `DEBUG`, `INFO`, `WARN` and `ERROR`, plus two additional levels:
+
+* `ALL`, which is an alias for `TRACE`
+* `OFF`, which disables entirely the logging (not even `ERROR` level messages are logged)
+
+When using the Jetty SLF4J binding, the logging levels can be dynamically changed via JMX, see xref:troubleshooting/index.adoc#logging[the troubleshooting section] for more information.
+
+[[logging-server-default-rolling]]
+==== Capturing Logs to a Rolling File
+
+Having the logging output on `System.err` may be fine at development time, but you typically want the logs to be captured in a file so that they can be looked at even if you don't have a terminal (for example, you started Jetty as a service).
+
+The `console-capture` Jetty module allows you to capture what is written to `System.out` and `System.err` and write it to a log file, by default under the `$JETTY_BASE/logs/` directory.
+
+The `console-capture` Jetty module defines a number of properties that you can customize to control the log directory, the number of days rolled files are retained, etc.
+See the xref:modules/standard.adoc#console-capture[`console-capture` module] for more information.
+
+[NOTE]
+====
+The `console-capture` Jetty module should be used only in conjunction with the `logging-jetty` module, as other SLF4J bindings such as LogBack or Log4j2 have their own, more sophisticated, rolling file appenders.
+====
+
+[[logging-server-custom]]
+==== Custom Configuration
+
+You can use a different SLF4J binding if you are more familiar with other logging libraries, or if you need custom logging appenders.
+There are a number of out-of-the-box Jetty modules that you can use:
+
+* `logging-logback`, to use the http://logback.qos.ch/[LogBack] binding
+* `logging-log4j2`, to use the https://logging.apache.org/log4j/2.x/[Log4j2] binding
+* `logging-log4j1`, to use the https://logging.apache.org/log4j/1.2/[Log4j1] binding (note that Log4j 1.x is end-of-life)
+* `logging-jul`, to use the `java.util.logging` binding
+* `logging-noop`, to use the SLF4J no-operation binding (discards all logging)
+
+[[logging-server-custom-logback]]
+==== Logging with LogBack
+
+You can enable, for example, the `logging-logback` Jetty module in this way (from the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=logging-logback,http
+----
+
+Since LogBack is released under a license that is different from Jetty's, you will be prompted to accept the LogBack license.
+Once you accept the LogBack license, you will have the following directory structure:
+
+----
+$JETTY_BASE
+├── lib
+│   └── logging
+│       ├── logback-classic-<version>.jar
+│       └── logback-core-<version>.jar
+├── resources
+│   └── logback.xml
+└── start.d
+    ├── http.ini
+    └── logging-logback.ini
+----
+
+As you can see, the Jetty module system downloaded the required LogBack `+*.jar+` files, and created a `$JETTY_BASE/resources/logback.xml` file that you can configure to customize your LogBack logging.
+Please refer to the http://logback.qos.ch/manual/configuration.html[LogBack configuration manual] for more information about how to configure LogBack.
+
+[[logging-server-custom-log4j2]]
+==== Logging with Log4j2
+
+Similarly to <<logging-server-custom-logback,logging with LogBack>>, you can enable the `logging-log4j2` Jetty module in this way (from the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=logging-log4j2,http
+----
+
+After accepting the Log4j2 license, you will have the following directory structure:
+
+----
+$JETTY_BASE
+├── lib
+│   └── logging
+│       ├── log4j-api-<version>.jar
+│       ├── log4j-core-<version>.jar
+│       └── log4j-slf4j18-impl-<version>.jar
+├── resources
+│   └── log4j2.xml
+└── start.d
+    ├── http.ini
+    └── logging-log4j2.ini
+----
+
+The Jetty module system downloaded the required Log4j2 `+*.jar+` files, and created a `$JETTY_BASE/resources/log4j2.xml` file that you can configure to customize your Log4j2 logging.
+
+[[logging-server-bridges]]
+==== Bridging Logging to SLF4J
+
+When you use libraries that provide the features you need (for example, JDBC drivers), it may be possible that those libraries use a different logging framework than SLF4J.
+
+SLF4J provides http://www.slf4j.org/legacy.html[bridges for legacy logging APIs] that allows you to bridge logging from one of these legacy logging frameworks to SLF4J.
+Once the logging is bridged to SLF4J, you can use the <<logging-server-default,default configuration>> or the <<logging-server-custom,custom configuration>> so that your logging is centralized in one place only.
+
+Jetty provides out-of-the-box modules that you can enable to bridge logging from other logging frameworks to SLF4J.
+
+[[logging-server-bridge-jul]]
+==== Bridging `java.util.logging`
+
+For libraries that use `java.util.logging` as their logging framework you can enable the `logging-jul-capture` Jetty module.
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=logging-jul-capture
+----
+
+The `logging-jul-capture` Jetty module implies `--exec` and therefore spawns a second JVM (see xref:start/index.adoc#start[this section]) because it needs to provide the system property `java.util.logging.config.file` (so that `java.util.logging` can read the configuration from the specified file), and because it needs to make available on the System ClassLoader the class `org.slf4j.bridge.SLF4JBridgeHandler`.
+
+For example, a library that uses `java.util.logging` as its logging library is the Postgresql JDBC driver.
+With the `logging-jul-capture` Jetty module, the logging follows this diagram:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant "Postgresql JDBC" as postgresql
+participant java.util.logging
+participant SLF4JBridgeHandler
+participant Jetty
+participant SLF4J
+participant "Jetty SLF4J Binding" as binding
+
+
+postgresql -> java.util.logging
+java.util.logging -> SLF4JBridgeHandler
+SLF4JBridgeHandler -> SLF4J
+SLF4J -> binding
+Jetty -> SLF4J
+SLF4J -> binding
+----
+
+Note how Jetty logs directly to SLF4J, while the Postgresql JDBC driver logs to SLF4J through the `SLF4JBridgeHandler`.
+They both arrive to the SLF4J binding, in this case the Jetty SLF4J binding (but could be any other SLF4J binding such as LogBack).
+
+[[og-logging-request]]
+=== Request Logging
+
+HTTP requests and responses can be logged to provide data that can be later analyzed with other tools, that can provide information such as the most frequently accessed request URIs, the response status codes, the request/response content lengths, geographical information about the clients, etc.
+
+Request logging is enabled by enabling the `requestlog` Jetty module.
+In the example below, both the `http` Jetty module and the `requestlog` module are enabled, so that you can make HTTP requests to the server and have them logged:
+
+----
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,requestlog
+----
+
+The `$JETTY_BASE` directory looks like this:
+
+[source]
+----
+$JETTY_BASE
+├── logs
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── http.ini
+    └── requestlog.ini
+----
+
+The `$JETTY_BASE/start.d/requestlog.ini` file is the Jetty module configuration file that allows you to configure the `requestlog` module, see xref:modules/standard.adoc#requestlog[this section] for more details.
+
+By default the `requestlog` Jetty module produces the `$JETTY_BASE/logs/yyyy_MM_dd.request.log`, where the pattern `yyyy_MM_dd` is replaced with the current date, for example `2020_01_31`.
+
+The format of the request log lines is the result of a _format string_ that uses formatting symbols to log relevant request/response data.
+
+The default format is the https://en.wikipedia.org/wiki/Common_Log_Format[NCSA Format] extended with referrer data and user-agent data.
+A typical log line looks like this:
+
+[,options=nowrap]
+----
+192.168.0.100 - - [31/Jan/2020:20:30:40 +0000] "GET / HTTP/1.1" 200 6789 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36"
+----
+
+The line above (that uses fake values) shows `192.168.0.100` for the client IP address, a hard-coded `-` for the identity, `-` for the authenticated user name, `[31/Jan/2020:20:30:40 +0000]` for the date and time with timezone, `"GET / HTTP/1.1"` for the HTTP request line, `200` for the HTTP response status code, `6789` for the HTTP response content length, `"-"` for the referrer and `"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36"` for the user-agent.
+
+The format string can be customized as described in xref:modules/standard.adoc#requestlog[this section].
+Request log files are rolled every day, and retained for customizable number of days, by default 90 days.
+
+[NOTE]
+====
+When Jetty is behind a load balancer, you want to log the remote client IP address, not the load balancer IP address. Refer to xref:protocols/index.adoc#proxy[this section] to configure the load balancer and Jetty to retain the remote client IP address information.
+====
+
+[[threadpool]]
+== Thread Pooling
+
+Jetty uses thread pooling to efficiently execute tasks that provide Jetty functionalities.
+
+Like any other component, the Jetty thread pool is configured and enabled via the xref:modules/standard.adoc#threadpool[`threadpool` Jetty module], that is transitively enabled by the xref:modules/standard.adoc#server[`server` Jetty module] which, in turn, is transitively enabled by a protocol module such as the xref:protocols/index.adoc#http[`http` Jetty module]:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http
+----
+
+The command above gives you the default configuration for the thread pool.
+
+If you want to explicitly configure the thread pool, it is enough to explicitly specify the xref:modules/standard.adoc#threadpool[`threadpool`] module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=threadpool,http
+----
+
+After the command above, the `$JETTY_BASE` directory looks like this:
+
+[source,subs=verbatim]
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── http.ini
+    └── threadpool.ini
+----
+
+Now you can customize the `threadpool.ini` file to explicitly configure the thread pool.
+
+[[threadpool-virtual]]
+=== Virtual Threads Support
+
+Virtual threads have been introduced as a preview feature in Java 19 and Java 20, and have become an official feature since Java 21.
+
+The xref:modules/standard.adoc#threadpool-virtual-preview[`threadpool-virtual-preview`] Jetty module provides support for virtual threads in Java 19 and Java 20, and it is mutually exclusive with the `threadpool` Jetty module.
+
+The xref:modules/standard.adoc#threadpool-virtual[`threadpool-virtual`] Jetty module provides support for virtual threads in Java 21 or later, and it is mutually exclusive with the `threadpool` Jetty module.
+
+If you have already enabled the `threadpool` Jetty module, it is sufficient to remove it by removing the `$JETTY_BASE/start.d/threadpool.ini` file.
+
+When using Java 21 or later, you can enable the xref:modules/standard.adoc#threadpool-virtual[`threadpool-virtual`] module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=threadpool-virtual,http
+----
+
+After the command above, the `$JETTY_BASE` directory looks like this:
+
+[source,subs=verbatim]
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── http.ini
+    └── threadpool-virtual.ini
+----
+
+Now you can customize the `threadpool-virtual.ini` file to explicitly configure the thread pool and the virtual threads and then start Jetty:
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-modules=threadpool-virtual,http
+....
