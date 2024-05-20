@@ -1,0 +1,960 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= HTTP Server Libraries
+
+Web application development typically involves writing your web applications, packaging them into a web application archive, the `+*.war+` file, and then deploy the `+*.war+` file into a standalone Servlet Container that you have previously installed.
+
+The Eclipse Jetty server libraries allow you to write web applications components using either the Jetty APIs (by writing <<handler,Jetty ``Handler``s>>) or using the standard <<handler-use-servlet,Servlet APIs>> (by writing ``Servlet``s and Servlet ``Filter``s).
+These components can then be programmatically assembled together, without the need of creating a `+*.war+` file, added to a Jetty ``Server`` instance that is then started.
+This result in your web applications to be available to HTTP clients as if you deployed your `+*.war+` files in a standalone Jetty server.
+
+The Maven artifact coordinates are:
+
+[,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-server</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
+An `org.eclipse.jetty.server.Server` instance is the central component that links together a collection of ``Connector``s and a collection of ``Handler``s, with threads from a `ThreadPool` doing the work.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam padding 5
+
+scale 1.5
+
+hide members
+hide circle
+
+Server - ThreadPool
+Connectors - Server
+Server -- Handlers
+----
+
+The components that accept connections from clients are `org.eclipse.jetty.server.Connector` implementations.
+
+When a Jetty server interprets the HTTP protocol (HTTP/1.1, HTTP/2 or HTTP/3), it uses `org.eclipse.jetty.server.Handler` instances to process incoming requests and eventually produce responses.
+
+A `Server` must be created, configured and started:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=simple]
+----
+
+The example above shows the simplest HTTP/1.1 server; it has no support for HTTP sessions, for HTTP authentication, or for any of the features required by the Servlet specification.
+
+All these features are provided by the Jetty Server Libraries, and server applications only need to put the required components together to provide all the required features.
+
+The ``Handler``s provided by the Jetty Server Libraries allow writing server applications that have functionalities similar to Apache HTTPD or Nginx (for example: URL redirection, URL rewriting, serving static content, reverse proxying, etc.), as well as generating content dynamically by processing incoming requests.
+Read <<handler,this section>> for further details about ``Handler``s.
+
+If you are interested in writing your server application based on the Servlet APIs, jump to <<handler-use-servlet,this section>>.
+
+[[request-processing]]
+== Request Processing
+
+The Jetty HTTP request processing is outlined below in the diagram below.
+You may want to refer to the xref:arch/io.adoc[Jetty I/O architecture] for additional information about the classes mentioned below.
+
+Request handing is slightly different for each protocol; in HTTP/2 Jetty takes into account multiplexing, something that is not present in HTTP/1.1.
+
+However, the diagram below captures the essence of request handling that is common among all protocols that carry HTTP requests.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant ManagedSelector
+participant EndPoint
+participant Connection
+participant Parser
+participant HttpChannel
+participant Server
+participant Handlers
+
+ManagedSelector -> EndPoint : read ready
+EndPoint -> Connection : onFillable()
+Connection -> EndPoint : fill()
+EndPoint --> Connection
+Connection -> Parser : parse()
+Parser -> HttpChannel : events
+Connection -> HttpChannel : handle()
+HttpChannel -> Server : handle()
+Server -> Handlers : handle()
+----
+
+First, the Jetty I/O layer emits an event that a socket has data to read.
+This event is converted to a call to `AbstractConnection.onFillable()`, where the `Connection` first reads from the `EndPoint` into a `ByteBuffer`, and then calls a protocol specific parser to parse the bytes in the `ByteBuffer`.
+
+The parser emit events that are protocol specific; the HTTP/2 parser, for example, emits events for each HTTP/2 frame that has been parsed, and similarly does the HTTP/3 parser.
+The parser events are then converted to protocol independent events such as _"request start"_, _"request headers"_, _"request content chunk"_, etc.
+that in turn are converted into method calls to `HttpChannel`.
+
+When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.handle()` that calls the `Handler` chain, that eventually calls the server application code.
+
+[[channel-events]]
+=== HttpChannel Events
+
+The central component processing HTTP requests is `HttpChannel`.
+There is a 1-to-1 relationship between an HTTP request/response and an `HttpChannel`, no matter what is the specific protocol that carries the HTTP request over the network (HTTP/1.1, HTTP/2, HTTP/3 or FastCGI).
+
+Advanced server applications may be interested in the progress of the processing of an HTTP request/response by `HttpChannel`.
+A typical case is to know exactly _when_ the HTTP request/response processing is complete, for example to monitor processing times.
+
+NOTE: A `Handler` or a Servlet `Filter` may not report precisely when an HTTP request/response processing is finished.
+A server application may write a small enough content that is aggregated by Jetty for efficiency reasons; the write returns immediately, but nothing has been written to the network yet.
+
+`HttpChannel` notifies ``HttpChannel.Listener``s of the progress of the HTTP request/response handling.
+Currently, the following events are available:
+
+* `requestBegin`
+* `beforeDispatch`
+* `dispatchFailure`
+* `afterDispatch`
+* `requestContent`
+* `requestContentEnd`
+* `requestTrailers`
+* `requestEnd`
+* `responseBegin`
+* `responseCommit`
+* `responseContent`
+* `responseFailure`
+* `responseEnd`
+* `complete`
+
+Please refer to the `HttpChannel.Listener` link:{javadoc-url}/org/eclipse/jetty/server/HttpChannel.Listener.html[javadocs] for the complete list of events.
+
+Server applications can register `HttpChannel.Listener` by adding them as xref:arch/bean.adoc[beans] to the `Connector`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=httpChannelListener]
+----
+
+[[request-logging]]
+== Request Logging
+
+HTTP requests and responses can be logged to provide data that can be later analyzed with other tools.
+These tools can provide information such as the most frequently accessed request URIs, the response status codes, the request/response content lengths, geographical information about the clients, etc.
+
+The default request/response log line format is the https://en.wikipedia.org/wiki/Common_Log_Format[NCSA Format] extended with referrer data and user-agent data.
+
+[NOTE]
+====
+Typically, the extended NCSA format is the is enough and it's the standard used and understood by most log parsing tools and monitoring tools.
+
+To customize the request/response log line format see the link:{javadoc-url}/org/eclipse/jetty/server/CustomRequestLog.html[`CustomRequestLog` javadocs].
+====
+
+Request logging can be enabled at the server level, or at the web application context level.
+
+The request logging output can be directed to an SLF4J logger named `"org.eclipse.jetty.server.RequestLog"` at `INFO` level, and therefore to any logging library implementation of your choice (see also xref:troubleshooting/logging.adoc[this section] about logging).
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=serverRequestLogSLF4J]
+----
+
+Alternatively, the request logging output can be directed to a daily rolling file of your choice, and the file name must contain `yyyy_MM_dd` so that rolled over files retain their date:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=serverRequestLogFile]
+----
+
+For maximum flexibility, you can log to multiple ``RequestLog``s using class `RequestLog.Collection`, for example by logging with different formats or to different outputs.
+
+You can use `CustomRequestLog` with a custom `RequestLog.Writer` to direct the request logging output to your custom targets (for example, an RDBMS).
+You can implement your own `RequestLog` if you want to have functionalities that are not implemented by `CustomRequestLog`.
+
+Request logging can also be enabled at the web application context level, using `RequestLogHandler` (see <<handler,this section>> about how to organize Jetty ``Handler``s) to wrap a web application `Handler`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=contextRequestLog]
+----
+
+[[connector]]
+== Server Connectors
+
+A `Connector` is the component that handles incoming requests from clients, and works in conjunction with `ConnectionFactory` instances.
+
+The available implementations are:
+
+* `org.eclipse.jetty.server.ServerConnector`, for TCP/IP sockets.
+* `org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector` for Unix-Domain sockets (requires Java 16 or later).
+
+Both use a `java.nio.channels.ServerSocketChannel` to listen to a socket address and to accept socket connections.
+
+Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured in a similar way, for example the IP port to listen to, the IP address to bind to, etc.:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnector]
+----
+
+Likewise, `UnixDomainServerConnector` also wraps a `ServerSocketChannel` and can be configured with the Unix-Domain path to listen to:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnectorUnix]
+----
+
+[IMPORTANT]
+====
+You can use Unix-Domain sockets support only when you run your server with Java 16 or later.
+====
+
+The _acceptors_ are threads (typically only one) that compete to accept socket connections.
+When a connection is accepted, `ServerConnector` wraps the accepted `SocketChannel` and passes it to the xref:arch/io.adoc#selector-manager[`SelectorManager`].
+Therefore, there is a little moment where the acceptor thread is not accepting new connections because it is busy wrapping the just accepted connection to pass it to the `SelectorManager`.
+Connections that are ready to be accepted but are not accepted yet are queued in a bounded queue (at the OS level) whose capacity can be configured with the `acceptQueueSize` parameter.
+
+If your application must withstand a very high rate of connections opened, configuring more than one acceptor thread may be beneficial: when one acceptor thread accepts one connection, another acceptor thread can take over accepting connections.
+
+The _selectors_ are components that manage a set of connected sockets, implemented by xref:arch/io.adoc#selector-manager[`ManagedSelector`].
+Each selector requires one thread and uses the Java NIO mechanism to efficiently handle a set of connected sockets.
+As a rule of thumb, a single selector can easily manage up to 1000-5000 sockets, although the number may vary greatly depending on the application.
+
+For example, web site applications tend to use sockets for one or more HTTP requests to retrieve resources and then the socket is idle for most of the time.
+In this case a single selector may be able to manage many sockets because chances are that they will be idle most of the time.
+On the contrary, web messaging applications tend to send many small messages at a very high frequency so that sockets are rarely idle.
+In this case a single selector may be able to manage less sockets because chances are that many of them will be active at the same time.
+
+It is possible to configure more than one `ServerConnector` (each listening on a different port), or more than one `UnixDomainServerConnector` (each listening on a different path), or ``ServerConnector``s and ``UnixDomainServerConnector``s, for example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnectors]
+----
+
+[[connector-protocol]]
+=== Configuring Protocols
+
+For each accepted socket connection, the server `Connector` asks a `ConnectionFactory` to create a `Connection` object that handles the traffic on that socket connection, parsing and generating bytes for a specific protocol (see xref:arch/io.adoc[this section] for more details about `Connection` objects).
+
+A server `Connector` can be configured with one or more ``ConnectionFactory``s.
+If no `ConnectionFactory` is specified then `HttpConnectionFactory` is implicitly configured.
+
+[[connector-protocol-http11]]
+==== Clear-Text HTTP/1.1
+
+`HttpConnectionFactory` creates `HttpConnection` objects that parse bytes and generate bytes for the HTTP/1.1 protocol.
+
+This is how you configure Jetty to support clear-text HTTP/1.1:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=http11]
+----
+
+[[connector-protocol-http11-tls]]
+==== Encrypted HTTP/1.1 (https)
+
+Supporting encrypted HTTP/1.1 (that is, requests with the `https` scheme) is supported by configuring an `SslContextFactory` that has access to the KeyStore containing the private server key and public server certificate, in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=tlsHttp11]
+----
+
+You can customize the SSL/TLS provider as explained in <<connector-protocol-tls-conscrypt,this section>>.
+
+[[connector-protocol-http2]]
+==== Clear-Text HTTP/2
+
+It is well known that the HTTP ports are `80` (for clear-text HTTP) and `443` for encrypted HTTP.
+By using those ports, a client had _prior knowledge_ that the server would speak, respectively, the HTTP/1.x protocol and the TLS protocol (and, after decryption, the HTTP/1.x protocol).
+
+HTTP/2 was designed to be a smooth transition from HTTP/1.1 for users and as such the HTTP ports were not changed.
+However the HTTP/2 protocol is, on the wire, a binary protocol, completely different from HTTP/1.1.
+Therefore, with HTTP/2, clients that connect to port `80` (or to a specific Unix-Domain path) may speak either HTTP/1.1 or HTTP/2, and the server must figure out which version of the HTTP protocol the client is speaking.
+
+Jetty can support both HTTP/1.1 and HTTP/2 on the same clear-text port by configuring both the HTTP/1.1 and the HTTP/2 ``ConnectionFactory``s:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=http11H2C]
+----
+
+Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: first HTTP/1.1, then HTTP/2.
+This is necessary to support both protocols on the same port: Jetty will start parsing the incoming bytes as HTTP/1.1, but then realize that they are HTTP/2 bytes and will therefore _upgrade_ from HTTP/1.1 to HTTP/2.
+
+This configuration is also typical when Jetty is installed in backend servers behind a load balancer that also takes care of offloading TLS.
+When Jetty is behind a load balancer, you can always prepend the PROXY protocol as described in <<connector-protocol-proxy-http11,this section>>.
+
+[[connector-protocol-http2-tls]]
+==== Encrypted HTTP/2
+
+When using encrypted HTTP/2, the unencrypted protocol is negotiated by client and server using an extension to the TLS protocol called ALPN.
+
+Jetty supports ALPN and encrypted HTTP/2 with this configuration:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=tlsALPNHTTP]
+----
+
+Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: TLS, ALPN, HTTP/2, HTTP/1.1.
+
+Jetty starts parsing TLS bytes so that it can obtain the ALPN extension.
+With the ALPN extension information, Jetty can negotiate a protocol and pick, among the ``ConnectionFactory``s supported by the `ServerConnector`, the `ConnectionFactory` correspondent to the negotiated protocol.
+
+The fact that the HTTP/2 protocol comes before the HTTP/1.1 protocol indicates that HTTP/2 is the preferred protocol for the server.
+
+Note also that the default protocol set in the ALPN ``ConnectionFactory``, which is used in case ALPN is not supported by the client, is HTTP/1.1 -- if the client does not support ALPN is probably an old client so HTTP/1.1 is the safest choice.
+
+You can customize the SSL/TLS provider as explained in <<connector-protocol-tls-conscrypt,this section>>.
+
+[[connector-protocol-http3]]
+==== HTTP/3
+
+HTTP/3 is based on UDP, differently from HTTP/1 and HTTP/2 that are based on TCP.
+
+An HTTP/3 client may initiate a connection (using the QUIC protocol via UDP) on the canonical HTTP secure port `443`, but chances are that the connection may not succeed (for example, the server does not listen for UDP on port `443`, only listens for TCP).
+
+For this reason, HTTP servers typically listen on the canonical HTTP secure port `443` for HTTP/1 and HTTP/2, and advertise the availability HTTP/3 as an https://datatracker.ietf.org/doc/html/rfc7838[_HTTP alternate service_] on a different port (and possibly a different host).
+
+For example, an HTTP/2 response may include the following header:
+
+[source]
+----
+Alt-Svc: h3=":843"
+----
+
+The presence of this header indicates that protocol `h3` is available on the same host (since no host is defined before the port), but on port `843`.
+The HTTP/3 client may now initiate a QUIC connection on port `843` and make HTTP/3 requests.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant client
+participant "server:443" as h2server
+participant "server:843" as h3server
+
+client -> h2server : HTTP/2 request
+h2server -> client : HTTP/2 response\nAlt-Svc: h3=":843"
+client -> h3server : HTTP/3 requests
+h3server -> client : HTTP/3 responses
+...
+----
+
+The code necessary to configure HTTP/2 is described in <<connector-protocol-http2-tls,this section>>.
+
+To setup HTTP/3, for example on port `843`, you need the following code (some of which could be shared with other connectors such as HTTP/2's):
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=h3]
+----
+
+[[connector-protocol-tls-conscrypt]]
+==== Using Conscrypt as SSL/TLS Provider
+
+If not explicitly configured, the TLS implementation is provided by the JDK you are using at runtime.
+
+OpenJDK's vendors may replace the default TLS provider with their own, but you can also explicitly configure an alternative TLS provider.
+
+The standard TLS provider from OpenJDK is implemented in Java (no native code), and its performance is not optimal, both in CPU usage and memory usage.
+
+A faster alternative, implemented natively, is Google's https://github.com/google/conscrypt/[Conscrypt], which is built on https://boringssl.googlesource.com/boringssl/[BoringSSL], which is Google's fork of https://www.openssl.org/[OpenSSL].
+
+CAUTION: As Conscrypt eventually binds to a native library, there is a higher risk that a bug in Conscrypt or in the native library causes a JVM crash, while the Java implementation will not cause a JVM crash.
+
+To use Conscrypt as TLS provider, you must have the Conscrypt jar and the Jetty dependency `jetty-alpn-conscrypt-server-{version}.jar` in the class-path or module-path.
+
+Then, you must configure the JDK with the Conscrypt provider, and configure Jetty to use the Conscrypt provider, in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=conscrypt]
+----
+
+[[connector-protocol-proxy-http11]]
+==== Jetty Behind a Load Balancer
+
+It is often the case that Jetty receives connections from a load balancer configured to distribute the load among many Jetty backend servers.
+
+From the Jetty point of view, all the connections arrive from the load balancer, rather than the real clients, but is possible to configure the load balancer to forward the real client IP address and IP port to the backend Jetty server using the https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt[PROXY protocol].
+
+NOTE: The PROXY protocol is widely supported by load balancers such as http://cbonte.github.io/haproxy-dconv/2.2/configuration.html#5.2-send-proxy[HAProxy] (via its `send-proxy` directive), https://docs.nginx.com/nginx/admin-guide/load-balancer/using-proxy-protocol[Nginx](via its `proxy_protocol on` directive) and others.
+
+To support this case, Jetty can be configured in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyHTTP]
+----
+
+Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: first PROXY, then HTTP/1.1.
+Note also how the PROXY `ConnectionFactory` needs to know its _next_ protocol (in this example, HTTP/1.1).
+
+Each `ConnectionFactory` is asked to create a `Connection` object for each accepted TCP connection; the `Connection` objects will be chained together to handle the bytes, each for its own protocol.
+Therefore the `ProxyConnection` will handle the PROXY protocol bytes and `HttpConnection` will handle the HTTP/1.1 bytes producing a request object and response object that will be processed by ``Handler``s.
+
+The load balancer may be configured to communicate with Jetty backend servers via Unix-Domain sockets (requires Java 16 or later).
+For example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyHTTPUnix]
+----
+
+Note that the only difference when using Unix-Domain sockets is instantiating `UnixDomainServerConnector` instead of `ServerConnector` and configuring the Unix-Domain path instead of the IP port.
+
+[[handler]]
+== Server Handlers
+
+An `org.eclipse.jetty.server.Handler` is the component that processes incoming HTTP requests and eventually produces HTTP responses.
+
+``Handler``s can be organized in different ways:
+
+* in a sequence, where ``Handler``s are invoked one after the other
+** `HandlerCollection` invokes _all_ ``Handler``s one after the other
+** `HandlerList` invokes ``Handlers``s until one calls `Request.setHandled(true)` to indicate that the request has been handled and no further `Handler` should be invoked
+* nested, where one `Handler` invokes the next, nested, `Handler`
+** `HandlerWrapper` implements this behavior
+
+The `HandlerCollection` behavior (invoking _all_ handlers) is useful when for example the last `Handler` is a logging `Handler` that logs the request (that may have been modified by previous handlers).
+
+The `HandlerList` behavior (invoking handlers up to the first that calls `Request.setHandled(true)`) is useful when each handler processes a different URIs or a different virtual hosts: ``Handler``s are invoked one after the other until one matches the URI or virtual host.
+
+The nested behavior is useful to enrich the request with additional services such as HTTP session support (`SessionHandler`), or with specific behaviors dictated by the Servlet specification (`ServletHandler`).
+
+``Handler``s can be organized in a tree by composing them together:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerTree]
+----
+
+The corresponding `Handler` tree structure looks like the following:
+
+[,screen]
+----
+HandlerCollection
+├── HandlerList
+│   ├── App1Handler
+│   └── HandlerWrapper
+│       └── App2Handler
+└── LoggingHandler
+----
+
+Server applications should rarely write custom ``Handler``s, preferring instead to use existing ``Handler``s provided by the Jetty Server Libraries for managing web application contexts, security, HTTP sessions and Servlet support.
+Refer to <<handler-use,this section>> for more information about how to use the ``Handler``s provided by the Jetty Server Libraries.
+
+However, in some cases the additional features are not required, or additional constraints on memory footprint, or performance, or just simplicity must be met.
+In these cases, implementing your own `Handler` may be a better solution.
+Refer to <<handler-implement,this section>> for more information about how to write your own ``Handler``s.
+
+[[handler-use]]
+=== Jetty Handlers
+
+Web applications are the unit of deployment in an HTTP server or Servlet container such as Jetty.
+
+Two different web applications are typically deployed on different __context path__s, where a _context path_ is the initial segment of the URI path.
+For example, web application `webappA` that implements a web user interface for an e-commerce site may be deployed to context path `/shop`, while web application `webappB` that implements a REST API for the e-commerce business may be deployed to `/api`.
+
+A client making a request to URI `/shop/cart` is directed by Jetty to `webappA`, while a request to URI `/api/products` is directed to `webappB`.
+
+An alternative way to deploy the two web applications of the example above is to use _virtual hosts_.
+A _virtual host_ is a subdomain of the primary domain that shares the same IP address with the primary domain.
+If the e-commerce business primary domain is `domain.com`, then a virtual host for `webappA` could be `shop.domain.com`, while a virtual host for `webappB` could be `api.domain.com`.
+
+Web application `webappA` can now be deployed to virtual host `shop.domain.com` and context path `/`, while web application `webappB` can be deployed to virtual host `api.domain.com` and context path `/`.
+Both applications have the same context path `/`, but they can be distinguished by the subdomain.
+
+A client making a request to `+https://shop.domain.com/cart+` is directed by Jetty to `webappA`, while a request to `+https://api.domain.com/products+` is directed to `webappB`.
+
+Therefore, in general, a web application is deployed to a _context_ which can be seen as the pair `(virtual_host, context_path)`.
+In the first case the contexts were `(domain.com, /shop)` and `(domain.com, /api)`, while in the second case the contexts were `(shop.domain.com, /)` and `(api.domain.com, /)`.
+Server applications using the Jetty Server Libraries create and configure a _context_ for each web application.
+Many __context__s can be deployed together to enrich the web application offering -- for example a catalog context, a shop context, an API context, an administration context, etc.
+
+Web applications can be written using exclusively the Servlet APIs, since developers know well the Servlet API and because they guarantee better portability across Servlet container implementations.
+
+Embedded web applications based on the Servlet APIs are described in <<handler-use-servlet,this section>>.
+
+Embedded web applications may also require additional features such as access to Jetty specific APIs, or utility features such as redirection from HTTP to HTTPS, support for `gzip` content compression, etc.
+The Jetty Server Libraries provides a number of out-of-the-box __Handler__s that implement the most common functionalities and are described in <<handler-use,this section>>.
+
+[[handler-use-util-context]]
+==== ContextHandler
+
+`ContextHandler` is a `Handler` that represents a _context_ for a web application.
+It is a `HandlerWrapper` that performs some action before and after delegating to the nested `Handler`.
+// TODO: expand on what the ContextHandler does, e.g. ServletContext.
+
+The simplest use of `ContextHandler` is the following:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=contextHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── ContextHandler /shop
+    └── ShopHandler
+----
+
+[[handler-use-util-context-collection]]
+==== ContextHandlerCollection
+
+Server applications may need to deploy to Jetty more than one web application.
+
+Recall from the <<handler,introduction>> that Jetty offers `HandlerCollection` and `HandlerList` that may contain a sequence of children ``Handler``s.
+However, both of these have no knowledge of the concept of _context_ and just iterate through the sequence of ``Handler``s.
+
+A better choice for multiple web application is `ContextHandlerCollection`, that matches a _context_ from either its _context path_ or _virtual host_, without iterating through the ``Handler``s.
+
+If `ContextHandlerCollection` does not find a match, it just returns.
+What happens next depends on the `Handler` tree structure: other ``Handler``s may be invoked after `ContextHandlerCollection`, for example `DefaultHandler` (see <<handler-use-util-default-handler,this section>>).
+Eventually, if `Request.setHandled(true)` is not called, Jetty returns an HTTP `404` response to the client.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=contextHandlerCollection]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── ContextHandlerCollection
+    ├── ContextHandler /shop
+    │   └── ShopHandler
+    └── ContextHandler /api
+        └── RESTHandler
+----
+
+[[handler-use-util-resource-handler]]
+==== ResourceHandler -- Static Content
+
+Static content such as images or files (HTML, JavaScript, CSS) can be sent by Jetty very efficiently because Jetty can write the content asynchronously, using direct ``ByteBuffer``s to minimize data copy, and using a memory cache for faster access to the data to send.
+
+Being able to write content asynchronously means that if the network gets congested (for example, the client reads the content very slowly) and the server stalls the send of the requested data, then Jetty will wait to resume the send _without_ blocking a thread to finish the send.
+
+`ResourceHandler` supports the following features:
+
+* Welcome files, for example serving `/index.html` for request URI `/`
+* Precompressed resources, serving a precompressed `/document.txt.gz` for request URI `/document.txt`
+* https://tools.ietf.org/html/rfc7233[Range requests], for requests containing the `Range` header, which allows clients to pause and resume downloads of large files
+* Directory listing, serving a HTML page with the file list of the requested directory
+* Conditional headers, for requests containing the `If-Match`, `If-None-Match`, `If-Modified-Since`, `If-Unmodified-Since` headers.
+
+The number of features supported and the efficiency in sending static content are on the same level as those of common front-end servers used to serve static content such as Nginx or Apache.
+Therefore, the traditional architecture where Nginx/Apache was the front-end server used only to send static content and Jetty was the back-end server used only to send dynamic content is somehow obsolete as Jetty can perform efficiently both tasks.
+This leads to simpler systems (less components to configure and manage) and more performance (no need to proxy dynamic requests from front-end servers to back-end servers).
+
+NOTE: It is common to use Nginx/Apache as load balancers, or as rewrite/redirect servers.
+We typically recommend https://haproxy.org[HAProxy] as load balancer, and Jetty has <<handler-use-util-rewrite-handler,rewrite/redirect features>> as well.
+
+This is how you configure a `ResourceHandler` to create a simple file server:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=resourceHandler]
+----
+
+If you need to serve static resources from multiple directories:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=multipleResourcesHandler]
+----
+
+If the resource is not found, `ResourceHandler` will not call `Request.setHandled(true)` so what happens next depends on the `Handler` tree structure.
+See also <<handler-use-util-default-handler,how to use>> `DefaultHandler`.
+
+[[handler-use-util-gzip-handler]]
+==== GzipHandler
+
+`GzipHandler` provides supports for automatic decompression of compressed request content and automatic compression of response content.
+
+`GzipHandler` is a `HandlerWrapper` that inspects the request and, if the request matches the `GzipHandler` configuration, just installs the required components to eventually perform decompression of the request content or compression of the response content.
+The decompression/compression is not performed until the web application reads request content or writes response content.
+
+`GzipHandler` can be configured at the server level in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=serverGzipHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── GzipHandler
+    └── ContextHandlerCollection
+        ├── ContextHandler 1
+        :── ...
+        └── ContextHandler N
+----
+
+However, in less common cases, you can configure `GzipHandler` on a per-context basis, for example because you want to configure `GzipHandler` with different parameters for each context, or because you want only some contexts to have compression support:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=contextGzipHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── ContextHandlerCollection
+    └── ContextHandlerCollection
+        ├── GzipHandler
+        │   └── ContextHandler /shop
+        │       └── ShopHandler
+        └── ContextHandler /api
+            └── RESTHandler
+----
+
+// TODO: does ServletContextHandler really need a special configuration?
+
+[[handler-use-util-rewrite-handler]]
+==== RewriteHandler
+
+`RewriteHandler` provides support for URL rewriting, very similarly to https://httpd.apache.org/docs/current/mod/mod_rewrite.html[Apache's mod_rewrite] or https://nginx.org/en/docs/http/ngx_http_rewrite_module.html[Nginx rewrite module].
+
+The Maven artifact coordinates are:
+
+[,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-rewrite</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
+`RewriteHandler` can be configured with a set of __rule__s; a _rule_ inspects the request and when it matches it performs some change to the request (for example, changes the URI path, adds/removes headers, etc.).
+
+The Jetty Server Libraries provide rules for the most common usages, but you can write your own rules by extending the `org.eclipse.jetty.rewrite.handler.Rule` class.
+
+Please refer to the `jetty-rewrite` module link:{javadoc-url}/org/eclipse/jetty/rewrite/handler/package-summary.html[javadocs] for the complete list of available rules.
+
+You typically want to configure `RewriteHandler` at the server level, although it is possible to configure it on a per-context basis.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=rewriteHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── RewriteHandler
+    └── ContextHandlerCollection
+        ├── ContextHandler 1
+        :── ...
+        └── ContextHandler N
+----
+
+[[handler-use-util-stats-handler]]
+==== StatisticsHandler
+
+`StatisticsHandler` gathers and exposes a number of statistic values related to request processing such as:
+
+* Total number of requests
+* Current number of concurrent requests
+* Minimum, maximum, average and standard deviation of request processing times
+* Number of responses grouped by HTTP code (i.e. how many `2xx` responses, how many `3xx` responses, etc.)
+* Total response content bytes
+
+Server applications can read these values and use them internally, or expose them via some service, or xref:arch/jmx.adoc[export them to JMX].
+
+`StatisticsHandler` can be configured at the server level or at the context level.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=statsHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── StatisticsHandler
+    └── ContextHandlerCollection
+        ├── ContextHandler 1
+        :── ...
+        └── ContextHandler N
+----
+
+[[handler-use-util-secure-handler]]
+==== SecuredRedirectHandler -- Redirect from HTTP to HTTPS
+
+`SecuredRedirectHandler` allows to redirect requests made with the `http` scheme (and therefore to the clear-text port) to the `https` scheme (and therefore to the encrypted port).
+
+For example a request to `+http://domain.com:8080/path?param=value+` is redirected to `+https://domain.com:8443/path?param=value+`.
+
+Server applications must configure a `HttpConfiguration` object with the secure scheme and secure port so that `SecuredRedirectHandler` can build the redirect URI.
+
+`SecuredRedirectHandler` is typically configured at the server level, although it can be configured on a per-context basis.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=securedHandler]
+----
+
+[[handler-use-util-default-handler]]
+==== DefaultHandler
+
+`DefaultHandler` is a terminal `Handler` that always calls `Request.setHandled(true)` and performs the following:
+
+* Serves the `favicon.ico` Jetty icon when it is requested
+* Sends a HTTP `404` response for any other request
+* The HTTP `404` response content nicely shows a HTML table with all the contexts deployed on the `Server` instance
+
+`DefaultHandler` is best used as the last `Handler` of a `HandlerList`, for example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=defaultHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── HandlerList
+    ├── ContextHandlerCollection
+    │   ├── ContextHandler 1
+    │   :── ...
+    │   └── ContextHandler N
+    └── DefaultHandler
+----
+
+In the example above, `ContextHandlerCollection` will try to match a request to one of the contexts; if the match fails, `HandlerList` will call the next `Handler` which is `DefaultHandler` that will return a HTTP `404` with an HTML page showing the existing contexts deployed on the `Server`.
+
+NOTE: `DefaultHandler` just sends a nicer HTTP `404` response in case of wrong requests from clients.
+Jetty will send an HTTP `404` response anyway if `DefaultHandler` is not used.
+
+[[handler-use-servlet]]
+=== Servlet API Handlers
+
+[[handler-use-servlet-context]]
+==== ServletContextHandler
+
+``Handler``s are easy to write, but often web applications have already been written using the Servlet APIs, using ``Servlet``s and ``Filter``s.
+
+`ServletContextHandler` is a `ContextHandler` that provides support for the Servlet APIs and implements the behaviors required by the Servlet specification.
+
+The Maven artifact coordinates are:
+
+[,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-servlet</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=servletContextHandler]
+----
+
+The `Handler` and Servlet components tree structure looks like the following:
+
+[,screen,subs=normal]
+----
+Server
+└── ServletContextHandler /shop
+    ├── _ShopCartServlet /cart/*_
+    └── _CrossOriginFilter /*_
+----
+
+Note how the Servlet components (they are not ``Handler``s) are represented in _italic_.
+
+Note also how adding a `Servlet` or a `Filter` returns a _holder_ object that can be used to specify additional configuration for that particular `Servlet` or `Filter`.
+
+When a request arrives to `ServletContextHandler` the request URI will be matched against the ``Filter``s and ``Servlet`` mappings and only those that match will process the request, as dictated by the Servlet specification.
+
+IMPORTANT: `ServletContextHandler` is a terminal `Handler`, that is it always calls `Request.setHandled(true)` when invoked.
+Server applications must be careful when creating the `Handler` tree to put ``ServletContextHandler``s as last ``Handler``s in a `HandlerList` or as children of `ContextHandlerCollection`.
+
+// TODO: revise what above, as ServletContextHandler is not a terminal handler.
+// TODO: introduce the fact that ServletContextHandler can have a class loader that may be used to "isolate" web application classes.
+
+[[handler-use-webapp-context]]
+==== WebAppContext
+
+`WebAppContext` is a `ServletContextHandler` that auto configures itself by reading a `web.xml` Servlet configuration file.
+
+Server applications can specify a `+*.war+` file or a directory with the structure of a `+*.war+` file to `WebAppContext` to deploy a standard Servlet web application packaged as a `war` (as defined by the Servlet specification).
+
+Where server applications using `ServletContextHandler` must manually invoke methods to add ``Servlet``s and ``Filter``s, `WebAppContext` reads `WEB-INF/web.xml` to add ``Servlet``s and ``Filter``s, and also enforces a number of restrictions defined by the Servlet specification, in particular related to class loading.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=webAppContextHandler]
+----
+
+[[handler-use-webapp-context-class-loading]]
+.WebAppContext Class Loading
+
+The Servlet specification requires that a web application class loader must load the web application classes from `WEB-INF/classes` and `WEB_INF/lib`.
+The web application class loader is special because it behaves differently from typical class loaders: where typical class loaders first delegate to their parent class loader and then try to find the class locally, the web application class loader first tries to find the class locally and then delegates to the parent class loader.
+The typical class loading model, parent-first, is _inverted_ for web application class loaders, as they use a child-first model.
+
+Furthermore, the Servlet specification requires that web applications cannot load or otherwise access the Servlet container implementation classes, also called _server classes_.
+In the Jetty case, the Servlet specification class `javax.servlet.http.HttpServletRequest` is implemented by `org.eclipse.jetty.server.Request`.
+Web applications cannot downcast Servlet's `HttpServletRequest` to Jetty's `Request` to access Jetty specific features -- this ensures maximum web application portability across Servlet container implementations.
+
+Lastly, the Servlet specification requires that other classes, also called _system classes_, such as `javax.servlet.http.HttpServletRequest` or JDK classes such as `java.lang.String` or `java.sql.Connection` cannot be modified by web applications by putting, for example, modified versions of those classes in `WEB-INF/classes` so that they are loaded first by the web application class loader (instead of the class-path class loader where they are normally loaded from).
+
+`WebAppContext` implements this class loader logic using a single class loader, `org.eclipse.jetty.webapp.WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _system class_ or a _server class_ and acts according to the Servlet specification.
+
+When `WebAppClassLoader` is asked to load a class, it first tries to find the class locally (since it must use the inverted child-first model); if the class is found, and it is not a _system class_, the class is loaded; otherwise the class is not found locally.
+If the class is not found locally, the parent class loader is asked to load the class; the parent class loader uses the standard parent-first model, so it delegates the class loading to its parent, and so on.
+If the class is found, and it is not a _server class_, the class is loaded; otherwise the class is not found and a `ClassNotFoundException` is thrown.
+
+Unfortunately, the Servlet specification does not define exactly which classes are _system classes_ and which classes are _server classes_.
+However, Jetty picks good defaults and allows server applications to customize _system classes_ and _server classes_ in `WebAppContext`.
+
+// TODO: add a section on parentLoaderPriority.
+// TODO: add a code example about how to set system/server classes.
+// TODO: add a code example about how to configure extra classpath
+// TODO: add a section on ClassLoading (see old docs)
+
+// TODO: add a section on Configuration (system/server classes)
+// TODO: add a section about how to setup JSP support
+
+[[handler-use-default-servlet]]
+==== DefaultServlet -- Static Content for Servlets
+
+If you have a <<handler-use-servlet-context,Servlet web application>>, you may want to use a `DefaultServlet` instead of `ResourceHandler`.
+The features are similar, but `DefaultServlet` is more commonly used to serve static files for Servlet web applications.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=defaultServlet]
+----
+
+[[handler-implement]]
+=== Implementing Handler
+
+The `Handler` API consist fundamentally of just one method:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerAPI]
+----
+
+The `target` parameter is an identifier for the resource.
+This is normally the URI that is parsed from an HTTP request.
+However, a request could be forwarded to either a named resource, in which case `target` will be the name of the resource, or to a different URI, in which case `target` will be the new URI.
+
+Applications may wrap the request or response (or both) and forward the wrapped request or response to a different URI (which may be possibly handled by a different `Handler`).
+This is the reason why there are two request parameters in the `Handler` APIs: the first is the unwrapped, original, request that also gives access to Jetty-specific APIs, while the second is the application-wrapped Servlet request.
+
+[[handler-impl-hello]]
+==== Hello World Handler
+
+A simple "Hello World" `Handler` is the following:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerHello]
+----
+
+Such a simple `Handler` extends from `AbstractHandler` and can access the request and response main features, such as reading request headers and content, or writing response headers and content.
+
+[[handler-impl-filter]]
+==== Filtering Handler
+
+A filtering `Handler` is a handler that perform some modification to the request or response, and then either forwards the request to another `Handler` or produces an error response:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerFilter]
+----
+
+Note how a filtering `Handler` extends from `HandlerWrapper` and as such needs another handler to forward the request processing to, and how the two ``Handler``s needs to be linked together to work properly.
+
+[[security]]
+=== Securing HTTP Server Applications
+
+// TODO: ConstraintSecurityHandler and Authenticators and LoginServices
+TODO
+
+[[application]]
+=== Writing HTTP Server Applications
+
+Writing HTTP applications is typically simple, especially when using blocking APIs.
+However, there are subtle cases where it is worth clarifying what a server application should do to obtain the desired results when run by Jetty.
+
+[[application-1xx]]
+==== Sending 1xx Responses
+
+The https://tools.ietf.org/html/rfc7231#section-5.1.1[HTTP/1.1 RFC] allows for `1xx` informational responses to be sent before a real content response.
+Unfortunately the servlet specification does not provide a way for these to be sent, so Jetty has had to provide non-standard handling of these headers.
+
+[[application-100]]
+==== 100 Continue
+
+The `100 Continue` response should be sent by the server when a client sends a request with an `Expect: 100-continue` header, as the client will not send the body of the request until the `100 Continue` response has been sent.
+
+The intent of this feature is to allow a server to inspect the headers and to tell the client to not send a request body that might be too large or insufficiently private or otherwise unable to be handled.
+
+Jetty achieves this by waiting until the input stream or reader is obtained by the filter/servlet, before sending the `100 Continue` response.
+Thus a filter/servlet may inspect the headers of a request before getting the input stream and send an error response (or redirect etc.) rather than the 100 continues.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=continue100]
+----
+
+[[jetty-102-processing]]
+==== 102 Processing
+
+https://tools.ietf.org/html/rfc2518[RFC 2518] defined the `102 Processing` status code that can be sent:
+
+[quote,RFC 2518 section 10.1]
+when the server has a reasonable expectation that the request will take significant time to complete.
+As guidance, if a method is taking longer than 20 seconds (a reasonable, but arbitrary value) to process the server SHOULD return a `102 Processing` response.
+
+However, a later update of RFC 2518, https://tools.ietf.org/html/rfc4918[RFC 4918], removed the `102 Processing` status code for https://tools.ietf.org/html/rfc4918#appendix-F.3["lack of implementation"].
+
+Jetty supports the `102 Processing` status code.
+If a request is received with the `Expect: 102-processing` header, then a filter/servlet may send a `102 Processing` response (without terminating further processing) by calling `response.sendError(102)`.

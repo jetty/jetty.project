@@ -13,7 +13,6 @@
   <name>Jetty :: Documentation :: Parent</name>
 
   <modules>
-    <module>jetty-asciidoctor-extensions</module>
-    <module>jetty-documentation</module>
+    <module>jetty</module>
   </modules>
 </project>
