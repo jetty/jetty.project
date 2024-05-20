@@ -108,7 +108,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             pageSource = PageLookupTechnique.STATUS_CODE;
 
             // look for an exact code match
-            errorStatusCode = (Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
+            errorStatusCode = (Integer)request.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS);
             if (errorStatusCode != null)
             {
                 errorPage = _errorPages.get(Integer.toString(errorStatusCode));

@@ -39,9 +39,11 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee11.servlet.util.ServletOutputStreamWrapper;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -747,9 +749,12 @@ public class Dispatcher implements RequestDispatcher
 
     private class ErrorRequest extends ParameterRequestWrapper
     {
-        public ErrorRequest(HttpServletRequest httpRequest)
+        private final HttpServletRequest _httpServletRequest;
+
+        public ErrorRequest(HttpServletRequest httpServletRequest)
         {
-            super(httpRequest);
+            super(httpServletRequest);
+            _httpServletRequest = Objects.requireNonNull(httpServletRequest);
         }
 
         @Override
@@ -759,15 +764,21 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
+        public String getMethod()
+        {
+            return HttpMethod.GET.asString();
+        }
+
+        @Override
         public String getPathInfo()
         {
-            return _servletPathMapping.getPathInfo();
+            return Objects.requireNonNull(_servletPathMapping).getPathInfo();
         }
 
         @Override
         public String getServletPath()
         {
-            return _servletPathMapping.getServletPath();
+            return Objects.requireNonNull(_servletPathMapping).getServletPath();
         }
 
         @Override
@@ -779,7 +790,7 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getRequestURI()
         {
-            return _uri.getPath();
+            return Objects.requireNonNull(_uri).getPath();
         }
 
         @Override
@@ -790,6 +801,28 @@ public class Dispatcher implements RequestDispatcher
                 .host(getServerName())
                 .port(getServerPort())
                 .asString());
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return switch (name)
+            {
+                case ERROR_METHOD -> _httpServletRequest.getMethod();
+                case ERROR_REQUEST_URI -> _httpServletRequest.getRequestURI();
+                case ERROR_QUERY_STRING -> _httpServletRequest.getQueryString();
+                case ERROR_STATUS_CODE -> super.getAttribute(ErrorHandler.ERROR_STATUS);
+                case ERROR_MESSAGE -> super.getAttribute(ErrorHandler.ERROR_MESSAGE);
+                default -> super.getAttribute(name);
+            };
+        }
+
+        @Override
+        public Enumeration<String> getAttributeNames()
+        {
+            List<String> names = new ArrayList<>(List.of(ERROR_METHOD, ERROR_REQUEST_URI, ERROR_QUERY_STRING, ERROR_STATUS_CODE, ERROR_MESSAGE));
+            names.addAll(Collections.list(super.getAttributeNames()));
+            return Collections.enumeration(names);
         }
     }
 

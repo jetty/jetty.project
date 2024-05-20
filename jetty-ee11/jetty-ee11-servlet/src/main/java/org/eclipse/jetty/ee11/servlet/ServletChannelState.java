@@ -36,10 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION;
 import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
-import static jakarta.servlet.RequestDispatcher.ERROR_MESSAGE;
-import static jakarta.servlet.RequestDispatcher.ERROR_REQUEST_URI;
 import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
-import static jakarta.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 /**
  * holder of the state of request-response cycle.
@@ -1039,11 +1036,8 @@ public class ServletChannelState
             response.setStatus(code);
             servletContextRequest.errorClose();
 
-            request.setAttribute(org.eclipse.jetty.ee11.servlet.ErrorHandler.ERROR_CONTEXT, servletContextRequest.getErrorContext());
-            request.setAttribute(ERROR_REQUEST_URI, httpServletRequest.getRequestURI());
             request.setAttribute(ERROR_SERVLET_NAME, servletContextRequest.getServletName());
-            request.setAttribute(ERROR_STATUS_CODE, code);
-            request.setAttribute(ERROR_MESSAGE, message);
+            // Additional servlet error attributes are provided in org.eclipse.jetty.ee11.servlet.Dispatcher.ErrorRequest
 
             // Set Jetty Specific Attributes.
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getServletContext());
