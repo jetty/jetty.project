@@ -1,0 +1,57 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Logging
+
+The Jetty libraries (both client and server) use http://slf4j.org/[SLF4J] as logging APIs.
+You can therefore plug in any SLF4J logging implementation, and configure the logging category `org.eclipse.jetty` at the desired level.
+
+When you have problems with Jetty, the first thing that you want to do is to enable DEBUG logging.
+This is helpful because by reading the DEBUG logs you get a better understanding of what is going on in the system (and that alone may give you the answers you need to fix the problem), and because Jetty developers will probably need the DEBUG logs to help you.
+
+== Jetty SLF4J Binding
+
+The Jetty artifact `jetty-slf4j-impl` is a SLF4J binding, that is the Jetty implementation of the SLF4J APIs, and provides a number of easy-to-use features to configure logging.
+
+The Jetty SLF4J binding only provides an appender that writes to `System.err`.
+For more advanced configurations (for example, logging to a file), use http://logback.qos.ch[LogBack], or https://logging.apache.org/log4j/2.x/[Log4j2], or your preferred SLF4J binding.
+
+CAUTION: Only one binding can be present in the class-path or module-path. If you use the LogBack SLF4J binding or the Log4j2 SLF4J binding, remember to remove the Jetty SLF4J binding.
+
+The Jetty SLF4J binding reads a file in the class-path (or module-path) called `jetty-logging.properties` that can be configured with the logging levels for various logger categories:
+
+.jetty-logging.properties
+[,screen]
+----
+# By default, log at INFO level all Jetty classes.
+org.eclipse.jetty.LEVEL=INFO
+
+# However, the Jetty client classes are logged at DEBUG level.
+org.eclipse.jetty.client.LEVEL=DEBUG
+----
+
+Similarly to how you configure the `jetty-logging.properties` file, you can set the system property `org.eclipse.jetty[.<package_names>].LEVEL=DEBUG` to quickly change the logging level to DEBUG without editing any file.
+The system property can be set on the command line, or in your IDE when you run your tests or your Jetty-based application and will override the `jetty-logging.properties` file configuration.
+For example to enable DEBUG logging for all the Jetty classes (_very_ verbose):
+
+[,screen]
+----
+java -Dorg.eclipse.jetty.LEVEL=DEBUG --class-path ...
+----
+
+If you want to enable DEBUG logging but only for the HTTP/2 classes:
+
+[,screen]
+----
+java -Dorg.eclipse.jetty.http2.LEVEL=DEBUG --class-path ...
+----

@@ -1,0 +1,39 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+.xref:operations-guide:index.adoc[]
+* xref:begin/index.adoc[]
+* xref:features/index.adoc[]
+* xref:howtos/index.adoc[]
+* xref:arch/index.adoc[]
+* xref:start/index.adoc[]
+** xref:start/start-jpms.adoc[]
+* xref:modules/index.adoc[]
+** xref:modules/custom.adoc[]
+** xref:modules/standard.adoc[]
+* xref:deploy/index.adoc[]
+* xref:server/index.adoc[]
+* xref:protocols/index.adoc[]
+* xref:keystore/index.adoc[]
+* xref:session/index.adoc[]
+* xref:quickstart/index.adoc[]
+* xref:annotations/index.adoc[]
+* xref:jsp/index.adoc[]
+* xref:jstl/index.adoc[]
+* xref:jsf-taglibs/index.adoc[]
+* xref:jndi/index.adoc[]
+* xref:jaas/index.adoc[]
+* xref:jaspi/index.adoc[]
+* xref:jmx/index.adoc[]
+* xref:troubleshooting/index.adoc[]
+* xref:xml/index.adoc[]

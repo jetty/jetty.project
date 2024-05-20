@@ -1,0 +1,25 @@
+name: jetty
+version: '11'
+title: Eclipse Jetty
+asciidoc:
+  attributes:
+    javadoc-url: https://eclipse.dev/jetty/javadoc/jetty-11
+    jdurl: '{javadoc-url}'
+    jetty-home: ${jetty.home}@
+    version: 11.0.21-SNAPSHOT
+    idprefix: ''
+    idseparator: ''
+    run-jetty-classpath: ${settings.localRepository}/org/eclipse/jetty/tests/jetty-home-tester/${project.version}/jetty-home-tester-${project.version}.jar${path.separator}${run.jetty.classpath}
+nav:
+- modules/operations-guide/nav.adoc
+- modules/programming-guide/nav.adoc
+ext:
+  collector:
+  - run:
+      command: mvn install -ntp -B -Dcollector -Pfast -am -pl documentation/jetty
+    scan:
+      dir: documentation/jetty/target/collector
+  - scan:
+      dir: jetty-server/src/main/java
+      files: org/eclipse/jetty/server/CustomRequestLog.java
+      base: modules/code/partials

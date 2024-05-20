@@ -1,0 +1,418 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Web Application Deployment
+
+Most of the times you want to be able to customize the deployment of your web applications, for example by changing the `contextPath`, or by adding JNDI entries, or by configuring virtual hosts, etc.
+
+The customization is performed by the xref:modules/standard.adoc#deploy[`deploy` module] by processing <<jetty,Jetty context XML files>>.
+
+The `deploy` module contains the `DeploymentManager` component that scans the `$JETTY_BASE/webapps` directory for changes, following the deployment rules described in <<rules,this section>>.
+
+[[hot-static]]
+== Hot vs Static Deployment
+
+The `DeploymentManager` scans the `$JETTY_BASE/webapps` directory for changes every `N` seconds, where `N` is configured via the `jetty.deploy.scanInterval` property.
+
+By default, the scan interval is `1` second, which means that _hot_ deployment is enabled: if a file is added/changed/removed from the `$JETTY_BASE/webapps` directory, the `DeploymentManager` will notice the change and respectively deploy/redeploy/undeploy the web application.
+
+Setting the scan interval to `0` means that _static_ deployment is enabled, and the `DeploymentManager` will not scan the `$JETTY_BASE/webapps` directory for changes.
+This means that to deploy/redeploy/undeploy a web application you will need to stop and restart Jetty.
+
+The following command line disables _hot_ deployment by specifying the `jetty.deploy.scanInterval` property on the command line, and therefore only for this particular run:
+
+----
+$ java -jar $JETTY_HOME/start.jar jetty.deploy.scanInterval=0
+----
+
+To make _static_ deployment persistent, you need to edit the `deploy` module configuration file, `$JETTY_BASE/start.d/deploy.ini`, uncomment the module property `jetty.deploy.scanInterval` and change its value to `0`:
+
+.deploy.ini
+[source,subs=quotes]
+----
+--module=deploy
+#jetty.deploy.scanInterval=0#
+...
+----
+
+[[rules]]
+== Deployment Rules
+
+_Adding_ a `+*.war+` file, a `+*.war+` directory, a Jetty context XML file or a normal directory to `$JETTY_BASE/webapps` causes the `DeploymentManager` to deploy the new web application.
+
+_Updating_ a `+*.war+` file or a Jetty context XML file causes the `DeploymentManager` to redeploy the web application, which means that the Jetty context component representing the web application is stopped, then reconfigured, and then restarted.
+
+_Removing_ a `+*.war+` file, a `+*.war+` directory, a Jetty context XML file or a normal directory from `$JETTY_BASE/webapps` causes the `DeploymentManager` to undeploy the web application, which means that the Jetty context component representing the web application is stopped and removed from the Jetty server.
+
+When a file or directory is added to `$JETTY_BASE/webapps`, the `DeploymentManager` derives the web application `contextPath` from the file or directory name, with the following rules:
+
+* If the directory name is, for example, `mywebapp/`, it is deployed as a standard web application if it contains a `WEB-INF/` subdirectory, otherwise it is deployed as a web application of static content.
+The `contextPath` would be `/mywebapp` (that is, the web application is reachable at `+http://localhost:8080/mywebapp/+`).
+* If the directory name is `ROOT`, case insensitive, the `contextPath` is `/` (that is, the web application is reachable at `+http://localhost:8080/+`).
+* If the directory name ends with `.d`, for example `config.d/`, it is ignored, although it may be referenced to configure other web applications (for example to store common files).
+* If the `+*.war+` file name is, for example, `mywebapp.war`, it is deployed as a standard web application with the context path `/mywebapp` (that is, the web application is reachable at `+http://localhost:8080/mywebapp/+`).
+* If the file name is `ROOT.war`, case insensitive, the `contextPath` is `/` (that is, the web application is reachable at `+http://localhost:8080/+`).
+* If both the `mywebapp.war` file and the `mywebapp/` directory exist, only the file is deployed.
+This allows the directory with the same name to be the `+*.war+` file unpack location and avoid that the web application is deployed twice.
+* A <<jetty,Jetty context XML file>> named `mywebapp.xml` is deployed as a web application by processing the directives contained in the XML file itself, which must set the `contextPath`.
+* If both `mywebapp.xml` and `mywebapp.war` exist, only the XML file is deployed.
+This allows the XML file to reference the `+*.war+` file and avoid that the web application is deployed twice.
+
+[[jetty]]
+== Deploying Jetty Context XML Files
+
+A Jetty context XML file is a xref:xml/index.adoc[Jetty XML file] that allows you to customize the deployment of web applications.
+
+NOTE: Recall that the `DeploymentManager` component of the Jetty `deploy` module <<rules,gives priority>> to Jetty context XML files over `+*.war+` files or directories.
+
+To deploy a web application using a Jetty context XML file, simply place the file in the `$JETTY_BASE/webapps` directory.
+
+A simple Jetty context XML file, for example named `wiki.xml` is the following:
+
+.wiki.xml
+[,xml,subs=verbatim]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext"> <1>
+  <Set name="contextPath">/wiki</Set> <2>
+  <Set name="war">/opt/myapps/myapp.war</Set> <3>
+</Configure>
+----
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<2> Specifies the web application `contextPath`, which may be different from the `+*.war+` file name.
+<3> Specifies the file system path of the `+*.war+` file.
+
+The `$JETTY_BASE` directory would look like this:
+
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+├── start.d
+│   ├── deploy.ini
+│   └── http.ini
+└── webapps
+    └── wiki.xml
+----
+
+TIP: The `+*.war+` file may be placed anywhere in the file system and does not need to be placed in the `$JETTY_BASE/webapps` directory.
+
+IMPORTANT: If you place both the Jetty context XML file _and_ the `+*.war+` file in the `$JETTY_BASE/webapps` directory, remember that they must have the same file name, for example `wiki.xml` and `wiki.war`, so that the `DeploymentManager` deploys the web application only once using the Jetty context XML file (and not the `+*.war+` file).
+
+You can use the features of xref:xml/index.adoc[Jetty XML files] to avoid to hard-code file system paths or other configurations in your Jetty context XML files, for example by using system properties:
+
+.wiki.xml
+[,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/wiki</Set>
+  <Set name="war"><SystemProperty name="myapps.dir"/>/myapp.war</Set>
+</Configure>
+----
+
+Note how the `+*.war+` file path is now obtained by resolving the system property `myapps.dir` that you can specify on the command line when you start Jetty:
+
+----
+$ java -jar $JETTY_HOME/start.jar -Dmyapps.dir=/opt/myapps
+----
+
+[[jndi]]
+== Configuring JNDI Entries
+
+A web application may _reference_ a JNDI entry, such as a JDBC `DataSource` from the web application `web.xml` file.
+The JNDI entry must be _defined_ in a xref:jndi/index.adoc#xml[Jetty XML file], for example a context XML like so:
+
+.mywebapp.xml
+[,xml,subs=normal]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="wac" class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/mywebapp</Set>
+  <Set name="war">/opt/webapps/mywebapp.war</Set>
+#&nbsp;&nbsp;<New class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg><Ref refid="wac"/></Arg>
+    <Arg>jdbc/myds</Arg>
+     <Arg>
+        <New class="com.mysql.cj.jdbc.MysqlConnectionPoolDataSource">
+           <Set name="url">jdbc:mysql://localhost:3306/databasename</Set>
+           <Set name="user">user</Set>
+           <Set name="password">password</Set>
+        </New>
+     </Arg>
+  </New>#
+</Configure>
+----
+
+For more information and examples on how to use JNDI in Jetty, refer to the xref:jndi/index.adoc[JNDI] feature section.
+
+[IMPORTANT]
+====
+Class `com.mysql.cj.jdbc.MysqlConnectionPoolDataSource` is present in the MySQL JDBC driver file, `mysql-connector-java-<version>.jar`, which must be available on the server's classpath .
+
+If the class is instead present _within_ the web application, then the JNDI entry must be declared in a `WEB-INF/jetty-env.xml` file - see the xref:jndi/index.adoc[JNDI] feature section for more information and examples.
+
+====
+
+[[virtual-hosts]]
+== Configuring Virtual Hosts
+
+A _virtual host_ is an internet domain name, registered in the Domain Name Server (DNS), for an IP address such that multiple virtual hosts will resolve to the same IP address of a single server instance.
+
+If you have multiple web applications deployed on the same Jetty server, by using virtual hosts you will be able to target a specific web application.
+
+For example, you may have a web application for your business and a web application for your hobbies , both deployed in the same Jetty server.
+By using virtual hosts, you will be able to have the first web application available at `+http://domain.biz/+`, and the second web application available at `+http://hobby.net/+`.
+
+Another typical case is when you want to use different subdomains for different web application, for example a project website is at `+http://project.org/+` and the project documentation is at `+http://docs.project.org+`.
+
+Virtual hosts can be used with any context that is a subclass of link:{javadoc-url}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler].
+
+[[virtual-hosts-names]]
+=== Virtual Host Names
+
+Jetty supports the following variants to be specified as virtual host names:
+
+`www.hostname.com`::
+A fully qualified domain name. It is important to list all variants as a site may receive traffic for both `www.hostname.com` and `hostname.com`.
+
+`*.hostname.com`::
+A wildcard domain name which will match only one level of arbitrary subdomains.
+*.foo.com will match www.foo.com and m.foo.com, but not www.other.foo.com.
+
+`10.0.0.2`::
+An IP address may be set as a virtual host to indicate that a web application should handle requests received on the network interface with that IP address for protocols that do not indicate a host name such as HTTP/0.9 or HTTP/1.0.
+
+`@ConnectorName`::
+A Jetty server `Connector` name to indicate that a web application should handle requests received on the server `Connector` with that name, and therefore received on a specific socket address (either an IP port for `ServerConnector`, or a Unix-Domain path for `UnixDomainServerConnector`).
+A server `Connector` name can be set via link:{javadoc-url}/org/eclipse/jetty/server/AbstractConnector.html#setName(java.lang.String)[].
+
+`www.√integral.com`::
+Non-ASCII and https://en.wikipedia.org/wiki/Internationalized_domain_name[IDN] domain names can be set as virtual hosts using https://en.wikipedia.org/wiki/Punycode[Puny Code] equivalents that may be obtained from a https://www.punycoder.com/[Punycode/IDN converters].
+For example if the non-ASCII domain name `www.√integral.com` is given to a browser, then the browser will make a request that uses the domain name `www.xn--integral-7g7d.com`, which is the name that should be added as the virtual host name.
+
+[[virtual-hosts-config]]
+=== Virtual Hosts Configuration
+
+If you have a web application `mywebapp.war` you can configure its virtual hosts in this way:
+
+[,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/mywebapp</Set>
+  <Set name="war">/opt/webapps/mywebapp.war</Set>
+  <Set name="virtualHosts">
+    <Array type="java.lang.String">
+      <Item>mywebapp.com</Item>
+      <Item>www.mywebapp.com</Item>
+      <Item>mywebapp.net</Item>
+      <Item>www.mywebapp.net</Item>
+    </Array>
+  </Set>
+</Configure>
+----
+
+Your web application will be available at:
+
+* `+http://mywebapp.com/mywebapp+`
+* `+http://www.mywebapp.com/mywebapp+`
+* `+http://mywebapp.net/mywebapp+`
+* `+http://www.mywebapp.net/mywebapp+`
+
+[NOTE]
+====
+You configured the `contextPath` of your web application to `/mywebapp`.
+
+As such, a request to `+http://mywebapp.com/other+` will not match your web application because the `contextPath` does not match.
+
+Likewise, a request to `+http://other.com/mywebapp+` will not match your web application because the virtual host does not match.
+====
+
+[[virtual-hosts-same-context]]
+=== Same Context Path, Different Virtual Hosts
+
+If you want to deploy different web applications to the same context path, typically the root context path `/`, you must use virtual hosts to differentiate among web applications.
+
+You have `domain.war` that you want to deploy at `+http://domain.biz/+` and `hobby.war` that you want to deploy at `+http://hobby.net+`.
+
+To achieve this, you simply use the same context path of `/` for each of your webapps, while specifying different virtual hosts for each of your webapps:
+
+.domain.xml
+[,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/</Set>
+  <Set name="war">/opt/webapps/domain.war</Set>
+  <Set name="virtualHosts">
+    <Array type="java.lang.String">
+      <Item>domain.biz</Item>
+    </Array>
+  </Set>
+</Configure>
+----
+
+.hobby.xml
+[,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/</Set>
+  <Set name="war">/opt/webapps/hobby.war</Set>
+  <Set name="virtualHosts">
+    <Array type="java.lang.String">
+      <Item>hobby.net</Item>
+    </Array>
+  </Set>
+</Configure>
+----
+
+[[virtual-hosts-port]]
+=== Different Port, Different Web Application
+
+Sometimes it is required to serve different web applications from different socket addresses (either different IP ports, or different Unix-Domain paths), and therefore from different server ``Connector``s.
+
+For example, you want requests to `+http://localhost:8080/+` to be served by one web application, but requests to `+http://localhost:9090/+` to be served by another web application.
+
+This configuration may be useful when Jetty sits behind a load balancer.
+
+In this case, you want to xref:protocols/index.adoc[configure multiple connectors], each with a different name, and then reference the connector name in the web application virtual host configuration:
+
+.domain.xml
+[,xml,highlight=10]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/</Set>
+  <Set name="war">/opt/webapps/domain.war</Set>
+  <Set name="virtualHosts">
+    <Array type="java.lang.String">
+      <Item>@port8080</Item>
+    </Array>
+  </Set>
+</Configure>
+----
+
+.hobby.xml
+[,xml,highlight=10]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/</Set>
+  <Set name="war">/opt/webapps/hobby.war</Set>
+  <Set name="virtualHosts">
+    <Array type="java.lang.String">
+      <Item>@port9090</Item>
+    </Array>
+  </Set>
+</Configure>
+----
+
+[NOTE]
+====
+Web application `domain.war` has a virtual host of `@port8080`, where `port8080` is the name of a Jetty connector.
+
+Likewise, web application `hobby.war` has a virtual host of `@port9090`, where `port9090` is the name of another Jetty connector.
+
+See xref:protocols/index.adoc[this section] for further information about how to configure connectors.
+====
+
+[[extract-war]]
+== Configuring `+*.war+` File Extraction
+
+By default, `+*.war+` files are uncompressed and its content extracted in a temporary directory.
+// TODO: reference the `work` module and how it works, perhaps in a section about the `deploy` module?
+The web application resources are served by Jetty from the files extracted in the temporary directory, not from the files within the `+*.war+` file, for performance reasons.
+
+If you do not want Jetty to extract the `+*.war+` files, you can disable this feature, for example:
+
+.mywebapp.xml
+[,xml,highlight=8]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/mywebapp</Set>
+  <Set name="war">/opt/webapps/mywebapp.war</Set>
+  <Set name="extractWAR">false</Set>
+</Configure>
+----
+
+[[jetty-override-web-xml]]
+== Overriding `web.xml`
+
+You can configure an additional `web.xml` that complements the `web.xml` file that is present in the web application `+*.war+` file.
+This additional `web.xml` is processed _after_ the `+*.war+` file `web.xml`.
+This allows you to add host specific configuration or server specific configuration without having to extract the web application `web.xml`, modify it, and repackage it in the `+*.war+` file.
+
+.mywebapp.xml
+[,xml,highlight=8]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/mywebapp</Set>
+  <Set name="war">/opt/webapps/mywebapp.war</Set>
+  <Set name="overrideDescriptor">/opt/webapps/mywebapp-web.xml</Set>
+</Configure>
+----
+
+The format of the additional `web.xml` is exactly the same as a standard `web.xml` file, for example:
+
+.mywebapp-web.xml
+[,xml,linenums,highlight=10-11]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+  <servlet>
+    <servlet-name>my-servlet</servlet-name>
+    <init-param>
+      <param-name>host</param-name>
+      <param-value>192.168.0.13</param-value>
+    </init-param>
+  </servlet>
+</web-app>
+----
+
+In the example above, you configured the `my-servlet` Servlet (defined in the web application `web.xml`), adding a host specific `init-param` with the IP address of the host.
+
+
+// TODO: move this section to its own file
+// TODO: configuring from the Jetty context XML file happens before web.xml
+//  What about jetty-web.xml? Can this be specified externally, e.g. WebAppContext.setJettyWebXml() ?
+[[init-params]]
+== Configuring ``init-param``s
+
+TODO

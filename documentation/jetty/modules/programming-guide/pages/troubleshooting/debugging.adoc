@@ -1,0 +1,29 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Debugging
+
+Sometimes, in order to figure out a problem, enabling xref:troubleshooting/logging.adoc[DEBUG logging] is not enough and you really need to debug the code with a debugger.
+
+Debugging an embedded Jetty application is most easily done from your preferred IDE, so refer to your IDE instruction for how to debug Java applications.
+
+Remote debugging can be enabled in a Jetty application via command line options:
+
+[,screen]
+----
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000 --class-path ...
+----
+
+The example above enables remote debugging so that debuggers (for example, your preferred IDE) can connect to port `8000` on the host running the Jetty application to receive debugging events.
+
+NOTE: More technically, remote debugging exchanges JVM Tools Interface (JVMTI) events and commands via the Java Debug Wire Protocol (JDWP).
