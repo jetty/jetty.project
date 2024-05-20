@@ -1,0 +1,1093 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Jetty Connectors and Protocols
+
+Connectors are the network components through which Jetty accepts incoming network connections.
+
+Each connector listens on a network port and can be configured with `ConnectionFactory` components that _understand_ one or more network protocols.
+
+Understanding a protocol means that the connector is able to interpret incoming network bytes (for example, the bytes that represent an HTTP/1.1 request) and convert them into more abstract objects (for example an `HttpServletRequest` object) that are then processed by applications.
+Conversely, an abstract object (for example an `HttpServletResponse`) is converted into the correspondent outgoing network bytes (the bytes that represent an HTTP/1.1 response).
+
+Like other Jetty components, connectors are enabled and configured by enabling and configuring the correspondent Jetty module.
+
+IMPORTANT: Recall that you must always issue the commands to enable Jetty modules from within the `$JETTY_BASE` directory, and that the Jetty module configuration files are in the `$JETTY_BASE/start.d/` directory.
+
+You can obtain the list of connector-related modules in this way:
+
+----
+$ java -jar $JETTY_HOME/start.jar --list-modules=connector
+----
+
+[[http]]
+== Clear-Text HTTP/1.1
+
+Clear text HTTP/1.1 is enabled with the `http` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http
+----
+----
+INFO  : mkdir ${jetty.base}/start.d
+INFO  : server          transitively enabled, ini template available with --add-module=server
+INFO  : logging-jetty   transitively enabled
+INFO  : http            initialized in ${jetty.base}/start.d/http.ini
+INFO  : resources       transitively enabled
+INFO  : threadpool      transitively enabled, ini template available with --add-module=threadpool
+INFO  : logging/slf4j   dynamic dependency of logging-jetty
+INFO  : bytebufferpool  transitively enabled, ini template available with --add-module=bytebufferpool
+INFO  : mkdir ${jetty.base}/resources
+INFO  : copy ${jetty.home}/modules/logging/jetty/resources/jetty-logging.properties to ${jetty.base}/resources/jetty-logging.properties
+INFO  : Base directory was modified
+----
+
+After having enabled the `http` module, the `$JETTY_BASE` directory looks like this:
+
+[source,subs=quotes]
+----
+JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    └── #http.ini#
+----
+
+The `http.ini` file is the file that you want to edit to configure network and protocol parameters -- for more details see xref:modules/standard.adoc#http[this section].
+
+Note that the `http` Jetty module depends on the `server` Jetty module.
+
+Some parameters that you may want to configure are in fact common HTTP parameters that are applied not only for clear-text HTTP/1.1, but also for secure HTTP/1.1 or for clear-text HTTP/2 or for encrypted HTTP/2, or for HTTP/3, and these configuration parameters may be present in the `server` module configuration file.
+
+You can force the creation of the `server.ini` file via:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=server
+----
+
+Now the `$JETTY_BASE` directory looks like this:
+
+[source]
+----
+JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── http.ini
+    └── server.ini
+----
+
+Now you can edit the `server.ini` file -- for more details see xref:modules/standard.adoc#server[this section].
+
+[[https]]
+== Secure HTTP/1.1
+
+Secure HTTP/1.1 is enabled with both the `ssl` and `https` Jetty modules with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=ssl,https
+----
+
+[jetty%nowrap]
+....
+[jetty]
+args=--add-modules=ssl,https
+....
+
+The command above enables the `ssl` module, that provides the secure network connector, the KeyStore configuration and TLS configuration -- for more details see <<ssl,this section>>.
+Then, the xref:modules/standard.adoc#https[`https` module] adds HTTP/1.1 as the protocol secured by TLS.
+
+The `$JETTY_BASE` directory looks like this:
+
+[source]
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── https.ini
+    └── ssl.ini
+----
+
+Note that the KeyStore file is missing, because you have to provide one with the cryptographic material you want (read xref:keystore/index.adoc[this section] to create your own KeyStore).
+You need to configure these two properties by editing `ssl.ini`:
+
+* `jetty.sslContext.keyStorePath`
+* `jetty.sslContext.keyStorePassword`
+
+As a quick example, you can enable the xref:modules/standard.adoc#test-keystore[`test-keystore` module], that creates on-the-fly a KeyStore containing a self-signed certificate:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-modules=ssl,https
+args=--add-modules=test-keystore
+....
+
+The `$JETTY_BASE` directory is now:
+
+[source,subs=quotes]
+----
+├── etc
+│   └── #test-keystore.p12#
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── https.ini
+    ├── ssl.ini
+    └── test-keystore.ini
+----
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-modules=ssl,https,test-keystore
+highlight=(\{.*:8443})
+....
+
+Note how Jetty is listening on port `8443` for the secure HTTP/1.1 protocol.
+
+[WARNING]
+====
+If you point your browser at `+https://localhost:8443/+` you will get a warning from the browser about a "potential security risk ahead", or that "your connection is not private", or similar message depending on the browser.
+
+This is normal because the certificate contained in `test-keystore.p12` is self-signed -- and as such not signed by a recognized certificate authority -- and therefore browsers do not trust it.
+====
+
+[[http2]]
+== Configuring HTTP/2
+
+https://tools.ietf.org/html/rfc7540[HTTP/2] is the successor of the HTTP/1.1 protocol, but it is quite different from HTTP/1.1: where HTTP/1.1 is a duplex, text-based protocol, HTTP/2 is a multiplex, binary protocol.
+
+Because of these fundamental differences, a client and a server need to _negotiate_ what version of the HTTP protocol they speak, based on what versions each side supports.
+
+To ensure maximum compatibility, and reduce the possibility that an intermediary that only understands HTTP/1.1 will close the connection when receiving unrecognized HTTP/2 bytes, HTTP/2 is typically deployed over secure connections, using the TLS protocol to wrap HTTP/2.
+
+IMPORTANT: Browsers only support secure HTTP/2.
+
+The protocol negotiation is performed by the https://tools.ietf.org/html/rfc7301[ALPN TLS extension]: the client advertises the list of protocols it can speak, and the server communicates to the client the protocol chosen by the server.
+
+For example, you can have a client that only supports HTTP/1.1 and a server that supports both HTTP/1.1 and HTTP/2:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant "client\nsupports\nhttp/1.1" as client
+participant "server\nsupports\nhttp/1.1 & http/2" as server
+
+group TLS handshake
+client -> server : ClientHello (alpn=[http/1.1])
+server -> server : picks http/1.1
+server -> client : ServerHello (alpn=http/1.1)
+...rest of TLS handshake...
+end
+group TLS HTTP/1.1
+client -> server : HTTP/1.1 GET
+server -> client : HTTP/1.1 200
+end
+----
+
+Nowadays, it's common that both clients and servers support HTTP/2, so servers prefer HTTP/2 as the protocol to speak:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant "client\nsupports\nhttp/1.1 & http/2" as client
+participant "server\nsupports\nhttp/1.1 & http/2" as server
+
+group TLS handshake
+client -> server : ClientHello (alpn=[http/1.1,h2])
+server -> server : picks http/2
+server -> client : ServerHello (alpn=h2)
+...rest of TLS handshake...
+end
+group TLS HTTP/2
+client -> server : HTTP/2 GET
+server -> client : HTTP/2 200
+end
+----
+
+When you configure a connector with the HTTP/2 protocol, you typically want to also configure the HTTP/1.1 protocol.
+The reason to configure both protocols is that you typically do not control the clients: for example an old browser that does not support HTTP/2, or a monitoring console that performs requests using HTTP/1.1, or a heartbeat service that performs a single HTTP/1.0 request to verify that the server is alive.
+
+== Secure vs Clear-Text HTTP/2
+
+Deciding whether you want to configure Jetty with <<http2s,secure HTTP/2>> or <<http2c,clear-text HTTP/2>> depends on your use case.
+
+You want to configure secure HTTP/2 when Jetty is exposed directly to browsers, because browsers only support secure HTTP/2.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+rectangle browser
+cloud internet
+rectangle jetty
+
+jetty <--> internet : TLS+HTTP/2
+internet <--> browser : TLS+HTTP/2
+----
+
+You may configure clear-text HTTP/2 (mostly for performance reasons) if you offload TLS at a load balancer (for example, https://haproxy.org/[HAProxy]) or at a reverse proxy (for example, https://nginx.org/[nginx]).
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+rectangle browser
+cloud internet
+rectangle haproxy
+rectangle jetty
+
+note right of haproxy: TLS offload
+
+jetty <--> haproxy : HTTP/2 (clear-text)
+haproxy <--> internet : TLS+HTTP/2
+internet <--> browser : TLS+HTTP/2
+----
+
+You may configure clear-text HTTP/2 (mostly for performance reasons) to call microservices deployed to different Jetty servers (although you may want to use secure HTTP/2 for confidentiality reasons).
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+rectangle browser
+cloud internet
+rectangle haproxy
+rectangle jetty
+rectangle microservice1
+rectangle microservice2
+rectangle microservice3
+
+note right of haproxy: TLS offload
+
+internet <--> browser : TLS+HTTP/2
+haproxy <--> internet :  TLS+HTTP/2
+jetty <--> haproxy : HTTP/2 (clear-text)
+microservice1 <--> jetty : HTTP/2
+microservice2 <--> jetty : HTTP/2
+microservice3 <--> jetty : HTTP/2
+microservice2 <--> microservice3 : HTTP/2
+microservice1 <--> microservice3 : HTTP/2
+----
+
+[[http2s]]
+== Secure HTTP/2
+
+When you enable secure HTTP/2 you typically want to enable also secure HTTP/1.1, for backwards compatibility reasons: in this way, old browsers or other clients that do not support HTTP/2 will be able to connect to your server.
+
+You need to enable:
+
+* the `ssl` Jetty module, which provides the secure connector and the KeyStore and TLS configuration
+* the `http2` Jetty module, which adds ALPN handling and adds the HTTP/2 protocol to the secured connector
+* optionally, the `https` Jetty module, which adds the HTTP/1.1 protocol to the secured connector
+
+Use the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=ssl,http2,https
+----
+
+As when enabling the `https` Jetty module, you need a valid KeyStore (read xref:keystore/index.adoc[this section] to create your own KeyStore).
+
+As a quick example, you can enable the xref:modules/standard.adoc#test-keystore[`test-keystore` module], that creates on-the-fly a KeyStore containing a self-signed certificate:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
+----
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-modules=ssl,http2,https,test-keystore
+highlight=(\{.*:8443})
+....
+
+Note how Jetty is listening on port `8443` and the protocols supported are the sequence `(ssl, alpn, h2, http/1.1)`.
+
+The (ordered) list of protocols after `alpn` are the _application protocols_, in the example above `(h2, http/1.1)`.
+
+When a new connection is accepted by the connector, Jetty first interprets the TLS bytes, then it handles the ALPN negotiation knowing that the application protocols are (in order) `h2` and then `http/1.1`.
+
+You can customize the list of application protocols and the default protocol to use in case the ALPN negotiation fails by editing the xref:modules/standard.adoc#alpn[`alpn` module] properties.
+
+The HTTP/2 protocol parameters can be configured by editing the xref:modules/standard.adoc#http2[`http2` module] properties.
+
+[[http2c]]
+== Clear-Text HTTP/2
+
+When you enable clear-text HTTP/2 you typically want to enable also clear-text HTTP/1.1, for backwards compatibility reasons and to allow clients to https://tools.ietf.org/html/rfc7540#section-3.2[upgrade] from HTTP/1.1 to HTTP/2.
+
+You need to enable:
+
+* the `http` Jetty module, which provides the clear-text connector and adds the HTTP/1.1 protocol to the clear-text connector
+* the `http2c` Jetty module, which adds the HTTP/2 protocol to the clear-text connector
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,http2c
+----
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-modules=http,http2c
+highlight=(\{.+:8080})
+....
+
+Note how Jetty is listening on port `8080` and the protocols supported are HTTP/1.1 and `h2c` (i.e. clear-text HTTP/2).
+
+With this configuration, browsers and client applications will be able to connect to port `8080` using:
+
+* HTTP/1.1 directly (e.g. `curl --http1.1 ++http://localhost:8080++`):
+----
+GET / HTTP/1.1
+Host: localhost:8080
+----
+* HTTP/1.1 with upgrade to HTTP/2 (e.g. `curl --http2 ++http://localhost:8080++`):
+----
+GET / HTTP/1.1
+Host: localhost:8080
+Connection: Upgrade, HTTP2-Settings
+Upgrade: h2c
+HTTP2-Settings:
+----
+* HTTP/2 directly (e.g. `curl --http2-prior-knowledge ++http://localhost:8080++`):
+----
+50 52 49 20 2a 20 48 54 54 50 2f 32 2e 30 0d 0a
+0d 0a 53 4d 0d 0a 0d 0a 00 00 12 04 00 00 00 00
+00 00 03 00 00 00 64 00 04 40 00 00 00 00 02 00
+00 00 00 00 00 1e 01 05 00 00 00 01 82 84 86 41
+8a a0 e4 1d 13 9d 09 b8 f0 1e 07 7a 88 25 b6 50
+c3 ab b8 f2 e0 53 03 2a 2f 2a
+----
+
+The HTTP/2 protocol parameters can be configured by editing the xref:modules/standard.adoc#http2c[`http2c` module] properties.
+
+[[http3]]
+== HTTP/3
+
+When you enable support for the HTTP/3 protocol, by default the secure HTTP/2 protocol is also enabled, so that browsers or clients that do not support HTTP/3 will be able to connect to your server.
+
+You need to enable:
+
+* the `ssl` Jetty module, which provides the KeyStore and TLS configuration
+* the `http3` Jetty module, which adds the HTTP/3 protocol on the HTTP/3 connector
+
+Use the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=ssl,http3
+----
+
+Enabling any module Jetty module that supports secure network communication requires a valid KeyStore (read xref:keystore/index.adoc[this section] to create your own KeyStore), that, as a quick example, you can enable with the xref:modules/standard.adoc#test-keystore[`test-keystore` module], that creates on-the-fly a KeyStore containing a self-signed certificate:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
+----
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--approve-all-licenses --add-modules=ssl,http3,test-keystore
+highlight=(\{.*:8444})
+....
+
+Note how Jetty is listening on port `8443` for HTTP/2 and on port `8444` for HTTP/3.
+
+The HTTP/3 protocol parameters can be configured by editing the xref:modules/standard.adoc#http3[`http3` module] properties.
+
+[[ssl]]
+== Configuring Secure Protocols
+
+Secure protocols are normal protocols such as HTTP/1.1, HTTP/2 or WebSocket that are wrapped by the https://en.wikipedia.org/wiki/Transport_Layer_Security[TLS protocol].
+Any network protocol based on TCP can be wrapped with TLS.
+
+QUIC, the protocol based on UDP that transports HTTP/3, uses TLS messages but not the TLS protocol framing.
+
+The `https` scheme used in URIs really means `tls+http/1.1` (or `tls+http/2`, or `quic+http/3`) and similarly the `wss` scheme used in URIs really means `tls+websocket`, etc.
+Senders wrap the underlying protocol bytes (e.g. HTTP bytes or WebSocket bytes) with the TLS protocol, while receivers first interpret the TLS protocol to obtain the underlying protocol bytes, and then interpret the wrapped bytes.
+
+The xref:modules/standard.adoc#ssl[`ssl` Jetty module] allows you to configure a secure network connector; if other modules require encryption, they declare a dependency on the `ssl` module.
+
+It is the job of other Jetty modules to configure the wrapped protocol.
+For example, it is the <<https,`https` module>> that configures the wrapped protocol to be HTTP/1.1.
+Similarly, it is the <<http2,`http2` module>> that configures the wrapped protocol to be HTTP/2.
+If you enable _both_ the `https` and the `http2` module, you will have a single secure connector that will be able to interpret both HTTP/1.1 and HTTP/2.
+
+TIP: Recall from the xref:modules/index.adoc[section about modules], that only modules that are explicitly enabled get their module configuration file (`+*.ini+`) saved in `$JETTY_BASE/start.d/`, and you want `$JETTY_BASE/start.d/ssl.ini` to be present so that you can configure the connector properties, the KeyStore properties and the TLS properties.
+
+[[ssl-customize]]
+=== Customizing KeyStore and SSL/TLS Configuration
+
+Secure protocols have a slightly more complicated configuration since they require to configure a _KeyStore_.
+Refer to the xref:keystore/index.adoc[KeyStore section] for more information about how to create and manage a KeyStore.
+
+For simple cases, you only need to configure the KeyStore path and KeyStore password as explained in xref:modules/standard.adoc#ssl-keystore-tls[this section].
+
+For more advanced configuration you may want to configure the TLS protocol versions, or the ciphers to include/exclude, etc.
+The correct way of doing this is to create a custom xref:xml/index.adoc[Jetty XML file] and reference it in `$JETTY_BASE/start.d/ssl.ini`:
+
+.ssl.ini
+[source,subs=verbatim]
+----
+jetty.sslContext.keyStorePassword=my_passwd! <1>
+etc/tls-config.xml <2>
+----
+<1> Configures the `jetty.sslContext.keyStorePassword` property with the KeyStore password.
+<2> References your newly created `$JETTY_BASE/etc/tls-config.xml`.
+
+The `ssl.ini` file above only shows the lines that are not commented out (you can leave the lines that are commented unmodified for future reference).
+
+You want to create the `$JETTY_BASE/etc/tls-config.xml` with the following template content:
+
+.tls-config.xml
+[,xml,subs=verbatim]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Ref refid="sslContextFactory">
+    ... <1>
+  </Ref>
+</Configure>
+----
+<1> Here goes your advanced configuration.
+
+The `tls-config.xml` file references the `sslContextFactory` component (created by the `ssl` Jetty module) that configures the KeyStore and TLS parameters, so that you can now call its APIs via XML, and you will have full flexibility for any advanced configuration you want (see below for few examples).
+
+Refer to the link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.html[SslContextFactory javadocs] for the list of methods that you can call through the Jetty XML file.
+
+CAUTION: Use module properties whenever possible, and only resort to use a Jetty XML file for advanced configuration that you cannot do using module properties.
+
+[[ssl-customize-versions]]
+==== Customizing SSL/TLS Protocol Versions
+
+By default, the SSL protocols (SSL, SSLv2, SSLv3, etc.) are already excluded because they are vulnerable.
+To explicitly add the exclusion of TLSv1.0 and TLSv1.1 (that are also vulnerable -- which leaves only TLSv1.2 and TLSv1.3 available), you want to use this XML:
+
+.tls-config.xml
+[,xml]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Ref refid="sslContextFactory">
+    <Call name="addExcludeProtocols">
+      <Arg>
+        <Array type="String">
+          <Item>TLSv1.0</Item>
+          <Item>TLSv1.1</Item>
+        </Array>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>
+----
+
+[[ssl-customize-ciphers]]
+==== Customizing SSL/TLS Ciphers
+
+You can precisely set the list of excluded ciphers, completely overriding Jetty's default, with this XML:
+
+.tls-config.xml
+[,xml]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Ref refid="sslContextFactory">
+    <Set name="ExcludeCipherSuites">
+      <Array type="String">
+        <Item>^TLS_RSA_.*$</Item>
+        <Item>^.*_RSA_.*_(MD5|SHA|SHA1)$</Item>
+        <Item>^.*_DHE_RSA_.*$</Item>
+        <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
+        <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+        <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+        <Item>SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA</Item>
+      </Array>
+    </Set>
+  </Ref>
+</Configure>
+----
+
+Note how each array item specifies a _regular expression_ that matches multiple ciphers, or specifies a precise cipher to exclude.
+
+You can choose to create multiple XML files, and reference them all from `$JETTY_BASE/start.d/ssl.ini`, or put all your custom configurations in a single XML file.
+
+[[ssl-renew]]
+=== Renewing the Certificates
+
+When you create a certificate, you must specify for how many days it is valid.
+
+The typical validity is 90 days, and while this period may seem short, it has two advantages:
+
+* Reduces the risk in case of compromised/stolen keys.
+* Encourages automation, i.e. certificate renewal performed by automated tools (rather than manually) at scheduled times.
+
+To renew a certificate, you must go through the xref:keystore/index.adoc#create[same steps] you followed to create the certificate the first time, and then you can <<ssl-reload,reload the KeyStore>> without the need to stop Jetty.
+
+[[ssl-reload]]
+=== Watching and Reloading the KeyStore
+
+Jetty can be configured to monitor the directory of the KeyStore file, and reload the `SslContextFactory` component if the KeyStore file changed.
+
+This feature can be enabled by activating the `ssl-reload` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=ssl-reload
+----
+
+For more information about the configuration of the `ssl-reload` Jetty module, see xref:modules/standard.adoc#ssl-reload[this section].
+
+[[ssl-conscrypt]]
+=== Using Conscrypt as SSL/TLS Provider
+
+If not explicitly configured, the TLS implementation is provided by the JDK you are using at runtime.
+
+OpenJDK's vendors may replace the default TLS provider with their own, but you can also explicitly configure an alternative TLS provider.
+
+The standard TLS provider from OpenJDK is implemented in Java (no native code), and its performance is not optimal, both in CPU usage and memory usage.
+
+A faster alternative, implemented natively, is Google's https://github.com/google/conscrypt/[Conscrypt], which is built on https://boringssl.googlesource.com/boringssl/[BoringSSL], which is Google's fork of https://www.openssl.org/[OpenSSL].
+
+CAUTION: As Conscrypt eventually binds to a native library, there is a higher risk that a bug in Conscrypt or in the native library causes a JVM crash, while the Java implementation will not cause a JVM crash.
+
+To use Conscrypt as the TLS provider just enable the `conscrypt` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=conscrypt
+----
+
+[[ssl-sni]]
+=== Configuring SNI
+
+Server Name Indication (SNI) is a TLS extension that clients send to indicate what domain they want to connect to during the initial TLS handshake.
+
+Modern TLS clients (e.g. browsers) always send the SNI extension; however, older TLS clients may not send the SNI extension.
+
+Being able to handle the SNI is important when you have xref:deploy/index.adoc#virtual-hosts[virtual hosts] and a KeyStore with multiple certificates, one for each domain.
+
+For example, you may have deployed over a secure connector two web applications, both at context path `/`, one at virtual host `one.com` and one at virtual host `two.net`.
+The KeyStore contains two certificates, one for `one.com` and one for `two.net`.
+
+There are three `ssl` module properties that control the SNI behavior on the server: one that works at the TLS level, and two that works at the HTTP level.
+
+The property that works at the TLS level is:
+
+`jetty.sslContext.sniRequired`::
+Whether SNI is required at the TLS level, defaults to `false`.
+Its behavior is explained by the following table:
++
+.Behavior of the `jetty.sslContext.sniRequired` property
+[cols="3*a"]
+|===
+|
+| `sniRequired=false`
+| `sniRequired=true`
+
+| SNI = `null`
+| client receives default certificate
+| client receives TLS failure
+
+| SNI = `wrong.org`
+| client receives default certificate
+| client receives TLS failure
+
+| SNI = `one.com`
+| client receives `one.com` certificate
+| client receives `one.com` certificate
+|===
++
+[WARNING]
+====
+The _default certificate_ is the certificate returned by the TLS implementation in case there is no SNI match, and you should not rely on this certificate to be the same across Java vendors and versions, or Jetty versions, or TLS provider vendors and versions.
+
+In the example above it could be either the `one.com` certificate or the `two.net` certificate.
+====
+
+When `jetty.sslContext.sniRequired=true`, clients that don't send a valid SNI receive a TLS failure, and their attempt to connect to the server fails.
+The details of this failure may not be reported and could be difficult to figure out that the failure is related to an invalid SNI.
+
+For this reason, other two properties are defined at the HTTP level, so that clients can received an HTTP 400 response with more details about what went wrong while trying to connect to the server:
+
+`jetty.ssl.sniRequired`::
+Whether SNI is required at the HTTP level, defaults to `false`.
+Its behavior is similar to the `jetty.sslContext.sniRequired` property above, and is explained by the following table:
++
+.Behavior of the `jetty.ssl.sniRequired` property
+[cols=3*a]
+|===
+|
+| `sniRequired=false`
+| `sniRequired=true`
+
+| SNI = `null`
+| Accept
+| Reject: 400 Bad Request
+
+| SNI = `wrong.org`
+| Accept
+| Reject: 400 Bad Request
+
+| SNI = `one.com`
+| Accept
+| Accept
+|===
+
+When `jetty.ssl.sniRequired=true`, the SNI is matched against the certificate sent to the client, and only if there is a match the request is accepted.
+
+When the request is accepted, there could be an additional check controlled by the following property:
+
+`jetty.ssl.sniHostCheck`::
+Whether the certificate sent to the client matches the `Host` header, defaults to `true`.
+Its behavior is explained by the following table:
++
+.Behavior of the `jetty.ssl.sniHostCheck` property
+[cols="3*a"]
+|===
+|
+| `sniHostCheck=false`
+| `sniHostCheck=true`
+
+| certificate = `one.com` +
+`Host: wrong.org`
+| Accept
+| Reject: 400 Bad Request
+
+| certificate = `one.com` +
+`Host: one.com`
+| Accept
+| Accept
+|===
+
+In the normal case with the default server configuration, for a TLS clients that sends SNI, and then sends an HTTP request with the correct `Host` header, Jetty will pick the correct certificate from the KeyStore based on the SNI received from the client, and accept the request.
+
+Accepting the request does not mean that the request is responded with an HTTP 200 OK, but just that the request passed successfully the SNI checks and will be processed by the server.
+If the request URI is for a resource that does not exist, the response will likely be a 404 Not Found.
+
+You may modify the default values of the SNI properties if you want stricter control over old/broken TLS clients or bad HTTP requests.
+
+[[proxy]]
+== Jetty Behind a Load Balancer or Reverse Proxy
+
+You may need to configure one or more Jetty instances behind an _intermediary_, typically a load balancer such as https://haproxy.org[HAProxy], or a reverse proxy such as https://httpd.apache.org[Apache HTTP Server] or https://nginx.org[Nginx].
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam padding 5
+
+scale 1.5
+
+rectangle client
+rectangle proxy
+rectangle "Jetty" as jetty1
+rectangle "Jetty" as jetty2
+
+client -- proxy
+proxy -- jetty1
+proxy -- jetty2
+----
+
+[WARNING]
+====
+HAProxy can communicate either HTTP/1.1 or HTTP/2 to backend servers such as Jetty.
+
+Apache HTTP Server and Nginx can only speak HTTP/1.1 to backend servers such as Jetty, and have no plans to support HTTP/2 towards backend servers.
+====
+
+In these setups, typically the proxy performs TLS offloading, and the communication with backend servers happens in clear-text.
+It is possible, however, to configure the proxy so that all the bytes arriving from the client are tunnelled opaquely to the backend Jetty server (that therefore needs to perform the TLS offloading) and viceversa the bytes arriving from the Jetty server are tunnelled opaquely to the client.
+
+Also in these setups, the TCP/IP connection terminating on the Jetty servers does not originate from the client, but from the proxy, so that the remote IP address and port number may be reported incorrectly in backend server logs, or worse applications may not work because they need to be able to differentiate different clients based on the client IP address.
+
+For this reason, intermediaries typically implement at least one of several _de facto_ standards to communicate information about the original client connection to the backend Jetty server.
+
+Jetty supports two methods to process client information sent by intermediaries:
+
+* The `Forwarded` HTTP header, defined in https://tools.ietf.org/html/rfc7239[RFC 7239] and replacing the old `X-Forwarded-*` headers, defined in <<proxy-forwarded,this section>>.
+* The https://www.haproxy.org/download/2.2/doc/proxy-protocol.txt[Proxy Protocol], defined in <<proxy-protocol,this section>>.
+
+In both methods, web applications that call `HttpServletRequest.getRemoteAddr()` will receive the remote client IP address as specified by the client information sent by the intermediary, not the physical IP address of TCP connection with the intermediary.
+Likewise, `HttpServletRequest.getRemotePort()` will return the remote client IP port as specified by the client information sent by the intermediary, and `HttpServletRequest.isSecure()` will return whether the client made a secure request using the `https` scheme as specified by the client information sent by the intermediary.
+
+[[proxy-forwarded]]
+=== Configuring the Forwarded Header
+
+The `Forwarded` HTTP header is added by the intermediary with information about the client and the client request, for example:
+
+----
+GET / HTTP/1.1
+Host: domain.com
+Forwarded: for=2.36.72.144:21216;proto=https
+----
+
+In the example above, the intermediary added the `Forwarded` header specifying that the client remote address is `2.36.72.144:21216` and that the request was made with the `https` scheme.
+
+Let's assume you have already configured Jetty with the HTTP/1.1 protocol with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http
+----
+
+Support for the `Forwarded` HTTP header (and its predecessor `X-Forwarded-*` headers) is enabled with the `http-forwarded` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http-forwarded
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-module=http
+args=--add-module=http-forwarded
+....
+
+With the `http-forwarded` Jetty module enabled, Jetty interprets the `Forwarded` header and makes its information available to web applications via the standard Servlet APIs.
+
+For further information about configuring the `http-forwarded` Jetty module, see xref:modules/standard.adoc#http-forwarded[this section].
+
+[[proxy-protocol]]
+=== Configuring the Proxy Protocol
+
+The https://www.haproxy.org/download/2.2/doc/proxy-protocol.txt[Proxy Protocol] is the _de facto_ standard, introduced by https://haproxy.org[HAProxy], to communicate client information to backend servers via the TCP connection, rather than via HTTP headers.
+
+The information about the client connection is sent as a small data frame on each newly established connection.
+This mechanism is therefore independent of any protocol, so it can be used for TLS, HTTP/1.1, HTTP/2, etc.
+
+[NOTE]
+====
+There are 2 versions of the proxy protocol: v1 and v2, both supported by Jetty.
+
+Proxy protocol v1 is human readable, but it only carries information about the client TCP connection (IP address and IP port).
+
+Proxy protocol v2 has a binary format, carries the information about the client TCP connection, and can carry additional arbitrary information encoded in pairs `(type, value)` where `type` is a single byte that indicates the value's meaning, and `value` is a variable length byte array that can encode user-defined data.
+====
+
+Support for the proxy protocol can be enabled for the clear-text connector or for the secure connector (or both).
+
+Let's assume you have already configured Jetty with the HTTP/1.1 clear-text protocol with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=http
+----
+
+To enable proxy protocol support for the clear-text connector, enable the `proxy-protocol` Jetty module:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=proxy-protocol
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-module=http
+args=--add-module=proxy-protocol
+....
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[jetty%nowrap]
+....
+[jetty]
+args=--module=proxy-protocol
+highlight=(\{.*:8080})
+....
+
+Note how in the example above the list of protocols for the clear-text connector is first `proxy` and then `http/1.1`.
+For every new TCP connection, Jetty first interprets the proxy protocol bytes with the client information; after this initial proxy protocol processing, Jetty interprets the incoming bytes as HTTP/1.1 bytes.
+
+Enabling proxy protocol support for the secure connector is similar.
+
+Let's assume you have already configured Jetty with the HTTP/1.1 secure protocol and the test KeyStore with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=https,test-keystore
+----
+
+Enable the `proxy-protocol-ssl` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=proxy-protocol-ssl
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-module=https
+args=--add-module=proxy-protocol-ssl
+....
+
+Starting Jetty yields:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-modules=https,test-keystore,proxy-protocol-ssl
+highlight=(\{.*:8443})
+....
+
+Note how in the example above the list of protocols for the secure connector is first `proxy`, then `ssl` and then `http/1.1`.
+
+[[proxy-haproxy]]
+=== HAProxy and Jetty with HTTP/1.1 and HTTP/2
+
+https://haproxy.org[HAProxy] is an open source solution that offers load balancing and proxying for TCP and HTTP based application, and can be used as a replacement for Apache or Nginx when these are used as reverse proxies.
+
+The deployment proposed here has HAProxy playing the role that Apache and Nginx usually do: to perform the TLS offloading (that is, decrypt incoming bytes and encrypt outgoing bytes) and then forwarding the now clear-text traffic to a backend Jetty server, speaking either HTTP/1.1 or HTTP/2.
+Since HAProxy's TLS offloading is based on OpenSSL, it is much more efficient than the Java implementation shipped with OpenJDK.
+
+After you have installed HAProxy on your system, you want to configure it so that it can perform TLS offloading.
+
+HAProxy will need a single file containing the X509 certificates and the private key, all in https://en.wikipedia.org/wiki/X.509[PEM format], with the following order:
+
+1.  The site certificate; this certificate's Common Name refers to the site domain (for example: CN=*.webtide.com) and is signed by Certificate Authority #1.
+2.  The Certificate Authority #1 certificate; this certificate may be signed by Certificate Authority #2.
+3.  The Certificate Authority #2 certificate; this certificate may be signed by Certificate Authority #3; and so on until the Root Certificate Authority.
+4.  The Root Certificate Authority certificate.
+5.  The private key corresponding to the site certificate.
+
+Refer to the xref:keystore/index.adoc[section about KeyStores] for more information about generating the required certificates and private key.
+
+Now you can create the HAProxy configuration file (in Linux it's typically `/etc/haproxy/haproxy.cfg`).
+This is a minimal configuration:
+
+.haproxy.cfg
+[source,subs=verbatim]
+----
+global
+tune.ssl.default-dh-param 1024
+
+defaults
+timeout connect 10000ms
+timeout client 60000ms
+timeout server 60000ms
+
+frontend fe_http <1>
+mode http
+bind *:80
+# Redirect to https
+redirect scheme https code 301
+
+frontend fe_https <2>
+mode tcp
+bind *:443 ssl no-sslv3 crt /path/to/domain.pem ciphers TLSv1.2 alpn h2,http/1.1
+default_backend be_http
+
+backend be_http <3>
+mode tcp
+server domain 127.0.0.1:8282 send-proxy-v2
+----
+<1> The `fe_http` front-end accepts connections on port 80 and redirects them to use the `https` scheme.
+<2> The `fe_https` front-end accepts connections on port 443, and it is where the TLS decryption/encryption happens.
+You must specify the path to the PEM file containing the TLS key material (the `crt /path/to/domain.pem` part), the ciphers that are suitable for HTTP/2 (`ciphers TLSv1.2`), and the ALPN protocols supported (`alpn h2,http/1.1`).
+This front-end then forwards the now decrypted bytes to the backend in `mode tcp`.
+The `mode tcp` says that HAProxy will not try to interpret the bytes but instead opaquely forwards them to the backend.
+<3> The `be_http` backend will forward (again in `mode tcp`) the clear-text bytes to a Jetty connector that talks clear-text HTTP/2 and HTTP/1.1 on port 8282.
+The `send-proxy-v2` directive sends the proxy protocol v2 bytes to the backend server.
+
+On the Jetty side, you need to enable the following modules:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=proxy-protocol,http2c,http,deploy
+----
+
+You need to specify the host (`127.0.0.1`) and port (`8282`) you have configured in HAProxy when you start Jetty:
+
+----
+$ java -jar $JETTY_HOME/start.jar jetty.http.host=127.0.0.1 jetty.http.port=8282
+----
+
+[NOTE]
+====
+You want the Jetty connector that listens on port `8282` to be available only to HAProxy, and not to remote clients.
+
+For this reason, you want to specify the `jetty.http.host` property on the command line (or in `$JETTY_BASE/start.d/http.ini` to make this setting persistent) to bind the Jetty connector only on the loopback interface (`127.0.0.1`), making it available to HAProxy but not to remote clients.
+
+If your Jetty instance runs on a different machine and/or on a different (sub)network, you may want to adjust both the back-end section of the HAProxy configuration file and the `jetty.http.host` property to match accordingly.
+====
+
+With this configuration for HAProxy and Jetty, browsers supporting HTTP/2 will connect to HAProxy, which will decrypt the traffic and send it to Jetty.
+Likewise, HTTP/1.1 clients will connect to HAProxy, which will decrypt the traffic and send it to Jetty.
+
+The Jetty connector, configured with the `http2c` and the `http` modules is able to distinguish whether the incoming bytes are HTTP/2 or HTTP/1.1 and will handle the request accordingly.
+
+The response is relayed back to HAProxy, which will encrypt it and send it back to the remote client.
+
+This configuration offers you efficient TLS offloading, HTTP/2 support and transparent fallback to HTTP/1.1 for clients that don't support HTTP/1.1.
+
+[[websocket]]
+== WebSocket
+
+WebSocket is a network protocol for bidirectional data communication initiated via the https://tools.ietf.org/html/rfc7230#section-6.7[HTTP/1.1 upgrade mechanism].
+WebSocket provides a simple, low-level, framing protocol layered over TCP.
+One or more WebSocket frames compose a WebSocket _message_ that is either a UTF-8 _text_ message or _binary_ message.
+
+Jetty provides an implementation of the following standards and specifications.
+
+http://tools.ietf.org/html/rfc6455[RFC-6455] - The WebSocket Protocol::
+Jetty supports version 13 of the released and final specification.
+
+http://www.jcp.org/en/jsr/detail?id=356[JSR-356] - The Java WebSocket API (`javax.websocket`)::
+This is the official Java API for working with WebSockets.
+
+https://tools.ietf.org/html/rfc7692[RFC-7692] - WebSocket Per-Message Deflate Extension::
+This is the replacement for perframe-compression, switching the compression to being based on the entire message, not the individual frames.
+
+https://tools.ietf.org/html/rfc8441[RFC-8441] - Bootstrapping WebSockets with HTTP/2::
+Allows a single stream of an HTTP/2 connection to be upgraded to WebSocket.
+This allows one TCP connection to be shared by both protocols and extends HTTP/2's more efficient use of the network to WebSockets.
+
+[[websocket-configure]]
+=== Configuring WebSocket
+
+Jetty provides two WebSocket implementations: one based on the Java WebSocket APIs defined by JSR 356, provided by module `websocket-javax`, and one based on Jetty specific WebSocket APIs, provided by module `websocket-jetty`.
+The Jetty `websocket` module enables both implementations, but each implementation can be enabled independently.
+
+NOTE: Remember that a WebSocket connection is always initiated from the HTTP protocol (either an HTTP/1.1 upgrade or an HTTP/2 connect), therefore to enable WebSocket you need to enable HTTP.
+
+To enable WebSocket support, you also need to decide what version of the HTTP protocol you want WebSocket to be initiated from, and whether you want secure HTTP.
+
+For example, to enable clear-text WebSocket from HTTP/1.1, use the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,websocket
+----
+
+To enable secure WebSocket from HTTP/2, use the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http2,websocket
+----
+
+When enabling secure protocols you need a valid KeyStore (read xref:keystore/index.adoc[this section] to create your own KeyStore).
+As a quick example, you can enable the xref:modules/standard.adoc#test-keystore[`test-keystore` module], that creates on-the-fly a KeyStore containing a self-signed certificate:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=test-keystore
+----
+
+To enable WebSocket on both HTTP/1.1 and HTTP/2, both clear-text and secure, use the following command (issued from within the `$JETTY_BASE` directory):
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,https,http2c,http2,websocket
+----
+
+[[websocket-disable]]
+=== Selectively Disabling WebSocket
+
+Enabling the WebSocket Jetty modules comes with a startup cost because Jetty must perform two steps:
+
+. Scan web applications `+*.war+` files (and all the jars and classes inside it) looking for WebSocket EndPoints classes (either annotated with WebSocket API annotations or extending/implementing WebSocket API classes/interfaces).
+This can be a significant cost if your web application contains a lot of classes and/or jar files.
+
+. Configure and wire WebSocket EndPoints so that WebSocket messages are delivered to the correspondent WebSocket EndPoint.
+
+WebSocket support is by default enabled for all web applications.
+
+For a specific web application, you can disable step 2 for Java WebSocket support (i.e. when the `websocket-javax` module is enabled) by setting the context attribute `org.eclipse.jetty.websocket.javax` to `false`:
+
+[,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+  <!-- Disable Javax WebSocket -->
+  <context-param>
+    <param-name>org.eclipse.jetty.websocket.javax</param-name>
+    <param-value>false</param-value>
+  </context-param>
+
+  ...
+
+</web-app>
+----
+
+Furthermore, for a specific web application, you can disable step 1 (and therefore also step 2) as described in the xref:annotations/index.adoc[annotations processing section].
+
+[[websocket-webapp-client]]
+=== Using WebSocket Client in WebApps
+
+Web applications may need to use a WebSocket client to communicate with third party WebSocket services.
+
+If the web application uses the Java WebSocket APIs, the WebSocket client APIs are provided by the Servlet Container and are available to the web application by enabling the WebSocket server APIs, and therefore you must enable the `websocket-javax` Jetty module.
+
+However, the Java WebSocket Client APIs are quite limited (for example, they do not support secure WebSocket).
+For this reason, web applications may want to use the Jetty WebSocket Client APIs.
+
+When using the Jetty WebSocket Client APIs, web applications should include the required jars and their dependencies in the `WEB-INF/lib` directory of the `+*.war+` file.
+Alternatively, when deploying your web applications in Jetty, you can enable the `websocket-jetty-client` Jetty module to allow web applications to use the Jetty WebSocket Client APIs provided by Jetty, without the need to include jars and their dependencies in the `+*.war+` file.
