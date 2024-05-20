@@ -85,6 +85,7 @@ import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
+import org.eclipse.jetty.server.handler.StateTrackingHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
@@ -1533,6 +1534,33 @@ public class HTTPServerDocs
         // The allowed origins are regex patterns.
         crossOriginHandler.setAllowedOriginPatterns(Set.of("http://domain\\.com"));
         // end::crossOriginAllowedOrigins[]
+    }
+
+    public void stateTrackingHandle()
+    {
+        // tag::stateTrackingHandle[]
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler();
+
+        // Emit an event if the Handler callback is not completed with 5 seconds.
+        stateTrackingHandler.setHandlerCallbackTimeout(5000);
+        // end::stateTrackingHandle[]
+    }
+
+    public void stateTrackingListener()
+    {
+        // tag::stateTrackingListener[]
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(new StateTrackingHandler.Listener()
+        {
+            @Override
+            public void onHandlerCallbackNotCompleted(Request request, StateTrackingHandler.ThreadInfo handlerThreadInfo)
+            {
+                // Your own event handling logic.
+            }
+        });
+
+        // Emit an event if the Handler callback is not completed with 5 seconds.
+        stateTrackingHandler.setHandlerCallbackTimeout(5000);
+        // end::stateTrackingListener[]
     }
 
     public void defaultHandler() throws Exception
