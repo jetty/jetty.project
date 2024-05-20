@@ -319,6 +319,20 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
+    public ByteBuffer takeContentAndClose()
+    {
+        try (AutoLock l = _channelState.lock())
+        {
+            if (_state != State.OPEN)
+                throw new IllegalStateException(stateString());
+            // TODO avoid this copy.
+            ByteBuffer content = _aggregate != null && _aggregate.hasRemaining() ? BufferUtil.copy(_aggregate.getByteBuffer()) : BufferUtil.EMPTY_BUFFER;
+            _state = State.CLOSED;
+            releaseBuffer();
+            return content;
+        }
+    }
+
     /**
      * This method is invoked for the COMPLETE action handling in
      * HttpChannel.handle.  The callback passed typically will call completed

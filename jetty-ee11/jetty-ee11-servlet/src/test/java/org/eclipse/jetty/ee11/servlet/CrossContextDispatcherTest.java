@@ -65,8 +65,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -81,7 +79,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CrossContextDispatcherTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CrossContextDispatcherTest.class);
     public static final String MULTIPART = "--AaB03x\r\n" +
         "content-disposition: form-data; name=\"field1\"\r\n" +
         "\r\n" +
@@ -99,10 +96,6 @@ public class CrossContextDispatcherTest
         "Connection: close\r\n";
 
     public static final String GET_INCLUDE = "GET /context/dispatch/?include=/reader HTTP/1.1\r\n";
-    public static final String MULTIPART_INCLUDE_REQUEST = GET_INCLUDE +
-        MULTIPART_HEADERS +
-        "\r\n" +
-        MULTIPART;
 
     public static final String GET_FORWARD = "GET /context/dispatch/?forward=/reader HTTP/1.1\r\n";
 
