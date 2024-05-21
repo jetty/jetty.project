@@ -68,7 +68,7 @@
             <phase>package</phase>
             <configuration>
               <descriptors>
-                <descriptor>src/main/assembly/web-bundle.xml</descriptor>
+                <descriptor>src/main/assembly/web-bundle-ee8.xml</descriptor>
               </descriptors>
               <archive>
                 <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>

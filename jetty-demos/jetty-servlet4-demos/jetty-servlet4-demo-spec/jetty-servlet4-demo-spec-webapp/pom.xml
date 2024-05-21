@@ -62,7 +62,7 @@
             <Export-Package>org.example.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";-noimport:=true</Export-Package>
             <Web-ContextPath>/</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes,WEB-INF/lib</Bundle-ClassPath>
-            <Jetty-ContextFilePath>META-INF/plugin-context.xml</Jetty-ContextFilePath>
+            <Jetty-ContextFilePath>META-INF/ee8-plugin-context.xml</Jetty-ContextFilePath>
             <Jetty-Environment>ee8</Jetty-Environment>
           </instructions>
         </configuration>
@@ -79,7 +79,7 @@
             <phase>package</phase>
             <configuration>
               <descriptors>
-                <descriptor>src/main/assembly/web-bundle.xml</descriptor>
+                <descriptor>src/main/assembly/web-bundle-ee8.xml</descriptor>
               </descriptors>
               <archive>
                 <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
@@ -169,12 +169,15 @@
                   <filtering>true</filtering>
                   <directory>${ee9.module.path}/src/main/templates</directory>
                 </resource>
+                <resource>
+                  <filtering>false</filtering>
+                  <directory>src/main/templates</directory>
+                </resource>
               </resources>
             </configuration>
           </execution>
         </executions>
       </plugin>
-      <!-- also make this webapp an osgi bundle -->
       <plugin>
         <artifactId>maven-war-plugin</artifactId>
         <configuration>
@@ -185,7 +188,7 @@
             <resource>
               <directory>target/templates</directory>
               <includes>
-                <include>plugin-context.xml</include>
+                <include>**/*.xml</include>
               </includes>
               <targetPath>META-INF</targetPath>
             </resource>

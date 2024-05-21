@@ -153,6 +153,10 @@
                   <filtering>true</filtering>
                   <directory>${ee9.module.path}/src/main/webapp</directory>
                 </resource>
+                <resource>
+                  <filtering>false</filtering>
+                  <directory>src/main/webapp</directory>
+                </resource>
               </resources>
             </configuration>
           </execution>
