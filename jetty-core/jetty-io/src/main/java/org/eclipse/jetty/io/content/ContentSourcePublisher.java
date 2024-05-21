@@ -16,7 +16,6 @@ package org.eclipse.jetty.io.content;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Flow;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -40,15 +39,13 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContentSourcePublisher.class);
 
-    private final AtomicBoolean exhausted;
-    private Content.Source content;
+    private final AtomicReference<Content.Source> content;
 
     public ContentSourcePublisher(Content.Source content)
     {
         if (content == null)
             throw new IllegalArgumentException("Content.Source must not be null");
-        this.exhausted = new AtomicBoolean(false);
-        this.content = content;
+        this.content = new AtomicReference<>(content);
     }
 
     @Override
@@ -57,28 +54,24 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         // As per rule 1.11, we have decided to support SINGLE subscriber
         // in a UNICAST configuration for this implementation. It means
         // that Content.Source can be consumed only once.
-        if (this.exhausted.compareAndSet(false, true))
-            subscribeActive(subscriber);
+        Content.Source content = this.content.getAndSet(null);
+        if (content != null)
+            onSubscribe(subscriber, content);
         else
-            subscribeExhausted(subscriber);
+            onMultiSubscribe(subscriber);
     }
 
-    private void subscribeActive(Flow.Subscriber<? super Content.Chunk> subscriber)
+    private void onSubscribe(Flow.Subscriber<? super Content.Chunk> subscriber, Content.Source content)
     {
         // As per rule 1.9, we need to throw a `java.lang.NullPointerException`
         // if the `Subscriber` is `null`
         if (subscriber == null)
         {
             NullPointerException error = new NullPointerException("Flow.Subscriber must not be null");
-            // fail Source.Content and drop the reference to avoid resource leaks
-            this.content.fail(error);
-            this.content = null;
+            content.fail(error);
             throw error;
         }
-        // As per rule 3.13, do not hold the reference to future exhausted Content.Source
-        LastWillSubscription subscription = new ActiveSubscription(this.content, subscriber);
-        this.content = null;
-
+        LastWillSubscription subscription = new ActiveSubscription(content, subscriber);
         // As per rule 1.9, this method must return normally (i.e. not throw).
         try
         {
@@ -93,7 +86,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         }
     }
 
-    private void subscribeExhausted(Flow.Subscriber<? super Content.Chunk> subscriber)
+    private void onMultiSubscribe(Flow.Subscriber<? super Content.Chunk> subscriber)
     {
         // As per rule 1.9, we need to throw a `java.lang.NullPointerException`
         // if the `Subscriber` is `null`
