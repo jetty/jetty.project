@@ -147,6 +147,7 @@ public interface Response
          * Callback method invoked when the response content has been received, parsed and there is demand.
          * This method may be invoked multiple times, and the {@code content} buffer
          * must be consumed (or copied) before returning from this method.
+         * This method is also always invoked when content arrives as demand is automatically registered on return.
          *
          * @param response the response containing the response line data and the headers
          * @param content the content bytes received
@@ -171,13 +172,15 @@ public interface Response
     {
         /**
          * Callback method invoked when the response content has been received, parsed and there is demand.
+         * The {@code chunk} must be consumed, copied, or retained before returning from this method as
+         * it is then automatically released.
          * The {@code demander} must be run before this method may be invoked again.
          *
          * @param response the response containing the response line data and the headers
          * @param chunk the chunk received
          * @param demander the runnable to be run to demand the next chunk
          * @throws Exception an uncaught exception will abort the response, release the chunk and fail the content source
-         * from which the chunk was returned from
+         * from which the chunk was read from
          */
         void onContent(Response response, Content.Chunk chunk, Runnable demander) throws Exception;
 
