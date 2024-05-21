@@ -21,7 +21,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 
 public class PrefaceGenerator extends FrameGenerator
 {
-    private static final RetainableByteBuffer PREFACE = RetainableByteBuffer.wrap(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES));
+    private static final ByteBuffer PREFACE = ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES);
 
     public PrefaceGenerator()
     {
@@ -31,7 +31,7 @@ public class PrefaceGenerator extends FrameGenerator
     @Override
     public int generate(RetainableByteBuffer.Mutable accumulator, Frame frame)
     {
-        accumulator.append(PREFACE.slice());
+        accumulator.add(PREFACE.slice());
         return PREFACE.remaining();
     }
 }

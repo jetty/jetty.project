@@ -663,14 +663,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      * <p>A variant of {@link ArrayByteBufferPool} that tracks buffer
      * acquires/releases, useful to identify buffer leaks.</p>
      * <p>Use {@link #getLeaks()} when the system is idle to get
-     * the {@link Buffer}s that have been leaked, which contain
+     * the {@link TrackedBuffer}s that have been leaked, which contain
      * the stack trace information of where the buffer was acquired.</p>
      */
     public static class Tracking extends ArrayByteBufferPool
     {
         private static final Logger LOG = LoggerFactory.getLogger(Tracking.class);
 
-        private final Set<Buffer> buffers = ConcurrentHashMap.newKeySet();
+        private final Set<TrackedBuffer> buffers = ConcurrentHashMap.newKeySet();
 
         public Tracking()
         {
@@ -701,14 +701,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public RetainableByteBuffer acquire(int size, boolean direct)
         {
             RetainableByteBuffer buffer = super.acquire(size, direct);
-            Buffer wrapper = new Buffer(buffer, size);
+            TrackedBuffer wrapper = new TrackedBuffer(buffer, size);
             if (LOG.isDebugEnabled())
                 LOG.debug("acquired {}", wrapper);
             buffers.add(wrapper);
             return wrapper;
         }
 
-        public Set<Buffer> getLeaks()
+        public Set<TrackedBuffer> getLeaks()
         {
             return buffers;
         }
@@ -716,11 +716,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public String dumpLeaks()
         {
             return getLeaks().stream()
-                .map(Buffer::dump)
+                .map(TrackedBuffer::dump)
                 .collect(Collectors.joining(System.lineSeparator()));
         }
 
-        public class Buffer extends RetainableByteBuffer.FixedCapacity
+        public class TrackedBuffer extends RetainableByteBuffer.FixedCapacity
         {
             private final int size;
             private final Instant acquireInstant;
@@ -729,7 +729,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             private final List<Throwable> releaseStacks = new CopyOnWriteArrayList<>();
             private final List<Throwable> overReleaseStacks = new CopyOnWriteArrayList<>();
 
-            private Buffer(RetainableByteBuffer wrapped, int size)
+            private TrackedBuffer(RetainableByteBuffer wrapped, int size)
             {
                 super(wrapped.getByteBuffer(), wrapped);
                 this.size = size;
@@ -761,7 +761,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     @Override
                     public boolean release()
                     {
-                        return Buffer.this.release();
+                        return TrackedBuffer.this.release();
                     }
                 };
             }
@@ -775,7 +775,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     @Override
                     public boolean release()
                     {
-                        return Buffer.this.release();
+                        return TrackedBuffer.this.release();
                     }
                 };
             }
@@ -808,6 +808,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     overReleaseStacks.add(new Throwable(Thread.currentThread().getName()));
                     throw e;
                 }
+            }
+
+            @Override
+            protected void addExtraStringInfo(StringBuilder builder)
+            {
+                builder.append(",@");
+                builder.append(Integer.toHexString(System.identityHashCode(getWrapped())));
             }
 
             public String dump()

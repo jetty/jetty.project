@@ -385,32 +385,60 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Take the contents of this buffer, after skipping some bytes, which remain in this buffer.
-     * This is equivalent to {@link #slice()}.{@link #skip(long)}.{@link #copy()}, but can be implemented more efficiently.
-     * @param skip The of bytes to skip before taking the contents
+     * Take the contents of this buffer, from the head, leaving remaining bytes in this buffer.
+     * This is similar to {@link #slice(long)} followed by a {@link #skip(long)}, but avoids shared data.
+     * @param length The number of bytes to take
+     * @return A buffer with the contents of this buffer after limiting bytes, avoiding copies if possible,
+     * but with no shared internal buffers.
+     */
+    default RetainableByteBuffer take(long length)
+    {
+        if (isEmpty() || length == 0)
+            return EMPTY;
+
+        RetainableByteBuffer slice = slice(length);
+        skip(length);
+        if (slice.isRetained())
+        {
+            RetainableByteBuffer copy = slice.copy();
+            slice.release();
+            return copy;
+        }
+        return slice;
+    }
+
+    /**
+     * Take the contents of this buffer, from the tail, leaving remaining bytes in this buffer.
+     * @param skip The number of bytes to skip before taking the tail.
      * @return A buffer with the contents of this buffer after skipping bytes, avoiding copies if possible,
      * but with no shared internal buffers.
      */
-    default RetainableByteBuffer take(long skip)
+    default RetainableByteBuffer takeFrom(long skip)
     {
-        if (skip > size())
-            throw new IllegalArgumentException("%d > %d".formatted(skip, size()));
+        if (isEmpty() || skip > size())
+            return EMPTY;
+
         RetainableByteBuffer slice = slice();
-        limit(skip);
         slice.skip(skip);
-        RetainableByteBuffer copy = slice.copy();
-        slice.release();
-        return copy;
+        limit(skip);
+        if (slice.isRetained())
+        {
+            RetainableByteBuffer copy = slice.copy();
+            slice.release();
+            return copy;
+        }
+        return slice;
     }
 
     /**
      * Take the contents of this buffer, leaving it clear.
      * @return A buffer with the contents of this buffer, avoiding copies if possible.
      * @see #take(long)
+     * @see #takeFrom(long)
      */
     default RetainableByteBuffer take()
     {
-        return take(0);
+        return take(Long.MAX_VALUE);
     }
 
     /**
@@ -886,6 +914,8 @@ public interface RetainableByteBuffer extends Retainable
                 builder.append("-");
             else
                 builder.append(maxSize());
+            builder.append(",d=");
+            builder.append(isDirect());
             addExtraStringInfo(builder);
             builder.append(",r=");
             builder.append(getRetained());
@@ -1473,14 +1503,59 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public RetainableByteBuffer take(long skip)
+        public RetainableByteBuffer take(long length)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("take {} {}", this, length);
+
+            if (_buffers.isEmpty() || length == 0)
+                return RetainableByteBuffer.EMPTY;
+
+            List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
+            _aggregate = null;
+
+            for (ListIterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
+            {
+                RetainableByteBuffer buffer = i.next();
+
+                long size = buffer.size();
+                if (length >= size)
+                {
+                    // take the buffer
+                    length -= size;
+                    buffers.add(buffer);
+                    i.remove();
+                    if (length == 0)
+                        break;
+                }
+                else
+                {
+                    // if the length to take is more than half the buffer
+                    if (length > (buffer.size() / 2) || buffer.isRetained())
+                    {
+                        // slice off the tail and take the buffer itself
+                        RetainableByteBuffer tail = buffer.takeFrom(length);
+                        buffers.add(buffer);
+                        i.set(tail);
+                    }
+                    else
+                    {
+                        // take the head of the buffer, but leave the buffer itself
+                        buffers.add(buffer.take(length));
+                    }
+                    break;
+                }
+            }
+            return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
+        }
+
+        @Override
+        public RetainableByteBuffer takeFrom(long skip)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("take {} {}", this, skip);
-            if (skip > size())
-                throw new IndexOutOfBoundsException();
 
-            if (_buffers.isEmpty())
+            if (_buffers.isEmpty() || skip > size())
                 return RetainableByteBuffer.EMPTY;
 
             List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
@@ -1493,41 +1568,26 @@ public interface RetainableByteBuffer extends Retainable
                 long size = buffer.size();
                 if (skip >= size)
                 {
-                    // the sub buffer stays with this RBB
+                    // leave this buffer
                     skip -= size;
                 }
                 else if (skip == 0)
                 {
-                    // the sub buffer is added to the new RBB
+                    buffers.add(buffer);
                     i.remove();
-                    // if it is retained, we have to copy it
-                    if (buffer.isRetained())
-                    {
-                        buffers.add(buffer.copy());
-                        buffer.release();
-                    }
-                    else
-                    {
-                        // transfer it
-                        buffers.add(buffer);
-                    }
                 }
                 else
                 {
-                    // the sub buffer is split between this RBB and the new RBB
+                    // if the length to leave is more than half the buffer
                     if (skip > (buffer.size() / 2) || buffer.isRetained())
                     {
-                        // copy the tail of the buffer into the new RBB
-                        buffers.add(buffer.take(skip));
+                        // take from the tail of the buffer and leave the buffer itself
+                        buffers.add(buffer.takeFrom(skip));
                     }
                     else
                     {
-                        // copy the head of the buffer and keep in this RBB, add the original buffer to the new RBB
-                        RetainableByteBuffer slice = buffer.slice();
-                        slice.limit(skip);
-                        i.set(slice.copy());
-                        slice.release();
-                        buffer.skip(skip);
+                        // leave the head taken from the buffer and take the buffer itself
+                        i.set(buffer.take(skip));
                         buffers.add(buffer);
                     }
                     skip = 0;
@@ -1703,7 +1763,7 @@ public interface RetainableByteBuffer extends Retainable
                 }
                 else if (limit < size)
                 {
-                    buffer.asMutable().limit(limit);
+                    buffer.limit(limit);
                     limit = 0;
                 }
                 else
@@ -1751,21 +1811,7 @@ public interface RetainableByteBuffer extends Retainable
 
         private Mutable newSlice(List<RetainableByteBuffer> buffers)
         {
-            retain();
-            Mutable parent = this;
-            return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize)
-            {
-                @Override
-                public boolean release()
-                {
-                    if (super.release())
-                    {
-                        parent.release();
-                        return true;
-                    }
-                    return false;
-                }
-            };
+            return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
         }
 
         @Override

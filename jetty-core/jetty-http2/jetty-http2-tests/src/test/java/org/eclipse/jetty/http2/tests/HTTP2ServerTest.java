@@ -462,7 +462,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             accumulator.put(offset + 2, (byte)0x00);
 
             // Take the body of the headers frame and all following frames
-            RetainableByteBuffer remainder = accumulator.take(offset + 9);
+            RetainableByteBuffer remainder = accumulator.takeFrom(offset + 9);
 
             // Copy the continuation frame after the first payload.
             for (int i = 0; i < 9; i++)
@@ -496,8 +496,8 @@ public class HTTP2ServerTest extends AbstractServerTest
                 .put(offset + 1, (byte)0x00)
                 .put(offset + 2, (byte)PriorityFrame.PRIORITY_LENGTH);
 
-            // Take the body of the headers frame and all following frames
-            RetainableByteBuffer remainder = accumulator.take(offset + 9 + PriorityFrame.PRIORITY_LENGTH);
+            // take the body of the headers frame and all following frames
+            RetainableByteBuffer remainder = accumulator.takeFrom(offset + 9 + PriorityFrame.PRIORITY_LENGTH);
 
             // Copy the continuation frame after the first payload.
             for (int i = 0; i < 9; i++)
@@ -508,62 +508,6 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             return accumulator;
         });
-    }
-
-    @Test
-    public void testDemoRBB() throws Exception
-    {
-        startServer(new ServerSessionListener() {});
-        // RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, false, -1, -1, 0);
-        RetainableByteBuffer.Mutable accumulator = bufferPool.acquire(8 * 1024, false).asMutable();
-        generator.control(accumulator, new PrefaceFrame());
-        long settings = accumulator.size();
-        generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-        generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
-
-        System.err.println("--");
-        System.err.println(accumulator.toDetailString());
-
-        RetainableByteBuffer taken = accumulator.take(settings);
-        System.err.println("-- take after settings");
-        System.err.println(accumulator.toDetailString());
-        System.err.println(taken.toDetailString());
-
-        RetainableByteBuffer headersHeader = taken;
-        taken = taken.take(9);
-        System.err.println("-- take headers header");
-        System.err.println(accumulator.toDetailString());
-        System.err.println(headersHeader.toDetailString());
-        System.err.println(taken.toDetailString());
-
-        RetainableByteBuffer last = taken.take(taken.size() - 4);
-
-        System.err.println("-- take last, make fake");
-        System.err.println(accumulator.toDetailString());
-        System.err.println(headersHeader.toDetailString());
-        System.err.println(taken.toDetailString());
-        System.err.println(last.toDetailString());
-
-        RetainableByteBuffer fakeContinuation = headersHeader.copy().asMutable()
-            .put(0, (byte)0).put(1, (byte)0x01).put(2, (byte)0xff);
-        System.err.println(fakeContinuation.toDetailString());
-
-        accumulator.add(headersHeader).add(taken).add(last).add(fakeContinuation);
-        System.err.println("-- add parts");
-        System.err.println(accumulator.toDetailString());
-        System.err.println(headersHeader.toDetailString());
-        System.err.println(taken.toDetailString());
-        System.err.println(last.toDetailString());
-        System.err.println(fakeContinuation.toDetailString());
-
-        accumulator.release();
-        System.err.println("-- accumulator.release");
-        System.err.println(accumulator.toDetailString());
-        System.err.println(headersHeader.toDetailString());
-        System.err.println(taken.toDetailString());
-        System.err.println(last.toDetailString());
-        System.err.println(fakeContinuation.toDetailString());
     }
 
     @Test
@@ -579,11 +523,11 @@ public class HTTP2ServerTest extends AbstractServerTest
             long offset = accumulator.size();
             generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
 
-            RetainableByteBuffer headers = accumulator.take(offset);
-            RetainableByteBuffer.Mutable continuation = headers.copy().asMutable();
-            accumulator.add(headers);
-            continuation.limit(9);
-            continuation.put(0, (byte)0x00).put(1, (byte)0x00).put(2, (byte)0x00);
+            RetainableByteBuffer continuation = accumulator.slice(offset + 9);
+            continuation.skip(offset);
+            continuation = continuation.copy();
+
+            continuation.asMutable().put(0, (byte)0x00).put(1, (byte)0x00).put(2, (byte)0x00);
             accumulator.add(continuation);
             return accumulator;
         });
@@ -602,23 +546,28 @@ public class HTTP2ServerTest extends AbstractServerTest
             long offset = accumulator.size();
             generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
 
-            RetainableByteBuffer headers = accumulator.take(offset);
+            RetainableByteBuffer slice = accumulator.slice();
+            slice.skip(offset);
+            accumulator.limit(offset);
+            RetainableByteBuffer headers = slice.copy();
+            slice.release();
 
-            // Take the last CONTINUATION frame and reset the flag.
+            // Look for the last CONTINUATION frame and reset the flag.
             offset = 0;
             while (true)
             {
-                int length = ((headers.get(offset) & 0xFF) << 16) + ((headers.get(offset + 1) & 0xFF) << 8) + (headers.get(offset + 2) & 0xFF);
+                int frameLength = ((headers.get(offset) & 0xFF) << 16) + ((headers.get(offset + 1) & 0xFF) << 8) + (headers.get(offset + 2) & 0xFF);
                 byte flag = headers.get(offset + 4);
                 if (flag == 0x04)
                 {
-                    RetainableByteBuffer.Mutable last = headers.take(offset).asMutable();
+                    // this is the last continuation frame
+                    RetainableByteBuffer last = headers.takeFrom(offset);
                     accumulator.add(headers);
-                    last.put(4, (byte)0);
+                    last.asMutable().put(4, (byte)0);
                     accumulator.add(last);
                     break;
                 }
-                offset += 9 + length;
+                offset += 9 + frameLength;
             }
 
             // Add a last, empty, CONTINUATION frame.
