@@ -607,7 +607,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             HttpHeader header = f.getHeader();
             if (header == null)
             {
-                seenByName = Objects.requireNonNullElse(seenByName, new TreeSet<>(String::compareToIgnoreCase));
+                if (seenByName == null)
+                    seenByName = new TreeSet<>(String::compareToIgnoreCase);
                 if (seenByName.add(f.getName()))
                     list.add(f.getName());
             }
