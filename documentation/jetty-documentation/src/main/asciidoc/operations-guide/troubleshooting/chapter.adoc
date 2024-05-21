@@ -14,7 +14,7 @@
 [[og-troubleshooting]]
 === Troubleshooting
 
-To troubleshoot Jetty when used as a production server, there are two main tools: the Jetty Server Dump and enabling DEBUG level logging.
+To troubleshoot Jetty when used as a standalone server, there are two main tools: the Jetty Server Dump and enabling DEBUG level logging.
 
 Jetty is based on components organized as a tree, with the `Server` instance at the root of the tree.
 
@@ -36,3 +36,4 @@ IMPORTANT: Make sure you read about how to secure the access to Jetty when using
 include::troubleshooting-dump.adoc[]
 include::troubleshooting-logging.adoc[]
 include::troubleshooting-debugging.adoc[]
+include::troubleshooting-handlers.adoc[]
