@@ -1511,9 +1511,27 @@ public interface RetainableByteBuffer extends Retainable
             if (_buffers.isEmpty() || length == 0)
                 return RetainableByteBuffer.EMPTY;
 
-            List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
             _aggregate = null;
 
+            if (_buffers.size() == 1)
+            {
+                RetainableByteBuffer buffer = _buffers.get(0);
+
+                // if the length to take is more than half the buffer and it is not retained
+                if (length > (buffer.size() / 2)  && !buffer.isRetained())
+                {
+                    // slice off the tail and take the buffer itself
+                    RetainableByteBuffer tail = buffer.takeFrom(length);
+                    _buffers.set(0, tail);
+                    return buffer;
+                }
+
+                // take the head of the buffer, but leave the buffer itself
+                return buffer.take(length);
+
+            }
+
+            List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
             for (ListIterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
                 RetainableByteBuffer buffer = i.next();
@@ -1530,8 +1548,8 @@ public interface RetainableByteBuffer extends Retainable
                 }
                 else
                 {
-                    // if the length to take is more than half the buffer
-                    if (length > (buffer.size() / 2) || buffer.isRetained())
+                    // if the length to take is more than half the buffer and it is not retained
+                    if (length > (buffer.size() / 2) && !buffer.isRetained())
                     {
                         // slice off the tail and take the buffer itself
                         RetainableByteBuffer tail = buffer.takeFrom(length);
@@ -1558,9 +1576,23 @@ public interface RetainableByteBuffer extends Retainable
             if (_buffers.isEmpty() || skip > size())
                 return RetainableByteBuffer.EMPTY;
 
-            List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
             _aggregate = null;
 
+            if (_buffers.size() == 1)
+            {
+                RetainableByteBuffer buffer = _buffers.get(0);
+                // if the length to leave is more than half the buffer
+                if (skip > (buffer.size() / 2) || buffer.isRetained())
+                {
+                    // take from the tail of the buffer and leave the buffer itself
+                    return buffer.takeFrom(skip);
+                }
+                // leave the head taken from the buffer and take the buffer itself
+                _buffers.set(0, buffer.take(skip));
+                return buffer;
+            }
+
+            List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
             for (ListIterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
                 RetainableByteBuffer buffer = i.next();
