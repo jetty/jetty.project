@@ -150,21 +150,15 @@ public interface Response
          *
          * @param response the response containing the response line data and the headers
          * @param content the content bytes received
+         * @throws Exception an uncaught exception will abort the response and eventually reclaim the ByteBuffer, if applicable
          */
-        void onContent(Response response, ByteBuffer content);
+        void onContent(Response response, ByteBuffer content) throws Exception;
 
         @Override
-        default void onContent(Response response, Content.Chunk chunk, Runnable demander)
+        default void onContent(Response response, Content.Chunk chunk, Runnable demander) throws Exception
         {
-            try
-            {
-                onContent(response, chunk.getByteBuffer());
-                demander.run();
-            }
-            catch (Throwable x)
-            {
-                response.abort(x);
-            }
+            onContent(response, chunk.getByteBuffer());
+            demander.run();
         }
     }
 
@@ -175,7 +169,17 @@ public interface Response
      */
     interface AsyncContentListener extends ContentSourceListener
     {
-        void onContent(Response response, Content.Chunk chunk, Runnable demander);
+        /**
+         * Callback method invoked when the response content has been received, parsed and there is demand.
+         * The {@code demander} must be run before this method may be invoked again.
+         *
+         * @param response the response containing the response line data and the headers
+         * @param chunk the chunk received
+         * @param demander the runnable to be run to demand the next chunk
+         * @throws Exception an uncaught exception will abort the response, release the chunk and fail the content source
+         * from which the chunk was returned from
+         */
+        void onContent(Response response, Content.Chunk chunk, Runnable demander) throws Exception;
 
         @Override
         default void onContentSource(Response response, Content.Source contentSource)
