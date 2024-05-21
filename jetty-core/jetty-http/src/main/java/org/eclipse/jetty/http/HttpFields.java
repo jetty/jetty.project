@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -596,7 +598,40 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      */
     default Set<String> getFieldNamesCollection()
     {
-        return stream().map(HttpField::getName).collect(Collectors.toSet());
+        Set<HttpHeader> seenByHeader = EnumSet.noneOf(HttpHeader.class);
+        Set<String> seenByName = null;
+        List<String> list = new ArrayList<>(size());
+
+        for (HttpField f : this)
+        {
+            HttpHeader header = f.getHeader();
+            if (header == null)
+            {
+                seenByName = Objects.requireNonNullElse(seenByName, new TreeSet<>(String::compareToIgnoreCase));
+                if (seenByName.add(f.getName()))
+                    list.add(f.getName());
+            }
+            else if (seenByHeader.add(header))
+            {
+                list.add(f.getName());
+            }
+        }
+
+        // use the list to retain a rough ordering
+        return new AbstractSet<>()
+        {
+            @Override
+            public Iterator<String> iterator()
+            {
+                return list.iterator();
+            }
+
+            @Override
+            public int size()
+            {
+                return list.size();
+            }
+        };
     }
 
     /**
