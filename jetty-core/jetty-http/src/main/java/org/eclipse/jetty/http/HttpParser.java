@@ -167,7 +167,7 @@ public class HttpParser
             for (HttpHeader h : HttpHeader.values())
             {
                 HttpField httpField = new HttpField(h, UNMATCHED_VALUE);
-                map.put(httpField.toString(), httpField);
+                map.put(h + ": ", httpField);
             }
             return map;
         })
