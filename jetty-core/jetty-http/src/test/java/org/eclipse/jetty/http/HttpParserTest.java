@@ -358,6 +358,20 @@ public class HttpParserTest
         assertEquals(1, _headers);
     }
 
+    @Test
+    public void testHeaderCache()
+    {
+        assertThat(HttpParser.CACHE.getBest("Content-Type: text/plain\r\n").toString(), is("Content-Type: text/plain"));
+        assertThat(HttpParser.CACHE.getBest("Content-Type: text/plain\n").toString(), is("Content-Type: text/plain"));
+        assertThat(HttpParser.CACHE.getBest("content-type: text/plain\r\n").toString(), is("Content-Type: text/plain"));
+        assertThat(HttpParser.CACHE.getBest("content-type: text/plain\n").toString(), is("Content-Type: text/plain"));
+
+        assertThat(HttpParser.CACHE.getBest("Content-Type: unknown\r\n").toString(), is("Content-Type: \u0000"));
+        assertThat(HttpParser.CACHE.getBest("Content-Type: unknown\n").toString(), is("Content-Type: \u0000"));
+        assertThat(HttpParser.CACHE.getBest("content-type: unknown\r\n").toString(), is("Content-Type: \u0000"));
+        assertThat(HttpParser.CACHE.getBest("content-type: unknown\n").toString(), is("Content-Type: \u0000"));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testHeaderCacheNearMiss(String eoln)
