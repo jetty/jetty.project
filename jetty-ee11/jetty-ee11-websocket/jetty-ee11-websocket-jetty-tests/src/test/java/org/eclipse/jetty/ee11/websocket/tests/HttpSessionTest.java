@@ -61,11 +61,26 @@ public class HttpSessionTest
         @OnWebSocketMessage
         public void onMessage(Session session, String message)
         {
-            accessor.access(httpSession ->
+            if ("onOpenAttribute".equals(message))
             {
-                String value = (String)httpSession.getAttribute("session");
-                session.sendText(value, Callback.NOOP);
-            });
+                try
+                {
+                    accessor.access(httpSession ->
+                    {
+                        String value = (String)httpSession.getAttribute("session");
+                        session.sendText(value, Callback.NOOP);
+                    });
+                }
+                catch (Throwable t)
+                {
+                    session.sendText(t.getMessage(), Callback.NOOP);
+                }
+            }
+            else if ("invalidate".equals(message))
+            {
+                accessor.access(HttpSession::invalidate);
+                session.sendText("success", Callback.NOOP);
+            }
         }
     }
 
@@ -106,9 +121,17 @@ public class HttpSessionTest
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());
         Session session = _client.connect(clientEndpoint, uri).get();
 
-        session.sendText("hello", Callback.NOOP);
+        session.sendText("onOpenAttribute", Callback.NOOP);
         String receivedMessage = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
         assertThat(receivedMessage, equalTo("setByOnOpen"));
+
+        session.sendText("invalidate", Callback.NOOP);
+        receivedMessage = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+        assertThat(receivedMessage, equalTo("success"));
+
+        session.sendText("onOpenAttribute", Callback.NOOP);
+        receivedMessage = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+        assertThat(receivedMessage, equalTo("Invalid session"));
 
         session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
