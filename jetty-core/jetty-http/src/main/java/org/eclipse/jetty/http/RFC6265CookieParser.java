@@ -16,8 +16,6 @@ package org.eclipse.jetty.http;
 import java.util.Locale;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ATTRIBUTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ATTRIBUTE_VALUES;
@@ -34,8 +32,6 @@ import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN
  */
 public class RFC6265CookieParser implements CookieParser
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(RFC6265CookieParser.class);
-
     private final CookieParser.Handler _handler;
     private final CookieCompliance _complianceMode;
     private final ComplianceViolation.Listener _complianceListener;
