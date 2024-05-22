@@ -335,6 +335,47 @@ public class HttpFieldsTest
         assertThrows(NoSuchElementException.class, () -> header.getField(2));
     }
 
+    @Test
+    public void testCaseInsensitive()
+    {
+        HttpFields header = HttpFields.build()
+            .add("expect", "100")
+            .add("RaNdOm", "value")
+            .add("Accept-Charset", "UTF-8")
+            .add("accept-charset", "UTF-16")
+            .add("foo-bar", "one")
+            .add("Foo-Bar", "two")
+            .asImmutable();
+
+        assertThat(header.get("expect"), is("100"));
+        assertThat(header.get("Expect"), is("100"));
+        assertThat(header.get("EXPECT"), is("100"));
+        assertThat(header.get("eXpEcT"), is("100"));
+        assertThat(header.get(HttpHeader.EXPECT), is("100"));
+
+        assertThat(header.get("random"), is("value"));
+        assertThat(header.get("Random"), is("value"));
+        assertThat(header.get("RANDOM"), is("value"));
+        assertThat(header.get("rAnDoM"), is("value"));
+        assertThat(header.get("RaNdOm"), is("value"));
+
+        assertThat(header.get("Accept-Charset"), is("UTF-8"));
+        assertThat(header.get("accept-charset"), is("UTF-8"));
+        assertThat(header.get(HttpHeader.ACCEPT_CHARSET), is("UTF-8"));
+
+        assertThat(header.getValuesList("Accept-Charset"), contains("UTF-8", "UTF-16"));
+        assertThat(header.getValuesList("accept-charset"), contains("UTF-8", "UTF-16"));
+        assertThat(header.getValuesList(HttpHeader.ACCEPT_CHARSET), contains("UTF-8", "UTF-16"));
+
+        assertThat(header.get("foo-bar"), is("one"));
+        assertThat(header.get("Foo-Bar"), is("one"));
+        assertThat(header.getValuesList("foo-bar"), contains("one", "two"));
+        assertThat(header.getValuesList("Foo-Bar"), contains("one", "two"));
+
+        // We know the order of the set is deterministic
+        assertThat(header.getFieldNamesCollection(), contains("expect", "RaNdOm", "Accept-Charset", "foo-bar"));
+    }
+
     @ParameterizedTest
     @MethodSource("mutables")
     public void testGetKnown(HttpFields.Mutable header)
