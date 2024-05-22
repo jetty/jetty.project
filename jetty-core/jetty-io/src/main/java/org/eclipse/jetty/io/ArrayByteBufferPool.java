@@ -199,7 +199,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     }
 
     @Override
-    public RetainableByteBuffer acquire(int size, boolean direct)
+    public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
     {
         RetainedBucket bucket = bucketFor(size, direct);
 
@@ -210,11 +210,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         bucket.recordAcquire();
 
         // Try to acquire a pooled entry.
-        Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().acquire();
+        Pool.Entry<RetainableByteBuffer.Pooled> entry = bucket.getPool().acquire();
         if (entry != null)
         {
             bucket.recordPooled();
-            RetainableByteBuffer buffer = entry.getPooled();
+            RetainableByteBuffer.Pooled buffer = entry.getPooled();
             ((PooledBuffer)buffer).acquire();
             return buffer;
         }
@@ -222,12 +222,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return newRetainableByteBuffer(bucket.getCapacity(), direct, buffer -> reserve(bucket, buffer));
     }
 
-    private void reserve(RetainedBucket bucket, RetainableByteBuffer buffer)
+    private void reserve(RetainedBucket bucket, RetainableByteBuffer.Pooled buffer)
     {
         bucket.recordRelease();
 
         // Try to reserve an entry to put the buffer into the pool.
-        Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().reserve();
+        Pool.Entry<RetainableByteBuffer.Pooled> entry = bucket.getPool().reserve();
         if (entry == null)
         {
             bucket.recordNonPooled();
@@ -249,7 +249,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         entry.remove();
     }
 
-    private void release(RetainedBucket bucket, Pool.Entry<RetainableByteBuffer> entry)
+    private void release(RetainedBucket bucket, Pool.Entry<RetainableByteBuffer.Pooled> entry)
     {
         bucket.recordRelease();
 
@@ -309,7 +309,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<RetainableByteBuffer> releaser)
+    private RetainableByteBuffer.Pooled newRetainableByteBuffer(int capacity, boolean direct, Consumer<RetainableByteBuffer.Pooled> releaser)
     {
         ByteBuffer buffer = BufferUtil.allocate(capacity, direct);
         PooledBuffer retainableByteBuffer = new PooledBuffer(this, buffer, releaser);
@@ -317,7 +317,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return retainableByteBuffer;
     }
 
-    public Pool<RetainableByteBuffer> poolFor(int capacity, boolean direct)
+    public Pool<RetainableByteBuffer.Pooled> poolFor(int capacity, boolean direct)
     {
         RetainedBucket bucket = bucketFor(capacity, direct);
         return bucket == null ? null : bucket.getPool();
@@ -445,7 +445,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private final LongAdder _evicts = new LongAdder();
         private final LongAdder _removes = new LongAdder();
         private final LongAdder _releases = new LongAdder();
-        private final Pool<RetainableByteBuffer> _pool;
+        private final Pool<RetainableByteBuffer.Pooled> _pool;
         private final int _capacity;
 
         private RetainedBucket(int capacity, int poolSize)
@@ -501,14 +501,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return _capacity;
         }
 
-        private Pool<RetainableByteBuffer> getPool()
+        private Pool<RetainableByteBuffer.Pooled> getPool()
         {
             return _pool;
         }
 
         private int evict()
         {
-            Pool.Entry<RetainableByteBuffer> entry;
+            Pool.Entry<RetainableByteBuffer.Pooled> entry;
             if (_pool instanceof BucketCompoundPool compound)
                 entry = compound.evict();
             else
@@ -539,7 +539,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             int entries = 0;
             int inUse = 0;
-            for (Pool.Entry<RetainableByteBuffer> entry : getPool().stream().toList())
+            for (Pool.Entry<RetainableByteBuffer.Pooled> entry : getPool().stream().toList())
             {
                 entries++;
                 if (entry.isInUse())
@@ -564,16 +564,16 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             );
         }
 
-        private static class BucketCompoundPool extends CompoundPool<RetainableByteBuffer>
+        private static class BucketCompoundPool extends CompoundPool<RetainableByteBuffer.Pooled>
         {
-            private BucketCompoundPool(ConcurrentPool<RetainableByteBuffer> concurrentBucket, QueuedPool<RetainableByteBuffer> queuedBucket)
+            private BucketCompoundPool(ConcurrentPool<RetainableByteBuffer.Pooled> concurrentBucket, QueuedPool<RetainableByteBuffer.Pooled> queuedBucket)
             {
                 super(concurrentBucket, queuedBucket);
             }
 
-            private Pool.Entry<RetainableByteBuffer> evict()
+            private Pool.Entry<RetainableByteBuffer.Pooled> evict()
             {
-                Entry<RetainableByteBuffer> entry = getSecondaryPool().acquire();
+                Entry<RetainableByteBuffer.Pooled> entry = getSecondaryPool().acquire();
                 if (entry == null)
                     entry = getPrimaryPool().acquire();
                 return entry;
@@ -583,11 +583,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private static class PooledBuffer extends RetainableByteBuffer.Pooled
     {
-        private final Consumer<RetainableByteBuffer> _releaser;
+        private final Consumer<Pooled> _releaser;
         private final ReferenceCounter _referenceCounter;
         private int _usages;
 
-        private PooledBuffer(ByteBufferPool pool, ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
+        private PooledBuffer(ByteBufferPool pool, ByteBuffer buffer, Consumer<Pooled> releaser)
         {
             super(pool, buffer, new ReferenceCounter(0));
             if (getWrapped() instanceof  ReferenceCounter referenceCounter)
@@ -698,9 +698,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
-            RetainableByteBuffer buffer = super.acquire(size, direct);
+            RetainableByteBuffer.Mutable buffer = super.acquire(size, direct);
             TrackedBuffer wrapper = new TrackedBuffer(buffer, size);
             if (LOG.isDebugEnabled())
                 LOG.debug("acquired {}", wrapper);
@@ -729,7 +729,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             private final List<Throwable> releaseStacks = new CopyOnWriteArrayList<>();
             private final List<Throwable> overReleaseStacks = new CopyOnWriteArrayList<>();
 
-            private TrackedBuffer(RetainableByteBuffer wrapped, int size)
+            private TrackedBuffer(RetainableByteBuffer.Mutable wrapped, int size)
             {
                 super(wrapped.getByteBuffer(), wrapped);
                 this.size = size;
