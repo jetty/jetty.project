@@ -65,6 +65,9 @@ etc/jetty.xml
 ## Relative Redirect Locations allowed
 # jetty.httpConfig.relativeRedirectAllowed=true
 
+## Redirect body generated
+# jetty.httpConfig.generateRedirectBody=false
+
 ## Whether to use direct ByteBuffers for reading or writing
 # jetty.httpConfig.useInputDirectByteBuffers=true
 # jetty.httpConfig.useOutputDirectByteBuffers=true

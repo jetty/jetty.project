@@ -56,7 +56,7 @@ public class MovedContextHandler extends ContextHandler
      */
     public void setStatusCode(int statusCode)
     {
-        if (!HttpStatus.isRedirection(statusCode))
+        if (!HttpStatus.isRedirectionWithLocation(statusCode))
             throw new IllegalArgumentException("Invalid HTTP redirection status code: " + statusCode);
         _statusCode = statusCode;
     }

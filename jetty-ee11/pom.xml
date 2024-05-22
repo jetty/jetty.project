@@ -61,7 +61,7 @@
     <jakarta.xml.ws.api.version>4.0.1</jakarta.xml.ws.api.version>
     <jersey.version>4.0.0-M1</jersey.version>
 
-    <jsp.impl.version>11.0.0-SNAPSHOT</jsp.impl.version>
+    <jsp.impl.version>11.0.0-M19</jsp.impl.version>
     <mail.impl.version>2.0.1</mail.impl.version>
 
     <sonar.skip>true</sonar.skip>

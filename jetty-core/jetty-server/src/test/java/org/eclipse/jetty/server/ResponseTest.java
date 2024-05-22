@@ -13,9 +13,13 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -23,18 +27,29 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -163,6 +178,112 @@ public class ResponseTest
         assertThat(response.get("Test"), is("after reset"));
     }
 
+    public static Stream<Arguments> redirects()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        for (int code : new int[] {0, 307})
+        {
+            for (String location : new String[] {"somewhere/else", "/somewhere/else", "http://else/where" })
+            {
+                for (boolean relative : new boolean[] {true, false})
+                {
+                    for (boolean generate : new boolean[] {true, false})
+                    {
+                        for (String content : new String[] {null, "alternative text" })
+                        {
+                            cases.add(Arguments.of(code, location, relative, generate, content));
+                        }
+                    }
+                }
+            }
+        }
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("redirects")
+    public void testRedirect(int code, String location, boolean relative, boolean generate, String content) throws Exception
+    {
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setRelativeRedirectAllowed(relative);
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setGenerateRedirectBody(generate);
+
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                if (content == null)
+                {
+                    Response.sendRedirect(request, response, callback, code, location, true);
+                }
+                else
+                {
+                    response.getHeaders().put(MimeTypes.Type.TEXT_PLAIN_UTF_8.getContentTypeField());
+                    Response.sendRedirect(request, response, callback, code, location, true, BufferUtil.toBuffer(content, StandardCharsets.UTF_8));
+                }
+
+                return true;
+            }
+        });
+        server.start();
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/ctx/servlet/test");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat(response.getStatus(), is(code == 0 ? HttpStatus.FOUND_302 : code));
+
+        String destination = location;
+        if (relative)
+        {
+            if (!location.startsWith("/") && !location.startsWith("http:/"))
+                destination = "/ctx/servlet/" + location;
+        }
+        else
+        {
+            if (location.startsWith("/"))
+                destination = "http://test" + location;
+            else if (!location.startsWith("http:/"))
+                destination = "http://test/ctx/servlet/" + location;
+        }
+
+        HttpField to = response.getField(HttpHeader.LOCATION);
+        assertThat(to, notNullValue());
+        assertThat(to.getValue(), is(destination));
+
+        String actual = response.getContent();
+
+        if (content == null)
+        {
+            if (generate)
+            {
+                assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/html"));
+                assertThat(actual, containsString("If you are not redirected, <a href=\"%s\">click here</a>".formatted(destination)));
+                assertThat(actual, not(containsString("oops")));
+            }
+            else
+            {
+                assertThat(response.get().get(HttpHeader.CONTENT_TYPE), nullValue());
+                assertThat(actual, emptyString());
+            }
+        }
+        else
+        {
+            assertThat(response.get().get(HttpHeader.CONTENT_TYPE), notNullValue());
+            assertThat(actual, not(containsString("oops")));
+            assertThat(actual, containsString(content));
+        }
+    }
+
     @Test
     public void testRedirectGET() throws Exception
     {
@@ -197,6 +318,67 @@ public class ResponseTest
         response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
+    }
+
+    @Test
+    public void testRedirectGetWithContent() throws Exception
+    {
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setRelativeRedirectAllowed(false);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "exotic");
+                Response.sendRedirect(request, response, callback, 0, "/somewhere/else", false,
+                    BufferUtil.toBuffer("something special"));
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
+        assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), is("exotic"));
+        assertThat(response.getContent(), containsString("something special"));
+    }
+
+    @Test
+    public void testRedirectGetWithGeneratedContent() throws Exception
+    {
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setRelativeRedirectAllowed(true);
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setGenerateRedirectBody(true);
+
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Response.sendRedirect(request, response, callback, 0, "/somewhere/else", false, null);
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
+        assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), equalToIgnoringCase(MimeTypes.Type.TEXT_HTML_8859_1.asString()));
+        assertThat(response.getContent(), containsString("<a href=\"/somewhere/else\">"));
     }
 
     @Test

@@ -1,0 +1,274 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Configuring SSL/TLS KeyStores
+
+A KeyStore is a file on the file system that contains a private key and a public certificate, along with the certificate chain of the certificate authorities that issued the certificate.
+The private key, the public certificate and the certificate chain, but more generally the items present in a KeyStore, are typically referred to as "cryptographic material".
+
+Keystores may encode the cryptographic material with different encodings, the most common being https://en.wikipedia.org/wiki/PKCS_12[PKCS12], and are typically protected by a password.
+
+Refer to the xref:protocols/index.adoc#ssl[secure protocols section] for more information about how to configure a secure connector using a KeyStore.
+
+[[create]]
+== Creating a KeyStore
+
+KeyStores are created with the JDK tool `$JAVA_HOME/bin/keytool`.
+
+The following command creates a KeyStore file containing a private key and a self-signed certificate:
+
+[source]
+----
+keytool
+    -genkeypair <1>
+    -alias mykey <2>
+    -validity 90 <3>
+    -keyalg RSA <4>
+    -keysize 2048 <5>
+    -keystore /path/to/keystore.p12 <6>
+    -storetype pkcs12 <7>
+    -dname "CN=domain.com, OU=Unit, O=Company, L=City, S=State, C=Country" <8>
+    -ext san=dns:www.domain.com,dns:domain.org <9>
+    -v <10>
+----
+<1> the command to generate a key and certificate pair
+<2> the alias name of the key and certificate pair
+<3> specifies the number of days after which the certificate expires
+<4> the algorithm _must_ be RSA (the DSA algorithm does not work for web sites)
+<5> indicates the strength of the key
+<6> the KeyStore file
+<7> the KeyStore type, stick with the standard PKCS12
+<8> the distinguished name (more below) -- customize it with your values for CN, OU, O, L, S and C
+<9> the extension with the subject alternative names (more below)
+<10> verbose output
+
+The command prompts for the KeyStore password that you must choose to protect the access to the KeyStore.
+
+[IMPORTANT]
+====
+The important parts of the command above are the _Common Name_ (CN) part of the distinguished name, and the subject alternative names (SAN).
+
+The CN value must be the main domain you own and that you want to use for your web applications.
+For example, if you have bought domains `domain.com` and `domain.org`, you want to specify `CN=domain.com` as your main domain.
+
+Furthermore, to specify additional domains or subdomains within the same certificate, you must specify the SAN extension.
+In the example above, `san=dns:www.domain.com,dns:domain.org` specifies `www.domain.com` and `domain.org` as alternative names for your web applications (that you can configure using xref:deploy/index.adoc#virtual-hosts[virtual hosts]).
+
+In rare cases, you may want to specify IP addresses, rather than domains, in the SAN extension.
+The syntax in such case is `san=ip:127.0.0.1,ip:[::1]`, which specifies as subject alternative names IPv4 `127.0.0.1` and IPv6 `[::1]`.
+====
+
+[[create-many]]
+=== KeyStores with Multiple Entries
+
+A single KeyStore may contain multiple key/certificate pairs.
+This is useful when you need to support multiple domains on the same Jetty server (typically accomplished using xref:deploy/index.adoc#virtual-hosts[virtual hosts]).
+
+You can create multiple key/certificate pairs as detailed in the <<create,previous section>>, provided that you assign each one to a different alias.
+
+Compliant TLS clients will send the xref:protocols/index.adoc#ssl-sni[TLS SNI extension] when creating new connections, and Jetty will automatically choose the right certificate by matching the SNI name sent by the client with the CN or SAN of certificates present in the KeyStore.
+
+[[csr]]
+== Creating a Certificate Signing Request
+
+Self-signed certificates are not trusted by browsers and generic clients: you need to establish a trust chain by having your self-signed certificate signed by a certificate authority (CA).
+
+Browsers and generic clients (e.g. Java clients) have an internal list of trusted certificate authorities root certificates; they use these trusted certificates to verify the certificate they received from the server when they connect to your web applications.
+
+To have your self-signed certificate signed by a certificate authority you first need to produce a _certificate signing request_ (CSR):
+
+[source]
+----
+keytool
+    -certreq <1>
+    -file domain.com.csr <2>
+    -keystore keystore.p12 <3>
+----
+<1> the command to generate a certificate signing request
+<2> the file to save the CSR
+<3> the keystore that contains the self-signed certificate
+
+Then, you have to send the CSR file to the certificate authority of your choice, and wait for their reply (they will probably require a proof that you really own the domains indicated in your certificate).
+
+Eventually, the certificate authority will reply to you with one or more files containing the CA certificate chain, and your certificate signed by their certificate chain.
+
+[[csr-import]]
+== Importing the Signed Certificate
+
+The file you receive from the CA is typically in PEM format, and you *must* import it back into the same KeyStore file you used to generate the CSR.
+You must import *both* the certificate chain and your signed certificate.
+
+First, import the certificate chain:
+
+[source]
+----
+keytool
+    -importcert <1>
+    -alias ca <2>
+    -file chain_from_ca.pem <3>
+    -keystore keystore.p12 <4>
+    -trustcacerts <5>
+    -v <6>
+----
+<1> the command to import certificates
+<2> use the `ca` alias to differentiate from the alias of the server certificate
+<3> the file containing the certificate chain received from the CA
+<4> your KeyStore file
+<5> specify that you trust CA certificates
+<6> verbose output
+
+Then, import the signed certificate:
+
+----
+keytool
+    -importcert
+    -file signed_certificate.pem
+    -keystore keystore.p12
+    -trustcacerts
+    -v
+----
+
+Now you have a trusted certificate in your KeyStore that you can use for the domains of your web applications.
+
+// TODO: add a section about renewal?
+
+Refer to the section about configuring xref:protocols/index.adoc#ssl[secure protocols] to configure the secure connector with your newly created KeyStore.
+
+[[client-authn]]
+== Creating a KeyStore for Client Certificate Authentication
+
+For the majority of secure web sites, it is the client (typically the browser) that validates the certificate sent by the server (by verifying the certificate chain).
+This is the _server domain certificate_.
+
+However, the TLS protocol supports a _mutual authentication_ mode where also the client must send a certificate to the server, that the server validates.
+
+You typically want to sign the client certificate(s) with a server certificate that you control, and you must distribute the client certificate(s) to all the clients that need it, and redistribute the client certificates when they expire.
+The _server authentication certificate_ may be different from the _server domain certificate_, but it's typically stored in the same KeyStore for simplicity (although under a different alias).
+
+First, you want to create the private key and server authentication certificate that you will use to sign client certificates:
+
+[source]
+----
+keytool
+    -genkeypair
+    -alias server_authn <1>
+    -validity 90
+    -keyalg RSA
+    -keysize 2048
+    -keystore keystore.p12 <2>
+    -storetype pkcs12
+    -dname "CN=server_authn, OU=Unit, O=Company, L=City, S=State, C=Country" <3>
+    -ext bc=ca:true <4>
+    -v
+----
+<1> use the `server_authn` alias to differentiate from the alias of the server certificate
+<2> the KeyStore file
+<3> the CN is not that important, since this certificate will not be validated by clients
+<4> the extension with the basic constraints (more below)
+
+IMPORTANT: The important difference with the <<create,creation of a server certificate>> is the _basic constraints_ extension (`bc`) that indicates that this certificates acts as a certificate authority (`ca:true`).
+
+Now you want to export both the private key and server authentication certificate.
+Unfortunately, the `keytool` program cannot export private keys, so you need to use a different command line program like `openssl`, or a graphical program like https://keystore-explorer.org/[KeyStore Explorer].
+
+Let's use `openssl` to export the server authentication private key:
+
+----
+openssl
+    pkcs12
+    -in keystore.p12
+    -nodes
+    -nocerts
+    -out server_authn.key
+----
+
+Now let's export the server authentication certificate:
+
+----
+keytool
+    -exportcert
+    -keystore keystore.p12
+    -rfc
+    -file server_authn.crt
+    -v
+----
+
+At this point, you want to create a client KeyStore, so that you can sign the client certificate with the server authentication cryptographic material:
+
+[source]
+----
+keytool
+    -genkeypair
+    -validity 90
+    -keyalg RSA
+    -keysize 2048
+    -keystore client_keystore.p12 <1>
+    -storetype pkcs12
+    -dname "CN=client, OU=Unit, O=Company, L=City, S=State, C=Country" <2>
+    -v
+----
+<1> the client KeyStore file
+<2> the CN is not that important, since it will not be validated by the server
+
+Now produce a certificate signing request (CSR):
+
+----
+keytool
+    -certreq
+    -file client.csr
+    -keystore client_keystore.p12
+----
+
+Now you need to sign the CSR, but again the `keytool` program does not have this functionality, and you must resort again to use `openssl`:
+
+----
+openssl
+    x509
+    -req
+    -days 90
+    -in client.csr
+    -CA server_authn.crt
+    -CAkey server_authn.key
+    -CAcreateserial
+    -sha256
+    -out signed.crt
+----
+
+Now you need to import the server authentication certificate and the signed client certificate into the client KeyStore.
+
+First, the server authentication certificate:
+
+----
+keytool
+    -importcert
+    -alias ca
+    -file server_authn.crt
+    -keystore client_keystore.p12
+    -v
+----
+
+Then, the signed client certificate:
+
+----
+keytool
+    -importcert
+    -file signed.crt
+    -keystore client_keystore.p12
+    -v
+----
+
+Now you can distribute `client_keystore.p12` to your client(s).
+
+// TODO: add a section about renewal?
+
+Refer to the section about configuring xref:protocols/index.adoc#ssl[secure protocols] to configure the secure connector to require client authentication.
