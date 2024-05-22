@@ -201,6 +201,9 @@ public class Content
         {
             return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb ->
             {
+                // TODO the current takeByteArray is only on Dynamic and it returns a byte[] that can be larger.
+                //      probably could be done here with a writeTo that writes into an allocated byte[]
+                //      or perhaps we add a take method like that on the RBB API.
                 if (rbb instanceof RetainableByteBuffer.DynamicCapacity dynamic)
                 {
                     int remaining = dynamic.remaining();
