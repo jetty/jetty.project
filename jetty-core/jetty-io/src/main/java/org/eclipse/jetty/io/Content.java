@@ -18,9 +18,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousByteChannel;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
@@ -196,7 +199,16 @@ public class Content
          */
         static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
         {
-            return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb -> BufferUtil.toArray(rbb.getByteBuffer()));
+            return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb ->
+            {
+                if (rbb instanceof RetainableByteBuffer.DynamicCapacity dynamic)
+                {
+                    int remaining = dynamic.remaining();
+                    byte[] bytes = dynamic.takeByteArray();
+                    return Arrays.copyOf(bytes, remaining); // TODO this is also a copy!
+                }
+                return BufferUtil.toArray(rbb.getByteBuffer()); // TODO need to writeTo an array
+            });
         }
 
         /**
@@ -536,8 +548,8 @@ public class Content
         }
 
         /**
-         * <p>Wraps the given {@link OutputStream} as a {@link Sink}.
-         * @param channel The ByteChannel to wrap
+         * <p>Wraps the given {@link ByteChannel} as a {@link Sink}.
+         * @param channel The {@link ByteChannel} to wrap
          * @return A sink wrapping the stream
          */
         static Sink from(ByteChannel channel)
@@ -556,13 +568,77 @@ public class Content
                     }
                     try
                     {
-                        channel.write(byteBuffer);
+                        int remaining = byteBuffer.remaining();
+                        int tries = 0;
+                        while (remaining > 0)
+                        {
+                            int written = channel.write(byteBuffer);
+                            if (written > 0)
+                                remaining -= written;
+                            else if (tries++ > 2)
+                                throw new IllegalStateException("ByteChannel in async mode");
+                        }
+
                         if (last)
                         {
                             closed = true;
                             channel.close();
                         }
                         callback.succeeded();
+                    }
+                    catch (Throwable t)
+                    {
+                        callback.failed(t);
+                    }
+                }
+            };
+        }
+
+        /**
+         * <p>Wraps the given {@link AsynchronousByteChannel} as a {@link Sink}.
+         * @param channel The {@link AsynchronousByteChannel} to wrap
+         * @return A sink wrapping the stream
+         */
+        static Sink from(AsynchronousByteChannel channel)
+        {
+            return new Sink()
+            {
+                boolean closed;
+
+                @Override
+                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                {
+                    if (closed)
+                    {
+                        callback.failed(new EOFException());
+                        return;
+                    }
+                    try
+                    {
+                        channel.write(byteBuffer, byteBuffer, new CompletionHandler<>()
+                        {
+                            @Override
+                            public void completed(Integer written, ByteBuffer buffer)
+                            {
+                                if (buffer.hasRemaining())
+                                    channel.write(buffer, buffer, this);
+                                else
+                                {
+                                    if (last)
+                                    {
+                                        closed = true;
+                                        IO.close(channel);
+                                    }
+                                    callback.succeeded();
+                                }
+                            }
+
+                            @Override
+                            public void failed(Throwable x, ByteBuffer buffer)
+                            {
+                                callback.failed(x);
+                            }
+                        });
                     }
                     catch (Throwable t)
                     {
@@ -666,18 +742,21 @@ public class Content
     public interface Chunk extends RetainableByteBuffer
     {
         /**
-         * <p>An empty chunk.</p>
+         * <p>An empty chunk implementation.</p>
          */
-        interface Empty extends Chunk
+        abstract class Empty implements Chunk
         {
+            Empty()
+            {}
+
             @Override
-            default ByteBuffer getByteBuffer()
+            public ByteBuffer getByteBuffer()
             {
                 return BufferUtil.EMPTY_BUFFER;
             }
 
             @Override
-            default RetainableByteBuffer slice(long length)
+            public RetainableByteBuffer slice(long length)
             {
                 return this;
             }
@@ -931,7 +1010,7 @@ public class Content
         /**
          * @return an immutable version of this Chunk
          */
-        @Deprecated(forRemoval = true, since = "12.0.9")
+        @Deprecated(forRemoval = true, since = "12.1.0")
         default Chunk asReadOnly()
         {
             if (getByteBuffer().isReadOnly())

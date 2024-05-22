@@ -536,8 +536,9 @@ public interface RetainableByteBuffer extends Retainable
          * Add the passed {@link RetainableByteBuffer} to this buffer, growing this buffer if necessary and possible.
          * The source {@link RetainableByteBuffer} is passed by reference and the caller gives up ownership, so
          * implementations of this method may avoid copies by keeping a reference to the buffer.
-         * Unlike the similar {@link #append(RetainableByteBuffer)}, implementations of this method need not call
-         * {@link #retain()} if keeping a reference, but they must ultimately call {@link #release()} the passed buffer.
+         * Unlike the similar {@link #append(RetainableByteBuffer)} and contrary to the general rules of {@link Retainable},
+         * implementations of this method need not call {@link #retain()} if keeping a reference, but they must ultimately
+         * call {@link #release()} the passed buffer.
          * Callers should use {@code add} rather than {@link #append(RetainableByteBuffer)} if they already have an obligation
          * to release the buffer and wish to delegate that obligation to this buffer.
          * @param bytes the byte buffer to add, which is passed by reference and is not necessarily consumed by the add.

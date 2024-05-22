@@ -65,6 +65,7 @@ public class IOResources
         Path path = resource.getPath();
         if (path != null && longLength < Integer.MAX_VALUE)
         {
+            // TODO convert to a Dynamic once HttpContent uses writeTo semantics
             RetainableByteBuffer retainableByteBuffer = bufferPool.acquire((int)longLength, direct);
             try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
             {
