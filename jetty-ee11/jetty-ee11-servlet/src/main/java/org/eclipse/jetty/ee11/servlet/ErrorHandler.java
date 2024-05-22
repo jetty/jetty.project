@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 
 public class ErrorHandler implements Request.Handler
 {
-    // TODO This classes API needs to be majorly refactored/cleanup
+    // TODO This class's API needs to be majorly refactored/cleanup
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
     public static final String ERROR_CHARSET = "org.eclipse.jetty.server.error_charset";
 
