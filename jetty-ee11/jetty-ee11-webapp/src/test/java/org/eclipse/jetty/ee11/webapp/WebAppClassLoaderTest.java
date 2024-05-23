@@ -353,7 +353,7 @@ public class WebAppClassLoaderTest
         expected.add(webappWebInfLibAcme);
         expected.add(webappWebInfClasses);
 
-        assertThat("Resources Found (Parent Loader Priority == true) (with serverClasses filtering)", resources, ordered(expected));
+        assertThat("Resources Found (Parent Loader Priority == true) (with hiddenClasses filtering)", resources, ordered(expected));
 
 //        dump(resources);
 //        assertEquals(2,resources.size());
@@ -374,7 +374,7 @@ public class WebAppClassLoaderTest
         expected.clear();
         expected.add(targetTestClasses);
 
-        assertThat("Resources Found (Parent Loader Priority == true) (with systemClasses filtering)", resources, ordered(expected));
+        assertThat("Resources Found (Parent Loader Priority == true) (with hiddenClasses filtering)", resources, ordered(expected));
     }
 
     @Test

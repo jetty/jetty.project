@@ -31,11 +31,11 @@ public class CdiConfiguration extends AbstractConfiguration
     {
         super(new Builder()
             .protectAndExpose("org.eclipse.jetty.ee11.cdi.CdiServletContainerInitializer")
-            .hide(getHiddenClasses())
+            .hide(getCdiHiddenClasses())
             .addDependents(AnnotationConfiguration.class, PlusConfiguration.class));
     }
 
-    private static String[] getHiddenClasses()
+    private static String[] getCdiHiddenClasses()
     {
         //Only hide the cdi api classes if there is not also an impl on the
         //environment classpath - vital for embedded uses.

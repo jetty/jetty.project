@@ -351,7 +351,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         protected Set<Class<?>> resolveStartupClasses() throws Exception
         {
             final Set<Class<?>> classes = new HashSet<>();
-            WebAppClassLoader.runWithServerClassAccess(() ->
+            WebAppClassLoader.runWithHiddenClassAccess(() ->
             {
                 for (String name:_startupClassNames)
                 {
