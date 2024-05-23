@@ -293,10 +293,10 @@ public class EE11Activator implements BundleActivator
                 try
                 {
                     Thread.currentThread().setContextClassLoader(contextHandler.getClassLoader());
-                    WebAppClassLoader.runWithServerClassAccess(() ->
+                    WebAppClassLoader.runWithHiddenClassAccess(() ->
                     {
                         XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(contextHandler).newResource(contextXmlURI));
-                        WebAppClassLoader.runWithServerClassAccess(() ->
+                        WebAppClassLoader.runWithHiddenClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
                             xmlConfiguration.getIdMap().put("Server", osgiApp.getDeploymentManager().getServer());
@@ -382,7 +382,7 @@ public class EE11Activator implements BundleActivator
             try
             {
                 Thread.currentThread().setContextClassLoader(environmentLoader);
-                WebAppClassLoader.runWithServerClassAccess(() ->
+                WebAppClassLoader.runWithHiddenClassAccess(() ->
                 {
                     Configurations.getKnown();
                     return null;
@@ -468,10 +468,10 @@ public class EE11Activator implements BundleActivator
                 try
                 {
                     Thread.currentThread().setContextClassLoader(webApp.getClassLoader());
-                    WebAppClassLoader.runWithServerClassAccess(() ->
+                    WebAppClassLoader.runWithHiddenClassAccess(() ->
                     {
                         XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(webApp).newResource(contextXmlUri));
-                        WebAppClassLoader.runWithServerClassAccess(() ->
+                        WebAppClassLoader.runWithHiddenClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
                             xmlConfiguration.getIdMap().put("Server", osgiApp.getDeploymentManager().getServer());

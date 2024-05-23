@@ -119,7 +119,7 @@ public interface Configuration
     @Deprecated(since = "12.0.8", forRemoval = true)
     default org.eclipse.jetty.ee10.webapp.ClassMatcher getSystemClasses()
     {
-        return new org.eclipse.jetty.ee10.webapp.ClassMatcher(getProtectedClasses());
+        return org.eclipse.jetty.ee10.webapp.ClassMatcher.wrap(getProtectedClasses());
     }
 
     /**
@@ -128,7 +128,7 @@ public interface Configuration
     @Deprecated(since = "12.0.8", forRemoval = true)
     default org.eclipse.jetty.ee10.webapp.ClassMatcher getServerClasses()
     {
-        return new org.eclipse.jetty.ee10.webapp.ClassMatcher(getHiddenClasses());
+        return org.eclipse.jetty.ee10.webapp.ClassMatcher.wrap(getHiddenClasses());
     }
 
     /**

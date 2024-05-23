@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_CONTEXT;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /**
@@ -459,7 +460,7 @@ public class ServletChannel
 
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
-                            Integer code = (Integer)_servletContextRequest.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                            Integer code = (Integer)_servletContextRequest.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS);
                             if (code == null)
                                 code = HttpStatus.INTERNAL_SERVER_ERROR_500;
                             getServletContextResponse().setStatus(code);
@@ -472,7 +473,7 @@ public class ServletChannel
                             if (!_httpInput.consumeAvailable())
                                 ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
 
-                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
+                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ERROR_CONTEXT);
                             Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body or have no ErrorHandler, then create a minimal error response.
@@ -527,7 +528,7 @@ public class ServletChannel
                         finally
                         {
                             // clean up the context that was set in Response.sendError
-                            _servletContextRequest.removeAttribute(ErrorHandler.ERROR_CONTEXT);
+                            _servletContextRequest.removeAttribute(ERROR_CONTEXT);
                         }
                         break;
                     }

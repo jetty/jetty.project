@@ -87,7 +87,7 @@ public class EnvConfiguration extends AbstractConfiguration
             {
                 XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlResource);
                 configuration.setJettyStandardIdsAndProperties(context.getServer(), null);
-                WebAppClassLoader.runWithServerClassAccess(() ->
+                WebAppClassLoader.runWithHiddenClassAccess(() ->
                 {
                     configuration.configure(context);
                     return null;

@@ -23,6 +23,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS;
+
 /**
  * An ErrorHandler that maps exceptions and status codes to URIs for dispatch using
  * the internal ERROR style of dispatch.
@@ -108,7 +110,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             pageSource = PageLookupTechnique.STATUS_CODE;
 
             // look for an exact code match
-            errorStatusCode = (Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
+            errorStatusCode = (Integer)request.getAttribute(ERROR_STATUS);
             if (errorStatusCode != null)
             {
                 errorPage = _errorPages.get(Integer.toString(errorStatusCode));

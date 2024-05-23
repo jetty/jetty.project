@@ -19,13 +19,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.jetty.util.ClassMatcher;
+
 public class AbstractConfiguration implements Configuration
 {
     private final boolean _enabledByDefault;
     private final List<String> _after;
     private final List<String> _before;
-    private final ClassMatcher _system;
-    private final ClassMatcher _server;
+    private final ClassMatcher _protected;
+    private final ClassMatcher _hidden;
 
     public static class Builder
     {
@@ -88,7 +90,7 @@ public class AbstractConfiguration implements Configuration
 
         /**
          * Protect classes from modification by the web application by adding them
-         * to the {@link WebAppConfiguration#getSystemClasses()}
+         * to the {@link WebAppConfiguration#getProtectedClasses()}
          *
          * @param classes classname or package pattern
          */
@@ -100,7 +102,7 @@ public class AbstractConfiguration implements Configuration
 
         /**
          * Hide classes from the web application by adding them
-         * to the {@link WebAppConfiguration#getServerClasses()}
+         * to the {@link WebAppConfiguration#getHiddenClasses()}
          *
          * @param classes classname or package pattern
          */
@@ -112,7 +114,7 @@ public class AbstractConfiguration implements Configuration
 
         /**
          * Expose classes to the web application by adding them
-         * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
+         * as exclusions to the {@link WebAppConfiguration#getHiddenClasses()}
          *
          * @param classes classname or package pattern
          */
@@ -129,9 +131,9 @@ public class AbstractConfiguration implements Configuration
 
         /**
          * Protect classes from modification by the web application by adding them
-         * to the {@link WebAppConfiguration#getSystemClasses()} and
+         * to the {@link WebAppConfiguration#getProtectedClasses()} and
          * expose them to the web application by adding them
-         * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
+         * as exclusions to the {@link WebAppConfiguration#getHiddenClasses()}
          *
          * @param classes classname or package pattern
          */
@@ -154,8 +156,8 @@ public class AbstractConfiguration implements Configuration
         _enabledByDefault = builder._enabledByDefault;
         _after = List.copyOf(builder._after);
         _before = List.copyOf(builder._before);
-        _system = new ClassMatcher(builder._system).asImmutable();
-        _server = new ClassMatcher(builder._server).asImmutable();
+        _protected = new ClassMatcher(builder._system).asImmutable();
+        _hidden = new ClassMatcher(builder._server).asImmutable();
     }
 
     @Override
@@ -171,15 +173,15 @@ public class AbstractConfiguration implements Configuration
     }
 
     @Override
-    public ClassMatcher getSystemClasses()
+    public ClassMatcher getProtectedClasses()
     {
-        return _system;
+        return _protected;
     }
 
     @Override
-    public ClassMatcher getServerClasses()
+    public ClassMatcher getHiddenClasses()
     {
-        return _server;
+        return _hidden;
     }
 
     @Override
