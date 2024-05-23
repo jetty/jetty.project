@@ -32,7 +32,14 @@ import org.eclipse.jetty.util.Callback;
 public class MockHttpStream implements HttpStream
 {
     private static final Throwable SUCCEEDED = new Throwable();
-    private static final Content.Chunk DEMAND = (Content.Chunk.Empty)() -> false;
+    private static final Content.Chunk DEMAND = new Content.Chunk.Empty()
+    {
+        @Override
+        public boolean isLast()
+        {
+            return false;
+        }
+    };
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
     private final AtomicReference<Throwable> _complete = new AtomicReference<>();
     private final CountDownLatch _completed = new CountDownLatch(1);

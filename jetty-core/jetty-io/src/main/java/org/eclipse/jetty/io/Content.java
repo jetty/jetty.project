@@ -747,7 +747,7 @@ public class Content
          */
         abstract class Empty implements Chunk
         {
-            Empty()
+            protected Empty()
             {}
 
             @Override

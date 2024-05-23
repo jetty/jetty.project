@@ -15,7 +15,7 @@ package org.eclipse.jetty.http;
 
 import org.eclipse.jetty.io.Content;
 
-public class Trailers implements Content.Chunk.Empty
+public class Trailers extends Content.Chunk.Empty
 {
     private final HttpFields trailers;
 
