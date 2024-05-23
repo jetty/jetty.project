@@ -841,18 +841,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        List<String> systemClasses = null;
+        List<String> protectedClasses = null;
         if (_protectedClasses != null)
         {
-            systemClasses = new ArrayList<>(_protectedClasses);
-            Collections.sort(systemClasses);
+            protectedClasses = new ArrayList<>(_protectedClasses);
+            Collections.sort(protectedClasses);
         }
 
-        List<String> serverClasses = null;
+        List<String> hiddenClasses = null;
         if (_hiddenClasses != null)
         {
-            serverClasses = new ArrayList<>(_hiddenClasses);
-            Collections.sort(serverClasses);
+            hiddenClasses = new ArrayList<>(_hiddenClasses);
+            Collections.sort(hiddenClasses);
         }
 
         String name = getDisplayName();
@@ -883,8 +883,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         dumpObjects(out, indent,
             new ClassLoaderDump(getClassLoader()),
-            new DumpableCollection("Systemclasses " + name, systemClasses),
-            new DumpableCollection("Serverclasses " + name, serverClasses),
+            new DumpableCollection("Protected classes " + name, protectedClasses),
+            new DumpableCollection("Hidden classes " + name, hiddenClasses),
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, asAttributeMap().entrySet()),
             new DumpableCollection("Context attributes " + name, getContext().asAttributeMap().entrySet()),
@@ -1463,33 +1463,5 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public MetaData getMetaData()
     {
         return _metadata;
-    }
-
-    /**
-     * Add a Server Class pattern to use for all WebAppContexts.
-     * @param server The {@link Server} instance to add classes to
-     * @param patterns the patterns to use
-     * @see #getHiddenClassMatcher()
-     * @see #getHiddenClasses()
-     * @deprecated use {@link WebAppClassLoading#addProtectedClasses(Server, String...)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public static void addServerClasses(Server server, String... patterns)
-    {
-        WebAppClassLoading.addHiddenClasses(server, patterns);
-    }
-
-    /**
-     * Add a System Class pattern to use for all WebAppContexts.
-     * @param server The {@link Server} instance to add classes to
-     * @param patterns the patterns to use
-     * @see #getProtectedClassMatcher()
-     * @see #getProtectedClasses()
-     * @deprecated use {@link WebAppClassLoading#addHiddenClasses(Server, String...)}
-     */
-    @Deprecated(since = "12.0.8", forRemoval = true)
-    public static void addSystemClasses(Server server, String... patterns)
-    {
-        WebAppClassLoading.addProtectedClasses(server, patterns);
     }
 }

@@ -951,7 +951,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
 
-        Path testPath = MavenPaths.targetTestDir("testAddServerClasses");
+        Path testPath = MavenPaths.targetTestDir("testAddHiddenClasses");
         FS.ensureDirExists(testPath);
         FS.ensureEmpty(testPath);
         Path warPath = createWar(testPath, "test.war");
@@ -984,7 +984,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
-        Path testPath = MavenPaths.targetTestDir("testAddServerClasses");
+        Path testPath = MavenPaths.targetTestDir("testAddHiddenClasses");
         FS.ensureDirExists(testPath);
         FS.ensureEmpty(testPath);
         Path warPath = createWar(testPath, "test.war");

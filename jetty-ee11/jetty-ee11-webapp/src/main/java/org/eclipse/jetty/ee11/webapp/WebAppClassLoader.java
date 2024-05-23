@@ -71,7 +71,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(WebAppClassLoader.class);
-    private static final ThreadLocal<Boolean> __loadServerClasses = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> __loadHiddenClasses = new ThreadLocal<>();
 
     private final Context _context;
     private final ClassLoader _parent;
@@ -117,7 +117,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
-     * Run an action with access to ServerClasses
+     * Run an action with access to Hidden Classes
      * <p>Run the passed {@link PrivilegedExceptionAction} with the classloader
      * configured so as to allow server classes to be visible</p>
      *
@@ -126,20 +126,20 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      * @return The return from the action
      * @throws Exception if thrown by the action
      */
-    public static <T> T runWithServerClassAccess(PrivilegedExceptionAction<T> action) throws Exception
+    public static <T> T runWithHiddenClassAccess(PrivilegedExceptionAction<T> action) throws Exception
     {
-        Boolean lsc = __loadServerClasses.get();
+        Boolean lsc = __loadHiddenClasses.get();
         try
         {
-            __loadServerClasses.set(true);
+            __loadHiddenClasses.set(true);
             return action.run();
         }
         finally
         {
             if (lsc == null)
-                __loadServerClasses.remove();
+                __loadHiddenClasses.remove();
             else
-                __loadServerClasses.set(lsc);
+                __loadHiddenClasses.set(lsc);
         }
     }
 
@@ -297,7 +297,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         while (urls != null && urls.hasMoreElements())
         {
             URL url = urls.nextElement();
-            if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isHiddenResource(name, url))
+            if (Boolean.TRUE.equals(__loadHiddenClasses.get()) || !_context.isHiddenResource(name, url))
                 fromParent.add(url);
         }
 
@@ -345,7 +345,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
             // return if we have a url the webapp is allowed to see
             if (parentUrl != null &&
-                (Boolean.TRUE.equals(__loadServerClasses.get()) ||
+                (Boolean.TRUE.equals(__loadHiddenClasses.get()) ||
                     !_context.isHiddenResource(name, parentUrl)))
                 resource = parentUrl;
             else
@@ -373,7 +373,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 // Couldn't find or see a webapp resource, so try a parent
                 URL parentUrl = _parent.getResource(name);
                 if (parentUrl != null &&
-                    (Boolean.TRUE.equals(__loadServerClasses.get()) ||
+                    (Boolean.TRUE.equals(__loadHiddenClasses.get()) ||
                         !_context.isHiddenResource(name, parentUrl)))
                     resource = parentUrl;
                     // We couldn't find a parent resource, so OK to return a webapp one if it exists
@@ -420,7 +420,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                         throw new ClassNotFoundException("Bad ClassLoader: returned null for loadClass(" + name + ")");
 
                     // If the webapp is allowed to see this class
-                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isHiddenClass(parentClass))
+                    if (Boolean.TRUE.equals(__loadHiddenClasses.get()) || !_context.isHiddenClass(parentClass))
                     {
                         return parentClass;
                     }
@@ -468,7 +468,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 {
                     parentClass = _parent.loadClass(name);
                     // If the webapp is allowed to see this class
-                    if (Boolean.TRUE.equals(__loadServerClasses.get()) || !_context.isHiddenClass(parentClass))
+                    if (Boolean.TRUE.equals(__loadHiddenClasses.get()) || !_context.isHiddenClass(parentClass))
                     {
                         return parentClass;
                     }

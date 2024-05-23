@@ -69,7 +69,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
             try
             {
-                WebAppClassLoader.runWithServerClassAccess(() ->
+                WebAppClassLoader.runWithHiddenClassAccess(() ->
                 {
                     jetty_config.configure(context);
                     return null;
