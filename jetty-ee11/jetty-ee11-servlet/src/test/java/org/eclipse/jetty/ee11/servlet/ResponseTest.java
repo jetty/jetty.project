@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import jakarta.servlet.ServletException;
@@ -251,7 +251,6 @@ public class ResponseTest
         {
             response.setContentLength(20);
             assertThat(response.getHeader("Content-Length"), is("5"));
-            return null;
         });
     }
 
@@ -262,7 +261,6 @@ public class ResponseTest
         {
             response.setHeader("foo", "bar");
             assertThat(response.getHeader("foo"), nullValue());
-            return null;
         });
     }
 
@@ -273,7 +271,6 @@ public class ResponseTest
         {
             response.addHeader("foo", "bar");
             assertThat(response.getHeader("foo"), nullValue());
-            return null;
         });
     }
 
@@ -284,7 +281,6 @@ public class ResponseTest
         {
             resp.addDateHeader("foo-date", System.currentTimeMillis());
             assertThat(resp.getHeader("foo-date"), nullValue());
-            return null;
         });
     }
 
@@ -295,7 +291,6 @@ public class ResponseTest
         {
             resp.setDateHeader("foo-date", System.currentTimeMillis());
             assertThat(resp.getHeader("foo-date"), nullValue());
-            return null;
         });
     }
 
@@ -306,11 +301,10 @@ public class ResponseTest
         {
             resp.setStatus(HttpStatus.FORBIDDEN_403);
             assertThat(resp.getStatus(), is(HttpStatus.OK_200));
-            return null;
         });
     }
 
-    private void testActionAfterCommit(BiFunction<HttpServletRequest, HttpServletResponse, Void> action)
+    private void testActionAfterCommit(BiConsumer<HttpServletRequest, HttpServletResponse> action)
         throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler();
@@ -324,7 +318,7 @@ public class ResponseTest
                 response.getWriter().println("Hello");
                 response.getWriter().flush();
                 assertThat(response.isCommitted(), is(Boolean.TRUE));
-                action.apply(request, response);
+                action.accept(request, response);
             }
         };
 
