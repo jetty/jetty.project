@@ -23,7 +23,6 @@ import java.nio.channels.ByteChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
@@ -201,16 +200,10 @@ public class Content
         {
             return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb ->
             {
-                // TODO the current takeByteArray is only on Dynamic and it returns a byte[] that can be larger.
-                //      probably could be done here with a writeTo that writes into an allocated byte[]
-                //      or perhaps we add a take method like that on the RBB API.
-                if (rbb instanceof RetainableByteBuffer.DynamicCapacity dynamic)
-                {
-                    int remaining = dynamic.remaining();
-                    byte[] bytes = dynamic.takeByteArray();
-                    return Arrays.copyOf(bytes, remaining); // TODO this is also a copy!
-                }
-                return BufferUtil.toArray(rbb.getByteBuffer()); // TODO need to writeTo an array
+                int remaining = rbb.remaining();
+                byte[] bytes = new byte[remaining];
+                rbb.get(bytes, 0, remaining);
+                return bytes;
             });
         }
 
@@ -234,7 +227,12 @@ public class Content
          */
         static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source, int maxSize)
         {
-            return asByteArrayAsync(source, maxSize).thenApply(ByteBuffer::wrap);
+            return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb ->
+            {
+               ByteBuffer byteBuffer = rbb.getByteBuffer();
+               rbb.release(); // safe as the buffer is known not to be pooled
+               return byteBuffer;
+            });
         }
 
         /**
