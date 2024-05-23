@@ -12,8 +12,8 @@
   <name>Documentation :: Content Root</name>
 
   <properties>
-    <!-- build cache must be skipped for antora goal to work and for run.jetty.classpath value to be computed properly -->
-    <maven.build.cache.skipCache>true</maven.build.cache.skipCache>
+    <!-- build cache must be disabled for antora goal to work and for run.jetty.classpath value to be computed properly -->
+    <maven.build.cache.enabled>false</maven.build.cache.enabled>
   </properties>
 
   <build>
