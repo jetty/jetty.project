@@ -15,6 +15,7 @@
   <modules>
     <module>jetty-servlet4-demo-async-rest</module>
     <module>jetty-servlet4-demo-jaas-webapp</module>
+    <module>jetty-servlet4-demo-javax-websocket-webapp</module>
     <module>jetty-servlet4-demo-jetty-webapp</module>
     <module>jetty-servlet4-demo-jndi-webapp</module>
     <module>jetty-servlet4-demo-jsp-webapp</module>
