@@ -153,6 +153,7 @@ public class ErrorPageTest
         assertThat(body, containsString("ERROR_EXCEPTION: null"));
         assertThat(body, containsString("ERROR_EXCEPTION_TYPE: null"));
         assertThat(body, containsString("ERROR_SERVLET: " + errorContentServlet.getClass().getName()));
+        assertThat(body, containsString("ERROR_METHOD: GET"));
         assertThat(body, containsString("ERROR_REQUEST_URI: /error-mime-charset-writer/"));
     }
 
@@ -732,6 +733,61 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("getQueryString()=[++++]"));
         assertThat(responseBody, Matchers.containsString("getParameterMap().size=1"));
         assertThat(responseBody, Matchers.containsString("getParameterMap()[    ]=[]"));
+    }
+
+    @Test
+    public void testErrorAttributes() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/");
+
+        HttpServlet failServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws IOException
+            {
+                response.sendError(599);
+            }
+
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                doGet(req, resp);
+            }
+        };
+
+        contextHandler.addServlet(failServlet, "/fail/599");
+        contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(599, "/error/599");
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+
+        startServer(contextHandler);
+
+        String rawRequest = """
+            POST /fail/599?name=value HTTP/1.1\r
+            Host: test\r
+            Connection: close\r
+            \r
+            """;
+
+        String rawResponse = _connector.getResponse(rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(599));
+        assertThat(response.get(HttpHeader.DATE), notNullValue());
+
+        String responseBody = response.getContent();
+
+        assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /599"));
+        assertThat(responseBody, Matchers.containsString("ERROR_CODE: 599"));
+        assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(responseBody, Matchers.containsString("ERROR_METHOD: POST"));
+        assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
+        assertThat(responseBody, Matchers.containsString("ERROR_QUERY_STRING: name=value"));
     }
 
     @Test
@@ -1733,7 +1789,7 @@ public class ErrorPageTest
     public static class ErrorDumpServlet extends HttpServlet
     {
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             if (request.getDispatcherType() != DispatcherType.ERROR && request.getDispatcherType() != DispatcherType.ASYNC)
                 throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
@@ -1746,7 +1802,9 @@ public class ErrorPageTest
             writer.println("ERROR_EXCEPTION: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION));
             writer.println("ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
             writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+            writer.println("ERROR_METHOD: " + request.getAttribute(Dispatcher.ERROR_METHOD));
             writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
+            writer.println("ERROR_QUERY_STRING: " + request.getAttribute(Dispatcher.ERROR_QUERY_STRING));
 
             writer.printf("getRequestURI()=%s%n", valueOf(request.getRequestURI()));
             writer.printf("getRequestURL()=%s%n", valueOf(request.getRequestURL()));
