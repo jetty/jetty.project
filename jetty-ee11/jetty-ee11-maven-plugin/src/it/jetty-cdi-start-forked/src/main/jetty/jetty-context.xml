@@ -4,7 +4,7 @@
 <!-- Weld needs access to some internal classes. Same configuration as "cdi2" module provides on server. -->
 
 <Configure class="org.eclipse.jetty.ee11.webapp.WebAppContext">
-  <Call name="addServerClassMatcher">
+  <Call name="addHiddenClassMatcher">
     <Arg>
       <New class="org.eclipse.jetty.util.ClassMatcher">
         <Arg>
