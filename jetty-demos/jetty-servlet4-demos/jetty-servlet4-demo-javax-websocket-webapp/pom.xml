@@ -6,9 +6,9 @@
     <artifactId>jetty-servlet4-demos</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-servlet4-demo-jakarta-websocket-webapp</artifactId>
+  <artifactId>jetty-servlet4-demo-javax-websocket-webapp</artifactId>
   <packaging>war</packaging>
-  <name>Servlet 4 :: Demo :: Jakarta WebSocket WebApp</name>
+  <name>Servlet 4 :: Demo :: Javax WebSocket WebApp</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlet4.javax.websocket.webapp</bundle-symbolic-name>
     <ee9.module>jetty-servlet5-demo-jakarta-websocket-webapp</ee9.module>
