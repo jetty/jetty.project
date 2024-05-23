@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -32,12 +33,14 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -262,10 +265,7 @@ public interface Response extends Content.Sink
      */
     static void sendRedirect(Request request, Response response, Callback callback, String location, boolean consumeAvailable)
     {
-        int code = HttpMethod.GET.is(request.getMethod()) || request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-            ? HttpStatus.MOVED_TEMPORARILY_302
-            : HttpStatus.SEE_OTHER_303;
-        sendRedirect(request, response, callback, code, location, consumeAvailable);
+        sendRedirect(request, response, callback, 0, location, consumeAvailable);
     }
 
     /**
@@ -283,7 +283,36 @@ public interface Response extends Content.Sink
      */
     static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable)
     {
-        if (!HttpStatus.isRedirection(code))
+        sendRedirect(request, response, callback, code, location, consumeAvailable, null);
+    }
+
+    /**
+     * <p>Sends a {@code 302} HTTP redirect status code to the given location.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param callback the callback to complete
+     * @param code the redirect HTTP status code, or 0 for a default
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
+     * @param consumeAvailable whether to consumer the available request content
+     * @param content the content of the response, or null for a generated HTML message if {@link HttpConfiguration#isGenerateRedirectBody()} is {@code true}.
+     * @see #toRedirectURI(Request, String)
+     * @throws IllegalArgumentException if the status code is not a redirect, or the location is {@code null}
+     * @throws IllegalStateException if the response is already {@link #isCommitted() committed}
+     */
+    static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable, ByteBuffer content)
+    {
+        if (response.isCommitted())
+        {
+            callback.failed(new IllegalStateException("Committed"));
+            return;
+        }
+
+        if (code <= 0)
+            code = HttpMethod.GET.is(request.getMethod()) || request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+            ? HttpStatus.MOVED_TEMPORARILY_302
+            : HttpStatus.SEE_OTHER_303;
+        if (!HttpStatus.isRedirectionWithLocation(code))
         {
             callback.failed(new IllegalArgumentException("Not a 3xx redirect code"));
             return;
@@ -294,12 +323,7 @@ public interface Response extends Content.Sink
             callback.failed(new IllegalArgumentException("No location"));
             return;
         }
-
-        if (response.isCommitted())
-        {
-            callback.failed(new IllegalStateException("Committed"));
-            return;
-        }
+        location = toRedirectURI(request, location);
 
         if (consumeAvailable)
         {
@@ -317,9 +341,22 @@ public interface Response extends Content.Sink
             }
         }
 
-        response.getHeaders().put(HttpHeader.LOCATION, toRedirectURI(request, location));
+        if (content == null && request.getConnectionMetaData().getHttpConfiguration().isGenerateRedirectBody())
+        {
+            response.getHeaders().put(MimeTypes.Type.TEXT_HTML_8859_1.getContentTypeField());
+            String body = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head><meta charset="ISO-8859-1"/><meta http-equiv="refresh" content="0; URL=%s"/><title>Redirecting...</title></head>
+            <body><p>If you are not redirected, <a href="%s">click here</a>.</p></body>
+            </html>
+            """.formatted(location, location);
+            content = BufferUtil.toBuffer(body, StandardCharsets.ISO_8859_1);
+        }
+
+        response.getHeaders().put(HttpHeader.LOCATION, location);
         response.setStatus(code);
-        response.write(true, null, callback);
+        response.write(true, content, callback);
     }
 
     /**

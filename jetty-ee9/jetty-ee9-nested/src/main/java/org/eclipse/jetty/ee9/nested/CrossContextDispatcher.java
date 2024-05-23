@@ -159,6 +159,7 @@ class CrossContextDispatcher implements RequestDispatcher
     private class ForwardRequest extends ServletCoreRequest
     {
         private Request _baseRequest;
+        private HttpURI _fullyQualifiedURI;
 
         public ForwardRequest(ContextHandler.CoreContextRequest coreContextRequest, Request request, HttpServletRequest httpServletRequest)
         {
@@ -209,6 +210,7 @@ class CrossContextDispatcher implements RequestDispatcher
                 }
             });
             _baseRequest = request;
+            _fullyQualifiedURI = HttpURI.build(request.getRootURL().toString()).pathQuery(_uri.getPathQuery()).asImmutable();
         }
 
         @Override
@@ -222,7 +224,7 @@ class CrossContextDispatcher implements RequestDispatcher
         @Override
         public HttpURI getHttpURI()
         {
-            return _uri;
+            return _fullyQualifiedURI;
         }
     }
 

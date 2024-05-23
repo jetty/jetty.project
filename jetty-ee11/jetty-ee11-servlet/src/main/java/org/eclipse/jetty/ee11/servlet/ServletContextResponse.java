@@ -19,6 +19,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletResponseWrapper;
@@ -48,7 +49,7 @@ import org.eclipse.jetty.util.Callback;
  */
 public class ServletContextResponse extends ContextResponse implements ServletContextHandler.ServletResponseInfo
 {
-    protected enum OutputType
+    public enum OutputType
     {
         NONE, STREAM, WRITER
     }
@@ -174,6 +175,9 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
 
     protected ServletApiResponse newServletApiResponse()
     {
+        if (_servletChannel.getServletContextHandler().isCrossContextDispatchSupported() &&
+            DispatcherType.INCLUDE.toString().equals(getRequest().getContext().getCrossContextDispatchType(getRequest())))
+            return new ServletApiResponse.CrossContextInclude(this);
         return new ServletApiResponse(this);
     }
 
@@ -515,7 +519,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         return isWriting() || isStreaming();
     }
 
-    protected enum EncodingFrom
+    public enum EncodingFrom
     {
         /**
          * Character encoding was not set, or the encoding was cleared with {@code setCharacterEncoding(null)}.

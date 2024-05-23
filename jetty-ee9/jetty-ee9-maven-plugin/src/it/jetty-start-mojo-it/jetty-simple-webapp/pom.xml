@@ -112,8 +112,9 @@
               </jettyXmls>
               <loginServices>
                 <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+                  <name>Test Realm</name>
                   <config implementation="org.eclipse.jetty.maven.MavenResource">
-                    <resourceAsString>${basedir}/src/config/login.xml</resourceAsString>
+                    <resourceAsString>${basedir}/src/config/realm.properties</resourceAsString>
                   </config>
                 </loginService>
               </loginServices>

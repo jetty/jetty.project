@@ -106,7 +106,7 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public void initialize() throws Exception
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             if (_filter != null)
                 return;
@@ -140,7 +140,7 @@ public class FilterHolder extends Holder<Filter>
     @Override
     protected Filter createInstance() throws Exception
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             Filter filter = super.createInstance();
             if (filter == null)
@@ -392,7 +392,7 @@ public class FilterHolder extends Holder<Filter>
         @Override
         public String toString()
         {
-            return String.format("%s:%s", this.getClass().getSimpleName(), _filter.toString());
+            return String.format("%s:%s", this.getClass().getSimpleName(), _filter);
         }
     }
 }

@@ -144,7 +144,7 @@ class CrossContextDispatcher implements RequestDispatcher
         }
     }
 
-    private class IncludeResponse extends ServletCoreResponse
+    private static class IncludeResponse extends ServletCoreResponse
     {
         public IncludeResponse(Request coreRequest, HttpServletResponse httpServletResponse)
         {
@@ -154,6 +154,8 @@ class CrossContextDispatcher implements RequestDispatcher
 
     private class ForwardRequest extends ServletCoreRequest
     {
+         private HttpURI _fullyQualifiedURI;
+
         /**
          * @param httpServletRequest the request to wrap
          */
@@ -198,12 +200,13 @@ class CrossContextDispatcher implements RequestDispatcher
                     return ATTRIBUTES;
                 }
             });
+            _fullyQualifiedURI = HttpURI.build(httpServletRequest.getRequestURL().toString()).pathQuery(_uri.getPathQuery()).asImmutable();
         }
 
         @Override
         public HttpURI getHttpURI()
         {
-            return _uri;
+            return _fullyQualifiedURI;
         }
     }
 
@@ -256,7 +259,6 @@ class CrossContextDispatcher implements RequestDispatcher
     {
         HttpServletRequest httpServletRequest = (servletRequest instanceof HttpServletRequest) ? ((HttpServletRequest)servletRequest) : new ServletRequestHttpWrapper(servletRequest);
         HttpServletResponse httpServletResponse = (servletResponse instanceof HttpServletResponse) ? (HttpServletResponse)servletResponse : new ServletResponseHttpWrapper(servletResponse);
-        ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(servletResponse);
 
         IncludeRequest includeRequest = new IncludeRequest(httpServletRequest);
         IncludeResponse includeResponse = new IncludeResponse(includeRequest, httpServletResponse);

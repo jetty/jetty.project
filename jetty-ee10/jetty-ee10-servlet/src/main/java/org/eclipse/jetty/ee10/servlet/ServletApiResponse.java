@@ -23,6 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletRequestInfo;
@@ -530,6 +532,7 @@ public class ServletApiResponse implements HttpServletResponse
         }
 
         @Override
+        @Deprecated(forRemoval = true, since = "12.1.0")
         public String getComment()
         {
             return _cookie.getComment();
@@ -572,6 +575,7 @@ public class ServletApiResponse implements HttpServletResponse
         }
 
         @Override
+        @Deprecated(forRemoval = true, since = "12.1.0")
         public int getVersion()
         {
             return _cookie.getVersion();
@@ -610,13 +614,128 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public boolean equals(Object obj)
         {
-            return HttpCookie.equals(this, obj);
+            return obj instanceof HttpCookie that && HttpCookie.equals(this, that);
         }
 
         @Override
         public String toString()
         {
             return HttpCookie.toString(this);
+        }
+    }
+
+    /**
+     * Servlet API wrapper for cross context included responses.
+     * It prevents the headers or response code from being updated.
+     * @see jakarta.servlet.RequestDispatcher#include(ServletRequest, ServletResponse)
+     */
+    public static class CrossContextInclude extends ServletApiResponse
+    {
+        public CrossContextInclude(ServletContextResponse servletContextResponse)
+        {
+            super(servletContextResponse);
+        }
+
+        @Override
+        public void setCharacterEncoding(String charset)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setLocale(Locale loc)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setContentLength(int len)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setContentLengthLong(long len)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setContentType(String type)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void reset()
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void resetBuffer()
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setDateHeader(String name, long date)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void addDateHeader(String name, long date)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setHeader(String name, String value)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void addHeader(String name, String value)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setIntHeader(String name, int value)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void addIntHeader(String name, int value)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setStatus(int sc)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendError(int sc, String msg) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendError(int sc) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location) throws IOException
+        {
+            // NOOP for include.
         }
     }
 }

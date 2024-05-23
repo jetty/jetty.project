@@ -664,6 +664,24 @@ public class Dispatcher implements RequestDispatcher
         {
             // NOOP for include.
         }
+
+        @Override
+        public void sendRedirect(String location, boolean clearBuffer) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location, int sc) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location, int sc, boolean clearBuffer) throws IOException
+        {
+            // NOOP for include.
+        }
     }
 
     private class AsyncRequest extends ParameterRequestWrapper
@@ -747,12 +765,9 @@ public class Dispatcher implements RequestDispatcher
 
     private class ErrorRequest extends ParameterRequestWrapper
     {
-        private final HttpServletRequest _httpServletRequest;
-
         public ErrorRequest(HttpServletRequest httpRequest)
         {
             super(httpRequest);
-            _httpServletRequest = httpRequest;
         }
 
         @Override

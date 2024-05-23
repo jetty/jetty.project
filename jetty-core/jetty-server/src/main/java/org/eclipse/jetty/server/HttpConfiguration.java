@@ -84,6 +84,7 @@ public class HttpConfiguration implements Dumpable
     private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;
     private boolean _notifyRemoteAsyncErrors = true;
     private boolean _relativeRedirectAllowed = true;
+    private boolean _generateRedirectBody = false;
     private HostPort _serverAuthority;
     private SocketAddress _localAddress;
     private int _maxUnconsumedRequestContentReads = 16;
@@ -158,6 +159,7 @@ public class HttpConfiguration implements Dumpable
         _complianceViolationListeners.addAll(config._complianceViolationListeners);
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
         _relativeRedirectAllowed = config._relativeRedirectAllowed;
+        _generateRedirectBody = config._generateRedirectBody;
         _uriCompliance = config._uriCompliance;
         _serverAuthority = config._serverAuthority;
         _localAddress = config._localAddress;
@@ -714,6 +716,23 @@ public class HttpConfiguration implements Dumpable
     public boolean isRelativeRedirectAllowed()
     {
         return _relativeRedirectAllowed;
+    }
+
+    /**
+     * @param generate True if a redirection body will be generated if no response body is supplied.
+     */
+    public void setGenerateRedirectBody(boolean generate)
+    {
+        _generateRedirectBody = generate;
+    }
+
+    /**
+     * @return True if a redirection body will be generated if no response body is supplied.
+     */
+    @ManagedAttribute("Whether a redirection response body will be generated")
+    public boolean isGenerateRedirectBody()
+    {
+        return _generateRedirectBody;
     }
 
     /**

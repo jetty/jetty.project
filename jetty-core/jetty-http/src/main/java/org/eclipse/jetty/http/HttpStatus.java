@@ -372,7 +372,7 @@ public class HttpStatus
     }
 
     /**
-     * Simple test against an code to determine if it falls into the
+     * Simple test against a code to determine if it falls into the
      * <code>Redirection</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
@@ -384,6 +384,22 @@ public class HttpStatus
     public static boolean isRedirection(int code)
     {
         return ((300 <= code) && (code <= 399));
+    }
+
+    /**
+     * Simple test against a code to determine if it falls into the
+     * <code>Redirection</code> message category as defined in the <a
+     * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
+     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>; and
+     * is a code that can requires a location (i.e. not 304).
+     *
+     * @param code the code to test.
+     * @return true if within range of codes that belongs to
+     * <code>Redirection</code> messages and not a {@code 304}
+     */
+    public static boolean isRedirectionWithLocation(int code)
+    {
+        return isRedirection(code) && code != 304;
     }
 
     /**

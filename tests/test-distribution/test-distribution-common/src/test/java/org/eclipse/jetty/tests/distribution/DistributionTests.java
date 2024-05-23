@@ -1672,9 +1672,8 @@ public class DistributionTests extends AbstractJettyHomeTest
             };
 
             // Put war into ${jetty.base}/wars/ directory
-            Path srcWar = ("ee8".equals(env) ? 
-                    distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet4-demo-simple-webapp:war:" + jettyVersion):
-                    distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-simple-webapp:war:" + jettyVersion);
+            Path srcWar = ("ee8".equals(env) 
+                    ?  distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet4-demo-simple-webapp:war:" + jettyVersion) : distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-simple-webapp:war:" + jettyVersion));
             Path warsDir = jettyBase.resolve("wars");
             FS.ensureDirExists(warsDir);
             Path destWar = warsDir.resolve("demo.war");
@@ -1880,6 +1879,35 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertThat(response.getContentAsString(), containsString("Hello World"));
                 // Verify that the CORS headers are not present, as the allowed origin is different.
                 assertFalse(response.getHeaders().contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
+            }
+        }
+    }
+
+    @Test
+    public void testStateTrackingModule() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=state-tracking,http,demo-handler"))
+        {
+            run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS);
+            assertThat(run1.getExitValue(), is(0));
+
+            int httpPort = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
+            {
+                assertThat(run2.awaitConsoleLogsFor("Started oejs.Server", START_TIMEOUT, TimeUnit.SECONDS), is(true));
+                startHttpClient();
+
+                ContentResponse response = client.newRequest("http://localhost:" + httpPort + "/demo-handler/")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(response.getContentAsString(), containsString("Hello World"));
             }
         }
     }

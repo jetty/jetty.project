@@ -29,8 +29,6 @@ import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 
 /**
- * ServletRequestHttpWrapper
- *
  * Class to tunnel a ServletRequest via an HttpServletRequest
  */
 public class ServletRequestHttpWrapper extends ServletRequestWrapper implements HttpServletRequest
