@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -362,7 +363,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             // If a write call is pending, take the writeCallback to fail below.
-            Runnable invokeWriteFailure = _response.lockedFailWrite(t, false);
+            Runnable invokeWriteFailure = _response.lockedFailWrite(t);
 
             // If there was a pending IO operation, deliver the idle timeout via them.
             if (invokeOnContentAvailable != null || invokeWriteFailure != null)
@@ -431,7 +432,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _onContentAvailable = null;
 
                 // If a write call is in progress, take the writeCallback to fail below.
-                Runnable invokeWriteFailure = _response.lockedFailWrite(x, true);
+                Runnable invokeWriteFailure = _response.lockedFailWrite(x);
 
                 // Notify the failure listeners only once.
                 Consumer<Throwable> onFailure = _onFailure;
@@ -461,6 +462,21 @@ public class HttpChannelState implements HttpChannel, Components
             LOG.debug("consuming content during error {}", unconsumed.toString());
 
         return task;
+    }
+
+    @Override
+    public Runnable onClose()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onClose {} stream={}", this, _stream);
+
+            // If the channel doesn't have a stream, then no action is needed.
+            if (_stream == null)
+                return null;
+        }
+        return onFailure(new EofException());
     }
 
     public void addHttpStreamWrapper(Function<HttpStream, HttpStream> onStreamEvent)
@@ -1058,6 +1074,22 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public int hashCode()
+        {
+            // Override the implementation from the base class,
+            // and align with the implementation of Request.Wrapper.
+            return System.identityHashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            // Override the implementation from the base class,
+            // and align with the implementation of Request.Wrapper.
+            return this == obj;
+        }
+
+        @Override
         public String toString()
         {
             return String.format("%s@%x %s %s", getMethod(), hashCode(), getHttpURI(), _metaData.getHttpVersion());
@@ -1104,20 +1136,17 @@ public class HttpChannelState implements HttpChannel, Components
             return _writeCallback != null;
         }
 
-        private Runnable lockedFailWrite(Throwable x, boolean fatal)
+        private Runnable lockedFailWrite(Throwable x)
         {
             assert _request._lock.isHeldByCurrentThread();
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
-            if (writeCallback != null || fatal)
-            {
-                if (_writeFailure == null)
-                    _writeFailure = x;
-                else
-                    ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
-            }
             if (writeCallback == null)
                 return null;
+            if (_writeFailure == null)
+                _writeFailure = x;
+            else
+                ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
             return () -> HttpChannelState.failed(writeCallback, x);
         }
 
@@ -1447,20 +1476,19 @@ public class HttpChannelState implements HttpChannel, Components
 
             try (AutoLock ignored = _request._lock.lock())
             {
+                if (lockedCompleteCallback())
+                    return;
+
                 request = _request;
                 httpChannelState = _request._httpChannelState;
                 response = httpChannelState._response;
                 stream = httpChannelState._stream;
 
-                // We are being tough on handler implementations and expect them
-                // to not have pending operations when calling succeeded or failed.
+                // We convert a call to succeeded with pending demand/write into a call to failed.
                 if (httpChannelState._onContentAvailable != null)
-                    throw new IllegalStateException("demand pending");
+                    failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
                 if (response.lockedIsWriting())
-                    throw new IllegalStateException("write pending");
-
-                if (lockedCompleteCallback())
-                    return;
+                    failure = ExceptionUtil.combine(failure, new IllegalStateException("write pending"));
 
                 assert httpChannelState._callbackFailure == null;
 
@@ -1476,7 +1504,7 @@ public class HttpChannelState implements HttpChannel, Components
                 long committedContentLength = httpChannelState._committedContentLength;
 
                 if (committedContentLength >= 0 && committedContentLength != totalWritten && !(totalWritten == 0 && HttpMethod.HEAD.is(_request.getMethod())))
-                    failure = new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten));
+                    failure = ExceptionUtil.combine(failure, new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten)));
 
                 // Is the request fully consumed?
                 Throwable unconsumed = stream.consumeAvailable();

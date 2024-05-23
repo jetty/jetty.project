@@ -1863,4 +1863,33 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testStateTrackingModule() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=state-tracking,http,demo-handler"))
+        {
+            run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS);
+            assertThat(run1.getExitValue(), is(0));
+
+            int httpPort = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))
+            {
+                assertThat(run2.awaitConsoleLogsFor("Started oejs.Server", START_TIMEOUT, TimeUnit.SECONDS), is(true));
+                startHttpClient();
+
+                ContentResponse response = client.newRequest("http://localhost:" + httpPort + "/demo-handler/")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(response.getContentAsString(), containsString("Hello World"));
+            }
+        }
+    }
 }

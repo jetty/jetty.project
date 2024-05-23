@@ -1,0 +1,121 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Server Compliance Modes
+
+The Jetty server strives to keep up with the latest https://en.wikipedia.org/wiki/Request_for_Comments[IETF RFC]s for compliance with internet specifications, which are periodically updated.
+
+When possible, Jetty will support backwards compatibility by providing compliance modes that can be configured to allow violations of the current specifications that may have been allowed in obsoleted specifications.
+
+There are compliance modes provided for:
+
+* <<http,HTTP Compliance>>
+* <<uri,URI Compliance>>
+* <<cookie,Cookie Compliance>>
+
+Compliance modes can be configured to allow violations from the RFC requirements, or in some cases to allow additional behaviors that Jetty has implemented in excess of the RFC (for example, to allow <<uri,ambiguous URIs>>).
+
+For example, the HTTP RFCs require that request HTTP methods are https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.1[case sensitive], however Jetty can allow case-insensitive HTTP methods by including the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.Violation.html#CASE_INSENSITIVE_METHOD[`HttpCompliance.Violation.CASE_INSENSITIVE_METHOD`] in the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] set of allowed violations.
+
+[[http]]
+== HTTP Compliance Modes
+
+In 1995, when Jetty was first implemented, there were no RFC specification of HTTP, only a W3C specification for https://www.w3.org/Protocols/HTTP/AsImplemented.html[HTTP/0.9], which has since been obsoleted or augmented by:
+
+ * https://datatracker.ietf.org/doc/html/rfc1945[RFC 1945] for HTTP/1.0 in 1996
+ * https://datatracker.ietf.org/doc/html/rfc2068[RFC 2068] for HTTP/1.1  in 1997
+ * https://datatracker.ietf.org/doc/html/rfc2616[RFC 2616] for HTTP/1.1 bis in 1999
+ * https://datatracker.ietf.org/doc/html/rfc7230[RFC 7230], https://datatracker.ietf.org/doc/html/rfc7231[RFC 7231], https://datatracker.ietf.org/doc/html/rfc7232[RFC 7232], https://datatracker.ietf.org/doc/html/rfc7233[RFC 7233], https://datatracker.ietf.org/doc/html/rfc7234[RFC 7234], https://datatracker.ietf.org/doc/html/rfc7235[RFC 7235] again for HTTP/1.1 in 2014
+ * https://datatracker.ietf.org/doc/html/rfc7540[RFC 7540] for HTTP/2.0 in 2015
+
+In addition to these evolving requirements, some earlier version of Jetty did not completely or strictly implement the RFC at the time (for example, case-insensitive HTTP methods).
+Therefore, upgrading to a newer Jetty version may cause runtime behavior differences that may break your applications.
+
+The link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.Violation.html[`HttpCompliance.Violation`] enumeration defines the RFC requirements that may be optionally enforced by Jetty, to support legacy deployments. These possible violations are grouped into modes by the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] class, which also defines several named modes that support common deployed sets of violations (with the default being link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html#RFC7230[`HttpCompliance.RFC7230`]).
+
+For example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=httpCompliance]
+----
+
+If you want to customize the violations that you want to allow, you can create your own mode using the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html#from(java.lang.String)[`HttpCompliance.from(String)`] method:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=httpComplianceCustom]
+----
+
+[[uri]]
+== URI Compliance Modes
+
+Universal Resource Locators (URLs) where initially formalized in 1994 in https://datatracker.ietf.org/doc/html/rfc1738[RFC 1738] and then refined in 1995 with relative URLs by https://datatracker.ietf.org/doc/html/rfc1808[RFC 1808].
+
+In 1998, URLs were generalized to Universal Resource Identifiers (URIs) by https://datatracker.ietf.org/doc/html/rfc2396[RFC 2396], which also introduced features such a https://datatracker.ietf.org/doc/html/rfc2396#section-3.3[path parameter]s.
+
+This was then obsoleted in 2005 by https://datatracker.ietf.org/doc/html/rfc3986[RFC 3986] which removed the definition for path parameters.
+
+Unfortunately by this stage the existence and use of such parameters had already been codified in the Servlet specification.
+For example, the relative URI `/foo/bar;JSESSIONID=a8b38cd02b1c` would define the path parameter `JSESSIONID` for the path segment `bar`, but the most recent RFC does not specify a formal definition of what this relative URI actually means.
+
+The current situation is that there may be URIs that are entirely valid for https://datatracker.ietf.org/doc/html/rfc3986[RFC 3986], but are ambiguous when handled by the Servlet APIs:
+
+* A URI with `..` _and_ path parameters such as `/some/..;/path` is not https://datatracker.ietf.org/doc/html/rfc3986#section-5.2[_resolved_] by RFC 3986, since the resolution process only applies to the exact segment `..`, not to `..;`.
+However, once the path parameters are removed by the Servlet APIs, the resulting `/some/../path` can easily be resolved to `/path`, rather than be treated as a path that has `..;` as a segment.
+* A URI such as `/some/%2e%2e/path` is not resolved by RFC 3986, yet when URL-decoded by the Servlet APIs will result in `/some/../path` which can easily be resolved to `/path`, rather than be treated as a path that has `..` as a segment.
+* A URI with empty segments like `/some//../path` may be correctly resolved to `/some/path` (the `..` removes the previous empty segment) by the Servlet APIs.
+However, if the URI raw path is passed to some other APIs (for example, file system APIs) it can be interpreted as `/path` because the empty segment `//` is discarded and treated as `/`, and the `..` thus removes the `/some` segment.
+
+In order to avoid ambiguous URIs, Jetty imposes additional URI requirements in excess of what is required by https://datatracker.ietf.org/doc/html/rfc3986[RFC 3986] compliance.
+
+These additional requirements may optionally be violated and are defined by the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.Violation.html[`UriCompliance.Violation`] enumeration.
+
+These violations are then grouped into modes by the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html[`UriCompliance`] class, which also defines several named modes that support common deployed sets of violations, with the default being link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html#DEFAULT[`UriCompliance.DEFAULT`].
+
+For example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=uriCompliance]
+----
+
+If you want to customize the violations that you want to allow, you can create your own mode using the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html#from(java.lang.String)[`UriCompliance.from(String)`] method:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=uriComplianceCustom]
+----
+
+[[cookie]]
+== Cookie Compliance Modes
+
+The standards for Cookies have varied greatly over time from a non-specified but de-facto standard (implemented by the first browsers), through https://tools.ietf.org/html/rfc2965[RFC 2965] and currently to https://tools.ietf.org/html/rfc6265[RFC 6265].
+
+The link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.Violation.html[CookieCompliance.Violation] enumeration defines the RFC requirements that may be optionally enforced by Jetty when parsing the `Cookie` HTTP header in requests and when generating the `Set-Cookie` HTTP header in responses.
+
+These violations are then grouped into modes by the link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html[`CookieCompliance`] class, which also defines several named modes that support common deployed sets of violations, with the default being link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html#RFC6265[`CookieCompliance.RFC6265`].
+
+For example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=cookieCompliance]
+----
+
+If you want to customize the violations that you want to allow, you can create your own mode using the link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html#from(java.lang.String)[`CookieCompliance.from(String)`] method:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=cookieComplianceCustom]
+----

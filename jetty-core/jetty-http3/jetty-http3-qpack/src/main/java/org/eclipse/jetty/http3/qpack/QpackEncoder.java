@@ -107,6 +107,11 @@ public class QpackEncoder implements Dumpable
         _parser = new EncoderInstructionParser(_instructionHandler);
     }
 
+    QpackContext getQpackContext()
+    {
+        return _context;
+    }
+
     Map<Long, StreamInfo> getStreamInfoMap()
     {
         return _streamInfoMap;

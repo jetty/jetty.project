@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8.demos</groupId>
     <artifactId>jetty-ee8-demos</artifactId>
-    <version>12.0.9-SNAPSHOT</version>
+    <version>12.0.10-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-demo-jetty-webapp</artifactId>
   <packaging>war</packaging>
@@ -101,7 +101,9 @@
             <loginServices>
               <loginService implementation="org.eclipse.jetty.security.HashLoginService">
                 <name>Test Realm</name>
-                <config>${project.build.testOutputDirectory}/test-realm.properties</config>
+                <config implementation="org.eclipse.jetty.maven.MavenResource">
+                  <resourceAsString>${project.build.testOutputDirectory}/test-realm.properties</resourceAsString>
+                </config>
               </loginService>
             </loginServices>
           </configuration>

@@ -79,6 +79,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.ResponseUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -103,6 +104,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -690,6 +692,31 @@ public class ServletContextHandlerTest
     {
         _server.stop();
         _server.join();
+    }
+
+    @Test
+    public void testEnsureNotPersistent() throws Exception
+    {
+        ServletContextHandler root = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        root.setContextPath("/");
+        root.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            {
+                Request request = ((ServletApiRequest)req).getRequest();
+                Response response = ((ServletApiResponse)resp).getResponse();
+
+                ResponseUtils.ensureNotPersistent(request, response);
+            }
+        }), "/ensureNotPersistent");
+        _server.setHandler(root);
+
+        _server.start();
+
+        String rawResponse = _connector.getResponse("GET /ensureNotPersistent HTTP/1.0\r\n\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
     }
 
     @Test

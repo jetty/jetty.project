@@ -249,7 +249,7 @@ public class ParserTest
         expected.put(toBuffer(Integer.MAX_VALUE));
         expected.flip();
 
-        Parser parser = new Parser(new ByteBufferPool.NonPooling());
+        Parser parser = new Parser(ByteBufferPool.NON_POOLING);
         assertNull(parser.parse(expected));
         assertThat(parser.getPayloadLength(), equalTo(Integer.MAX_VALUE));
     }
@@ -265,7 +265,7 @@ public class ParserTest
         expected.put(toBuffer(Integer.MAX_VALUE + 1L));
         expected.flip();
 
-        Parser parser = new Parser(new ByteBufferPool.NonPooling());
+        Parser parser = new Parser(ByteBufferPool.NON_POOLING);
         assertThrows(MessageTooLargeException.class, () -> parser.parse(expected));
     }
 
@@ -280,7 +280,7 @@ public class ParserTest
         expected.put(new byte[]{(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF});
         expected.flip();
 
-        Parser parser = new Parser(new ByteBufferPool.NonPooling());
+        Parser parser = new Parser(ByteBufferPool.NON_POOLING);
         assertThrows(MessageTooLargeException.class, () -> parser.parse(expected));
     }
 

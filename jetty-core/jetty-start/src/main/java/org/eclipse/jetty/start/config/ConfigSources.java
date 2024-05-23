@@ -60,7 +60,7 @@ public class ConfigSources implements Iterable<ConfigSource>
         // look for --include-jetty-dir entries
         for (RawArgs.Entry arg : source.getArgs())
         {
-            if (arg.startsWith("--include-jetty-dir"))
+            if (arg.startsWith("--include-jetty-dir") || arg.startsWith("--add-config-dir"))
             {
                 String ref = getValue(arg.getLine());
                 String dirName = getProps().expand(ref);

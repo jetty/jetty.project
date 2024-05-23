@@ -71,6 +71,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -187,6 +188,7 @@ public class CrossContextDispatcherTest
         assertThat(content, containsString("jakarta.servlet.forward.query_string=forward=/verify"));
         assertThat(content, containsString("jakarta.servlet.forward.request_uri=/context/dispatch/"));
         //verify request values
+        assertThat(content, containsString("REQUEST_URL=http://localhost/foreign/"));
         assertThat(content, containsString("CONTEXT_PATH=/foreign"));
         assertThat(content, containsString("SERVLET_PATH=/verify"));
         assertThat(content, containsString("PATH_INFO=/pinfo"));
@@ -369,6 +371,42 @@ public class CrossContextDispatcherTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testCrossContextForwardAndFilter() throws Exception
+    {
+        FilterHolder filterHolder = new FilterHolder(
+            (request, response, chain) ->
+            {
+                // verify that expected RequestURL is still sane during Filter.
+                HttpServletRequest httpRequest = (HttpServletRequest)request;
+                HttpServletResponse httpResponse = (HttpServletResponse)response;
+                StringBuffer requestUrl = httpRequest.getRequestURL();
+                httpResponse.addHeader("X-Filter-RequestURL", requestUrl.toString());
+                chain.doFilter(httpRequest, httpResponse);
+            }
+        );
+        _targetServletContextHandler.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.FORWARD));
+        _targetServletContextHandler.addServlet(VerifyForwardServlet.class, "/verify/*");
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+
+        String rawRequest = """
+                GET /context/dispatch/?forward=/verify HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
+
+        String rawResponse = _connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        String expectedRequestURL = "http://localhost/foreign/verify/pinfo";
+        assertThat(response.get("X-Filter-RequestURL"), is(expectedRequestURL));
+
+        String content = response.getContent();
+        List<String> contentLines = List.of(content.split("\\n"));
+        assertThat(contentLines, hasItem("REQUEST_URL=" + expectedRequestURL));
     }
 
     @Test
@@ -914,6 +952,7 @@ public class CrossContextDispatcherTest
                 res.getWriter().println(RequestDispatcher.FORWARD_REQUEST_URI + "=" + req.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI));
                 res.getWriter().println("----------- REQUEST");
                 HttpServletRequest httpServletRequest = (HttpServletRequest)req;
+                res.getWriter().println("REQUEST_URL=" + httpServletRequest.getRequestURL());
                 res.getWriter().println("CONTEXT_PATH=" + httpServletRequest.getServletContext().getContextPath());
                 res.getWriter().println("SERVLET_PATH=" + httpServletRequest.getServletPath());
                 res.getWriter().println("PATH_INFO=" + httpServletRequest.getPathInfo());

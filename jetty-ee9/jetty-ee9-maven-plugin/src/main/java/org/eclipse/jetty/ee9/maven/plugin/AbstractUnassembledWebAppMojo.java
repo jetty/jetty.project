@@ -23,6 +23,9 @@ import java.util.stream.Collectors;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.eclipse.jetty.maven.MavenProjectHelper;
+import org.eclipse.jetty.maven.Overlay;
+import org.eclipse.jetty.maven.ScanPattern;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -198,7 +201,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
         
         //process any overlays and the war type artifacts, and
         //sets up the base resource collection for the webapp
-        mavenProjectHelper.getOverlayManager().applyOverlays(webApp);
+        mavenProjectHelper.getOverlayManager().applyOverlays(webApp.getCoreContextHandler(), webApp.getBaseAppFirst());
 
         getLog().info("web.xml file = " + webApp.getDescriptor());       
         getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());

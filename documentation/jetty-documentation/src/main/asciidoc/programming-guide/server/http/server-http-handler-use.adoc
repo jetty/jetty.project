@@ -456,6 +456,34 @@ If the application deployed in the cross domain requires cookies or authenticati
 
 For more `CrossOriginHandler` configuration options, refer to the link:{javadoc-url}/org/eclipse/jetty/server/handler/CrossOriginHandler.html[`CrossOriginHandler` javadocs].
 
+[[pg-server-http-handler-use-state-tracking]]
+====== StateTrackingHandler
+
+`StateTrackingHandler` is a xref:pg-troubleshooting[troubleshooting] `Handler` that tracks whether `Handler`/`Request`/`Response` asynchronous APIs are properly used by applications.</p>
+
+Asynchronous APIs are notoriously more difficult to troubleshoot than blocking APIs, and may be subject to restrictions that applications need to respect (a typical case is that they cannot perform blocking operations).
+
+For example, a `Handler` implementation whose `handle(\...)` method returns `true` _must_ eventually complete the callback passed to `handle(\...)` (for more details on the `Handler` APIs, see xref:pg-server-http-handler-impl[this section]).
+
+When an application forgets to complete the callback passed to `handle(\...)`, the HTTP response may not be sent to the client, but it will be difficult to troubleshoot why the client is not receiving responses.
+
+`StateTrackingHandler` helps with this troubleshooting because it tracks the callback passed to `handle(\...)` and emits an event if the callback is not completed within a configurable timeout:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=stateTrackingHandle]
+----
+
+By default, events are logged at warning level, but it is possible to specify a listener to be notified of the events tracked by `StateTrackingHandler`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=stateTrackingListener]
+----
+
+Other events tracked by `StateTrackingHandler` are demand callbacks that block, writes that do not complete their callbacks, or write callbacks that block.
+The complete list of events is specified by the `StateTrackingHandler.Listener` class (link:{javadoc-url}/org/eclipse/jetty/server/handler/StateTrackingHandler.Listener.html[javadocs]).
+
 [[pg-server-http-handler-use-default]]
 ====== DefaultHandler
 

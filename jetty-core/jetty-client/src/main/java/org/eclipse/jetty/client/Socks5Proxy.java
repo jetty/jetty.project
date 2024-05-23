@@ -279,7 +279,7 @@ public class Socks5Proxy extends Proxy
                         .put(Socks5.ADDRESS_TYPE_IPV4);
                     for (int i = 1; i <= 4; ++i)
                     {
-                        byteBuffer.put(Byte.parseByte(matcher.group(i)));
+                        byteBuffer.put((byte)Integer.parseInt(matcher.group(i)));
                     }
                     byteBuffer.putShort(port)
                         .flip();

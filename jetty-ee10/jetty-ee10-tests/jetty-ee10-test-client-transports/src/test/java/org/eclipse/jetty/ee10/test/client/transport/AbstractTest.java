@@ -317,5 +317,14 @@ public class AbstractTest
                 case HTTPS, H2, H3 -> true;
             };
         }
+
+        public boolean isMultiplexed()
+        {
+            return switch (this)
+            {
+                case HTTP, HTTPS, FCGI -> false;
+                case H2C, H2, H3 -> true;
+            };
+        }
     }
 }

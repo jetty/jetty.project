@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10.osgi</groupId>
     <artifactId>jetty-ee10-osgi</artifactId>
-    <version>12.0.9-SNAPSHOT</version>
+    <version>12.0.10-SNAPSHOT</version>
   </parent>
   <artifactId>test-jetty-ee10-osgi</artifactId>
   <name>EE10 :: OSGi :: Test</name>
@@ -41,6 +41,10 @@
           <artifactId>jakarta.el-api</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
@@ -261,18 +265,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!--
-    <dependency>
-       <groupId>org.slf4j</groupId>
-       <artifactId>slf4j-simple</artifactId>
-       <scope>test</scope>
-     </dependency>
-     -->
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -539,6 +531,8 @@
             <systemPropertyVariables>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
+              <!-- uncomment to be able to use jetty logging -->
+              <!-- pax.exam.system>default</pax.exam.system -->
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
             <!-- TODO -->

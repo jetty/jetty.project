@@ -64,7 +64,7 @@ public class BufferedContentSink implements Content.Sink
         if (maxBufferSize < maxAggregationSize)
             throw new IllegalArgumentException("maxBufferSize (" + maxBufferSize + ") must be >= maxAggregationSize (" + maxAggregationSize + ")");
         _delegate = delegate;
-        _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
+        _bufferPool = (bufferPool == null) ? ByteBufferPool.NON_POOLING : bufferPool;
         _direct = direct;
         _maxBufferSize = maxBufferSize;
         _maxAggregationSize = maxAggregationSize;

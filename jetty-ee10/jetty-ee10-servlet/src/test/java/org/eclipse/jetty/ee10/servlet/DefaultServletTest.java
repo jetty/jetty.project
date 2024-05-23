@@ -3488,6 +3488,26 @@ public class DefaultServletTest
     }
 
     @Test
+    public void testSuffixMappings() throws Exception
+    {
+        server.stop();
+
+        Path suffixroot = MavenTestingUtils.getTestResourcePath("suffixroot");
+        ResourceFactory resourceFactory = ResourceFactory.of(context);
+        context.setBaseResource(resourceFactory.newResource(suffixroot.toUri()));
+
+        ServletHolder holderAlt = new ServletHolder("static-js", DefaultServlet.class);
+        context.addServlet(holderAlt, "*.js");
+        ServletHolder holderDef = new ServletHolder("default", DefaultServlet.class);
+        holderDef.setInitParameter("dirAllowed", "true");
+        context.addServlet(holderDef, "/");
+
+        server.start();
+        String rawResponse = connector.getResponse("GET /context/test.js HTTP/1.0\r\n\r\n");
+        assertThat(rawResponse, containsString("Hello"));
+    }
+
+    @Test
     public void testMemoryResourceRange() throws Exception
     {
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
@@ -3516,7 +3536,7 @@ public class DefaultServletTest
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), new ByteBufferPool.NonPooling(), false).getByteBuffer();
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()
@@ -3570,7 +3590,7 @@ public class DefaultServletTest
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), new ByteBufferPool.NonPooling(), false).getByteBuffer();
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()

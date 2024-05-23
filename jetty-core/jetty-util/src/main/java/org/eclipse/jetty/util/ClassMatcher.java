@@ -525,6 +525,27 @@ public class ClassMatcher extends AbstractSet<String>
         add(pattern);
     }
 
+    @Deprecated
+    protected interface Constructor<T extends ClassMatcher>
+    {
+         T construct(Map<String, Entry> entries, IncludeExcludeSet<Entry, String> patterns, IncludeExcludeSet<Entry, URI> locations);
+    }
+
+    /**
+     * Wrap an instance of a {@link ClassMatcher} using a constructor of an extended {@code ClassMatcher}
+     * that needs access to the internal fields of the passed matcher.
+     * @param matcher The matcher to wrap
+     * @param constructor The constructor to build the API specific wrapper
+     * @param <T> The type of the API specific wrapper
+     * @return A wrapper of the {@code matcher}, sharing internal state.
+     * @deprecated use {@link ClassMatcher} directly.
+     */
+    @Deprecated
+    protected static <T extends ClassMatcher> T wrap(ClassMatcher matcher, Constructor<T> constructor)
+    {
+        return constructor.construct(matcher._entries, matcher._patterns, matcher._locations);
+    }
+
     public ClassMatcher asImmutable()
     {
         return new ClassMatcher(Map.copyOf(_entries),
