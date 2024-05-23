@@ -843,19 +843,22 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Enumeration<String> getAttributeNames()
     {
-        Set<String> set = getRequest().getAttributeNameSet();
         if (_async != null)
         {
-            set = new HashSet<>(set);
-            set.add(AsyncContext.ASYNC_REQUEST_URI);
-            set.add(AsyncContext.ASYNC_CONTEXT_PATH);
-            set.add(AsyncContext.ASYNC_SERVLET_PATH);
-            set.add(AsyncContext.ASYNC_PATH_INFO);
-            set.add(AsyncContext.ASYNC_QUERY_STRING);
-            set.add(AsyncContext.ASYNC_MAPPING);
+            Set<String> names = new HashSet<>(Set.of(
+
+                AsyncContext.ASYNC_REQUEST_URI,
+                AsyncContext.ASYNC_CONTEXT_PATH,
+                AsyncContext.ASYNC_SERVLET_PATH,
+                AsyncContext.ASYNC_PATH_INFO,
+                AsyncContext.ASYNC_QUERY_STRING,
+                AsyncContext.ASYNC_MAPPING
+            ));
+            names.addAll(getRequest().getAttributeNameSet());
+            return Collections.enumeration(names);
         }
 
-        return Collections.enumeration(set);
+        return Collections.enumeration(getRequest().getAttributeNameSet());
     }
 
     @Override
