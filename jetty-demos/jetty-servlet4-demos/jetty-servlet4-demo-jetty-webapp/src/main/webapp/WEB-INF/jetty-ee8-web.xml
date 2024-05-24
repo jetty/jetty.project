@@ -9,7 +9,7 @@ org.eclipse.jetty.ee8.servlet.WebApplicationContext object
 -->
 
 <Configure class="org.eclipse.jetty.ee8.webapp.WebAppContext">
-  <Get name="ServerClassMatcher">
+  <Get name="serverClassMatcher">
     <Call name="exclude">
       <Arg>
         <Array type="String">
