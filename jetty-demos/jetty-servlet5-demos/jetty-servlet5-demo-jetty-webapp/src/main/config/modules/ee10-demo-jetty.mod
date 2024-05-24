@@ -24,6 +24,6 @@ demo-realm
 [files]
 webapps/ee10-demo-jetty.d/
 basehome:modules/demo.d/ee10-demo-jetty.xml|webapps/ee10-demo-jetty.xml
-basehome:modules/demo.d/override-web.xml|webapps/jetty-override-web.xml
+basehome:modules/demo.d/override-web.xml|webapps/ee10-demo-jetty.d/override-web.xml
 basehome:modules/demo.d/ee10-demo-jetty.properties|webapps/ee10-demo-jetty.properties
 maven://org.eclipse.jetty.demos/jetty-servlet5-demo-jetty-webapp/${jetty.version}/war|webapps/ee10-demo-jetty.war
