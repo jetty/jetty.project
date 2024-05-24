@@ -23,8 +23,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A scheduler based on the the JVM Timer class
+ * A scheduler based on the JVM {@link Timer} class.
+ *
+ * @deprecated use {@link ScheduledExecutorScheduler} instead.
  */
+@Deprecated(since = "12.0.9", forRemoval = true)
 public class TimerScheduler extends AbstractLifeCycle implements Scheduler, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TimerScheduler.class);
