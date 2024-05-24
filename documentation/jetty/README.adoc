@@ -16,7 +16,14 @@
 This project is the root of the Jetty documentation.
 The content files in this project get sourced by the Antora playbook in the playbook repository that builds the website.
 
-In order to build the documentation locally, you first need to prepare a jetty-home directory by running the following command from the top-level folder of the Jetty project:
+== Usage
+
+You can choose to do a fast build or a build that includes processing of the jetty block.
+
+=== Fast build
+
+To build the documentation quickly without executing the jetty blocks, there are two steps required.
+First, you first need to prepare a jetty-home directory by running the following command from the top-level folder of the Jetty project:
 
  $ mvn install -Dcollector -Pfast -am -pl documentation/jetty
 
@@ -24,7 +31,18 @@ Then you can use the following command from this directory to prepare and run An
 
  $ mvn antora -N
 
-If you don't run the first command, the Antora build will still succeed, but you will get warnings about missing includes for files taken from jetty-home.
+If you don't run the first command, the Antora build will still succeed, but you'll get warnings about missing includes for files taken from jetty-home.
+
+=== Build with jetty block
+
+To build the documentation such that the jetty blocks are executed, you only need to run a single command:
+
+ $ mvn antora:antora@run-jetty -N
+
+Using this task execution, you don't have to seed the output of collector since it will happen when Antora runs.
+This task execution also fulfills the prerequisite for a fast build, so now you can run `mvn antora -N`.
+
+== How it works
 
 The `antora:antora` goal, which the `antora` lifecycle invokes, takes advantage of the playbook provider feature so the playbook for this branch can be centrally managed in the playbook repository.
 
