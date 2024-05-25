@@ -1,0 +1,32 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Jetty Documentation
+
+This project is the root of the Jetty documentation.
+The content files in this project get sourced by the Antora playbook in the playbook repository that builds the website.
+
+In order to build the documentation locally, you first need to prepare a jetty-home directory by running the following command from the top-level folder of the Jetty project:
+
+ $ mvn install -Dcollector -Pfast -am -pl documentation/jetty
+
+Then you can use the following command from this directory to prepare and run Antora using a preview profile:
+
+ $ mvn antora -N
+
+If you don't run the first command, the Antora build will still succeed, but you will get warnings about missing includes for files taken from jetty-home.
+
+The `antora:antora` goal, which the `antora` lifecycle invokes, takes advantage of the playbook provider feature so the playbook for this branch can be centrally managed in the playbook repository.
+
+Note that this preview profile does not run the jetty blocks, so you will only see the configuration for those runs in the preview site.
+If you want to build the full site, use the build in the playbook repository.
