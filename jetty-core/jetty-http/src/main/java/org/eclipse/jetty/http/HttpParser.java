@@ -92,7 +92,7 @@ import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
  */
 public class HttpParser
 {
-    public static final Logger LOG = LoggerFactory.getLogger(HttpParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpParser.class);
     public static final int INITIAL_URI_LENGTH = 256;
     private static final int MAX_CHUNK_LENGTH = Integer.MAX_VALUE / 16 - 16;
     private static final String UNMATCHED_VALUE = "\u0000";

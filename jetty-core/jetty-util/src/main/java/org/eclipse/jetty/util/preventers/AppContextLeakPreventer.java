@@ -25,7 +25,6 @@ import javax.imageio.ImageIO;
  */
 public class AppContextLeakPreventer extends AbstractLeakPreventer
 {
-
     @Override
     public void prevent(ClassLoader loader)
     {
