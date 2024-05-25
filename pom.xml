@@ -1159,26 +1159,6 @@
       </dependency>
       <dependency>
         <groupId>org.reactivestreams</groupId>
-        <artifactId>reactive-streams</artifactId>
-        <version>${reactive-streams.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.reactivestreams</groupId>
-        <artifactId>reactive-streams-examples</artifactId>
-        <version>${reactive-streams.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.reactivestreams</groupId>
-        <artifactId>reactive-streams-flow-adapters</artifactId>
-        <version>${reactive-streams.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.reactivestreams</groupId>
-        <artifactId>reactive-streams-tck</artifactId>
-        <version>${reactive-streams.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.reactivestreams</groupId>
         <artifactId>reactive-streams-tck-flow</artifactId>
         <version>${reactive-streams.version}</version>
       </dependency>
