@@ -786,10 +786,43 @@ public class ServletHandler extends Handler.Wrapper
      */
     public ServletHolder addServletWithMapping(Class<? extends Servlet> servlet, String pathSpec)
     {
-        ServletHolder holder = newServletHolder(Source.EMBEDDED);
-        holder.setHeldClass(servlet);
-        addServletWithMapping(holder, pathSpec);
+        return addServletWithMapping(null, servlet, pathSpec);
+    }
 
+    /**
+     * Convenience method to add a servlet.
+     *
+     * @param servletName The name of the servlet holder or {@code null} for a default name.
+     * @param servlet the servlet class
+     * @param pathSpecs the path specs
+     * @return The servlet holder.
+     */
+    public ServletHolder addServletWithMapping(String servletName, Class<? extends Servlet> servlet, String... pathSpecs)
+    {
+        ServletHolder holder = newServletHolder(Source.EMBEDDED);
+        if (servletName != null)
+            holder.setName(servletName);
+        holder.setHeldClass(servlet);
+        addServletWithMappings(holder, pathSpecs);
+
+        return holder;
+    }
+
+    /**
+     * Convenience method to add a servlet.
+     *
+     * @param servletName The name of the servlet holder or {@code null} for a default name.
+     * @param servlet the servlet instance
+     * @param pathSpecs the path specs
+     * @return The servlet holder.
+     */
+    public ServletHolder addServletWithMapping(String servletName, Servlet servlet, String... pathSpecs)
+    {
+        ServletHolder holder = newServletHolder(Source.EMBEDDED);
+        if (servletName != null)
+            holder.setName(servletName);
+        holder.setServlet(servlet);
+        addServletWithMappings(holder, pathSpecs);
         return holder;
     }
 
@@ -801,6 +834,17 @@ public class ServletHandler extends Handler.Wrapper
      */
     public void addServletWithMapping(ServletHolder servlet, String pathSpec)
     {
+        addServletWithMappings(servlet, pathSpec);
+    }
+
+    /**
+     * Convenience method to add a servlet.
+     *
+     * @param servlet servlet holder to add
+     * @param pathSpecs servlet mappings for the servletHolder
+     */
+    public void addServletWithMappings(ServletHolder servlet, String... pathSpecs)
+    {
         Objects.requireNonNull(servlet);
         ServletHolder[] holders = getServlets();
         try
@@ -811,10 +855,13 @@ public class ServletHandler extends Handler.Wrapper
                     setServlets(ArrayUtil.addToArray(holders, servlet, ServletHolder.class));
             }
 
-            ServletMapping mapping = new ServletMapping();
-            mapping.setServletName(servlet.getName());
-            mapping.setPathSpec(pathSpec);
-            setServletMappings(ArrayUtil.addToArray(getServletMappings(), mapping, ServletMapping.class));
+            if (pathSpecs != null && pathSpecs.length > 0)
+            {
+                ServletMapping mapping = new ServletMapping();
+                mapping.setServletName(servlet.getName());
+                mapping.setPathSpecs(pathSpecs);
+                addServletMapping(mapping);
+            }
         }
         catch (RuntimeException e)
         {

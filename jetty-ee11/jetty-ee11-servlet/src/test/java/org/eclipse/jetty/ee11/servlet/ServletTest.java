@@ -15,23 +15,25 @@ package org.eclipse.jetty.ee11.servlet;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ServletTest
@@ -197,40 +199,75 @@ public class ServletTest
         }
     }
 
-    @Test
-    public void testHttpServletMapping() throws Exception
+    public static Stream<Arguments> mappings()
     {
-        _context.addServlet(new HttpServlet()
+        return Stream.of(
+            // from servlet javadoc
+            Arguments.of("/", "", "", "CONTEXT_ROOT"),
+            Arguments.of("/index.html", "", "/", "DEFAULT"),
+            Arguments.of("/MyServlet/index.html", "", "/", "DEFAULT"),
+            Arguments.of("/MyServlet", "MyServlet", "/MyServlet", "EXACT"),
+            Arguments.of("/MyServlet/foo", "", "/", "DEFAULT"),
+            Arguments.of("/foo.extension", "foo", "*.extension", "EXTENSION"),
+            Arguments.of("/bar/foo.extension", "bar/foo", "*.extension", "EXTENSION"),
+            Arguments.of("/path/foo", "foo", "/path/*", "PATH"),
+            Arguments.of("/path/foo/bar", "foo/bar", "/path/*", "PATH"),
+
+            // extra tests
+            Arguments.of("/path/", "", "/path/*", "PATH"),
+            Arguments.of("/path", "", "/path/*", "PATH")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("mappings")
+    public void testHttpServletMapping(String uri, String matchValue, String pattern, String mappingMatch) throws Exception
+    {
+        ServletHolder holder = new ServletHolder("MyServlet", new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 HttpServletMapping mapping = req.getHttpServletMapping();
-                assertThat(mapping.getMappingMatch(), is(MappingMatch.EXACT));
-                assertThat(mapping.getMatchValue(), is("get"));
-                assertThat(mapping.getPattern(), is("/get"));
-
-                mapping = ServletPathMapping.from(mapping);
-                assertThat(mapping.getMappingMatch(), is(MappingMatch.EXACT));
-                assertThat(mapping.getMatchValue(), is("get"));
-                assertThat(mapping.getPattern(), is("/get"));
-
-                mapping = ServletPathMapping.from(mapping.toString());
-                assertThat(mapping.getMappingMatch(), is(MappingMatch.EXACT));
-                assertThat(mapping.getMatchValue(), is("get"));
-                assertThat(mapping.getPattern(), is("/get"));
-
-                resp.getWriter().println("Hello!");
+                resp.getWriter().println("""
+                    matchValue: '%s'
+                    pattern: '%s'
+                    MappingMatch: '%s'
+                    """.formatted(
+                    mapping.getMatchValue(),
+                    mapping.getPattern(),
+                    mapping.getMappingMatch()
+                ));
             }
-        }, "/get");
+        });
 
+        ServletMapping mapping = new ServletMapping();
+        mapping.setServletName(holder.getName());
+        mapping.setPathSpecs(new String[]
+        {
+            "/",
+            "/MyServlet",
+            "",
+            "*.extension",
+            "/path/*"
+        });
+        _context.getServletHandler().addServlet(holder);
+        _context.getServletHandler().addServletMapping(mapping);
         _server.start();
 
         String response = _connector.getResponse("""
-            GET /ctx/get HTTP/1.0
+            GET /ctx%s HTTP/1.0
             
-            """);
+            """.formatted(uri));
         assertThat(response, containsString(" 200 OK"));
-        assertThat(response, containsString("Hello!"));
+
+        assertThat(response, containsString("""
+                    matchValue: '%s'
+                    pattern: '%s'
+                    MappingMatch: '%s'
+                    """.formatted(
+            matchValue,
+            pattern,
+            mappingMatch)));
     }
 }
