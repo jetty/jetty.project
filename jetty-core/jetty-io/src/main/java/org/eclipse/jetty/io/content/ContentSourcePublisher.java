@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io.content;
 
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Flow;
@@ -43,8 +44,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
 
     public ContentSourcePublisher(Content.Source content)
     {
-        if (content == null)
-            throw new IllegalArgumentException("Content.Source must not be null");
+        Objects.requireNonNull(content, "Content.Source must not be null");
         this.content = new AtomicReference<>(content);
     }
 
@@ -135,10 +135,8 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         {
             public LastWill
             {
-                if (reason == null)
-                    throw new IllegalArgumentException("Last will reason must not be null");
-                if (finalSignal == null)
-                    throw new IllegalArgumentException("Last will final signal must not be null");
+                Objects.requireNonNull(reason, "Last will reason must not be null");
+                Objects.requireNonNull(finalSignal, "Last will final signal must not be null");
             }
         }
 
