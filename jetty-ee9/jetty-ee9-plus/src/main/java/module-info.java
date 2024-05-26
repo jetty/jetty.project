@@ -23,7 +23,7 @@ module org.eclipse.jetty.ee9.plus
     requires transitive org.eclipse.jetty.plus;
 
     // Only required if using Transaction.
-    requires static jakarta.transaction;
+    requires static transitive jakarta.transaction;
 
     exports org.eclipse.jetty.ee9.plus.jndi;
     exports org.eclipse.jetty.ee9.plus.webapp;

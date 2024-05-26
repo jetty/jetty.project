@@ -13,13 +13,13 @@
 
 module org.eclipse.jetty.plus
 {
-    requires org.eclipse.jetty.security;
+    requires transitive org.eclipse.jetty.security;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
 
     requires transitive java.naming;
     // Only required if using DataSourceLoginService.
-    requires static java.sql;
+    requires static transitive java.sql;
 
     exports org.eclipse.jetty.plus.annotation;
     exports org.eclipse.jetty.plus.jndi;
