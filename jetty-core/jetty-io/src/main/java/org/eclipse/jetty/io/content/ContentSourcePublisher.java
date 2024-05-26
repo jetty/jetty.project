@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.StaticException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,6 +196,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
     private static final class ActiveSubscription extends IteratingCallback implements LastWillSubscription
     {
         private static final long NO_MORE_DEMAND = -1;
+        private static final Throwable COMPLETED = new StaticException("Source.Content read fully");
         private final AtomicReference<LastWill> cancelled;
         private final AtomicLong demand;
         private Content.Source content;
@@ -275,7 +277,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
 
             if (chunk.isLast())
             {
-                cancel(new CompletionException("Source.Content read fully", null), FinalSignal.COMPLETE);
+                cancel(COMPLETED, FinalSignal.COMPLETE);
                 return Action.IDLE;
             }
 
