@@ -617,7 +617,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     default Set<String> getFieldNamesCollection()
     {
         Set<HttpHeader> seenByHeader = EnumSet.noneOf(HttpHeader.class);
-        Set<String> seenByName = null;
+        Set<String> buildByName = null;
         List<String> list = new ArrayList<>(size());
 
         for (HttpField f : this)
@@ -625,9 +625,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             HttpHeader header = f.getHeader();
             if (header == null)
             {
-                if (seenByName == null)
-                    seenByName = new TreeSet<>(String::compareToIgnoreCase);
-                if (seenByName.add(f.getName()))
+                if (buildByName == null)
+                    buildByName = new TreeSet<>(String::compareToIgnoreCase);
+                if (buildByName.add(f.getName()))
                     list.add(f.getName());
             }
             else if (seenByHeader.add(header))
@@ -635,6 +635,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 list.add(f.getName());
             }
         }
+
+        Set<String> seenByName = buildByName;
 
         // use the list to retain a rough ordering
         return new AbstractSet<>()
@@ -649,6 +651,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             public int size()
             {
                 return list.size();
+            }
+
+            @Override
+            public boolean contains(Object o)
+            {
+                if (o instanceof String s)
+                    return seenByName != null && seenByName.contains(s) || seenByHeader.contains(HttpHeader.CACHE.get(s));
+                return false;
             }
         };
     }

@@ -244,15 +244,15 @@ class ImmutableHttpFields implements HttpFields
     /**
      * An immutable {@link HttpFields} instance, optimized for random field access.
      */
-    private static class RandomAccess implements HttpFields
+    public static class RandomAccess implements HttpFields
     {
         private final HttpFields _httpFields;
         private final EnumMap<HttpHeader, HttpField> _enumMap = new EnumMap<>(HttpHeader.class);
         private final Map<String, HttpField> _stringMap;
 
-        RandomAccess(org.eclipse.jetty.http.ImmutableHttpFields httpFields)
+        RandomAccess(HttpFields httpFields)
         {
-            _httpFields = Objects.requireNonNull(httpFields);
+            _httpFields = Objects.requireNonNull(httpFields.asImmutable());
             Map<String, HttpField> stringMap = null;
             for (HttpField field : httpFields)
             {
@@ -354,7 +354,16 @@ class ImmutableHttpFields implements HttpFields
         @Override
         public Set<String> getFieldNamesCollection()
         {
-            LinkedHashSet<String> set = new LinkedHashSet<>();
+            LinkedHashSet<String> set = new LinkedHashSet<>()
+            {
+                @Override
+                public boolean contains(Object o)
+                {
+                    if (o instanceof String s)
+                        return _stringMap.containsKey(s) || _enumMap.containsKey(HttpHeader.CACHE.get(s));
+                    return false;
+                }
+            };
             TreeSet<String> seenByName = null;
             for (HttpField field : _httpFields)
             {
