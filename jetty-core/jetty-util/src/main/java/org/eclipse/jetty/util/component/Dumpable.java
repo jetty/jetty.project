@@ -56,7 +56,7 @@ public interface Dumpable
     void dump(Appendable out, String indent) throws IOException;
 
     /**
-     * Utility method to call dump to a {@link String}
+     * Utility method to dump to a {@link String}
      *
      * @param dumpable The dumpable to dump
      * @return The dumped string
