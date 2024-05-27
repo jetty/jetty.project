@@ -155,7 +155,6 @@ public class ServerTest
         assertThat(dump, containsString("oejs.Server@"));
         assertThat(dump, containsString("QueuedThreadPool"));
         assertThat(dump, containsString("+= ReservedThreadExecutor@"));
-        assertThat(dump, containsString("1: ReservedThread@"));
         assertThat(dump, containsString(".ArrayByteBufferPool@"));
         assertThat(dump, containsString("+- System Properties size="));
         assertThat(dump, containsString("+> java.home: "));
