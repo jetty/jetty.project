@@ -226,7 +226,7 @@
     <ee11.jakarta.xml.jaxws.impl.version>4.0.2</ee11.jakarta.xml.jaxws.impl.version>
     <ee11.jakarta.xml.ws.api.version>4.0.1</ee11.jakarta.xml.ws.api.version>
     <ee11.jersey.version>4.0.0-M1</ee11.jersey.version>
-    <ee11.jsp.impl.version>11.0.0-SNAPSHOT</ee11.jsp.impl.version>
+    <ee11.jsp.impl.version>11.0.0-M20</ee11.jsp.impl.version>
     <ee11.mail.impl.version>2.0.1</ee11.mail.impl.version>
     <ee11.weld.version>6.0.0.Beta1</ee11.weld.version>
 
