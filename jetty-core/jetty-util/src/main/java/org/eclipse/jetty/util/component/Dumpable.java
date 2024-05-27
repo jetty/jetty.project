@@ -14,8 +14,13 @@
 package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Array;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -64,6 +69,9 @@ public interface Dumpable
         return b.toString();
     }
 
+    DateTimeFormatter UTC_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
+    DateTimeFormatter LOCAL_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS Z").withZone(ZoneId.of(System.getProperty("user.timezone")));
+
     /**
      * Utility method to dump to an {@link Appendable}
      *
@@ -78,18 +86,25 @@ public interface Dumpable
 
             out.append(KEY);
             Runtime runtime = Runtime.getRuntime();
-            out.append("JVM: %s %s; Jetty: %s; CPUs: %d; mem(free/total/max)B:%,d/%,d/%,d".formatted(
+            Instant now = Instant.now();
+            out.append("JVM: %s %s; OS: %s %s %s; Jetty: %s; CPUs: %d; mem(free/total/max): %,d/%,d/%,d MB\nUTC: %s; %s: %s".formatted(
                 System.getProperty("java.runtime.name"),
                 System.getProperty("java.runtime.version"),
+                System.getProperty("os.name"),
+                System.getProperty("os.arch"),
+                System.getProperty("os.version"),
                 Jetty.VERSION,
                 runtime.availableProcessors(),
-                runtime.freeMemory(),
-                runtime.totalMemory(),
-                runtime.maxMemory()));
+                runtime.freeMemory() / (1024 * 1024),
+                runtime.totalMemory() / (1024 * 1024),
+                runtime.maxMemory() / (1024 * 1024),
+                UTC_FORMATTER.format(now),
+                System.getProperty("user.timezone"),
+                LOCAL_FORMATTER.format(now)));
         }
         catch (IOException e)
         {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 

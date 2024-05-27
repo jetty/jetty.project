@@ -151,6 +151,7 @@ public class ServerTest
         testSimpleGET();
         ((QueuedThreadPool)(_server.getThreadPool())).tryExecute(() -> {});
         String dump = _server.dump();
+        System.err.println(dump);
         assertThat(dump, containsString("oejs.Server@"));
         assertThat(dump, containsString("QueuedThreadPool"));
         assertThat(dump, containsString("+= ReservedThreadExecutor@"));
