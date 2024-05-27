@@ -38,9 +38,14 @@ import java.util.stream.StreamSupport;
 /**
  * <p>An ordered collection of {@link HttpField}s that represent the HTTP headers
  * or HTTP trailers of an HTTP request or an HTTP response.</p>
+ *
  * <p>{@link HttpFields} is immutable and typically used in server-side HTTP requests
  * and client-side HTTP responses, while {@link HttpFields.Mutable} is mutable and
  * typically used in server-side HTTP responses and client-side HTTP requests.</p>
+ *
+ * <p>The primary implementations of {@code HttpFields} have been optimized assuming few
+ * lookup operations, thus typically if many {@link HttpField}s need to looked up, it may be
+ * better to use an {@link Iterator} or the {@link #asRandomAccess()} method.</p>
  */
 public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 {
@@ -194,6 +199,18 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     default HttpFields asImmutable()
     {
         return HttpFields.build(this).asImmutable();
+    }
+
+    /**
+     * <p>Returns an immutable version of this {@link HttpFields} instance, possibly optimized for random access.</p>
+     * <p>Mutable {@code HttpFields} cannot be optimized for random access, so {@link #asImmutable()} should be called
+     * first if a random access version of mutable Fields are required.</p>
+     *
+     * @return an {@link HttpFields} instance, which may be optimized for RandomAccess
+     */
+    default HttpFields asRandomAccess()
+    {
+        return this;
     }
 
     /**
@@ -594,7 +611,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      * <p>Returns a {@link Set} of the field names.</p>
      * <p>Case-sensitivity of the field names is preserved.</p>
      *
-     * @return a {@link Set} of the field names
+     * @return an immutable {@link Set} of the field names. Changes made to the
+     * {@code HttpFields} after this call are not reflected in the set.
      */
     default Set<String> getFieldNamesCollection()
     {

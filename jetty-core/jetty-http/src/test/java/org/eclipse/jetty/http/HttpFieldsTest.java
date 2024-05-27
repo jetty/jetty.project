@@ -42,7 +42,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -1466,5 +1468,51 @@ public class HttpFieldsTest
         assertThat(wrapper.size(), is(0));
         assertThat(wrapper.actions, is(List.of("onAddField", "onReplaceField", "onRemoveField")));
         wrapper.actions.clear();
+    }
+
+    @Test
+    public void testRandomAccess()
+    {
+        HttpFields.Mutable mutable = HttpFields.build();
+        assertThat(mutable.asRandomAccess(), sameInstance(mutable));
+
+        mutable.add("expect", "100")
+            .add("RaNdOm", "value")
+            .add("Accept-Charset", "UTF-8")
+            .add("accept-charset", "UTF-16")
+            .add("foo-bar", "one")
+            .add("Foo-Bar", "two")
+            .asImmutable();
+
+        HttpFields header = mutable.asImmutable().asRandomAccess();
+        assertThat(header, not(sameInstance(mutable)));
+
+        assertThat(header.get("expect"), is("100"));
+        assertThat(header.get("Expect"), is("100"));
+        assertThat(header.get("EXPECT"), is("100"));
+        assertThat(header.get("eXpEcT"), is("100"));
+        assertThat(header.get(HttpHeader.EXPECT), is("100"));
+
+        assertThat(header.get("random"), is("value"));
+        assertThat(header.get("Random"), is("value"));
+        assertThat(header.get("RANDOM"), is("value"));
+        assertThat(header.get("rAnDoM"), is("value"));
+        assertThat(header.get("RaNdOm"), is("value"));
+
+        assertThat(header.get("Accept-Charset"), is("UTF-8"));
+        assertThat(header.get("accept-charset"), is("UTF-8"));
+        assertThat(header.get(HttpHeader.ACCEPT_CHARSET), is("UTF-8"));
+
+        assertThat(header.getValuesList("Accept-Charset"), contains("UTF-8", "UTF-16"));
+        assertThat(header.getValuesList("accept-charset"), contains("UTF-8", "UTF-16"));
+        assertThat(header.getValuesList(HttpHeader.ACCEPT_CHARSET), contains("UTF-8", "UTF-16"));
+
+        assertThat(header.get("foo-bar"), is("one"));
+        assertThat(header.get("Foo-Bar"), is("one"));
+        assertThat(header.getValuesList("foo-bar"), contains("one", "two"));
+        assertThat(header.getValuesList("Foo-Bar"), contains("one", "two"));
+
+        // We know the order of the set is deterministic
+        assertThat(header.getFieldNamesCollection(), contains("Expect", "RaNdOm", "Accept-Charset", "foo-bar"));
     }
 }
