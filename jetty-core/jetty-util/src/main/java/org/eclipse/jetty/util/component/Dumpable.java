@@ -69,9 +69,6 @@ public interface Dumpable
         return b.toString();
     }
 
-    DateTimeFormatter UTC_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
-    DateTimeFormatter LOCAL_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS Z").withZone(ZoneId.of(System.getProperty("user.timezone")));
-
     /**
      * Utility method to dump to an {@link Appendable}
      *
@@ -87,9 +84,11 @@ public interface Dumpable
             out.append(KEY);
             Runtime runtime = Runtime.getRuntime();
             Instant now = Instant.now();
-            out.append("JVM: %s %s; OS: %s %s %s; Jetty: %s; CPUs: %d; mem(free/total/max): %,d/%,d/%,d MB\nUTC: %s; %s: %s".formatted(
-                System.getProperty("java.runtime.name"),
-                System.getProperty("java.runtime.version"),
+            String zone = System.getProperty("user.timezone");
+            out.append("JVM: %s %s %s; OS: %s %s %s; Jetty: %s; CPUs: %d; mem(free/total/max): %,d/%,d/%,d MiB\nUTC: %s; %s: %s".formatted(
+                System.getProperty("java.vm.vendor"),
+                System.getProperty("java.vm.name"),
+                System.getProperty("java.vm.version"),
                 System.getProperty("os.name"),
                 System.getProperty("os.arch"),
                 System.getProperty("os.version"),
@@ -98,9 +97,9 @@ public interface Dumpable
                 runtime.freeMemory() / (1024 * 1024),
                 runtime.totalMemory() / (1024 * 1024),
                 runtime.maxMemory() / (1024 * 1024),
-                UTC_FORMATTER.format(now),
-                System.getProperty("user.timezone"),
-                LOCAL_FORMATTER.format(now)));
+                DateTimeFormatter.ISO_DATE_TIME.format(now.atOffset(ZoneOffset.UTC)),
+                zone,
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(now.atZone(ZoneId.of(zone)))));
         }
         catch (IOException e)
         {
