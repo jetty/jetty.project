@@ -54,6 +54,7 @@ import org.eclipse.jetty.util.component.AttributeContainerMap;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.DumpableAttributes;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.DumpableMap;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -137,6 +138,7 @@ public class Server extends Handler.Wrapper implements Attributes
     public Server(@Name("threadPool") ThreadPool pool)
     {
         this(pool, null, null);
+        installBean(new DumpableMap("System Properties", System.getProperties()));
     }
 
     public Server(@Name("threadPool") ThreadPool threadPool, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") ByteBufferPool bufferPool)

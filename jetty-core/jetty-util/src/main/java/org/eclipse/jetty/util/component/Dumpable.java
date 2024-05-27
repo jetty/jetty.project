@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject("Dumpable Object")
 public interface Dumpable
 {
-    String KEY = "key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +@ map, +> undefined";
+    String KEY = "key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +@ map, +> undefined\n";
 
     @ManagedOperation(value = "Dump the nested Object state as a String", impact = "INFO")
     default String dump()
@@ -50,24 +51,46 @@ public interface Dumpable
     void dump(Appendable out, String indent) throws IOException;
 
     /**
-     * Utility method to implement {@link #dump()} by calling {@link #dump(Appendable, String)}
+     * Utility method to call dump to a {@link String}
      *
      * @param dumpable The dumpable to dump
      * @return The dumped string
+     * @see #dump(Appendable, String)
      */
     static String dump(Dumpable dumpable)
     {
         StringBuilder b = new StringBuilder();
+        dump(dumpable, b);
+        return b.toString();
+    }
+
+    /**
+     * Utility method to dump to an {@link Appendable}
+     *
+     * @param dumpable The dumpable to dump
+     * @param out The destination of the dump
+     */
+    static void dump(Dumpable dumpable, Appendable out)
+    {
         try
         {
-            dumpable.dump(b, "");
+            dumpable.dump(out, "");
+
+            out.append(KEY);
+            Runtime runtime = Runtime.getRuntime();
+            out.append("JVM: %s %s; Jetty: %s; CPUs: %d; mem(free/total/max)B:%,d/%,d/%,d".formatted(
+                System.getProperty("java.runtime.name"),
+                System.getProperty("java.runtime.version"),
+                Jetty.VERSION,
+                runtime.availableProcessors(),
+                runtime.freeMemory(),
+                runtime.totalMemory(),
+                runtime.maxMemory()));
         }
         catch (IOException e)
         {
-            b.append(e.toString());
+            throw new RuntimeException(e);
         }
-        b.append(KEY);
-        return b.toString();
     }
 
     /**
@@ -301,7 +324,7 @@ public interface Dumpable
      * interface to allow it to refine which of its beans can be
      * dumped.
      */
-    public interface DumpableContainer extends Dumpable
+    interface DumpableContainer extends Dumpable
     {
         default boolean isDumpable(Object o)
         {
