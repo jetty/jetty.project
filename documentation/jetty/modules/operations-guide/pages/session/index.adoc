@@ -1,0 +1,974 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= HTTP Session Management
+
+HTTP sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
+Jetty offers a number of pluggable alternatives for managing and distributing/persisting sessions.
+Choosing the best alternative is an important consideration for every application as is the correct configuration to achieve optimum performance.
+
+[[overview]]
+== HTTP Session Overview
+
+=== Terminology
+
+Before diving into the specifics of how to plug-in and configure various alternative HTTP session management modules, let's review some useful terminology:
+
+Session::
+is a means of retaining information across requests for a particular user.
+The Servlet Specification defines the semantics of sessions.
+Some of the most important characteristics of sessions is that they have a unique id and that their contents cannot be shared between different contexts (although the id can be): if a session is invalidated in one context, then all other sessions that share the same id in other contexts will also be invalidated.
+Sessions can expire or they can be explicitly invalidated.
+
+SessionIdManager::
+is responsible for allocating session ids.
+A Jetty server can have at most 1 SessionIdManager.
+
+HouseKeeper::
+is responsible for periodically orchestrating the removal of expired sessions.
+This process is referred to as <<base-scavenge,"scavenging">>.
+
+SessionHandler::
+is responsible for managing the lifecycle of sessions.
+A context can have at most 1 `SessionHandler`.
+
+SessionCache::
+is a L1 cache of in-use session objects.
+The `SessionCache` is used by the `SessionHandler`.
+
+SessionDataStore::
+is responsible for all clustering/persistence operations on sessions.
+A `SessionCache` uses a `SessionDataStore` as a backing store.
+
+CachingSessionDataStore::
+is an L2 cache of session data.
+A `SessionCache` can use a `CachingSessionDataStore` as its backing store.
+
+More details on these concepts can be found in the xref:programming-guide:server/session.adoc[Programming Guide].
+
+[NOTE]
+====
+``SessionDataStore``s implementations interact with other, usually third party, systems responsible for storing and/or distributing session information.
+Sessions can be distributed without being persisted.
+They can also be persisted without being distributed.
+Because persisting session information to a shared store is a very common way of distributing (also known as "clustering") sessions, in the documentation we will often refer to just "persisting".
+====
+
+[[modules]]
+=== Session Modules
+
+There are a number of modules that offer pluggable alternatives for http session management.
+You can design how you want to cache and store http sessions by selecting alternative combinations of session modules.
+
+For example, Jetty ships with two alternative implementations of the `SessionCache`:
+
+* one that caches sessions in memory: <<cache-hash,`session-cache-hash`>>
+* one that does not actually cache: <<cache-null,`session-cache-null`>>
+
+There are at least 6 alternative implementations of the `SessionDataStore` that you can use to persist/distribute your http sessions:
+
+* file system storage: <<filesystem,`session-store-file`>>
+* relational database storage: <<jdbc,`session-store-jdbc`>>
+* NoSQL database storage: <<mongo,`session-store-mongo`>>
+* Google Cloud datastore storage: <<gcloud,`session-store-gcloud`>>
+* Hazelcast: <<hazelcast-remote,`session-store-hazelcast-remote`>> or <<hazelcast-embedded,`session-store-hazelcast-embedded`>>
+* Infinispan: <<infinispan,`session-store-infinispan-remote`>> or <<infinispan-embedded,`session-store-infinispan-embedded`>>
+
+TIP: It is worth noting that if you do not configure _any_ session modules, Jetty will still provide HTTP sessions that are cached in memory but are never persisted.
+
+[[base]]
+== The Base Session Module
+
+The `sessions` module is the base module that all other session modules depend upon.
+As such it will be _transitively_ enabled if you enable any of the other session modules: you need to _explicitly_ enable it if you wish to _change_ any settings from their defaults.
+
+Enabling the `sessions` module puts the `$JETTY_HOME/etc/sessions/id-manager.xml` file onto the execution path and generates a `$JETTY_BASE/start.d/sessions.ini` file.
+
+The `id-manager.xml` file instantiates a `DefaultSessionIdManager` and `HouseKeeper`.
+The former is used to generate and manage session ids whilst the latter is responsible for periodic <<base-scavenge,scavenging>> of expired sessions.
+
+=== Configuration
+
+The `$JETTY_BASE/start.d/sessions.ini` file contains these configuration properties:
+
+jetty.sessionIdManager.workerName::
+This uniquely identifies the jetty server instance and is applied to the `SessionIdManager`.
+You can either provide a value for this property, or you can allow Jetty to try and synthesize a `workerName` - the latter option is _only_ advisable in the case of a single, non-clustered deployment.
+There are two ways a default `workerName` can be synthesized:
+
+* if running on Google AppEngine, the `workerName` will be formed by concatenating the values of the environment variables `JETTY_WORKER_INSTANCE` and `GAE_MODULE_INSTANCE`
+* otherwise, the `workerName` will be formed by concatenating the environment variable `JETTY_WORKER_INSTANCE` and the literal `0`.
+
+So, if you're not running on Google AppEngine, and you haven't configured one, the workerName will always be: `node0`.
+
+IMPORTANT: If you have more than one Jetty instance, it is *crucial* that you configure the `workerName` differently for each instance.
+
+jetty.sessionScavengeInterval.seconds::
+This is the period in _seconds_ between runs of the `HouseKeeper`, responsible for orchestrating the removal of expired sessions.
+By default it will run approximately every 600 secs (ie 10 mins).
+As a rule of thumb, you should ensure that the <<base-scavenge,scavenge>> interval is shorter than the `<session-timeout>` of your sessions to ensure that they are promptly scavenged.
+On the other hand, if you have a backend store configured for your sessions, <<base-scavenge,scavenging>> too frequently can increase the load on it.
+
+CAUTION: Don't forget that the `<session-timeout>` is specified in `web.xml` in _minutes_ and the value of the `jetty.sessionScavengeInterval.seconds` is in _seconds_.
+
+[[base-scavenge]]
+=== Session Scavenging
+
+The `HouseKeeper` is responsible for the periodic initiation of session scavenge cycles.
+The `jetty.sessionScavengeInterval.seconds` property in `$JETTY_BASE/start.d/sessions.ini` controls the periodicity of the cycle.
+
+[NOTE]
+====
+The HouseKeeper semi-randomly adds an additional 10% to the configured `sessionScavengeInterval`.
+This is to prevent multiple nodes in a cluster that are all started at once from syncing up scavenge cycles and placing extra load on the configured persistence mechanism.
+====
+
+A session whose expiry time has been exceeded is considered eligible for scavenging.
+The session might be present in a `SessionCache` and/or present in the session persistence/clustering mechanism.
+
+Scavenging occurs for all contexts on a server at every cycle.
+The `HouseKeeper` sequentially asks the `SessionHandler` in each context to find and remove expired sessions.
+The `SessionHandler` works with the `SessionDataStore` to evaluate candidates for expiry held in the `SessionCache`, and also to sweep the persistence mechanism to find expired sessions.
+
+The sweep takes two forms: once per cycle the `SessionDataStore` searches for sessions for its own context that have expired; infrequently, the `SessionDataStore` will widen the search to expired sessions in all contexts.
+The former finds sessions that are no longer in this context's `SessionCache`, and using some heuristics, are unlikely to be in the `SessionCache` of the same context on another node either.
+These sessions will be loaded and fully expired, meaning that `HttpSessionListener.destroy()` will be called for them.
+The latter finds sessions that have not been disposed of by scavenge cycles on any other context/node.
+As these will be sessions that expired a long time ago, and may not be appropriate to load by the context doing the scavenging, these are summarily deleted without `HttpSessionListener.destroy()` being called.
+
+A combination of these sweeps should ensure that the persistence mechanism does not fill over time with expired sessions.
+
+As aforementioned, the sweep period needs to be short enough to find expired sessions in a timely fashion, but not so often that it overloads the persistence mechanism.
+
+[[cache]]
+== Modules for HTTP Session Caching
+
+In this section we will look at the alternatives for the `SessionCache`, i.e. the L1 cache of in-use session objects.
+Jetty ships with 2 alternatives: an in-memory cache, and a null cache.
+The latter does not actually do any caching of sessions, and can be useful if you either want to minimize your support for sessions, or you are in a clustered deployment without a sticky loadbalancer.
+
+The <<usecases,scenarios>> go into more detail on this.
+
+[[cache-hash]]
+=== Caching in Memory
+
+If you wish to change any of the default configuration values you should enable the `session-cache-hash` xref:modules/index.adoc[module].
+The name `"hash"` harks back to historical Jetty session implementations, whereby sessions were kept in memory using a HashMap.
+
+==== Configuration
+
+The `$JETTY_BASE/start.d/session-cache-hash.ini` contains the following configurable properties:
+
+jetty.session.evictionPolicy::
+Integer, default -1.
+This controls whether session objects that are held in memory are subject to eviction from the cache.
+Eviction means that the session is removed from the cache.
+This can reduce the memory footprint of the cache and can be useful if you have a lot of sessions.
+Eviction is usually used in conjunction with a `SessionDataStore` that persists sessions.
+The eviction strategies and their corresponding values are:
+   -1 (NO EVICTION):::
+   sessions are never evicted from the cache.
+   The only way they leave are via expiration or invalidation.
+   0 (EVICT AFTER USE):::
+   sessions are evicted from the cache as soon as the last active request for it finishes.
+   The session will be passed to the `SessionDataStore` to be written out before eviction.
+   >= 1 (EVICT ON INACTIVITY):::
+   any positive number is the time in seconds after which a session that is in the cache but has not experienced any activity will be evicted.
+   Use the `jetty.session.saveOnInactiveEvict` property to force a session write before eviction.
+
+NOTE: If you are not using one of the session store modules, ie one of the ``session-store-xxxx``s, then sessions will be lost when the context is stopped, or the session is evicted.
+
+jetty.session.saveOnInactiveEvict::
+Boolean, default `false`.
+This controls whether a session will be persisted to the `SessionDataStore` if it is being evicted due to the EVICT ON INACTIVITY policy.
+Usually sessions will be written to the `SessionDataStore` whenever the last simultaneous request exits the session.
+However, as `SessionDataStores` can be configured to skip some writes (see the documentation for the `session-store-xxx` module that you are using), this option is provided to ensure that the session will be written out.
+
+NOTE: Be careful with this option, as in clustered scenarios it would be possible to "re-animate" a session that has actually been deleted by another node.
+
+jetty.session.saveOnCreate::
+Boolean, default `false`.
+Controls whether a session that is newly created will be immediately saved to the `SessionDataStore` or lazily saved as the last request for the session exits.
+This can be useful if the request dispatches to another context and needs to re-use the same session id.
+
+jetty.session.removeUnloadableSessions::
+Boolean, default `false`.
+Controls whether the session cache should ask a `SessionDataStore` to delete a session that cannot be restored - for example because it is corrupted.
+
+jetty.session.flushOnResponseCommit::
+Boolean, default `false`.
+If true, if a session is "dirty" - ie its attributes have changed - it will be written to the `SessionDataStore` as the response is about to commit.
+This ensures that all subsequent requests whether to the same or different node will see the updated session data.
+If false, a dirty session will only be written to the backing store when the last simultaneous request for it leaves the session.
+
+jetty.session.invalidateOnShutdown::
+Boolean, default `false`.
+If true, when a context is shutdown, all sessions in the cache are invalidated and deleted both from the cache and from the `SessionDataStore`.
+
+[[cache-null]]
+=== No Caching
+
+You may need to use the `session-cache-null` module if your clustering setup does not have a sticky load balancer, or if you want absolutely minimal support for sessions.
+If you enable this module, but you don't enable a module that provides session persistence (ie one of the `session-store-xxx` modules), then sessions will _neither_ be retained in memory _nor_ persisted.
+
+==== Configuration
+
+The `$JETTY_BASE/start.d/session-cache-null.ini` contains the following configurable properties:
+
+jetty.session.saveOnCreate::
+Boolean, default `false`.
+Controls whether a session that is newly created will be immediately saved to the `SessionDataStore` or lazily saved as the last request for the session exits.
+This can be useful if the request dispatches to another context and needs to re-use the same session id.
+
+jetty.session.removeUnloadableSessions::
+Boolean, default `false`.
+Controls whether the session cache should ask a `SessionDataStore` to delete a session that cannot be restored - for example because it is corrupted.
+
+jetty.session.flushOnResponseCommit::
+Boolean, default `false`.
+If true, if a session is "dirty" - ie its attributes have changed - it will be written to the backing store as the response is about to commit.
+This ensures that all subsequent requests whether to the same or different node will see the updated session data.
+If false, a dirty session will only be written to the backing store when the last simultaneous request for it leaves the session.
+
+[[filesystem]]
+== Modules for Persistent HTTP Sessions: File System
+
+The `session-store-file` Jetty module supports persistent storage of session data in a filesystem.
+
+IMPORTANT: Persisting sessions to the local file system should *never* be used in a clustered environment.
+
+Enabling this module creates the `$JETTY_BASE/sessions` directory.
+By default session data will be saved to this directory, one file representing each session.
+
+File names follow this pattern:
+
+`+[expiry]_[contextpath]_[virtualhost]_[id]+`
+
+expiry::
+This is the expiry time in milliseconds since the epoch.
+
+contextpath::
+This is the context path with any special characters, including `/`, replaced by the `_` underscore character.
+For example, a context path of `/catalog` would become `_catalog`.
+A context path of simply `/` becomes just `__`.
+
+virtualhost::
+This is the first virtual host associated with the context and has the form of 4 digits separated by `.` characters: `+[digit].[digit].[digit].[digit]+`.
+If there are no virtual hosts associated with a context, then `0.0.0.0` is used.
+
+id::
+This is the unique id of the session.
+
+Putting all of the above together as an example, a session with an id of `node0ek3vx7x2y1e7pmi3z00uqj1k0` for the context with path `/test` with no virtual hosts and an expiry of `1599558193150` would have a file name of:
+
+`1599558193150__test_0.0.0.0_node0ek3vx7x2y1e7pmi3z00uqj1k0`
+
+=== Configuration
+
+The `$JETTY_BASE/start.d/sessions.ini` file contains the following properties which may be modified to customise filesystem session storage:
+
+jetty.session.storeDir::
+The default is `$JETTY_BASE/sessions`.
+This is a path that defines the location for storage of session files.
+
+jetty.session.file.deleteUnrestorableFiles::
+Boolean, default `false`.
+If set to `true`, unreadable files will be deleted.
+This is useful to prevent repeated logging of the same error when the scavenger periodically (re-)attempts to load the corrupted information for a session in order to expire it.
+
+jetty.session.gracePeriod.seconds::
+Integer, default 3600.
+Used during session <<base-scavenge,scavenging>>.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be <<base-scavenge,scavenged>>.
+
+jetty.session.savePeriod.seconds::
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
+
+[WARNING]
+====
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
+====
+
+[[jdbc]]
+== Modules for Persistent HTTP Sessions: JDBC
+
+Enabling the `session-store-jdbc` module configures Jetty to persist session data in a relational database.
+
+=== Configuration
+
+After enabling the module, the `$JETTY_BASE/start.d/session-store-jdbc.ini` file contains the following customizable properties:
+
+jetty.session.gracePeriod.seconds::
+Integer, default 3600.
+Used during session <<base-scavenge,scavenging>>.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be <<base-scavenge,scavenged>>.
+
+jetty.session.savePeriod.seconds::
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
+
+[WARNING]
+====
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
+====
+
+db-connection-type::
+Default `datasource`.
+Set to either `datasource` or `driver` depending on the type of connection being used.
+Depending which you select, there are additional properties available:
+
+`datasource`:::
+jetty.session.jdbc.datasourceName::::
+Name of the remote datasource.
+
+`driver`:::
+jetty.session.jdbc.driverClass::::
+Name of the JDBC driver that controls access to the remote database, such as `com.mysql.jdbc.Driver`
+jetty.session.jdbc.driverUrl::::
+URL of the database which includes the driver type, host name and port, service name and any specific attributes unique to the database, such as a username.
+As an example, here is a mysql connection with the username appended: `jdbc:mysql://127.0.0.1:3306/sessions?user=sessionsadmin`.
+
+jetty.session.jdbc.blobType::
+Optional.
+Default `blob` or `bytea` for Postgres.
+This is the keyword used by the particular database to identify the blob data type.
+If netiher default is suitable you can set this value explicitly.
+
+jetty.session.jdbc.longType::
+Optional.
+Default `bigint` or `number(20)` for Oracle.
+This is the keyword used by the particular database to identify the long integer data type.
+Set this explicitly if neither of the default values is appropriate.
+
+jetty.session.jdbc.stringType::
+Optional.
+Default `varchar`.
+This is the keyword used by the particular database to identify character type.
+If the default is not suitable, you can set this value explicitly.
+
+jetty.session.jdbc.schema.schemaName::
+jetty.session.jdbc.schema.catalogName::
+Optional.
+The exact meaning of these two properties is dependent on your database vendor, but can broadly be described as further scoping for the session table name.
+See https://en.wikipedia.org/wiki/Database_schema[] and https://en.wikipedia.org/wiki/Database_catalog[].
+These extra scoping names can come into play at startup time when Jetty determines if the session table already exists, or otherwise creates it on-the-fly.
+If you have employed either of these concepts when you pre-created the session table, or you want to ensure that Jetty uses them when it auto-creates the session table, then you have two options: either set them explicitly, or let Jetty infer them from a database connection (obtained using either a Datasource or Driver according to the `db-connection-type` you have configured).
+To set them explicitly, uncomment and supply appropriate values for the `jetty.session.jdbc.schema.schemaName` and/or `jetty.session.jdbc.schema.catalogName` properties.
+Alternatively, to allow Jetty to infer them from a database connection, use the special string `INFERRED` instead.
+If you leave them blank or commented out, then the sessions table will not be scoped by schema or catalog name.
+
+jetty.session.jdbc.schema.table::
+Default `JettySessions`.
+This is the name of the table in which session data is stored.
+
+jetty.session.jdbc.schema.accessTimeColumn::
+Default `accessTime`.
+This is the name of the column that stores the time - in ms since the epoch - at which a session was last accessed
+
+jetty.session.jdbc.schema.contextPathColumn::
+Default `contextPath`.
+This is the name of the column that stores the `contextPath` of a session.
+
+jetty.session.jdbc.schema.cookieTimeColumn::
+Default `cookieTime`.
+This is the name of the column that stores the time - in ms since the epoch - that the cookie was last set for a session.
+
+jetty.session.jdbc.schema.createTimeColumn::
+Default `createTime`.
+This is the name of the column that stores the time - in ms since the epoch - at which a session was created.
+
+jetty.session.jdbc.schema.expiryTimeColumn::
+Default `expiryTime`.
+This is name of the column that stores - in ms since the epoch - the time at which a session will expire.
+
+jetty.session.jdbc.schema.lastAccessTimeColumn::
+Default `lastAccessTime`.
+This is the name of the column that stores the time - in ms since the epoch - that a session was previously accessed.
+
+jetty.session.jdbc.schema.lastSavedTimeColumn::
+Default `lastSavedTime`.
+This is the name of the column that stores the time - in ms since the epoch - at which a session was last written.
+
+jetty.session.jdbc.schema.idColumn::
+Default `sessionId`.
+This is the name of the column that stores the id of a session.
+
+jetty.session.jdbc.schema.lastNodeColumn::
+Default `lastNode`.
+This is the name of the column that stores the `workerName` of the last node to write a session.
+
+jetty.session.jdbc.schema.virtualHostColumn::
+Default `virtualHost`.
+This is the name of the column that stores the first virtual host of the context of a session.
+
+jetty.session.jdbc.schema.maxIntervalColumn::
+Default `maxInterval`.
+This is the name of the column that stores the interval - in ms - during which a session can be idle before being considered expired.
+
+jetty.session.jdbc.schema.mapColumn::
+Default `map`.
+This is the name of the column that stores the serialized attributes of a session.
+
+[[mongo]]
+== Modules for Persistent HTTP Sessions: MongoDB
+
+Enabling the `session-store-mongo` module configures Jetty to store session data in MongoDB.
+
+Because MongoDB is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case) during the install.
+Jars needed by MongoDB are downloaded and stored into a directory named `$JETTY_BASE/lib/nosql/`.
+
+IMPORTANT: If you want to use updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
+
+=== Configuration
+
+The `$JETTY_BASE/start.d/session-store-mongo.ini` file contains these configurable properties:
+
+jetty.session.mongo.dbName::
+Default is "HttpSessions".
+This is the name of the database in MongoDB used to store the session collection.
+
+jetty.session.mongo.collectionName::
+Default is "jettySessions".
+This is the name of the collection in MongoDB used to store all of the sessions.
+
+The connection type-::
+You can connect to MongoDB either using a host/port combination, or a URI.
+By default, the host/port method is selected, but you can change this by commenting out the unwanted method, and uncommenting the other one.
+connection-type=address:::
+Used when utilizing a direct connection to the MongoDB server.
+jetty.session.mongo.host::::
+Host name or address for the remote MongoDB instance.
+jetty.session.mongo.port::::
+Port number for the remote MongoDB instance.
+connection-type=uri:::
+Used when utilizing MongoURI for secured connections.
+jetty.session.mongo.connectionString::::
+The string defining the MongoURI value, such as `+mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]+`.
+More information on how to format the MongoURI string can be found in the https://docs.mongodb.com/manual/reference/connection-string/[official documentation for mongo].
+[NOTE]
+====
+You will only use *one* `connection-type` at a time, either `address` or `uri`.
+If both are utilized in your `session-store-mongo.ini`, only the _last_ `connection-type` configured in the file will be used.
+====
+
+jetty.session.gracePeriod.seconds::
+Integer, in seconds.
+Default 3600.
+Used during session <<base-scavenge,scavenging>>.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be <<base-scavenge,scavenged>>.
+
+jetty.session.savePeriod.seconds::
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
+
+[WARNING]
+====
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
+====
+
+[[infinispan]]
+== Modules for Persistent HTTP Sessions: Infinispan
+
+In order to persist/cluster sessions using Infinispan, Jetty needs to know how to contact Infinispan.
+There are two options: a remote Infinispan instance, or an in-process Infinispan instance.
+The former is referred to as "remote" Infinispan and the latter as "embedded" Infinispan.
+If you wish Jetty to be able to <<base-scavenge,scavenge>> expired sessions, you will also need to enable the appropriate `infinispan-[remote|embedded]-query` module.
+
+[[infinispan-remote]]
+=== Remote Infinispan Session Module
+
+The `session-store-infinispan-remote` module configures Jetty to talk to an external Infinispan instance to store session data.
+
+Because Infinispan is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case).
+
+Infinispan-specific jar files are download to the directory named `$JETTY_BASE/lib/infinispan/`.
+
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `$JETTY_BASE/start.d` directory.
+
+NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
+
+==== Configuration
+
+The `$JETTY_BASE/start.d/session-store-infinispan-remote.ini` contains the following configurable properties:
+
+jetty.session.infinispan.remoteCacheName::
+Default `"sessions"`.
+This is the name of the cache in Infinispan where sessions will be stored.
+
+jetty.session.infinispan.idleTimeout.seconds::
+Integer, in seconds, default `0`.
+This is the amount of time, in seconds, that a session entry in Infinispan can be idle (ie neither read nor written) before Infinispan will delete its entry.
+Usually, you do *not* want to set a value for this, as you want Jetty to manage all session expiration (and call any HttpSessionListeners).
+You *should* enable the <<infinispan-remote-query,infinispan-remote-query>> to allow jetty to <<base-scavenge,scavenge>> for expired sessions.
+If you do not, then there is the possibility that sessions can be left in Infinispan but no longer referenced by any Jetty node (so called "zombie" or "orphan" sessions), in which case you can use this feature to ensure their removal.
+
+IMPORTANT: You should make sure that the number of seconds you specify is larger than the configured `maxIdleTime` for sessions.
+
+jetty.session.gracePeriod.seconds::
+Integer, default 3600.
+Used during session <<base-scavenge,scavenging>>.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be <<base-scavenge,scavenged>>.
+
+jetty.session.savePeriod.seconds::
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
+
+[WARNING]
+====
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
+====
+
+[[infinispan-remote-query]]
+=== Remote Infinispan Query Module
+
+The `infinispan-remote-query` module allows Jetty to <<base-scavenge,scavenge>> expired sessions.
+Note that this is an *additional* module, to be used in conjunction with the `session-store-infinispan-remote` module.
+
+There are no configuration properties associated with this module.
+
+[[infinispan-embedded]]
+=== Embedded Infinispan Session Module
+
+Enabling the `session-store-infinispan-embedded` module runs an in-process instance of Infinispan.
+
+Because Infinispan is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case).
+Infinispan-specific jar files will be downloaded and saved to a directory named `$JETTY_BASE/lib/infinispan/`.
+
+NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
+
+==== Configuration
+
+The `$JETTY_BASE/start.d/session-store-infinispan-embedded.ini` contains the following configurable properties:
+
+jetty.session.infinispan.idleTimeout.seconds::
+Integer, in seconds, default `0`.
+This is the amount of time, in seconds, that a session entry in Infinispan can be idle (ie neither read nor written) before Infinispan will delete its entry.
+Usually, you do *not* want to set a value for this, as you want Jetty to manage all session expiration (and call any HttpSessionListeners).
+You *should* enable the <<infinispan-embedded-query,infinispan-embedded-query>> to allow Jetty to <<base-scavenge,scavenge>> for expired sessions.
+If you do not, then there is the possibility that expired sessions can be left in Infinispan.
+
+IMPORTANT: You should make sure that the number of seconds you specify is larger than the configured `maxIdleTime` for sessions.
+
+jetty.session.gracePeriod.seconds::
+Integer, default 3600.
+Used during session <<base-scavenge,scavenging>>.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be <<base-scavenge,scavenged>>.
+
+jetty.session.savePeriod.seconds::
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
+
+[WARNING]
+====
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
+====
+
+[[infinispan-embedded-query]]
+=== Embedded Infinispan Query Module
+
+The `infinispan-embedded-query` module allows Jetty to <<base-scavenge,scavenge>> expired sessions.
+
+There are no configuration properties associated with this module.
+
+=== Converting Session Format for Jetty-9.4.13
+
+From Jetty-9.4.13 onwards, we have changed the format of the serialized session when using a remote cache (ie using hotrod).
+Prior to release 9.4.13 we used the default Infinispan serialization, however this was not able to store sufficient information to allow Jetty to properly deserialize session attributes in all circumstances.
+See issue https://github.com/eclipse/jetty.project/issues/2919[] for more background.
+
+We have provided a conversion program which will convert any sessions stored in Infinispan to the new format.
+
+IMPORTANT: We recommend that you backup your stored sessions before running the conversion program.
+
+How to use the converter:
+
+----
+java -cp jetty-jakarta-servlet-api-4.0.2.jar:jetty-util-{VERSION}.jar:jetty-server-{VERSION}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{VERSION}.jar:[other classpath]  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter
+
+Usage:  InfinispanSessionLegacyConverter [-Dhost=127.0.0.1] [-Dverbose=true|false] <cache-name> [check]
+----
+
+The classpath::
+Must contain the servlet-api, jetty-util, jetty-server, jetty-infinispan and infinispan-remote jars. If your sessions contain attributes that use application classes, you will also need to also put those classes onto the classpath. If your session has been authenticated, you may also need to include the jetty-security and jetty-http jars on the classpath.
+
+Parameters::
+When used with no arguments the usage message is printed. When used with the `cache-name` parameter the conversion is performed. When used with both `cache-name` and `check` parameters, sessions are checked for whether or not they are converted.
+-Dhost:::  you can optionally provide a system property with the address of your remote Infinispan server. Defaults to the localhost.
+-Dverbose::: defaults to false. If true, prints more comprehensive stacktrace information about failures. Useful to diagnose why a session is not converted.
+cache-name::: the name of the remote cache containing your sessions. This is mandatory.
+check::: the optional check command will verify sessions have been converted. Use it _after_ doing the conversion.
+
+To perform the conversion, run the InfinispanSessionLegacyConverter with just the `cache-name`, and optionally the `host` system property.
+The following command will attempt to convert all sessions in the cached named `my-remote-cache` on the machine `myhost`, ensuring that application classes in the `/my/custom/classes` directory are on the classpath:
+
+----
+java -cp jetty-jakarta-servlet-api-4.0.2.jar:jetty-util-{VERSION}.jar:jetty-server-{VERSION}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{VERSION}.jar:/my/custom/classes  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter -Dhost=myhost my-remote-cache
+----
+
+If the converter fails to convert a session, an error message and stacktrace will be printed and the conversion will abort. The failed session should be untouched, however _it is prudent to take a backup of your cache before attempting the conversion_.
+
+[[hazelcast]]
+== Modules for Persistent HTTP Sessions: Hazelcast
+
+Hazelcast can be used to cluster session information in one of two modes: either remote or embedded.
+Remote mode means that Hazelcast will create a client to talk to other instances, possibly on other nodes.
+Embedded mode means that Hazelcast will start a local instance and communicate with that.
+
+[[hazelcast-remote]]
+=== Remote Hazelcast Clustering
+
+Enabling the `session-store-hazelcast-remote` module allows jetty to communicate with a remote Hazelcast instance to cluster session data.
+
+Because Hazelcast is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case).
+
+Hazelcast-specific jar files will be downloaded and saved to a directory named `$JETTY_BASE/lib/hazelcast/`.
+
+NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
+
+==== Configuration
+
+The `start.d/session-store-hazelcast-remote.ini` contains a list of all the configurable options for the Hazelcast module:
+
+jetty.session.hazelcast.mapName::
+The default is "jetty-distributed-session-map".
+This is the name of the Map in Hazelcast where sessions will be stored.
+
+jetty.session.hazelcast.onlyClient::
+Boolean, default `true`.
+The Hazelcast instance will be configured in client mode.
+
+jetty.session.hazelcast.configurationLocation::
+Optional.
+This is the path to an external Hazelcast xml configuration file.
+
+jetty.session.hazelcast.useQueries::
+Boolean, default `false`.
+If `true`, Jetty will use Hazelcast queries to find sessions to <<base-scavenge,scavenge>>.
+If `false` sessions that are not currently in a <<cache,session cache>> cannot be <<base-scavenge,scavenged>>, and will need to be removed by some external process.
+
+jetty.session.hazelcast.addresses::
+Optional.
+These are the addresses of remote Hazelcast instances with which to communicate.
+
+jetty.session.gracePeriod.seconds::
+Integer, in seconds.
+Default 3600.
+Used during session <<base-scavenge,scavenging>>.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be <<base-scavenge,scavenged>>.
+
+jetty.session.savePeriod.seconds::
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
+
+[WARNING]
+====
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
+====
+
+IMPORTANT: Be aware that if your session attributes contain classes from inside your webapp (or Jetty classes) then you will need to put these classes onto the classpath of all of your Hazelcast instances.
+
+[[hazelcast-embedded]]
+=== Embedded Hazelcast Clustering
+
+This will run an in-process instance of Hazelcast.
+This can be useful for example during testing.
+To enable this you enable the `session-store-hazelcast-embedded` module.
+
+Because Hazelcast is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case).
+
+Hazelcast-specific jar files will be downloaded to a directory named `$JETTY_BASE/lib/hazelcast/`.
+
+==== Configuration
+
+The `$JETTY_BASE/start.d/start.d/session-store-hazelcast-embedded.ini` contains a list of all the configurable options for the Hazelcast module:
+
+jetty.session.hazelcast.mapName::
+The default is "jetty-distributed-session-map".
+This is the name of the Map in Hazelcast where sessions will be stored.
+jetty.session.hazelcast.hazelcastInstanceName
+Default is "JETTY_DISTRIBUTED_SESSION_INSTANCE".
+This is the unique name of the Hazelcast instance that will be created.
+
+jetty.session.hazelcast.configurationLocation::
+Optional.
+This is the path to an external Hazelcast xml configuration file.
+
+jetty.session.hazelcast.useQueries::
+Boolean, default `false'.
+If `true`, Jetty will use Hazelcast queries to find expired sessions to <<base-scavenge,scavenge>>.
+If `false` sessions that are not currently in a <<cache,session cache>> cannot be <<base-scavenge,scavenged>>, and will need to be removed by some external process.
+
+jetty.session.gracePeriod.seconds::
+Integer, in seconds.
+Default 3600.
+Used during session <<base-scavenge,scavenging>>.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be <<base-scavenge,scavenged>>.
+
+jetty.session.savePeriod.seconds::
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
+
+[WARNING]
+====
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
+====
+
+IMPORTANT: If your session attributes contain classes from inside your webapp (or jetty classes) then you will need to put these classes onto the classpath of all of your hazelcast instances. In the case of embedded hazelcast, as it is started before your webapp, it will NOT have access to your webapp's classes - you will need to extract these classes and put them onto the jetty server's classpath.
+
+[[gcloud]]
+== Modules for Persistent HTTP Sessions: Google Cloud DataStore
+
+Jetty can store http session information into GCloud by enabling the `session-store-gcloud` module.
+
+=== Preparation
+
+You will first need to create a project and enable the Google Cloud API: https://cloud.google.com/docs/authentication#preparation[].
+Take note of the project id that you create in this step as you need to supply it in later steps.
+
+=== Communicating with GCloudDataStore
+
+==== When Running Jetty Outside of Google Infrastructure
+
+Before running Jetty, you will need to choose one of the following methods to set up the local environment to enable remote GCloud DataStore communications.
+
+1. Using the GCloud SDK:
+  * Ensure you have the GCloud SDK installed: https://cloud.google.com/sdk/?hl=en[]
+  * Use the GCloud tool to set up the project you created in the preparation step: `gcloud config set project PROJECT_ID`
+  * Use the GCloud tool to authenticate a Google account associated with the project created in the preparation step: `gcloud auth login ACCOUNT`
+
+2. Using environment variables
+  * Define the environment variable `GCLOUD_PROJECT` with the project id you created in the preparation step.
+  * Generate a JSON https://cloud.google.com/storage/docs/authentication?hl=en#service_accounts[service account key] and then define the environment variable `GOOGLE_APPLICATION_CREDENTIALS=/path/to/my/key.json`
+
+==== When Running Jetty Inside of Google Infrastructure
+
+The Google deployment tools will automatically configure the project and authentication information for you.
+
+=== Configuring Indexes for Session Data
+
+Using some special, composite indexes can speed up session search operations, although it may make write operations slower.
+By default, indexes will _not_ be used.
+In order to use them, you will need to manually upload a file that defines the indexes.
+This file is named `index.yaml` and you can find it in your distribution in `$JETTY_BASE/etc/sessions/gcloud/index.yaml`.
+
+Follow the instructions https://cloud.google.com/datastore/docs/tools/#the_development_workflow_using_gcloud[here] to upload the pre-generated `index.yaml` file.
+
+=== Communicating with the GCloudDataStore Emulator
+
+To enable communication using the GCloud Emulator:
+
+* Ensure you have the GCloud SDK installed: https://cloud.google.com/sdk/?hl=en[]
+* Follow the instructions https://cloud.google.com/datastore/docs/tools/datastore-emulator[here] on how to start the GCloud datastore emulator, and how to propagate the environment variables that it creates to the terminal in which you run Jetty.
+
+=== Enabling the Google Cloud DataStore Module
+
+The `session-store-gcloud` module provides GCloud support for storing session data.
+
+Because the Google Cloud DataStore is not a technology provided by the Eclipse Foundation, when enabling the module you will be prompted to assent to the licenses of the external vendor.
+
+As GCloud requires certain Java Commons Logging features to work correctly, Jetty routes these through SLF4J.
+By default, Jetty implements the SLF4J api, but you can choose a different logging implementation by following the instructions xref:server/index.adoc#logging[here]
+
+IMPORTANT: If you want to use updated versions of the jar files automatically downloaded during the module enablement, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
+
+== Configuration
+
+The `$JETTY_BASE/start.d/session-store-gcloud.ini` file contains all of the configurable properties for the `session-store-gcloud` module:
+
+jetty.session.gcloud.maxRetries::
+Integer.
+Default 5.
+Maximum number of retries to connect to GCloud DataStore to write a session.
+
+jetty.session.gcloud.backoffMs::
+Integer in milliseconds.
+Default 1000.
+Number of milliseconds between successive attempts to connect to the GCloud DataStore to write a session.
+
+jetty.session.gracePeriod.seconds::
+Integer, in seconds.
+Default 3600.
+Used during session <<base-scavenge,scavenging>>.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be <<base-scavenge,scavenged>>.
+
+jetty.session.savePeriod.seconds::
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
+
+[WARNING]
+====
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
+====
+
+jetty.session.gcloud.namespace::
+Optional.
+Sets the namespace for GCloud Datastore to use.
+If set, partitions the visibility of session data between webapps, which is helpful for multi-tenant deployments.
+More information can be found https://cloud.google.com/datastore/docs/concepts/multitenancy[here.]
+
+Configuration of the stored session object and its fields names-::
+You should very rarely, if ever, need to change these defaults.
+jetty.session.gcloud.model.kind:::
+The default is "GCloudSession".
+This is the type of the object that is stored in GCloud.
+jetty.session.gcloud.model.id:::
+The default is "id".
+This is the session id.
+jetty.session.gcloud.model.contextPath:::
+The default is "contextPath".
+This is the canonicalized context path of the context to which the session belongs.
+jetty.session.gcloud.model.vhost:::
+The default is "vhost".
+This is the canonicalized virtual host of the context to which the session belongs.
+jetty.session.gcloud.model.accessed:::
+The default is "accessed".
+This is the current access time of the session.
+jetty.session.gcloud.model.lastAccessed:::
+The default is "lastAccessed".
+This is the last access time of the session.
+jetty.session.gcloud.model.createTime:::
+The default is "createTime".
+This is the time, in ms since the epoch, at which the session was created.
+jetty.session.gcloud.model.cookieSetTime:::
+The default is "cookieSetTime".
+This is the time at which the session cookie was last set.
+jetty.session.gcloud.model.lastNode:::
+The default is "lastNode".
+This is the `workerName` of the last node to manage the session.
+jetty.session.gcloud.model.expiry:::
+The default is "expiry".
+This is the time, in ms since the epoch, at which the session will expire.
+jetty.session.gcloud.model.maxInactive:::
+The default is "maxInactive".
+This is the session timeout in ms.
+jetty.session.gcloud.model.attributes:::
+The default is "attributes".
+This is a map of all the session attributes.
+
+[[memcached]]
+
+== Modules for Persistent HTTP Sessions: The L2 Session Data Cache
+
+If your chosen persistence technology is slow, it can be helpful to locally cache the session data.
+The `CachingSessionDataStore` is a special type of `SessionDataStore` that locally caches session data, which makes reads faster. It writes-through to your chosen type of `SessionDataStore` when session data changes.
+
+=== MemcachedSessionDataMap
+
+The `MemcachedSessionDataMap` uses `memcached` to perform caching of `SessionData`.
+
+To enable it with the Jetty distribution, enable the `session-store-cache` module, along with your chosen `session-store-xxxx` module.
+
+==== Configuration
+
+The `$JETTY_BASE/start.d/session-store-cache.ini` contains the following configurable properties:
+
+jetty.session.memcached.host::
+Default value is `localhost`.
+This is the host on which the memcached server resides.
+
+jetty.session.memcached.port::
+Default value is `11211`.
+This is the port on which the memcached server is listening.
+
+jetty.session.memcached.expirySec::
+Default value `0`.
+This is the length of time in seconds that an item can remain in the memcached cache, where 0 indicates indefinitely.
+
+jetty.session.memcached.heartbeats::
+Default value `true`.
+Whether the memcached system should generate heartbeats.
+
+[[usecases]]
+== Session Scenarios
+
+=== Minimizing Support for Sessions
+
+The standard support for webapps in Jetty will use sessions cached in memory, but not persisted/clustered, with a scavenge for expired sessions that occurs every 10 minutes.
+If you wish to pare back support for sessions because you know your app doesn't use them (or use JSPs that use them), then you can do the following:
+
+* enable the <<base,base sessions module>> and <<base,configure the scavenge interval>> to 0 to prevent scavenging
+* enable the <<cache-null,null session cache module>> to prevent sessions being cached in memory
+
+If you wish to do any further minimization, you should consult the xref:programming-guide:server/session.adoc[Programming Guide].
+
+=== Clustering with a Sticky Load Balancer
+
+Preferably, your cluster will utilize a sticky load balancer.
+This will route requests for the same session to the same Jetty instance.
+In this case, the <<cache-hash,`DefaultSessionCache`>> can be used to keep in-use session objects <<cache-hash,in memory>>.
+You can fine-tune the cache by controlling how long session objects remain in memory with the <<cache-hash,eviction policy settings>>.
+
+If you have a large number of sessions or very large session objects, then you may want to manage your memory allocation by controlling the amount of time session objects spend in the cache.
+The `EVICT_ON_SESSION_EXIT` eviction policy will remove a session object from the cache as soon as the last simultaneous request referencing it exits.
+Alternatively, the `EVICT_ON_INACTIVITY` policy will remove a session object from the cache after a configurable amount of time has passed without a request referencing it.
+
+If your sessions are very long lived and infrequently referenced, you might use the `EVICT_ON_INACTIVITY_POLICY` to control the size of the cache.
+
+If your sessions are small, or relatively few or stable in number or they are read-mostly, then you might select the `NEVER_EVICT` policy.
+With this policy, session objects will remain in the cache until they either expire or are explicitly invalidated.
+
+If you have a high likelihood of simultaneous requests for the same session object, then the `EVICT_ON_SESSION_EXIT` policy will ensure the session object stays in the cache as long as it is needed.
+
+=== Clustering Without a Sticky Load Balancer
+
+Without a sticky load balancer requests for the same session may arrive on any node in the cluster.
+This means it is likely that the copy of the session object in any `SessionCache` is likely to be out-of-date, as the session was probably last accessed on a different node.
+In this case, your choices are to use either the <<cache-null,`NullSessionCache`>> or to de-tune the <<cache-hash,`DefaultSessionCache`>>.
+If you use the `NullSessionCache` all session object caching is avoided.
+This means that every time a request references a session it must be read in from persistent storage.
+It also means that there can be no sharing of session objects for multiple requests for the same session: each will have their own independent session object.
+Furthermore, the outcome of session writes are indeterminate because the Servlet Specification does not mandate ACID transactions for sessions.
+
+If you use the `DefaultSessionCache`, there is a risk that the caches on some nodes will contain out-of-date session information as simultaneous requests for the same session are scattered over the cluster.
+To mitigate this somewhat you can use the `EVICT_ON_SESSION_EXIT` eviction policy: this will ensure that the session is removed from the cache as soon as the last simultaneous request for it exits.
+Again, due to the lack of session transactionality, the ordering outcome of write operations cannot be guaranteed.
+As the session is cached while at least one request is accessing it, it is possible for multiple simultaneous requests to share the same session object.
+
+=== Handling Corrupted or Unreadable Session Data
+
+For various reasons it might not be possible for the `SessionDataStore` to re-read a stored session.
+One scenario is that the session stores a serialized object in its attributes, and after a re-deployment there in an incompatible class change.
+Setting the `$JETTY_BASE/start.d/session-cache-hash.ini` or `$JETTY_BASE/start.d/session-cache-null.ini` property `jetty.session.removeUnloadableSessions` to `true` will allow the unreadable session to be removed from persistent storage.
+This can be useful for preventing the <<base-scavenge,scavenger>> from continually generating errors on the same expired, but un-readable session.

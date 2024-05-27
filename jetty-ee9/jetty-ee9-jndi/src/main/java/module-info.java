@@ -19,7 +19,7 @@ module org.eclipse.jetty.ee9.jndi
     requires transitive java.naming;
 
     // Only required if using MailSessionReference.
-    requires static jakarta.mail;
+    requires static transitive jakarta.mail;
 
     exports org.eclipse.jetty.ee9.jndi.factories;
 }
