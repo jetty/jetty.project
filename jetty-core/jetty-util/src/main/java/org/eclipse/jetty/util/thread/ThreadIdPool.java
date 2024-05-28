@@ -25,7 +25,6 @@ import org.eclipse.jetty.util.MemoryUtils;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -236,8 +235,12 @@ public class ThreadIdPool<E> implements Dumpable
         int capacity = capacity();
         List<Object> slots = new ArrayList<>(capacity);
         for (int i = 0; i < capacity; i++)
-            slots.add(_items.get(toSlot(i)));
-        Dumpable.dumpObjects(out, indent, this, new DumpableCollection("items", slots));
+        {
+            E slot = _items.get(toSlot(i));
+            if (slot != null)
+                slots.add(Dumpable.named(Integer.toString(i), slot));
+        }
+        Dumpable.dumpObjects(out, indent, this, slots.toArray());
     }
 
     @Override
