@@ -43,9 +43,11 @@ import java.util.stream.StreamSupport;
  * and client-side HTTP responses, while {@link HttpFields.Mutable} is mutable and
  * typically used in server-side HTTP responses and client-side HTTP requests.</p>
  *
+ * <p>Access is always more efficient using {@link HttpHeader} keys rather than {@link String} field names.</p>
+ * 
  * <p>The primary implementations of {@code HttpFields} have been optimized assuming few
  * lookup operations, thus typically if many {@link HttpField}s need to looked up, it may be
- * better to use an {@link Iterator} or the {@link #asRandomAccess()} method.</p>
+ * better to use an {@link Iterator} or the {@link #asMappedAccess()} method.</p>
  */
 public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 {
@@ -202,15 +204,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * <p>Returns an immutable version of this {@link HttpFields} instance, possibly optimized for random access.</p>
-     * <p>Mutable {@code HttpFields} cannot be optimized for random access, so {@link #asImmutable()} should be called
-     * first if a random access version of mutable Fields are required.</p>
+     * <p>Returns an immutable version of this {@link HttpFields} instance, possibly optimized for random field
+     * access via {@link Map} implementations.</p>
      *
-     * @return an {@link HttpFields} instance, which may be optimized for RandomAccess
+     * @return an {@link HttpFields} instance, which may be optimized for random access.
      */
-    default HttpFields asRandomAccess()
+    default HttpFields asMappedAccess()
     {
-        return this;
+        return asImmutable();
     }
 
     /**
@@ -367,10 +368,12 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     /**
      * <p>Returns whether this instance contains the given field name.</p>
      * <p>The comparison of field name is case-insensitive via
-     * {@link HttpField#is(String)}.
+     * {@link HttpField#is(String)}. If possible, it is more efficient to use
+     * {@link #contains(HttpHeader)}.
      *
      * @param name the case-insensitive field name to search for
      * @return whether this instance contains the given field name
+     * @see #contains(HttpHeader) 
      */
     default boolean contains(String name)
     {
@@ -429,7 +432,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      * <p>Returns the encoded value of the first field with the given field name,
      * or {@code null} if no such field is present.</p>
      * <p>The comparison of field name is case-insensitive via
-     * {@link HttpField#is(String)}.</p>
+     * {@link HttpField#is(String)}. If possible, it is more efficient to use {@link #get(HttpHeader)}.</p>
      * <p>In case of multi-valued fields, the returned value is the encoded
      * value, including commas and quotes, as returned by {@link HttpField#getValue()}.</p>
      *
@@ -437,6 +440,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      * @return the raw value of the first field with the given field name,
      * or {@code null} if no such field is present
      * @see HttpField#getValue()
+     * @see #get(HttpHeader) 
      */
     default String get(String name)
     {

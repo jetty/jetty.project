@@ -1496,7 +1496,7 @@ public class HttpFieldsTest
     public void testRandomAccess()
     {
         HttpFields.Mutable mutable = HttpFields.build();
-        assertThat(mutable.asRandomAccess(), sameInstance(mutable));
+        assertThat(mutable.asMappedAccess(), sameInstance(mutable));
 
         mutable.add("expect", "100")
             .add("RaNdOm", "value")
@@ -1506,7 +1506,7 @@ public class HttpFieldsTest
             .add("Foo-Bar", "two")
             .asImmutable();
 
-        HttpFields header = mutable.asImmutable().asRandomAccess();
+        HttpFields header = mutable.asImmutable().asMappedAccess();
         assertThat(header, not(sameInstance(mutable)));
 
         assertThat(header.get("expect"), is("100"));

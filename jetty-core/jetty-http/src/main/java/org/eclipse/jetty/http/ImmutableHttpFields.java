@@ -35,7 +35,6 @@ class ImmutableHttpFields implements HttpFields
 {
     final HttpField[] _fields;
     final int _size;
-    RandomAccess _randomAccess;
 
     /**
      * Initialize HttpFields from copy.
@@ -60,11 +59,9 @@ class ImmutableHttpFields implements HttpFields
     }
 
     @Override
-    public HttpFields asRandomAccess()
+    public HttpFields asMappedAccess()
     {
-        if (_randomAccess == null)
-            _randomAccess = new RandomAccess(this);
-        return _randomAccess;
+        return new RandomAccess(this);
     }
 
     @Override
@@ -242,9 +239,10 @@ class ImmutableHttpFields implements HttpFields
     }
 
     /**
-     * An immutable {@link HttpFields} instance, optimized for random field access.
+     * An immutable {@link HttpFields} instance, optimized for random access to
+     * single valued fields
      */
-    public static class RandomAccess implements HttpFields
+    private static class RandomAccess implements HttpFields
     {
         private final HttpFields _httpFields;
         private final EnumMap<HttpHeader, HttpField> _enumMap = new EnumMap<>(HttpHeader.class);
@@ -252,7 +250,7 @@ class ImmutableHttpFields implements HttpFields
 
         RandomAccess(HttpFields httpFields)
         {
-            _httpFields = Objects.requireNonNull(httpFields.asImmutable());
+            _httpFields = Objects.requireNonNull(httpFields);
             Map<String, HttpField> stringMap = null;
             for (HttpField field : httpFields)
             {
