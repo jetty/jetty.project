@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class SetCookieTest
 {
@@ -84,5 +85,41 @@ public class SetCookieTest
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat(response.getStatus(), is(200));
         assertThat(response.get(HttpHeader.SET_COOKIE), is("key=foo; SameSite=Lax"));
+    }
+
+    @Test
+    public void testAddCookieAfterCommit() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+
+        HttpServlet testServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.setCharacterEncoding("utf-8");
+                resp.setContentType("text/plain");
+                resp.getWriter().printf("pathInfo: " + req.getPathInfo());
+                resp.getWriter().flush();
+                //Adding a cookie after the response is committed should be a no-op
+                Cookie cookie = new Cookie("key", "foo");
+
+                resp.addCookie(cookie);
+                assertThat(resp.getHeader("Set-Cookie"), nullValue());
+            }
+        };
+
+        contextHandler.addServlet(testServlet, "/test/*");
+        startServer(contextHandler);
+                String rawRequest = """
+            GET /test/after-commit HTTP/1.1
+            Host: test
+            Connection: close
+            
+            """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
     }
 }
