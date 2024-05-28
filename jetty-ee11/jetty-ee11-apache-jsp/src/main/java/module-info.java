@@ -14,9 +14,9 @@
 module org.eclipse.jetty.ee11.apache.jsp
 {
     requires java.xml;
-    requires  jakarta.servlet;
+    requires transitive jakarta.servlet;
     requires org.eclipse.jetty.util;
-    requires org.mortbay.apache.jasper;
+    requires transitive org.mortbay.apache.jasper;
     requires org.slf4j;
 
     exports org.eclipse.jetty.ee11.apache.jsp;

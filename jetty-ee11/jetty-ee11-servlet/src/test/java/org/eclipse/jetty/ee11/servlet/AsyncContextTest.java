@@ -286,7 +286,7 @@ public class AsyncContextTest
         assertThat("async run attr query string", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
         assertThat("async run context path", responseBody, containsString("async:run:attr:contextPath:/ctx"));
         assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/encoded/hello%20there"));
-        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:encoded"));
+        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:hello there"));
         assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/encoded/*"));
         assertThat("http servlet mapping servletName is correct", responseBody, containsString("async:run:attr:mapping:servletName:"));
         assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:PATH"));
@@ -333,7 +333,7 @@ public class AsyncContextTest
         assertThat("async run attr query string", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
         assertThat("async run context path", responseBody, containsString("async:run:attr:contextPath:/ctx"));
         assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/ambiguous/hello%20there"));
-        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:ambiguous"));
+        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:hello there"));
         assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/ambiguous/*"));
         assertThat("http servlet mapping servletName is correct", responseBody, containsString("async:run:attr:mapping:servletName:"));
         assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:PATH"));

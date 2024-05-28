@@ -119,6 +119,60 @@ public class RequestTest
     }
 
     @Test
+    public void testCaseInsensitiveHeaders() throws Exception
+    {
+        final AtomicReference<Boolean> resultIsSecure = new AtomicReference<>();
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse resp)
+            {
+                assertThat(request.getHeader("accept"), is("*/*"));
+                assertThat(request.getHeader("Accept"), is("*/*"));
+                assertThat(request.getHeader("ACCEPT"), is("*/*"));
+                assertThat(request.getHeader("AcCePt"), is("*/*"));
+
+                assertThat(request.getHeader("random"), is("value"));
+                assertThat(request.getHeader("Random"), is("value"));
+                assertThat(request.getHeader("RANDOM"), is("value"));
+                assertThat(request.getHeader("rAnDoM"), is("value"));
+                assertThat(request.getHeader("RaNdOm"), is("value"));
+
+                assertThat(request.getHeader("Accept-Charset"), is("UTF-8"));
+                assertThat(request.getHeader("accept-charset"), is("UTF-8"));
+
+                assertThat(Collections.list(request.getHeaders("Accept-Charset")), contains("UTF-8", "UTF-16"));
+                assertThat(Collections.list(request.getHeaders("accept-charset")), contains("UTF-8", "UTF-16"));
+
+                assertThat(request.getHeader("foo-bar"), is("one"));
+                assertThat(request.getHeader("Foo-Bar"), is("one"));
+                assertThat(Collections.list(request.getHeaders("foo-bar")), contains("one", "two"));
+                assertThat(Collections.list(request.getHeaders("Foo-Bar")), contains("one", "two"));
+
+                assertThat(Collections.list(request.getHeaderNames()),
+                    contains("Host", "Connection", "Accept", "RaNdOm", "Accept-Charset", "Foo-Bar"));
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET / HTTP/1.1
+                Host: local
+                Connection: close
+                Accept: */*
+                RaNdOm: value
+                Accept-Charset: UTF-8
+                accept-charset: UTF-16
+                Foo-Bar: one
+                foo-bar: two
+                
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    @Test
     public void testIsSecure() throws Exception
     {
         final AtomicReference<Boolean> resultIsSecure = new AtomicReference<>();
