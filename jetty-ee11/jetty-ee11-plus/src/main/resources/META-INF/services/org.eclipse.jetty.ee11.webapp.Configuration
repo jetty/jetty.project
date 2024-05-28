@@ -1,2 +1,2 @@
-org.eclipse.jetty.ee11.plus.webapp.PlusConfiguration
 org.eclipse.jetty.ee11.plus.webapp.EnvConfiguration
+org.eclipse.jetty.ee11.plus.webapp.PlusConfiguration

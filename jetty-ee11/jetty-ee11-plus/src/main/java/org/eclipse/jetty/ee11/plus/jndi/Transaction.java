@@ -16,8 +16,6 @@ package org.eclipse.jetty.ee11.plus.jndi;
 import javax.naming.NamingException;
 
 import jakarta.transaction.UserTransaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Transaction
@@ -26,8 +24,6 @@ import org.slf4j.LoggerFactory;
  */
 public class Transaction extends org.eclipse.jetty.plus.jndi.Transaction
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Transaction.class);
-
     /**
      * @param scope the scope, usually an environment like ee9, ee10, ee11
      * @param userTransaction the UserTransaction

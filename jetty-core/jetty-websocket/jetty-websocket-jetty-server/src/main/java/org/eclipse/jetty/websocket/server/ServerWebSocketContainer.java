@@ -322,7 +322,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      * @see #upgrade(WebSocketCreator, Request, Response, Callback)
      */
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws WebSocketException
+    public boolean handle(Request request, Response response, Callback callback)
     {
         return mappings.upgrade(request, response, callback, configuration);
     }
@@ -346,7 +346,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      * @throws WebSocketException there is an error during the upgrade
      * @see #handle(Request, Response, Callback)
      */
-    public boolean upgrade(WebSocketCreator creator, Request request, Response response, Callback callback) throws WebSocketException
+    public boolean upgrade(WebSocketCreator creator, Request request, Response response, Callback callback)
     {
         var coreCreator = newWebSocketCreator(creator);
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, factory);

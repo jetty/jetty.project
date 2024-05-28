@@ -251,7 +251,7 @@ public class HttpConnectionTest
     @MethodSource("contentLengths")
     public void testHttp11MultipleContentLength(int[] clen) throws Exception
     {
-        HttpParser.LOG.info("badMessage: 400 Bad messages EXPECTED...");
+        LOG.info("badMessage: 400 Bad messages EXPECTED...");
         StringBuilder request = new StringBuilder();
         request.append("POST / HTTP/1.1\r\n");
         request.append("Host: local\r\n");
@@ -298,7 +298,7 @@ public class HttpConnectionTest
     @MethodSource("http11ContentLengthAndChunkedData")
     public void testHttp11ContentLengthAndChunk(int[] contentLengths) throws Exception
     {
-        HttpParser.LOG.info("badMessage: 400 Bad messages EXPECTED...");
+        LOG.info("badMessage: 400 Bad messages EXPECTED...");
 
         StringBuilder request = new StringBuilder();
         request.append("POST / HTTP/1.1\r\n");
@@ -405,7 +405,7 @@ public class HttpConnectionTest
     @MethodSource("http11TransferEncodingInvalidChunked")
     public void testHttp11TransferEncodingInvalidChunked(List<String> tokens) throws Exception
     {
-        HttpParser.LOG.info("badMessage: 400 Bad messages EXPECTED...");
+        LOG.info("badMessage: 400 Bad messages EXPECTED...");
         StringBuilder request = new StringBuilder();
         request.append("POST / HTTP/1.1\r\n");
         request.append("Host: local\r\n");
