@@ -53,7 +53,7 @@
     <javax.servlet.jsp.jstl.impl.version>${ee8.javax.servlet.jsp.jstl.impl.version}</javax.servlet.jsp.jstl.impl.version>
     <jetty.servlet.api.version>${ee8.jetty.servlet.api.version}</jetty.servlet.api.version>
     <jsp.impl.version>${ee8.jsp.impl.version}</jsp.impl.version>
-    <modify-sources-plugin.version>1.0.11-SNAPSHOT</modify-sources-plugin.version>
+    <modify-sources-plugin.version>1.0.11</modify-sources-plugin.version>
     <sonar.skip>true</sonar.skip>
     <weld.version>${ee8.weld.version}</weld.version>
 

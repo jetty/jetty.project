@@ -27,7 +27,7 @@
   <properties>
     <ee9.module></ee9.module>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-demos/jetty-servlet5-demos/${ee9.module}</ee9.module.path>
-    <modify-sources-plugin.version>1.0.10</modify-sources-plugin.version>
+    <modify-sources-plugin.version>1.0.11</modify-sources-plugin.version>
     <sonar.skip>true</sonar.skip>
     <warSourceDirectory>${project.build.directory}/webapp</warSourceDirectory>
   </properties>
