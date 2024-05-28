@@ -42,37 +42,34 @@
 
   <properties>
 
-    <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
-    <jakarta.annotation.api.version>2.0.0</jakarta.annotation.api.version>
-    <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
-    <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
-    <jakarta.enterprise.cdi.api.version>3.0.1</jakarta.enterprise.cdi.api.version>
-    <jakarta.inject.api.version>2.0.1.MR</jakarta.inject.api.version>
-    <jakarta.interceptor.api.version>2.0.1</jakarta.interceptor.api.version>
-    <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
-    <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
-    <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
-    <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version>
-    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
-    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
+    <jakarta.activation.api.version>${ee9.jakarta.activation.api.version}</jakarta.activation.api.version>
+    <jakarta.annotation.api.version>${ee9.jakarta.annotation.api.version}</jakarta.annotation.api.version>
+    <jakarta.authentication.api.version>${ee9.jakarta.authentication.api.version}</jakarta.authentication.api.version>
+    <jakarta.el.api.version>${ee9.jakarta.el.api.version}</jakarta.el.api.version>
+    <jakarta.enterprise.cdi.api.version>${ee9.jakarta.enterprise.cdi.api.version}</jakarta.enterprise.cdi.api.version>
+    <jakarta.inject.api.version>${ee9.jakarta.inject.api.version}</jakarta.inject.api.version>
+    <jakarta.interceptor.api.version>${ee9.jakarta.interceptor.api.version}</jakarta.interceptor.api.version>
+    <jakarta.mail.api.version>${ee9.jakarta.mail.api.version}</jakarta.mail.api.version>
+    <jakarta.servlet.api.version>${ee9.jakarta.servlet.api.version}</jakarta.servlet.api.version>
+    <jakarta.servlet.jsp.api.version>${ee9.jakarta.servlet.jsp.api.version}</jakarta.servlet.jsp.api.version>
+    <jakarta.servlet.jsp.jstl.api.version>${ee9.jakarta.servlet.jsp.jstl.api.version}</jakarta.servlet.jsp.jstl.api.version>
+    <jakarta.servlet.jsp.jstl.impl.version>${ee9.jakarta.servlet.jsp.jstl.impl.version}</jakarta.servlet.jsp.jstl.impl.version>
+    <jakarta.transaction-api.version>${ee9.jakarta.transaction-api.version}</jakarta.transaction-api.version>
+    <jakarta.websocket.api.version>${ee9.jakarta.websocket.api.version}</jakarta.websocket.api.version>
     <!-- TODO: remove? -->
-    <jakarta.ws.rs.api.version>3.0.0</jakarta.ws.rs.api.version>
-    <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
-    <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
-    <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
-    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
-
+    <jakarta.ws.rs.api.version>${ee9.jakarta.ws.rs.api.version}</jakarta.ws.rs.api.version>
+    <jakarta.xml.bind.api.version>${ee9.jakarta.xml.bind.api.version}</jakarta.xml.bind.api.version>
+    <jakarta.xml.bind.impl.version>${ee9.jakarta.xml.bind.impl.version}</jakarta.xml.bind.impl.version>
+    <jakarta.xml.jaxws.impl.version>${ee9.jakarta.xml.jaxws.impl.version}</jakarta.xml.jaxws.impl.version>
+    <jakarta.xml.ws.api.version>${ee9.jakarta.xml.ws.api.version}</jakarta.xml.ws.api.version>
     <!-- TODO: Remove these javax.* entries? -->
-    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
-    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
+    <javax.activation.impl.version>${ee9.javax.activation.impl.version}</javax.activation.impl.version>
+    <javax.mail.glassfish.version>${ee9.javax.mail.glassfish.version}</javax.mail.glassfish.version>
     <!-- FIXME we need a separate property for this one -->
-    <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
-
-    <jsp.impl.version>10.0.27</jsp.impl.version>
-
+    <jetty.servlet.api.version>${ee9.jetty.servlet.api.version}</jetty.servlet.api.version>
+    <jsp.impl.version>${ee9.jsp.impl.version}</jsp.impl.version>
     <sonar.skip>true</sonar.skip>
-    <weld.version>4.0.3.Final</weld.version>
+    <weld.version>${ee9.weld.version}</weld.version>
   </properties>
 
   <dependencyManagement>
@@ -172,6 +169,68 @@
         <artifactId>jakarta.xml.ws-api</artifactId>
         <version>${jakarta.xml.ws.api.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-async-rest-jar</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-async-rest-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-container-initializer</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-jaas-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-simple-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-web-fragment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- Jetty EE 9 Dependencies -->
       <dependency>
@@ -266,69 +325,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-async-rest-jar</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-async-rest-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-container-initializer</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-jaas-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-jndi-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-jsp-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-mock-resources</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
         <artifactId>jetty-ee9-demo-proxy-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-spec-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-web-fragment</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

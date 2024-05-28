@@ -155,27 +155,6 @@ public class TestOSGiUtil
 
         res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
 
-        /*
-         * Jetty 11 uses slf4j 2.0.0 by default, however we want to test with slf4j 1.7.30 for backwards compatibility.
-         * To do that, we need to use slf4j-simple as the logging implementation. We make a simplelogger.properties
-         * file available so that jetty logging can be configured
-         */
-        // BEGIN - slf4j 1.7.x
-        /* slf4j-simple conflicts with both slf4j 1.7.x, and jetty-slf4j-impl. (but in different ways)
-
-        TinyBundle simpleLoggingPropertiesBundle = TinyBundles.bundle();
-        simpleLoggingPropertiesBundle.add("simplelogger.properties", ClassLoader.getSystemResource("simplelogger.properties"));
-        simpleLoggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "simple-logger-properties");
-        simpleLoggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "slf4j-simple");
-        simpleLoggingPropertiesBundle.add(FragmentActivator.class);
-        res.add(CoreOptions.streamBundle(simpleLoggingPropertiesBundle.build()).noStart());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").versionAsInProject().noStart());
-         */
-        // END - slf4j 1.7.x
-
-        /*
-         * When running with slf4j >= 2.0.0, remove the slf4j simple logger above and uncomment the following lines
-         */
         // BEGIN - slf4j 2.x
         TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
         loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));

@@ -63,7 +63,7 @@ public class TestJettyOSGiBootWithJsp
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(CoreOptions.cleanCaches(true));
         
-        options.add(mavenBundle().groupId("org.eclipse.jetty.ee11.demos").artifactId("jetty-ee11-demo-jsp-webapp").classifier("webbundle").versionAsInProject());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-jsp-webapp").classifier("webbundle-ee11").versionAsInProject());
         return options.toArray(new Option[0]);
     }
 
@@ -81,7 +81,7 @@ public class TestJettyOSGiBootWithJsp
 
             String port = System.getProperty("boot.jsp.port");
             assertNotNull(port);
-            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/ee11-demo-jsp/jstl.jsp");
+            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/servlet5-demo-jsp/jstl.jsp");
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
             assertTrue(content.contains("JSTL Example"));

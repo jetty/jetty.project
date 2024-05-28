@@ -85,56 +85,10 @@
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlets</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-async-rest-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-jaas-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-jndi-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-jsp-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
     <!-- Demo ee9 Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-mock-resources</artifactId>
+      <artifactId>jetty-ee9-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>
@@ -143,22 +97,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-proxy-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>

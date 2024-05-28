@@ -13,16 +13,9 @@
   <name>EE11 :: Demos</name>
 
   <modules>
-    <module>jetty-ee11-demo-async-rest</module>
-    <module>jetty-ee11-demo-embedded</module>
-    <module>jetty-ee11-demo-jaas-webapp</module>
-    <module>jetty-ee11-demo-jetty-webapp</module>
-    <module>jetty-ee11-demo-jndi-webapp</module>
-    <module>jetty-ee11-demo-jsp-webapp</module>
-    <module>jetty-ee11-demo-mock-resources</module>
+    <!-- module>jetty-ee11-demo-embedded</module -->
+    <module>jetty-ee11-demo-jetty-websocket-webapp</module>
     <module>jetty-ee11-demo-proxy-webapp</module>
-    <module>jetty-ee11-demo-simple-webapp</module>
-    <module>jetty-ee11-demo-spec</module>
     <module>jetty-ee11-demo-template</module>
   </modules>
 
