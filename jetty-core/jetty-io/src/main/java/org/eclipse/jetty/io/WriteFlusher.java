@@ -584,7 +584,7 @@ public abstract class WriteFlusher
      *
      * @deprecated functionality removed, no replacement
      */
-    @Deprecated(since = "12.0.9", forRemoval = true)
+    @Deprecated(since = "12.0.10", forRemoval = true)
     public interface Listener
     {
         /**
