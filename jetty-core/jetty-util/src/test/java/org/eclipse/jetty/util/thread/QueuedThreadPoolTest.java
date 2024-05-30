@@ -833,8 +833,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
-        // Flaky
-        //assertThat(count(dump, "+> 0: ReservedThread@"), is(1));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(0));
 
         pool.setDetailedDump(true);
