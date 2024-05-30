@@ -14,7 +14,9 @@
 package org.eclipse.jetty.util;
 
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
@@ -80,6 +82,15 @@ public interface Callback extends Invocable
      */
     default void failed(Throwable x)
     {
+    }
+
+    /**
+     *
+     */
+    default boolean cancel(Throwable x)
+    {
+        failed(x);
+        return true;
     }
 
     /**
@@ -286,6 +297,12 @@ public interface Callback extends Invocable
             }
 
             @Override
+            public boolean cancel(Throwable x)
+            {
+                return callback.cancel(x);
+            }
+
+            @Override
             public void failed(Throwable x)
             {
                 Callback.failed(callback::failed, completed, x);
@@ -320,6 +337,12 @@ public interface Callback extends Invocable
                 }
             }
 
+            @Override
+            public boolean cancel(Throwable x)
+            {
+                return callback.cancel(x);
+            }
+
             private void completed(Throwable ignored)
             {
                 completed.run();
@@ -349,6 +372,13 @@ public interface Callback extends Invocable
             public void succeeded()
             {
                 callback.failed(cause);
+            }
+
+            @Override
+            public boolean cancel(Throwable x)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
+                return callback.cancel(cause);
             }
 
             @Override
@@ -441,6 +471,12 @@ public interface Callback extends Invocable
         }
 
         @Override
+        public boolean cancel(Throwable x)
+        {
+            return callback.cancel(x);
+        }
+
+        @Override
         public void failed(Throwable x)
         {
             Callback.failed(callback::failed, this::completed, x);
@@ -479,6 +515,12 @@ public interface Callback extends Invocable
                 {
                     cb2.succeeded();
                 }
+            }
+
+            @Override
+            public boolean cancel(Throwable x)
+            {
+                return Callback.cancel(cb1, this, x);
             }
 
             @Override
@@ -529,6 +571,12 @@ public interface Callback extends Invocable
                 {
                     callback.succeeded();
                     super.succeeded();
+                }
+
+                @Override
+                public boolean cancel(boolean mayInterruptIfRunning)
+                {
+                    return super.cancel(mayInterruptIfRunning) && CancelableCallback.cancel(callback, null);
                 }
 
                 @Override
@@ -623,17 +671,40 @@ public interface Callback extends Invocable
      * @param failure The failure
      * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
      */
+    private static boolean cancel(Callback first, Callback second,  Throwable failure)
+    {
+        boolean cancelled = false;
+        try
+        {
+            cancelled = first.cancel(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(failure, t);
+        }
+        try
+        {
+            cancelled |= second.cancel(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
+            throw t;
+        }
+        return cancelled;
+    }
+
+    /**
+     * Invoke two consumers of a failure, handling any {@link Throwable} thrown
+     * by adding the passed {@code failure} as a suppressed with
+     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
+     * @param first The first consumer of a failure
+     * @param second The first consumer of a failure
+     * @param failure The failure
+     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
+     */
     private static void failed(Consumer<Throwable> first, Consumer<Throwable> second,  Throwable failure)
     {
-        // This is an improved version of:
-        // try
-        // {
-        //     first.accept(failure);
-        // }
-        // finally
-        // {
-        //     second.accept(failure);
-        // }
         try
         {
             first.accept(failure);
@@ -650,6 +721,160 @@ public interface Callback extends Invocable
         {
             ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
             throw t;
+        }
+    }
+
+    /**
+     * A Callback that can be cancelled.
+     * The callback is cancelled when it is known that it cannot be completed successfully, but a scheduled callback to
+     * {@link #succeeded()} or {@link #failed(Throwable)} cannot be aborted.
+     * The following methods can be extended:
+     * <ul>
+     *     <li>{@link #onSuccess()} will be called by a call to {@link #succeeded()} if the Callback has not already been
+     *     {@link #cancel(Throwable) cancelled}.</li>
+     *     <li>{@link #onFailure(Throwable)} will be called by a call to {@link #failed(Throwable)} if the Callback has not
+     *     already been {@link #cancel(Throwable) cancelled}.</li>
+     *     <li>{@link #onComplete(Throwable)} will always be called once either {@link #succeeded()} or
+     *     {@link #failed(Throwable)} has been called.  If passed {@link Throwable} will be null only if the callback has
+     *     neither been {@link #cancel(Throwable) cancelled} nor {@link #failed(Throwable) failed}.</li>
+     * </ul>
+     */
+    class CancelableCallback implements Callback
+    {
+        private static final Throwable SUCCEEDED = new StaticException("Succeeded");
+        AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
+
+        /**
+         * Cancel or fail a callback.
+         * @param callback The {@link Callback} to {@link #cancel(Throwable)} if it is an instance of {@code CancelableCallback},
+         *                 else it is {@link #failed(Throwable) failed}.
+         * @param cause The cause of the cancellation
+         */
+        static boolean cancel(Callback callback, Throwable cause)
+        {
+            if (callback instanceof CancelableCallback cancelableCallback)
+                return cancelableCallback.cancel(cause);
+
+            callback.failed(cause);
+            return true;
+        }
+
+        /**
+         * Cancel the callback if it has not already been completed.
+         * The {@link #onFailure(Throwable)} method will be called directly by this call, then
+         * the {@link #onComplete(Throwable)} method will be called only once the {@link #succeeded()} or
+         * {@link #failed(Throwable)} methods are called.
+         * @param cause The cause of the cancellation
+         * @return true if the callback was cancelled
+         */
+        public boolean cancel(Throwable cause)
+        {
+            if (cause == null)
+                cause = new CancellationException();
+            if (_completion.compareAndSet(null, cause, false, false))
+            {
+                onFailure(cause);
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void failed(Throwable failure)
+        {
+            if (failure == null)
+                failure = new Exception();
+            while (true)
+            {
+                if (_completion.compareAndSet(null, failure, false, true))
+                {
+                    try
+                    {
+                        onFailure(failure);
+                    }
+                    finally
+                    {
+                        onComplete(null);
+                    }
+                    return;
+                }
+
+                if (_completion.isMarked())
+                    return;
+
+                Throwable cause = _completion.getReference();
+                ExceptionUtil.addSuppressedIfNotAssociated(cause, failure);
+                if (_completion.compareAndSet(cause, cause, false, true))
+                {
+                    onComplete(cause);
+                    return;
+                }
+            }
+        }
+
+        @Override
+        public void succeeded()
+        {
+            while (true)
+            {
+                if (_completion.compareAndSet(null, SUCCEEDED, false, true))
+                {
+                    try
+                    {
+                        onSuccess();
+                    }
+                    finally
+                    {
+                        onComplete(null);
+                    }
+                    return;
+                }
+
+                if (_completion.isMarked())
+                    return;
+
+                Throwable cause = _completion.getReference();
+                if (_completion.compareAndSet(cause, cause, false, true))
+                {
+                    onComplete(cause);
+                    return;
+                }
+            }
+        }
+
+        /**
+         * Called when the callback has been {@link #succeeded() succeeded} but not {@link #cancel(Throwable) cancelled}.
+         * The {@link #onComplete(Throwable)} method will be called with a {@code null} argument after this call.
+         * Typically, this method is implement to act on the success.  It can release or reuse any resources that may have
+         * been in use by the scheduled operation, but it should defer that release or reuse to the subsequent call to
+         * {@link #onComplete(Throwable)} to avoid double releasing.
+         */
+        protected void onSuccess()
+        {
+
+        }
+
+        /**
+         * Called when the callback has either been {@link #failed(Throwable) failed} or {@link #cancel(Throwable) cancelled}.
+         * The {@link #onComplete(Throwable)} method will ultimately be called, but only once the callback has been
+         * {@link #succeeded() succeeded} or {@link #failed(Throwable)}.
+         * Typically, this method is implemented to act on the failure, but it cannot release or reuse any resources that may
+         * be in use by the schedule operation.
+         * @param cause The cause of the failure or cancellation
+         */
+        protected void onFailure(Throwable cause)
+        {
+
+        }
+
+        /**
+         * Called once the callback has been either {@link #succeeded() succeeded} or {@link #failed(Throwable)}.
+         * Typically, this method is implemented to release resources that may be used by the scheduled operation.
+         * @param cause The cause of the failure or cancellation
+         */
+        protected void onComplete(Throwable cause)
+        {
+
         }
     }
 }
