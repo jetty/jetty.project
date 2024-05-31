@@ -264,7 +264,7 @@ public class ServerTimeoutsTest extends AbstractTest
                     @Override
                     public void onError(Throwable failure)
                     {
-                        if (failure instanceof TimeoutException)
+                        if (failure.getCause() instanceof TimeoutException)
                             handlerLatch.countDown();
 
                         asyncContext.complete();
