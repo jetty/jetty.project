@@ -98,6 +98,10 @@ public class InputStreamResponseListener implements Listener
     @Override
     public void onContent(Response response, Content.Chunk chunk, Runnable demander)
     {
+        // Call onContent(Response, ByteBuffer) as ContentListener is implemented,
+        // so it is expected that this variant is called.
+        onContent(response, chunk.getByteBuffer());
+
         if (!chunk.hasRemaining())
         {
             if (LOG.isDebugEnabled())
