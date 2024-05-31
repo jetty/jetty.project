@@ -188,7 +188,7 @@ public class ReadWriteFailuresTest
                 Callback.Completable completable2 = new Callback.Completable();
                 Content.Sink.write(response, true, "hello world", completable2);
                 Throwable writeFailure2 = assertThrows(ExecutionException.class, () -> completable2.get(5, TimeUnit.SECONDS)).getCause();
-                assertSame(writeFailure1, writeFailure2);
+                assertSame(writeFailure1.getCause(), writeFailure2);
 
                 latch.countDown();
 
