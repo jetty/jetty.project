@@ -222,7 +222,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
-                releaseBuffer();
                 wake = updateApiState(failure);
             }
             else if (_state == State.CLOSE)
@@ -1744,18 +1743,24 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    private class WriteCompleteCB implements Callback
+    private class WriteCompleteCB extends Callback.CancelableCallback
     {
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             onWriteComplete(true, null);
         }
 
         @Override
-        public void failed(Throwable x)
+        protected void onFailure(Throwable cause)
         {
-            onWriteComplete(true, x);
+            onWriteComplete(true, cause);
+        }
+
+        @Override
+        protected void onComplete(Throwable cause)
+        {
+            releaseBuffer();
         }
 
         @Override

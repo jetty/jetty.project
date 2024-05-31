@@ -579,18 +579,31 @@ public class ErrorHandler implements Request.Handler
      * when calling {@link Response#write(boolean, ByteBuffer, Callback)} to wrap the passed in {@link Callback}
      * so that the {@link RetainableByteBuffer} used can be released.
      */
-    private static class WriteErrorCallback extends Callback.Nested
+    private static class WriteErrorCallback extends Callback.CancelableCallback
     {
+        private final Callback _callback;
         private final Retainable _retainable;
 
         public WriteErrorCallback(Callback callback, Retainable retainable)
         {
-            super(callback);
+            _callback = callback;
             _retainable = retainable;
         }
 
         @Override
-        public void completed()
+        protected void onSuccess()
+        {
+            _callback.succeeded();
+        }
+
+        @Override
+        protected void onFailure(Throwable cause)
+        {
+            _callback.failed(cause);
+        }
+
+        @Override
+        protected void onComplete(Throwable cause)
         {
             _retainable.release();
         }

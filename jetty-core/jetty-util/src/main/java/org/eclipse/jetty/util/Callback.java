@@ -14,7 +14,9 @@
 package org.eclipse.jetty.util;
 
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
@@ -650,6 +652,166 @@ public interface Callback extends Invocable
         {
             ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
             throw t;
+        }
+    }
+
+    /**
+     * A Callback that can be cancelled.
+     * The callback is cancelled when it is known that it cannot be completed successfully, but a scheduled callback to
+     * {@link #succeeded()} or {@link #failed(Throwable)} cannot be aborted.
+     * The following methods can be extended:
+     * <ul>
+     *     <li>{@link #onSuccess()} will be called by a call to {@link #succeeded()} if the Callback has not already been
+     *     {@link #cancel(Throwable) cancelled}.</li>
+     *     <li>{@link #onFailure(Throwable)} will be called by a call to {@link #failed(Throwable)} if the Callback has not
+     *     already been {@link #cancel(Throwable) cancelled}.</li>
+     *     <li>{@link #onComplete(Throwable)} will always be called once either {@link #succeeded()} or
+     *     {@link #failed(Throwable)} has been called.  If passed {@link Throwable} will be null only if the callback has
+     *     neither been {@link #cancel(Throwable) cancelled} nor {@link #failed(Throwable) failed}.</li>
+     * </ul>
+     */
+    class CancelableCallback implements Callback
+    {
+        private static final Throwable SUCCEEDED = new StaticException("Succeeded");
+
+        private final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
+
+        /**
+         * Cancel or fail a callback.
+         * @param callback The {@link Callback} to {@link #cancel(Throwable)} if it is an instance of {@code CancelableCallback},
+         *                 else it is {@link #failed(Throwable) failed}.
+         * @param cause The cause of the cancellation
+         */
+        public static void cancel(Callback callback, Throwable cause)
+        {
+            if (callback instanceof CancelableCallback cancelableCallback)
+                cancelableCallback.cancel(cause);
+            else
+                callback.failed(new AsyncCancelException(cause));
+        }
+
+        /**
+         * Cancel the callback if it has not already been completed.
+         * The {@link #onFailure(Throwable)} method will be called directly by this call, then
+         * the {@link #onComplete(Throwable)} method will be called only once the {@link #succeeded()} or
+         * {@link #failed(Throwable)} methods are called.
+         * @param cause The cause of the cancellation
+         */
+        public void cancel(Throwable cause)
+        {
+            if (cause == null)
+                cause = new CancellationException();
+            if (_completion.compareAndSet(null, cause, false, false))
+                onFailure(cause);
+        }
+
+        @Override
+        public final void failed(Throwable failure)
+        {
+            if (failure instanceof AsyncCancelException ce)
+            {
+                cancel(ce.getCause());
+                return;
+            }
+
+            if (failure == null)
+                failure = new Exception();
+            while (true)
+            {
+                if (_completion.compareAndSet(null, failure, false, true))
+                {
+                    try
+                    {
+                        onFailure(failure);
+                    }
+                    finally
+                    {
+                        onComplete(null);
+                    }
+                    return;
+                }
+
+                if (_completion.isMarked())
+                    return;
+
+                Throwable cause = _completion.getReference();
+                ExceptionUtil.addSuppressedIfNotAssociated(cause, failure);
+                if (_completion.compareAndSet(cause, cause, false, true))
+                {
+                    onComplete(cause);
+                    return;
+                }
+            }
+        }
+
+        @Override
+        public final void succeeded()
+        {
+            while (true)
+            {
+                if (_completion.compareAndSet(null, SUCCEEDED, false, true))
+                {
+                    try
+                    {
+                        onSuccess();
+                    }
+                    finally
+                    {
+                        onComplete(null);
+                    }
+                    return;
+                }
+
+                if (_completion.isMarked())
+                    return;
+
+                Throwable cause = _completion.getReference();
+                if (_completion.compareAndSet(cause, cause, false, true))
+                {
+                    onComplete(cause);
+                    return;
+                }
+            }
+        }
+
+        /**
+         * Called when the callback has been {@link #succeeded() succeeded} but not {@link #cancel(Throwable) cancelled}.
+         * The {@link #onComplete(Throwable)} method will be called with a {@code null} argument after this call.
+         * Typically, this method is implement to act on the success.  It can release or reuse any resources that may have
+         * been in use by the scheduled operation, but it should defer that release or reuse to the subsequent call to
+         * {@link #onComplete(Throwable)} to avoid double releasing.
+         */
+        protected void onSuccess()
+        {
+        }
+
+        /**
+         * Called when the callback has either been {@link #failed(Throwable) failed} or {@link #cancel(Throwable) cancelled}.
+         * The {@link #onComplete(Throwable)} method will ultimately be called, but only once the callback has been
+         * {@link #succeeded() succeeded} or {@link #failed(Throwable)}.
+         * Typically, this method is implemented to act on the failure, but it cannot release or reuse any resources that may
+         * be in use by the schedule operation.
+         * @param cause The cause of the failure or cancellation
+         */
+        protected void onFailure(Throwable cause)
+        {
+        }
+
+        /**
+         * Called once the callback has been either {@link #succeeded() succeeded} or {@link #failed(Throwable)}.
+         * Typically, this method is implemented to release resources that may be used by the scheduled operation.
+         * @param cause The cause of the failure or cancellation
+         */
+        protected void onComplete(Throwable cause)
+        {
+        }
+
+        private static class AsyncCancelException extends Exception
+        {
+            public AsyncCancelException(Throwable cause)
+            {
+                super(cause);
+            }
         }
     }
 }

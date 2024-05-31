@@ -1147,7 +1147,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _writeFailure = x;
             else
                 ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
-            return () -> HttpChannelState.failed(writeCallback, x);
+            return () -> HttpChannelState.cancel(writeCallback, x);
         }
 
         public long getContentBytesWritten()
@@ -1929,6 +1929,19 @@ public class HttpChannelState implements HttpChannel, Components
         try
         {
             callback.failed(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
+            throw t;
+        }
+    }
+
+    private static void cancel(Callback callback, Throwable failure)
+    {
+        try
+        {
+            Callback.CancelableCallback.cancel(callback, failure);
         }
         catch (Throwable t)
         {
