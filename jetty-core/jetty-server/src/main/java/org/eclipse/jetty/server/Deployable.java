@@ -58,6 +58,7 @@ public interface Deployable
     String CONTEXT_PATH = "jetty.deploy.contextPath";
     String DEFAULTS_DESCRIPTOR = "jetty.deploy.defaultsDescriptor";
     String ENVIRONMENT = "environment";
+    String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
     String EXTRACT_WARS = "jetty.deploy.extractWars";
     String PARENT_LOADER_PRIORITY = "jetty.deploy.parentLoaderPriority";
     String SCI_EXCLUSION_PATTERN = "jetty.deploy.servletContainerInitializerExclusionPattern";
