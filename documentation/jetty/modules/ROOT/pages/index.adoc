@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-= Eclipse Jetty
+= Eclipse Jetty {page-version}
 
 This section of the site contains the documentation for {page-component-title} {page-version}.
 
