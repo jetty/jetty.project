@@ -204,8 +204,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * <p>Returns an immutable version of this {@link HttpFields} instance, possibly optimized for random field
-     * access via {@link Map} implementations.</p>
+     * <p>Returns an immutable version of this {@code HttpFields} instance, possibly optimized for random field
+     * access via {@link Map} implementations. If this {@code HttpFields} is mutable, then subsequent modifications
+     * are not reflected in the instance returned by this method.</p>
      *
      * @return an {@link HttpFields} instance, which may be optimized for random access.
      */

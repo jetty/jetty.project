@@ -1496,7 +1496,6 @@ public class HttpFieldsTest
     public void testRandomAccess()
     {
         HttpFields.Mutable mutable = HttpFields.build();
-        assertThat(mutable.asMappedAccess(), sameInstance(mutable));
 
         mutable.add("expect", "100")
             .add("RaNdOm", "value")
