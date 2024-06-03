@@ -41,6 +41,17 @@ public abstract class IteratingNestedCallback extends IteratingCallback
     }
 
     @Override
+    public boolean cancel(Throwable x)
+    {
+        if (_callback.cancel(x))
+        {
+            abort(x);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public InvocationType getInvocationType()
     {
         return _callback.getInvocationType();

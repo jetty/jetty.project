@@ -363,7 +363,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             // If a write call is pending, take the writeCallback to fail below.
-            Runnable invokeWriteFailure = _response.lockedFailWrite(t);
+            Runnable invokeWriteFailure = _response.lockedCancelWrite(t);
 
             // If there was a pending IO operation, deliver the idle timeout via them.
             if (invokeOnContentAvailable != null || invokeWriteFailure != null)
@@ -432,7 +432,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _onContentAvailable = null;
 
                 // If a write call is in progress, take the writeCallback to fail below.
-                Runnable invokeWriteFailure = _response.lockedFailWrite(x);
+                Runnable invokeWriteFailure = _response.lockedCancelWrite(x);
 
                 // Notify the failure listeners only once.
                 Consumer<Throwable> onFailure = _onFailure;
@@ -1136,7 +1136,7 @@ public class HttpChannelState implements HttpChannel, Components
             return _writeCallback != null;
         }
 
-        private Runnable lockedFailWrite(Throwable x)
+        private Runnable lockedCancelWrite(Throwable x)
         {
             assert _request._lock.isHeldByCurrentThread();
             Callback writeCallback = _writeCallback;
@@ -1147,7 +1147,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _writeFailure = x;
             else
                 ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
-            return () -> HttpChannelState.failed(writeCallback, x);
+            return () -> HttpChannelState.cancel(writeCallback, x);
         }
 
         public long getContentBytesWritten()
@@ -1929,6 +1929,27 @@ public class HttpChannelState implements HttpChannel, Components
         try
         {
             callback.failed(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
+            throw t;
+        }
+    }
+
+    /**
+     * Invoke a callback failure, handling any {@link Throwable} thrown
+     * by adding the passed {@code failure} as a suppressed with
+     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
+     * @param callback The callback to fail
+     * @param failure The failure
+     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
+     */
+    private static void cancel(Callback callback, Throwable failure)
+    {
+        try
+        {
+            callback.cancel(failure);
         }
         catch (Throwable t)
         {

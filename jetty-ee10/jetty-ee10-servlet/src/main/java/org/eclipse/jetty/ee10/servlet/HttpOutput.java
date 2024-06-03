@@ -1439,6 +1439,17 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
+        public boolean cancel(Throwable x)
+        {
+            if (_callback.cancel(x))
+            {
+                abort(x);
+                return true;
+            }
+            return false;
+        }
+
+        @Override
         public InvocationType getInvocationType()
         {
             return _callback.getInvocationType();
