@@ -14,7 +14,9 @@
 package org.eclipse.jetty.util;
 
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
@@ -74,11 +76,27 @@ public interface Callback extends Invocable
     }
 
     /**
+     * <p>Cancel the callback, prior to either {@link #succeeded()} or {@link #failed(Throwable)} being called.
+     * The operation to which the {@code Callback} has been passed must ultimately call either {@link #succeeded()} or
+     * {@link #failed(Throwable)}</p>
+     *
+     * @param cause the reason for the operation failure
+     * @return {@code} if the call to cancel was prior to a call to either {@link #succeeded()}, {@link #failed(Throwable)}
+     * or another call to {@code cancel(Throwable)}.
+     * @see Completing
+     */
+    default boolean abort(Throwable cause)
+    {
+        failed(cause);
+        return true;
+    }
+
+    /**
      * <p>Callback invoked when the operation fails.</p>
      *
-     * @param x the reason for the operation failure
+     * @param cause the reason for the operation failure
      */
-    default void failed(Throwable x)
+    default void failed(Throwable cause)
     {
     }
 
@@ -270,25 +288,12 @@ public interface Callback extends Invocable
      */
     static Callback from(Callback callback, Consumer<Throwable> completed)
     {
-        return new Callback()
+        return new Nested(callback)
         {
             @Override
-            public void succeeded()
+            protected void onCompleteFailure(Throwable cause)
             {
-                try
-                {
-                    callback.succeeded();
-                }
-                finally
-                {
-                    completed.accept(null);
-                }
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                Callback.failed(callback::failed, completed, x);
+                completed.accept(cause);
             }
         };
     }
@@ -318,6 +323,12 @@ public interface Callback extends Invocable
                 {
                     Callback.failed(callback, t);
                 }
+            }
+
+            @Override
+            public boolean abort(Throwable cause)
+            {
+                return callback.abort(cause);
             }
 
             private void completed(Throwable ignored)
@@ -352,6 +363,13 @@ public interface Callback extends Invocable
             }
 
             @Override
+            public boolean abort(Throwable cancelCause)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(cause, cancelCause);
+                return callback.abort(cause);
+            }
+
+            @Override
             public void failed(Throwable x)
             {
                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
@@ -372,30 +390,161 @@ public interface Callback extends Invocable
     }
 
     /**
-     * <p>A Callback implementation that calls the {@link #completed()} method when it either succeeds or fails.</p>
+     * <p>A Callback implementation that calls the {@link #completed()} method when it either succeeds or fails.
+     * If the callback is aborted, then {@link #onAbort(Throwable)} is called, but the {@link #onCompleteFailure(Throwable)}
+     * and {@link #completed()} methods are not called until either {@link #succeeded()} or {@link #failed(Throwable)}
+     * are called.</p>
      */
-    interface Completing extends Callback
+    abstract class Completing implements Callback
     {
-        void completed();
+        private static final Throwable SUCCEEDED = new StaticException("Completed");
+        private final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
 
         @Override
-        default void succeeded()
+        public void succeeded()
         {
-            completed();
+            while (true)
+            {
+                if (_completion.compareAndSet(null, SUCCEEDED, false, true))
+                {
+                    try
+                    {
+                        onCompleteSuccess();
+                    }
+                    finally
+                    {
+                        completed();
+                    }
+                    return;
+                }
+
+                if (_completion.isMarked())
+                    return;
+
+                Throwable cause = _completion.getReference();
+                if (_completion.compareAndSet(cause, cause, false, true))
+                {
+                    doCompleteFailure(cause);
+                    return;
+                }
+            }
+        }
+
+        /**
+         * Abort the callback if it has not already been completed.
+         * The {@link #onAbort(Throwable)} method will be called, then the {@link #onCompleteFailure(Throwable)}
+         * will be called only once the {@link #succeeded()} or {@link #failed(Throwable)} methods are called, followed
+         * by a call to {@link #completed()}.
+         * @param cause The cause of the abort
+         * @return true if the callback was aborted
+         */
+        @Override
+        public boolean abort(Throwable cause)
+        {
+            if (cause == null)
+                cause = new CancellationException();
+            // Try aborting directly by assuming that the callback is neither failed nor aborted.
+            if (_completion.compareAndSet(null, cause, false, false))
+            {
+                onAbort(cause);
+                return true;
+            }
+
+            Throwable failure = _completion.getReference();
+            if (failure != null)
+                ExceptionUtil.addSuppressedIfNotAssociated(failure, cause);
+            return false;
         }
 
         @Override
-        default void failed(Throwable x)
+        public void failed(Throwable cause)
+        {
+            if (cause == null)
+                cause = new Exception();
+            while (true)
+            {
+                // Try failing directly by assuming that the callback is neither failed nor aborted.
+                if (_completion.compareAndSet(null, cause, false, true))
+                {
+                    doCompleteFailure(cause);
+                    return;
+                }
+
+                Throwable failure = _completion.getReference();
+                if (failure != null)
+                    ExceptionUtil.addSuppressedIfNotAssociated(failure, cause);
+
+                // Have we somehow already completed?
+                if (_completion.isMarked())
+                    return;
+
+                // Have we aborted? in which case we can complete
+                if (failure != null && _completion.compareAndSet(failure, failure, false, true))
+                {
+                    doCompleteFailure(failure);
+                    return;
+                }
+            }
+        }
+
+        protected void doCompleteFailure(Throwable failure)
         {
             try
             {
-                completed();
+                onCompleteFailure(failure);
             }
             catch (Throwable t)
             {
-                ExceptionUtil.addSuppressedIfNotAssociated(t, x);
-                throw t;
+                ExceptionUtil.addSuppressedIfNotAssociated(failure, t);
             }
+            finally
+            {
+                completed();
+            }
+        }
+
+        /**
+         * Called when the callback has been {@link #succeeded() succeeded} and not {@link #abort(Throwable) aborted}.
+         * The {@link #completed()} method will be also be called after this call.
+         * Typically, this method is implement to act on the success.  It can release or reuse any resources that may have
+         * been in use by the scheduled operation, but it may defer that release or reuse to the subsequent call to
+         * {@link #completed()} to avoid double releasing.
+         */
+        protected void onCompleteSuccess()
+        {
+        }
+
+        /**
+         * Called when the callback has either been {@link #abort(Throwable) aborted}.
+         * The {@link #onCompleteFailure(Throwable)} method will ultimately be called, but only once the callback has been
+         * {@link #succeeded() succeeded} or {@link #failed(Throwable)}, and then the {@link #completed()} method will be also be called.
+         * Typically, this method is implemented to act on the failure, but it should not release or reuse any resources that may
+         * be in use by the schedule operation.
+         * @param cause The cause of the abort
+         */
+        protected void onAbort(Throwable cause)
+        {
+        }
+
+        /**
+         * Called when the callback has been {@link #failed(Throwable) failed} or {@link #abort(Throwable) aborted} and
+         * then either {@link #succeeded() succeeded} or {@link #failed(Throwable)} called.
+         * The {@link #completed()} method will be also be called after this call.
+         * Typically, this method is implemented to act on the failure.It can release or reuse any resources that may have
+         * been in use by the scheduled operation, but it may defer that release or reuse to the subsequent call to
+         * {@link #completed()} to avoid double releasing
+         * @param cause The cause of the failure
+         */
+        protected void onCompleteFailure(Throwable cause)
+        {
+        }
+
+        /**
+         * Called once the callback has been either {@link #succeeded() succeeded} or {@link #failed(Throwable)}.
+         * Typically, this method is implemented to release resources that may be used by the scheduled operation.
+         */
+        protected void completed()
+        {
         }
     }
 
@@ -403,7 +552,7 @@ public interface Callback extends Invocable
      * Nested Completing Callback that completes after
      * completing the nested callback
      */
-    class Nested implements Completing
+    class Nested extends Completing
     {
         private final Callback callback;
 
@@ -418,32 +567,21 @@ public interface Callback extends Invocable
         }
 
         @Override
-        public void completed()
+        protected void onCompleteSuccess()
         {
-        }
-
-        private void completed(Throwable ignored)
-        {
-            completed();
+            callback.succeeded();
         }
 
         @Override
-        public void succeeded()
+        protected void onAbort(Throwable cause)
         {
-            try
-            {
-                callback.succeeded();
-            }
-            finally
-            {
-                completed();
-            }
+            callback.abort(cause);
         }
 
         @Override
-        public void failed(Throwable x)
+        protected void onCompleteFailure(Throwable cause)
         {
-            Callback.failed(callback::failed, this::completed, x);
+            callback.failed(cause);
         }
 
         @Override
@@ -482,6 +620,14 @@ public interface Callback extends Invocable
             }
 
             @Override
+            public boolean abort(Throwable cause)
+            {
+                boolean c1 = cb1.abort(cause);
+                boolean c2 = cb2.abort(cause);
+                return c1 || c2;
+            }
+
+            @Override
             public void failed(Throwable x)
             {
                 Callback.failed(cb1::failed, cb2::failed, x);
@@ -497,7 +643,10 @@ public interface Callback extends Invocable
 
     /**
      * <p>A {@link CompletableFuture} that is also a {@link Callback}.</p>
+     * @deprecated TODO This should either be a Callback that wraps a CompletableFuture OR a CompletableFuture that
+     *                  wraps a Callback, but not both.
      */
+    @Deprecated
     class Completable extends CompletableFuture<Void> implements Callback
     {
         /**
@@ -532,6 +681,12 @@ public interface Callback extends Invocable
                 }
 
                 @Override
+                public boolean abort(Throwable cause)
+                {
+                    return callback.abort(cause) && super.abort(cause);
+                }
+
+                @Override
                 public void failed(Throwable x)
                 {
                     Callback.failed(callback::failed, super::failed, x);
@@ -555,6 +710,12 @@ public interface Callback extends Invocable
         public void succeeded()
         {
             complete(null);
+        }
+
+        @Override
+        public boolean abort(Throwable cause)
+        {
+            return cancel(false);
         }
 
         @Override
@@ -625,15 +786,6 @@ public interface Callback extends Invocable
      */
     private static void failed(Consumer<Throwable> first, Consumer<Throwable> second,  Throwable failure)
     {
-        // This is an improved version of:
-        // try
-        // {
-        //     first.accept(failure);
-        // }
-        // finally
-        // {
-        //     second.accept(failure);
-        // }
         try
         {
             first.accept(failure);

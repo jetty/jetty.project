@@ -201,41 +201,26 @@ public class IteratingCallbackTest
             {
                 processed++;
 
-                switch (i--)
+                return switch (i--)
                 {
-                    case 5:
-                        succeeded();
-                        return Action.SCHEDULED;
-
-                    case 4:
+                    case 1, 4 ->
+                    {
                         scheduler.schedule(successTask, 5, TimeUnit.MILLISECONDS);
-                        return Action.SCHEDULED;
-
-                    case 3:
-                        scheduler.schedule(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                idle.countDown();
-                            }
-                        }, 5, TimeUnit.MILLISECONDS);
-                        return Action.IDLE;
-
-                    case 2:
+                        yield Action.SCHEDULED;
+                    }
+                    case 2, 5 ->
+                    {
                         succeeded();
-                        return Action.SCHEDULED;
-
-                    case 1:
-                        scheduler.schedule(successTask, 5, TimeUnit.MILLISECONDS);
-                        return Action.SCHEDULED;
-
-                    case 0:
-                        return Action.SUCCEEDED;
-
-                    default:
-                        throw new IllegalStateException();
-                }
+                        yield Action.SCHEDULED;
+                    }
+                    case 3 ->
+                    {
+                        scheduler.schedule(idle::countDown, 5, TimeUnit.MILLISECONDS);
+                        yield Action.IDLE;
+                    }
+                    case 0 -> Action.SUCCEEDED;
+                    default -> throw new IllegalStateException();
+                };
             }
         };
 
@@ -266,7 +251,7 @@ public class IteratingCallbackTest
         IteratingCallback callback = new IteratingCallback()
         {
             @Override
-            protected Action process() throws Exception
+            protected Action process()
             {
                 close();
                 return action;
@@ -286,22 +271,8 @@ public class IteratingCallbackTest
 
     private abstract static class TestCB extends IteratingCallback
     {
-        protected Runnable successTask = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                succeeded();
-            }
-        };
-        protected Runnable failTask = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                failed(new Exception("testing failure"));
-            }
-        };
+        protected Runnable successTask = this::succeeded;
+        protected Runnable failTask = () -> failed(new Exception("testing failure"));
         protected CountDownLatch completed = new CountDownLatch(1);
         protected int processed = 0;
 

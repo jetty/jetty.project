@@ -1147,7 +1147,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _writeFailure = x;
             else
                 ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
-            return () -> HttpChannelState.failed(writeCallback, x);
+            return () -> HttpChannelState.cancel(writeCallback, x);
         }
 
         public long getContentBytesWritten()
@@ -1913,6 +1913,27 @@ public class HttpChannelState implements HttpChannel, Components
                     LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, e);
                 }
             }
+        }
+    }
+
+    /**
+     * Invoke a callback cancel, handling any {@link Throwable} thrown
+     * by adding the passed {@code failure} as a suppressed with
+     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
+     * @param callback The callback to fail
+     * @param failure The failure
+     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
+     */
+    private static void cancel(Callback callback, Throwable failure)
+    {
+        try
+        {
+            callback.abort(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
+            throw t;
         }
     }
 
