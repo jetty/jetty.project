@@ -745,10 +745,10 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     {
         try
         {
-            dump(System.err, "");
-            System.err.println(Dumpable.KEY);
+            Dumpable.dump(this, System.err);
+            System.err.println();
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
             LOG.warn("Unable to dump", e);
         }

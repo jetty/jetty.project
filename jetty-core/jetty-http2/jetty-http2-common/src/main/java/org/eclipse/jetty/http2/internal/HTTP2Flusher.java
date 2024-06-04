@@ -293,15 +293,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         return Action.SCHEDULED;
     }
 
-    public void onFlushed(long bytes) throws IOException
-    {
-        // A single EndPoint write may be flushed multiple times (for example with SSL).
-        for (HTTP2Session.Entry entry : processedEntries)
-        {
-            bytes = entry.onFlushed(bytes);
-        }
-    }
-
     @Override
     public void succeeded()
     {
