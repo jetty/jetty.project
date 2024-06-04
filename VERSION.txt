@@ -1,4 +1,37 @@
-jetty-12.0.10-SNAPSHOT
+jetty-12.0.11-SNAPSHOT
+
+jetty-12.0.10 - 30 May 2024
+ + 1470 Replace Timer use with Jetty Scheduler
+ + 9177 Add JVM info and OS info to Dumpable.dump()
+ + 9778 Jetty 12 - Remove WriteFlusher.Listener
+ + 11072 Jetty 12: CompleteCallbackHandler
+ + 11507 org.eclipse.jetty.util.Attributes.getAttribute() should specify return
+   type if no match is found
+ + 11659 HTTP Fields with OWS (Optional WhiteSpace) in value are not properly
+   parsed in Jetty 12
+ + 11736 Issue with Response OutputStream#close() rethrowing same EofException
+   instance
+ + 11745 Issue while adding Module for Persistent HTTP Sessions: Google Cloud
+   DataStore
+ + 11748 Unexpected HTTP Response Status Code: 404 Not Found
+ + 11756 ChunkAccumulator not working with empty chunks
+ + 11760 request.getHttpURI().getScheme() is null on FORWARD dispatched
+   request, causing NPE
+ + 11761 Update documentation for #10077
+ + 11763 Race condition in QoSHandler
+ + 11766 Ensure ReadListener is nulled out when AsyncContext is completed.
+ + 11767 Backward compat API WebAppContext.getServerClassMatcher() is not
+   updating the WebAppClassloader 
+ + 11776 NPE from `org.eclipse.jetty.ee8.nested.Request.getRequestURL`
+ + 11778 jetty-http-spi does not properly provide SPI for modules
+ + 11791 How to configure Jetty Server v12 ee10 for serving multiple static
+   resources in the same base directory?
+ + 11792 StdErrAppender should detect exception circular references
+ + 11800 client: Allow AsyncContentListener.onContent to throw checked
+   Exceptions
+ + 11811 getHeaderNames should return header name once also when request has it
+   in different case
+ + 11851 jetty-ee8-websocket-javax-server export not honoured
 
 jetty-12.0.9 - 03 May 2024
  + 5944 Introduce alias --files for --download
@@ -291,11 +324,13 @@ jetty-12.0.1 - 29 August 2023
  + 10411 Review deployment of Jetty Context XML files
  + 10416 EE9 Copies HttpFields in response
 
-jetty-9.4.54.v20240208 - 08 February 2024
- + 1256 DoSFilter leaks USER_AUTH entries
- + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
-   (CVE-2024-22201)
- + 11389 Strip default ports on ws/wss scheme uris too
+jetty-11.0.21 - 14 May 2024
+ + 10805 Jetty response with an invalid HTTP2 packet if the client set the
+   hpack table size as 0
+ + 11527 Reduce ByteBuffer churning in HttpOutput
+ + 11634 Socks5Proxy does not support IP addresses with IP segments above 127
+ + 11656 Upgrade jetty-quiche-native to version 0.21.0
+ + 11782 HttpExchange retained by HttpSenderOverHTTP which caused memory leak
 
 jetty-11.0.20 - 29 January 2024
  + 11081 Dropped WebSocket messages due to race condition in WebSocket frame
@@ -306,6 +341,12 @@ jetty-11.0.20 - 29 January 2024
    a `WEB-INF/quickstart-web.xml`
  + 11273 Support BSD expr in startup script
  + 11349 Update quiche to 0.20.0
+
+jetty-9.4.54.v20240208 - 08 February 2024
+ + 1256 DoSFilter leaks USER_AUTH entries
+ + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
+   (CVE-2024-22201)
+ + 11389 Strip default ports on ws/wss scheme uris too
 
 jetty-11.0.19 - 15 December 2023
  + 9900 Improve `Request.getBeginNanoTime()` accuracy
