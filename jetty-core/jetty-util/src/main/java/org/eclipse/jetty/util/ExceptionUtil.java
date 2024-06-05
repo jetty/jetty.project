@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -298,6 +299,38 @@ public class ExceptionUtil
         if (areNotAssociated(t1, t2))
             t1.addSuppressed(t2);
         return t1;
+    }
+
+    public static void call(Throwable cause, Consumer<Throwable> first, Consumer<Throwable> second)
+    {
+        try
+        {
+            first.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            addSuppressedIfNotAssociated(cause, t);
+        }
+        finally
+        {
+            second.accept(cause);
+        }
+    }
+
+    public static void call(Throwable cause, Consumer<Throwable> first, Runnable second)
+    {
+        try
+        {
+            first.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            addSuppressedIfNotAssociated(cause, t);
+        }
+        finally
+        {
+            second.run();
+        }
     }
 
     private ExceptionUtil()

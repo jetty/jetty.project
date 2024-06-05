@@ -291,6 +291,12 @@ public interface Callback extends Invocable
         return new Nested(callback)
         {
             @Override
+            protected void onCompleteSuccess()
+            {
+                completed.accept(null);
+            }
+
+            @Override
             protected void onCompleteFailure(Throwable cause)
             {
                 completed.accept(cause);
@@ -403,30 +409,27 @@ public interface Callback extends Invocable
         @Override
         public void succeeded()
         {
-            while (true)
+            if (_completion.compareAndSet(null, SUCCEEDED, false, true))
             {
-                if (_completion.compareAndSet(null, SUCCEEDED, false, true))
+                try
                 {
-                    try
-                    {
-                        onCompleteSuccess();
-                    }
-                    finally
-                    {
-                        completed();
-                    }
-                    return;
+                    onCompleteSuccess();
                 }
-
-                if (_completion.isMarked())
-                    return;
-
-                Throwable cause = _completion.getReference();
-                if (_completion.compareAndSet(cause, cause, false, true))
+                finally
                 {
-                    doCompleteFailure(cause);
-                    return;
+                    completed();
                 }
+                return;
+            }
+
+            if (_completion.isMarked())
+                return;
+
+            Throwable cause = _completion.getReference();
+            if (_completion.compareAndSet(cause, cause, false, true))
+            {
+                doCompleteFailure(cause);
+                return;
             }
         }
 
@@ -451,8 +454,7 @@ public interface Callback extends Invocable
             }
 
             Throwable failure = _completion.getReference();
-            if (failure != null)
-                ExceptionUtil.addSuppressedIfNotAssociated(failure, cause);
+            ExceptionUtil.addSuppressedIfNotAssociated(failure, cause);
             return false;
         }
 
@@ -461,46 +463,30 @@ public interface Callback extends Invocable
         {
             if (cause == null)
                 cause = new Exception();
-            while (true)
+            // Try failing directly by assuming that the callback is neither failed nor aborted.
+            if (_completion.compareAndSet(null, cause, false, true))
             {
-                // Try failing directly by assuming that the callback is neither failed nor aborted.
-                if (_completion.compareAndSet(null, cause, false, true))
-                {
-                    doCompleteFailure(cause);
-                    return;
-                }
+                doCompleteFailure(cause);
+                return;
+            }
 
-                Throwable failure = _completion.getReference();
-                if (failure != null)
-                    ExceptionUtil.addSuppressedIfNotAssociated(failure, cause);
+            Throwable failure = _completion.getReference();
+            ExceptionUtil.addSuppressedIfNotAssociated(failure, cause);
 
-                // Have we somehow already completed?
-                if (_completion.isMarked())
-                    return;
+            // Have we somehow already completed?
+            if (_completion.isMarked())
+                return;
 
-                // Have we aborted? in which case we can complete
-                if (failure != null && _completion.compareAndSet(failure, failure, false, true))
-                {
-                    doCompleteFailure(failure);
-                    return;
-                }
+            // Have we aborted? in which case we can complete
+            if (failure != null && _completion.compareAndSet(failure, failure, false, true))
+            {
+                doCompleteFailure(failure);
             }
         }
 
-        protected void doCompleteFailure(Throwable failure)
+        private void doCompleteFailure(Throwable failure)
         {
-            try
-            {
-                onCompleteFailure(failure);
-            }
-            catch (Throwable t)
-            {
-                ExceptionUtil.addSuppressedIfNotAssociated(failure, t);
-            }
-            finally
-            {
-                completed();
-            }
+            ExceptionUtil.call(failure, this::onCompleteFailure, this::completed);
         }
 
         /**
