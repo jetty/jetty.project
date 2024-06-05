@@ -273,6 +273,38 @@ public class CallbackTest
         assertThat(callback._completed.getCount(), is(0L));
     }
 
+    @Test
+    public void testAbortingWrappedByLegacyCallback() throws Exception
+    {
+        TestCompletingCB callback = new TestCompletingCB();
+        Callback legacyCb = new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                callback.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable cause)
+            {
+                callback.failed(cause);
+            }
+        };
+
+        Throwable abort = new Throwable();
+        legacyCb.abort(abort);
+        assertFalse(callback._completed.await(100, TimeUnit.MILLISECONDS));
+        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
+        assertFalse(callback._completion.isMarked());
+
+        Throwable failure = new Throwable();
+        legacyCb.failed(failure);
+        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
+        assertFalse(ExceptionUtil.areNotAssociated(abort, failure));
+        assertThat(callback._completed.getCount(), is(0L));
+    }
+
     private static class TestCompletingCB extends Callback.Completing
     {
         final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
