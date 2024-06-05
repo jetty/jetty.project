@@ -94,7 +94,7 @@ public interface ContentProducer
      * After this call, state can be either of UNREADY or IDLE.
      *
      * @return the next content chunk that can be read from or null if the implementation does not block
-     * and has no available content.
+     * and has no available content. The returned chunk can be empty IFF it is a failure and/or last.
      */
     Content.Chunk nextChunk();
 

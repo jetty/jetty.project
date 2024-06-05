@@ -93,10 +93,21 @@ public interface HttpChannel extends Invocable
      *
      * @param failure the failure cause.
      * @return a {@code Runnable} that performs the failure action, or {@code null}
-     * if no failure action need be performed by the calling thread
+     * if no failure action needs be performed by the calling thread
      * @see Request#addFailureListener(Consumer)
      */
     Runnable onFailure(Throwable failure);
+
+    /**
+     * <p>Notifies this {@code HttpChannel} that an asynchronous close happened.</p>
+     *
+     * @return a {@code Runnable} that performs the close action, or {@code null}
+     * if no close action needs be performed by the calling thread
+     */
+    default Runnable onClose()
+    {
+        return null;
+    }
 
     /**
      * Recycle the HttpChannel, so that a new cycle of calling {@link #setHttpStream(HttpStream)},

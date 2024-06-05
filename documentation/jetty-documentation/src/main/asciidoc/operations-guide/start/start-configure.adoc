@@ -18,7 +18,7 @@ Within the Jetty start mechanism, the source of configurations is layered in thi
 
 * The command line options.
 * The `$JETTY_BASE` directory, and its files.
-* The directory specified with the `--include-jetty-dir` option, and its files.
+* The directory specified with the `--add-config-dir` option, and its files.
 * The `$JETTY_HOME` directory, and its files.
 
 [[og-start-configure-enable]]
@@ -31,7 +31,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=server,http
 ----
 
 The Jetty start mechanism will look for the specified modules following the order specified above.
-In the common case (without a `--include-jetty-dir` directory), it will look in `$JETTY_BASE/modules/` first and then in `$JETTY_HOME/modules/`.
+In the common case (without a `--add-config-dir` directory), it will look in `$JETTY_BASE/modules/` first and then in `$JETTY_HOME/modules/`.
 
 Since the `server` and `http` modules are standard Jetty modules, they are present in `$JETTY_HOME/modules/` and loaded from there.
 

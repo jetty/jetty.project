@@ -38,7 +38,7 @@ public class IntegrationTestJettyRunner
             httpClient.start();
             ContentResponse response = httpClient.newRequest(serverUri).send();
             String res = response.getContentAsString();
-            assertThat(res, Matchers.containsString("Hello World!"));
+            assertThat(res, Matchers.containsString("Hello World EE10!"));
         }
         finally
         {

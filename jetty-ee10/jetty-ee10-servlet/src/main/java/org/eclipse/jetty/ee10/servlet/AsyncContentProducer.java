@@ -219,9 +219,10 @@ class AsyncContentProducer implements ContentProducer
         assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("reclaim {} {}", chunk, this);
-        assert chunk == _chunk;
+        if (chunk != _chunk)
+            throw new IllegalArgumentException("Cannot reclaim unknown chunk");
         chunk.release();
-        _chunk = null;
+        _chunk = Content.Chunk.next(_chunk);
     }
 
     @Override
@@ -270,6 +271,9 @@ class AsyncContentProducer implements ContentProducer
         return _servletChannel.getServletRequestState().isInputUnready();
     }
 
+    /**
+     * Never returns an empty chunk that isn't a failure and/or last.
+     */
     private Content.Chunk produceChunk()
     {
         if (LOG.isDebugEnabled())
@@ -309,13 +313,19 @@ class AsyncContentProducer implements ContentProducer
                         LOG.debug("channel has no new chunk {}", this);
                     return null;
                 }
-                _servletChannel.getServletRequestState().onContentAdded();
             }
         }
     }
 
     private Content.Chunk readChunk()
     {
+        if (_servletChannel.getServletRequestState().isInputUnready())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("readChunk() in unready state, returning null {}", this);
+            return null;
+        }
+
         Content.Chunk chunk = _servletChannel.getRequest().read();
         if (chunk != null)
         {

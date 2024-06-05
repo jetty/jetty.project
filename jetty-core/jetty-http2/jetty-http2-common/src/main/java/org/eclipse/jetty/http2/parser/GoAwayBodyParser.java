@@ -56,6 +56,8 @@ public class GoAwayBodyParser extends BodyParser
                         return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_go_away_frame");
                     state = State.LAST_STREAM_ID;
                     length = getBodyLength();
+                    if (length < 8)
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                     break;
                 }
                 case LAST_STREAM_ID:
@@ -66,8 +68,6 @@ public class GoAwayBodyParser extends BodyParser
                         lastStreamId &= 0x7F_FF_FF_FF;
                         state = State.ERROR;
                         length -= 4;
-                        if (length <= 0)
-                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                     }
                     else
                     {
@@ -82,14 +82,10 @@ public class GoAwayBodyParser extends BodyParser
                     --cursor;
                     lastStreamId += currByte << (8 * cursor);
                     --length;
-                    if (cursor > 0 && length <= 0)
-                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                     if (cursor == 0)
                     {
                         lastStreamId &= 0x7F_FF_FF_FF;
                         state = State.ERROR;
-                        if (length == 0)
-                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                     }
                     break;
                 }
@@ -100,8 +96,6 @@ public class GoAwayBodyParser extends BodyParser
                         error = buffer.getInt();
                         state = State.PAYLOAD;
                         length -= 4;
-                        if (length < 0)
-                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                         if (length == 0)
                             return onGoAway(lastStreamId, error, null);
                     }
@@ -118,8 +112,6 @@ public class GoAwayBodyParser extends BodyParser
                     --cursor;
                     error += currByte << (8 * cursor);
                     --length;
-                    if (cursor > 0 && length <= 0)
-                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                     if (cursor == 0)
                     {
                         state = State.PAYLOAD;

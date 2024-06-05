@@ -14,23 +14,27 @@
 package org.eclipse.jetty.security.jaas.spi;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
 import javax.security.auth.login.Configuration;
 
+import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.PropertyUserStore;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.jaas.JAASLoginService;
 import org.eclipse.jetty.security.jaas.PropertyUserStoreManager;
+import org.eclipse.jetty.security.jaas.TestHandler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
@@ -62,7 +66,6 @@ public class PropertyFileLoginModuleTest
     }
     
     @Test
-    @Disabled //TODO
     public void testPropertyFileLoginModule() throws Exception
     {
         //configure for PropertyFileLoginModule
@@ -81,24 +84,21 @@ public class PropertyFileLoginModuleTest
 
         ContextHandler context = new ContextHandler();
         context.setContextPath("/ctx");
-        /* TODO
-        context.setHandler(new TestHandler(Arrays.asList("role1", "role2", "role3"), Arrays.asList("role4")), "/");
+        SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
+        securityHandler.setAuthenticator(new BasicAuthenticator());
+        securityHandler.put("/*", Constraint.from("role1", "role2", "role3"));
+        context.setHandler(securityHandler);
+        securityHandler.setHandler(new TestHandler(Arrays.asList("role1", "role2", "role3"), Arrays.asList("role4")));
         _server.setHandler(context);
-        
-        ConstraintSecurityHandler security = new ConstraintSecurityHandler();
-        security.setAuthenticator(new BasicAuthenticator());
-        context.setSecurityHandler(security);
 
-         */
-        
         JAASLoginService ls = new JAASLoginService("foo");
-        ls.setCallbackHandlerClass("org.eclipse.jetty.ee10.jaas.callback.DefaultCallbackHandler");
+        ls.setCallbackHandlerClass("org.eclipse.jetty.security.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(testConfig);
         _server.addBean(ls, true);
 
         _server.start();
-        
+
         //test that the manager is created when the JAASLoginService starts
         PropertyUserStoreManager mgr = ls.getBean(PropertyUserStoreManager.class);
         assertThat(mgr, notNullValue());

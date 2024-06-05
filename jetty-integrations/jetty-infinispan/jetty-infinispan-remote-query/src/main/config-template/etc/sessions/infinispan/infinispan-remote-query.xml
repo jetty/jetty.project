@@ -6,20 +6,7 @@
   <!-- ===================================================================== -->
   <!-- Set up support for queries and index on session expiry time.          -->
   <!-- ===================================================================== -->
-  <New id="mapping" class="org.hibernate.search.cfg.SearchMapping">
-    <Call name="entity">
-      <Arg><Call class="java.lang.Class" name="forName"><Arg>org.eclipse.jetty.session.infinispan.InfinispanSessionData</Arg></Call></Arg>
-      <Call name="indexed">
-        <Call name="providedId">
-          <Call name="property">
-            <Arg type="String">expiry</Arg>
-            <Arg><Get class="java.lang.annotation.ElementType" name="FIELD"/></Arg>
-              <Call name="field"/>
-          </Call>
-        </Call>
-      </Call>
-    </Call>
-  </New>
+
 
   <New id="properties" class="java.util.Properties">
     <Call name="load">
@@ -28,10 +15,6 @@
           <Arg><Property name="jetty.base"/>/resources/hotrod-client.properties</Arg>
         </New>
       </Arg>
-    </Call>
-    <Call name="put">
-      <Arg><Get class="org.hibernate.search.cfg.Environment" name="MODEL_MAPPING"/></Arg>
-      <Arg><Ref refid="mapping"/></Arg>
     </Call>
   </New>
 

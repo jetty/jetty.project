@@ -62,7 +62,7 @@ public class IOResources
             throw new IllegalArgumentException("Resource length exceeds 2 GiB: " + resource);
         int length = (int)longLength;
 
-        bufferPool = bufferPool == null ? new ByteBufferPool.NonPooling() : bufferPool;
+        bufferPool = bufferPool == null ? ByteBufferPool.NON_POOLING : bufferPool;
 
         // Optimize for PathResource.
         Path path = resource.getPath();
@@ -371,7 +371,7 @@ public class IOResources
             if (first > -1)
                 channel.position(first);
             this.sink = sink;
-            this.pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
+            this.pool = pool == null ? ByteBufferPool.NON_POOLING : pool;
             this.bufferSize = bufferSize <= 0 ? 4096 : bufferSize;
             this.direct = direct;
             this.remainingLength = length;

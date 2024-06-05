@@ -318,10 +318,10 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
     private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
     {
         if (contextHandler == null)
-            return new ByteBufferPool.NonPooling();
+            return ByteBufferPool.NON_POOLING;
         Server server = contextHandler.getServer();
         if (server == null)
-            return new ByteBufferPool.NonPooling();
+            return ByteBufferPool.NON_POOLING;
         return server.getByteBufferPool();
     }
 

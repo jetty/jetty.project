@@ -19,10 +19,10 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
@@ -691,7 +691,7 @@ public class AsyncServletTest
     private static class AsyncServlet extends HttpServlet
     {
         private static final long serialVersionUID = -8161977157098646562L;
-        private final Timer _timer = new Timer();
+        private final ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
 
         @Override
         public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
@@ -797,28 +797,20 @@ public class AsyncServletTest
 
                     if (completeAfter > 0)
                     {
-                        TimerTask complete = new TimerTask()
+                        _scheduler.schedule(() ->
                         {
-                            @Override
-                            public void run()
+                            try
                             {
-                                try
-                                {
-                                    response.setStatus(200);
-                                    response.getOutputStream().println("COMPLETED\n");
-                                    historyAdd("complete");
-                                    async.complete();
-                                }
-                                catch (Exception e)
-                                {
-                                    e.printStackTrace();
-                                }
+                                response.setStatus(200);
+                                response.getOutputStream().println("COMPLETED\n");
+                                historyAdd("complete");
+                                async.complete();
                             }
-                        };
-                        synchronized (_timer)
-                        {
-                            _timer.schedule(complete, completeAfter);
-                        }
+                            catch (Exception e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }, completeAfter, TimeUnit.MILLISECONDS);
                     }
                     else if (completeAfter == 0)
                     {
@@ -829,28 +821,20 @@ public class AsyncServletTest
                     }
                     else if (dispatchAfter > 0)
                     {
-                        TimerTask dispatch = new TimerTask()
+                        _scheduler.schedule(() ->
                         {
-                            @Override
-                            public void run()
+                            historyAdd("dispatch");
+                            if (path != null)
                             {
-                                historyAdd("dispatch");
-                                if (path != null)
-                                {
-                                    int q = path.indexOf('?');
-                                    String uriInContext = (q >= 0)
-                                        ? URIUtil.encodePath(path.substring(0, q)) + path.substring(q)
-                                        : URIUtil.encodePath(path);
-                                    async.dispatch(uriInContext);
-                                }
-                                else
-                                    async.dispatch();
+                                int q = path.indexOf('?');
+                                String uriInContext = (q >= 0)
+                                    ? URIUtil.encodePath(path.substring(0, q)) + path.substring(q)
+                                    : URIUtil.encodePath(path);
+                                async.dispatch(uriInContext);
                             }
-                        };
-                        synchronized (_timer)
-                        {
-                            _timer.schedule(dispatch, dispatchAfter);
-                        }
+                            else
+                                async.dispatch();
+                        }, dispatchAfter, TimeUnit.MILLISECONDS);
                     }
                     else if (dispatchAfter == 0)
                     {
@@ -901,28 +885,20 @@ public class AsyncServletTest
 
                     if (complete2After > 0)
                     {
-                        TimerTask complete = new TimerTask()
+                        _scheduler.schedule(() ->
                         {
-                            @Override
-                            public void run()
+                            try
                             {
-                                try
-                                {
-                                    response.setStatus(200);
-                                    response.getOutputStream().println("COMPLETED\n");
-                                    historyAdd("complete");
-                                    async.complete();
-                                }
-                                catch (Exception e)
-                                {
-                                    e.printStackTrace();
-                                }
+                                response.setStatus(200);
+                                response.getOutputStream().println("COMPLETED\n");
+                                historyAdd("complete");
+                                async.complete();
                             }
-                        };
-                        synchronized (_timer)
-                        {
-                            _timer.schedule(complete, complete2After);
-                        }
+                            catch (Exception e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }, complete2After, TimeUnit.MILLISECONDS);
                     }
                     else if (complete2After == 0)
                     {
@@ -933,19 +909,11 @@ public class AsyncServletTest
                     }
                     else if (dispatch2After > 0)
                     {
-                        TimerTask dispatch = new TimerTask()
+                        _scheduler.schedule(() ->
                         {
-                            @Override
-                            public void run()
-                            {
-                                historyAdd("dispatch");
-                                async.dispatch();
-                            }
-                        };
-                        synchronized (_timer)
-                        {
-                            _timer.schedule(dispatch, dispatch2After);
-                        }
+                            historyAdd("dispatch");
+                            async.dispatch();
+                        }, dispatch2After, TimeUnit.MILLISECONDS);
                     }
                     else if (dispatch2After == 0)
                     {

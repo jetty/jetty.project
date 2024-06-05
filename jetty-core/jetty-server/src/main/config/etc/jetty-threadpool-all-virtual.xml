@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <New id="threadPool" class="org.eclipse.jetty.util.thread.VirtualThreadPool">
+    <Set name="name" property="jetty.threadPool.namePrefix" />
+  </New>
+
+  <Call class="org.slf4j.LoggerFactory" name="getLogger">
+    <Arg>org.eclipse.jetty</Arg>
+    <Call name="info">
+      <Arg>Virtual threads enabled. Using virtual threads for all tasks.</Arg>
+    </Call>
+  </Call>
+</Configure>

@@ -415,6 +415,17 @@ public class TrieTest
     }
 
     @ParameterizedTest
+    @MethodSource("emptyImplementations")
+    public void testGetNullStringKey(AbstractTrie<Integer> trie) throws Exception
+    {
+        assertNull(trie.get((String)null));
+        assertNull(trie.get((String)null, 0, 0));
+        assertFalse(trie.contains(null));
+        assertNull(trie.getBest((String)null));
+        assertNull(trie.getBest((String)null, 0, 0));
+    }
+
+    @ParameterizedTest
     @MethodSource("implementations")
     public void testIsNotEmpty(AbstractTrie<Integer> trie) throws Exception
     {

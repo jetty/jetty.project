@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10</artifactId>
-    <version>12.0.9-SNAPSHOT</version>
+    <version>12.0.11-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee10-runner</artifactId>
   <name>EE10 :: Runner</name>
@@ -127,33 +127,11 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- TODO -->
-      <!-- plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>integration-test</id>
-            <phase>integration-test</phase>
-            <goals>
-              <goal>install</goal>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
         <configuration>
           <debug>${it.debug}</debug>
           <addTestClassPath>true</addTestClassPath>
+          <junitPackageName>org.eclipse.jetty.maven.its.ee10.runner</junitPackageName>
           <scriptVariables>
             <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
@@ -163,7 +141,29 @@
             <goal>clean</goal>
           </goals>
         </configuration>
-      </plugin -->
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>install</goal>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <phase>integration-test</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

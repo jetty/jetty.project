@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -355,6 +356,20 @@ public class HttpParserTest
         assertEquals("Connection", _hdr[1]);
         assertEquals("close", _val[1]);
         assertEquals(1, _headers);
+    }
+
+    @Test
+    public void testHeaderCache()
+    {
+        assertThat(HttpParser.CACHE.getBest("Content-Type: text/plain\r\n").toString(), is("Content-Type: text/plain"));
+        assertThat(HttpParser.CACHE.getBest("Content-Type: text/plain\n").toString(), is("Content-Type: text/plain"));
+        assertThat(HttpParser.CACHE.getBest("content-type: text/plain\r\n").toString(), is("Content-Type: text/plain"));
+        assertThat(HttpParser.CACHE.getBest("content-type: text/plain\n").toString(), is("Content-Type: text/plain"));
+
+        assertThat(HttpParser.CACHE.getBest("Content-Type: unknown\r\n").toString(), is("Content-Type: \u0000"));
+        assertThat(HttpParser.CACHE.getBest("Content-Type: unknown\n").toString(), is("Content-Type: \u0000"));
+        assertThat(HttpParser.CACHE.getBest("content-type: unknown\r\n").toString(), is("Content-Type: \u0000"));
+        assertThat(HttpParser.CACHE.getBest("content-type: unknown\n").toString(), is("Content-Type: \u0000"));
     }
 
     @ParameterizedTest
@@ -1970,7 +1985,8 @@ public class HttpParserTest
         "+10",
         "1.0",
         "1,0",
-        "10,"
+        "10,",
+        "10A"
     })
     public void testBadContentLengths(String contentLength)
     {
@@ -1991,6 +2007,116 @@ public class HttpParserTest
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED, parser.getState());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        " 10 ",
+        "10 ",
+        " 10",
+        "\t10",
+        "\t10\t",
+        "10\t",
+        " \t \t \t 10"
+    })
+    public void testContentLengthWithOWS(String contentLength)
+    {
+        String rawRequest = """
+            GET /test HTTP/1.1\r
+            Host: localhost\r
+            Content-Length: @LEN@\r
+            \r
+            1234567890
+            """.replace("@LEN@", contentLength);
+        ByteBuffer buffer = BufferUtil.toBuffer(rawRequest);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/test", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+
+        assertEquals(_content.length(), 10);
+        assertEquals(parser.getContentLength(), 10);
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        " chunked ",
+        "chunked ",
+        " chunked",
+        "\tchunked",
+        "\tchunked\t",
+        "chunked\t",
+        " \t \t \t chunked"
+    })
+    public void testTransferEncodingWithOWS(String transferEncoding)
+    {
+        String rawRequest = """
+            GET /test HTTP/1.1\r
+            Host: localhost\r
+            Transfer-Encoding: @TE@\r
+            \r
+            1\r
+            X\r
+            0\r
+            \r
+            """.replace("@TE@", transferEncoding);
+        ByteBuffer buffer = BufferUtil.toBuffer(rawRequest);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/test", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Transfer-Encoding", _hdr[1]);
+        assertEquals("chunked", _val[1]);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        " testhost ",
+        "testhost ",
+        " testhost",
+        "\ttesthost",
+        "\ttesthost\t",
+        "testhost\t",
+        " \t \t \t testhost"
+    })
+    public void testHostWithOWS(String host)
+    {
+        String rawRequest = """
+            GET /test HTTP/1.1\r
+            Host: @HOST@\r
+            \r
+            """.replace("@HOST@", host);
+        ByteBuffer buffer = BufferUtil.toBuffer(rawRequest);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/test", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("testhost", _val[0]);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
     }
 
     @ParameterizedTest
@@ -2117,7 +2243,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("host", _host);
-        assertEquals(0, _port);
+        assertEquals(URIUtil.UNDEFINED_PORT, _port);
     }
 
     @ParameterizedTest
@@ -2182,7 +2308,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("192.168.0.1", _host);
-        assertEquals(0, _port);
+        assertEquals(URIUtil.UNDEFINED_PORT, _port);
     }
 
     @ParameterizedTest
@@ -2200,7 +2326,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("[::1]", _host);
-        assertEquals(0, _port);
+        assertEquals(URIUtil.UNDEFINED_PORT, _port);
     }
 
     @ParameterizedTest

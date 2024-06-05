@@ -279,7 +279,9 @@ public class ServletChannel
     public ServletContextResponse getServletContextResponse()
     {
         ServletContextRequest request = _servletContextRequest;
-        return request == null ? null : request.getServletContextResponse();
+        if (_servletContextRequest == null)
+            throw new IllegalStateException("Request/Response does not exist (likely recycled)");
+        return request.getServletContextResponse();
     }
 
     /**
@@ -291,6 +293,8 @@ public class ServletChannel
      */
     public Response getResponse()
     {
+        if (_response == null)
+            throw new IllegalStateException("Response does not exist (likely recycled)");
         return _response;
     }
 
@@ -384,9 +388,10 @@ public class ServletChannel
      */
     void recycle(Throwable x)
     {
-        _state.recycle();
+        // _httpInput must be recycled before _state.
         _httpInput.recycle();
         _httpOutput.recycle();
+        _state.recycle();
         _servletContextRequest = null;
         _request = null;
         _response = null;
@@ -516,7 +521,7 @@ public class ServletChannel
                             catch (Throwable t)
                             {
                                 ExceptionUtil.addSuppressedIfNotAssociated(t, cause);
-                                throw t;
+                                abort(t);
                             }
                         }
                         finally

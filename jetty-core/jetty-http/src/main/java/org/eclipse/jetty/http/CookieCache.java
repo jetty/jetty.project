@@ -21,8 +21,6 @@ import java.util.ListIterator;
 import java.util.Map;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Cookie parser
@@ -31,9 +29,8 @@ import org.slf4j.LoggerFactory;
 @Deprecated (forRemoval = true)
 public class CookieCache implements CookieParser.Handler, ComplianceViolation.Listener
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(CookieCache.class);
-    protected final List<String> _rawFields = new ArrayList<>();
-    protected List<HttpCookie> _cookieList;
+    private final List<String> _rawFields = new ArrayList<>();
+    private List<HttpCookie> _cookieList;
     private final CookieParser _parser;
     private List<ComplianceViolation.Event> _violations;
 

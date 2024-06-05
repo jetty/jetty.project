@@ -36,6 +36,7 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -80,6 +81,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -128,7 +130,7 @@ public class WebAppContextTest
      * @param name the name of the war
      * @return the Path of the generated war
      *
-     * @throws Exception
+     * @throws Exception if the war could not be created
      */
     private Path createWar(Path tempDir, String name) throws Exception
     {
@@ -935,5 +937,81 @@ public class WebAppContextTest
         server.setHandler(new Handler.Sequence(context, handler));
 
         assertThat(handler.getServer(), sameInstance(server));
+    }
+
+    @Test
+    public void testAddHiddenClasses() throws Exception
+    {
+        Server server = newServer();
+
+        String testPattern = "org.eclipse.jetty.ee10.webapp.test.";
+
+        WebAppClassLoading.addHiddenClasses(server, testPattern);
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+
+        Path testPath = MavenPaths.targetTestDir("testAddServerClasses");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+        Path warPath = createWar(testPath, "test.war");
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+
+        // Check context specific
+        context.getHiddenClassMatcher().add("org.context.specific.");
+
+        // Check old API
+        context.getServerClassMatcher().add("org.deprecated.api.");
+
+        server.setHandler(context);
+        server.start();
+
+        List<String> hiddenClasses = List.of(context.getHiddenClasses());
+        assertThat("Should have environment specific test pattern", hiddenClasses, hasItem(testPattern));
+        assertThat("Should have pattern from defaults", hiddenClasses, hasItem("org.eclipse.jetty."));
+        assertThat("Should have pattern from JaasConfiguration", hiddenClasses, hasItem("-org.eclipse.jetty.security.jaas."));
+        for (String defaultServerClass: WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
+            assertThat("Should have default patterns", hiddenClasses, hasItem(defaultServerClass));
+
+        assertThat("context API", hiddenClasses, hasItem("org.context.specific."));
+        assertThat("deprecated API", hiddenClasses, hasItem("org.deprecated.api."));
+    }
+
+    @Test
+    public void testAddProtectedClasses() throws Exception
+    {
+        Server server = newServer();
+
+        String testPattern = "org.eclipse.jetty.ee10.webapp.test.";
+
+        WebAppClassLoading.addProtectedClasses(server, testPattern);
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        Path testPath = MavenPaths.targetTestDir("testAddServerClasses");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+        Path warPath = createWar(testPath, "test.war");
+        context.setBaseResource(context.getResourceFactory().newResource(warPath));
+
+        // Check context specific
+        context.getProtectedClassMatcher().add("org.context.specific.");
+
+        // Check old API is a wrapper
+        context.getSystemClassMatcher().add("org.deprecated.api.");
+
+        server.setHandler(context);
+        server.start();
+
+        List<String> protectedClasses = List.of(context.getProtectedClasses());
+        assertThat("Should have environment specific test pattern", protectedClasses, hasItem(testPattern));
+        assertThat("Should have pattern from defaults", protectedClasses, hasItem("javax."));
+        assertThat("Should have pattern from defaults", protectedClasses, hasItem("jakarta."));
+        assertThat("Should have pattern from JaasConfiguration", protectedClasses, hasItem("org.eclipse.jetty.security.jaas."));
+        for (String defaultSystemClass: WebAppClassLoading.DEFAULT_PROTECTED_CLASSES)
+            assertThat("Should have default patterns", protectedClasses, hasItem(defaultSystemClass));
+
+        assertThat("context API", protectedClasses, hasItem("org.context.specific."));
+        assertThat("deprecated API", protectedClasses, hasItem("org.deprecated.api."));
     }
 }

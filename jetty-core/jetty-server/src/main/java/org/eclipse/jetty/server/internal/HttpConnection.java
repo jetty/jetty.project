@@ -52,7 +52,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -81,7 +80,7 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractMetaDataConnection implements Runnable, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
+public class HttpConnection extends AbstractMetaDataConnection implements Runnable, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
@@ -334,13 +333,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     public void onUpgradeTo(ByteBuffer buffer)
     {
         BufferUtil.append(getRequestBuffer(), buffer);
-    }
-
-    @Override
-    public void onFlushed(long bytes) throws IOException
-    {
-        // TODO is this callback still needed?   Couldn't we wrap send callback instead?
-        //      Either way, the dat rate calculations from HttpOutput.onFlushed should be moved to Channel.
     }
 
     void releaseRequestBuffer()
@@ -608,6 +600,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         if (task != null)
             getExecutor().execute(task);
         return false; // We've handle the exception
+    }
+
+    @Override
+    public void close()
+    {
+        Runnable task = _httpChannel.onClose();
+        if (task != null)
+            task.run();
+        super.close();
     }
 
     @Override
@@ -1048,7 +1049,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream != null)
             {
-                BadMessageException bad = new BadMessageException("Early EOF");
+                HttpEofException bad = new HttpEofException();
                 Content.Chunk chunk = stream._chunk;
 
                 if (Content.Chunk.isFailure(chunk))
@@ -1629,6 +1630,30 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public EndPoint getEndPoint()
         {
             return HttpConnection.this.getEndPoint();
+        }
+    }
+
+    /**
+     * HttpParser converts some bad message event into early EOF.
+     * However, we want to send a 400 (not a 500) to the client because it's a client error.
+     */
+    private static class HttpEofException extends EofException implements HttpException
+    {
+        private HttpEofException()
+        {
+            super("Early EOF");
+        }
+
+        @Override
+        public int getCode()
+        {
+            return HttpStatus.BAD_REQUEST_400;
+        }
+
+        @Override
+        public String getReason()
+        {
+            return getMessage();
         }
     }
 }

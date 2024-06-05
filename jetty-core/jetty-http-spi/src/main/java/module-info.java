@@ -11,6 +11,9 @@
 // ========================================================================
 //
 
+import com.sun.net.httpserver.spi.HttpServerProvider;
+import org.eclipse.jetty.http.spi.JettyHttpServerProvider;
+
 module org.eclipse.jetty.http.spi
 {
     requires transitive jdk.httpserver;
@@ -19,4 +22,6 @@ module org.eclipse.jetty.http.spi
     requires transitive org.eclipse.jetty.util;
 
     exports org.eclipse.jetty.http.spi;
+
+    provides HttpServerProvider with JettyHttpServerProvider;
 }

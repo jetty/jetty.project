@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncServletLongPollTest
@@ -206,9 +205,9 @@ public class AsyncServletLongPollTest
             server.stop();
 
             client.socket().setSoTimeout(1000);
-            // The connection has been closed, no response.
+
             HttpTester.Response response = HttpTester.parseResponse(client);
-            assertNull(response);
+            assertEquals(500, response.getStatus());
         }
     }
 }
