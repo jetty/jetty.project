@@ -72,7 +72,7 @@ public class CCDServlet extends HttpServlet
                 }
                 return;
             }
-            else if (step instanceof GetHttpSessionStep getHttpSessionTask)
+            else if (step instanceof GetHttpSessionStep)
             {
                 req.getSession(true);
             }

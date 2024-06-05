@@ -187,6 +187,12 @@ public class DispatchPlan
 
     public Step popStep()
     {
-        return steps.pop();
+        return steps.pollFirst();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "DispatchPlan[id=" + id + "]";
     }
 }

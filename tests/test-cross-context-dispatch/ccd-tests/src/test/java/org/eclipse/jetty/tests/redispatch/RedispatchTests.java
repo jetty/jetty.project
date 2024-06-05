@@ -140,6 +140,10 @@ public class RedispatchTests
                 distribution.installWar(war, "ccd-" + env);
                 Path warProperties = jettyBase.resolve("webapps/ccd-" + env + ".properties");
                 Files.writeString(warProperties, "environment: " + env, StandardCharsets.UTF_8);
+
+                Path webappXmlSrc = MavenPaths.findTestResourceFile("webapp-xmls/ccd-" + env + ".xml");
+                Path webappXmlDest = jettyBase.resolve("webapps/ccd-" + env + ".xml");
+                Files.copy(webappXmlSrc, webappXmlDest);
             }
 
             runStart = distribution.start(argsStart);
@@ -162,6 +166,9 @@ public class RedispatchTests
         List<DispatchPlan> plans = new ArrayList<>();
 
         plans.add(loadDispatchPlan("ee10-request-forward-dump.json"));
+        plans.add(loadDispatchPlan("context-ee10-forward-dump.json"));
+        plans.add(loadDispatchPlan("ee8-request-include-dump.json"));
+        plans.add(loadDispatchPlan("ee8-request-forward-dump.json"));
 
         return plans.stream().map(Arguments::of);
     }
