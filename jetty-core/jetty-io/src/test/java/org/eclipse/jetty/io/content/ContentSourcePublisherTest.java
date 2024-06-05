@@ -96,7 +96,7 @@ public final class ContentSourcePublisherTest extends FlowPublisherVerification<
         @Override
         public void demand(Runnable demandCallback)
         {
-            // TODO: recursive stack overflow
+            // Note: recursive stack overflow not necessary for this test
             demandCallback.run();
         }
 
