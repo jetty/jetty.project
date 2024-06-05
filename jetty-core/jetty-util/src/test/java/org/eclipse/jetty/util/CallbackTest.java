@@ -290,6 +290,13 @@ public class CallbackTest
             {
                 callback.failed(cause);
             }
+
+            // TODO uncommenting this fixes the test
+//            @Override
+//            public boolean abort(Throwable cause)
+//            {
+//                return callback.abort(cause);
+//            }
         };
 
         Throwable abort = new Throwable();
