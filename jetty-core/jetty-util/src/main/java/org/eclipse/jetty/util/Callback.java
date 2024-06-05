@@ -81,8 +81,8 @@ public interface Callback extends Invocable
      * {@link #failed(Throwable)}</p>
      *
      * @param cause the reason for the operation failure
-     * @return {@code} if the call to cancel was prior to a call to either {@link #succeeded()}, {@link #failed(Throwable)}
-     * or another call to {@code cancel(Throwable)}.
+     * @return {@code true} if the call to abort was prior to a call to either {@link #succeeded()}, {@link #failed(Throwable)}
+     * or another call to {@code abort(Throwable)}.
      * @see Completing
      */
     default boolean abort(Throwable cause)
@@ -369,9 +369,9 @@ public interface Callback extends Invocable
             }
 
             @Override
-            public boolean abort(Throwable cancelCause)
+            public boolean abort(Throwable abortCause)
             {
-                ExceptionUtil.addSuppressedIfNotAssociated(cause, cancelCause);
+                ExceptionUtil.addSuppressedIfNotAssociated(cause, abortCause);
                 return callback.abort(cause);
             }
 
