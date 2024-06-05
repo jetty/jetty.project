@@ -14,12 +14,15 @@
 package org.eclipse.jetty.tests.redispatch;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -180,18 +183,34 @@ public class RedispatchTests
         ContentResponse response = client.newRequest("localhost", httpPort)
             .method(requestStep.getMethod())
             .headers((headers) ->
-            {
-                headers.put("X-DispatchPlan", dispatchPlan.id());
-            })
+                headers.put("X-DispatchPlan", dispatchPlan.id()))
             .path(requestStep.getRequestPath())
             .send();
         String responseDetails = toResponseDetails(response);
         assertThat(responseDetails, response.getStatus(), is(HttpStatus.OK_200));
-        List<String> actualEvents = response.getContentAsString().lines()
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
 
-        assertThat(actualEvents, contains(dispatchPlan.getExpectedEvents()));
+        Properties responseProps = new Properties();
+        try (StringReader stringReader = new StringReader(response.getContentAsString()))
+        {
+            responseProps.load(stringReader);
+        }
+
+        dumpProperties(responseProps);
+
+        int expectedEventCount = dispatchPlan.getExpectedEvents().size();
+        assertThat(responseProps.getProperty("dispatchPlan.events.count"), is(Integer.toString(expectedEventCount)));
+        for (int i = 0; i < expectedEventCount; i++)
+        {
+            assertThat("event[" + i + "]", responseProps.getProperty("dispatchPlan.event[" + i + "]"), is(dispatchPlan.getExpectedEvents().get(i)));
+        }
+    }
+
+    private void dumpProperties(Properties props)
+    {
+        props.stringPropertyNames().stream()
+            .sorted()
+            .forEach((name) ->
+                System.out.printf("%s=%s%n", name, props.getProperty(name)));
     }
 
     private static String toResponseDetails(ContentResponse response)

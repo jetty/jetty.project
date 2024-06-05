@@ -15,7 +15,7 @@
   "expectedEvents": [
     "Initial plan: ee10-request-forward-dump.json",
     "DispatchPlanHandler.handle() method=GET path-query=/ccd-ee10/redispatch/ee10",
-    "CCDServlet.service() dispatcherType=REQUEST method=GET requestUri=/ccd-ee10/redispatch/ee10",
-    "CCDServlet.service() dispatcherType=FORWARD method=GET requestUri=/ccd-ee10/dump/ee10"
+    "org.eclipse.jetty.tests.ccd.ee10.CCDServlet.service() dispatcherType=REQUEST method=GET requestUri=/ccd-ee10/redispatch/ee10",
+    "org.eclipse.jetty.tests.ccd.ee10.DumpServlet.service() dispatcherType=FORWARD method=GET requestUri=/ccd-ee10/dump/ee10"
   ]
 }

@@ -393,7 +393,6 @@ public class RequestTest
             assertThat(connection.getResponse(), containsString(" 200 OK"));
         }
 
-        cookieHistory.forEach(System.err::println);
         assertThat(cookieHistory.size(), is(6));
         assertThat(cookieHistory.stream().map(c -> c.getName() + "=" + c.getValue()).toList(), contains(
             "name1=value1",

@@ -34,6 +34,13 @@ public class CCDServlet extends HttpServlet
     {
         DispatchPlan dispatchPlan = (DispatchPlan)req.getAttribute(DispatchPlan.class.getName());
 
+        if (dispatchPlan == null)
+            throw new ServletException("Unable to find DispatchPlan");
+
+        dispatchPlan.addEvent("%s.service() dispatcherType=%s method=%s requestUri=%s",
+            this.getClass().getName(),
+            req.getDispatcherType(), req.getMethod(), req.getRequestURI());
+
         Step step;
 
         while ((step = dispatchPlan.popStep()) != null)

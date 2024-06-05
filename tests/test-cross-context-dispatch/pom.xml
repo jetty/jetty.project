@@ -17,7 +17,7 @@
     <module>ccd-ee10-webapp</module>
     <module>ccd-ee9-webapp</module>
     <module>ccd-ee8-webapp</module>
-    <module>tests-ccd</module>
+    <module>ccd-tests</module>
   </modules>
 
   <properties>
