@@ -18,5 +18,16 @@
     "Initial",
     "Request Path /foo/redispatch",
     "Request Path /ccd-ee8/dump/ee8"
+  ],
+  "expectedContentType": "text/x-java-properties; charset=utf-8",
+  "expectedProperties": [
+    {
+      "class": "org.eclipse.jetty.tests.ccd.common.Property",
+      "name": "request.dispatchType",
+      "value": "FORWARD"
+    }
+  ],
+  "expectedOutput": [
+    "request.dispatcherType=FORWARD"
   ]
 }

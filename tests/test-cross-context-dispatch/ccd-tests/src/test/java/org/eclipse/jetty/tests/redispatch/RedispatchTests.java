@@ -19,19 +19,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.ccd.common.DispatchPlan;
+import org.eclipse.jetty.tests.ccd.common.Property;
 import org.eclipse.jetty.tests.ccd.common.steps.HttpRequestStep;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
@@ -47,7 +46,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -112,17 +110,17 @@ public class RedispatchTests
             String module = """
                 [depend]
                 server
-                                
+                
                 [lib]
                 lib/jetty-util-ajax-$J.jar
                 lib/ccd-common-$J.jar
-                                
+                
                 [xml]
                 etc/install-ccd-handler.xml
                 
                 [ini]
-                jetty.webapp.addSystemClasses+=,org.eclipse.jetty.tests.ccd.common.
-                jetty.webapp.addServerClasses+=,-org.eclipse.jetty.tests.ccd.common.
+                jetty.webapp.addProtectedClasses+=,org.eclipse.jetty.tests.ccd.common.
+                jetty.webapp.addHiddenClasses+=,-org.eclipse.jetty.tests.ccd.common.
                 """.replace("$J", jettyVersion);
             Files.writeString(modulesDir.resolve("ccd.mod"), module, StandardCharsets.UTF_8);
 
@@ -202,6 +200,18 @@ public class RedispatchTests
         for (int i = 0; i < expectedEventCount; i++)
         {
             assertThat("event[" + i + "]", responseProps.getProperty("dispatchPlan.event[" + i + "]"), is(dispatchPlan.getExpectedEvents().get(i)));
+        }
+
+        if (dispatchPlan.getExpectedContentType() != null)
+        {
+            assertThat("Expected ContentType", response.getHeaders().get(HttpHeader.CONTENT_TYPE), is(dispatchPlan.getExpectedContentType()));
+        }
+
+        for (Property expectedProperty : dispatchPlan.getExpectedProperties())
+        {
+            String actualValue = responseProps.getProperty(expectedProperty.getName());
+            assertThat("Expected Property [" + expectedProperty.getName() + "]",
+                actualValue, is(expectedProperty.getValue()));
         }
     }
 

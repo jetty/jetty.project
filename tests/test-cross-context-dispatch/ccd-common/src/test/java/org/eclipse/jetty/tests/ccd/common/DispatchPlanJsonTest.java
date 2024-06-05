@@ -54,6 +54,10 @@ public class DispatchPlanJsonTest
         plan.addExpectedEvent("Initial");
         plan.addExpectedEvent("Request Path /foo/redispatch");
 
+        plan.addExpectedOutput("request.dispatcherType=FORWARD");
+        plan.setExpectedContentType("text/plain");
+        plan.addExpectedProperty("request.dispatcherType", "FORWARD");
+
         DispatchPlan.write(plan, outputDir.resolve("simple.json"));
     }
 
@@ -78,6 +82,10 @@ public class DispatchPlanJsonTest
         assertThat(contextRedispatchStep.getContextPath(), is("/ccd-ee8"));
         assertThat(contextRedispatchStep.getDispatchPath(), is("/dump/ee8"));
 
+        assertThat(plan.getExpectedContentType(), is("text/x-java-properties; charset=utf-8"));
+
         assertThat(plan.getExpectedEvents().size(), is(3));
+        assertThat(plan.getExpectedOutput().size(), is(1));
+        assertThat(plan.getExpectedProperties().size(), is(1));
     }
 }

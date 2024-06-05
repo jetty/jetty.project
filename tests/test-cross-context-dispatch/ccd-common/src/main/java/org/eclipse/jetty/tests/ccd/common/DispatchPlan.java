@@ -32,19 +32,130 @@ import org.eclipse.jetty.util.ajax.JSONPojoConvertor;
 
 public class DispatchPlan
 {
-    private HttpRequestStep requestStep;
-    private String id;
     private final Deque<Step> steps = new LinkedBlockingDeque<>();
     private final List<String> events = new ArrayList<>();
     private final List<String> expectedEvents = new ArrayList<>();
+    private final List<Property> expectedProperties = new ArrayList<>();
+    private final List<String> expectedOutput = new ArrayList<>();
+    private HttpRequestStep requestStep;
+    private String id;
+    private String expectedContentType;
 
     public DispatchPlan()
     {
     }
 
-    public String id()
+    private static JSON newJSON()
     {
-        return id;
+        JSON json = new JSON();
+        json.addConvertor(DispatchPlan.class, new JSONPojoConvertor(DispatchPlan.class));
+        json.addConvertor(DispatchType.class, new JSONEnumConvertor());
+        List<Class<?>> classes = List.of(
+            ContextRedispatchStep.class,
+            RequestDispatchStep.class,
+            GetHttpSessionStep.class,
+            HttpRequestStep.class,
+            Property.class
+        );
+        for (Class<?> clazz : classes)
+        {
+            json.addConvertor(clazz, new JSONPojoConvertor(clazz));
+        }
+        return json;
+    }
+
+    public static DispatchPlan read(Path inputJson) throws IOException
+    {
+        JSON json = newJSON();
+        String rawJson = Files.readString(inputJson, StandardCharsets.UTF_8);
+        DispatchPlan plan = (DispatchPlan)json.fromJSON(rawJson);
+        plan.id = inputJson.getFileName().toString();
+        return plan;
+    }
+
+    public static void write(DispatchPlan plan, Path outputJson) throws IOException
+    {
+        JSON json = newJSON();
+        String planJson = json.toJSON(plan);
+        Files.writeString(outputJson, planJson, StandardCharsets.UTF_8);
+    }
+
+    public void addEvent(String format, Object... args)
+    {
+        events.add(String.format(format, args));
+    }
+
+    public void addExpectedEvent(String event)
+    {
+        expectedEvents.add(event);
+    }
+
+    public void addExpectedOutput(String output)
+    {
+        expectedOutput.add(output);
+    }
+
+    public void addExpectedProperty(String name, String value)
+    {
+        expectedProperties.add(new Property(name, value));
+    }
+
+    public void addExpectedProperty(Property property)
+    {
+        expectedProperties.add(property);
+    }
+
+    public void addStep(Step step)
+    {
+        steps.push(step);
+    }
+
+    public List<String> getEvents()
+    {
+        return events;
+    }
+
+    public String getExpectedContentType()
+    {
+        return expectedContentType;
+    }
+
+    public void setExpectedContentType(String expectedContentType)
+    {
+        this.expectedContentType = expectedContentType;
+    }
+
+    public List<String> getExpectedEvents()
+    {
+        return expectedEvents;
+    }
+
+    public void setExpectedEvents(String[] events)
+    {
+        expectedEvents.clear();
+        expectedEvents.addAll(List.of(events));
+    }
+
+    public List<String> getExpectedOutput()
+    {
+        return expectedOutput;
+    }
+
+    public void setExpectedOutput(String[] output)
+    {
+        expectedOutput.clear();
+        expectedOutput.addAll(List.of(output));
+    }
+
+    public List<Property> getExpectedProperties()
+    {
+        return expectedProperties;
+    }
+
+    public void setExpectedProperties(Property[] properties)
+    {
+        expectedProperties.clear();
+        expectedProperties.addAll(List.of(properties));
     }
 
     public HttpRequestStep getRequestStep()
@@ -55,32 +166,6 @@ public class DispatchPlan
     public void setRequestStep(HttpRequestStep requestStep)
     {
         this.requestStep = requestStep;
-    }
-
-    public void addEvent(String format, Object... args)
-    {
-        events.add(String.format(format, args));
-    }
-
-    public List<String> getEvents()
-    {
-        return events;
-    }
-
-    public void addExpectedEvent(String event)
-    {
-        expectedEvents.add(event);
-    }
-
-    public void setExpectedEvents(String[] events)
-    {
-        expectedEvents.clear();
-        expectedEvents.addAll(List.of(events));
-    }
-
-    public List<String> getExpectedEvents()
-    {
-        return expectedEvents;
     }
 
     public Deque<Step> getSteps()
@@ -95,47 +180,13 @@ public class DispatchPlan
             steps.add(step);
     }
 
-    public void addStep(Step step)
+    public String id()
     {
-        steps.push(step);
+        return id;
     }
 
     public Step popStep()
     {
         return steps.pop();
-    }
-
-    private static JSON newJSON()
-    {
-        JSON json = new JSON();
-        json.addConvertor(DispatchPlan.class, new JSONPojoConvertor(DispatchPlan.class));
-        json.addConvertor(DispatchType.class, new JSONEnumConvertor());
-        List<Class> classes = List.of(
-            ContextRedispatchStep.class,
-            RequestDispatchStep.class,
-            GetHttpSessionStep.class,
-            HttpRequestStep.class
-        );
-        for (Class<?> clazz : classes)
-        {
-            json.addConvertor(clazz, new JSONPojoConvertor(clazz));
-        }
-        return json;
-    }
-
-    public static void write(DispatchPlan plan, Path outputJson) throws IOException
-    {
-        JSON json = newJSON();
-        String planJson = json.toJSON(plan);
-        Files.writeString(outputJson, planJson, StandardCharsets.UTF_8);
-    }
-
-    public static DispatchPlan read(Path inputJson) throws IOException
-    {
-        JSON json = newJSON();
-        String rawJson = Files.readString(inputJson, StandardCharsets.UTF_8);
-        DispatchPlan plan = (DispatchPlan)json.fromJSON(rawJson);
-        plan.id = inputJson.getFileName().toString();
-        return plan;
     }
 }
