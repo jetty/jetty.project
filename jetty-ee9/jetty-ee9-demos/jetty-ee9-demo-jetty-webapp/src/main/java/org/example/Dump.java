@@ -29,8 +29,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -63,7 +64,7 @@ public class Dump extends HttpServlet
      */
     private static final String ZWSP = "&#8203;";
     boolean fixed;
-    Timer _timer;
+    ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
 
     @Override
     public void init(ServletConfig config) throws ServletException
@@ -76,8 +77,6 @@ public class Dump extends HttpServlet
             fixed = true;
             throw new UnavailableException("Unavailable test", Integer.parseInt(config.getInitParameter("unavailable")));
         }
-
-        _timer = new Timer(true);
     }
 
     @Override
@@ -226,36 +225,25 @@ public class Dump extends HttpServlet
                     request.setAttribute("RESUME", Boolean.TRUE);
 
                     final long resume = Long.parseLong(request.getParameter("dispatch"));
-                    _timer.schedule(new TimerTask()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            async.dispatch();
-                        }
-                    }, resume);
+                    _scheduler.schedule(() -> async.dispatch(), resume, TimeUnit.MILLISECONDS);
                 }
 
                 if (request.getParameter("complete") != null)
                 {
                     final long complete = Long.parseLong(request.getParameter("complete"));
-                    _timer.schedule(new TimerTask()
+                    _scheduler.schedule(() ->
                     {
-                        @Override
-                        public void run()
+                        try
                         {
-                            try
-                            {
-                                response.setContentType("text/html");
-                                response.getOutputStream().println("<h1>COMPLETED</h1>");
-                                async.complete();
-                            }
-                            catch (Exception e)
-                            {
-                                e.printStackTrace();
-                            }
+                            response.setContentType("text/html");
+                            response.getOutputStream().println("<h1>COMPLETED</h1>");
+                            async.complete();
                         }
-                    }, complete);
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }, complete, TimeUnit.MILLISECONDS);
                 }
 
                 return;
@@ -915,7 +903,7 @@ public class Dump extends HttpServlet
     @Override
     public void destroy()
     {
-        _timer.cancel();
+        _scheduler.shutdownNow();
     }
 
     private String getURI(HttpServletRequest request)

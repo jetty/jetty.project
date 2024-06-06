@@ -29,8 +29,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -55,15 +56,15 @@ import jakarta.servlet.http.Part;
 /**
  * Dump Servlet Request.
  */
-@SuppressWarnings("serial")
 public class Dump extends HttpServlet
 {
     /**
      * Zero Width Space, to allow text to be wrapped at designated spots
      */
     private static final String ZWSP = "&#8203;";
-    boolean fixed;
-    Timer _timer;
+
+    private final ScheduledExecutorService _scheduler = Executors.newSingleThreadScheduledExecutor();
+    private boolean fixed;
 
     @Override
     public void init(ServletConfig config) throws ServletException
@@ -72,12 +73,9 @@ public class Dump extends HttpServlet
 
         if (config.getInitParameter("unavailable") != null && !fixed)
         {
-
             fixed = true;
             throw new UnavailableException("Unavailable test", Integer.parseInt(config.getInitParameter("unavailable")));
         }
-
-        _timer = new Timer(true);
     }
 
     @Override
@@ -124,9 +122,9 @@ public class Dump extends HttpServlet
         final String chars = request.getParameter("chars");
         final String block = request.getParameter("block");
         final String dribble = request.getParameter("dribble");
-        final boolean flush = request.getParameter("flush") != null ? Boolean.parseBoolean(request.getParameter("flush")) : false;
+        final boolean flush = request.getParameter("flush") != null && Boolean.parseBoolean(request.getParameter("flush"));
 
-        if (request.getPathInfo() != null && request.getPathInfo().toLowerCase(Locale.ENGLISH).indexOf("script") != -1)
+        if (request.getPathInfo() != null && request.getPathInfo().toLowerCase(Locale.ENGLISH).contains("script"))
         {
             response.sendRedirect(response.encodeRedirectURL(getServletContext().getContextPath() + "/dump/info"));
             return;
@@ -139,6 +137,7 @@ public class Dump extends HttpServlet
             long end = System.currentTimeMillis() + Long.parseLong(request.getParameter("busy"));
             while (System.currentTimeMillis() < end)
             {
+                Thread.onSpinWait();
             }
         }
 
@@ -154,7 +153,7 @@ public class Dump extends HttpServlet
             try
             {
                 long s = Long.parseLong(request.getParameter("sleep"));
-                if (request.getHeader("Expect") != null && request.getHeader("Expect").indexOf("102") >= 0)
+                if (request.getHeader("Expect") != null && request.getHeader("Expect").contains("102"))
                 {
                     Thread.sleep(s / 2);
                     response.sendError(102);
@@ -184,7 +183,7 @@ public class Dump extends HttpServlet
                 {
 
                     @Override
-                    public void onTimeout(AsyncEvent event) throws IOException
+                    public void onTimeout(AsyncEvent event)
                     {
                         response.addHeader("Dump", "onTimeout");
                         try
@@ -203,19 +202,19 @@ public class Dump extends HttpServlet
                     }
 
                     @Override
-                    public void onStartAsync(AsyncEvent event) throws IOException
+                    public void onStartAsync(AsyncEvent event)
                     {
                         response.addHeader("Dump", "onStartAsync");
                     }
 
                     @Override
-                    public void onError(AsyncEvent event) throws IOException
+                    public void onError(AsyncEvent event)
                     {
                         response.addHeader("Dump", "onError");
                     }
 
                     @Override
-                    public void onComplete(AsyncEvent event) throws IOException
+                    public void onComplete(AsyncEvent event)
                     {
                         response.addHeader("Dump", "onComplete");
                     }
@@ -226,36 +225,25 @@ public class Dump extends HttpServlet
                     request.setAttribute("RESUME", Boolean.TRUE);
 
                     final long resume = Long.parseLong(request.getParameter("dispatch"));
-                    _timer.schedule(new TimerTask()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            async.dispatch();
-                        }
-                    }, resume);
+                    _scheduler.schedule(() -> async.dispatch(), resume, TimeUnit.MILLISECONDS);
                 }
 
                 if (request.getParameter("complete") != null)
                 {
                     final long complete = Long.parseLong(request.getParameter("complete"));
-                    _timer.schedule(new TimerTask()
+                    _scheduler.schedule(() ->
                     {
-                        @Override
-                        public void run()
+                        try
                         {
-                            try
-                            {
-                                response.setContentType("text/html");
-                                response.getOutputStream().println("<h1>COMPLETED</h1>");
-                                async.complete();
-                            }
-                            catch (Exception e)
-                            {
-                                e.printStackTrace();
-                            }
+                            response.setContentType("text/html");
+                            response.getOutputStream().println("<h1>COMPLETED</h1>");
+                            async.complete();
                         }
-                    }, complete);
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }, complete, TimeUnit.MILLISECONDS);
                 }
 
                 return;
@@ -272,7 +260,7 @@ public class Dump extends HttpServlet
 
         // Force a content length response
         String length = request.getParameter("length");
-        if (length != null && length.length() > 0)
+        if (length != null && !length.isEmpty())
         {
             response.setContentLength(Integer.parseInt(length));
         }
@@ -298,7 +286,7 @@ public class Dump extends HttpServlet
 
         // test a reset
         String reset = request.getParameter("reset");
-        if (reset != null && reset.length() > 0)
+        if (reset != null && !reset.isEmpty())
         {
             response.getOutputStream().println("THIS SHOULD NOT BE SEEN!");
             response.setHeader("SHOULD_NOT", "BE SEEN");
@@ -307,7 +295,7 @@ public class Dump extends HttpServlet
 
         // handle an redirect
         String redirect = request.getParameter("redirect");
-        if (redirect != null && redirect.length() > 0)
+        if (redirect != null && !redirect.isEmpty())
         {
             response.getOutputStream().println("THIS SHOULD NOT BE SEEN!");
             response.sendRedirect(response.encodeRedirectURL(redirect));
@@ -324,7 +312,7 @@ public class Dump extends HttpServlet
 
         // handle an error
         String error = request.getParameter("error");
-        if (error != null && error.length() > 0 && request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE) == null)
+        if (error != null && !error.isEmpty() && request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE) == null)
         {
             response.getOutputStream().println("THIS SHOULD NOT BE SEEN!");
             response.sendError(Integer.parseInt(error));
@@ -352,7 +340,7 @@ public class Dump extends HttpServlet
 
         // Handle a extra headers
         String headers = request.getParameter("headers");
-        if (headers != null && headers.length() > 0)
+        if (headers != null && !headers.isEmpty())
         {
             long h = Long.parseLong(headers);
             for (int i = 0; i < h; i++)
@@ -362,7 +350,7 @@ public class Dump extends HttpServlet
         }
 
         String buffer = request.getParameter("buffer");
-        if (buffer != null && buffer.length() > 0)
+        if (buffer != null && !buffer.isEmpty())
             response.setBufferSize(Integer.parseInt(buffer));
 
         String charset = request.getParameter("charset");
@@ -371,7 +359,7 @@ public class Dump extends HttpServlet
         response.setCharacterEncoding(charset);
         response.setContentType("text/html");
 
-        if (info != null && info.indexOf("Locale/") >= 0)
+        if (info != null && info.contains("Locale/"))
         {
             try
             {
@@ -418,8 +406,7 @@ public class Dump extends HttpServlet
 
         String buffered = request.getParameter("buffered");
 
-        PrintWriter pout = null;
-
+        PrintWriter pout;
         try
         {
             pout = response.getWriter();
@@ -438,7 +425,7 @@ public class Dump extends HttpServlet
             pout.write("<table width=\"95%\">");
             pout.write("<tr>\n");
             pout.write("<th align=\"right\">getContentLength:&nbsp;</th>");
-            pout.write("<td>" + Integer.toString(request.getContentLength()) + "</td>");
+            pout.write("<td>" + request.getContentLength() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getContentType:&nbsp;</th>");
             pout.write("<td>" + notag(request.getContentType()) + "</td>");
@@ -459,7 +446,7 @@ public class Dump extends HttpServlet
             pout.write("<td>" + request.getLocalAddr() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getLocalPort:&nbsp;</th>");
-            pout.write("<td>" + Integer.toString(request.getLocalPort()) + "</td>");
+            pout.write("<td>" + request.getLocalPort() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getMethod:&nbsp;</th>");
             pout.write("<td>" + notag(request.getMethod()) + "</td>");
@@ -507,7 +494,7 @@ public class Dump extends HttpServlet
             pout.write("<td>" + notag(request.getServletPath()) + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getServerPort:&nbsp;</th>");
-            pout.write("<td>" + Integer.toString(request.getServerPort()) + "</td>");
+            pout.write("<td>" + request.getServerPort() + "</td>");
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getUserPrincipal:&nbsp;</th>");
             pout.write("<td>" + request.getUserPrincipal() + "</td>");
@@ -541,12 +528,12 @@ public class Dump extends HttpServlet
             String name;
             while (h.hasMoreElements())
             {
-                name = (String)h.nextElement();
+                name = h.nextElement();
 
                 Enumeration<String> h2 = request.getHeaders(name);
                 while (h2.hasMoreElements())
                 {
-                    String hv = (String)h2.nextElement();
+                    String hv = h2.nextElement();
                     pout.write("</tr><tr>\n");
                     pout.write("<th align=\"right\">" + notag(name) + ":&nbsp;</th>");
                     pout.write("<td>" + notag(hv) + "</td>");
@@ -558,7 +545,7 @@ public class Dump extends HttpServlet
             h = request.getParameterNames();
             while (h.hasMoreElements())
             {
-                name = (String)h.nextElement();
+                name = h.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">" + notag(name) + ":&nbsp;</th>");
                 pout.write("<td>" + notag(request.getParameter(name)) + "</td>");
@@ -646,13 +633,12 @@ public class Dump extends HttpServlet
             Enumeration<String> a = request.getAttributeNames();
             while (a.hasMoreElements())
             {
-                name = (String)a.nextElement();
+                name = a.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\" valign=\"top\">" + name.replace(".", ZWSP + ".") + ":&nbsp;</th>");
                 Object value = request.getAttribute(name);
-                if (value instanceof File)
+                if (value instanceof File file)
                 {
-                    File file = (File)value;
                     pout.write("<td>" + "<pre>" + file.getName() + " (" + file.length() + " " + new Date(file.lastModified()) + ")</pre>" + "</td>");
                 }
                 else
@@ -665,7 +651,7 @@ public class Dump extends HttpServlet
             a = getInitParameterNames();
             while (a.hasMoreElements())
             {
-                name = (String)a.nextElement();
+                name = a.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">" + name + ":&nbsp;</th>");
                 pout.write("<td>" + toString(getInitParameter(name)) + "</td>");
@@ -676,7 +662,7 @@ public class Dump extends HttpServlet
             a = getServletContext().getInitParameterNames();
             while (a.hasMoreElements())
             {
-                name = (String)a.nextElement();
+                name = a.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\" valign=\"top\">" + name.replace(".", ZWSP + ".") + ":&nbsp;</th>");
                 pout.write("<td>" + toString(getServletContext().getInitParameter(name)) + "</td>");
@@ -687,14 +673,14 @@ public class Dump extends HttpServlet
             a = getServletContext().getAttributeNames();
             while (a.hasMoreElements())
             {
-                name = (String)a.nextElement();
+                name = a.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\" valign=\"top\">" + name.replace(".", ZWSP + ".") + ":&nbsp;</th>");
                 pout.write("<td>" + "<pre>" + toString(getServletContext().getAttribute(name)) + "</pre>" + "</td>");
             }
 
             String res = request.getParameter("resource");
-            if (res != null && res.length() > 0)
+            if (res != null && !res.isEmpty())
             {
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Get Resource: \"" + res + "\"</big></th>");
@@ -707,7 +693,7 @@ public class Dump extends HttpServlet
                 }
                 catch (Exception e)
                 {
-                    pout.write("<td>" + "" + e + "</td>");
+                    pout.write("<td>" + e + "</td>");
                 }
 
                 pout.write("</tr><tr>\n");
@@ -718,7 +704,7 @@ public class Dump extends HttpServlet
                 }
                 catch (Exception e)
                 {
-                    pout.write("<td>" + "" + e + "</td>");
+                    pout.write("<td>" + e + "</td>");
                 }
 
                 pout.write("</tr><tr>\n");
@@ -729,7 +715,7 @@ public class Dump extends HttpServlet
                 }
                 catch (Exception e)
                 {
-                    pout.write("<td>" + "" + e + "</td>");
+                    pout.write("<td>" + e + "</td>");
                 }
 
                 pout.write("</tr><tr>\n");
@@ -748,7 +734,7 @@ public class Dump extends HttpServlet
                     }
                     catch (Exception e)
                     {
-                        pout.write("<td>" + "" + e + "</td>");
+                        pout.write("<td>" + e + "</td>");
                     }
 
                     pout.write("</tr><tr>\n");
@@ -759,7 +745,7 @@ public class Dump extends HttpServlet
                     }
                     catch (Exception e)
                     {
-                        pout.write("<td>" + "" + e + "</td>");
+                        pout.write("<td>" + e + "</td>");
                     }
 
                     String cp = context.getContextPath();
@@ -897,12 +883,12 @@ public class Dump extends HttpServlet
 
         if (pi != null)
         {
-            if ("/ex4".equals(pi))
-                throw new ServletException("test ex4", new Throwable());
-            if ("/ex5".equals(pi))
-                throw new IOException("test ex5");
-            if ("/ex6".equals(pi))
-                throw new UnavailableException("test ex6");
+            switch (pi)
+            {
+                case "/ex4" -> throw new ServletException("test ex4", new Throwable());
+                case "/ex5" -> throw new IOException("test ex5");
+                case "/ex6" -> throw new UnavailableException("test ex6");
+            }
         }
     }
 
@@ -915,7 +901,7 @@ public class Dump extends HttpServlet
     @Override
     public void destroy()
     {
-        _timer.cancel();
+        _scheduler.shutdownNow();
     }
 
     private String getURI(HttpServletRequest request)
@@ -935,7 +921,7 @@ public class Dump extends HttpServlet
         {
             if (o.getClass().isArray())
             {
-                StringBuffer sb = new StringBuffer();
+                StringBuilder sb = new StringBuilder();
                 if (!o.getClass().getComponentType().isPrimitive())
                 {
                     Object[] array = (Object[])o;
@@ -978,11 +964,11 @@ public class Dump extends HttpServlet
 
     private boolean dump(HttpServletResponse response, String data, String chars, String block, String dribble, boolean flush) throws IOException
     {
-        if (data != null && data.length() > 0)
+        int len = (block != null && !block.isEmpty()) ? Integer.parseInt(block) : 50;
+        if (data != null && !data.isEmpty())
         {
-            int b = (block != null && block.length() > 0) ? Integer.parseInt(block) : 50;
-            byte[] buf = new byte[b];
-            for (int i = 0; i < b; i++)
+            byte[] buf = new byte[len];
+            for (int i = 0; i < len; i++)
             {
 
                 buf[i] = (byte)('0' + (i % 10));
@@ -995,15 +981,15 @@ public class Dump extends HttpServlet
             long d = Long.parseLong(data);
             while (d > 0)
             {
-                if (b == 1)
+                if (len == 1)
                 {
                     out.write(d % 80 == 0 ? '\n' : '.');
                     d--;
                 }
-                else if (d >= b)
+                else if (d >= len)
                 {
                     out.write(buf);
-                    d = d - b;
+                    d = d - len;
                 }
                 else
                 {
@@ -1033,11 +1019,10 @@ public class Dump extends HttpServlet
         }
 
         // Handle a dump of data
-        if (chars != null && chars.length() > 0)
+        if (chars != null && !chars.isEmpty())
         {
-            int b = (block != null && block.length() > 0) ? Integer.parseInt(block) : 50;
-            char[] buf = new char[b];
-            for (int i = 0; i < b; i++)
+            char[] buf = new char[len];
+            for (int i = 0; i < len; i++)
             {
                 buf[i] = (char)('0' + (i % 10));
                 if (i % 10 == 9)
@@ -1049,15 +1034,15 @@ public class Dump extends HttpServlet
             long d = Long.parseLong(chars);
             while (d > 0 && !out.checkError())
             {
-                if (b == 1)
+                if (len == 1)
                 {
                     out.write(d % 80 == 0 ? '\n' : '.');
                     d--;
                 }
-                else if (d >= b)
+                else if (d >= len)
                 {
                     out.write(buf);
-                    d = d - b;
+                    d = d - len;
                 }
                 else
                 {

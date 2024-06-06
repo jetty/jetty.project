@@ -38,7 +38,7 @@ public interface Attributes
     /**
      * Remove an attribute
      * @param name the attribute to remove
-     * @return the value of the attribute if removed, else null
+     * @return the value of the attribute if removed, else {@code null}
      */
     Object removeAttribute(String name);
 
@@ -46,20 +46,20 @@ public interface Attributes
      * Set an attribute
      * @param name the attribute to set
      * @param attribute the value to set. A null value is equivalent to removing the attribute.
-     * @return the previous value of the attribute if set, else null
+     * @return the previous value of the attribute if set, else {@code null}
      */
     Object setAttribute(String name, Object attribute);
 
     /**
      * Get an attribute
      * @param name the attribute to get
-     * @return the value of the attribute
+     * @return the value of the attribute, or {@code null} if no such attribute exists
      */
     Object getAttribute(String name);
 
     /**
      * Get the immutable set of attribute names.
-     * @return Set of attribute names
+     * @return Set of attribute names, or an empty set if there are no attributes.
      */
     Set<String> getAttributeNameSet();
 
