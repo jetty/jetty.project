@@ -28,8 +28,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-simple-webapp</artifactId>
       <version>@project.version@</version>
       <type>war</type>
     </dependency>
@@ -73,8 +73,8 @@
                   <destFileName>jetty-runner.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.ee9.demos</groupId>
-                  <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
+                  <groupId>org.eclipse.jetty.demos</groupId>
+                  <artifactId>jetty-servlet5-demo-simple-webapp</artifactId>
                   <version>@project.version@</version>
                   <type>war</type>
                   <overWrite>false</overWrite>

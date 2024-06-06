@@ -264,8 +264,11 @@ public class WebSocketOverHTTP2Test
         startServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
+        // Port 293 is not assigned by IANA, so
+        // it should be impossible to connect.
+        int nonExistingPort = 293;
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + (connector.getLocalPort() + 1) + "/ws/echo");
+        URI uri = URI.create("ws://localhost:" + nonExistingPort + "/ws/echo");
 
         ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
             wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));

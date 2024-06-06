@@ -52,7 +52,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -81,7 +80,7 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractMetaDataConnection implements Runnable, WriteFlusher.Listener, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
+public class HttpConnection extends AbstractMetaDataConnection implements Runnable, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
@@ -334,13 +333,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     public void onUpgradeTo(ByteBuffer buffer)
     {
         BufferUtil.append(getRequestBuffer(), buffer);
-    }
-
-    @Override
-    public void onFlushed(long bytes) throws IOException
-    {
-        // TODO is this callback still needed?   Couldn't we wrap send callback instead?
-        //      Either way, the dat rate calculations from HttpOutput.onFlushed should be moved to Channel.
     }
 
     void releaseRequestBuffer()

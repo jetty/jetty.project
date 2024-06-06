@@ -63,8 +63,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee8.demos</groupId>
-      <artifactId>jetty-ee8-demo-simple-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-simple-webapp</artifactId>
+      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>

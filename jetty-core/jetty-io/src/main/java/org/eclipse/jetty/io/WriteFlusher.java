@@ -429,8 +429,8 @@ public abstract class WriteFlusher
             if (written > 0)
             {
                 Connection connection = _endPoint.getConnection();
-                if (connection instanceof Listener)
-                    ((Listener)connection).onFlushed(written);
+                if (connection instanceof Listener listener)
+                    listener.onFlushed(written);
             }
 
             if (flushed)
@@ -581,7 +581,10 @@ public abstract class WriteFlusher
     /**
      * <p>A listener of {@link WriteFlusher} events.
      * If implemented by a Connection class, the {@link #onFlushed(long)} event will be delivered to it.</p>
+     *
+     * @deprecated functionality removed, no replacement
      */
+    @Deprecated(since = "12.0.10", forRemoval = true)
     public interface Listener
     {
         /**

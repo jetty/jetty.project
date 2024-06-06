@@ -107,7 +107,8 @@ public class BufferUtil
             (byte)'E', (byte)'F'
         };
 
-    public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]).asReadOnlyBuffer();
+    public static final byte[] EMPTY_BYTES = new byte[0];
+    public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(EMPTY_BYTES).asReadOnlyBuffer();
 
     /**
      * Allocate ByteBuffer in flush mode.

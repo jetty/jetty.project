@@ -43,8 +43,8 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-mock-resources</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -276,39 +276,44 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-container-initializer</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-container-initializer</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-jakarta-websocket-webapp</artifactId>
       <version>${project.version}</version>
-      <type>war</type>
+      <classifier>webbundle-ee11</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>webbundle-ee11</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>webbundle-ee11</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>webbundle-ee11</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-jetty-webapp</artifactId>
+      <artifactId>jetty-ee11-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle</classifier>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- Eclipse OSGi Deps -->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-jsp-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>webbundle</classifier>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-spec-webapp</artifactId>
-      <version>${project.version}</version>
-      <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -545,8 +550,10 @@
             <excludes>
               <exclude>**/TestJettyOSGiBootHTTP2Conscrypt.java</exclude>
               <exclude>**/TestJettyOSGiBootHTTP2JDK9.java</exclude>
+              <!-- jstl api not ported to servlet 6.1 -->
               <exclude>**/TestJettyOSGiBootWithJakartaWebSocket.java</exclude>
               <exclude>**/TestJettyOSGiBootWithJsp.java</exclude>
+              <exclude>**/TestJettyOSGiBootWithAnnotations.java</exclude>
               <exclude>**/TestJettyOSGiBootWithBundleJettyHome.java</exclude>
             </excludes>
           </configuration>

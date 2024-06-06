@@ -60,7 +60,6 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
@@ -1084,11 +1083,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         streamsState.onStreamDestroyed();
     }
 
-    public void onFlushed(long bytes) throws IOException
-    {
-        flusher.onFlushed(bytes);
-    }
-
     private void terminate(Throwable cause)
     {
         flusher.terminate(cause);
@@ -1263,8 +1257,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
         public abstract boolean generate(RetainableByteBuffer.Mutable accumulator) throws HpackException;
 
-        public abstract long onFlushed(long bytes) throws IOException;
-
         boolean hasHighPriority()
         {
             return false;
@@ -1355,16 +1347,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             return true;
         }
 
-        @Override
-        public long onFlushed(long bytes)
-        {
-            long flushed = Math.min(frameBytes, bytes);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Flushed {}/{} frame bytes for {}", flushed, bytes, this);
-            frameBytes -= flushed;
-            return bytes - flushed;
-        }
-
         /**
          * <p>Performs actions just before writing the frame to the network.</p>
          * <p>Some frame, when sent over the network, causes the receiver
@@ -1433,7 +1415,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     private class DataEntry extends Entry
     {
         private int frameBytes;
-        private int frameRemaining;
         private int dataBytes;
         private int dataRemaining;
 
@@ -1477,7 +1458,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             DataFrame dataFrame = (DataFrame)frame;
             int frameBytes = generator.data(accumulator, dataFrame, length);
             this.frameBytes += frameBytes;
-            this.frameRemaining += frameBytes;
 
             int dataBytes = frameBytes - Frame.HEADER_LENGTH;
             this.dataBytes += dataBytes;
@@ -1493,26 +1473,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }
 
         @Override
-        public long onFlushed(long bytes) throws IOException
-        {
-            long flushed = Math.min(frameRemaining, bytes);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Flushed {}/{} frame bytes for {}", flushed, bytes, this);
-            frameRemaining -= flushed;
-            // We should only forward data (not frame) bytes,
-            // but we trade precision for simplicity.
-            Object channel = stream.getAttachment();
-            if (channel instanceof WriteFlusher.Listener)
-                ((WriteFlusher.Listener)channel).onFlushed(flushed);
-            return bytes - flushed;
-        }
-
-        @Override
         public void succeeded()
         {
             bytesWritten.addAndGet(frameBytes);
             frameBytes = 0;
-            frameRemaining = 0;
 
             flowControl.onDataSent(stream, dataBytes);
             dataBytes = 0;

@@ -79,6 +79,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet5-demo-jakarta-websocket-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-annotations</artifactId>
       <scope>test</scope>
@@ -103,7 +110,8 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>
+      <artifactId>jetty-ee9-demo-jetty-websocket-webapp</artifactId>
+      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
@@ -150,10 +158,16 @@
                   <destFileName>ee9-test-rfc2616.war</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.ee9.demos</groupId>
-                  <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>
+                  <groupId>org.eclipse.jetty.demos</groupId>
+                  <artifactId>jetty-servlet5-demo-jakarta-websocket-webapp</artifactId>
                   <type>war</type>
-                  <destFileName>ee9-demo-jetty.war</destFileName>
+                  <destFileName>servlet5-demo-jakarta-websocket.war</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.ee9.demos</groupId>
+                  <artifactId>jetty-ee9-demo-jetty-websocket-webapp</artifactId>
+                  <type>war</type>
+                  <destFileName>ee9-demo-jetty-websocket.war</destFileName>
                 </artifactItem>
               </artifactItems>
               <stripVersion>true</stripVersion>

@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import jakarta.servlet.ServletException;
@@ -241,5 +242,101 @@ public class ResponseTest
             assertThat(actual, not(containsString("oops")));
             assertThat(actual, containsString(expected));
         }
+    }
+
+    @Test
+    public void testSetContentLengthAfterCommit() throws Exception
+    {
+        testActionAfterCommit((request, response) ->
+        {
+            response.setContentLength(20);
+            assertThat(response.getHeader("Content-Length"), is("5"));
+        });
+    }
+
+    @Test
+    public void testSetHeaderAfterCommit() throws Exception
+    {
+        testActionAfterCommit((request, response) ->
+        {
+            response.setHeader("foo", "bar");
+            assertThat(response.getHeader("foo"), nullValue());
+        });
+    }
+
+    @Test
+    public void testAddHeaderAfterCommit() throws Exception
+    {
+        testActionAfterCommit((request, response) ->
+        {
+            response.addHeader("foo", "bar");
+            assertThat(response.getHeader("foo"), nullValue());
+        });
+    }
+
+    @Test
+    public void testAddDateHeaderAfterCommit() throws Exception
+    {
+        testActionAfterCommit((req, resp) ->
+        {
+            resp.addDateHeader("foo-date", System.currentTimeMillis());
+            assertThat(resp.getHeader("foo-date"), nullValue());
+        });
+    }
+
+    @Test
+    public void testSetDateHeaderAfterCommit() throws Exception
+    {
+        testActionAfterCommit((req, resp) ->
+        {
+            resp.setDateHeader("foo-date", System.currentTimeMillis());
+            assertThat(resp.getHeader("foo-date"), nullValue());
+        });
+    }
+
+    @Test
+    public void testSetStatusAfterCommit() throws Exception
+    {
+        testActionAfterCommit((req, resp) ->
+        {
+            resp.setStatus(HttpStatus.FORBIDDEN_403);
+            assertThat(resp.getStatus(), is(HttpStatus.OK_200));
+        });
+    }
+
+    private void testActionAfterCommit(BiConsumer<HttpServletRequest, HttpServletResponse> action)
+        throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentType("text/plain; charset=US-ASCII");
+                response.getWriter().println("Hello");
+                response.getWriter().flush();
+                assertThat(response.isCommitted(), is(Boolean.TRUE));
+                action.accept(request, response);
+            }
+        };
+
+        contextHandler.addServlet(servlet, "/servlet/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/servlet/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = _connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.get("Content-Type"), is("text/plain; charset=US-ASCII"));
+        assertThat(response.getContent(), containsString("Hello"));
     }
 }
