@@ -1509,7 +1509,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("abort due to pending read {} {} ", this, getEndPoint());
-                abort(new IOException("Pending read in onCompleted"));
+                Throwable failure = new IOException("Pending read in onCompleted");
+                getEndPoint().close(failure);
                 return;
             }
 
@@ -1603,12 +1604,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("aborting", x);
-            abort(x);
-        }
-
-        private void abort(Throwable failure)
-        {
-            getEndPoint().close(failure);
+            getEndPoint().close(x);
         }
 
         @Override
