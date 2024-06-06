@@ -1,0 +1,28 @@
+{
+  "class": "org.eclipse.jetty.tests.ccd.common.DispatchPlan",
+  "requestStep": {
+    "class": "org.eclipse.jetty.tests.ccd.common.steps.HttpRequestStep",
+    "method": "GET",
+    "requestPath": "/ccd-ee8/redispatch/ee8"
+  },
+  "steps": [
+    {
+      "class": "org.eclipse.jetty.tests.ccd.common.steps.RequestDispatchStep",
+      "dispatchType": "INCLUDE",
+      "dispatchPath": "/dump/ee8"
+    }
+  ],
+  "expectedEvents": [
+    "Initial plan: ee8-request-include-dump.json",
+    "DispatchPlanHandler.handle() method=GET path-query=/ccd-ee8/redispatch/ee8",
+    "org.eclipse.jetty.tests.ccd.ee8.CCDServlet.service() dispatcherType=REQUEST method=GET requestUri=/ccd-ee8/redispatch/ee8",
+    "org.eclipse.jetty.tests.ccd.ee8.DumpServlet.service() dispatcherType=INCLUDE method=GET requestUri=/ccd-ee8/redispatch/ee8"
+  ],
+  "expectedProperties": [
+    {
+      "class": "org.eclipse.jetty.tests.ccd.common.Property",
+      "name": "request.dispatcherType",
+      "value": "INCLUDE"
+    }
+  ]
+}

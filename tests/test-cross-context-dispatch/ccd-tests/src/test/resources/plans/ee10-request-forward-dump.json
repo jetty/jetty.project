@@ -1,0 +1,29 @@
+{
+  "class": "org.eclipse.jetty.tests.ccd.common.DispatchPlan",
+  "requestStep": {
+    "class": "org.eclipse.jetty.tests.ccd.common.steps.HttpRequestStep",
+    "method": "GET",
+    "requestPath": "/ccd-ee10/redispatch/ee10"
+  },
+  "steps": [
+    {
+      "class": "org.eclipse.jetty.tests.ccd.common.steps.RequestDispatchStep",
+      "dispatchType": "FORWARD",
+      "dispatchPath": "/dump/ee10"
+    }
+  ],
+  "expectedEvents": [
+    "Initial plan: ee10-request-forward-dump.json",
+    "DispatchPlanHandler.handle() method=GET path-query=/ccd-ee10/redispatch/ee10",
+    "org.eclipse.jetty.tests.ccd.ee10.CCDServlet.service() dispatcherType=REQUEST method=GET requestUri=/ccd-ee10/redispatch/ee10",
+    "org.eclipse.jetty.tests.ccd.ee10.DumpServlet.service() dispatcherType=FORWARD method=GET requestUri=/ccd-ee10/dump/ee10"
+  ],
+  "expectedContentType": "text/x-java-properties;charset=utf-8",
+  "expectedProperties": [
+    {
+      "class": "org.eclipse.jetty.tests.ccd.common.Property",
+      "name": "request.dispatcherType",
+      "value": "FORWARD"
+    }
+  ]
+}
