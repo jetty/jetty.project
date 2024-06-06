@@ -16,13 +16,17 @@ package org.eclipse.jetty.util;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -203,14 +207,14 @@ public class IteratingCallbackTest
 
                 return switch (i--)
                 {
-                    case 1, 4 ->
-                    {
-                        scheduler.schedule(successTask, 5, TimeUnit.MILLISECONDS);
-                        yield Action.SCHEDULED;
-                    }
-                    case 2, 5 ->
+                    case 5, 2 ->
                     {
                         succeeded();
+                        yield Action.SCHEDULED;
+                    }
+                    case 4, 1 ->
+                    {
+                        scheduler.schedule(successTask, 5, TimeUnit.MILLISECONDS);
                         yield Action.SCHEDULED;
                     }
                     case 3 ->
@@ -225,7 +229,7 @@ public class IteratingCallbackTest
         };
 
         cb.iterate();
-        idle.await(10, TimeUnit.SECONDS);
+        assertTrue(idle.await(10, TimeUnit.SECONDS));
         assertTrue(cb.isIdle());
 
         cb.iterate();
@@ -236,16 +240,43 @@ public class IteratingCallbackTest
     @Test
     public void testCloseDuringProcessingReturningScheduled() throws Exception
     {
-        testCloseDuringProcessing(IteratingCallback.Action.SCHEDULED);
+        final CountDownLatch abortLatch = new CountDownLatch(1);
+        final CountDownLatch failureLatch = new CountDownLatch(1);
+        IteratingCallback callback = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                close();
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onAbort(Throwable cause)
+            {
+                abortLatch.countDown();
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                failureLatch.countDown();
+            }
+        };
+
+        callback.iterate();
+
+        assertFalse(failureLatch.await(100, TimeUnit.MILLISECONDS));
+        assertTrue(abortLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(callback.isAborted());
+
+        callback.succeeded();
+        assertTrue(failureLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(callback.isFailed());
     }
 
     @Test
     public void testCloseDuringProcessingReturningSucceeded() throws Exception
-    {
-        testCloseDuringProcessing(IteratingCallback.Action.SUCCEEDED);
-    }
-
-    private void testCloseDuringProcessing(final IteratingCallback.Action action) throws Exception
     {
         final CountDownLatch failureLatch = new CountDownLatch(1);
         IteratingCallback callback = new IteratingCallback()
@@ -254,7 +285,7 @@ public class IteratingCallbackTest
             protected Action process()
             {
                 close();
-                return action;
+                return Action.SUCCEEDED;
             }
 
             @Override
@@ -290,8 +321,7 @@ public class IteratingCallbackTest
 
         boolean waitForComplete() throws InterruptedException
         {
-            completed.await(10, TimeUnit.SECONDS);
-            return isSucceeded();
+            return completed.await(10, TimeUnit.SECONDS) && isSucceeded();
         }
     }
 
@@ -360,11 +390,10 @@ public class IteratingCallbackTest
 
         assertEquals(1, count.get());
 
-        // Aborting should not iterate.
         icb.abort(new Exception());
 
         assertTrue(ocfLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(icb.isAborted());
+        assertTrue(icb.isFailed());
         assertEquals(1, count.get());
     }
 
@@ -398,12 +427,128 @@ public class IteratingCallbackTest
 
         assertEquals(1, count.get());
 
-        assertTrue(ocfLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(ocfLatch.await(100, TimeUnit.MILLISECONDS));
         assertTrue(icb.isAborted());
 
         // Calling succeeded() won't cause further iterations.
         icb.succeeded();
 
+        assertTrue(ocfLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(icb.isFailed());
         assertEquals(1, count.get());
+    }
+
+    @Test
+    public void testICBSuccess() throws Exception
+    {
+        TestIteratingCB callback = new TestIteratingCB();
+        callback.iterate();
+        callback.succeeded();
+        assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
+        assertThat(callback._completion.getReference(), Matchers.nullValue());
+        assertTrue(callback._completion.isMarked());
+
+        // Everything now a noop
+        assertFalse(callback.abort(new Throwable()));
+        callback.failed(new Throwable());
+        assertThat(callback._completion.getReference(), Matchers.nullValue());
+        assertThat(callback._completed.getCount(), is(0L));
+    }
+
+    @Test
+    public void testICBFailure() throws Exception
+    {
+        Throwable failure = new Throwable();
+        TestIteratingCB callback = new TestIteratingCB();
+        callback.iterate();
+        callback.failed(failure);
+        assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
+        assertThat(callback._completion.getReference(), Matchers.sameInstance(failure));
+        assertTrue(callback._completion.isMarked());
+
+        // Everything now a noop, other than suppression
+        callback.succeeded();
+        Throwable late = new Throwable();
+        assertFalse(callback.abort(late));
+        assertFalse(ExceptionUtil.areNotAssociated(failure, late));
+        assertThat(callback._completion.getReference(), Matchers.sameInstance(failure));
+        assertThat(callback._completed.getCount(), is(0L));
+    }
+
+    @Test
+    public void testICBAbortSuccess() throws Exception
+    {
+        TestIteratingCB callback = new TestIteratingCB();
+        callback.iterate();
+
+        Throwable abort = new Throwable();
+        callback.abort(abort);
+        assertFalse(callback._completed.await(100, TimeUnit.MILLISECONDS));
+        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
+        assertFalse(callback._completion.isMarked());
+
+        callback.succeeded();
+        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
+        assertThat(callback._completed.getCount(), is(0L));
+
+        Throwable late = new Throwable();
+        callback.failed(late);
+        assertFalse(callback.abort(late));
+        assertFalse(ExceptionUtil.areNotAssociated(abort, late));
+        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
+        assertThat(callback._completed.getCount(), is(0L));
+    }
+
+    private static class TestIteratingCB extends IteratingCallback
+    {
+        final AtomicInteger _count;
+        final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
+        final CountDownLatch _completed = new CountDownLatch(2);
+
+        private TestIteratingCB()
+        {
+            this(1);
+        }
+
+        private TestIteratingCB(int count)
+        {
+            _count = new AtomicInteger(count);
+        }
+
+        @Override
+        protected Action process() throws Throwable
+        {
+            return _count.getAndDecrement() == 0 ? Action.SUCCEEDED : Action.SCHEDULED;
+        }
+
+        @Override
+        protected void onAbort(Throwable cause)
+        {
+            _completion.compareAndSet(null, cause, false, false);
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            if (_completion.compareAndSet(null, cause, false, true))
+                _completed.countDown();
+
+            Throwable failure = _completion.getReference();
+            if (failure != null && _completion.compareAndSet(failure, failure, false, true))
+                _completed.countDown();
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            if (_completion.compareAndSet(null, null, false, true))
+                _completed.countDown();
+        }
+
+        @Override
+        protected void onCompleted()
+        {
+            _completed.countDown();
+        }
     }
 }

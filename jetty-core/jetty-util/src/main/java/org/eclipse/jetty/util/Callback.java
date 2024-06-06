@@ -83,7 +83,7 @@ public interface Callback extends Invocable
      * @param cause the reason for the operation failure
      * @return {@code true} if the call to abort was prior to a call to either {@link #succeeded()}, {@link #failed(Throwable)}
      * or another call to {@code abort(Throwable)}.
-     * @see Completing
+     * @see AbstractCallback
      */
     default boolean abort(Throwable cause)
     {
@@ -237,7 +237,7 @@ public interface Callback extends Invocable
      */
     static Callback from(InvocationType invocationType, Runnable completed)
     {
-        return new Completing()
+        return new AbstractCallback()
         {
             @Override
             public void completed()
@@ -396,12 +396,40 @@ public interface Callback extends Invocable
     }
 
     /**
+     * <p>A Callback implementation that calls the {@link #completed()} method when it either succeeds or fails.</p>
+     */
+    interface Completing extends Callback
+    {
+        void completed();
+
+        @Override
+        default void succeeded()
+        {
+            completed();
+        }
+
+        @Override
+        default void failed(Throwable x)
+        {
+            try
+            {
+                completed();
+            }
+            catch (Throwable t)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(t, x);
+                throw t;
+            }
+        }
+    }
+
+    /**
      * <p>A Callback implementation that calls the {@link #completed()} method when it either succeeds or fails.
      * If the callback is aborted, then {@link #onAbort(Throwable)} is called, but the {@link #onCompleteFailure(Throwable)}
      * and {@link #completed()} methods are not called until either {@link #succeeded()} or {@link #failed(Throwable)}
      * are called.</p>
      */
-    abstract class Completing implements Callback
+    class AbstractCallback implements Callback, Completing
     {
         private static final Throwable SUCCEEDED = new StaticException("Completed");
         private final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
@@ -529,7 +557,8 @@ public interface Callback extends Invocable
          * Called once the callback has been either {@link #succeeded() succeeded} or {@link #failed(Throwable)}.
          * Typically, this method is implemented to release resources that may be used by the scheduled operation.
          */
-        protected void completed()
+        @Override
+        public void completed()
         {
         }
     }
@@ -538,7 +567,7 @@ public interface Callback extends Invocable
      * Nested Completing Callback that completes after
      * completing the nested callback
      */
-    class Nested extends Completing
+    class Nested extends AbstractCallback
     {
         private final Callback callback;
 

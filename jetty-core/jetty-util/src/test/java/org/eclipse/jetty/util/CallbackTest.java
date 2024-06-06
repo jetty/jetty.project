@@ -47,9 +47,9 @@ public class CallbackTest
     }
 
     @Test
-    public void testCompletingSuccess() throws Exception
+    public void testAbstractSuccess() throws Exception
     {
-        TestCompletingCB callback = new TestCompletingCB();
+        TestAbstractCB callback = new TestAbstractCB();
         callback.succeeded();
         assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
         assertThat(callback._completion.getReference(), Matchers.nullValue());
@@ -63,10 +63,10 @@ public class CallbackTest
     }
 
     @Test
-    public void testCompletingFailure() throws Exception
+    public void testAbstractFailure() throws Exception
     {
         Throwable failure = new Throwable();
-        TestCompletingCB callback = new TestCompletingCB();
+        TestAbstractCB callback = new TestAbstractCB();
         callback.failed(failure);
         assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
         assertThat(callback._completion.getReference(), Matchers.sameInstance(failure));
@@ -82,9 +82,9 @@ public class CallbackTest
     }
 
     @Test
-    public void testCompletingAbortSuccess() throws Exception
+    public void testAbstractAbortSuccess() throws Exception
     {
-        TestCompletingCB callback = new TestCompletingCB();
+        TestAbstractCB callback = new TestAbstractCB();
 
         Throwable abort = new Throwable();
         callback.abort(abort);
@@ -106,9 +106,9 @@ public class CallbackTest
     }
 
     @Test
-    public void testCompletingAbortFailure() throws Exception
+    public void testAbstractAbortFailure() throws Exception
     {
-        TestCompletingCB callback = new TestCompletingCB();
+        TestAbstractCB callback = new TestAbstractCB();
 
         Throwable abort = new Throwable();
         callback.abort(abort);
@@ -133,8 +133,8 @@ public class CallbackTest
     @Test
     public void testCombineSuccess() throws Exception
     {
-        TestCompletingCB callbackA = new TestCompletingCB();
-        TestCompletingCB callbackB = new TestCompletingCB();
+        TestAbstractCB callbackA = new TestAbstractCB();
+        TestAbstractCB callbackB = new TestAbstractCB();
         Callback combined = Callback.combine(callbackA, callbackB);
 
         combined.succeeded();
@@ -150,8 +150,8 @@ public class CallbackTest
     @Test
     public void testCombineFailure() throws Exception
     {
-        TestCompletingCB callbackA = new TestCompletingCB();
-        TestCompletingCB callbackB = new TestCompletingCB();
+        TestAbstractCB callbackA = new TestAbstractCB();
+        TestAbstractCB callbackB = new TestAbstractCB();
         Callback combined = Callback.combine(callbackA, callbackB);
 
         Throwable failure = new Throwable();
@@ -169,8 +169,8 @@ public class CallbackTest
     @Test
     public void testCombineAbortSuccess() throws Exception
     {
-        TestCompletingCB callbackA = new TestCompletingCB();
-        TestCompletingCB callbackB = new TestCompletingCB();
+        TestAbstractCB callbackA = new TestAbstractCB();
+        TestAbstractCB callbackB = new TestAbstractCB();
         Callback combined = Callback.combine(callbackA, callbackB);
 
         Throwable abort = new Throwable();
@@ -192,8 +192,8 @@ public class CallbackTest
     @Test
     public void testCombineAbortFailure() throws Exception
     {
-        TestCompletingCB callbackA = new TestCompletingCB();
-        TestCompletingCB callbackB = new TestCompletingCB();
+        TestAbstractCB callbackA = new TestAbstractCB();
+        TestAbstractCB callbackB = new TestAbstractCB();
         Callback combined = Callback.combine(callbackA, callbackB);
 
         Throwable abort = new Throwable();
@@ -217,7 +217,7 @@ public class CallbackTest
     @Test
     public void testNestedSuccess() throws Exception
     {
-        TestCompletingCB callback = new TestCompletingCB();
+        TestAbstractCB callback = new TestAbstractCB();
         Callback nested = new Callback.Nested(callback);
         nested.succeeded();
         assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
@@ -229,7 +229,7 @@ public class CallbackTest
     public void testNestedFailure() throws Exception
     {
         Throwable failure = new Throwable();
-        TestCompletingCB callback = new TestCompletingCB();
+        TestAbstractCB callback = new TestAbstractCB();
         Callback nested = new Callback.Nested(callback);
         nested.failed(failure);
         assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
@@ -240,7 +240,7 @@ public class CallbackTest
     @Test
     public void testNestedAbortSuccess() throws Exception
     {
-        TestCompletingCB callback = new TestCompletingCB();
+        TestAbstractCB callback = new TestAbstractCB();
         Callback nested = new Callback.Nested(callback);
 
         Throwable abort = new Throwable();
@@ -257,7 +257,7 @@ public class CallbackTest
     @Test
     public void testNestedAbortFailure() throws Exception
     {
-        TestCompletingCB callback = new TestCompletingCB();
+        TestAbstractCB callback = new TestAbstractCB();
         Callback nested = new Callback.Nested(callback);
 
         Throwable abort = new Throwable();
@@ -276,7 +276,7 @@ public class CallbackTest
     @Test
     public void testAbortingWrappedByLegacyCallback() throws Exception
     {
-        TestCompletingCB callback = new TestCompletingCB();
+        TestAbstractCB callback = new TestAbstractCB();
         Callback legacyCb = new Callback()
         {
             @Override
@@ -312,7 +312,7 @@ public class CallbackTest
         assertThat(callback._completed.getCount(), is(0L));
     }
 
-    private static class TestCompletingCB extends Callback.Completing
+    private static class TestAbstractCB extends Callback.AbstractCallback
     {
         final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
         final CountDownLatch _completed = new CountDownLatch(2);
@@ -342,7 +342,7 @@ public class CallbackTest
         }
 
         @Override
-        protected void completed()
+        public void completed()
         {
             _completed.countDown();
         }
