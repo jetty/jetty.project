@@ -333,8 +333,8 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the sessions exist persisted
-            assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertTrue(ctxB.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> ctxB.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {

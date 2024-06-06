@@ -1425,7 +1425,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
     /**
      * StreamWrapper to intercept commit and complete events to ensure
-     * session handling happens in context, with request available.
+     * session handling happens in context, with the request available.
+     * This implementation assumes that a request only has a single session.
      */
     private class SessionStreamWrapper extends HttpStream.Wrapper
     {
