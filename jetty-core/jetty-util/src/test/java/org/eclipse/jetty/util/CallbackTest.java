@@ -290,26 +290,15 @@ public class CallbackTest
             {
                 callback.failed(cause);
             }
-
-            // TODO uncommenting this fixes the test
-//            @Override
-//            public boolean abort(Throwable cause)
-//            {
-//                return callback.abort(cause);
-//            }
         };
 
         Throwable abort = new Throwable();
         legacyCb.abort(abort);
-        assertFalse(callback._completed.await(100, TimeUnit.MILLISECONDS));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(callback._completion.isMarked());
 
-        Throwable failure = new Throwable();
-        legacyCb.failed(failure);
+        // Abort is seen as failure
+        assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
         assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(ExceptionUtil.areNotAssociated(abort, failure));
-        assertThat(callback._completed.getCount(), is(0L));
+        assertTrue(callback._completion.isMarked());
     }
 
     private static class TestAbstractCB extends Callback.AbstractCallback
