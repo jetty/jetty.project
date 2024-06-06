@@ -13,20 +13,32 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicMarkableReference;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -273,6 +285,7 @@ public class IteratingCallbackTest
         callback.succeeded();
         assertTrue(failureLatch.await(1, TimeUnit.SECONDS));
         assertTrue(callback.isFailed());
+        assertTrue(callback.isAborted());
     }
 
     @Test
@@ -394,6 +407,7 @@ public class IteratingCallbackTest
 
         assertTrue(ocfLatch.await(5, TimeUnit.SECONDS));
         assertTrue(icb.isFailed());
+        assertTrue(icb.isAborted());
         assertEquals(1, count.get());
     }
 
@@ -411,7 +425,7 @@ public class IteratingCallbackTest
                 abort(new Exception());
 
                 // After calling abort, onCompleteFailure() must not be called yet.
-                assertFalse(ocfLatch.await(1, TimeUnit.SECONDS));
+                assertFalse(ocfLatch.await(100, TimeUnit.MILLISECONDS));
 
                 return Action.SCHEDULED;
             }
@@ -427,7 +441,7 @@ public class IteratingCallbackTest
 
         assertEquals(1, count.get());
 
-        assertFalse(ocfLatch.await(100, TimeUnit.MILLISECONDS));
+        assertFalse(ocfLatch.await(10, TimeUnit.MILLISECONDS));
         assertTrue(icb.isAborted());
 
         // Calling succeeded() won't cause further iterations.
@@ -435,6 +449,7 @@ public class IteratingCallbackTest
 
         assertTrue(ocfLatch.await(5, TimeUnit.SECONDS));
         assertTrue(icb.isFailed());
+        assertTrue(icb.isAborted());
         assertEquals(1, count.get());
     }
 
@@ -497,6 +512,189 @@ public class IteratingCallbackTest
         assertFalse(ExceptionUtil.areNotAssociated(abort, late));
         assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
         assertThat(callback._completed.getCount(), is(0L));
+    }
+
+    public static Stream<Arguments> abortTests()
+    {
+        List<Arguments> tests = new ArrayList<>();
+
+        for (IteratingCallback.State state : IteratingCallback.State.values())
+        {
+            String name = state.name();
+
+            if (name.contains("PROCESSING"))
+            {
+                for (IteratingCallback.Action action : IteratingCallback.Action.values())
+                {
+                    if (name.contains("CALLED") || action == IteratingCallback.Action.SCHEDULED)
+                    {
+                        tests.add(Arguments.of(name, action.toString(), Boolean.TRUE));
+                        tests.add(Arguments.of(name, action.toString(), Boolean.FALSE));
+                    }
+                    else
+                    {
+                        tests.add(Arguments.of(name, action.toString(), null));
+                    }
+                }
+            }
+            else if (name.equals("COMPLETE") || name.contains("PENDING"))
+            {
+                tests.add(Arguments.of(name, null, Boolean.TRUE));
+                tests.add(Arguments.of(name, null, Boolean.FALSE));
+            }
+            else
+            {
+                tests.add(Arguments.of(name, null, null));
+            }
+        }
+
+        return tests.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("abortTests")
+    public void testAbortInEveryState(String state, String action, Boolean success) throws Exception
+    {
+        CountDownLatch processLatch = new CountDownLatch(1);
+
+        AtomicReference<Throwable> onAbort = new AtomicReference<>();
+        AtomicReference<Throwable> onCompleteFailure = new AtomicReference<>();
+        AtomicBoolean onCompleteSuccess = new AtomicBoolean();
+        AtomicBoolean onCompleted = new AtomicBoolean();
+
+        IteratingCallback callback = new IteratingCallback()
+        {
+            @Override
+            protected Action process() throws Throwable
+            {
+                if (state.contains("CALLED"))
+                {
+                    if (success)
+                        succeeded();
+                    else
+                        failed(new Throwable("failure"));
+                }
+
+                if (state.contains("ABORT"))
+                    abort(new Throwable("abort in process"));
+
+                if (state.contains("PENDING"))
+                    return Action.SCHEDULED;
+
+                if (state.equals("COMPLETE"))
+                {
+                    if (success)
+                        return Action.SUCCEEDED;
+                    failed(new Throwable("Complete Failure"));
+                    return Action.SCHEDULED;
+                }
+
+                processLatch.await();
+                return IteratingCallback.Action.valueOf(action);
+            }
+
+            @Override
+            protected void onAbort(Throwable cause)
+            {
+                onAbort.set(cause);
+            }
+
+            @Override
+            protected void onCompleteSuccess()
+            {
+                onCompleteSuccess.set(true);
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                onCompleteFailure.set(cause);
+            }
+
+            @Override
+            protected void onCompleted()
+            {
+                onCompleted.set(true);
+            }
+        };
+
+        if (!state.equals("IDLE"))
+        {
+            new Thread(callback::iterate).start();
+        }
+
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> callback.toString().contains(state));
+        assertThat(callback.toString(), containsString(state));
+
+        Throwable cause = new Throwable("abort");
+        boolean aborted = callback.abort(cause);
+
+        // Check abort in completed state
+        if (state.equals("COMPLETE"))
+        {
+            assertThat(aborted, is(false));
+            assertThat(onAbort.get(), nullValue());
+            if (success)
+            {
+                assertThat(onCompleteFailure.get(), nullValue());
+                assertTrue(onCompleteSuccess.get());
+            }
+            else
+            {
+                assertFalse(onCompleteSuccess.get());
+                assertThat(onCompleteFailure.get(), notNullValue());
+                assertTrue(ExceptionUtil.areAssociated(onCompleteFailure.get(), cause));
+            }
+            assertTrue(onCompleted.get());
+            return;
+        }
+
+        // Check abort in non completed states
+        if (state.contains("CALLED") && !success)
+            assertThat(aborted, is(false));
+        else
+            assertThat(aborted, is(true));
+
+        if (state.contains("PROCESSING"))
+        {
+            processLatch.countDown();
+
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> !callback.toString().contains("PROCESSING"));
+
+            if (state.contains("CALLED"))
+            {
+                assertTrue(onCompleted.get());
+            }
+
+            if (action.equals("SCHEDULED"))
+            {
+                if (success)
+                    callback.succeeded();
+                else
+                    callback.failed(new Throwable("failure after abort"));
+            }
+        }
+        else if (state.contains("PENDING"))
+        {
+            if (success)
+                callback.succeeded();
+            else
+                callback.failed(new Throwable("failure after abort"));
+        }
+
+        assertTrue(onCompleted.get());
+        assertThat(onCompleteFailure.get(), notNullValue());
+
+        if (callback.isAborted())
+        {
+            Throwable abort = onAbort.get();
+            assertThat(abort, notNullValue());
+            if (abort != cause)
+            {
+                assertThat(abort.getMessage(), is("abort in process"));
+                assertTrue(ExceptionUtil.areAssociated(abort, cause));
+            }
+        }
     }
 
     private static class TestIteratingCB extends IteratingCallback

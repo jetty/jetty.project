@@ -56,7 +56,7 @@ public abstract class IteratingCallback implements Callback
     /**
      * The internal states of this callback.
      */
-    private enum State
+    protected enum State
     {
         /**
          * This callback is idle, ready to iterate.
@@ -146,6 +146,7 @@ public abstract class IteratingCallback implements Callback
     private State _state;
     private Throwable _failure;
     private boolean _reprocess;
+    private boolean _aborted;
 
     protected IteratingCallback()
     {
@@ -278,6 +279,7 @@ public abstract class IteratingCallback implements Callback
             }
             catch (Throwable x)
             {
+                x.printStackTrace();
                 action = null;
                 failed(x);
                 // Fall through to possibly invoke onCompleteFailure().
@@ -353,7 +355,7 @@ public abstract class IteratingCallback implements Callback
                             case IDLE:
                             case SUCCEEDED:
                                 _state = State.COMPLETE;
-                                doCompleteFailure = _failure;
+                                onAbortDoCompleteFailure = _failure;
                                 break processing;
 
                             case SCHEDULED:
@@ -365,8 +367,12 @@ public abstract class IteratingCallback implements Callback
 
                     case PROCESSING_CALLED_ABORT:
                     {
-                        onAbortDoCompleteFailure = _failure;
-                        break;
+                        _state = State.COMPLETE;
+                        if (_aborted)
+                            onAbortDoCompleteFailure = _failure;
+                        else
+                            doCompleteFailure = _failure;
+                        break processing;
                     }
 
                     default:
@@ -563,6 +569,7 @@ public abstract class IteratingCallback implements Callback
 
         boolean doAbort = false;
         boolean doCompleteFailure = false;
+        boolean aborted;
         try (AutoLock ignored = _lock.lock())
         {
             switch (_state)
@@ -613,10 +620,14 @@ public abstract class IteratingCallback implements Callback
                 }
             }
             if (_failure == null)
+            {
+                _aborted = true;
                 _failure = cause;
+            }
             else
                 ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
             cause = _failure;
+            aborted = _aborted;
         }
 
         if (doAbort)
@@ -626,7 +637,7 @@ public abstract class IteratingCallback implements Callback
             else
                 onAbort(cause);
         }
-        return true;
+        return aborted;
     }
 
     /**
@@ -683,7 +694,7 @@ public abstract class IteratingCallback implements Callback
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _state != State.COMPLETE && _failure != null;
+            return _aborted;
         }
     }
 
@@ -720,6 +731,9 @@ public abstract class IteratingCallback implements Callback
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), _state);
+        try (AutoLock ignored = _lock.lock())
+        {
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), _state);
+        }
     }
 }
