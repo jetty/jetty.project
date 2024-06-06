@@ -793,7 +793,7 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     public Resource getDefaultStyleSheet()
     {
-        return newResource("jetty-dir.css");
+        return newResource("/org/eclipse/jetty/server/jetty-dir.css");
     }
 
     /**
@@ -803,7 +803,7 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     public Resource getDefaultFavicon()
     {
-        return newResource("favicon.ico");
+        return newResource("/org/eclipse/jetty/server/favicon.ico");
     }
 
     /**
