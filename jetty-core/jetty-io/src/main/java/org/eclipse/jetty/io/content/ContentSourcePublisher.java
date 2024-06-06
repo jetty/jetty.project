@@ -243,7 +243,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         @Override
         public void cancel()
         {
-            cancel(new Cancelled());
+            cancel(new Suppressed("Subscription was cancelled manually"));
         }
 
         public void cancel(Throwable cause)
@@ -270,7 +270,8 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         // Publisher succeeded -> cancel(COMPLETED)
         // 1.5 If a Publisher terminates successfully (finite stream) it MUST signal an onComplete.
 
-        // Subscriber
+        // Subscriber notes
+        //
         // 2.13 In the case that this rule is violated, any associated Subscription to the Subscriber
         // MUST be considered as cancelled, and the caller MUST raise this error condition in a
         // fashion that is adequate for the runtime environment.
@@ -279,7 +280,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
 
         // Subscription notes
         //
-        // Subscription.cancel -> cancel(new Cancelled())
+        // Subscription.cancel -> cancel(new Suppressed("Subscription was cancelled manually"))
         // It's not clearly specified in the specification, but according to:
         // - the issue: https://github.com/reactive-streams/reactive-streams-jvm/issues/458
         // - TCK test 'untested_spec108_possiblyCanceledSubscriptionShouldNotReceiveOnErrorOrOnCompleteSignals'
@@ -300,14 +301,6 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         Suppressed(Throwable cause)
         {
             super(cause.getMessage(), cause);
-        }
-    }
-
-    private static class Cancelled extends Suppressed
-    {
-        Cancelled()
-        {
-            super("Subscription was cancelled");
         }
     }
 }
