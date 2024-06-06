@@ -12,6 +12,11 @@
   </servlet>
 
   <servlet>
+    <servlet-name>forwardto</servlet-name>
+    <servlet-class>org.eclipse.jetty.tests.ccd.ee8.ForwardServlet</servlet-class>
+  </servlet>
+
+  <servlet>
     <servlet-name>dump</servlet-name>
     <servlet-class>org.eclipse.jetty.tests.ccd.ee8.DumpServlet</servlet-class>
   </servlet>
@@ -19,6 +24,11 @@
   <servlet-mapping>
     <servlet-name>ccd</servlet-name>
     <url-pattern>/redispatch/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>forwardto</servlet-name>
+    <url-pattern>/forwardto/*</url-pattern>
   </servlet-mapping>
 
   <servlet-mapping>

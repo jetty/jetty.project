@@ -19,9 +19,12 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DispatchPlanHandler extends Handler.Wrapper
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DispatchPlanHandler.class);
     private Path plansDir;
 
     public Path getPlansDir()
@@ -47,15 +50,21 @@ public class DispatchPlanHandler extends Handler.Wrapper
         if (dispatchPlan == null)
         {
             String planName = request.getHeaders().get("X-DispatchPlan");
-            if (planName == null)
-                callback.failed(new RuntimeException("Unable to find X-DispatchPlan"));
-            Path planPath = plansDir.resolve(planName);
-            dispatchPlan = DispatchPlan.read(planPath);
-            dispatchPlan.addEvent("Initial plan: %s", planName);
-            request.setAttribute(DispatchPlan.class.getName(), dispatchPlan);
+            if (planName != null)
+            {
+                Path planPath = plansDir.resolve(planName);
+                dispatchPlan = DispatchPlan.read(planPath);
+                dispatchPlan.addEvent("Initial plan: %s", planName);
+                request.setAttribute(DispatchPlan.class.getName(), dispatchPlan);
+            }
+            else
+            {
+                LOG.info("Missing Request Header [X-DispatchPlan], skipping DispatchPlan behaviors for this request: {}", request.getHttpURI().toURI());
+            }
         }
 
-        dispatchPlan.addEvent("DispatchPlanHandler.handle() method=%s path-query=%s", request.getMethod(), request.getHttpURI().getPathQuery());
+        if (dispatchPlan != null)
+            dispatchPlan.addEvent("DispatchPlanHandler.handle() method=%s path-query=%s", request.getMethod(), request.getHttpURI().getPathQuery());
 
         return super.handle(request, response, callback);
     }

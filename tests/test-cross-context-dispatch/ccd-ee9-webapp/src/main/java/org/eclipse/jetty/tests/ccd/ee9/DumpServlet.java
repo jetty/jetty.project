@@ -35,12 +35,12 @@ public class DumpServlet extends HttpServlet
     {
         DispatchPlan dispatchPlan = (DispatchPlan)req.getAttribute(DispatchPlan.class.getName());
 
-        if (dispatchPlan == null)
-            throw new ServletException("Unable to find DispatchPlan");
-
-        dispatchPlan.addEvent("%s.service() dispatcherType=%s method=%s requestUri=%s",
-            this.getClass().getName(),
-            req.getDispatcherType(), req.getMethod(), req.getRequestURI());
+        if (dispatchPlan != null)
+        {
+            dispatchPlan.addEvent("%s.service() dispatcherType=%s method=%s requestUri=%s",
+                this.getClass().getName(),
+                req.getDispatcherType(), req.getMethod(), req.getRequestURI());
+        }
 
         Properties props = new Properties();
         props.setProperty("request.authType", Objects.toString(req.getAuthType(), NULL));
@@ -85,11 +85,14 @@ public class DumpServlet extends HttpServlet
                 props.setProperty("header[" + name + "]", Objects.toString(headerVal, NULL));
             });
 
-        int eventCount = dispatchPlan.getEvents().size();
-        props.setProperty("dispatchPlan.events.count", Integer.toString(dispatchPlan.getEvents().size()));
-        for (int i = 0; i < eventCount; i++)
+        if (dispatchPlan != null)
         {
-            props.setProperty("dispatchPlan.event[" + i + "]", dispatchPlan.getEvents().get(i));
+            int eventCount = dispatchPlan.getEvents().size();
+            props.setProperty("dispatchPlan.events.count", Integer.toString(dispatchPlan.getEvents().size()));
+            for (int i = 0; i < eventCount; i++)
+            {
+                props.setProperty("dispatchPlan.event[" + i + "]", dispatchPlan.getEvents().get(i));
+            }
         }
 
         resp.setStatus(HttpServletResponse.SC_OK);

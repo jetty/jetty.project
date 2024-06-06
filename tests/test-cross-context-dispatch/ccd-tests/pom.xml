@@ -13,7 +13,7 @@
   <properties>
 
     <!--    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>-->
-    <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
+    <junit.jupiter.execution.parallel.config.fixed.parallelism>1</junit.jupiter.execution.parallel.config.fixed.parallelism>
   </properties>
 
   <dependencyManagement>
