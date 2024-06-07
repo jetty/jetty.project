@@ -218,7 +218,7 @@ public class CallbackTest
     public void testNestedSuccess() throws Exception
     {
         TestAbstractCB callback = new TestAbstractCB();
-        Callback nested = new Callback.Nested(callback);
+        Callback nested = new Callback.Wrapper(callback);
         nested.succeeded();
         assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
         assertThat(callback._completion.getReference(), Matchers.nullValue());
@@ -230,7 +230,7 @@ public class CallbackTest
     {
         Throwable failure = new Throwable();
         TestAbstractCB callback = new TestAbstractCB();
-        Callback nested = new Callback.Nested(callback);
+        Callback nested = new Callback.Wrapper(callback);
         nested.failed(failure);
         assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
         assertThat(callback._completion.getReference(), Matchers.sameInstance(failure));
@@ -241,7 +241,7 @@ public class CallbackTest
     public void testNestedAbortSuccess() throws Exception
     {
         TestAbstractCB callback = new TestAbstractCB();
-        Callback nested = new Callback.Nested(callback);
+        Callback nested = new Callback.Wrapper(callback);
 
         Throwable abort = new Throwable();
         nested.abort(abort);
@@ -258,7 +258,7 @@ public class CallbackTest
     public void testNestedAbortFailure() throws Exception
     {
         TestAbstractCB callback = new TestAbstractCB();
-        Callback nested = new Callback.Nested(callback);
+        Callback nested = new Callback.Wrapper(callback);
 
         Throwable abort = new Throwable();
         nested.abort(abort);
@@ -301,7 +301,7 @@ public class CallbackTest
         assertTrue(callback._completion.isMarked());
     }
 
-    private static class TestAbstractCB extends Callback.AbstractCallback
+    private static class TestAbstractCB extends Callback.Abstract
     {
         final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
         final CountDownLatch _completed = new CountDownLatch(2);

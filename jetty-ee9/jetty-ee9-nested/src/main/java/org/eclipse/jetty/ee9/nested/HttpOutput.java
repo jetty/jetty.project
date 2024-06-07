@@ -1230,7 +1230,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (prepareSendContent(content.remaining(), callback))
         {
-            channelWrite(content, true, new Callback.Nested(callback)
+            channelWrite(content, true, new Callback.Wrapper(callback)
             {
                 @Override
                 public void succeeded()
@@ -1297,7 +1297,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 {
                     _written += byteBuffer.remaining();
                     channelWrite(byteBuffer, last, cb);
-                }, _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(), new Callback.Nested(callback)
+                }, _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(), new Callback.Wrapper(callback)
                 {
                     @Override
                     public void succeeded()
@@ -1918,7 +1918,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    private class WriteCompleteCB extends Callback.AbstractCallback
+    private class WriteCompleteCB extends Callback.Abstract
     {
         @Override
         protected void onCompleteSuccess()

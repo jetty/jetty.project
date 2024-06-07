@@ -74,7 +74,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     private static final BlockingQueue<PendingCallback> __queue = new BlockingArrayQueue<>();
     private static final AtomicBoolean __transportComplete = new AtomicBoolean();
 
-    private static class PendingCallback extends Callback.Nested
+    private static class PendingCallback extends Callback.Wrapper
     {
         private CompletableFuture<Void> _pending = new CompletableFuture<>();
 

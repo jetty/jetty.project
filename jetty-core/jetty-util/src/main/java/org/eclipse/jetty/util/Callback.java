@@ -83,12 +83,14 @@ public interface Callback extends Invocable
      * @param cause the reason for the operation failure
      * @return {@code true} if the call to abort was prior to a call to either {@link #succeeded()}, {@link #failed(Throwable)}
      * or another call to {@code abort(Throwable)}.
-     * @see AbstractCallback
+     * @see Abstract
      */
     default boolean abort(Throwable cause)
     {
-        failed(cause);
-        return true;
+        // TODO revert to:
+        //      failed(cause);
+        //      return true;
+        throw new UnsupportedOperationException("unsupported abort");
     }
 
     /**
@@ -237,7 +239,7 @@ public interface Callback extends Invocable
      */
     static Callback from(InvocationType invocationType, Runnable completed)
     {
-        return new AbstractCallback()
+        return new Abstract()
         {
             @Override
             public void completed()
@@ -269,7 +271,7 @@ public interface Callback extends Invocable
      */
     static Callback from(Callback callback, Runnable completed)
     {
-        return new Nested(callback)
+        return new Wrapper(callback)
         {
             public void completed()
             {
@@ -288,7 +290,7 @@ public interface Callback extends Invocable
      */
     static Callback from(Callback callback, Consumer<Throwable> completed)
     {
-        return new Nested(callback)
+        return new Wrapper(callback)
         {
             @Override
             protected void onCompleteSuccess()
@@ -429,7 +431,7 @@ public interface Callback extends Invocable
      * and {@link #completed()} methods are not called until either {@link #succeeded()} or {@link #failed(Throwable)}
      * are called.</p>
      */
-    class AbstractCallback implements Callback, Completing
+    class Abstract implements Callback, Completing
     {
         private static final Throwable SUCCEEDED = new StaticException("Completed");
         private final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
@@ -514,7 +516,7 @@ public interface Callback extends Invocable
 
         private void doCompleteFailure(Throwable failure)
         {
-            ExceptionUtil.call(failure, this::onCompleteFailure, this::completed);
+            ExceptionUtil.callThen(failure, this::onCompleteFailure, this::completed);
         }
 
         /**
@@ -567,11 +569,11 @@ public interface Callback extends Invocable
      * Nested Completing Callback that completes after
      * completing the nested callback
      */
-    class Nested extends AbstractCallback
+    class Wrapper extends Abstract
     {
         private final Callback callback;
 
-        public Nested(Callback callback)
+        public Wrapper(Callback callback)
         {
             this.callback = Objects.requireNonNull(callback);
         }
@@ -609,6 +611,18 @@ public interface Callback extends Invocable
         public String toString()
         {
             return "%s@%x:%s".formatted(getClass().getSimpleName(), hashCode(), callback);
+        }
+    }
+
+    /**
+     * @deprecated use {@link Wrapper}
+     */
+    @Deprecated(forRemoval = true, since = "12.1.0")
+    class Nested extends Wrapper
+    {
+        public Nested(Callback callback)
+        {
+            super(callback);
         }
     }
 

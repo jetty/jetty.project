@@ -138,7 +138,7 @@ public class BufferedContentSink implements Content.Sink
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("flushing aggregated buffer {}", aggregatedBuffer);
-            _flusher.offer(false, aggregatedBuffer.getByteBuffer(), new Callback.Nested(Callback.from(aggregatedBuffer::release))
+            _flusher.offer(false, aggregatedBuffer.getByteBuffer(), new Callback.Wrapper(Callback.from(aggregatedBuffer::release))
             {
                 @Override
                 public void succeeded()
@@ -200,7 +200,7 @@ public class BufferedContentSink implements Content.Sink
 
             if (BufferUtil.hasContent(currentBuffer))
             {
-                _flusher.offer(false, aggregatedBuffer.getByteBuffer(), new Callback.Nested(Callback.from(aggregatedBuffer::release))
+                _flusher.offer(false, aggregatedBuffer.getByteBuffer(), new Callback.Wrapper(Callback.from(aggregatedBuffer::release))
                 {
                     @Override
                     public void succeeded()

@@ -71,7 +71,7 @@ public class TrailersTest extends AbstractTest
                 response.setTrailersSupplier(() -> responseTrailers);
 
                 // Write the content first, then the trailers.
-                response.write(false, ByteBuffer.allocate(1024 * 1024), new Callback.Nested(callback)
+                response.write(false, ByteBuffer.allocate(1024 * 1024), new Callback.Wrapper(callback)
                 {
                     @Override
                     public void succeeded()

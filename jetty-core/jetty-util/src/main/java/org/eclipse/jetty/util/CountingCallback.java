@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * }
  * </pre>
  */
-public class CountingCallback extends Callback.Nested
+public class CountingCallback extends Callback.Wrapper
 {
     private final AtomicInteger count;
 

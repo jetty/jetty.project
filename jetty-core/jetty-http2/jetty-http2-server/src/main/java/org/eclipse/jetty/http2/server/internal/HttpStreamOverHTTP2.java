@@ -639,7 +639,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
     }
 
-    private class SendTrailers extends Callback.Nested
+    private class SendTrailers extends Callback.Wrapper
     {
         private final HttpFields trailers;
 

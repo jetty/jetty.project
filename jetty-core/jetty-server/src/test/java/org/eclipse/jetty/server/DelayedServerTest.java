@@ -66,7 +66,7 @@ public class DelayedServerTest extends HttpServerTestBase
         }
     }
 
-    private static class DelayedCallback extends Callback.Nested
+    private static class DelayedCallback extends Callback.Wrapper
     {
         public DelayedCallback(Callback callback)
         {

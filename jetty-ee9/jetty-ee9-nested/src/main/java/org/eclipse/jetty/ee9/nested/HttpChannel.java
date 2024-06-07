@@ -1389,7 +1389,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    private class SendCallback extends Callback.Nested
+    private class SendCallback extends Callback.Wrapper
     {
         private final ByteBuffer _content;
         private final int _length;
@@ -1427,7 +1427,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (x instanceof HttpException httpException)
             {
                 MetaData.Response responseMeta = new MetaData.Response(httpException.getCode(), httpException.getReason(), HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
-                send(_request.getMetaData(), responseMeta, null, true, new Nested(getCallback())
+                send(_request.getMetaData(), responseMeta, null, true, new Wrapper(getCallback())
                 {
                     @Override
                     public void succeeded()

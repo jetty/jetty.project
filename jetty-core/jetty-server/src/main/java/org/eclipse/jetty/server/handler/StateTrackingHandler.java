@@ -582,7 +582,7 @@ public class StateTrackingHandler extends Handler.Wrapper
         }
     }
 
-    private class HandlerCallback extends Callback.Nested implements Runnable, Dumpable
+    private class HandlerCallback extends Callback.Wrapper implements Runnable, Dumpable
     {
         private final AtomicBoolean completed = new AtomicBoolean();
         private final Request request;
@@ -803,7 +803,7 @@ public class StateTrackingHandler extends Handler.Wrapper
             }
         }
 
-        private class WriteCallback extends Callback.Nested implements Dumpable
+        private class WriteCallback extends Callback.Wrapper implements Dumpable
         {
             private final AtomicBoolean callbackCompleted = new AtomicBoolean();
             private final Thread writeThread;

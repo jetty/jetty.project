@@ -84,7 +84,7 @@ public abstract class IteratingCallback implements Callback
          * {@link #PROCESSING} state. Further actions are waiting for the
          * {@link #process()} method to return.
          */
-        PROCESSING_ABORT,
+        PROCESSING_ABORTED,
 
         /**
          * The was {@link #abort(Throwable) aborted} and the sub-task was completed either with
@@ -217,7 +217,7 @@ public abstract class IteratingCallback implements Callback
 
     private void doCompleteFailure(Throwable cause)
     {
-        ExceptionUtil.call(cause, this::onCompleteFailure, this::onCompleted);
+        ExceptionUtil.callThen(cause, this::onCompleteFailure, this::onCompleted);
     }
 
     /**
@@ -244,7 +244,7 @@ public abstract class IteratingCallback implements Callback
 
                 case PROCESSING:
                 case PROCESSING_CALLED:
-                case PROCESSING_ABORT:
+                case PROCESSING_ABORTED:
                 case PROCESSING_CALLED_ABORT:
                     _reprocess = true;
                     break;
@@ -346,7 +346,7 @@ public abstract class IteratingCallback implements Callback
                         break;
                     }
 
-                    case PROCESSING_ABORT:
+                    case PROCESSING_ABORTED:
                     {
                         if (action == null)
                             break processing;
@@ -381,13 +381,13 @@ public abstract class IteratingCallback implements Callback
             }
         }
         if (onAbortDoCompleteFailure != null)
-            ExceptionUtil.call(onAbortDoCompleteFailure, this::onAbort, this::doCompleteFailure);
+            ExceptionUtil.callThen(onAbortDoCompleteFailure, this::onAbort, this::doCompleteFailure);
         else if (doCompleteSuccess)
             doCompleteSuccess();
         else if (doCompleteFailure != null)
             doCompleteFailure(doCompleteFailure);
         else if (onAbortScheduled != null)
-            ExceptionUtil.call(onAbortScheduled, this::onAbort, this::onAbortScheduledProcessing);
+            ExceptionUtil.callThen(onAbortScheduled, this::onAbort, this::onAbortScheduledProcessing);
     }
 
     private void onAbortScheduledProcessing()
@@ -397,7 +397,7 @@ public abstract class IteratingCallback implements Callback
         {
             switch (_state)
             {
-                case PROCESSING_ABORT:
+                case PROCESSING_ABORTED:
                 {
                     _state = State.PENDING_ABORT;
                     break;
@@ -437,7 +437,7 @@ public abstract class IteratingCallback implements Callback
                     _state = State.PROCESSING_CALLED;
                     break;
                 }
-                case PROCESSING_ABORT:
+                case PROCESSING_ABORTED:
                 {
                     // another thread is processing, so it will handle everything, we just tell it the state
                     _state = State.PROCESSING_CALLED_ABORT;
@@ -504,7 +504,7 @@ public abstract class IteratingCallback implements Callback
                     _state = State.PROCESSING_CALLED;
                     break;
                 }
-                case PROCESSING_ABORT:
+                case PROCESSING_ABORTED:
                 {
                     // another thread is processing, so it will handle everything, we just tell it the state
                     _state = State.PROCESSING_CALLED_ABORT;
@@ -585,7 +585,7 @@ public abstract class IteratingCallback implements Callback
                 case PROCESSING:
                 {
                     // Another thread is processing, so we just tell it the state and let it handle it
-                    _state = State.PROCESSING_ABORT;
+                    _state = State.PROCESSING_ABORTED;
                     break;
                 }
 
@@ -596,7 +596,7 @@ public abstract class IteratingCallback implements Callback
                     break;
                 }
 
-                case PROCESSING_ABORT:
+                case PROCESSING_ABORTED:
                 case PROCESSING_CALLED_ABORT:
                 case PENDING_ABORT:
                 {
@@ -633,7 +633,7 @@ public abstract class IteratingCallback implements Callback
         if (doAbort)
         {
             if (doCompleteFailure)
-                ExceptionUtil.call(cause, this::onAbort, this::doCompleteFailure);
+                ExceptionUtil.callThen(cause, this::onAbort, this::doCompleteFailure);
             else
                 onAbort(cause);
         }

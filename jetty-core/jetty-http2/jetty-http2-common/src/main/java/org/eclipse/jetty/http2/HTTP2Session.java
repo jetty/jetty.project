@@ -1236,7 +1236,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         );
     }
 
-    public abstract static class Entry extends Callback.Nested
+    public abstract static class Entry extends Callback.Wrapper
     {
         protected final Frame frame;
         protected final HTTP2Stream stream;
