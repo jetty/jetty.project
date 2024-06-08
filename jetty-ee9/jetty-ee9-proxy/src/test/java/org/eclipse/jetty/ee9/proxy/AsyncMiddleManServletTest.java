@@ -63,6 +63,7 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -188,6 +189,104 @@ public class AsyncMiddleManServletTest
             .send();
 
         assertEquals(200, response.getStatus());
+    }
+
+    /**
+     * Tests a hard to reproduce timing-based NullPointerException. It does not always happen, it may be related to
+     * how busy the CPU is; using "CPU Stres" from https://learn.microsoft.com/en-us/sysinternals/downloads/cpustres
+     * helps make the failure happen more often when I peg the CPU at 92% busy or above.
+     * <p>
+     * This test is a great simplification of a set up used in real life where both NullPointerException below occur.
+     * </p>
+     * <pre>
+     * java.lang.NullPointerException: Cannot invoke "java.lang.Runnable.run()" because "action" is null
+     *     at org.eclipse.jetty.ee9.proxy/org.eclipse.jetty.ee9.proxy.AsyncMiddleManServlet.onContinue(AsyncMiddleManServlet.java:178)
+     *     at org.eclipse.jetty.ee9.proxy/org.eclipse.jetty.ee9.proxy.AbstractProxyServlet$ProxyContinueProtocolHandler.onContinue(AbstractProxyServlet.java:862)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.ContinueProtocolHandler$ContinueListener.onSuccess(ContinueProtocolHandler.java:83)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.ResponseListeners.notifySuccess(ResponseListeners.java:273)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.ResponseListeners.notifySuccess(ResponseListeners.java:265)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpReceiver.lambda$4(HttpReceiver.java:359)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.thread.SerializedInvoker$Link.run(SerializedInvoker.java:191)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.thread.SerializedInvoker.run(SerializedInvoker.java:117)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpReceiver.responseHeaders(HttpReceiver.java:243)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.internal.HttpReceiverOverHTTP.lambda$2(HttpReceiverOverHTTP.java:435)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.internal.HttpReceiverOverHTTP.parse(HttpReceiverOverHTTP.java:320)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.internal.HttpReceiverOverHTTP.parseAndFill(HttpReceiverOverHTTP.java:250)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.internal.HttpReceiverOverHTTP.receive(HttpReceiverOverHTTP.java:76)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP.receive(HttpChannelOverHTTP.java:97)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP.onFillable(HttpConnectionOverHTTP.java:207)
+     *     at org.eclipse.jetty.io/org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:322)
+     *     at org.eclipse.jetty.io/org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:99)
+     *     at org.eclipse.jetty.io/org.eclipse.jetty.io.SelectableChannelEndPoint$1.run(SelectableChannelEndPoint.java:53)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy.runTask(AdaptiveExecutionStrategy.java:478)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy.consumeTask(AdaptiveExecutionStrategy.java:441)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy.tryProduce(AdaptiveExecutionStrategy.java:293)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy.produce(AdaptiveExecutionStrategy.java:195)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:979)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.thread.QueuedThreadPool$Runner.doRunJob(QueuedThreadPool.java:1209)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.thread.QueuedThreadPool$Runner.run(QueuedThreadPool.java:1164)
+     *     at java.base/java.lang.Thread.run(Thread.java:840)
+     * </pre>
+     * Once AsyncMiddleManServlet.onContinue() is fixed to avoid the above NPE, you may get a different NPE, in the client:
+     * <pre>
+     * java.lang.NullPointerException: Cannot invoke "org.eclipse.jetty.client.transport.HttpExchange.getRequest()" because "exchange" is null
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpSender.abortRequest(HttpSender.java:237)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpSender.internalAbort(HttpSender.java:389)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpSender$ContentSender.onCompleteFailure(HttpSender.java:609)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.IteratingCallback.processing(IteratingCallback.java:335)
+     *     at org.eclipse.jetty.util/org.eclipse.jetty.util.IteratingCallback.iterate(IteratingCallback.java:231)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpSender.send(HttpSender.java:85)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP.send(HttpChannelOverHTTP.java:86)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpChannel.send(HttpChannel.java:142)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpConnection.send(HttpConnection.java:112)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP$Delegate.send(HttpConnectionOverHTTP.java:330)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP.send(HttpConnectionOverHTTP.java:159)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpDestination.send(HttpDestination.java:444)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpDestination.process(HttpDestination.java:420)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpDestination.process(HttpDestination.java:375)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpDestination.send(HttpDestination.java:358)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpDestination.send(HttpDestination.java:352)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpDestination.send(HttpDestination.java:329)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpDestination.send(HttpDestination.java:308)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpRequest.sendAsync(HttpRequest.java:751)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpDestination.send(HttpDestination.java:303)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpRequest.send(HttpRequest.java:744)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.CompletableResponseListener.send(CompletableResponseListener.java:79)
+     *     at org.eclipse.jetty.client/org.eclipse.jetty.client.transport.HttpRequest.send(HttpRequest.java:707)
+     *     at org.eclipse.jetty.ee9.proxy@12.0.11-SNAPSHOT/org.eclipse.jetty.ee9.proxy.AsyncMiddleManServletTest.testServletOnContinueNullPointerException(AsyncMiddleManServletTest.java:253)
+     *     at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+     *     at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+     *     at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+     *  </pre>
+     * @throws Exception on a test failure.
+     */
+    @Test
+    public void testServletOnContinueNullPointerException() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                // Send the 100 Continue.
+                ServletInputStream input = request.getInputStream();
+                // Echo the content.
+                IO.copy(input, response.getOutputStream());
+            }
+        });
+        startProxy(new AsyncMiddleManServlet());
+        startClient();
+
+        // loop to attempt increase odds of NullPointerException
+        for (int i = 0; i < 50; i++)
+        {
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                    .timeout(5, TimeUnit.SECONDS)
+                    .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
+                    .body(new BytesRequestContent("content"))
+                    .send();
+            assertEquals(200, response.getStatus());
+        }
     }
 
     @Test

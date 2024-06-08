@@ -193,8 +193,7 @@ public abstract class HttpSender
 
                 // Mark atomically the request as terminated, with
                 // respect to concurrency between request and response.
-                Result result = exchange.terminateRequest();
-                terminateRequest(exchange, null, result);
+                terminateRequest(exchange, null);
                 yield true;
             }
             default -> false;
@@ -234,26 +233,33 @@ public abstract class HttpSender
     {
         Throwable failure = this.failure.get();
 
-        HttpRequest request = exchange.getRequest();
-        Content.Source content = request.getBody();
-        if (content != null)
-            content.fail(failure);
+        if (exchange != null)
+        {
+            HttpRequest request = exchange.getRequest();
+            Content.Source content = request.getBody();
+            if (content != null)
+                content.fail(failure);
 
-        dispose();
+            dispose();
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("Request abort {} {} on {}", request, exchange, getHttpChannel(), failure);
-        request.notifyFailure(failure);
-
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request abort {} {} on {}", request, exchange, getHttpChannel(), failure);
+            request.notifyFailure(failure);
+        }
+        else
+        {
+            dispose();
+        }
         // Mark atomically the request as terminated, with
         // respect to concurrency between request and response.
-        Result result = exchange.terminateRequest();
-        terminateRequest(exchange, failure, result);
+        terminateRequest(exchange, failure);
     }
 
-    private void terminateRequest(HttpExchange exchange, Throwable failure, Result result)
+    private void terminateRequest(HttpExchange exchange, Throwable failure)
     {
-        HttpRequest request = exchange.getRequest();
+        boolean inExchange = exchange != null;
+        Result result = inExchange ? exchange.terminateRequest() : null;
+        HttpRequest request = inExchange ? exchange.getRequest() : null;
 
         if (LOG.isDebugEnabled())
             LOG.debug("Terminating request {}", request);
@@ -262,7 +268,7 @@ public abstract class HttpSender
         {
             if (failure != null)
             {
-                if (exchange.responseComplete(failure))
+                if (inExchange && exchange.responseComplete(failure))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Response failure from request {} {}", request, exchange);
