@@ -1003,6 +1003,7 @@ public class XmlConfiguration
 
                 try
                 {
+                    System.err.println("Invoking: " + method);
                     return invokeMethod(method, obj, arguments);
                 }
                 catch (IllegalAccessException | IllegalArgumentException e)

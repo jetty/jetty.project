@@ -218,6 +218,11 @@ public class XmlConfigurationTest
         Map<String, String> concurrentMap = (Map<String, String>)configuration.getIdMap().get("concurrentMap");
         assertThat(concurrentMap, instanceOf(ConcurrentMap.class));
         assertEquals(concurrentMap.get("KEY"), "ITEM");
+
+        if ("org/eclipse/jetty/xml/configureWithElements.xml".equals(configure))
+        {
+            System.err.println("Static call with TestImpl: " + ExampleConfiguration.calledWithClass);
+        }
     }
 
     @ParameterizedTest
