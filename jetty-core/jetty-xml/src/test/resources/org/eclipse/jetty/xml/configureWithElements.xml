@@ -137,6 +137,19 @@
     <Class>org.eclipse.jetty.xml.ExampleConfiguration</Class>
   </Call>
 
+   <Call class="org.eclipse.jetty.xml.ExampleConfiguration" name="callStaticWithVarArgs">
+    <Arg>
+      <New class="org.eclipse.jetty.xml.ExampleConfiguration$TestImpl"/>
+    </Arg>
+    <Arg>
+      <Array type="java.lang.String">
+        <Item>A</Item>
+        <Item>B</Item>
+        <Item>C</Item>
+      </Array>
+    </Arg>
+  </Call>
+
   <Call>
     <Name>call</Name>
     <Arg><Array type="java.lang.Object">
