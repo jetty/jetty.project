@@ -534,7 +534,8 @@ public class HttpChannelState
             if (!_failureListener)
             {
                 _failureListener = true;
-                getHttpChannel().getCoreRequest().addFailureListener(this::asyncError);
+                if (_channel.getHttpConfiguration().isNotifyRemoteAsyncErrors())
+                    getHttpChannel().getCoreRequest().addFailureListener(this::asyncError);
             }
             _requestState = RequestState.ASYNC;
             _event = event;

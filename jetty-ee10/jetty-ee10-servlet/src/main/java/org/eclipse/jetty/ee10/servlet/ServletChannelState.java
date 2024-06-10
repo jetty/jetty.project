@@ -572,7 +572,8 @@ public class ServletChannelState
             if (!_failureListener)
             {
                 _failureListener = true;
-                _servletChannel.getRequest().addFailureListener(this::asyncError);
+                if (_servletChannel.getHttpConfiguration().isNotifyRemoteAsyncErrors())
+                    _servletChannel.getRequest().addFailureListener(this::asyncError);
             }
             _requestState = RequestState.ASYNC;
             _event = event;
