@@ -150,6 +150,7 @@ public class ServletContextHandler extends ContextHandler
 
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
     public static final int EXTENDED_LISTENER_TYPE_INDEX = 0;
+    private static final int MAX_FORM_UNSET = -2;
     public static final String MAX_FORM_KEYS_KEY = FormFields.MAX_FIELDS_ATTRIBUTE;
     public static final String MAX_FORM_CONTENT_SIZE_KEY = FormFields.MAX_LENGTH_ATTRIBUTE;
     public static final int DEFAULT_MAX_FORM_KEYS = FormFields.MAX_FIELDS_DEFAULT;
@@ -217,8 +218,8 @@ public class ServletContextHandler extends ContextHandler
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private Logger _logger;
-    private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
-    private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
+    private int _maxFormKeys = MAX_FORM_UNSET;
+    private int _maxFormContentSize = MAX_FORM_UNSET;
     private boolean _usingSecurityManager = getSecurityManager() != null;
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
@@ -435,6 +436,19 @@ public class ServletContextHandler extends ContextHandler
             return _durableListeners.contains(listener);
         // If we are not yet started then all set listeners are durable
         return getEventListeners().contains(listener);
+    }
+
+    private Integer getIntegerAttribute(String key)
+    {
+        Object value = getAttribute(key);
+        if (value == null)
+            return null;
+        if (value instanceof Integer)
+            return ((Integer)value);
+        if (value instanceof String)
+            return Integer.parseInt((String)value);
+        LOG.warn("Unrecognized type {} for context attribute [{}]", value.getClass().getName(), key);
+        return null;
     }
 
     public Logger getLogger()
@@ -672,6 +686,8 @@ public class ServletContextHandler extends ContextHandler
     @ManagedAttribute("The maximum content size")
     public int getMaxFormContentSize()
     {
+        if (_maxFormContentSize == MAX_FORM_UNSET)
+            return DEFAULT_MAX_FORM_CONTENT_SIZE;
         return _maxFormContentSize;
     }
 
@@ -687,6 +703,8 @@ public class ServletContextHandler extends ContextHandler
 
     public int getMaxFormKeys()
     {
+        if (_maxFormKeys == MAX_FORM_UNSET)
+            return DEFAULT_MAX_FORM_KEYS;
         return _maxFormKeys;
     }
 
@@ -1035,6 +1053,30 @@ public class ServletContextHandler extends ContextHandler
 
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
+
+        if (_maxFormContentSize == MAX_FORM_UNSET)
+        {
+            // Use context attribute as primary source of value
+            Integer maxFormContentSize = getIntegerAttribute(MAX_FORM_CONTENT_SIZE_KEY);
+            if (maxFormContentSize == null)
+            {
+                // fall back to System Property as secondary value if context attribute version is not present
+                maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
+            }
+            setMaxFormContentSize(maxFormContentSize);
+        }
+
+        if (_maxFormKeys == MAX_FORM_UNSET)
+        {
+            // Use context attribute as primary source of value
+            Integer maxFormKeys = getIntegerAttribute(MAX_FORM_KEYS_KEY);
+            if (maxFormKeys == null)
+            {
+                // fall back to System Property as secondary value if context attribute version is not present
+                maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
+            }
+            setMaxFormKeys(maxFormKeys);
+        }
 
         if (getServer() != null)
             _servletContext.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());

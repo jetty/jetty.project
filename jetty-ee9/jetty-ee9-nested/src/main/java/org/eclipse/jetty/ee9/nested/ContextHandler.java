@@ -166,6 +166,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
     private static String __serverInfo = "jetty/" + Server.getVersion();
 
+    private static final int MAX_FORM_UNSET = -2;
     public static final String MAX_FORM_KEYS_KEY = FormFields.MAX_FIELDS_ATTRIBUTE;
     public static final String MAX_FORM_CONTENT_SIZE_KEY = FormFields.MAX_LENGTH_ATTRIBUTE;
     public static final int DEFAULT_MAX_FORM_KEYS = FormFields.MAX_FIELDS_DEFAULT;
@@ -223,8 +224,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     private String[] _welcomeFiles;
     private ErrorHandler _errorHandler;
     private Logger _logger;
-    private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
-    private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
+    private int _maxFormKeys = MAX_FORM_UNSET;
+    private int _maxFormContentSize = MAX_FORM_UNSET;
     private boolean _compactPath = false;
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
@@ -635,6 +636,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         _logger = logger;
     }
 
+    private Integer getIntegerAttribute(String key)
+    {
+        Object value = getAttribute(key);
+        if (value == null)
+            return null;
+        if (value instanceof Integer)
+            return ((Integer)value);
+        if (value instanceof String)
+            return Integer.parseInt((String)value);
+        LOG.warn("Unrecognized type {} for context attribute [{}]", value.getClass().getName(), key);
+        return null;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -679,6 +693,30 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     {
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
+
+        if (_maxFormContentSize == MAX_FORM_UNSET)
+        {
+            // Use context attribute as primary source of value
+            Integer maxFormContentSize = getIntegerAttribute(MAX_FORM_CONTENT_SIZE_KEY);
+            if (maxFormContentSize == null)
+            {
+                // fall back to System Property as secondary value if context attribute version is not present
+                maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
+            }
+            setMaxFormContentSize(maxFormContentSize);
+        }
+
+        if (_maxFormKeys == MAX_FORM_UNSET)
+        {
+            // Use context attribute as primary source of value
+            Integer maxFormKeys = getIntegerAttribute(MAX_FORM_KEYS_KEY);
+            if (maxFormKeys == null)
+            {
+                // fall back to System Property as secondary value if context attribute version is not present
+                maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
+            }
+            setMaxFormKeys(maxFormKeys);
+        }
 
         if (_errorHandler == null)
             setErrorHandler(new ErrorHandler());
@@ -1373,6 +1411,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     @ManagedAttribute("The maximum content size")
     public int getMaxFormContentSize()
     {
+        if (_maxFormContentSize == MAX_FORM_UNSET)
+            return DEFAULT_MAX_FORM_CONTENT_SIZE;
         return _maxFormContentSize;
     }
 
@@ -1388,6 +1428,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
     public int getMaxFormKeys()
     {
+        if (_maxFormKeys == MAX_FORM_UNSET)
+            return DEFAULT_MAX_FORM_KEYS;
         return _maxFormKeys;
     }
 
