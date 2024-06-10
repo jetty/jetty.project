@@ -13,10 +13,14 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EventListener;
@@ -420,6 +424,23 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             // This call frees malloc'ed memory so make sure it always happens.
             quicheConnection.dispose();
+        }
+    }
+
+    public X509Certificate[] getPeerCertificates()
+    {
+        try
+        {
+            byte[] encoded = quicheConnection.getPeerCertificate();
+            if (encoded == null)
+                return null;
+            CertificateFactory factory = CertificateFactory.getInstance("X509");
+            X509Certificate certificate = (X509Certificate)factory.generateCertificate(new ByteArrayInputStream(encoded));
+            return new X509Certificate[]{certificate};
+        }
+        catch (CertificateException x)
+        {
+            return null;
         }
     }
 
