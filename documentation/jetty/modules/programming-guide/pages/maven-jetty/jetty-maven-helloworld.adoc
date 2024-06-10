@@ -47,36 +47,45 @@ Use an editor to create the file `src/main/java/org/example/HelloWorld.java` wit
 ----
 package org.example;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.ServletException;
-import java.io.IOException;
-import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
-public class HelloWorld extends AbstractHandler
+class HelloWorldHandler extends Handler.Abstract.NonBlocking
 {
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response)
-        throws IOException, ServletException
+    @Override
+    public boolean handle(Request request, Response response, Callback callback)
     {
-        response.setContentType("text/html;charset=utf-8");
-        response.setStatus(HttpServletResponse.SC_OK);
-        baseRequest.setHandled(true);
-        response.getWriter().println("<h1>Hello World</h1>");
-    }
+        response.setStatus(200);
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=UTF-8");
 
-    public static void main(String[] args) throws Exception
-    {
-        Server server = new Server(8080);
-        server.setHandler(new HelloWorld());
-
-        server.start();
-        server.join();
+        // Write a Hello World response.
+        Content.Sink.write(response, true, """
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Jetty Hello World Handler</title>
+            </head>
+            <body>
+              <p>Hello World</p>
+            </body>
+            </html>
+            """, callback);
+        return true;
     }
+}
+
+Server server = new Server();
+Connector connector = new ServerConnector(server);
+server.addConnector(connector);
+
+// Set the Hello World Handler.
+server.setHandler(new HelloWorldHandler());
+
+server.start();
 }
 ----
 
@@ -116,7 +125,6 @@ Use an editor to create the file `pom.xml` in the `JettyMavenHelloWorld` directo
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.1</version>
         <executions>
           <execution><goals><goal>java</goal></goals></execution>
         </executions>
