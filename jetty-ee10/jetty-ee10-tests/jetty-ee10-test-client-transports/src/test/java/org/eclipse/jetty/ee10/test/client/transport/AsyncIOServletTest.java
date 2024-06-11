@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.AsyncContext;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
@@ -54,13 +56,19 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.ee10.servlet.HttpOutput;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -76,6 +84,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -83,6 +92,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1532,6 +1542,83 @@ public class AsyncIOServletTest extends AbstractTest
 
         ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testStartAsyncThenClientResetWithoutRemoteErrorNotification(boolean notify) throws Exception
+    {
+        httpConfig.setNotifyRemoteAsyncErrors(notify);
+
+        AtomicReference<AsyncEvent> errorAsyncEventRef = new AtomicReference<>();
+        AtomicReference<HttpServletResponse> responseRef = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        start(Transport.H2C, new HttpServlet() {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.addListener(new AsyncListener() {
+                    @Override
+                    public void onComplete(AsyncEvent event) throws IOException
+                    {
+                    }
+
+                    @Override
+                    public void onTimeout(AsyncEvent event) throws IOException
+                    {
+                    }
+
+                    @Override
+                    public void onError(AsyncEvent event) throws IOException
+                    {
+                        errorAsyncEventRef.set(event);
+                    }
+
+                    @Override
+                    public void onStartAsync(AsyncEvent event) throws IOException
+                    {
+                    }
+                });
+                asyncContext.setTimeout(0);
+                responseRef.set(response);
+                latch.countDown();
+            }
+        });
+
+        Session session = newHttp2ClientSession(new Session.Listener() {});
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        session.newStream(frame, promise, null);
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+
+        // Wait for the server to be in ASYNC_WAIT.
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        sleep(500);
+
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+
+        if (notify)
+            // Wait for the reset to be notified to the async context listener.
+            await().atMost(5, TimeUnit.SECONDS).until(() ->
+            {
+                AsyncEvent asyncEvent = errorAsyncEventRef.get();
+                return asyncEvent == null ? null : asyncEvent.getThrowable();
+            }, instanceOf(EofException.class));
+        else
+            // Wait for the reset to NOT be notified to the failure listener.
+            await().atMost(5, TimeUnit.SECONDS).during(1, TimeUnit.SECONDS).until(errorAsyncEventRef::get, nullValue());
+
+        ServletOutputStream output = responseRef.get().getOutputStream();
+
+        assertThrows(IOException.class,
+            () ->
+            {
+                // Large writes or explicit flush() must
+                // fail because the stream has been reset.
+                output.flush();
+            });
     }
 
     private static class Listener implements ReadListener, WriteListener

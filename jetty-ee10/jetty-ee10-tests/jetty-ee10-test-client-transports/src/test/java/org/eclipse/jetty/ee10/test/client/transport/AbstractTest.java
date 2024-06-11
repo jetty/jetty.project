@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.test.client.transport;
 
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,6 +22,7 @@ import java.security.KeyStore;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import jakarta.servlet.http.HttpServlet;
@@ -32,7 +34,13 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
+import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.HTTP2Cipher;
+import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
@@ -58,6 +66,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -79,6 +88,7 @@ public class AbstractTest
     protected AbstractConnector connector;
     protected ServletContextHandler servletContextHandler;
     protected HttpClient client;
+    protected HTTP2Client http2Client;
 
     public static Collection<Transport> transports()
     {
@@ -189,6 +199,29 @@ public class AbstractTest
         client.start();
     }
 
+    protected Session newHttp2ClientSession(Session.Listener listener) throws Exception
+    {
+        String host = "localhost";
+        int port = ((NetworkConnector)connector).getLocalPort();
+        InetSocketAddress address = new InetSocketAddress(host, port);
+        FuturePromise<Session> promise = new FuturePromise<>();
+        http2Client.connect(address, listener, promise);
+        return promise.get(5, TimeUnit.SECONDS);
+    }
+
+    protected MetaData.Request newRequest(String method, HttpFields fields)
+    {
+        return newRequest(method, "/", fields);
+    }
+
+    protected MetaData.Request newRequest(String method, String path, HttpFields fields)
+    {
+        String host = "localhost";
+        int port = ((NetworkConnector)connector).getLocalPort();
+        String authority = host + ":" + port;
+        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields, -1);
+    }
+
     public AbstractConnector newConnector(Transport transport, Server server)
     {
         return switch (transport)
@@ -262,7 +295,7 @@ public class AbstractTest
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
                 clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                HTTP2Client http2Client = new HTTP2Client(clientConnector);
+                http2Client = new HTTP2Client(clientConnector);
                 yield new HttpClientTransportOverHTTP2(http2Client);
             }
             case H3 ->

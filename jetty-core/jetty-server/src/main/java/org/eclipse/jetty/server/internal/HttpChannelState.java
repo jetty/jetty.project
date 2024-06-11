@@ -437,7 +437,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Notify the failure listeners only once.
                 Consumer<Throwable> onFailure = _onFailure;
                 _onFailure = null;
-                Runnable invokeOnFailureListeners = onFailure == null ? null : () ->
+                Runnable invokeOnFailureListeners = onFailure == null || !getHttpConfiguration().isNotifyRemoteAsyncErrors() ? null : () ->
                 {
                     try
                     {
