@@ -1546,7 +1546,7 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testStartAsyncThenClientResetWithoutRemoteErrorNotification(boolean notify) throws Exception
+    public void testStartAsyncThenClientResetRemoteErrorNotification(boolean notify) throws Exception
     {
         httpConfig.setNotifyRemoteAsyncErrors(notify);
 

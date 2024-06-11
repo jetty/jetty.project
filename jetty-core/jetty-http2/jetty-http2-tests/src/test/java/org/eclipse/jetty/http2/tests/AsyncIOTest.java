@@ -254,7 +254,7 @@ public class AsyncIOTest extends AbstractTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testClientResetWithoutRemoteErrorNotification(boolean notify) throws Exception
+    public void testClientResetRemoteErrorNotification(boolean notify) throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Response> responseRef = new AtomicReference<>();
