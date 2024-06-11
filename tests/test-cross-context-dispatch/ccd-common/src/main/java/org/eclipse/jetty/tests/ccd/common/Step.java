@@ -54,8 +54,31 @@ public interface Step
             {
                 return new GetHttpSession();
             }
+            case "SET_HTTP_SESSION_ATTRIBUTE" ->
+            {
+                String name = parts[2];
+                String value = parts[3];
+                Property prop = new Property(name, value);
+                HttpSessionSetAttribute step = new HttpSessionSetAttribute(prop);
+                return step;
+            }
         }
         throw new RuntimeException("Unknown STEP type [" + parts[1] + "]");
+    }
+
+    public class HttpSessionSetAttribute implements Step
+    {
+        private Property property;
+
+        public HttpSessionSetAttribute(Property property)
+        {
+            this.property = property;
+        }
+
+        public Property getProperty()
+        {
+            return property;
+        }
     }
 
     public class GetHttpSession implements Step

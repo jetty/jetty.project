@@ -20,8 +20,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.tests.ccd.common.DispatchPlan;
+import org.eclipse.jetty.tests.ccd.common.Property;
 import org.eclipse.jetty.tests.ccd.common.Step;
 
 public class CCDServlet extends HttpServlet
@@ -72,6 +74,12 @@ public class CCDServlet extends HttpServlet
             else if (step instanceof Step.GetHttpSession getHttpSessionTask)
             {
                 req.getSession(true);
+            }
+            else if (step instanceof Step.HttpSessionSetAttribute sessionSetAttribute)
+            {
+                HttpSession session = req.getSession(true);
+                Property prop = sessionSetAttribute.getProperty();
+                session.setAttribute(prop.getName(), prop.getValue());
             }
             else
             {

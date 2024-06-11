@@ -21,7 +21,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.tests.ccd.common.DispatchPlan;
+import org.eclipse.jetty.tests.ccd.common.Property;
 import org.eclipse.jetty.tests.ccd.common.Step;
 
 public class CCDServlet extends HttpServlet
@@ -72,6 +74,12 @@ public class CCDServlet extends HttpServlet
             else if (step instanceof Step.GetHttpSession getHttpSessionTask)
             {
                 req.getSession(true);
+            }
+            else if (step instanceof Step.HttpSessionSetAttribute sessionSetAttribute)
+            {
+                HttpSession session = req.getSession(true);
+                Property prop = sessionSetAttribute.getProperty();
+                session.setAttribute(prop.getName(), prop.getValue());
             }
             else
             {

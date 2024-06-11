@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.tests.ccd.common.DispatchPlan;
 
@@ -43,6 +44,9 @@ public class DumpServlet extends HttpServlet
         }
 
         Properties props = new Properties();
+        props.setProperty("requestType", req.getClass().getName());
+        props.setProperty("responseType", resp.getClass().getName());
+
         props.setProperty("request.authType", Objects.toString(req.getAuthType(), NULL));
         props.setProperty("request.characterEncoding", Objects.toString(req.getCharacterEncoding(), NULL));
         props.setProperty("request.contentLength", Long.toString(req.getContentLengthLong()));
@@ -67,6 +71,20 @@ public class DumpServlet extends HttpServlet
         props.setProperty("request.requestURL", Objects.toString(req.getRequestURL(), NULL));
         props.setProperty("request.serverPort", Integer.toString(req.getServerPort()));
         props.setProperty("request.servletPath", Objects.toString(req.getServletPath(), NULL));
+
+        props.setProperty("request.session.exists", "false");
+        HttpSession httpSession = req.getSession(false);
+        if (httpSession != null)
+        {
+            props.setProperty("request.session.exists", "true");
+            List<String> attrNames = Collections.list(httpSession.getAttributeNames());
+            attrNames
+                .forEach((name) ->
+                {
+                    Object attrVal = httpSession.getAttribute(name);
+                    props.setProperty("session[" + name + "]", Objects.toString(attrVal, NULL));
+                });
+        }
 
         List<String> attrNames = Collections.list(req.getAttributeNames());
         attrNames
