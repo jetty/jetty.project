@@ -46,7 +46,6 @@ public class MultiPartConfig
     private final MultiPartCompliance compliance;
     private final ComplianceViolation.Listener listener;
 
-
     public MultiPartConfig(Path location, int maxFormKeys, long maxRequestSize, long maxFileSize, long fileSizeThreshold)
     {
         this(location, maxFormKeys, maxRequestSize, maxFileSize, fileSizeThreshold, 8 * 1024, MultiPartCompliance.RFC7578, null);

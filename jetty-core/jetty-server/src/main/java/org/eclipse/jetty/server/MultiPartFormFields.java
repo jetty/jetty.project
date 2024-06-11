@@ -27,14 +27,8 @@ public class MultiPartFormFields
 {
     public static CompletableFuture<MultiPartFormData.Parts> from(Request request, MultiPartConfig config)
     {
-        return from(request, request, config);
-    }
-
-    public static CompletableFuture<MultiPartFormData.Parts> from(Request request, Content.Source source, MultiPartConfig config)
-    {
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-
-        return from(source, request, contentType, config);
+        return from(request, request, contentType, config);
     }
 
     public static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config)
