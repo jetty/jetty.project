@@ -1553,30 +1553,32 @@ public class AsyncIOServletTest extends AbstractTest
         AtomicReference<AsyncEvent> errorAsyncEventRef = new AtomicReference<>();
         AtomicReference<HttpServletResponse> responseRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        start(Transport.H2C, new HttpServlet() {
+        start(Transport.H2C, new HttpServlet()
+        {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 AsyncContext asyncContext = request.startAsync();
-                asyncContext.addListener(new AsyncListener() {
+                asyncContext.addListener(new AsyncListener()
+                {
                     @Override
-                    public void onComplete(AsyncEvent event) throws IOException
+                    public void onComplete(AsyncEvent event)
                     {
                     }
 
                     @Override
-                    public void onTimeout(AsyncEvent event) throws IOException
+                    public void onTimeout(AsyncEvent event)
                     {
                     }
 
                     @Override
-                    public void onError(AsyncEvent event) throws IOException
+                    public void onError(AsyncEvent event)
                     {
                         errorAsyncEventRef.set(event);
                     }
 
                     @Override
-                    public void onStartAsync(AsyncEvent event) throws IOException
+                    public void onStartAsync(AsyncEvent event)
                     {
                     }
                 });

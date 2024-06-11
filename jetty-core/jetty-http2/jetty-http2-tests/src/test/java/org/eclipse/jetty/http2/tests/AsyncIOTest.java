@@ -261,7 +261,8 @@ public class AsyncIOTest extends AbstractTest
         AtomicReference<Throwable> failureRef = new AtomicReference<>();
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         httpConfiguration.setNotifyRemoteAsyncErrors(notify);
-        start(new Handler.Abstract() {
+        start(new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
