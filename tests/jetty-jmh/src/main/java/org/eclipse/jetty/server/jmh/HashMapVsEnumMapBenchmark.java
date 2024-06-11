@@ -13,11 +13,15 @@
 
 package org.eclipse.jetty.server.jmh;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -40,27 +44,72 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 public class HashMapVsEnumMapBenchmark
 {
     private static final HttpHeader[] HEADERS = HttpHeader.values();
-    private static final String[] HEADER_NAMES = {
-        "Content-Type", "Content-Length", "User-Agent", "Accept", "Authorization"
+    private static final HttpHeader[] HEADER_NAMES =
+    {
+        // These will be hits
+        HttpHeader.HOST,
+        HttpHeader.CONTENT_TYPE,
+        HttpHeader.CONTENT_LENGTH,
+        HttpHeader.ACCEPT,
+
+        // These will be misses
+        HttpHeader.TRANSFER_ENCODING,
+        HttpHeader.AUTHORIZATION
     };
+
+    private List<HttpField> newHeaders()
+    {
+        List<HttpField> list = new ArrayList<>();
+        list.add(new HttpField(HttpHeader.HOST, "Localhost"));
+        list.add(new HttpField(HttpHeader.CONTENT_TYPE, "application/json"));
+        list.add(new HttpField(HttpHeader.CONTENT_LENGTH, "123"));
+        list.add(new HttpField(HttpHeader.USER_AGENT, "JMH Benchmark"));
+        list.add(new HttpField(HttpHeader.ACCEPT, "application/json"));
+        return list;
+    }
+
+    @Benchmark
+    @OperationsPerInvocation(5)
+    public long testListLookup()
+    {
+        // Build the HashMap
+        List<HttpField> list = newHeaders();
+
+        // Perform lookups
+        long result = 0;
+        for (HttpHeader header : HEADER_NAMES)
+        {
+            for (HttpField field : list)
+            {
+                if (field.getHeader() == header)
+                {
+                    result ^= field.getValue().hashCode();
+                    break;
+                }
+            }
+        }
+        return result;
+    }
 
     @Benchmark
     @OperationsPerInvocation(5)
     public long testHashMapBuildAndLookup()
     {
         // Build the HashMap
-        Map<String, String> hashMap = new HashMap<>();
-        hashMap.put("Content-Type", "application/json");
-        hashMap.put("Content-Length", "123");
-        hashMap.put("User-Agent", "JMH Benchmark");
-        hashMap.put("Accept", "application/json");
-        hashMap.put("Authorization", "Bearer token");
+        List<HttpField> list = newHeaders();
+        Map<String, HttpField> hashMap = new HashMap<>();
+        for (HttpField field : list)
+        {
+            hashMap.put(field.getName(), field);
+        }
 
         // Perform lookups
         long result = 0;
-        for (String header : HEADER_NAMES)
+        for (HttpHeader header : HEADER_NAMES)
         {
-            result ^= hashMap.get(header).hashCode();
+            HttpField field = hashMap.get(header.asString());
+            if (field != null)
+                result ^= field.getValue().hashCode();
         }
         return result;
     }
@@ -70,29 +119,23 @@ public class HashMapVsEnumMapBenchmark
     public long testEnumMapBuildAndLookup()
     {
         // Build the EnumMap
-        Map<HttpHeader, String> enumMap = new EnumMap<>(HttpHeader.class);
-        enumMap.put(HttpHeader.CONTENT_TYPE, "application/json");
-        enumMap.put(HttpHeader.CONTENT_LENGTH, "123");
-        enumMap.put(HttpHeader.USER_AGENT, "JMH Benchmark");
-        enumMap.put(HttpHeader.ACCEPT, "application/json");
-        enumMap.put(HttpHeader.AUTHORIZATION, "Bearer token");
+        Map<HttpHeader, HttpField> enumMap = new EnumMap<>(HttpHeader.class);
+
+        List<HttpField> list = newHeaders();
+        for (HttpField field : list)
+        {
+            enumMap.put(field.getHeader(), field);
+        }
 
         // Perform lookups
         long result = 0;
         for (HttpHeader header : HEADERS)
         {
-            result ^= enumMap.get(header).hashCode();
+            HttpField field = enumMap.get(header);
+            if (field != null)
+                result ^= field.getValue().hashCode();
         }
         return result;
-    }
-
-    public enum HttpHeader
-    {
-        CONTENT_TYPE,
-        CONTENT_LENGTH,
-        USER_AGENT,
-        ACCEPT,
-        AUTHORIZATION
     }
 
     public static void main(String[] args) throws RunnerException
