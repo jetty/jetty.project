@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.tests.ccd.common;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.Handler;
@@ -53,6 +55,10 @@ public class DispatchPlanHandler extends Handler.Wrapper
             if (planName != null)
             {
                 Path planPath = plansDir.resolve(planName);
+                if (!Files.isRegularFile(planPath))
+                {
+                    callback.failed(new IOException("Unable to find: " + planPath));
+                }
                 dispatchPlan = DispatchPlan.read(planPath);
                 dispatchPlan.addEvent("Initial plan: %s", planName);
                 request.setAttribute(DispatchPlan.class.getName(), dispatchPlan);

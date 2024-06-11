@@ -27,8 +27,8 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.ccd.common.DispatchPlan;
+import org.eclipse.jetty.tests.ccd.common.HttpRequest;
 import org.eclipse.jetty.tests.ccd.common.Property;
-import org.eclipse.jetty.tests.ccd.common.steps.HttpRequestStep;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -80,12 +80,12 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
         {
             List<Path> testPlans = plansStream
                 .filter(Files::isRegularFile)
-                .filter((file) -> file.getFileName().toString().endsWith(".json"))
+                .filter((file) -> file.getFileName().toString().endsWith(".txt"))
                 .toList();
 
-            for (Path planJson : testPlans)
+            for (Path plansText : testPlans)
             {
-                plans.add(Arguments.of(DispatchPlan.read(planJson)));
+                plans.add(Arguments.of(DispatchPlan.read(plansText)));
             }
         }
 
@@ -96,7 +96,7 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
     @MethodSource("dispatchPlans")
     public void testRedispatch(DispatchPlan dispatchPlan) throws Exception
     {
-        HttpRequestStep requestStep = dispatchPlan.getRequestStep();
+        HttpRequest requestStep = dispatchPlan.getRequestStep();
         assertNotNull(requestStep);
         ContentResponse response = client.newRequest("localhost", jettyBase.httpPort)
             .method(requestStep.getMethod())
@@ -119,7 +119,7 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
         assertThat(responseProps.getProperty("dispatchPlan.events.count"), is(Integer.toString(expectedEventCount)));
         for (int i = 0; i < expectedEventCount; i++)
         {
-            assertThat("event[" + i + "]", responseProps.getProperty("dispatchPlan.event[" + i + "]"), is(dispatchPlan.getExpectedEvents().get(i)));
+            assertThat("id[" + dispatchPlan.id() + "] event[" + i + "]", responseProps.getProperty("dispatchPlan.event[" + i + "]"), is(dispatchPlan.getExpectedEvents().get(i)));
         }
 
         if (dispatchPlan.getExpectedContentType() != null)
@@ -129,7 +129,7 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
 
         for (Property expectedProperty : dispatchPlan.getExpectedProperties())
         {
-            assertProperty(responseProps, expectedProperty.getName(), is(expectedProperty.getValue()));
+            assertProperty(dispatchPlan.id(), responseProps, expectedProperty.getName(), is(expectedProperty.getValue()));
         }
     }
 }

@@ -28,6 +28,16 @@ public class Property
         this.value = value;
     }
 
+    public static Property parse(String line)
+    {
+        String[] parts = line.split("\\|");
+        String name = parts[1];
+        String value = null;
+        if (parts.length > 2)
+            value = parts[2];
+        return new Property(name, value);
+    }
+
     public String getName()
     {
         return name;

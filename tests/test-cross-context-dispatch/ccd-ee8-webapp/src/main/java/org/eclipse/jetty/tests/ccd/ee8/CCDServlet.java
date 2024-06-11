@@ -23,9 +23,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.tests.ccd.common.DispatchPlan;
 import org.eclipse.jetty.tests.ccd.common.Step;
-import org.eclipse.jetty.tests.ccd.common.steps.ContextRedispatchStep;
-import org.eclipse.jetty.tests.ccd.common.steps.GetHttpSessionStep;
-import org.eclipse.jetty.tests.ccd.common.steps.RequestDispatchStep;
 
 public class CCDServlet extends HttpServlet
 {
@@ -45,7 +42,7 @@ public class CCDServlet extends HttpServlet
 
         while ((step = dispatchPlan.popStep()) != null)
         {
-            if (step instanceof ContextRedispatchStep contextRedispatchStep)
+            if (step instanceof Step.ContextRedispatch contextRedispatchStep)
             {
                 ServletContext otherContext = getServletContext().getContext(contextRedispatchStep.getContextPath());
                 if (otherContext == null)
@@ -60,7 +57,7 @@ public class CCDServlet extends HttpServlet
                 }
                 return;
             }
-            else if (step instanceof RequestDispatchStep requestDispatchStep)
+            else if (step instanceof Step.RequestDispatch requestDispatchStep)
             {
                 RequestDispatcher dispatcher = req.getRequestDispatcher(requestDispatchStep.getDispatchPath());
                 if (dispatcher == null)
@@ -72,7 +69,7 @@ public class CCDServlet extends HttpServlet
                 }
                 return;
             }
-            else if (step instanceof GetHttpSessionStep getHttpSessionTask)
+            else if (step instanceof Step.GetHttpSession getHttpSessionTask)
             {
                 req.getSession(true);
             }

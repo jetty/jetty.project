@@ -11,18 +11,27 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tests.ccd.common.steps;
+package org.eclipse.jetty.tests.ccd.common;
 
 import java.util.Map;
 
-import org.eclipse.jetty.tests.ccd.common.Step;
-
-public class HttpRequestStep implements Step
+public class HttpRequest implements Step
 {
     private String method;
     private String requestPath;
     private String body;
     private Map<String, String> headers;
+
+    public static HttpRequest parse(String line)
+    {
+        String[] parts = line.split("\\|");
+        HttpRequest request = new HttpRequest();
+        request.setMethod(parts[1]);
+        request.setRequestPath(parts[2]);
+        if (parts.length > 4)
+            request.setBody(parts[3]);
+        return request;
+    }
 
     public String getMethod()
     {

@@ -22,14 +22,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.tests.ccd.common.steps.ContextRedispatchStep;
-import org.eclipse.jetty.tests.ccd.common.steps.GetHttpSessionStep;
-import org.eclipse.jetty.tests.ccd.common.steps.HttpRequestStep;
-import org.eclipse.jetty.tests.ccd.common.steps.RequestDispatchStep;
-import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.ajax.JSONEnumConvertor;
-import org.eclipse.jetty.util.ajax.JSONPojoConvertor;
-
 public class DispatchPlan
 {
     private final Deque<Step> steps = new LinkedBlockingDeque<>();
@@ -37,7 +29,7 @@ public class DispatchPlan
     private final List<String> expectedEvents = new ArrayList<>();
     private final List<Property> expectedProperties = new ArrayList<>();
     private final List<String> expectedOutput = new ArrayList<>();
-    private HttpRequestStep requestStep;
+    private HttpRequest requestStep;
     private String id;
     private String expectedContentType;
 
@@ -45,39 +37,48 @@ public class DispatchPlan
     {
     }
 
-    private static JSON newJSON()
+    public static DispatchPlan read(Path inputText) throws IOException
     {
-        JSON json = new JSON();
-        json.addConvertor(DispatchPlan.class, new JSONPojoConvertor(DispatchPlan.class));
-        json.addConvertor(DispatchType.class, new JSONEnumConvertor());
-        List<Class<?>> classes = List.of(
-            ContextRedispatchStep.class,
-            RequestDispatchStep.class,
-            GetHttpSessionStep.class,
-            HttpRequestStep.class,
-            Property.class
-        );
-        for (Class<?> clazz : classes)
-        {
-            json.addConvertor(clazz, new JSONPojoConvertor(clazz));
-        }
-        return json;
-    }
+        DispatchPlan plan = new DispatchPlan();
 
-    public static DispatchPlan read(Path inputJson) throws IOException
-    {
-        JSON json = newJSON();
-        String rawJson = Files.readString(inputJson, StandardCharsets.UTF_8);
-        DispatchPlan plan = (DispatchPlan)json.fromJSON(rawJson);
-        plan.id = inputJson.getFileName().toString();
+        plan.id = inputText.getFileName().toString();
+
+        for (String line : Files.readAllLines(inputText, StandardCharsets.UTF_8))
+        {
+            if (line.startsWith("#"))
+                continue; // skip
+            if (line.startsWith("REQUEST|"))
+            {
+                plan.setRequestStep(HttpRequest.parse(line));
+            }
+            else if (line.startsWith("STEP|"))
+            {
+                plan.addStep(Step.parse(line));
+            }
+            else if (line.startsWith("EXPECTED_CONTENT_TYPE|"))
+            {
+                plan.setExpectedContentType(dropType(line));
+            }
+            else if (line.startsWith("EXPECTED_EVENT|"))
+            {
+                plan.addExpectedEvent(dropType(line));
+            }
+            else if (line.startsWith("EXPECTED_PROP|"))
+            {
+                plan.addExpectedProperty(Property.parse(line));
+            }
+            else if (line.startsWith("EXPECTED_OUTPUT|"))
+            {
+                plan.addExpectedOutput(dropType(line));
+            }
+        }
         return plan;
     }
 
-    public static void write(DispatchPlan plan, Path outputJson) throws IOException
+    private static String dropType(String line)
     {
-        JSON json = newJSON();
-        String planJson = json.toJSON(plan);
-        Files.writeString(outputJson, planJson, StandardCharsets.UTF_8);
+        int idx = line.indexOf("|");
+        return line.substring(idx + 1);
     }
 
     public void addEvent(String format, Object... args)
@@ -107,7 +108,7 @@ public class DispatchPlan
 
     public void addStep(Step step)
     {
-        steps.push(step);
+        steps.add(step);
     }
 
     public List<String> getEvents()
@@ -158,12 +159,12 @@ public class DispatchPlan
         expectedProperties.addAll(List.of(properties));
     }
 
-    public HttpRequestStep getRequestStep()
+    public HttpRequest getRequestStep()
     {
         return requestStep;
     }
 
-    public void setRequestStep(HttpRequestStep requestStep)
+    public void setRequestStep(HttpRequest requestStep)
     {
         this.requestStep = requestStep;
     }

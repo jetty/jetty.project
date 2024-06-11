@@ -74,7 +74,7 @@ public class DumpServlet extends HttpServlet
             .forEach((name) ->
             {
                 Object attrVal = req.getAttribute(name);
-                props.setProperty("request.attr[" + name + "]", Objects.toString(attrVal, NULL));
+                props.setProperty("attr[" + name + "]", Objects.toString(attrVal, NULL));
             });
 
         List<String> headerNames = Collections.list(req.getHeaderNames());
@@ -82,7 +82,7 @@ public class DumpServlet extends HttpServlet
             .forEach((name) ->
             {
                 String headerVal = req.getHeader(name);
-                props.setProperty("request.header[" + name + "]", Objects.toString(headerVal, NULL));
+                props.setProperty("header[" + name + "]", Objects.toString(headerVal, NULL));
             });
 
         if (dispatchPlan != null)

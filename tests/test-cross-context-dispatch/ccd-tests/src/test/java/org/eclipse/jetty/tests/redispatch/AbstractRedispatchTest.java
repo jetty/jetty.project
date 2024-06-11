@@ -174,4 +174,9 @@ public abstract class AbstractRedispatchTest
     {
         assertThat("Property [" + name + "]", props.getProperty(name), valueMatcher);
     }
+
+    public static void assertProperty(String id, Properties props, String name, Matcher<String> valueMatcher)
+    {
+        assertThat("id[" + id + "] property[" + name + "]", props.getProperty(name), valueMatcher);
+    }
 }
