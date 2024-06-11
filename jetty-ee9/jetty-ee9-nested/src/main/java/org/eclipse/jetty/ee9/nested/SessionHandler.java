@@ -78,6 +78,8 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
      * finished being handled, then the sessions have their reference
      * counts decremented, potentially leading to eviction from their cache,
      * as appropriate to the configuration of that cache.
+     *
+     * This wrapper replaces the AbstractSessionManager.SessionStreamWrapper.
      */
     private static class SessionStreamWrapper extends HttpStream.Wrapper
     {

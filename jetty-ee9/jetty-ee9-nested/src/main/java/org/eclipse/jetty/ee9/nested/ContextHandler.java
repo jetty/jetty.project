@@ -2535,6 +2535,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             addManagedSession(managedSession);
         }
 
+        /**
+         * Add a session to the list of sessions maintained by this request.
+         * A session will be added whenever a request visits a new context
+         * that already has a session associated with it, or one is created
+         * during the dispatch.
+         *
+         * @param managedSession the session to add
+         */
         private void addManagedSession(ManagedSession managedSession)
         {
             if (managedSession == null)

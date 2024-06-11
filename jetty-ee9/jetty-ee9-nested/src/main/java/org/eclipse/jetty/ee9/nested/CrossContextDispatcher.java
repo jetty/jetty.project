@@ -296,7 +296,7 @@ class CrossContextDispatcher implements RequestDispatcher
         ContextHandler.CoreContextRequest coreContextRequest = baseRequest.getCoreRequest();
         org.eclipse.jetty.server.Response coreResponse = coreContextRequest.getHttpChannel().getCoreResponse();
 
-        //if including to the same environment we can take a shortcut
+        //if including to the same environment we must mutate this request for Object wrapper identity
         if (_targetContext.getTargetContext().getContextHandler() instanceof ContextHandler.CoreContextHandler coreContextHandler)
         {
             new Dispatcher(coreContextHandler.getContextHandler(), _uri, _decodedPathInContext).include(httpServletRequest, httpServletResponse);
