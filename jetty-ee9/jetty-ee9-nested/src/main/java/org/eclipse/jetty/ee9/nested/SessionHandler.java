@@ -534,6 +534,8 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
                     //check if we have changed contexts during the dispatch
                     if (oldSessionManager != _sessionManager)
                     {
+                        _sessionManager.addSessionStreamWrapper(coreRequest);
+
                         //find any existing session for this context that has already been accessed
                         currentSession = coreRequest.getManagedSession(_sessionManager);
 
