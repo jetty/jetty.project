@@ -248,7 +248,7 @@ class CrossContextDispatcher implements RequestDispatcher
         org.eclipse.jetty.server.Response coreResponse = coreContextRequest.getHttpChannel().getCoreResponse();
         baseResponse.resetForForward();
 
-        //if forwarding to the same environment we can take a shortcut
+        //if forwarding to the same environment we must mutate this request for Object wrapper identity
         if (_targetContext.getTargetContext().getContextHandler() instanceof ContextHandler.CoreContextHandler coreContextHandler)
         {
             new Dispatcher(coreContextHandler.getContextHandler(), _uri, _decodedPathInContext).forward(httpServletRequest, httpServletResponse, DispatcherType.FORWARD);
