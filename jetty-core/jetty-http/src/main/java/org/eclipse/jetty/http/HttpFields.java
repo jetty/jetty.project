@@ -44,10 +44,10 @@ import java.util.stream.StreamSupport;
  * typically used in server-side HTTP responses and client-side HTTP requests.</p>
  *
  * <p>Access is always more efficient using {@link HttpHeader} keys rather than {@link String} field names.</p>
- * 
+ *
  * <p>The primary implementations of {@code HttpFields} have been optimized assuming few
  * lookup operations, thus typically if many {@link HttpField}s need to looked up, it may be
- * better to use an {@link Iterator} or the {@link #asMappedAccess()} method.</p>
+ * better to use an {@link Iterator} to find multiple fields in a single iteration.</p>
  */
 public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 {
@@ -201,18 +201,6 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     default HttpFields asImmutable()
     {
         return HttpFields.build(this).asImmutable();
-    }
-
-    /**
-     * <p>Returns an immutable version of this {@code HttpFields} instance, possibly optimized for random field
-     * access via {@link Map} implementations. If this {@code HttpFields} is mutable, then subsequent modifications
-     * are not reflected in the instance returned by this method.</p>
-     *
-     * @return an {@link HttpFields} instance, which may be optimized for random access.
-     */
-    default HttpFields asMappedAccess()
-    {
-        return asImmutable();
     }
 
     /**

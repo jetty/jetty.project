@@ -14,18 +14,9 @@
 package org.eclipse.jetty.http;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.stream.Stream;
 
 /**
@@ -56,12 +47,6 @@ class ImmutableHttpFields implements HttpFields
     public HttpFields asImmutable()
     {
         return this;
-    }
-
-    @Override
-    public HttpFields asMappedAccess()
-    {
-        return new RandomAccess(this);
     }
 
     @Override
@@ -235,148 +220,6 @@ class ImmutableHttpFields implements HttpFields
         public void set(HttpField field)
         {
             throw new UnsupportedOperationException();
-        }
-    }
-
-    /**
-     * An immutable {@link HttpFields} instance, optimized for random access to
-     * single valued fields
-     */
-    private static class RandomAccess implements HttpFields
-    {
-        private final HttpFields _httpFields;
-        private final EnumMap<HttpHeader, HttpField> _enumMap = new EnumMap<>(HttpHeader.class);
-        private final Map<String, HttpField> _stringMap;
-
-        RandomAccess(HttpFields httpFields)
-        {
-            _httpFields = Objects.requireNonNull(httpFields);
-            Map<String, HttpField> stringMap = null;
-            for (HttpField field : httpFields)
-            {
-                HttpHeader header = field.getHeader();
-                if (header != null)
-                {
-                    _enumMap.putIfAbsent(header, field);
-                }
-                else
-                {
-                    if (stringMap == null)
-                        stringMap = new TreeMap<>(String::compareToIgnoreCase);
-                    stringMap.putIfAbsent(field.getName(), field);
-                }
-            }
-            _stringMap = stringMap == null ? Collections.emptyMap() : stringMap;
-        }
-
-        @Override
-        public HttpFields asImmutable()
-        {
-            return this;
-        }
-
-        @Override
-        public String get(HttpHeader header)
-        {
-            HttpField field = _enumMap.get(header);
-            return field == null ? null : field.getValue();
-        }
-
-        @Override
-        public String get(String name)
-        {
-            HttpField field = _stringMap.get(name);
-            if (field == null)
-                field = _enumMap.get(HttpHeader.CACHE.get(name));
-            return field == null ? null : field.getValue();
-        }
-
-        @Override
-        public boolean contains(HttpHeader header)
-        {
-            return _enumMap.containsKey(header);
-        }
-
-        @Override
-        public boolean contains(EnumSet<HttpHeader> headers)
-        {
-            for (HttpHeader header : headers)
-                if (_enumMap.containsKey(header))
-                    return true;
-            return false;
-        }
-
-        @Override
-        public boolean contains(String name)
-        {
-            return _stringMap.containsKey(name) || _enumMap.containsKey(HttpHeader.CACHE.get(name));
-        }
-
-        @Override
-        public HttpField getField(HttpHeader header)
-        {
-            return _enumMap.get(header);
-        }
-
-        @Override
-        public HttpField getField(String name)
-        {
-            HttpField field = _stringMap.get(name);
-            return field == null ? _enumMap.get(HttpHeader.CACHE.get(name)) : field;
-        }
-
-        @Override
-        public Iterator<HttpField> iterator()
-        {
-            return _httpFields.iterator();
-        }
-
-        @Override
-        public ListIterator<HttpField> listIterator()
-        {
-            return _httpFields.listIterator();
-        }
-
-        @Override
-        public int size()
-        {
-            return _httpFields.size();
-        }
-
-        @Override
-        public ListIterator<HttpField> listIterator(int index)
-        {
-            return _httpFields.listIterator(index);
-        }
-
-        @Override
-        public Set<String> getFieldNamesCollection()
-        {
-            LinkedHashSet<String> set = new LinkedHashSet<>()
-            {
-                @Override
-                public boolean contains(Object o)
-                {
-                    if (o instanceof String s)
-                        return _stringMap.containsKey(s) || _enumMap.containsKey(HttpHeader.CACHE.get(s));
-                    return false;
-                }
-            };
-            TreeSet<String> seenByName = null;
-            for (HttpField field : _httpFields)
-            {
-                HttpHeader header = field.getHeader();
-                if (_enumMap.containsKey(header))
-                    set.add(header.asString());
-                else if (_stringMap.containsKey(field.getName()))
-                {
-                    if (seenByName == null)
-                        seenByName = new TreeSet<>(String::compareToIgnoreCase);
-                    if (seenByName.add(field.getName()))
-                        set.add(field.getName());
-                }
-            }
-            return set;
         }
     }
 }
