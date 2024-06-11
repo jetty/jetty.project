@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CallbackTest
@@ -292,13 +293,7 @@ public class CallbackTest
             }
         };
 
-        Throwable abort = new Throwable();
-        legacyCb.abort(abort);
-
-        // Abort is seen as failure
-        assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertTrue(callback._completion.isMarked());
+        assertThrows(UnsupportedOperationException.class, () -> legacyCb.abort(new Throwable()));
     }
 
     private static class TestAbstractCB extends Callback.Abstract
@@ -331,7 +326,7 @@ public class CallbackTest
         }
 
         @Override
-        public void completed()
+        public void onCompleted()
         {
             _completed.countDown();
         }

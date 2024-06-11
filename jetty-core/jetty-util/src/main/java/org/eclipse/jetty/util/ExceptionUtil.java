@@ -343,6 +343,22 @@ public class ExceptionUtil
         }
     }
 
+    public static void callThen(Runnable first, Runnable second)
+    {
+        try
+        {
+            first.run();
+        }
+        catch (Throwable t)
+        {
+            // ignored
+        }
+        finally
+        {
+            second.run();
+        }
+    }
+
     private ExceptionUtil()
     {
     }

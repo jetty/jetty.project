@@ -590,7 +590,7 @@ public class ErrorHandler implements Request.Handler
         }
 
         @Override
-        public void completed()
+        public void onCompleted()
         {
             _retainable.release();
         }

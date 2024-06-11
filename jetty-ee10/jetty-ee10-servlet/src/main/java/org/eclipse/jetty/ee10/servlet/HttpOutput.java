@@ -1758,7 +1758,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void completed()
+        public void onCompleted()
         {
             releaseBuffer();
         }
