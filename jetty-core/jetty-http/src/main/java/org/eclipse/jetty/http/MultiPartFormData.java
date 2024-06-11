@@ -98,14 +98,25 @@ public class MultiPartFormData
      */
     public static CompletableFuture<Parts> from(Attributes attributes, MultiPartCompliance compliance, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
-        @SuppressWarnings("unchecked")
-        CompletableFuture<Parts> futureParts = (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
+        CompletableFuture<Parts> futureParts = get(attributes);
         if (futureParts == null)
         {
             futureParts = parse.apply(new Parser(boundary, compliance, listener));
             attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
         }
         return futureParts;
+    }
+
+    /**
+     * Returns {@code multipart/form-data} parts if they have already been created.
+     *
+     * @param attributes the attributes where the futureParts are tracked
+     * @return the future parts
+     */
+    @SuppressWarnings("unchecked")
+    public static CompletableFuture<Parts> get(Attributes attributes)
+    {
+        return (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
     }
 
     /**
@@ -221,7 +232,7 @@ public class MultiPartFormData
         private final MultiPart.Parser parser;
         private final MultiPartCompliance compliance;
         private final ComplianceViolation.Listener complianceListener;
-        private boolean useFilesForPartsWithoutFileName;
+        private boolean useFilesForPartsWithoutFileName = true;
         private Path filesDirectory;
         private long maxFileSize = -1;
         private long maxMemoryFileSize;
@@ -450,17 +461,17 @@ public class MultiPartFormData
             public void onPartContent(Content.Chunk chunk)
             {
                 ByteBuffer buffer = chunk.getByteBuffer();
+                long maxFileSize = getMaxFileSize();
+                fileSize += buffer.remaining();
+                if (maxFileSize >= 0 && fileSize > maxFileSize)
+                {
+                    onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxFileSize)));
+                    return;
+                }
+
                 String fileName = getFileName();
                 if (fileName != null || isUseFilesForPartsWithoutFileName())
                 {
-                    long maxFileSize = getMaxFileSize();
-                    fileSize += buffer.remaining();
-                    if (maxFileSize >= 0 && fileSize > maxFileSize)
-                    {
-                        onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxFileSize)));
-                        return;
-                    }
-
                     long maxMemoryFileSize = getMaxMemoryFileSize();
                     if (maxMemoryFileSize >= 0)
                     {
