@@ -352,7 +352,7 @@ public class ContextProvider extends ScanningAppProvider
             //applying the environment xml file.
             String contextHandlerClassName = app.getProperties().get(Deployable.CONTEXT_HANDLER_CLASS);
             if (contextHandlerClassName != null)
-	                context = Class.forName(contextHandlerClassName).getDeclaredConstructor().newInstance();
+                context = Class.forName(contextHandlerClassName).getDeclaredConstructor().newInstance();
 
             //add in environment-specific properties
             String env = app.getEnvironmentName() == null ? "" : app.getEnvironmentName();
