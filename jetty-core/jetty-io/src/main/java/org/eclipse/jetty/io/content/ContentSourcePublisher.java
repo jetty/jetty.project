@@ -184,8 +184,8 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
 
             if (chunk == null)
             {
-                content.demand(this::iterate);
-                return Action.IDLE;
+                content.demand(this::succeeded);
+                return Action.SCHEDULED;
             }
 
             if (Content.Chunk.isFailure(chunk))
