@@ -81,7 +81,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         {
             // As per rule 2.13, we MUST consider subscription cancelled and
             // MUST raise this error condition in a fashion that is adequate for the runtime environment.
-            subscription.cancel(new Suppressed(err));
+            subscription.cancel(new SuppressedException(err));
             if (LOG.isTraceEnabled())
                 LOG.trace("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
         }
@@ -168,7 +168,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
                 {
                     if (cancelled == COMPLETED)
                         this.subscriber.onComplete();
-                    else if (!(cancelled instanceof Suppressed))
+                    else if (!(cancelled instanceof SuppressedException))
                         this.subscriber.onError(cancelled);
                 }
                 catch (Throwable err)
@@ -201,7 +201,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
             }
             catch (Throwable err)
             {
-                cancel(new Suppressed(err));
+                cancel(new SuppressedException(err));
                 if (LOG.isTraceEnabled())
                     LOG.trace("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
             }
@@ -243,7 +243,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         @Override
         public void cancel()
         {
-            cancel(new Cancelled());
+            cancel(new CancelledException());
         }
 
         public void cancel(Throwable cause)
@@ -289,22 +289,22 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         // java.lang.IllegalArgumentException if the argument is <= 0.
     }
 
-    private static class Suppressed extends Exception
+    private static class SuppressedException extends Exception
     {
-        Suppressed(String message)
+        SuppressedException(String message)
         {
             super(message);
         }
 
-        Suppressed(Throwable cause)
+        SuppressedException(Throwable cause)
         {
             super(cause.getMessage(), cause);
         }
     }
 
-    private static class Cancelled extends Suppressed
+    private static class CancelledException extends SuppressedException
     {
-        Cancelled()
+        CancelledException()
         {
             super("Subscription was cancelled");
         }
