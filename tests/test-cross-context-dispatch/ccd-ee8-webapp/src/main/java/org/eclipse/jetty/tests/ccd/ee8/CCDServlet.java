@@ -14,6 +14,7 @@
 package org.eclipse.jetty.tests.ccd.ee8;
 
 import java.io.IOException;
+import java.util.Objects;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -73,11 +74,27 @@ public class CCDServlet extends HttpServlet
             }
             else if (step instanceof Step.GetHttpSession getHttpSessionTask)
             {
-                req.getSession(true);
+                HttpSession session = req.getSession(false);
+                if (session == null)
+                {
+                    dispatchPlan.addEvent("%s.service() HttpSession is null",
+                        this.getClass().getName());
+                }
+                else
+                {
+                    String name = getHttpSessionTask.getName();
+                    Object value = session.getAttribute(name);
+                    dispatchPlan.addEvent("%s.service() HttpSession exists: [%s]=[%s]",
+                        this.getClass().getName(),
+                        name,
+                        Objects.toString(value)
+                        );
+                }
             }
             else if (step instanceof Step.HttpSessionSetAttribute sessionSetAttribute)
             {
                 HttpSession session = req.getSession(true);
+                req.setAttribute("session[" + req.getRequestURI() + "].id", session.getId());
                 Property prop = sessionSetAttribute.getProperty();
                 session.setAttribute(prop.getName(), prop.getValue());
             }

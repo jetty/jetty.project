@@ -42,6 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -130,6 +131,24 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
         for (Property expectedProperty : dispatchPlan.getExpectedProperties())
         {
             assertProperty(dispatchPlan.id(), responseProps, expectedProperty.getName(), is(expectedProperty.getValue()));
+        }
+
+        // Ensure that all seen session ids are the same.
+        if (dispatchPlan.isExpectedSessionIds())
+        {
+            List<String> attrNames = responseProps.keySet().stream()
+                .map(Object::toString)
+                .filter((name) -> name.startsWith("attr[session["))
+                .toList();
+
+            if (attrNames.size() > 1)
+            {
+                String expectedId = responseProps.getProperty(attrNames.get(0));
+                for (String name : attrNames)
+                {
+                    assertEquals(expectedId, responseProps.getProperty(name));
+                }
+            }
         }
     }
 }

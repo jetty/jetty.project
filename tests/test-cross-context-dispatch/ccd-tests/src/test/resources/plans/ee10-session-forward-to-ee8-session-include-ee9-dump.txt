@@ -1,15 +1,31 @@
 REQUEST|GET|/ccd-ee10/redispatch/ee10
-STEP|SET_HTTP_SESSION_ATTRIBUTE|test-name|test-value-ee10
+# we reach ee10
+STEP|SET_HTTP_SESSION_ATTRIBUTE|test-name-10|test-value-ee10
 STEP|CONTEXT_FORWARD|/ccd-ee8|/redispatch/ee8
-STEP|SET_HTTP_SESSION_ATTRIBUTE|test-name|test-value-ee8
+# we reach ee8
+STEP|GET_HTTP_SESSION_ATTRIBUTE|test-name-10
+STEP|SET_HTTP_SESSION_ATTRIBUTE|test-name-8|test-value-ee8
+STEP|GET_HTTP_SESSION_ATTRIBUTE|test-name-10
 STEP|CONTEXT_FORWARD|/ccd-ee9|/redispatch/ee9
+# we reach ee9
+STEP|GET_HTTP_SESSION_ATTRIBUTE|test-name-10
 STEP|SET_HTTP_SESSION_ATTRIBUTE|test-name|test-value-ee9
+STEP|GET_HTTP_SESSION_ATTRIBUTE|test-name-10
+STEP|GET_HTTP_SESSION_ATTRIBUTE|test-name-8
 STEP|REQUEST_INCLUDE|/dump/ee9
 EXPECTED_EVENT|Initial plan: ee10-session-forward-to-ee8-session-include-ee9-dump.txt
 EXPECTED_EVENT|DispatchPlanHandler.handle() method=GET path-query=/ccd-ee10/redispatch/ee10
+# we reach ee10
 EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee10.CCDServlet.service() dispatcherType=REQUEST method=GET requestUri=/ccd-ee10/redispatch/ee10
+# we reach ee8
 EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee8.CCDServlet.service() dispatcherType=FORWARD method=GET requestUri=/ccd-ee8/redispatch/ee8
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee8.CCDServlet.service() HttpSession is null
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee8.CCDServlet.service() HttpSession exists: [test-name-10]=[null]
+# we reach ee9
 EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee9.CCDServlet.service() dispatcherType=FORWARD method=GET requestUri=/ccd-ee9/redispatch/ee9
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee9.CCDServlet.service() HttpSession is null
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee9.CCDServlet.service() HttpSession exists: [test-name-10]=[null]
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee9.CCDServlet.service() HttpSession exists: [test-name-8]=[null]
 EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee9.DumpServlet.service() dispatcherType=INCLUDE method=GET requestUri=/ccd-ee9/redispatch/ee9
 EXPECTED_PROP|request.dispatcherType|INCLUDE
 EXPECTED_PROP|request.requestURI|/ccd-ee9/redispatch/ee9
@@ -31,3 +47,4 @@ EXPECTED_PROP|attr[javax.servlet.forward.context_path]|/ccd-ee8
 EXPECTED_PROP|attr[javax.servlet.forward.path_info]|/ee8
 EXPECTED_PROP|attr[javax.servlet.forward.request_uri]|/ccd-ee8/redispatch/ee8
 EXPECTED_PROP|attr[javax.servlet.forward.servlet_path]|/redispatch
+EXPECTED_SESSION_IDS|true

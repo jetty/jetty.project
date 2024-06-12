@@ -32,6 +32,8 @@ public class DispatchPlan
     private HttpRequest requestStep;
     private String id;
     private String expectedContentType;
+    // if true, assert that all Session.id seen in request attributes are the same id.
+    private boolean expectedSessionIds;
 
     public DispatchPlan()
     {
@@ -70,6 +72,10 @@ public class DispatchPlan
             else if (line.startsWith("EXPECTED_OUTPUT|"))
             {
                 plan.addExpectedOutput(dropType(line));
+            }
+            else if (line.startsWith("EXPECTED_SESSION_IDS|"))
+            {
+                plan.setExpectedSessionIds(Boolean.parseBoolean(dropType(line)));
             }
         }
         return plan;
@@ -179,6 +185,16 @@ public class DispatchPlan
         steps.clear();
         for (Step step: stepArr)
             steps.add(step);
+    }
+
+    public boolean isExpectedSessionIds()
+    {
+        return expectedSessionIds;
+    }
+
+    public void setExpectedSessionIds(boolean expectedSessionIds)
+    {
+        this.expectedSessionIds = expectedSessionIds;
     }
 
     public String id()

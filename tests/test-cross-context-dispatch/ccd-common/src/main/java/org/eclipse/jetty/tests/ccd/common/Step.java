@@ -50,9 +50,11 @@ public interface Step
                 step.setDispatchPath(parts[2]);
                 return step;
             }
-            case "GET_HTTP_SESSION" ->
+            case "GET_HTTP_SESSION_ATTRIBUTE" ->
             {
-                return new GetHttpSession();
+                GetHttpSession step = new GetHttpSession();
+                step.setName(parts[2]);
+                return step;
             }
             case "SET_HTTP_SESSION_ATTRIBUTE" ->
             {
@@ -83,6 +85,17 @@ public interface Step
 
     public class GetHttpSession implements Step
     {
+        private String name;
+
+        public String getName()
+        {
+            return name;
+        }
+
+        public void setName(String name)
+        {
+            this.name = name;
+        }
     }
 
     public class ContextRedispatch implements Step
