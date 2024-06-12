@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -92,6 +93,11 @@ public class PathContentSource implements Content.Source
         return byteBufferPool.getSize();
     }
 
+    /**
+     * @param bufferSize The size of the buffer
+     * @deprecated Use {@link InputStreamContentSource#InputStreamContentSource(InputStream, ByteBufferPool.Sized)}
+     */
+    @Deprecated(forRemoval = true)
     public void setBufferSize(int bufferSize)
     {
         try (AutoLock ignored = lock.lock())
@@ -106,6 +112,11 @@ public class PathContentSource implements Content.Source
         return byteBufferPool.isDirect();
     }
 
+    /**
+     * @param useDirectByteBuffers {@code true} if direct buffers should be used
+     * @deprecated Use {@link InputStreamContentSource#InputStreamContentSource(InputStream, ByteBufferPool.Sized)}
+     */
+    @Deprecated(forRemoval = true)
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
         try (AutoLock ignored = lock.lock())

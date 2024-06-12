@@ -73,13 +73,13 @@ public class ContentSourceTest
     private static ArrayByteBufferPool.Tracking byteBufferPool;
 
     @BeforeEach
-    public void beforeAll()
+    public void beforeEach()
     {
         byteBufferPool = new ArrayByteBufferPool.Tracking();
     }
 
     @AfterEach
-    public void afterAll()
+    public void afterEach()
     {
         if (!byteBufferPool.getLeaks().isEmpty())
             byteBufferPool.dumpLeaks();

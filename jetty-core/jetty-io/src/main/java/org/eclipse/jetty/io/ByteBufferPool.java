@@ -105,7 +105,7 @@ public interface ByteBufferPool
         {
             super(Objects.requireNonNullElse(wrapped, NON_POOLING));
             _direct = direct;
-            _size = size;
+            _size = size > 0 ? size : 4096;
         }
 
         public boolean isDirect()

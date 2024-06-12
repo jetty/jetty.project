@@ -66,6 +66,11 @@ public class InputStreamContentSource implements Content.Source
         return bufferPool.getSize();
     }
 
+    /**
+     * @param bufferSize The size of the buffer
+     * @deprecated Use {@link InputStreamContentSource#InputStreamContentSource(InputStream, ByteBufferPool.Sized)}
+     */
+    @Deprecated(forRemoval = true)
     public void setBufferSize(int bufferSize)
     {
         try (AutoLock ignored = lock.lock())
@@ -80,6 +85,11 @@ public class InputStreamContentSource implements Content.Source
         return bufferPool.isDirect();
     }
 
+    /**
+     * @param useDirectByteBuffers {@code true} if direct buffers will be used.
+     * @deprecated Use {@link InputStreamContentSource#InputStreamContentSource(InputStream, ByteBufferPool.Sized)}
+     */
+    @Deprecated(forRemoval = true)
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
         try (AutoLock ignored = lock.lock())

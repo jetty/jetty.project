@@ -206,13 +206,7 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
-            RangedInputStreamContentSource contentSource = new RangedInputStreamContentSource(inputStream, bufferPool, first, length);
-            if (bufferSize > 0)
-            {
-                contentSource.setBufferSize(bufferSize);
-                contentSource.setUseDirectByteBuffers(direct);
-            }
-            return contentSource;
+            return new RangedInputStreamContentSource(inputStream, new ByteBufferPool.Sized(bufferPool, direct, bufferSize), first, length);
         }
         catch (IOException e)
         {
