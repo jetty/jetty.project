@@ -2766,7 +2766,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
                 request.getComponents().getCache().setAttribute(HttpChannel.class.getName(), httpChannel);
             }
-            else if (httpChannel.getContextHandler() == ContextHandler.this)
+            else if (httpChannel.getContextHandler() == ContextHandler.this && !request.getContext().isCrossContextDispatch(request))
             {
                 httpChannel.recycle();
             }
