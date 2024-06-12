@@ -109,7 +109,6 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
             // MUST raise this error condition in a fashion that is adequate for the runtime environment.
             if (LOG.isTraceEnabled())
                 LOG.trace("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
-
         }
     }
 
@@ -292,13 +291,18 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
 
     private static class Suppressed extends Exception
     {
+        Suppressed(String message)
+        {
+            super(message);
+        }
+
         Suppressed(Throwable cause)
         {
             super(cause.getMessage(), cause);
         }
     }
 
-    private static class Cancelled extends Exception
+    private static class Cancelled extends Suppressed
     {
         Cancelled()
         {
