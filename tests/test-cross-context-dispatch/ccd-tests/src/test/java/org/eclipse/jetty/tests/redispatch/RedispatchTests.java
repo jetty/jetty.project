@@ -24,7 +24,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
@@ -48,7 +47,6 @@ public class RedispatchTests extends AbstractRedispatchTest
      * see {@code org.eclipse.jetty.tests.ccd.ee8.InternalRequestURIFilter}
      */
     @Test
-    @Disabled
     public void testEe8FilterWithAwkwardRequestURI(TestInfo testInfo) throws Exception
     {
         InitializedJettyBase jettyBase = new InitializedJettyBase(testInfo);
