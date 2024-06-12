@@ -56,6 +56,7 @@ public interface Deployable
     String CONFIGURATION_CLASSES = "jetty.deploy.configurationClasses";
     String CONTAINER_SCAN_JARS = "jetty.deploy.containerScanJarPattern";
     String CONTEXT_PATH = "jetty.deploy.contextPath";
+    String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
     String DEFAULTS_DESCRIPTOR = "jetty.deploy.defaultsDescriptor";
     String ENVIRONMENT = "environment";
     String ENVIRONMENT_XML = "jetty.deploy.environmentXml";

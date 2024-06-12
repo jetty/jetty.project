@@ -17,29 +17,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.deploy.AppProvider;
-import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.BarContextHandler;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.Deployable;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -113,13 +100,14 @@ public class ContextProviderStartupTest
         Path propsFile = Files.writeString(jettyBase.resolve("webapps/core.properties"), Deployable.ENVIRONMENT_XML + " = etc/core-context.xml", StandardOpenOption.CREATE_NEW);
         assertTrue(Files.exists(propsFile));
         Files.copy(MavenPaths.findTestResourceFile("etc/core-context.xml"), jettyBase.resolve("etc/core-context.xml"), StandardCopyOption.REPLACE_EXISTING);
-
+        jetty.copyWebapp("bar-core-context.properties", "bar.properties");
         startJetty();
 
         //check environment context xml was applied to the produced context
         ContextHandler context = jetty.getContextHandler("/bar");
         assertNotNull(context);
         assertThat(context.getAttribute("somename"), equalTo("somevalue"));
+        assertTrue(context instanceof BarContextHandler);
 
     }
 
@@ -131,7 +119,7 @@ public class ContextProviderStartupTest
             MavenPaths.findTestResourceFile("etc/core-context.xml"), StandardOpenOption.CREATE_NEW);
         assertTrue(Files.exists(propsFile));
         Files.copy(MavenPaths.findTestResourceFile("etc/core-context.xml"), jettyBase.resolve("etc/core-context.xml"), StandardCopyOption.REPLACE_EXISTING);
-
+        jetty.copyWebapp("bar-core-context.properties", "bar-core-context.properties");
         startJetty();
 
         //check environment context xml was applied to the produced context

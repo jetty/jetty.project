@@ -347,6 +347,12 @@ public class ContextProvider extends ScanningAppProvider
             properties.putAll(getProperties());
 
             Object context = null;
+            //check if there is a specific ContextHandler type to create set in the
+            //properties associated with the webapp. If there is, we create it _before_
+            //applying the environment xml file.
+            String contextHandlerClassName = app.getProperties().get(Deployable.CONTEXT_HANDLER_CLASS);
+            if (contextHandlerClassName != null)
+	                context = Class.forName(contextHandlerClassName).getDeclaredConstructor().newInstance();
 
             //add in environment-specific properties
             String env = app.getEnvironmentName() == null ? "" : app.getEnvironmentName();
@@ -367,7 +373,7 @@ public class ContextProvider extends ScanningAppProvider
                     if (!envXmlPath.isAbsolute())
                         envXmlPath = getMonitoredDirResource().getPath().getParent().resolve(envXmlPath);
 
-                    context = applyXml(null, envXmlPath, env, properties);
+                    context = applyXml(context, envXmlPath, env, properties);
                 }
             }
 
@@ -409,7 +415,7 @@ public class ContextProvider extends ScanningAppProvider
             // Build the web application if necessary
             if (context == null)
             {
-                String contextHandlerClassName = (String)environment.getAttribute("contextHandlerClass");
+                contextHandlerClassName = (String)environment.getAttribute("contextHandlerClass");
                 if (StringUtil.isBlank(contextHandlerClassName))
                     throw new IllegalStateException("No ContextHandler classname for " + app);
                 Class<?> contextHandlerClass = Loader.loadClass(contextHandlerClassName);
