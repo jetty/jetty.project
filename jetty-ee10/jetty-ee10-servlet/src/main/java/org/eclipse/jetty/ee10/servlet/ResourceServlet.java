@@ -31,9 +31,9 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -56,14 +56,11 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.util.URIUtil.encodePath;
 
 /**
  * <p>The default Servlet, normally mapped to {@code /}, that handles static resources.</p>
@@ -166,11 +163,10 @@ import static org.eclipse.jetty.util.URIUtil.encodePath;
 public class ResourceServlet extends HttpServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceServlet.class);
-    public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
 
-    private ServletContextHandler _contextHandler;
     private ServletResourceService _resourceService;
     private WelcomeServletMode _welcomeServletMode;
+    private boolean _pathInfoOnly = true;
 
     public ResourceService getResourceService()
     {
@@ -180,17 +176,17 @@ public class ResourceServlet extends HttpServlet
     @Override
     public void init() throws ServletException
     {
-        _contextHandler = initContextHandler(getServletContext());
-        _resourceService = new ServletResourceService(_contextHandler);
+        ServletContextHandler contextHandler = initContextHandler(getServletContext());
+        _resourceService = new ServletResourceService(contextHandler);
         _resourceService.setWelcomeFactory(_resourceService);
-        Resource baseResource = _contextHandler.getBaseResource();
+        Resource baseResource = contextHandler.getBaseResource();
 
         String rb = getInitParameter("baseResource", "resourceBase");
         if (rb != null)
         {
             try
             {
-                baseResource = URIUtil.isRelative(rb) ? _contextHandler.getBaseResource().resolve(rb) :  _contextHandler.newResource(rb);
+                baseResource = URIUtil.isRelative(rb) ? contextHandler.getBaseResource().resolve(rb) :  contextHandler.newResource(rb);
             }
             catch (Exception e)
             {
@@ -208,11 +204,11 @@ public class ResourceServlet extends HttpServlet
         HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
         if (contentFactory == null)
         {
-            MimeTypes mimeTypes = _contextHandler.getMimeTypes();
+            MimeTypes mimeTypes = contextHandler.getMimeTypes();
             contentFactory = new ResourceHttpContentFactory(baseResource, mimeTypes);
 
             // Use the servers default stylesheet unless there is one explicitly set by an init param.
-            Resource styleSheet = _contextHandler.getServer().getDefaultStyleSheet();
+            Resource styleSheet = contextHandler.getServer().getDefaultStyleSheet();
             String stylesheetParam = getInitParameter("stylesheet");
             if (stylesheetParam != null)
             {
@@ -246,7 +242,7 @@ public class ResourceServlet extends HttpServlet
             long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
-                ByteBufferPool bufferPool = getByteBufferPool(_contextHandler);
+                ByteBufferPool bufferPool = getByteBufferPool(contextHandler);
                 ValidatingCachingHttpContentFactory cached = new ValidatingCachingHttpContentFactory(contentFactory,
                     (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
                 contentFactory = cached;
@@ -260,8 +256,8 @@ public class ResourceServlet extends HttpServlet
         }
         _resourceService.setHttpContentFactory(contentFactory);
 
-        if (_contextHandler.getWelcomeFiles() == null)
-            _contextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
+        if (contextHandler.getWelcomeFiles() == null)
+            contextHandler.setWelcomeFiles(new String[]{"index.html", "index.jsp"});
 
         _resourceService.setAcceptRanges(getInitBoolean("acceptRanges", _resourceService.isAcceptRanges()));
         _resourceService.setDirAllowed(getInitBoolean("dirAllowed", _resourceService.isDirAllowed()));
@@ -382,33 +378,10 @@ public class ResourceServlet extends HttpServlet
         return ret;
     }
 
-    /**
-     * <p>
-     *     Returns a {@code String} containing the value of the named initialization parameter, or null if the parameter does not exist.
-     * </p>
-     *
-     * <p>
-     *     Parameter lookup first checks the {@link ServletContext#getInitParameter(String)} for the
-     *     parameter prefixed with {@code org.eclipse.jetty.servlet.Default.}, then checks
-     *     {@link jakarta.servlet.ServletConfig#getInitParameter(String)} for the actual value
-     * </p>
-     *
-     * @param name a {@code String} specifying the name of the initialization parameter
-     * @return a {@code String} containing the value of the initialization parameter
-     */
-    @Override
-    public String getInitParameter(String name)
-    {
-        String value = getServletContext().getInitParameter(CONTEXT_INIT + name);
-        if (value == null)
-            value = super.getInitParameter(name);
-        return value;
-    }
-
     private Boolean getInitBoolean(String name)
     {
         String value = getInitParameter(name);
-        if (value == null || value.length() == 0)
+        if (value == null || value.isEmpty())
             return null;
         return (value.startsWith("t") ||
             value.startsWith("T") ||
@@ -425,7 +398,7 @@ public class ResourceServlet extends HttpServlet
     private int getInitInt(String name, int dft)
     {
         String value = getInitParameter(name);
-        if (value != null && value.length() > 0)
+        if (value != null && !value.isEmpty())
             return Integer.parseInt(value);
         return dft;
     }
@@ -446,9 +419,10 @@ public class ResourceServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws ServletException, IOException
     {
-        String includedServletPath = (String)httpServletRequest.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
-        String encodedPathInContext = getEncodedPathInContext(httpServletRequest, includedServletPath);
-        boolean included = includedServletPath != null;
+        boolean included = httpServletRequest.getDispatcherType() == DispatcherType.INCLUDE;
+        String encodedPathInContext = getEncodedPathInContext(httpServletRequest, included);
+
+        System.err.printf("%s <=%b= %s\n", encodedPathInContext, included, httpServletRequest);
 
         if (LOG.isDebugEnabled())
             LOG.debug("doGet(hsReq={}, hsResp={}) pathInContext={}, included={}", httpServletRequest, httpServletResponse, encodedPathInContext, included);
@@ -461,19 +435,7 @@ public class ResourceServlet extends HttpServlet
 
             if (content == null || Resources.missing(content.getResource()))
             {
-                if (included)
-                {
-                    /* https://github.com/jakartaee/servlet/blob/6.0.0-RELEASE/spec/src/main/asciidoc/servlet-spec-body.adoc#93-the-include-method
-                     * 9.3 - If the default servlet is the target of a RequestDispatch.include() and the requested
-                     * resource does not exist, then the default servlet MUST throw FileNotFoundException.
-                     * If the exception isn’t caught and handled, and the response
-                     * hasn’t been committed, the status code MUST be set to 500.
-                     */
-                    throw new FileNotFoundException(encodedPathInContext);
-                }
-
-                // no content
-                httpServletResponse.sendError(404);
+                doNotFound(httpServletRequest, httpServletResponse, encodedPathInContext);
             }
             else
             {
@@ -551,25 +513,34 @@ public class ResourceServlet extends HttpServlet
         }
     }
 
-    protected String getEncodedPathInContext(HttpServletRequest req, String includedServletPath)
+    protected String getEncodedPathInContext(HttpServletRequest request, boolean included)
     {
-        if (includedServletPath != null)
-            return encodePath(getIncludedPathInContext(req, includedServletPath, !isDefaultMapping(req)));
-        else if (!isDefaultMapping(req))
+        HttpServletMapping mapping = included ? (HttpServletMapping)request.getAttribute(Dispatcher.INCLUDE_MAPPING) : request.getHttpServletMapping();
+        System.err.println(mapping);
+        return switch (mapping.getMappingMatch())
         {
-            //a match via an extension mapping will more than likely
-            //have no path info
-            String path = req.getPathInfo();
-            if (StringUtil.isEmpty(path) && 
-                MappingMatch.EXTENSION.equals(req.getHttpServletMapping().getMappingMatch()))
-                path = req.getServletPath();
-          
-            return encodePath(path);
-        }
-        else if (req instanceof ServletApiRequest apiRequest)
-            return Context.getPathInContext(req.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
-        else
-            return Context.getPathInContext(req.getContextPath(), URIUtil.canonicalPath(req.getRequestURI()));
+            case CONTEXT_ROOT -> "/";
+            case DEFAULT, EXTENSION, EXACT -> included ? (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH) : request.getServletPath();
+            case PATH ->
+            {
+                if (_pathInfoOnly)
+                {
+                    if (included)
+                        yield URIUtil.encodePath((String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
+                    else
+                        yield URIUtil.encodePath(request.getPathInfo());
+                }
+                else
+                {
+                    if (included)
+                        yield URIUtil.encodePath(URIUtil.addPaths((String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH), (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO)));
+                    else if (request instanceof ServletApiRequest apiRequest)
+                        yield Context.getPathInContext(request.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
+                    else
+                        yield URIUtil.encodePath(URIUtil.addPaths(request.getServletPath(), request.getPathInfo()));
+                }
+            }
+        };
     }
 
     @Override
@@ -592,6 +563,23 @@ public class ResourceServlet extends HttpServlet
     {
         // override to eliminate TRACE that the default HttpServlet impl adds
         resp.setHeader("Allow", "GET, HEAD, OPTIONS");
+    }
+
+    protected void doNotFound(HttpServletRequest request, HttpServletResponse response, String encodedPathInContext) throws IOException
+    {
+        if (request.getDispatcherType() == DispatcherType.INCLUDE)
+        {
+            /* https://github.com/jakartaee/servlet/blob/6.0.0-RELEASE/spec/src/main/asciidoc/servlet-spec-body.adoc#93-the-include-method
+             * 9.3 - If the default servlet is the target of a RequestDispatch.include() and the requested
+             * resource does not exist, then the default servlet MUST throw FileNotFoundException.
+             * If the exception isn’t caught and handled, and the response
+             * hasn’t been committed, the status code MUST be set to 500.
+             */
+            throw new FileNotFoundException(encodedPathInContext);
+        }
+
+        // no content
+        response.sendError(404);
     }
 
     private class ServletResourceService extends ResourceService implements ResourceService.WelcomeFactory
@@ -627,9 +615,6 @@ public class ResourceServlet extends HttpServlet
                     // Check whether a Servlet may serve the welcome resource.
                     if (_welcomeServletMode != WelcomeServletMode.NONE && welcomeTarget == null)
                     {
-                        if (!isDefaultMapping(getServletRequest(coreRequest)) && !isIncluded(getServletRequest(coreRequest)))
-                            welcomeTarget = URIUtil.addPaths(getServletRequest(coreRequest).getPathInfo(), welcome);
-
                         ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
                         // Is there a different Servlet that may serve the welcome resource?
                         if (entry != null && entry.getServletHolder().getServletInstance() != ResourceServlet.this)
@@ -784,13 +769,6 @@ public class ResourceServlet extends HttpServlet
     private static boolean isIncluded(HttpServletRequest request)
     {
         return request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
-    }
-
-    protected boolean isDefaultMapping(HttpServletRequest req)
-    {
-        if (req.getHttpServletMapping().getMappingMatch() == MappingMatch.DEFAULT)
-            return true;
-        return (req.getDispatcherType() != DispatcherType.REQUEST) && "default".equals(getServletConfig().getServletName());
     }
 
     /**

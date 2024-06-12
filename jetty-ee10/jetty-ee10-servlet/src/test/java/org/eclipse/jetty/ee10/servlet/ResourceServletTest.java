@@ -38,6 +38,7 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -1383,7 +1384,7 @@ public class ResourceServletTest
         FS.ensureDirExists(altRoot);
 
         ServletHolder defholder = context.addServlet(ResourceServlet.class, "/alt/*");
-        defholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+        defholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "true");
@@ -1394,7 +1395,9 @@ public class ResourceServletTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 String includeTarget = req.getParameter("includeTarget");
-                req.getRequestDispatcher(includeTarget).include(req, resp);
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(includeTarget);
+                System.err.printf("include %s -> %s\n", includeTarget, requestDispatcher);
+                requestDispatcher.include(req, resp);
             }
         });
         context.addServlet(gwholder, "/gateway");
