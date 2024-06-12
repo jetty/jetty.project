@@ -16,9 +16,12 @@ package org.eclipse.jetty.tests.ccd.ee9;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -86,14 +89,10 @@ public class DumpServlet extends HttpServlet
                 });
         }
 
-        List<String> attrNames = Collections.list(req.getAttributeNames());
-        attrNames
-            // .stream().filter((name) -> name.startsWith("javax.") || name.startsWith("jakarta."))
-            .forEach((name) ->
-            {
-                Object attrVal = req.getAttribute(name);
-                props.setProperty("attr[" + name + "]", Objects.toString(attrVal, NULL));
-            });
+        addAttributes(props, "req", req::getAttributeNames, req::getAttribute);
+        addAttributes(props, "context",
+            () -> getServletContext().getAttributeNames(),
+            (name) -> getServletContext().getAttribute(name));
 
         List<String> headerNames = Collections.list(req.getHeaderNames());
         headerNames
@@ -118,5 +117,19 @@ public class DumpServlet extends HttpServlet
         resp.setContentType("text/x-java-properties");
         PrintWriter out = resp.getWriter();
         props.store(out, "From " + this.getClass().getName());
+    }
+
+    private void addAttributes(Properties props,
+                               String prefix,
+                               Supplier<Enumeration<String>> getNamesSupplier,
+                               Function<String, Object> getAttributeFunction)
+    {
+        List<String> attrNames = Collections.list(getNamesSupplier.get());
+        attrNames
+            .forEach((name) ->
+            {
+                Object attrVal = getAttributeFunction.apply(name);
+                props.setProperty(prefix + ".attr[" + name + "]", Objects.toString(attrVal, NULL));
+            });
     }
 }

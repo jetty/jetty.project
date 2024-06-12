@@ -27,11 +27,11 @@ import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,9 +53,12 @@ public abstract class AbstractRedispatchTest
         public JettyHomeTester distribution;
         public int httpPort;
 
-        public InitializedJettyBase(WorkDir workDir) throws Exception
+        public InitializedJettyBase(TestInfo testInfo) throws Exception
         {
-            jettyBase = workDir.getEmptyPathDir();
+            Path testsDir = MavenPaths.targetTests();
+            String cleanBaseName = toCleanDirectoryName(testInfo);
+            jettyBase = testsDir.resolve(cleanBaseName);
+            FS.ensureEmpty(jettyBase);
             String jettyVersion = System.getProperty("jettyVersion");
             distribution = JettyHomeTester.Builder.newInstance()
                 .jettyVersion(jettyVersion)
@@ -75,10 +78,6 @@ public abstract class AbstractRedispatchTest
             {
                 assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(0, runConfig.getExitValue());
-
-                String[] argsStart = {
-                    "jetty.http.port=" + httpPort
-                };
 
                 Path libDir = jettyBase.resolve("lib");
                 FS.ensureDirExists(libDir);
@@ -145,6 +144,41 @@ public abstract class AbstractRedispatchTest
                 }
             }
         }
+
+        /**
+         * Create a name that can be used as a Jetty Base home directory in a safe way.
+         *
+         * Note: unlike the WorkDir object, this strips out {@code [} and {@code ]} characters
+         * and also makes any non-alpha-numeric character just {@code _}, which results in
+         * a happy {@code ${jetty.base}} and {@code start.jar}.
+         *
+         * Failure to use this method can result in start.jar behaving in unintended ways
+         * when it goes through the Java -> Runtime.exec -> OS behaviors.
+         *
+         * This change also makes the created directory named {@code target/tests/<method-name>.<display-name>}
+         * live and suitable for execution via a console without accidental shell interpretation of special
+         * characters in the directory name (that can result from characters like "[]" used in a directory name)
+         *
+         * @param testInfo the TestInfo to use to generate directory name from.
+         * @return the safe to use directory name.
+         */
+        public static String toCleanDirectoryName(TestInfo testInfo)
+        {
+            StringBuilder name = new StringBuilder();
+            if (testInfo.getTestMethod().isPresent())
+            {
+                name.append(testInfo.getTestMethod().get().getName());
+                name.append(".");
+            }
+            for (char c: testInfo.getDisplayName().toCharArray())
+            {
+                if (Character.isLetterOrDigit(c) || c == '.' || c == '-')
+                    name.append(c);
+                else if (c != '[' && c != ']')
+                    name.append("_");
+            }
+            return name.toString();
+        }
     }
 
     protected HttpClient client;
@@ -167,7 +201,7 @@ public abstract class AbstractRedispatchTest
         props.stringPropertyNames().stream()
             .sorted()
             .forEach((name) ->
-                System.out.printf("%s=%s%n", name, props.getProperty(name)));
+                System.out.printf("  %s=%s%n", name, props.getProperty(name)));
     }
 
     public static void assertProperty(Properties props, String name, Matcher<String> valueMatcher)

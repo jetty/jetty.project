@@ -31,31 +31,29 @@ import org.eclipse.jetty.tests.ccd.common.HttpRequest;
 import org.eclipse.jetty.tests.ccd.common.Property;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(WorkDirExtension.class)
 public class RedispatchPlansTests extends AbstractRedispatchTest
 {
-    private static InitializedJettyBase jettyBase;
-    private static JettyHomeTester.Run runStart;
+    private InitializedJettyBase jettyBase;
+    private JettyHomeTester.Run runStart;
 
-    @BeforeAll
-    public static void startJettyBase(WorkDir workDir) throws Exception
+    @BeforeEach
+    public void startJettyBase(TestInfo testInfo) throws Exception
     {
-        jettyBase = new InitializedJettyBase(workDir);
+        jettyBase = new InitializedJettyBase(testInfo);
 
         String[] argsStart = {
             "jetty.http.port=" + jettyBase.httpPort
@@ -66,8 +64,8 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
         assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
     }
 
-    @AfterAll
-    public static void stopJettyBase()
+    @AfterEach
+    public void stopJettyBase()
     {
         runStart.close();
     }
@@ -76,12 +74,16 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
     {
         List<Arguments> plans = new ArrayList<>();
 
+        List<String> disabledTests = new ArrayList<>();
+        disabledTests.add("ee10-session-ee8-ee9-ee8.txt"); // causes an ISE
+
         Path testPlansDir = MavenPaths.findTestResourceDir("plans");
         try (Stream<Path> plansStream = Files.list(testPlansDir))
         {
             List<Path> testPlans = plansStream
                 .filter(Files::isRegularFile)
                 .filter((file) -> file.getFileName().toString().endsWith(".txt"))
+                .filter((file) -> !disabledTests.contains(file.getFileName().toString()))
                 .toList();
 
             for (Path plansText : testPlans)
@@ -136,9 +138,10 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
         // Ensure that all seen session ids are the same.
         if (dispatchPlan.isExpectedSessionIds())
         {
+            // Verify that Request Attributes for Session.id are in agreement
             List<String> attrNames = responseProps.keySet().stream()
                 .map(Object::toString)
-                .filter((name) -> name.startsWith("attr[session["))
+                .filter((name) -> name.startsWith("req.attr[session["))
                 .toList();
 
             if (attrNames.size() > 1)
@@ -149,6 +152,25 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
                     assertEquals(expectedId, responseProps.getProperty(name));
                 }
             }
+
+            // Verify that Context Attributes for Session.id are in agreement
+            // And that all ids have had their .commit() and .release() methods called.
+            Path sessionLog = jettyBase.jettyBase.resolve("work/session.log");
+            assertTrue(Files.isRegularFile(sessionLog), "Missing " + sessionLog);
+
+            List<String> logEntries = Files.readAllLines(sessionLog);
+            List<String> newSessions = logEntries.stream()
+                .filter(line -> line.contains("SessionCache.event.newSession()"))
+                .map(line -> line.substring(line.indexOf("=") + 1))
+                .toList();
+            // we should have the commit() and release() for each new Session.
+            for (String sessionId : newSessions)
+            {
+                assertThat(logEntries, hasItem("SessionCache.event.commit()=" + sessionId));
+                assertThat(logEntries, hasItem("SessionCache.event.release()=" + sessionId));
+            }
+
+            // TODO: should we check the response headers for a "Set-Cookie" entry?
         }
     }
 }

@@ -6,7 +6,7 @@ EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee10.CCDServlet.service() dispatcherT
 EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee10.DumpServlet.service() dispatcherType=INCLUDE method=GET requestUri=/ccd-ee10/redispatch/ee10
 EXPECTED_PROP|request.dispatcherType|INCLUDE
 EXPECTED_PROP|request.requestURI|/ccd-ee10/redispatch/ee10
-EXPECTED_PROP|attr[jakarta.servlet.include.context_path]|/ccd-ee10
-EXPECTED_PROP|attr[jakarta.servlet.include.path_info]|/ee10
-EXPECTED_PROP|attr[jakarta.servlet.include.request_uri]|/ccd-ee10/dump/ee10
-EXPECTED_PROP|attr[jakarta.servlet.include.servlet_path]|/dump
+EXPECTED_PROP|req.attr[jakarta.servlet.include.context_path]|/ccd-ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.include.path_info]|/ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.include.request_uri]|/ccd-ee10/dump/ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.include.servlet_path]|/dump
