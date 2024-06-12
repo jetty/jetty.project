@@ -8,7 +8,7 @@ EXPECTED_PROP|request.dispatcherType|INCLUDE
 EXPECTED_PROP|request.contextPath|/ccd-ee8
 EXPECTED_PROP|request.pathInfo|/ee8
 EXPECTED_PROP|request.requestURI|/ccd-ee8/redispatch/ee8
-EXPECTED_PROP|attr[javax.servlet.include.context_path]|/ccd-ee8
-EXPECTED_PROP|attr[javax.servlet.include.path_info]|/ee8
-EXPECTED_PROP|attr[javax.servlet.include.request_uri]|/ccd-ee8/dump/ee8
-EXPECTED_PROP|attr[javax.servlet.include.servlet_path]|/dump
+EXPECTED_PROP|req.attr[javax.servlet.include.context_path]|/ccd-ee8
+EXPECTED_PROP|req.attr[javax.servlet.include.path_info]|/ee8
+EXPECTED_PROP|req.attr[javax.servlet.include.request_uri]|/ccd-ee8/dump/ee8
+EXPECTED_PROP|req.attr[javax.servlet.include.servlet_path]|/dump

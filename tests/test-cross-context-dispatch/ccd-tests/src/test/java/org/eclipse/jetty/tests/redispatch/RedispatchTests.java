@@ -23,20 +23,16 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.TestInfo;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(WorkDirExtension.class)
 public class RedispatchTests extends AbstractRedispatchTest
 {
-    public WorkDir workDir;
     private JettyHomeTester.Run runStart;
 
     @AfterEach
@@ -51,9 +47,9 @@ public class RedispatchTests extends AbstractRedispatchTest
      * see {@code org.eclipse.jetty.tests.ccd.ee8.InternalRequestURIFilter}
      */
     @Test
-    public void testEe8FilterWithAwkwardRequestURI() throws Exception
+    public void testEe8FilterWithAwkwardRequestURI(TestInfo testInfo) throws Exception
     {
-        InitializedJettyBase jettyBase = new InitializedJettyBase(workDir);
+        InitializedJettyBase jettyBase = new InitializedJettyBase(testInfo);
 
         // Now add the filter to the webapp xml init
         String xml = """

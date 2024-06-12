@@ -29,8 +29,8 @@ EXPECTED_PROP|request.dispatcherType|FORWARD
 EXPECTED_PROP|request.requestURI|/ccd-ee8/dump/ee8
 EXPECTED_PROP|request.session.exists|true
 EXPECTED_PROP|session[test-name-8]|test-value-ee8
-EXPECTED_PROP|attr[javax.servlet.forward.context_path]|/ccd-ee8
-EXPECTED_PROP|attr[javax.servlet.forward.path_info]|/ee8
-EXPECTED_PROP|attr[javax.servlet.forward.request_uri]|/ccd-ee8/dump/ee8
-EXPECTED_PROP|attr[javax.servlet.forward.servlet_path]|/dump
+EXPECTED_PROP|req.attr[javax.servlet.forward.context_path]|/ccd-ee8
+EXPECTED_PROP|req.attr[javax.servlet.forward.path_info]|/ee8
+EXPECTED_PROP|req.attr[javax.servlet.forward.request_uri]|/ccd-ee8/dump/ee8
+EXPECTED_PROP|req.attr[javax.servlet.forward.servlet_path]|/dump
 EXPECTED_SESSION_IDS|true
