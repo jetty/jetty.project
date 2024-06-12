@@ -163,9 +163,9 @@ import static org.eclipse.jetty.util.URIUtil.encodePath;
  *   </dd>
  * </dl>
  */
-public class DefaultServlet extends HttpServlet
+public class ResourceServlet extends HttpServlet
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceServlet.class);
     public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
 
     private ServletContextHandler _contextHandler;
@@ -632,7 +632,7 @@ public class DefaultServlet extends HttpServlet
 
                         ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
                         // Is there a different Servlet that may serve the welcome resource?
-                        if (entry != null && entry.getServletHolder().getServletInstance() != DefaultServlet.this)
+                        if (entry != null && entry.getServletHolder().getServletInstance() != ResourceServlet.this)
                         {
                             if (_welcomeServletMode == WelcomeServletMode.MATCH || entry.getPathSpec().getDeclaration().equals(welcomeInContext))
                             {
