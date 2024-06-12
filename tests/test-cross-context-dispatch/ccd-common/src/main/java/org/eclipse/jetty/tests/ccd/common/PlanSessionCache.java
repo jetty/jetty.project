@@ -36,7 +36,6 @@ public class PlanSessionCache extends DefaultSessionCache
     {
         super(manager);
         outputFile = Path.of(System.getProperty("jetty.base"), "work/session.log");
-        LOG.info("outputFile={}", outputFile);
         setSessionDataStore(new NullSessionDataStore());
     }
 

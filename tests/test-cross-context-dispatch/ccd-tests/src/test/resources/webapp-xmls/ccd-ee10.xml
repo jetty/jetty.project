@@ -6,18 +6,14 @@
   <Set name="war"><Property name="jetty.webapps" default="." />/ccd-ee10</Set>
   <Set name="crossContextDispatchSupported">true</Set>
 
-  <!--
-  <Get name="sessionHandler">
-    <Get id="sessMan" name="sessionManager">
-      <Set name="sessionCache">
-        <New class="org.eclipse.jetty.tests.ccd.common.PlanSessionCache">
-          <Arg>
-            <Ref refid="sessMan"/>
-          </Arg>
-        </New>
-      </Set>
-    </Get>
+  <Get id="sessMan" name="sessionHandler">
+    <Set name="sessionCache">
+      <New class="org.eclipse.jetty.tests.ccd.common.PlanSessionCache">
+        <Arg>
+          <Ref refid="sessMan"/>
+        </Arg>
+      </New>
+    </Set>
   </Get>
-  -->
 </Configure>
 
