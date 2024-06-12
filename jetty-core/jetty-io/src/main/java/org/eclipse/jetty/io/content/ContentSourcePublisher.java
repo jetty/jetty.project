@@ -82,7 +82,8 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
             // As per rule 2.13, we MUST consider subscription cancelled and
             // MUST raise this error condition in a fashion that is adequate for the runtime environment.
             subscription.cancel(new Suppressed(err));
-            LOG.error("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
+            if (LOG.isTraceEnabled())
+                LOG.trace("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
         }
     }
 
@@ -106,7 +107,9 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         {
             // As per rule 2.13, we MUST consider subscription cancelled and
             // MUST raise this error condition in a fashion that is adequate for the runtime environment.
-            LOG.error("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
+            if (LOG.isTraceEnabled())
+                LOG.trace("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
+
         }
     }
 
@@ -171,7 +174,8 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
                 }
                 catch (Throwable err)
                 {
-                    LOG.error("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
                 }
                 this.subscriber = null;
                 return Action.SUCCEEDED;
@@ -199,7 +203,8 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
             catch (Throwable err)
             {
                 cancel(new Suppressed(err));
-                LOG.error("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
             }
             chunk.release();
 
@@ -248,9 +253,8 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
             //
             // As per rule 3.5, this handles cancellation requests, and is idempotent, thread-safe and not
             // synchronously performing heavy computations
-            if (!cancelled.compareAndSet(null, cause))
-                return;
-            this.iterate();
+            if (cancelled.compareAndSet(null, cause))
+                this.iterate();
         }
 
         // Publisher notes
@@ -286,20 +290,15 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         // java.lang.IllegalArgumentException if the argument is <= 0.
     }
 
-    private static class Suppressed extends Throwable
+    private static class Suppressed extends Exception
     {
-        Suppressed(String message)
-        {
-            super(message);
-        }
-
         Suppressed(Throwable cause)
         {
             super(cause.getMessage(), cause);
         }
     }
 
-    private static class Cancelled extends Suppressed
+    private static class Cancelled extends Exception
     {
         Cancelled()
         {
