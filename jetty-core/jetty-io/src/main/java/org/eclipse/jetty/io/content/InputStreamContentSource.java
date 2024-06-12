@@ -21,6 +21,7 @@ import java.util.Objects;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -39,44 +40,55 @@ public class InputStreamContentSource implements Content.Source
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final InputStream inputStream;
-    private final ByteBufferPool bufferPool;
-    private int bufferSize = 4096;
-    private boolean useDirectByteBuffers;
+    private ByteBufferPool.Sized bufferPool;
     private Runnable demandCallback;
     private Content.Chunk errorChunk;
     private boolean closed;
 
     public InputStreamContentSource(InputStream inputStream)
     {
-        this(inputStream, null);
+        this(inputStream, new ByteBufferPool.Sized(null, false, 4096));
     }
 
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
     {
+        this(inputStream, new ByteBufferPool.Sized(bufferPool, false, 4096));
+    }
+
+    public InputStreamContentSource(InputStream inputStream, ByteBufferPool.Sized bufferPool)
+    {
         this.inputStream = Objects.requireNonNull(inputStream);
-        this.bufferPool = bufferPool != null ? bufferPool : ByteBufferPool.NON_POOLING;
+        this.bufferPool = Objects.requireNonNull(bufferPool);
     }
 
     public int getBufferSize()
     {
-        return bufferSize;
+        return bufferPool.getSize();
     }
 
     public void setBufferSize(int bufferSize)
     {
-        this.bufferSize = bufferSize;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (bufferSize != bufferPool.getSize())
+                bufferPool = new ByteBufferPool.Sized(bufferPool.getWrapped(), bufferPool.isDirect(), bufferSize);
+        }
     }
 
     public boolean isUseDirectByteBuffers()
     {
-        return useDirectByteBuffers;
+        return bufferPool.isDirect();
     }
 
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
-        this.useDirectByteBuffers = useDirectByteBuffers;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (useDirectByteBuffers != bufferPool.isDirect())
+                bufferPool = new ByteBufferPool.Sized(bufferPool.getWrapped(), useDirectByteBuffers, bufferPool.getSize());
+        }
     }
-
+    
     @Override
     public Content.Chunk read()
     {
@@ -88,7 +100,7 @@ public class InputStreamContentSource implements Content.Source
                 return Content.Chunk.EOF;
         }
 
-        RetainableByteBuffer streamBuffer = bufferPool.acquire(getBufferSize(), useDirectByteBuffers);
+        RetainableByteBuffer streamBuffer = bufferPool.acquire();
         try
         {
             ByteBuffer buffer = streamBuffer.getByteBuffer();
@@ -147,19 +159,7 @@ public class InputStreamContentSource implements Content.Source
             this.demandCallback = null;
         }
         if (demandCallback != null)
-            runDemandCallback(demandCallback);
-    }
-
-    private void runDemandCallback(Runnable demandCallback)
-    {
-        try
-        {
-            demandCallback.run();
-        }
-        catch (Throwable x)
-        {
-            fail(x);
-        }
+            ExceptionUtil.run(demandCallback, this::fail);
     }
 
     @Override

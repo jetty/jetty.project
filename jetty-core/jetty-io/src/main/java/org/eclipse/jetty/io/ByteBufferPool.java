@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -89,6 +90,40 @@ public interface ByteBufferPool
         public void clear()
         {
             getWrapped().clear();
+        }
+    }
+
+    /**
+     * A ByteBufferPool for a specific size and type of buffer
+     */
+    class Sized extends Wrapper
+    {
+        private final boolean _direct;
+        private final int _size;
+
+        public Sized(ByteBufferPool wrapped, boolean direct, int size)
+        {
+            super(Objects.requireNonNullElse(wrapped, NON_POOLING));
+            _direct = direct;
+            _size = size;
+        }
+
+        public boolean isDirect()
+        {
+            return _direct;
+        }
+
+        public int getSize()
+        {
+            return _size;
+        }
+
+        /**
+         * @return A {@link RetainableByteBuffer} suitable for the specified size and type.
+         */
+        public RetainableByteBuffer acquire()
+        {
+            return getWrapped().acquire(_size, _direct);
         }
     }
 

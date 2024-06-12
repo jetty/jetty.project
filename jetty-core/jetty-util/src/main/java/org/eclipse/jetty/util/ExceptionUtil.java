@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -256,15 +257,7 @@ public class ExceptionUtil
 
         public void callAndCatch(Invocable.Callable task)
         {
-            try
-            {
-                if (task != null)
-                    task.call();
-            }
-            catch (Throwable t)
-            {
-                add(t);
-            }
+            ExceptionUtil.call(task, this::add);
         }
     }
 
@@ -300,8 +293,54 @@ public class ExceptionUtil
         return t1;
     }
 
-    private ExceptionUtil()
+    /**
+     * Call a {@link Invocable.Callable} and handle failures
+     * @param callable The runnable to call
+     * @param failure The handling of failures
+     */
+    public static void call(Invocable.Callable callable, Consumer<Throwable> failure)
     {
+        try
+        {
+            callable.call();
+        }
+        catch (Throwable thrown)
+        {
+            try
+            {
+                failure.accept(thrown);
+            }
+            catch (Throwable alsoThrown)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(alsoThrown, thrown);
+                ExceptionUtil.ifExceptionThrowUnchecked(alsoThrown);
+            }
+        }
+    }
+
+    /**
+     * Call a {@link Runnable} and handle failures
+     * @param runnable The runnable to call
+     * @param failure The handling of failures
+     */
+    public static void run(Runnable runnable, Consumer<Throwable> failure)
+    {
+        try
+        {
+            runnable.run();
+        }
+        catch (Throwable thrown)
+        {
+            try
+            {
+                failure.accept(thrown);
+            }
+            catch (Throwable alsoThrown)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(alsoThrown, thrown);
+                ExceptionUtil.ifExceptionThrowUnchecked(alsoThrown);
+            }
+        }
     }
 
     /**
@@ -325,5 +364,9 @@ public class ExceptionUtil
         {
             throw new RuntimeException(e.getCause());
         }
+    }
+
+    private ExceptionUtil()
+    {
     }
 }

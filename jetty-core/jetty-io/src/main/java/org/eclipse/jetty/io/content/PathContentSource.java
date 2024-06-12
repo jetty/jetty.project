@@ -22,11 +22,13 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -40,9 +42,7 @@ public class PathContentSource implements Content.Source
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final Path path;
     private final long length;
-    private final ByteBufferPool byteBufferPool;
-    private int bufferSize = 4096;
-    private boolean useDirectByteBuffers = true;
+    private ByteBufferPool.Sized byteBufferPool;
     private SeekableByteChannel channel;
     private long totalRead;
     private Runnable demandCallback;
@@ -50,10 +50,15 @@ public class PathContentSource implements Content.Source
 
     public PathContentSource(Path path)
     {
-        this(path, null);
+        this(path, new ByteBufferPool.Sized(null, true, 4096));
     }
 
     public PathContentSource(Path path, ByteBufferPool byteBufferPool)
+    {
+        this(path, new ByteBufferPool.Sized(byteBufferPool, true, 4096));
+    }
+
+    public PathContentSource(Path path, ByteBufferPool.Sized byteBufferPool)
     {
         try
         {
@@ -63,7 +68,7 @@ public class PathContentSource implements Content.Source
                 throw new AccessDeniedException(path.toString());
             this.path = path;
             this.length = Files.size(path);
-            this.byteBufferPool = byteBufferPool != null ? byteBufferPool : ByteBufferPool.NON_POOLING;
+            this.byteBufferPool = Objects.requireNonNull(byteBufferPool);
         }
         catch (IOException x)
         {
@@ -84,22 +89,30 @@ public class PathContentSource implements Content.Source
 
     public int getBufferSize()
     {
-        return bufferSize;
+        return byteBufferPool.getSize();
     }
 
     public void setBufferSize(int bufferSize)
     {
-        this.bufferSize = bufferSize;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (bufferSize != byteBufferPool.getSize())
+                byteBufferPool = new ByteBufferPool.Sized(byteBufferPool.getWrapped(), byteBufferPool.isDirect(), bufferSize);
+        }
     }
 
     public boolean isUseDirectByteBuffers()
     {
-        return useDirectByteBuffers;
+        return byteBufferPool.isDirect();
     }
 
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
-        this.useDirectByteBuffers = useDirectByteBuffers;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (useDirectByteBuffers != byteBufferPool.isDirect())
+                byteBufferPool = new ByteBufferPool.Sized(byteBufferPool.getWrapped(), useDirectByteBuffers, byteBufferPool.getSize());
+        }
     }
 
     @Override
@@ -128,7 +141,7 @@ public class PathContentSource implements Content.Source
         if (!channel.isOpen())
             return Content.Chunk.EOF;
 
-        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(getBufferSize(), isUseDirectByteBuffers());
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire();
         ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
 
         int read;
@@ -190,19 +203,7 @@ public class PathContentSource implements Content.Source
             this.demandCallback = null;
         }
         if (demandCallback != null)
-            runDemandCallback(demandCallback);
-    }
-
-    private void runDemandCallback(Runnable demandCallback)
-    {
-        try
-        {
-            demandCallback.run();
-        }
-        catch (Throwable x)
-        {
-            fail(x);
-        }
+            ExceptionUtil.run(demandCallback, this::fail);
     }
 
     @Override

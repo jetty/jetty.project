@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -35,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.io.content.ByteChannelContentSource;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
@@ -46,6 +48,8 @@ import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,6 +57,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -65,7 +70,35 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentSourceTest
 {
+    private static ArrayByteBufferPool.Tracking byteBufferPool;
+
+    @BeforeEach
+    public void beforeAll()
+    {
+        byteBufferPool = new ArrayByteBufferPool.Tracking();
+    }
+
+    @AfterEach
+    public void afterAll()
+    {
+        if (!byteBufferPool.getLeaks().isEmpty())
+            byteBufferPool.dumpLeaks();
+        assertThat(byteBufferPool.getLeaks(), empty());
+        byteBufferPool.clear();
+        byteBufferPool = null;
+    }
+
     public static List<Content.Source> all() throws Exception
+    {
+        return sources(false);
+    }
+
+    public static List<Content.Source> multi() throws Exception
+    {
+        return sources(true);
+    }
+
+    private static List<Content.Source> sources(boolean supportMultipleReads) throws Exception
     {
         AsyncContent asyncSource = new AsyncContent();
         try (asyncSource)
@@ -93,17 +126,48 @@ public class ContentSourceTest
 
         Path tmpDir = MavenTestingUtils.getTargetTestingPath();
         Files.createDirectories(tmpDir);
-        Path path = Files.createTempFile(tmpDir, ContentSourceTest.class.getSimpleName(), ".txt");
-        Files.writeString(path, "onetwo", StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        PathContentSource pathSource = new PathContentSource(path);
-        pathSource.setBufferSize(3);
+        Path path12 = Files.createTempFile(tmpDir, ContentSourceTest.class.getSimpleName(), ".txt");
+        Files.writeString(path12, "onetwo", StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        Path path0123 = Files.createTempFile(tmpDir, ContentSourceTest.class.getSimpleName(), ".txt");
+        Files.writeString(path0123, "zeroonetwothree", StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+
+        PathContentSource path0 = new PathContentSource(path12, byteBufferPool);
+        PathContentSource path1 = new PathContentSource(path12, byteBufferPool);
+        path1.setBufferSize(3);
 
         InputStreamContentSource inputSource = new InputStreamContentSource(new ByteArrayInputStream("onetwo".getBytes(UTF_8)));
-
         InputStreamContentSource inputSource2 =
             new InputStreamContentSource(new ContentSourceInputStream(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"))));
 
-        return List.of(asyncSource, byteBufferSource, transformerSource, pathSource, inputSource, inputSource2);
+        ByteChannelContentSource bccs0 = new ByteChannelContentSource(byteBufferPool, false, 1024, Files.newByteChannel(path12, StandardOpenOption.READ));
+        ByteChannelContentSource bccs1 = new ByteChannelContentSource(byteBufferPool, false, 4096, Files.newByteChannel(path12, StandardOpenOption.READ), 0, 6);
+        ByteChannelContentSource bccs2 = new ByteChannelContentSource(byteBufferPool, false, 8192, Files.newByteChannel(path0123, StandardOpenOption.READ), 4, 6);
+        ByteChannelContentSource bccs3 = new ByteChannelContentSource(new ByteBufferPool.Sized(null, false, 3), Files.newByteChannel(path0123, StandardOpenOption.READ), 4, 6);
+
+        if (supportMultipleReads)
+        {
+            return List.of(
+                asyncSource,
+                byteBufferSource,
+                transformerSource,
+                path1,
+                inputSource,
+                inputSource2,
+                bccs3);
+        }
+
+        return List.of(
+            asyncSource,
+            byteBufferSource,
+            transformerSource,
+            path0,
+            path1,
+            inputSource,
+            inputSource2,
+            bccs0,
+            bccs1,
+            bccs2,
+            bccs3);
     }
 
     /**
@@ -171,6 +235,51 @@ public class ContentSourceTest
 
     @ParameterizedTest
     @MethodSource("all")
+    public void testReadRetain(Content.Source source) throws Exception
+    {
+        List<Content.Chunk> chunks = new ArrayList<>();
+
+        var task = new CompletableTask<>()
+        {
+            @Override
+            public void run()
+            {
+                while (true)
+                {
+                    Content.Chunk chunk = source.read();
+                    if (chunk == null)
+                    {
+                        source.demand(this);
+                        break;
+                    }
+
+                    if (chunk.hasRemaining())
+                        chunks.add(chunk);
+
+                    if (chunk.isLast())
+                    {
+                        complete(null);
+                        break;
+                    }
+                }
+            }
+        };
+        source.demand(task);
+
+        task.get(10, TimeUnit.SECONDS);
+
+        StringBuilder builder = new StringBuilder();
+        for (Content.Chunk chunk : chunks)
+        {
+            if (chunk.hasRemaining())
+                builder.append(BufferUtil.toString(chunk.getByteBuffer()));
+            chunk.release();
+        }
+        assertThat(builder.toString(), is("onetwo"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("all")
     public void testDemandReadDemandDoesNotRecurse(Content.Source source) throws Exception
     {
         CountDownLatch processed = new CountDownLatch(1);
@@ -226,7 +335,7 @@ public class ContentSourceTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("multi")
     public void testReadFailReadReturnsError(Content.Source source) throws Exception
     {
         Content.Chunk chunk = nextChunk(source);
@@ -237,6 +346,17 @@ public class ContentSourceTest
 
         // We must read the error.
         chunk = source.read();
+        assertTrue(Content.Chunk.isFailure(chunk, true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testFailReadReturnsError(Content.Source source) throws Exception
+    {
+        source.fail(new CancellationException());
+
+        // We must read the error.
+        Content.Chunk chunk = source.read();
         assertTrue(Content.Chunk.isFailure(chunk, true));
     }
 
@@ -268,13 +388,9 @@ public class ContentSourceTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
-    public void testDemandCallbackThrows(Content.Source source) throws Exception
+    @MethodSource("multi")
+    public void testReadDemandCallbackThrows(Content.Source source) throws Exception
     {
-        // TODO fix for OSCS
-//        if (source instanceof OutputStreamContentSource)
-//            return;
-
         Content.Chunk chunk = nextChunk(source);
         assertNotNull(chunk);
         chunk.release();
@@ -285,6 +401,19 @@ public class ContentSourceTest
         });
 
         chunk = source.read();
+        assertTrue(Content.Chunk.isFailure(chunk, true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testDemandCallbackThrows(Content.Source source) throws Exception
+    {
+        source.demand(() ->
+        {
+            throw new CancellationException();
+        });
+
+        Content.Chunk chunk = source.read();
         assertTrue(Content.Chunk.isFailure(chunk, true));
     }
 
