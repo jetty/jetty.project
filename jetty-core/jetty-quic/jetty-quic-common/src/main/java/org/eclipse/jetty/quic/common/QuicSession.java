@@ -427,6 +427,14 @@ public abstract class QuicSession extends ContainerLifeCycle
         }
     }
 
+    /**
+     * <p>Returns the peer certificates chain.</p>
+     * <p>Due to current Quiche C API limitations (that the Rust version does not have),
+     * only the last certificate in the chain is returned.
+     * This may change in the future when the C APIs are aligned to the Rust APIs.</p>
+     *
+     * @return the peer certificates chain (currently only the last certificate in the chain)
+     */
     public X509Certificate[] getPeerCertificates()
     {
         try
