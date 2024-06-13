@@ -78,8 +78,8 @@ import org.slf4j.LoggerFactory;
  * <p>For XML configured contexts, the ID map will contain a reference to the {@link Server} instance called "Server" and
  * properties for the webapp file such as "jetty.webapp" and directory as "jetty.webapps".
  * The properties will be initialized with:<ul>
- *     <li>The properties set on the application via {@link App#getProperties()}; otherwise:</li>
- *     <li>The properties set on this provider via {@link #getProperties()}</li>
+ * <li>The properties set on the application via {@link App#getProperties()}; otherwise:</li>
+ * <li>The properties set on this provider via {@link #getProperties()}</li>
  * </ul>
  */
 @ManagedObject("Provider for start-up deployment of webapps based on presence in directory")
@@ -244,6 +244,7 @@ public class ContextProvider extends ScanningAppProvider
 
     /**
      * This is equivalent to setting the {@link Deployable#CONFIGURATION_CLASSES} property.
+     *
      * @param configurations The configuration class names as a comma separated list
      */
     public void setConfigurationClasses(String configurations)
@@ -253,6 +254,7 @@ public class ContextProvider extends ScanningAppProvider
 
     /**
      * This is equivalent to setting the {@link Deployable#CONFIGURATION_CLASSES} property.
+     *
      * @param configurations The configuration class names.
      */
     public void setConfigurationClasses(String[] configurations)
@@ -263,8 +265,8 @@ public class ContextProvider extends ScanningAppProvider
     }
 
     /**
-     *
      * This is equivalent to getting the {@link Deployable#CONFIGURATION_CLASSES} property.
+     *
      * @return The configuration class names.
      */
     @ManagedAttribute("configuration classes for webapps to be processed through")
@@ -383,7 +385,7 @@ public class ContextProvider extends ScanningAppProvider
             // Handle a context XML file
             if (FileID.isXml(path))
             {
-               context = applyXml(context, path, env, properties);
+                context = applyXml(context, path, env, properties);
 
                 // Look for the contextHandler itself
                 ContextHandler contextHandler = null;
@@ -425,7 +427,7 @@ public class ContextProvider extends ScanningAppProvider
                 context = contextHandlerClass.getDeclaredConstructor().newInstance();
                 properties.put(Deployable.WAR, path.toString());
             }
-            
+
             return initializeContextHandler(context, path, properties);
         }
         finally
@@ -438,7 +440,6 @@ public class ContextProvider extends ScanningAppProvider
     {
         if (!FileID.isXml(xml))
             return null;
-
 
         XmlConfiguration xmlc = new XmlConfiguration(ResourceFactory.of(this).newResource(xml), null, properties)
         {
@@ -463,8 +464,6 @@ public class ContextProvider extends ScanningAppProvider
             return xmlc.configure();
 
         return xmlc.configure(context);
-
-
     }
 
     protected ClassLoader findCoreContextClassLoader(Path path) throws IOException
