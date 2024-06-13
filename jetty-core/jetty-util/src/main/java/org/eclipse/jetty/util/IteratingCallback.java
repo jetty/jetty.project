@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -43,7 +42,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
  * <p>
  * Subclasses must implement method {@link #process()} where the
  * asynchronous sub-task is initiated and a suitable {@link Action}
- * is returned to this callback to indicate the overall progress of
+ * is returned to this callback to indicate the overall progress ofk
  * the large asynchronous task.
  * This callback is passed to the asynchronous sub-task, and a call
  * to {@link #succeeded()} on this callback represents the successful
@@ -111,7 +110,12 @@ public abstract class IteratingCallback implements Callback
         /**
          * This callback is complete.
          */
-        COMPLETE
+        COMPLETE,
+
+        /**
+         * Complete and can't be reset.
+         */
+        CLOSED
     }
 
     /**
@@ -279,7 +283,6 @@ public abstract class IteratingCallback implements Callback
             }
             catch (Throwable x)
             {
-                x.printStackTrace();
                 action = null;
                 failed(x);
                 // Fall through to possibly invoke onCompleteFailure().
@@ -339,7 +342,7 @@ public abstract class IteratingCallback implements Callback
                         if (_failure != null)
                         {
                             doCompleteFailure = _failure;
-                            _state = State.COMPLETE;
+                            _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
                             break processing;
                         }
                         _state = State.PROCESSING;
@@ -354,7 +357,7 @@ public abstract class IteratingCallback implements Callback
                         {
                             case IDLE:
                             case SUCCEEDED:
-                                _state = State.COMPLETE;
+                                _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
                                 onAbortDoCompleteFailure = _failure;
                                 break processing;
 
@@ -367,7 +370,7 @@ public abstract class IteratingCallback implements Callback
 
                     case PROCESSING_CALLED_ABORT:
                     {
-                        _state = State.COMPLETE;
+                        _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
                         if (_aborted)
                             onAbortDoCompleteFailure = _failure;
                         else
@@ -404,7 +407,7 @@ public abstract class IteratingCallback implements Callback
                 }
                 case PROCESSING_CALLED_ABORT:
                 {
-                    _state = State.COMPLETE;
+                    _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
                     doCompleteFailure = _failure;
                     break;
                 }
@@ -453,11 +456,11 @@ public abstract class IteratingCallback implements Callback
                 case PENDING_ABORT:
                 {
                     // onAbort has already been called, so we just need to complete the failure
-                    _state = State.COMPLETE;
+                    _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
                     doCompleteFailure = _failure;
                     break;
                 }
-                case COMPLETE:
+                case COMPLETE, CLOSED:
                 {
                     // Too late
                     return;
@@ -514,11 +517,11 @@ public abstract class IteratingCallback implements Callback
                 case PENDING_ABORT:
                 {
                     // No other thread is processing, so we will do it
-                    _state = State.COMPLETE;
+                    _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
                     doCompleteFailure = true;
                     break;
                 }
-                case COMPLETE:
+                case COMPLETE, CLOSED:
                 {
                     // too late!
                     return;
@@ -549,8 +552,70 @@ public abstract class IteratingCallback implements Callback
      */
     public void close()
     {
-        // TODO avoid exception if we are IDLE or COMPLETE
-        abort(new ClosedChannelException());
+        Throwable doAbort = null;
+        boolean doCompleteFailure = false;
+        boolean aborted;
+
+        try (AutoLock ignored = _lock.lock())
+        {
+            switch (_state)
+            {
+                case IDLE ->
+                {
+                    // Nothing happening so we can abort and complete
+                    _state = State.CLOSED;
+                    _failure = new ClosedException();
+                    doAbort = _failure;
+                    doCompleteFailure = true;
+                }
+                case PROCESSING ->
+                {
+                    // Another thread is processing, so we just tell it the state and let it handle it
+                    _state = State.PROCESSING_ABORTED;
+                    _failure = new ClosedException();
+                }
+
+                case PROCESSING_CALLED ->
+                {
+                    // Another thread is processing, so we just tell it the state and let it handle it
+                    _state = State.PROCESSING_CALLED_ABORT;
+                    _failure = new ClosedException();
+                }
+
+                case PROCESSING_ABORTED, PROCESSING_CALLED_ABORT, PENDING_ABORT ->
+                {
+                    // already aborted, change to close exception
+                    _failure = new ClosedException(_failure);
+                }
+
+                case PENDING ->
+                {
+                    // We are waiting for the callback, so we can only call onAbort and then keep waiting
+                    _state = State.PENDING_ABORT;
+                    _failure = new ClosedException();
+                    doAbort = _failure;
+                }
+
+                case COMPLETE ->
+                {
+                    _state = State.CLOSED;
+                }
+
+                case CLOSED ->
+                {
+                    // too late
+                    return;
+                }
+            }
+        }
+
+        if (doAbort != null)
+        {
+            if (doCompleteFailure)
+                ExceptionUtil.callThen(doAbort, this::onAbort, this::doCompleteFailure);
+            else
+                onAbort(doAbort);
+        }
     }
 
     /**
@@ -612,7 +677,7 @@ public abstract class IteratingCallback implements Callback
                     break;
                 }
 
-                case COMPLETE:
+                case COMPLETE, CLOSED:
                 {
                     // too late
                     ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
@@ -658,8 +723,7 @@ public abstract class IteratingCallback implements Callback
     {
         try (AutoLock ignored = _lock.lock())
         {
-            // TODO
-            return _state == State.COMPLETE && _failure instanceof ClosedChannelException;
+            return _state == State.CLOSED || _failure instanceof ClosedException;
         }
     }
 
@@ -670,7 +734,7 @@ public abstract class IteratingCallback implements Callback
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _state == State.COMPLETE && _failure != null;
+            return _failure != null;
         }
     }
 
@@ -734,6 +798,20 @@ public abstract class IteratingCallback implements Callback
         try (AutoLock ignored = _lock.lock())
         {
             return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), _state);
+        }
+    }
+
+    private static class ClosedException extends Exception
+    {
+        ClosedException()
+        {
+            super("Closed");
+        }
+
+        ClosedException(Throwable suppressed)
+        {
+            super("Closed");
+            ExceptionUtil.addSuppressedIfNotAssociated(this, suppressed);
         }
     }
 }

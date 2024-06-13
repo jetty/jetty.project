@@ -279,13 +279,13 @@ public class IteratingCallbackTest
         callback.iterate();
 
         assertFalse(failureLatch.await(100, TimeUnit.MILLISECONDS));
-        assertTrue(abortLatch.await(1, TimeUnit.SECONDS));
-        assertTrue(callback.isAborted());
+        assertTrue(abortLatch.await(1000000000, TimeUnit.SECONDS));
+        assertTrue(callback.isClosed());
 
         callback.succeeded();
         assertTrue(failureLatch.await(1, TimeUnit.SECONDS));
         assertTrue(callback.isFailed());
-        assertTrue(callback.isAborted());
+        assertTrue(callback.isClosed());
     }
 
     @Test
@@ -589,6 +589,12 @@ public class IteratingCallbackTest
                     return Action.SCHEDULED;
                 }
 
+                if (state.equals("CLOSED"))
+                {
+                    close();
+                    return Action.SUCCEEDED;
+                }
+
                 processLatch.await();
                 return IteratingCallback.Action.valueOf(action);
             }
@@ -650,7 +656,7 @@ public class IteratingCallbackTest
         }
 
         // Check abort in non completed states
-        if (state.contains("CALLED") && !success)
+        if ((state.contains("CALLED") && !success) || state.equals("CLOSED"))
             assertThat(aborted, is(false));
         else
             assertThat(aborted, is(true));

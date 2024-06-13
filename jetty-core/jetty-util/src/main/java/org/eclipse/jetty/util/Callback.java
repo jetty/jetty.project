@@ -87,10 +87,8 @@ public interface Callback extends Invocable
      */
     default boolean abort(Throwable cause)
     {
-        // TODO revert to:
-        //      failed(cause);
-        //      return true;
-        throw new UnsupportedOperationException("unsupported abort");
+        failed(cause);
+        return true;
     }
 
     /**
