@@ -36,8 +36,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.io.content.ByteChannelContentSource;
 import org.eclipse.jetty.io.content.ChunksContentSource;
-import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -475,7 +475,8 @@ public class MultiPart
         @Override
         public Content.Source newContentSource()
         {
-            return new PathContentSource(getPath());
+            // TODO: use a ByteBuffer pool and direct ByteBuffers?
+            return new ByteChannelContentSource.PathContentSource(getPath());
         }
 
         @Override

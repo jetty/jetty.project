@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.content.PathContentSource;
+import org.eclipse.jetty.io.content.ByteChannelContentSource;
 
 /**
  * <p>A {@link Request.Content} for files using JDK 7's {@code java.nio.file} APIs.</p>
@@ -26,7 +26,7 @@ import org.eclipse.jetty.io.content.PathContentSource;
  * {@link ByteBufferPool} from which {@code ByteBuffer}s will be acquired
  * to read from the {@code Path}.</p>
  */
-public class PathRequestContent extends PathContentSource implements Request.Content
+public class PathRequestContent extends ByteChannelContentSource.PathContentSource implements Request.Content
 {
     private final String contentType;
 
@@ -42,18 +42,22 @@ public class PathRequestContent extends PathContentSource implements Request.Con
 
     public PathRequestContent(String contentType, Path filePath) throws IOException
     {
-        this(contentType, filePath, 4096);
+        this(contentType, filePath, new ByteBufferPool.Sized(null));
     }
 
     public PathRequestContent(String contentType, Path filePath, int bufferSize) throws IOException
     {
-        this(contentType, filePath, null);
-        setBufferSize(bufferSize);
+        this(contentType, filePath, new ByteBufferPool.Sized(null, false, bufferSize));
     }
 
     public PathRequestContent(String contentType, Path filePath, ByteBufferPool bufferPool) throws IOException
     {
-        super(filePath, bufferPool);
+        this(contentType, filePath, new ByteBufferPool.Sized(bufferPool));
+    }
+
+    public PathRequestContent(String contentType, Path filePath, ByteBufferPool.Sized bufferPool) throws IOException
+    {
+        super(bufferPool, filePath);
         this.contentType = contentType;
     }
 

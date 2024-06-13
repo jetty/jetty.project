@@ -101,6 +101,21 @@ public interface ByteBufferPool
         private final boolean _direct;
         private final int _size;
 
+        /**
+         * Create a sized pool for non direct buffers of a default size
+         * @param wrapped The actual {@link ByteBufferPool}
+         */
+        public Sized(ByteBufferPool wrapped)
+        {
+            this(wrapped, false, -1);
+        }
+
+        /**
+         * Create a sized pool for a give directness and size
+         * @param wrapped The actual {@link ByteBufferPool}
+         * @param direct {@code true} for direct buffers.
+         * @param size The specified size in bytes of the buffer, or -1 for a default
+         */
         public Sized(ByteBufferPool wrapped, boolean direct, int size)
         {
             super(Objects.requireNonNullElse(wrapped, NON_POOLING));

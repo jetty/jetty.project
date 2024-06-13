@@ -18,6 +18,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -38,7 +41,7 @@ public class ByteChannelContentSource implements Content.Source
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker _invoker = new SerializedInvoker();
     private final ByteBufferPool.Sized _byteBufferPool;
-    private final ByteChannel _byteChannel;
+    private ByteChannel _byteChannel;
     private final long _offset;
     private final long _length;
     private RetainableByteBuffer _buffer;
@@ -46,34 +49,33 @@ public class ByteChannelContentSource implements Content.Source
     private Runnable demandCallback;
     private Content.Chunk _terminal;
 
-    public ByteChannelContentSource(SeekableByteChannel seekableByteChannel, long offset, long length) throws IOException
+    public ByteChannelContentSource(SeekableByteChannel seekableByteChannel, long offset, long length)
     {
-        this(null, false, 4096, seekableByteChannel, offset, length);
+        this(new ByteBufferPool.Sized(null), seekableByteChannel, offset, length);
     }
 
-    public ByteChannelContentSource(ByteBufferPool byteBufferPool, boolean direct, int bufferSize, SeekableByteChannel seekableByteChannel, long offset, long length) throws IOException
-    {
-        this(new ByteBufferPool.Sized(byteBufferPool, direct, bufferSize), seekableByteChannel, offset, length);
-    }
-    
-    public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length) throws IOException
+    public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
     {
         this(byteBufferPool, (ByteChannel)seekableByteChannel, offset, length);
-        if (offset > 0)
-            seekableByteChannel.position(offset);
+        if (offset > 0 && seekableByteChannel != null)
+        {
+            try
+            {
+                seekableByteChannel.position(offset);
+            }
+            catch (IOException e)
+            {
+                _terminal = Content.Chunk.from(e, true);
+            }
+        }
     }
 
     public ByteChannelContentSource(ByteChannel byteChannel)
     {
-        this(new ByteBufferPool.Sized(null, false, 4096), byteChannel, -1L, -1L);
-    }
-    
-    public ByteChannelContentSource(ByteBufferPool byteBufferPool, boolean direct, int bufferSize, ByteChannel byteChannel)
-    {
-        this(new ByteBufferPool.Sized(byteBufferPool, direct, bufferSize), byteChannel, -1L, -1L);
+        this(new ByteBufferPool.Sized(null), byteChannel, -1L, -1L);
     }
 
-    public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, int bufferSize, ByteChannel byteChannel)
+    public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
     {
         this(byteBufferPool, byteChannel, -1L, -1L);
     }
@@ -82,8 +84,15 @@ public class ByteChannelContentSource implements Content.Source
     {
         _byteBufferPool = Objects.requireNonNull(byteBufferPool);
         _byteChannel = byteChannel;
-        _offset = offset;
+        _offset = offset < 0 ? 0 : offset;
         _length = length;
+        if (_length >= 0 && _offset > _length)
+            throw new IllegalArgumentException("offset greater than length");
+    }
+
+    protected ByteChannel open() throws IOException
+    {
+        return _byteChannel;
     }
 
     @Override
@@ -110,24 +119,42 @@ public class ByteChannelContentSource implements Content.Source
             ExceptionUtil.run(demandCallback, this::fail);
     }
 
+    private void checkOpenLocked()
+    {
+        if (_terminal == null)
+        {
+            if (_byteChannel == null || !_byteChannel.isOpen())
+            {
+                try
+                {
+                    _byteChannel = open();
+                    if (_byteChannel == null || !_byteChannel.isOpen())
+                        _terminal = Content.Chunk.from(new ClosedChannelException(), true);
+                    if (_offset > 0 && _byteChannel instanceof SeekableByteChannel seekableByteChannel)
+                        seekableByteChannel.position(_offset);
+                }
+                catch (IOException e)
+                {
+                    _terminal = Content.Chunk.from(e, true);
+                }
+
+                if (_terminal != null && _buffer != null)
+                {
+                    _buffer.release();
+                    _buffer = null;
+                }
+            }
+        }
+    }
+
     @Override
     public Content.Chunk read()
     {
         try (AutoLock ignored = lock.lock())
         {
+            checkOpenLocked();
             if (_terminal != null)
                 return _terminal;
-
-            if (!_byteChannel.isOpen())
-            {
-                if (_buffer != null)
-                {
-                    _buffer.release();
-                    _buffer = null;
-                }
-                _terminal = Content.Chunk.from(new ClosedChannelException(), true);
-                return _terminal;
-            }
 
             if (_buffer == null)
             {
@@ -151,10 +178,12 @@ public class ByteChannelContentSource implements Content.Source
                     return null;
                 if (read > 0)
                 {
-                    _buffer.retain();
                     _totalRead += read;
-                    if (_length >= 0 && _totalRead < _length)
+                    if (_length < 0 || _totalRead < _length)
+                    {
+                        _buffer.retain();
                         return Content.Chunk.asChunk(byteBuffer, false, _buffer);
+                    }
 
                     _terminal = Content.Chunk.EOF;
                     IO.close(_byteChannel);
@@ -162,6 +191,8 @@ public class ByteChannelContentSource implements Content.Source
                     _buffer = null;
                     return last;
                 }
+                _buffer.release();
+                _buffer = null;
                 _terminal = Content.Chunk.EOF;
                 IO.close(_byteChannel);
             }
@@ -202,6 +233,10 @@ public class ByteChannelContentSource implements Content.Source
     {
         try (AutoLock ignored = lock.lock())
         {
+            checkOpenLocked();
+            if (_terminal != null || _byteChannel == null || !_byteChannel.isOpen())
+                return false;
+
             if (_offset >= 0 && _byteChannel instanceof SeekableByteChannel seekableByteChannel)
             {
                 try
@@ -210,12 +245,61 @@ public class ByteChannelContentSource implements Content.Source
                     _totalRead = 0;
                     return true;
                 }
-                catch (IOException e)
+                catch (Throwable t)
                 {
-                    // ignore;
+                    _terminal = Content.Chunk.from(t, true);
                 }
             }
             return false;
+        }
+    }
+
+    /**
+     * A {@link ByteChannelContentSource} for a {@link Path}
+     */
+    public static class PathContentSource extends ByteChannelContentSource
+    {
+        private final Path _path;
+
+        public PathContentSource(Path path)
+        {
+            super(new ByteBufferPool.Sized(null), null, 0, size(path));
+            _path = path;
+        }
+
+        public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path)
+        {
+            super(byteBufferPool, null, 0, size(path));
+            _path = path;
+        }
+
+        public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
+        {
+            super(byteBufferPool, null, offset, length);
+            _path = path;
+        }
+
+        public Path getPath()
+        {
+            return _path;
+        }
+
+        @Override
+        protected ByteChannel open() throws IOException
+        {
+            return Files.newByteChannel(_path, StandardOpenOption.READ);
+        }
+
+        private static long size(Path path)
+        {
+            try
+            {
+                return Files.size(path);
+            }
+            catch (IOException e)
+            {
+                return -1L;
+            }
         }
     }
 }

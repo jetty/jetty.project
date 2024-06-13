@@ -36,7 +36,9 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 /**
  * <p>A {@link Content.Source} that provides the file content of the passed {@link Path}.</p>
+ * @deprecated use {@link ByteChannelContentSource.PathContentSource}
  */
+@Deprecated(forRemoval = true)
 public class PathContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();

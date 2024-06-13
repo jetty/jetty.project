@@ -53,8 +53,8 @@ public class ContentCopier extends IteratingNestedCallback
 
         if (current == null)
         {
-            source.demand(this::iterate);
-            return Action.IDLE;
+            source.demand(this::succeeded);
+            return Action.SCHEDULED;
         }
 
         if (chunkProcessor != null && chunkProcessor.process(current, this))
@@ -70,8 +70,11 @@ public class ContentCopier extends IteratingNestedCallback
     @Override
     public void succeeded()
     {
-        terminated = current.isLast();
-        current.release();
+        if (current != null)
+        {
+            terminated = current.isLast();
+            current.release();
+        }
         current = null;
         super.succeeded();
     }

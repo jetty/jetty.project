@@ -15,8 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -26,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
+import org.eclipse.jetty.io.content.ByteChannelContentSource;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -165,46 +164,18 @@ public class MultiPartByteRanges
     }
 
     /**
-     * <p>A specialized {@link org.eclipse.jetty.io.content.PathContentSource}
+     * <p>A specialized {@link org.eclipse.jetty.io.content.ByteChannelContentSource.PathContentSource}
      * whose content is sliced by a byte range.</p>
      */
-    public static class PathContentSource extends org.eclipse.jetty.io.content.PathContentSource
+    public static class PathContentSource extends ByteChannelContentSource.PathContentSource
     {
         private final ByteRange byteRange;
         private long toRead;
 
         public PathContentSource(Path path, ByteRange byteRange)
         {
-            super(path);
+            super(new ByteBufferPool.Sized(null), path, byteRange.first(), byteRange.getLength());
             this.byteRange = byteRange;
-        }
-
-        @Override
-        protected SeekableByteChannel open() throws IOException
-        {
-            SeekableByteChannel channel = super.open();
-            channel.position(byteRange.first());
-            toRead = byteRange.getLength();
-            return channel;
-        }
-
-        @Override
-        protected int read(SeekableByteChannel channel, ByteBuffer byteBuffer) throws IOException
-        {
-            int read = super.read(channel, byteBuffer);
-            if (read <= 0)
-                return read;
-
-            read = (int)Math.min(read, toRead);
-            toRead -= read;
-            byteBuffer.position(read);
-            return read;
-        }
-
-        @Override
-        protected boolean isReadComplete(long read)
-        {
-            return read == byteRange.getLength();
         }
     }
 

@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -90,15 +91,20 @@ public class ContentSourceTest
 
     public static List<Content.Source> all() throws Exception
     {
-        return sources(false);
+        return sources("all");
     }
 
     public static List<Content.Source> multi() throws Exception
     {
-        return sources(true);
+        return sources("multi");
     }
 
-    private static List<Content.Source> sources(boolean supportMultipleReads) throws Exception
+    public static List<Content.Source> rewind() throws Exception
+    {
+        return sources("rewind");
+    }
+
+    private static List<Content.Source> sources(String mode) throws Exception
     {
         AsyncContent asyncSource = new AsyncContent();
         try (asyncSource)
@@ -139,35 +145,48 @@ public class ContentSourceTest
         InputStreamContentSource inputSource2 =
             new InputStreamContentSource(new ContentSourceInputStream(new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"))));
 
-        ByteChannelContentSource bccs0 = new ByteChannelContentSource(byteBufferPool, false, 1024, Files.newByteChannel(path12, StandardOpenOption.READ));
-        ByteChannelContentSource bccs1 = new ByteChannelContentSource(byteBufferPool, false, 4096, Files.newByteChannel(path12, StandardOpenOption.READ), 0, 6);
-        ByteChannelContentSource bccs2 = new ByteChannelContentSource(byteBufferPool, false, 8192, Files.newByteChannel(path0123, StandardOpenOption.READ), 4, 6);
+        ByteChannelContentSource bccs0 = new ByteChannelContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), Files.newByteChannel(path12, StandardOpenOption.READ));
+        ByteChannelContentSource bccs1 = new ByteChannelContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 4096), Files.newByteChannel(path12, StandardOpenOption.READ), 0, 6);
+        ByteChannelContentSource bccs2 = new ByteChannelContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 8192), Files.newByteChannel(path0123, StandardOpenOption.READ), 4, 6);
         ByteChannelContentSource bccs3 = new ByteChannelContentSource(new ByteBufferPool.Sized(null, false, 3), Files.newByteChannel(path0123, StandardOpenOption.READ), 4, 6);
 
-        if (supportMultipleReads)
+        ByteChannelContentSource.PathContentSource pcs0 = new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), path12);
+        ByteChannelContentSource.PathContentSource pcs1 = new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), path0123, 4, 6);
+        ByteChannelContentSource.PathContentSource pcs2 = new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(null, false, 3), path12);
+
+        return switch (mode)
         {
-            return List.of(
+            case "rewind" -> List.of(
+                byteBufferSource,
+                path1,
+                bccs3,
+                pcs2);
+            case "multi" -> List.of(
                 asyncSource,
                 byteBufferSource,
                 transformerSource,
                 path1,
                 inputSource,
                 inputSource2,
-                bccs3);
-        }
-
-        return List.of(
-            asyncSource,
-            byteBufferSource,
-            transformerSource,
-            path0,
-            path1,
-            inputSource,
-            inputSource2,
-            bccs0,
-            bccs1,
-            bccs2,
-            bccs3);
+                bccs3,
+                pcs2);
+            case "all" -> List.of(
+                asyncSource,
+                byteBufferSource,
+                transformerSource,
+                path0,
+                path1,
+                inputSource,
+                inputSource2,
+                bccs0,
+                bccs1,
+                bccs2,
+                bccs3,
+                pcs0,
+                pcs1,
+                pcs2);
+            default -> Collections.emptyList();
+        };
     }
 
     /**
@@ -231,6 +250,45 @@ public class ContentSourceTest
         source.demand(task);
         task.get(10, TimeUnit.SECONDS);
         assertThat(builder.toString(), is("onetwo"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("rewind")
+    public void testReadRewindReadAll(Content.Source source) throws Exception
+    {
+        StringBuilder builder = new StringBuilder();
+        var task = new CompletableTask<>()
+        {
+            @Override
+            public void run()
+            {
+                while (true)
+                {
+                    Content.Chunk chunk = source.read();
+                    if (chunk == null)
+                    {
+                        source.demand(this);
+                        break;
+                    }
+
+                    if (chunk.hasRemaining() && builder.isEmpty())
+                        assertTrue(source.rewind());
+
+                    if (chunk.hasRemaining())
+                        builder.append(BufferUtil.toString(chunk.getByteBuffer()));
+                    chunk.release();
+
+                    if (chunk.isLast())
+                    {
+                        complete(null);
+                        break;
+                    }
+                }
+            }
+        };
+        source.demand(task);
+        task.get(10, TimeUnit.SECONDS);
+        assertThat(builder.toString(), is("oneonetwo"));
     }
 
     @ParameterizedTest
