@@ -86,8 +86,6 @@ public class ByteChannelContentSource implements Content.Source
         _byteChannel = byteChannel;
         _offset = offset < 0 ? 0 : offset;
         _length = length;
-        if (_length >= 0 && _offset > _length)
-            throw new IllegalArgumentException("offset greater than length");
     }
 
     protected ByteChannel open() throws IOException

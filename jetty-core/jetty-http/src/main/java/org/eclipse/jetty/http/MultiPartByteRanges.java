@@ -169,13 +169,9 @@ public class MultiPartByteRanges
      */
     public static class PathContentSource extends ByteChannelContentSource.PathContentSource
     {
-        private final ByteRange byteRange;
-        private long toRead;
-
         public PathContentSource(Path path, ByteRange byteRange)
         {
             super(new ByteBufferPool.Sized(null), path, byteRange.first(), byteRange.getLength());
-            this.byteRange = byteRange;
         }
     }
 

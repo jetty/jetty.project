@@ -46,6 +46,9 @@ public class ContentCopier extends IteratingNestedCallback
     @Override
     protected Action process() throws Throwable
     {
+        if (current != null)
+            current.release();
+
         if (terminated)
             return Action.SUCCEEDED;
 
@@ -60,32 +63,22 @@ public class ContentCopier extends IteratingNestedCallback
         if (chunkProcessor != null && chunkProcessor.process(current, this))
             return Action.SCHEDULED;
 
+        terminated = current.isLast();
+
         if (Content.Chunk.isFailure(current))
-            throw current.getFailure();
+        {
+            failed(current.getFailure());
+            return Action.SCHEDULED;
+        }
 
         sink.write(current.isLast(), current.getByteBuffer(), this);
         return Action.SCHEDULED;
     }
 
     @Override
-    public void succeeded()
+    protected void onCompleteFailure(Throwable x)
     {
-        if (current != null)
-        {
-            terminated = current.isLast();
-            current.release();
-        }
-        current = null;
-        super.succeeded();
-    }
-
-    @Override
-    public void failed(Throwable x)
-    {
-        if (current != null)
-            current.release();
-        current = null;
         source.fail(x);
-        super.failed(x);
+        super.onCompleteFailure(x);
     }
 }
