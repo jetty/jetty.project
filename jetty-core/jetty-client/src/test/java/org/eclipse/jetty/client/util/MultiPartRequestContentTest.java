@@ -283,8 +283,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        PathRequestContent content = new PathRequestContent(contentType, tmpPath, client.getByteBufferPool());
-        content.setUseDirectByteBuffers(client.isUseOutputDirectByteBuffers());
+        PathRequestContent content = new PathRequestContent(contentType, tmpPath, client.getByteBufferPool(), client.isUseOutputDirectByteBuffers(), -1);
         multiPart.addPart(new MultiPart.ContentSourcePart(name, tmpPath.getFileName().toString(), null, content));
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())

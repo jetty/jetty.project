@@ -55,6 +55,11 @@ public class PathRequestContent extends ByteChannelContentSource.PathContentSour
         this(contentType, filePath, new ByteBufferPool.Sized(bufferPool));
     }
 
+    public PathRequestContent(String contentType, Path filePath, ByteBufferPool bufferPool, boolean direct, int bufferSize) throws IOException
+    {
+        this(contentType, filePath, new ByteBufferPool.Sized(bufferPool, direct, bufferSize));
+    }
+
     public PathRequestContent(String contentType, Path filePath, ByteBufferPool.Sized bufferPool) throws IOException
     {
         super(bufferPool, filePath);
@@ -65,5 +70,21 @@ public class PathRequestContent extends ByteChannelContentSource.PathContentSour
     public String getContentType()
     {
         return contentType;
+    }
+
+    /**
+     * @deprecated Use the {@link ByteBufferPool.Sized} in a constructor
+     */
+    @Deprecated (forRemoval = true)
+    public void setUseDirectByteBuffers()
+    {
+    }
+
+    /**
+     * @deprecated Use the {@link ByteBufferPool.Sized} in a constructor
+     */
+    @Deprecated (forRemoval = true)
+    public void setBufferSize(int bufferSize)
+    {
     }
 }
