@@ -60,10 +60,10 @@ public class ServletToHandlerDocs
             //   - servletRequest.getProtocol();
             String protocol = request.getConnectionMetaData().getProtocol();
 
-            // Gets the full request URI.
+            // Gets the request URL.
             // Replaces:
             //   - servletRequest.getRequestURL();
-            String fullRequestURI = request.getHttpURI().asString();
+            StringBuffer requestURL = new StringBuffer(HttpURI.build(request.getHttpURI()).query(null).asString());
 
             // Gets the request context.
             // Replaces:
