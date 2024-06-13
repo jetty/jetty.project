@@ -12,7 +12,7 @@ lib/jetty-util-ajax-${jetty.version}.jar
 lib/jetty-openid-${jetty.version}.jar
 
 [files]
-basehome:etc/jetty-openid-baseloginservice.xml|etc/jetty-openid-baseloginservice.xml
+basehome:modules/openid/jetty-openid-baseloginservice.xml|etc/jetty-openid-baseloginservice.xml
 
 [xml]
 etc/jetty-openid-baseloginservice.xml
