@@ -579,7 +579,7 @@ public class ErrorHandler implements Request.Handler
      * when calling {@link Response#write(boolean, ByteBuffer, Callback)} to wrap the passed in {@link Callback}
      * so that the {@link RetainableByteBuffer} used can be released.
      */
-    private static class WriteErrorCallback extends Callback.Wrapper
+    private static class WriteErrorCallback extends Callback.Nested
     {
         private final Retainable _retainable;
 

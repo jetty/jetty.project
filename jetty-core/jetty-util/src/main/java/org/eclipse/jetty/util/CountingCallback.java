@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * }
  * </pre>
  */
-public class CountingCallback extends Callback.Wrapper
+public class CountingCallback extends Callback.Nested
 {
     private final AtomicInteger count;
 
@@ -67,23 +67,15 @@ public class CountingCallback extends Callback.Wrapper
     }
 
     @Override
-    public void failed(Throwable failure)
+    protected void onAbort(Throwable cause)
     {
-        // Forward failure on the first failure.
-        while (true)
-        {
-            int current = count.get();
+        count.set(1);
+    }
 
-            // Already completed ?
-            if (current == 0)
-                return;
-
-            if (count.compareAndSet(current, 0))
-            {
-                super.failed(failure);
-                return;
-            }
-        }
+    @Override
+    protected void onFailure(Throwable cause)
+    {
+        count.set(0);
     }
 
     @Override

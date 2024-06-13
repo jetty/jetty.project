@@ -180,16 +180,16 @@ public interface Callback extends Invocable
      */
     static Callback from(InvocationType invocationType, Runnable success, Consumer<Throwable> failure)
     {
-        return new Callback()
+        return new Abstract()
         {
             @Override
-            public void succeeded()
+            public void onCompleteSuccess()
             {
                 success.run();
             }
 
             @Override
-            public void failed(Throwable x)
+            public void onCompleteFailure(Throwable x)
             {
                 try
                 {
@@ -269,8 +269,9 @@ public interface Callback extends Invocable
      */
     static Callback from(Callback callback, Runnable completed)
     {
-        return new Wrapper(callback)
+        return new Nested(callback)
         {
+            @Override
             public void onCompleted()
             {
                 completed.run();
@@ -288,8 +289,26 @@ public interface Callback extends Invocable
      */
     static Callback from(Callback callback, Consumer<Throwable> completed)
     {
-        return new Wrapper(callback)
+        return new Abstract()
         {
+            @Override
+            public boolean abort(Throwable cause)
+            {
+                return callback.abort(cause) && super.abort(cause);
+            }
+
+            @Override
+            public void failed(Throwable cause)
+            {
+                callback.failed(cause);
+            }
+
+            @Override
+            public void succeeded()
+            {
+                callback.succeeded();
+            }
+
             @Override
             protected void onCompleteSuccess()
             {
@@ -299,7 +318,7 @@ public interface Callback extends Invocable
             @Override
             protected void onCompleteFailure(Throwable cause)
             {
-                completed.accept(cause);
+                super.onCompleteFailure(cause);
             }
         };
     }
@@ -599,11 +618,10 @@ public interface Callback extends Invocable
         }
     }
 
-    /**
-     * Nested Completing Callback that completes after
-     * completing the nested callback
+    /*
+     * A Callback that wraps another Callback
      */
-    class Wrapper extends Abstract
+    class Wrapper implements Callback
     {
         private final Callback callback;
 
@@ -618,21 +636,21 @@ public interface Callback extends Invocable
         }
 
         @Override
-        protected void onCompleteSuccess()
+        public boolean abort(Throwable cause)
         {
-            callback.succeeded();
+            return callback.abort(cause);
         }
 
         @Override
-        protected void onAbort(Throwable cause)
-        {
-            callback.abort(cause);
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
+        public void failed(Throwable cause)
         {
             callback.failed(cause);
+        }
+
+        @Override
+        public void succeeded()
+        {
+            callback.succeeded();
         }
 
         @Override
@@ -649,14 +667,34 @@ public interface Callback extends Invocable
     }
 
     /**
-     * @deprecated use {@link Wrapper}
+     * Nested Completing Callback that completes after
+     * completing the nested callback
      */
-    @Deprecated(forRemoval = true, since = "12.1.0")
-    class Nested extends Wrapper
+    class Nested extends Abstract
     {
+        private final Callback callback;
+
         public Nested(Callback callback)
         {
-            super(callback);
+            this.callback = Objects.requireNonNull(callback);
+        }
+
+        @Override
+        protected void onAbort(Throwable cause)
+        {
+            callback.abort(cause);
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            callback.failed(cause);
         }
     }
 

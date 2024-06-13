@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -39,6 +40,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EventsHandlerTest
 {
@@ -117,6 +119,7 @@ public class EventsHandlerTest
     {
         AtomicReference<Long> beginNanoTime = new AtomicReference<>();
         AtomicReference<Long> readyNanoTime = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
         EventsHandler eventsHandler = new EventsHandler(new EchoHandler())
         {
             @Override
@@ -124,6 +127,7 @@ public class EventsHandlerTest
             {
                 beginNanoTime.set(request.getBeginNanoTime());
                 readyNanoTime.set(request.getHeadersNanoTime());
+                latch.countDown();
             }
         };
         startServer(eventsHandler);
@@ -148,6 +152,7 @@ public class EventsHandlerTest
             String response = endPoint.getResponse();
 
             assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
             assertThat(NanoTime.millisSince(beginNanoTime.get()), greaterThan(900L));
             assertThat(NanoTime.millisSince(readyNanoTime.get()), greaterThan(450L));
         }

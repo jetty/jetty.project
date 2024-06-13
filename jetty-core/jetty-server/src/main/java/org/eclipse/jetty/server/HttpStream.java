@@ -222,6 +222,12 @@ public interface HttpStream extends Callback
         }
 
         @Override
+        public boolean abort(Throwable cause)
+        {
+            return getWrapped().abort(cause);
+        }
+
+        @Override
         public void failed(Throwable x)
         {
             getWrapped().failed(x);

@@ -32,7 +32,7 @@ public class ContextResponse extends Response.Wrapper
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        Callback contextCallback = new Callback.Wrapper(callback)
+        Callback contextCallback = new Callback.Nested(callback)
         {
             @Override
             protected void onCompleteSuccess()
