@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.common;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -219,6 +220,15 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     public Object getTransport()
     {
         return session;
+    }
+
+    @Override
+    public SslSessionData getSslSessionData()
+    {
+        X509Certificate[] peerCertificates = getQuicSession().getPeerCertificates();
+        if (peerCertificates == null)
+            return null;
+        return SslSessionData.from(null, null, null, peerCertificates);
     }
 
     public void onWritable()
