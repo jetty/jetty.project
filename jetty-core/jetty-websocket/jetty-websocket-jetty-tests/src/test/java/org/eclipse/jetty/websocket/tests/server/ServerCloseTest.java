@@ -269,7 +269,7 @@ public class ServerCloseTest
 
         // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
         AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
-        assertTrue(serverEndpoint.connectLatch.await(5, SECONDS));
+        assertTrue(serverEndpoint.openLatch.await(5, SECONDS));
         Session session = serverEndpoint.getSession();
         session.close(StatusCode.SHUTDOWN, "SHUTDOWN hard close", Callback.NOOP);
 
@@ -294,7 +294,7 @@ public class ServerCloseTest
 
         // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
         AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
-        assertTrue(serverEndpoint.connectLatch.await(5, SECONDS));
+        assertTrue(serverEndpoint.openLatch.await(5, SECONDS));
         Session session = serverEndpoint.getSession();
         session.close(StatusCode.SHUTDOWN, "SHUTDOWN hard close", Callback.NOOP);
 

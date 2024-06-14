@@ -68,12 +68,12 @@ public abstract class QuotedCSVParser
         if (value == null)
             return;
 
-        // The parser does not actually use LIST_TOKENIZER as we wish to keep the tokens in the StringBuffer
+        // The parser does not actually use LIST_TOKENIZER as we wish to keep the tokens in the StringBuilder
         // and allow them to be mutated by the callbacks.
 
         // TODO update to RFC9110, specifically no OWS around '='
 
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
 
         int l = value.length();
         State state = State.VALUE;
@@ -261,7 +261,7 @@ public abstract class QuotedCSVParser
      *
      * @param buffer Containing the trimmed value and parameters
      */
-    protected void parsedValueAndParams(StringBuffer buffer)
+    protected void parsedValueAndParams(StringBuilder buffer)
     {
     }
 
@@ -270,7 +270,7 @@ public abstract class QuotedCSVParser
      *
      * @param buffer Containing the trimmed value, which may be mutated
      */
-    protected void parsedValue(StringBuffer buffer)
+    protected void parsedValue(StringBuilder buffer)
     {
     }
 
@@ -282,7 +282,7 @@ public abstract class QuotedCSVParser
      * @param paramName The index of the start of the parameter just parsed
      * @param paramValue The index of the start of the parameter value just parsed, or -1
      */
-    protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+    protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
     {
     }
 }

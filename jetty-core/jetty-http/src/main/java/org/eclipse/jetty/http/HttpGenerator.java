@@ -195,7 +195,7 @@ public class HttpGenerator
                 int pos = BufferUtil.flipToFill(header);
                 try
                 {
-                    // generate ResponseLine
+                    // generate request line
                     generateRequestLine(info, header);
 
                     if (info.getHttpVersion() == HttpVersion.HTTP_0_9)
@@ -520,7 +520,7 @@ public class HttpGenerator
         String reason = response.getReason();
         if (preprepared != null)
         {
-            if (reason == null)
+            if (reason == null || preprepared._reason.equals(reason))
                 header.put(preprepared._responseLine);
             else
             {
@@ -779,11 +779,9 @@ public class HttpGenerator
         }
     }
 
+    @Deprecated(forRemoval = true)
     public static byte[] getReasonBuffer(int code)
     {
-        PreparedResponse status = code < __preprepared.length ? __preprepared[code] : null;
-        if (status != null)
-            return status._reason;
         return null;
     }
 
@@ -807,9 +805,16 @@ public class HttpGenerator
     // Build cache of response lines for status
     private static class PreparedResponse
     {
-        byte[] _reason;
-        byte[] _schemeCode;
-        byte[] _responseLine;
+        final String _reason;
+        final byte[] _schemeCode;
+        final byte[] _responseLine;
+
+        private PreparedResponse(String reason, byte[] schemeCode, byte[] responseLine)
+        {
+            _reason = reason;
+            _schemeCode = schemeCode;
+            _responseLine = responseLine;
+        }
     }
 
     private static final PreparedResponse[] __preprepared = new PreparedResponse[HttpStatus.MAX_CODE + 1];
@@ -838,10 +843,7 @@ public class HttpGenerator
             line[versionLength + 5 + reason.length()] = HttpTokens.CARRIAGE_RETURN;
             line[versionLength + 6 + reason.length()] = HttpTokens.LINE_FEED;
 
-            __preprepared[i] = new PreparedResponse();
-            __preprepared[i]._schemeCode = Arrays.copyOfRange(line, 0, versionLength + 5);
-            __preprepared[i]._reason = Arrays.copyOfRange(line, versionLength + 5, line.length - 2);
-            __preprepared[i]._responseLine = line;
+            __preprepared[i] = new PreparedResponse(reason, Arrays.copyOfRange(line, 0, versionLength + 5), line);
         }
     }
 

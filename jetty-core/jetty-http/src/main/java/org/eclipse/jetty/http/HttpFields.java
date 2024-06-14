@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -22,7 +23,10 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -516,10 +520,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         if (val == null)
             return -1;
 
-        final long date = DateParser.parseDate(val);
-        if (date == -1)
-            throw new IllegalArgumentException("Cannot convert date: " + val);
-        return date;
+        return TimeUnit.SECONDS.toMillis(HttpDateTime.parse(val).toEpochSecond());
     }
 
     /**
@@ -597,7 +598,41 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      */
     default Set<String> getFieldNamesCollection()
     {
-        return stream().map(HttpField::getName).collect(Collectors.toSet());
+        Set<HttpHeader> seenByHeader = EnumSet.noneOf(HttpHeader.class);
+        Set<String> seenByName = null;
+        List<String> list = new ArrayList<>(size());
+
+        for (HttpField f : this)
+        {
+            HttpHeader header = f.getHeader();
+            if (header == null)
+            {
+                if (seenByName == null)
+                    seenByName = new TreeSet<>(String::compareToIgnoreCase);
+                if (seenByName.add(f.getName()))
+                    list.add(f.getName());
+            }
+            else if (seenByHeader.add(header))
+            {
+                list.add(f.getName());
+            }
+        }
+
+        // use the list to retain a rough ordering
+        return new AbstractSet<>()
+        {
+            @Override
+            public Iterator<String> iterator()
+            {
+                return list.iterator();
+            }
+
+            @Override
+            public int size()
+            {
+                return list.size();
+            }
+        };
     }
 
     /**
@@ -897,8 +932,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable add(String name, String value)
         {
-            if (value == null)
-                throw new IllegalArgumentException("null value");
+            Objects.requireNonNull(name);
+            Objects.requireNonNull(value);
             return add(new HttpField(name, value));
         }
 
@@ -913,6 +948,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable add(String name, long value)
         {
+            Objects.requireNonNull(name);
             return add(new HttpField.LongValueHttpField(name, value));
         }
 
@@ -927,6 +963,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable add(HttpHeader header, HttpHeaderValue value)
         {
+            Objects.requireNonNull(header);
+            Objects.requireNonNull(value);
             return add(header, value.toString());
         }
 
@@ -941,8 +979,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable add(HttpHeader header, String value)
         {
-            if (value == null)
-                throw new IllegalArgumentException("null value");
+            Objects.requireNonNull(header);
+            Objects.requireNonNull(value);
             return add(new HttpField(header, value));
         }
 
@@ -957,6 +995,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable add(HttpHeader header, long value)
         {
+            Objects.requireNonNull(header);
             return add(new HttpField.LongValueHttpField(header, value));
         }
 
@@ -968,6 +1007,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable add(HttpField field)
         {
+            Objects.requireNonNull(field);
             ListIterator<HttpField> i = listIterator(size());
             i.add(field);
             return this;
@@ -990,6 +1030,28 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
+         * <p>Adds a field associated with a list of values.</p>
+         *
+         * @param name the name of the field
+         * @param list the List value of the field.
+         * @return this builder
+         */
+        default Mutable add(String name, List<String> list)
+        {
+            Objects.requireNonNull(name);
+            Objects.requireNonNull(list);
+            if (list.isEmpty())
+                return this;
+            if (list.size() == 1)
+            {
+                String v = list.get(0);
+                return add(name, v == null ? "" : v);
+            }
+            HttpField field = new HttpField.MultiHttpField(name, list);
+            return add(field);
+        }
+
+        /**
          * <p>Adds the given value(s) to the {@link HttpField} with the given name,
          * encoding them as comma-separated if necessary,
          * unless they are already present in existing fields with the same name.</p>
@@ -1000,6 +1062,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable addCSV(HttpHeader header, String... values)
         {
+            Objects.requireNonNull(header);
             QuotedCSV existing = null;
             for (HttpField f : this)
             {
@@ -1027,6 +1090,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable addCSV(String name, String... values)
         {
+            Objects.requireNonNull(name);
             QuotedCSV existing = null;
             for (HttpField f : this)
             {
@@ -1054,6 +1118,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable addDateField(String name, long date)
         {
+            Objects.requireNonNull(name);
             add(name, DateGenerator.formatDate(date));
             return this;
         }
@@ -1083,6 +1148,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default void ensureField(HttpField field)
         {
+            Objects.requireNonNull(field);
             HttpHeader header = field.getHeader();
             // Is the field value multi valued?
             if (field.getValue().indexOf(',') < 0)
@@ -1114,6 +1180,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable put(HttpField field)
         {
+            Objects.requireNonNull(field);
             boolean put = false;
             ListIterator<HttpField> i = listIterator();
             while (i.hasNext())
@@ -1148,6 +1215,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable put(String name, String value)
         {
+            Objects.requireNonNull(name);
             if (value == null)
                 return remove(name);
             return put(new HttpField(name, value));
@@ -1164,6 +1232,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable put(HttpHeader header, HttpHeaderValue value)
         {
+            Objects.requireNonNull(header);
             if (value == null)
                 return remove(header);
             return put(new HttpField(header, value.toString()));
@@ -1180,13 +1249,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable put(HttpHeader header, String value)
         {
+            Objects.requireNonNull(header);
             if (value == null)
                 return remove(header);
             return put(new HttpField(header, value));
         }
 
         /**
-         * Set a field.
+         * <p>Puts a field associated with a list of values.</p>
          *
          * @param name the name of the field
          * @param list the List value of the field. If null the field is cleared.
@@ -1194,19 +1264,17 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable put(String name, List<String> list)
         {
-            // TODO: this implementation should not add
-            //  multiple headers, see RFC 9110 section 5.3.
-            boolean first = true;
-            for (String s : list)
+            Objects.requireNonNull(name);
+            if (list == null || list.isEmpty())
+                return remove(name);
+            if (list.size() == 1)
             {
-                HttpField field = new HttpField(name, s);
-                if (first)
-                    put(field);
-                else
-                    add(field);
-                first = false;
+                String value = list.get(0);
+                return put(name, value == null ? "" : value);
             }
-            return this;
+
+            HttpField field = new HttpField.MultiHttpField(name, list);
+            return put(field);
         }
 
         /**
@@ -1221,6 +1289,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable putDate(HttpHeader name, long date)
         {
+            Objects.requireNonNull(name);
             return put(name, DateGenerator.formatDate(date));
         }
 
@@ -1236,6 +1305,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable putDate(String name, long date)
         {
+            Objects.requireNonNull(name);
             return put(name, DateGenerator.formatDate(date));
         }
 
@@ -1249,6 +1319,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable put(HttpHeader header, long value)
         {
+            Objects.requireNonNull(header);
             if (value == 0 && header == HttpHeader.CONTENT_LENGTH)
                 return put(HttpFields.CONTENT_LENGTH_0);
             return put(new HttpField.LongValueHttpField(header, value));
@@ -1264,6 +1335,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable put(String name, long value)
         {
+            Objects.requireNonNull(name);
             if (value == 0 && HttpHeader.CONTENT_LENGTH.is(name))
                 return put(HttpFields.CONTENT_LENGTH_0);
             return put(new HttpField.LongValueHttpField(name, value));
@@ -1347,7 +1419,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable computeField(HttpHeader header, BiFunction<HttpHeader, List<HttpField>, HttpField> computeFn)
         {
-            return put(computeFn.apply(header, stream().filter(f -> f.getHeader() == header).collect(Collectors.toList())));
+            Objects.requireNonNull(header);
+            HttpField result = computeFn.apply(header, stream().filter(f -> f.getHeader() == header).toList());
+            return result != null ? put(result) : remove(header);
         }
 
         /**
@@ -1360,7 +1434,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
         {
-            return put(computeFn.apply(name, stream().filter(f -> f.is(name)).collect(Collectors.toList())));
+            Objects.requireNonNull(name);
+            HttpField result = computeFn.apply(name, stream().filter(f -> f.is(name)).toList());
+            return result != null ? put(result) : remove(name);
         }
 
         /**
@@ -1371,6 +1447,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable remove(HttpHeader header)
         {
+            Objects.requireNonNull(header);
             Iterator<HttpField> i = iterator();
             while (i.hasNext())
             {
@@ -1408,6 +1485,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable remove(String name)
         {
+            Objects.requireNonNull(name);
             for (ListIterator<HttpField> i = listIterator(); i.hasNext(); )
             {
                 HttpField f = i.next();
@@ -1636,6 +1714,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             @Override
             public Mutable put(HttpField field)
             {
+                Objects.requireNonNull(field);
                 // rewrite put to ensure that removes are called before replace
                 int put = -1;
                 ListIterator<HttpField> i = _fields.listIterator();
@@ -1655,7 +1734,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 {
                     field = onAddField(field);
                     if (field != null)
-                        add(field);
+                        _fields.add(field);
                 }
                 else
                 {

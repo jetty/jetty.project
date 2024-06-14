@@ -14,34 +14,64 @@
 package org.eclipse.jetty.util;
 
 /**
- * ClassVisibilityChecker
- *
  * Interface to be implemented by classes capable of checking class visibility
  * for a context.
  */
 public interface ClassVisibilityChecker
 {
-
     /**
-     * Is the class a System Class.
-     * A System class is a class that is visible to a webapplication,
+     * Is the class a Protected (System) Class.
+     * A System class is a class that is visible to a web application,
      * but that cannot be overridden by the contents of WEB-INF/lib or
      * WEB-INF/classes
      *
      * @param clazz The fully qualified name of the class.
      * @return True if the class is a system class.
      */
-    boolean isSystemClass(Class<?> clazz);
+    boolean isProtectedClass(Class<?> clazz);
 
     /**
-     * Is the class a Server Class.
+     * Is the class a Hidden (Server) Class.
      * A Server class is a class that is part of the implementation of
-     * the server and is NIT visible to a webapplication. The web
-     * application may provide it's own implementation of the class,
+     * the server and is NOT visible to a web application. The web
+     * application may provide its own implementation of the class,
      * to be loaded from WEB-INF/lib or WEB-INF/classes
      *
      * @param clazz The fully qualified name of the class.
      * @return True if the class is a server class.
      */
-    boolean isServerClass(Class<?> clazz);
+    boolean isHiddenClass(Class<?> clazz);
+
+    /**
+     * Is the class a System Class.
+     * A System class is a class that is visible to a web application,
+     * but that cannot be overridden by the contents of WEB-INF/lib or
+     * WEB-INF/classes
+     *
+     * @param clazz The fully qualified name of the class.
+     * @return True if the class is a system class.
+     * @deprecated use {@link #isProtectedClass(Class)}
+     */
+    @Deprecated (forRemoval = true, since = "12.0.9")
+    default boolean isSystemClass(Class<?> clazz)
+    {
+        return isProtectedClass(clazz);
+    }
+
+    /**
+     * Is the class a Server Class.
+     * A Server class is a class that is part of the implementation of
+     * the server and is NOT visible to a web application. The web
+     * application may provide its own implementation of the class,
+     * to be loaded from WEB-INF/lib or WEB-INF/classes
+     *
+     * @param clazz The fully qualified name of the class.
+     * @return True if the class is a server class.
+     * @deprecated use {@link #isHiddenClass(Class)}
+     */
+    @Deprecated (forRemoval = true, since = "12.0.9")
+    default boolean isServerClass(Class<?> clazz)
+    {
+        return isHiddenClass(clazz);
+    }
 }

@@ -23,7 +23,6 @@ import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
-import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -60,25 +59,25 @@ import jakarta.servlet.http.PushBuilder;
 import jakarta.servlet.http.WebConnection;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletRequestInfo;
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.CookieCache;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpCookieUtils;
@@ -94,6 +93,7 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,6 +104,132 @@ import org.slf4j.LoggerFactory;
  */
 public class ServletApiRequest implements HttpServletRequest
 {
+    public static class CrossContextForwarded extends ServletApiRequest
+    {
+        protected CrossContextForwarded(ServletContextRequest servletContextRequest)
+        {
+            super(servletContextRequest);
+        }
+
+        @Override
+        protected void extractQueryParameters() throws BadMessageException
+        {
+            // Extract query string parameters; these may be replaced by a forward()
+            // and may have already been extracted by mergeQueryParameters().
+            if (_queryParameters == null)
+            {
+                String forwardQueryString = (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
+                String originalQueryString = getQueryString();
+                if (StringUtil.isBlank(forwardQueryString))
+                {
+                    if (StringUtil.isBlank(originalQueryString))
+                    {
+                        _queryParameters = ServletContextRequest.NO_PARAMS;
+                    }
+                    else
+                    {
+                        _queryParameters = new Fields(true);
+                        UrlEncoded.decodeTo(forwardQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                    }
+                }
+                else
+                {
+                    _queryParameters = new Fields(true);
+                    if (!StringUtil.isBlank(originalQueryString))
+                        UrlEncoded.decodeTo(originalQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                    UrlEncoded.decodeTo(forwardQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                }
+            }
+        }
+    }
+
+    public static class CrossContextIncluded extends ServletApiRequest
+    {
+        private final ServletPathMapping _originalMapping;
+
+        protected CrossContextIncluded(ServletContextRequest servletContextRequest)
+        {
+            super(servletContextRequest);
+            Request dispatchedRequest = servletContextRequest.getWrapped();
+
+            _originalMapping = ServletPathMapping.from(dispatchedRequest.getAttribute(CrossContextDispatcher.ORIGINAL_SERVLET_MAPPING));
+
+            //ensure the request is set up with the correct INCLUDE attributes now we know the matchedResource
+            MatchedResource<ServletHandler.MappedServlet> matchedResource = servletContextRequest.getMatchedResource();
+            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, matchedResource.getResource().getServletPathMapping(getServletRequestInfo().getDecodedPathInContext()));
+            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, matchedResource.getMatchedPath().getPathMatch());
+            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, matchedResource.getMatchedPath().getPathInfo());
+            dispatchedRequest.setAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH, servletContextRequest.getContext().getContextPath());
+        }
+        
+        @Override
+        public String getPathInfo()
+        {
+            return _originalMapping == null ? null : _originalMapping.getPathInfo();
+        }
+        
+        @Override
+        public String getContextPath()
+        {
+            return (String)getAttribute(CrossContextDispatcher.ORIGINAL_CONTEXT_PATH);
+        }
+        
+        @Override
+        public String getQueryString()
+        {
+            return (String)getAttribute(CrossContextDispatcher.ORIGINAL_QUERY_STRING);
+        }
+
+        @Override
+        public String getServletPath()
+        {
+            return _originalMapping == null ? null : _originalMapping.getServletPath();
+        }
+
+        @Override
+        public HttpServletMapping getHttpServletMapping()
+        {
+            return _originalMapping;
+        }
+
+        @Override
+        public String getRequestURI()
+        {
+            return (String)getAttribute(CrossContextDispatcher.ORIGINAL_URI);
+        }
+
+        @Override
+        protected void extractQueryParameters() throws BadMessageException
+        {
+            // Extract query string parameters; these may be replaced by a forward()
+            // and may have already been extracted by mergeQueryParameters().
+            if (_queryParameters == null)
+            {
+                String includedQueryString = (String)getAttribute(RequestDispatcher.INCLUDE_QUERY_STRING);
+                String originalQueryString = getQueryString();
+                if (StringUtil.isBlank(includedQueryString))
+                {
+                    if (StringUtil.isBlank(originalQueryString))
+                    {
+                        _queryParameters = ServletContextRequest.NO_PARAMS;
+                    }
+                    else
+                    {
+                        _queryParameters = new Fields(true);
+                        UrlEncoded.decodeTo(includedQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                    }
+                }
+                else
+                {
+                    _queryParameters = new Fields(true);
+                    if (!StringUtil.isBlank(originalQueryString))
+                        UrlEncoded.decodeTo(originalQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                    UrlEncoded.decodeTo(includedQueryString, _queryParameters::add, getServletRequestInfo().getQueryEncoding());
+                }
+            }
+        }
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(ServletApiRequest.class);
     private static final SetCookieParser SET_COOKIE_PARSER = SetCookieParser.newInstance();
 
@@ -115,10 +241,9 @@ public class ServletApiRequest implements HttpServletRequest
     private int _inputState = ServletContextRequest.INPUT_NONE;
     private BufferedReader _reader;
     private String _contentType;
-    private boolean _contentParamsExtracted;
-    private Fields _contentParameters;
+    protected Fields _contentParameters;
     private Fields _parameters;
-    private Fields _queryParameters;
+    protected Fields _queryParameters;
     private ServletMultiPartFormData.Parts _parts;
     private boolean _asyncSupported = true;
 
@@ -247,17 +372,20 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Cookie[] getCookies()
     {
-        List<HttpCookie> httpCookies = Request.getCookies(getRequest());
-        if (httpCookies.isEmpty())
-            return null;
-        if (httpCookies instanceof ServletCookieList servletCookieList)
-            return servletCookieList.getServletCookies();
+        return CookieCache.getApiCookies(getRequest(), Cookie.class, this::convertCookie);
+    }
 
-        ServletCookieList servletCookieList = new ServletCookieList(httpCookies, getRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
-        getRequest().setAttribute(Request.COOKIE_ATTRIBUTE, servletCookieList);
-        if (getRequest().getComponents().getCache().getAttribute(Request.CACHE_ATTRIBUTE) instanceof CookieCache cookieCache)
-            cookieCache.replaceCookieList(servletCookieList);
-        return servletCookieList.getServletCookies();
+    private Cookie convertCookie(HttpCookie cookie)
+    {
+        CookieCompliance compliance = getRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance();
+        Cookie result = new Cookie(cookie.getName(), cookie.getValue());
+        //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
+        if (CookieCompliance.RFC2965.equals(compliance))
+        {
+            result.setPath(cookie.getPath());
+            result.setDomain(cookie.getDomain());
+        }
+        return result;
     }
 
     @Override
@@ -505,6 +633,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
+        //TODO support parts read during a cross context dispatch to environment other than EE10
         if (_parts == null)
         {
             try
@@ -569,8 +698,8 @@ public class ServletApiRequest implements HttpServletRequest
                         try (InputStream is = p.getInputStream())
                         {
                             String content = IO.toString(is, charset == null ? defaultCharset : Charset.forName(charset));
-                            if (_contentParameters == null)
-                                _contentParameters = new Fields();
+                            if (_contentParameters == null || _contentParameters.isEmpty())
+                                _contentParameters = new Fields(true);
                             _contentParameters.add(p.getName(), content);
                         }
                     }
@@ -880,10 +1009,8 @@ public class ServletApiRequest implements HttpServletRequest
         if (_inputState != ServletContextRequest.INPUT_NONE && _inputState != ServletContextRequest.INPUT_STREAM)
             throw new IllegalStateException("READER");
         _inputState = ServletContextRequest.INPUT_STREAM;
-
-        if (getServletRequestInfo().getServletChannel().isExpecting100Continue())
-            getServletRequestInfo().getServletChannel().continue100(getServletRequestInfo().getHttpInput().available());
-
+        // Try to write a 100 continue, ignoring failure result if it was not necessary.
+        _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         return getServletRequestInfo().getHttpInput();
     }
 
@@ -914,119 +1041,115 @@ public class ServletApiRequest implements HttpServletRequest
         return Collections.unmodifiableMap(getParameters().toStringArrayMap());
     }
 
-    private Fields getParameters()
+    public Fields getParameters()
     {
-        extractContentParameters();
-        extractQueryParameters();
-
-        // Do parameters need to be combined?
-        if (ServletContextRequest.isNoParams(_queryParameters) || _queryParameters.getSize() == 0)
-            _parameters = _contentParameters;
-        else if (ServletContextRequest.isNoParams(_contentParameters) || _contentParameters.getSize() == 0)
-            _parameters = _queryParameters;
-        else if (_parameters == null)
-        {
-            _parameters = new Fields(true);
-            _parameters.addAll(_queryParameters);
-            _parameters.addAll(_contentParameters);
-        }
-
         // protect against calls to recycled requests (which is illegal, but
         // this gives better failures
         Fields parameters = _parameters;
+        if (parameters == null)
+        {
+            extractContentParameters();
+            extractQueryParameters();
+
+            // Do parameters need to be combined?
+            if (ServletContextRequest.isNoParams(_queryParameters) || _queryParameters.getSize() == 0)
+                _parameters = _contentParameters;
+            else if (ServletContextRequest.isNoParams(_contentParameters) || _contentParameters.getSize() == 0)
+                _parameters = _queryParameters;
+            else if (_parameters == null)
+            {
+                _parameters = new Fields(true);
+                _parameters.addAll(_queryParameters);
+                _parameters.addAll(_contentParameters);
+            }
+            parameters = _parameters;
+        }
         return parameters == null ? ServletContextRequest.NO_PARAMS : parameters;
     }
 
     private void extractContentParameters() throws BadMessageException
     {
-        if (!_contentParamsExtracted)
+        // Extract content parameters; these cannot be replaced by a forward()
+        // once extracted and may have already been extracted by getParts() or
+        // by a processing happening after a form-based authentication.
+        if (_contentParameters == null)
         {
-            // content parameters need boolean protection as they can only be read
-            // once, but may be reset to null by a reset
-            _contentParamsExtracted = true;
-
-            // Extract content parameters; these cannot be replaced by a forward()
-            // once extracted and may have already been extracted by getParts() or
-            // by a processing happening after a form-based authentication.
-            if (_contentParameters == null)
+            try
             {
-                try
+                int contentLength = getContentLength();
+                if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
                 {
-                    int contentLength = getContentLength();
-                    if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
+                    String baseType = HttpField.getValueParameters(getContentType(), null);
+                    if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
+                        getRequest().getConnectionMetaData().getHttpConfiguration().isFormEncodedMethod(getMethod()))
                     {
-                        String baseType = HttpField.getValueParameters(getContentType(), null);
-                        if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
-                            getRequest().getConnectionMetaData().getHttpConfiguration().isFormEncodedMethod(getMethod()))
+                        try
                         {
-                            try
-                            {
-                                ServletContextHandler contextHandler = getServletRequestInfo().getServletContextHandler();
-                                int maxKeys = contextHandler.getMaxFormKeys();
-                                int maxContentSize = contextHandler.getMaxFormContentSize();
-                                _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
-                            }
-                            catch (IllegalStateException | IllegalArgumentException | ExecutionException |
-                                   InterruptedException e)
-                            {
-                                LOG.warn(e.toString());
-                                throw new BadMessageException("Unable to parse form content", e);
-                            }
+                            ServletContextHandler contextHandler = getServletRequestInfo().getServletContextHandler();
+                            int maxKeys = contextHandler.getMaxFormKeys();
+                            int maxContentSize = contextHandler.getMaxFormContentSize();
+                            _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
                         }
-                        else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
-                            getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) != null)
+                        catch (IllegalStateException | IllegalArgumentException | ExecutionException |
+                               InterruptedException e)
                         {
-                            try
-                            {
-                                getParts();
-                            }
-                            catch (IOException e)
-                            {
-                                String msg = "Unable to extract content parameters";
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug(msg, e);
-                                throw new RuntimeIOException(msg, e);
-                            }
-                            catch (ServletException e)
-                            {
-                                Throwable cause = e.getCause();
-                                if (cause instanceof BadMessageException badMessageException)
-                                    throw badMessageException;
-
-                                String msg = "Unable to extract content parameters";
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug(msg, e);
-                                throw new RuntimeIOException(msg, e);
-                            }
-                        }
-                        else
-                        {
-                            try
-                            {
-                                _contentParameters = FormFields.get(getRequest()).get();
-                            }
-                            catch (IllegalStateException | IllegalArgumentException | ExecutionException |
-                                   InterruptedException e)
-                            {
-                                LOG.warn(e.toString());
-                                throw new BadMessageException("Unable to parse form content", e);
-                            }
+                            LOG.warn(e.toString());
+                            throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
+                    else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
+                        getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) != null)
+                    {
+                        try
+                        {
+                            getParts();
+                        }
+                        catch (IOException e)
+                        {
+                            String msg = "Unable to extract content parameters";
+                            if (LOG.isDebugEnabled())
+                                LOG.debug(msg, e);
+                            throw new RuntimeIOException(msg, e);
+                        }
+                        catch (ServletException e)
+                        {
+                            Throwable cause = e.getCause();
+                            if (cause instanceof BadMessageException badMessageException)
+                                throw badMessageException;
 
-                    if (_contentParameters == null || _contentParameters.isEmpty())
-                        _contentParameters = ServletContextRequest.NO_PARAMS;
+                            String msg = "Unable to extract content parameters";
+                            if (LOG.isDebugEnabled())
+                                LOG.debug(msg, e);
+                            throw new RuntimeIOException(msg, e);
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            _contentParameters = FormFields.get(getRequest()).get();
+                        }
+                        catch (IllegalStateException | IllegalArgumentException | ExecutionException |
+                               InterruptedException e)
+                        {
+                            LOG.warn(e.toString());
+                            throw new BadMessageException("Unable to parse form content", e);
+                        }
+                    }
                 }
-                catch (IllegalStateException | IllegalArgumentException e)
-                {
-                    LOG.warn(e.toString());
-                    throw new BadMessageException("Unable to parse form content", e);
-                }
+
+                if (_contentParameters == null || _contentParameters.isEmpty())
+                    _contentParameters = ServletContextRequest.NO_PARAMS;
+            }
+            catch (IllegalStateException | IllegalArgumentException e)
+            {
+                LOG.warn(e.toString());
+                throw new BadMessageException("Unable to parse form content", e);
             }
         }
     }
 
-    private void extractQueryParameters() throws BadMessageException
+    protected void extractQueryParameters() throws BadMessageException
     {
         // Extract query string parameters; these may be replaced by a forward()
         // and may have already been extracted by mergeQueryParameters().
@@ -1109,7 +1232,7 @@ public class ServletApiRequest implements HttpServletRequest
 
         // If no port specified, return the default port for the scheme
         if (port <= 0)
-            return HttpScheme.getDefaultPort(getScheme());
+            return URIUtil.getDefaultPortForScheme(getScheme());
 
         // return a specific port
         return port;
@@ -1164,7 +1287,12 @@ public class ServletApiRequest implements HttpServletRequest
             };
         }
 
-        if (_reader == null || !charset.equals(_readerCharset))
+        if (_reader != null && charset.equals(_readerCharset))
+        {
+            // Try to write a 100 continue, ignoring failure result if it was not necessary.
+            _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+        }
+        else
         {
             ServletInputStream in = getInputStream();
             _readerCharset = charset;
@@ -1178,10 +1306,6 @@ public class ServletApiRequest implements HttpServletRequest
                     in.close();
                 }
             };
-        }
-        else if (getServletRequestInfo().getServletChannel().isExpecting100Continue())
-        {
-            getServletRequestInfo().getServletChannel().continue100(getServletRequestInfo().getHttpInput().available());
         }
         _inputState = ServletContextRequest.INPUT_READER;
         return _reader;
@@ -1383,7 +1507,9 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public DispatcherType getDispatcherType()
     {
-        return DispatcherType.REQUEST;
+        Request request = getRequest();
+        String dispatchType = request.getContext().getCrossContextDispatchType(request);
+        return dispatchType == null ? DispatcherType.REQUEST : DispatcherType.valueOf(dispatchType);
     }
 
     @Override
@@ -1404,70 +1530,24 @@ public class ServletApiRequest implements HttpServletRequest
 
     static class AmbiguousURI extends ServletApiRequest
     {
-        protected AmbiguousURI(ServletContextRequest servletContextRequest)
+        private final String msg;
+
+        protected AmbiguousURI(ServletContextRequest servletContextRequest, String msg)
         {
             super(servletContextRequest);
+            this.msg = msg;
         }
 
         @Override
         public String getPathInfo()
         {
-            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
+            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, msg);
         }
 
         @Override
         public String getServletPath()
         {
-            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
-        }
-    }
-
-    /**
-     * Extended list of HttpCookies that converts and caches a servlet Cookie array.
-     */
-    private static class ServletCookieList extends AbstractList<HttpCookie>
-    {
-        private final List<HttpCookie> _httpCookies;
-        private final Cookie[] _cookies;
-
-        ServletCookieList(List<HttpCookie> httpCookies, CookieCompliance compliance)
-        {
-            _httpCookies = httpCookies;
-            _cookies = new Cookie[_httpCookies.size()];
-            int i = 0;
-            for (HttpCookie httpCookie : _httpCookies)
-            {
-                _cookies[i++] = convertCookie(httpCookie, compliance);
-            }
-        }
-
-        @Override
-        public HttpCookie get(int index)
-        {
-            return _httpCookies.get(index);
-        }
-
-        public Cookie[] getServletCookies()
-        {
-            return _cookies;
-        }
-
-        @Override
-        public int size()
-        {
-            return _cookies.length;
-        }
-
-        private static Cookie convertCookie(HttpCookie cookie, CookieCompliance compliance)
-        {
-            Cookie result = new Cookie(cookie.getName(), cookie.getValue());
-            //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
-            if (CookieCompliance.RFC2965.equals(compliance))
-            {
-                result.setPath(cookie.getPath());
-                result.setDomain(cookie.getDomain());
-            }
-            return result;
+            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, msg);
         }
     }
 }

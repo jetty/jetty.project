@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8.websocket</groupId>
     <artifactId>jetty-ee8-websocket</artifactId>
-    <version>12.0.5-SNAPSHOT</version>
+    <version>12.0.11-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-websocket-javax-server</artifactId>
   <name>EE8 :: Websocket :: Javax Server</name>
@@ -52,7 +52,7 @@
         <configuration>
           <instructions>
             <Bundle-Description>javax.websocket.server Implementation</Bundle-Description>
-            <Export-Package>org.eclipse.jetty.websocket.javax.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+            <Export-Package>org.eclipse.jetty.ee8.websocket.javax.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
             <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.ee8.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=javax.websocket.server.ServerEndpointConfig$Configurator</Provide-Capability>
           </instructions>

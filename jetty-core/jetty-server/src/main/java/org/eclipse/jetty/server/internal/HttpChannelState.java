@@ -16,7 +16,9 @@ package org.eclipse.jetty.server.internal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -27,6 +29,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -41,6 +44,7 @@ import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -100,7 +104,8 @@ public class HttpChannelState implements HttpChannel, Components
     private final AutoLock _lock = new AutoLock();
     private final HandlerInvoker _handlerInvoker = new HandlerInvoker();
     private final ConnectionMetaData _connectionMetaData;
-    private final SerializedInvoker _serializedInvoker;
+    private final SerializedInvoker _readInvoker;
+    private final SerializedInvoker _writeInvoker;
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
     private Thread _handling;
     private boolean _handled;
@@ -117,12 +122,33 @@ public class HttpChannelState implements HttpChannel, Components
     private Consumer<Throwable> _onFailure;
     private Throwable _callbackFailure;
     private Attributes _cache;
+    private boolean _expects100Continue;
+    private ComplianceViolation.Listener _complianceViolationListener;
 
     public HttpChannelState(ConnectionMetaData connectionMetaData)
     {
         _connectionMetaData = connectionMetaData;
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
-        _serializedInvoker = new HttpChannelSerializedInvoker();
+        _readInvoker = new HttpChannelSerializedInvoker();
+        _writeInvoker = new HttpChannelSerializedInvoker();
+    }
+
+    @Override
+    public void initialize()
+    {
+        List<ComplianceViolation.Listener> listeners = _connectionMetaData.getHttpConfiguration().getComplianceViolationListeners();
+        _complianceViolationListener = switch (listeners.size())
+        {
+            case 0 -> ComplianceViolation.Listener.NOOP;
+            case 1 -> listeners.get(0).initialize();
+            default -> new InitializedCompositeComplianceViolationListener(listeners);
+        };
+    }
+
+    @Override
+    public ComplianceViolation.Listener getComplianceViolationListener()
+    {
+        return _complianceViolationListener;
     }
 
     @Override
@@ -154,6 +180,8 @@ public class HttpChannelState implements HttpChannel, Components
             _readFailure = null;
             _onFailure = null;
             _callbackFailure = null;
+            _expects100Continue = false;
+            _complianceViolationListener = null;
         }
     }
 
@@ -242,6 +270,7 @@ public class HttpChannelState implements HttpChannel, Components
                 throw new IllegalStateException("duplicate request");
             _request = new ChannelRequest(this, request);
             _response = new ChannelResponse(_request);
+            _expects100Continue = request.is100ContinueExpected();
 
             HttpConfiguration httpConfiguration = getHttpConfiguration();
             HttpFields.Mutable responseHeaders = _response.getHeaders();
@@ -296,7 +325,7 @@ public class HttpChannelState implements HttpChannel, Components
             onContent = _onContentAvailable;
             _onContentAvailable = null;
         }
-        return _serializedInvoker.offer(onContent);
+        return _readInvoker.offer(onContent);
     }
 
     @Override
@@ -335,17 +364,17 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             // If a write call is pending, take the writeCallback to fail below.
-            Runnable invokeWriteFailure = _response.lockedFailWrite(t, false);
+            Runnable invokeWriteFailure = _response.lockedFailWrite(t);
 
             // If there was a pending IO operation, deliver the idle timeout via them.
             if (invokeOnContentAvailable != null || invokeWriteFailure != null)
-                return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
+                return Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure));
 
             // Otherwise, if there are idle timeout listeners, ask them whether we should call onFailure.
             Predicate<TimeoutException> onIdleTimeout = _onIdleTimeout;
             if (onIdleTimeout != null)
             {
-                return _serializedInvoker.offer(() ->
+                return () ->
                 {
                     if (onIdleTimeout.test(t))
                     {
@@ -354,7 +383,7 @@ public class HttpChannelState implements HttpChannel, Components
                         if (task != null)
                             task.run();
                     }
-                });
+                };
             }
         }
 
@@ -381,7 +410,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 // If the channel doesn't have a request, then the error must have occurred during the parsing of
                 // the request line / headers, so make a temp request for logging and producing an error response.
-                MetaData.Request errorRequest = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
+                MetaData.Request errorRequest = new MetaData.Request("GET", HttpURI.from("/badRequest"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
                 _request = new ChannelRequest(this, errorRequest);
                 _response = new ChannelResponse(_request);
             }
@@ -404,7 +433,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _onContentAvailable = null;
 
                 // If a write call is in progress, take the writeCallback to fail below.
-                Runnable invokeWriteFailure = _response.lockedFailWrite(x, true);
+                Runnable invokeWriteFailure = _response.lockedFailWrite(x);
 
                 // Notify the failure listeners only once.
                 Consumer<Throwable> onFailure = _onFailure;
@@ -424,7 +453,7 @@ public class HttpChannelState implements HttpChannel, Components
                 };
 
                 // Serialize all the error actions.
-                task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnFailureListeners);
+                task = Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure), _readInvoker.offer(invokeOnFailureListeners));
             }
         }
 
@@ -434,6 +463,21 @@ public class HttpChannelState implements HttpChannel, Components
             LOG.debug("consuming content during error {}", unconsumed.toString());
 
         return task;
+    }
+
+    @Override
+    public Runnable onClose()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onClose {} stream={}", this, _stream);
+
+            // If the channel doesn't have a stream, then no action is needed.
+            if (_stream == null)
+                return null;
+        }
+        return onFailure(new EofException());
     }
 
     public void addHttpStreamWrapper(Function<HttpStream, HttpStream> onStreamEvent)
@@ -519,16 +563,18 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public String toString()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock lock = _lock.tryLock())
         {
-            return String.format("%s@%x{handling=%s, handled=%b, send=%s, completed=%b, request=%s}",
+            boolean held = lock.isHeldByCurrentThread();
+            return String.format("%s@%x{handling=%s, handled=%s, send=%s, completed=%s, request=%s}",
                 this.getClass().getSimpleName(),
                 hashCode(),
-                _handling,
-                _handled,
-                _streamSendState,
-                _callbackCompleted,
-                _request);
+                held ? _handling : "?",
+                held ? _handled : "?",
+                held ? _streamSendState : "?",
+                held ? _callbackCompleted : "?",
+                held ? _request : "?"
+            );
         }
     }
 
@@ -568,7 +614,7 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpURI uri = request.getHttpURI();
                 if (uri.hasViolations())
                 {
-                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri);
+                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri, HttpChannel.from(request).getComplianceViolationListener());
                     if (badMessage != null)
                         throw new BadMessageException(badMessage);
                 }
@@ -690,6 +736,10 @@ public class HttpChannelState implements HttpChannel, Components
             }
             finally
             {
+                ComplianceViolation.Listener listener = getComplianceViolationListener();
+                if (listener != null)
+                    listener.onRequestEnd(_request);
+
                 // This is THE ONLY PLACE the stream is succeeded or failed.
                 if (failure == null)
                     stream.succeeded();
@@ -838,31 +888,37 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public Content.Chunk read()
         {
-            HttpStream stream;
-            try (AutoLock ignored = _lock.lock())
+            try
             {
-                HttpChannelState httpChannel = lockedGetHttpChannelState();
+                HttpStream stream;
+                try (AutoLock ignored = _lock.lock())
+                {
+                    HttpChannelState httpChannel = lockedGetHttpChannelState();
 
-                Content.Chunk error = httpChannel._readFailure;
-                httpChannel._readFailure = Content.Chunk.next(error);
-                if (error != null)
-                    return error;
+                    Content.Chunk error = httpChannel._readFailure;
+                    httpChannel._readFailure = Content.Chunk.next(error);
+                    if (error != null)
+                        return error;
 
-                stream = httpChannel._stream;
+                    stream = httpChannel._stream;
+                }
+                Content.Chunk chunk = stream.read();
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read {}", chunk);
+
+                if (chunk != null && chunk.hasRemaining())
+                    _contentBytesRead.add(chunk.getByteBuffer().remaining());
+
+                if (chunk instanceof Trailers trailers)
+                    _trailers = trailers.getTrailers();
+
+                return chunk;
             }
-
-            Content.Chunk chunk = stream.read();
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("read {}", chunk);
-
-            if (chunk != null && chunk.hasRemaining())
-                _contentBytesRead.add(chunk.getByteBuffer().remaining());
-
-            if (chunk instanceof Trailers trailers)
-                _trailers = trailers.getTrailers();
-
-            return chunk;
+            catch (Throwable t)
+            {
+                return Content.Chunk.from(t, true);
+            }
         }
 
         @Override
@@ -884,28 +940,43 @@ public class HttpChannelState implements HttpChannel, Components
             boolean error;
             HttpStream stream;
             HttpChannelState httpChannelState;
+            InterimCallback interimCallback = null;
             try (AutoLock ignored = _lock.lock())
             {
                 httpChannelState = lockedGetHttpChannelState();
+                stream = httpChannelState._stream;
+                error = httpChannelState._readFailure != null;
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("demand {}", httpChannelState);
 
-                error = httpChannelState._readFailure != null;
                 if (!error)
                 {
                     if (httpChannelState._onContentAvailable != null)
                         throw new IllegalArgumentException("demand pending");
                     httpChannelState._onContentAvailable = demandCallback;
-                }
 
-                stream = httpChannelState._stream;
+                    if (httpChannelState._expects100Continue && httpChannelState._response._writeCallback == null)
+                    {
+                        httpChannelState._response._writeCallback = interimCallback = new InterimCallback(httpChannelState);
+                        httpChannelState._expects100Continue = false;
+                    }
+                }
             }
 
             if (error)
-                httpChannelState._serializedInvoker.run(demandCallback);
-            else
+            {
+                httpChannelState._readInvoker.run(demandCallback);
+            }
+            else if (interimCallback == null)
+            {
                 stream.demand();
+            }
+            else
+            {
+                stream.send(_metaData, new MetaData.Response(HttpStatus.CONTINUE_100, null, getConnectionMetaData().getHttpVersion(), HttpFields.EMPTY), false, null, interimCallback);
+                interimCallback.whenComplete((v, t) -> stream.demand());
+            }
         }
 
         @Override
@@ -1004,6 +1075,22 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public int hashCode()
+        {
+            // Override the implementation from the base class,
+            // and align with the implementation of Request.Wrapper.
+            return System.identityHashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            // Override the implementation from the base class,
+            // and align with the implementation of Request.Wrapper.
+            return this == obj;
+        }
+
+        @Override
         public String toString()
         {
             return String.format("%s@%x %s %s", getMethod(), hashCode(), getHttpURI(), _metaData.getHttpVersion());
@@ -1018,6 +1105,8 @@ public class HttpChannelState implements HttpChannel, Components
      */
     public static class ChannelResponse implements Response, Callback
     {
+        private static final CompletableFuture<Void> UNEXPECTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("100 not expected"));
+        private static final CompletableFuture<Void> COMMITTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("Committed"));
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;
         protected int _status;
@@ -1048,21 +1137,18 @@ public class HttpChannelState implements HttpChannel, Components
             return _writeCallback != null;
         }
 
-        private Runnable lockedFailWrite(Throwable x, boolean fatal)
+        private Runnable lockedFailWrite(Throwable x)
         {
             assert _request._lock.isHeldByCurrentThread();
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
-            if (writeCallback != null || fatal)
-            {
-                if (_writeFailure == null)
-                    _writeFailure = x;
-                else
-                    ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
-            }
             if (writeCallback == null)
                 return null;
-            return () -> writeCallback.failed(x);
+            if (_writeFailure == null)
+                _writeFailure = x;
+            else
+                ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
+            return () -> HttpChannelState.failed(writeCallback, x);
         }
 
         public long getContentBytesWritten()
@@ -1118,13 +1204,13 @@ public class HttpChannelState implements HttpChannel, Components
         {
             long length = BufferUtil.length(content);
 
-            HttpChannelState httpChannel;
+            HttpChannelState httpChannelState;
             HttpStream stream;
             Throwable writeFailure;
             MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = _request.lockedGetHttpChannelState();
+                httpChannelState = _request.lockedGetHttpChannelState();
                 long totalWritten = _contentBytesWritten + length;
                 writeFailure = _writeFailure;
 
@@ -1132,11 +1218,17 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     if (_writeCallback != null)
                     {
+                        if (_writeCallback instanceof InterimCallback interimCallback)
+                        {
+                            // Do this write after the interim callback.
+                            interimCallback.whenComplete((v, t) -> write(last, content, callback));
+                            return;
+                        }
                         writeFailure = new WritePendingException();
                     }
                     else
                     {
-                        long committedContentLength = httpChannel._committedContentLength;
+                        long committedContentLength = httpChannelState._committedContentLength;
                         long contentLength = committedContentLength >= 0 ? committedContentLength : getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
 
                         if (contentLength >= 0 && totalWritten != contentLength)
@@ -1160,27 +1252,27 @@ public class HttpChannelState implements HttpChannel, Components
 
                 // If no failure by this point, we can try to switch to sending state.
                 if (writeFailure == null)
-                    writeFailure = httpChannel.lockedStreamSend(last, length);
+                    writeFailure = httpChannelState.lockedStreamSend(last, length);
 
                 if (writeFailure == NOTHING_TO_SEND)
                 {
-                    httpChannel._serializedInvoker.run(callback::succeeded);
+                    httpChannelState._writeInvoker.run(callback::succeeded);
                     return;
                 }
                 // Have we failed in some way?
                 if (writeFailure != null)
                 {
                     Throwable failure = writeFailure;
-                    httpChannel._serializedInvoker.run(() -> callback.failed(failure));
+                    httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(callback, failure));
                     return;
                 }
 
                 // No failure, do the actual stream send using the ChannelResponse as the callback.
                 _writeCallback = callback;
                 _contentBytesWritten = totalWritten;
-                stream = httpChannel._stream;
+                stream = httpChannelState._stream;
                 if (_httpFields.commit())
-                    responseMetaData = lockedPrepareResponse(httpChannel, last);
+                    responseMetaData = lockedPrepareResponse(httpChannelState, last);
             }
 
             if (LOG.isDebugEnabled())
@@ -1210,12 +1302,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(true);
             }
             if (callback != null)
-            {
-                // Do not use SerializedInvoker here because application code running within
-                // SerializedInvoker could issue blocking write() or close() that would deadlock.
-                // We must execute in case of recursive write within the callback.
-                getRequest().getContext().execute(callback::succeeded);
-            }
+                httpChannel._writeInvoker.run(callback::succeeded);
         }
 
         /**
@@ -1225,6 +1312,7 @@ public class HttpChannelState implements HttpChannel, Components
          * <p>
          * The implementation maintains the {@link #_streamSendState} before taking
          * and serializing the call to the {@link #_writeCallback}, which was set by the call to {@code write}.
+         *
          * @param x The reason for the failure.
          */
         @Override
@@ -1243,12 +1331,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
-            {
-                // Do not use SerializedInvoker here because application code running within
-                // SerializedInvoker could issue blocking write() or close() that would deadlock.
-                // We must execute in case of recursive write within the callback.
-                getRequest().getContext().execute(() -> callback.failed(x));
-            }
+                httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
         }
 
         @Override
@@ -1299,19 +1382,36 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
         {
-            Completable completable = new Completable();
-            if (HttpStatus.isInterim(status))
+            if (!HttpStatus.isInterim(status))
+                return CompletableFuture.failedFuture(new IllegalArgumentException("Invalid interim status code: " + status));
+
+            HttpStream stream;
+            MetaData.Response response;
+            InterimCallback interimCallback;
+            try (AutoLock ignored = _request._lock.lock())
             {
-                HttpChannelState channel = _request.getHttpChannelState();
-                HttpVersion version = channel.getConnectionMetaData().getHttpVersion();
-                MetaData.Response response = new MetaData.Response(status, null, version, headers);
-                channel._stream.send(_request._metaData, response, false, null, completable);
+                HttpChannelState httpChannelState = _request.lockedGetHttpChannelState();
+                stream = httpChannelState._stream;
+
+                if (status == HttpStatus.CONTINUE_100)
+                {
+                    if (!httpChannelState._expects100Continue)
+                        return UNEXPECTED_100_CONTINUE;
+                    httpChannelState._expects100Continue = false;
+                }
+
+                if (_httpFields.isCommitted())
+                    return status == HttpStatus.CONTINUE_100 ? COMMITTED_100_CONTINUE : CompletableFuture.failedFuture(new IllegalStateException("Committed"));
+                if (_writeCallback != null)
+                    return CompletableFuture.failedFuture(new WritePendingException());
+
+                _writeCallback = interimCallback = new InterimCallback(httpChannelState);
+                HttpVersion version = httpChannelState.getConnectionMetaData().getHttpVersion();
+                response = new MetaData.Response(status, null, version, headers);
             }
-            else
-            {
-                completable.failed(new IllegalArgumentException("Invalid interim status code: " + status));
-            }
-            return completable;
+
+            stream.send(_request._metaData, response, false, null, interimCallback);
+            return interimCallback;
         }
 
         MetaData.Response lockedPrepareResponse(HttpChannelState httpChannel, boolean last)
@@ -1377,20 +1477,19 @@ public class HttpChannelState implements HttpChannel, Components
 
             try (AutoLock ignored = _request._lock.lock())
             {
+                if (lockedCompleteCallback())
+                    return;
+
                 request = _request;
                 httpChannelState = _request._httpChannelState;
                 response = httpChannelState._response;
                 stream = httpChannelState._stream;
 
-                // We are being tough on handler implementations and expect them
-                // to not have pending operations when calling succeeded or failed.
+                // We convert a call to succeeded with pending demand/write into a call to failed.
                 if (httpChannelState._onContentAvailable != null)
-                    throw new IllegalStateException("demand pending");
+                    failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
                 if (response.lockedIsWriting())
-                    throw new IllegalStateException("write pending");
-
-                if (lockedCompleteCallback())
-                    return;
+                    failure = ExceptionUtil.combine(failure, new IllegalStateException("write pending"));
 
                 assert httpChannelState._callbackFailure == null;
 
@@ -1406,7 +1505,7 @@ public class HttpChannelState implements HttpChannel, Components
                 long committedContentLength = httpChannelState._committedContentLength;
 
                 if (committedContentLength >= 0 && committedContentLength != totalWritten && !(totalWritten == 0 && HttpMethod.HEAD.is(_request.getMethod())))
-                    failure = new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten));
+                    failure = ExceptionUtil.combine(failure, new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten)));
 
                 // Is the request fully consumed?
                 Throwable unconsumed = stream.consumeAvailable();
@@ -1441,43 +1540,55 @@ public class HttpChannelState implements HttpChannel, Components
 
         /**
          * Called when the {@link Handler} (or it's delegates) fail the request handling.
+         *
          * @param failure The reason for the failure.
          */
         @Override
         public void failed(Throwable failure)
         {
-            // Called when the request/response cycle is completing with a failure.
-            HttpStream stream;
-            ChannelRequest request;
-            HttpChannelState httpChannelState;
-            ErrorResponse errorResponse = null;
-            try (AutoLock ignored = _request._lock.lock())
+            try
             {
-                if (lockedCompleteCallback())
-                    return;
-                httpChannelState = _request._httpChannelState;
-                stream = httpChannelState._stream;
-                request = _request;
+                // Called when the request/response cycle is completing with a failure.
+                HttpStream stream;
+                ChannelRequest request;
+                HttpChannelState httpChannelState;
+                ErrorResponse errorResponse = null;
+                try (AutoLock ignored = _request._lock.lock())
+                {
+                    if (lockedCompleteCallback())
+                        return;
+                    httpChannelState = _request._httpChannelState;
+                    stream = httpChannelState._stream;
+                    request = _request;
 
-                assert httpChannelState._callbackFailure == null;
+                    assert httpChannelState._callbackFailure == null;
 
-                httpChannelState._callbackFailure = failure;
+                    httpChannelState._callbackFailure = failure;
 
-                // Consume any input.
-                Throwable unconsumed = stream.consumeAvailable();
-                ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
+                    // Consume any input.
+                    Throwable unconsumed = stream.consumeAvailable();
+                    ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", httpChannelState._stream.isCommitted(), httpChannelState._response.isCommitted(), this);
+                    ChannelResponse response = httpChannelState._response;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", stream.isCommitted(), response.isCommitted(), this);
 
-                if (!stream.isCommitted())
-                    errorResponse = new ErrorResponse(request);
+                    // There may have been an attempt to write an error response that failed.
+                    // Do not try to write again an error response if already committed.
+                    if (!stream.isCommitted())
+                        errorResponse = new ErrorResponse(request);
+                }
+
+                if (errorResponse != null)
+                    Response.writeError(request, errorResponse, new ErrorCallback(request, errorResponse, stream, failure), failure);
+                else
+                    _request.getHttpChannelState()._handlerInvoker.failed(failure);
             }
-
-            if (errorResponse != null)
-                Response.writeError(request, errorResponse, new ErrorCallback(request, errorResponse, stream, failure), failure);
-            else
-                _request.getHttpChannelState()._handlerInvoker.failed(failure);
+            catch (Throwable t)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
+                throw t;
+            }
         }
 
         private boolean lockedCompleteCallback()
@@ -1613,12 +1724,13 @@ public class HttpChannelState implements HttpChannel, Components
             }
             else
             {
-                httpChannelState._handlerInvoker.failed(failure);
+                HttpChannelState.failed(httpChannelState._handlerInvoker, failure);
             }
         }
 
         /**
          * Called when the error write in {@link HttpChannelState.ChannelCallback#failed(Throwable)} fails.
+         *
          * @param x The reason for the failure.
          */
         @Override
@@ -1634,15 +1746,56 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannelState = _request.lockedGetHttpChannelState();
                 httpChannelState._response._status = _errorResponse._status;
             }
-            if (ExceptionUtil.areNotAssociated(failure, x))
-                failure.addSuppressed(x);
-            httpChannelState._handlerInvoker.failed(failure);
+            ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
+            HttpChannelState.failed(httpChannelState._handlerInvoker, failure);
         }
 
         @Override
         public String toString()
         {
             return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+        }
+    }
+
+    private static class InterimCallback extends Callback.Completable
+    {
+        private final HttpChannelState _httpChannelState;
+
+        private InterimCallback(HttpChannelState httpChannelState)
+        {
+            _httpChannelState = httpChannelState;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            completing();
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            try
+            {
+                completing();
+                super.failed(x);
+            }
+            catch (Throwable t)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(t, x);
+                throw t;
+            }
+        }
+
+        private void completing()
+        {
+            try (AutoLock ignore = _httpChannelState._lock.lock())
+            {
+                // Allow other writes to proceed
+                if (_httpChannelState._response._writeCallback == this)
+                    _httpChannelState._response._writeCallback = null;
+            }
         }
     }
 
@@ -1669,6 +1822,119 @@ public class HttpChannelState implements HttpChannel, Components
             Runnable failureTask = onFailure(failure);
             if (failureTask != null)
                 failureTask.run();
+        }
+    }
+
+    /**
+     * A Listener that represents multiple user {@link ComplianceViolation.Listener} instances
+     */
+    private static class InitializedCompositeComplianceViolationListener implements ComplianceViolation.Listener
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(InitializedCompositeComplianceViolationListener.class);
+        private final List<ComplianceViolation.Listener> _listeners;
+
+        /**
+         * Construct a new ComplianceViolations that will initialize the list of listeners and notify events to all.
+         *
+         * @param unInitializedListeners the user listeners to initialized and notify. Null or empty list is not allowed..
+         */
+        public InitializedCompositeComplianceViolationListener(List<ComplianceViolation.Listener> unInitializedListeners)
+        {
+            List<ComplianceViolation.Listener> initialized = null;
+            for (ComplianceViolation.Listener listener : unInitializedListeners)
+            {
+                ComplianceViolation.Listener listening = listener.initialize();
+                if (listening != listener)
+                {
+                    initialized = new ArrayList<>(unInitializedListeners.size());
+                    for (ComplianceViolation.Listener l : unInitializedListeners)
+                    {
+                        if (l == listener)
+                            break;
+                        initialized.add(l);
+                    }
+                }
+                if (initialized != null)
+                    initialized.add(listening);
+            }
+
+            _listeners = initialized == null ? unInitializedListeners : initialized;
+        }
+
+        @Override
+        public void onRequestEnd(Attributes request)
+        {
+            for (ComplianceViolation.Listener listener : _listeners)
+            {
+                try
+                {
+                    listener.onRequestEnd(request);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of onRequestEnd {}", listener, request, e);
+                }
+            }
+        }
+
+        @Override
+        public void onRequestBegin(Attributes request)
+        {
+            for (ComplianceViolation.Listener listener : _listeners)
+            {
+                try
+                {
+                    listener.onRequestBegin(request);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of onRequestBegin {}", listener, request, e);
+                }
+            }
+        }
+
+        @Override
+        public ComplianceViolation.Listener initialize()
+        {
+            throw new IllegalStateException("already initialized");
+        }
+
+        @Override
+        public void onComplianceViolation(ComplianceViolation.Event event)
+        {
+            assert event != null;
+            for (ComplianceViolation.Listener listener : _listeners)
+            {
+                try
+                {
+                    listener.onComplianceViolation(event);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Invoke a callback failure, handling any {@link Throwable} thrown
+     * by adding the passed {@code failure} as a suppressed with
+     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
+     * @param callback The callback to fail
+     * @param failure The failure
+     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
+     */
+    private static void failed(Callback callback, Throwable failure)
+    {
+        try
+        {
+            callback.failed(failure);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
+            throw t;
         }
     }
 }

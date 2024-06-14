@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import jakarta.servlet.AsyncContext;
@@ -35,9 +36,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletMapping;
@@ -50,17 +49,12 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -93,17 +87,10 @@ public class DispatcherTest
         _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendServerVersion(false);
         _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
 
-        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
         _contextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("contextResources"));
-        contextCollection.addHandler(_contextHandler);
-        ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setBaseResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest")));
-        ContextHandler resourceContextHandler = new ContextHandler("/resource");
-        resourceContextHandler.setHandler(resourceHandler);
-        contextCollection.addHandler(resourceContextHandler);
-        _server.setHandler(contextCollection);
+        _server.setHandler(_contextHandler);
         _server.addConnector(_connector);
 
         _server.start();
@@ -196,7 +183,7 @@ public class DispatcherTest
 
         assertEquals(expected, rawResponse);
     }
-    
+
     @Test
     public void testForwardNonUTF8() throws Exception
     {
@@ -378,7 +365,7 @@ public class DispatcherTest
                 Connection: close\r
                 \r
                 """);
-            assertThat(rawResponse, containsString(" 500 "));
+            assertThat(rawResponse, containsString(" 400 "));
         }
     }
 
@@ -396,7 +383,7 @@ public class DispatcherTest
             Connection: close\r
             \r
             """);
-        
+
         String expected = """
             HTTP/1.1 200 OK\r
             specialSetHeader: specialSetHeader\r
@@ -830,98 +817,6 @@ public class DispatcherTest
     }
 
     @Test
-    public void testWorkingResourceHandler() throws Exception
-    {
-        String rawResponse = _connector.getResponse("""
-                GET /resource/content.txt HTTP/1.1\r
-                Host: localhost\r
-                Connection: close\r
-                \r
-                """);
-
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        // from inside the context.txt file
-        assertThat(response.getContent(), containsString("content goes here")); // from inside the context.txt file
-    }
-
-    @Test
-    @Disabled("Cross context dispatch not yet supported in jetty-12")
-    public void testIncludeToResourceHandler() throws Exception
-    {
-        _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
-
-        String rawResponse = _connector.getResponse("""
-            GET /context/resourceServlet/content.txt?do=include HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """);
-
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        // from inside the context.txt file
-        assertThat(response.getContent(), containsString("content goes here"));
-    }
-
-    @Test
-    @Disabled("Cross context dispatch not yet supported in jetty-12")
-    public void testForwardToResourceHandler() throws Exception
-    {
-        _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
-
-        String rawResponse = _connector.getResponse("""
-            GET /context/resourceServlet/content.txt?do=forward HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """);
-
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        // from inside the context.txt file
-        assertThat(response.getContent(), containsString("content goes here"));
-    }
-
-    @Test
-    @Disabled("Cross context dispatch not yet supported in jetty-12")
-    public void testWrappedIncludeToResourceHandler() throws Exception
-    {
-        _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
-
-        String rawResponse = _connector.getResponse("""
-            GET /context/resourceServlet/content.txt?do=include&wrapped=true HTTP/1.1\r
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """);
-
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        // from inside the context.txt file
-        assertThat(response.getContent(), containsString("content goes here"));
-    }
-
-    @Test
-    @Disabled("Cross context dispatch not yet supported in jetty-12")
-    public void testWrappedForwardToResourceHandler() throws Exception
-    {
-        _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
-
-        String rawResponse = _connector.getResponse("""
-            GET /context/resourceServlet/content.txt?do=forward&wrapped=true HTTP/1.1
-            Host: localhost\r
-            Connection: close\r
-            \r
-            """);
-
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        // from inside the context.txt file
-        assertThat(response.getContent(), containsString("content goes here"));
-    }
-
-    @Test
     public void testForwardFilterToRogerServlet() throws Exception
     {
         _contextHandler.addServlet(RogerThatServlet.class, "/*");
@@ -1147,6 +1042,18 @@ public class DispatcherTest
         }
     }
 
+    public static class ParameterReadingFilter implements Filter
+    {
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            //case the params to be parsed on the request
+            Map<String, String[]> params = request.getParameterMap();
+
+            chain.doFilter(request, response);
+        }
+    }
+
     /*
      * Forward filter works with roger, echo and reverse echo servlets to test various
      * forwarding bits using filters.
@@ -1209,6 +1116,35 @@ public class DispatcherTest
                 dispatcher = getServletContext().getRequestDispatcher(request.getParameter("forward"));
                 if (dispatcher != null)
                     dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
+                else
+                    response.sendError(404);
+            }
+        }
+    }
+
+    public static class CrossContextDispatchServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            doGet(req, resp);
+        }
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            RequestDispatcher dispatcher;
+
+            if (request.getParameter("forward") != null)
+            {
+                ServletContext foreign = getServletContext().getContext("/foreign");
+                assertNotNull(foreign);
+                dispatcher = foreign.getRequestDispatcher(request.getParameter("forward"));
+
+                if (dispatcher != null)
+                {
+                    dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
+                }
                 else
                     response.sendError(404);
             }
@@ -1318,6 +1254,46 @@ public class DispatcherTest
                 out.println("CAUGHT2 " + t);
             }
             out.println("AFTER");
+        }
+    }
+
+    public static class ParameterReadingServlet extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            Map<String, String[]> params = req.getParameterMap();
+
+            for (String key : params.keySet())
+            {
+                res.getWriter().print(key + "=");
+                String[] val = params.get(key);
+                if (val == null)
+                    res.getWriter().println();
+                else if (val.length == 1)
+                    res.getWriter().println(val[0]);
+                else
+                {
+                    res.getWriter().println(Arrays.asList(val));
+                }
+            }
+
+/*          System.err.println(req.getAttribute("jakarta.servlet.forward.mapping"));
+            System.err.println(req.getAttribute("jakarta.servlet.forward.request_uri"));
+            System.err.println(req.getAttribute("jakarta.servlet.forward.context_path"));
+            System.err.println(req.getAttribute("jakarta.servlet.forward.servlet_path"));
+            System.err.println(req.getAttribute("jakarta.servlet.forward.path_info"));
+            System.err.println(req.getAttribute("jakarta.servlet.forward.query_string"));*/
+        }
+    }
+
+    public static class VerifyForwardServlet extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            if (DispatcherType.FORWARD.equals(req.getDispatcherType()))
+                res.getWriter().print("Verified!");
         }
     }
 
@@ -1449,7 +1425,7 @@ public class DispatcherTest
             response.getOutputStream().println(request.getRequestURI());
         }
     }
-    
+
     public static class IncludeEchoURIServlet extends HttpServlet implements Servlet
     {
         @Override
@@ -1470,7 +1446,7 @@ public class DispatcherTest
             response.getOutputStream().println((String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH));
         }
     }
-    
+
     public static class ForwardEchoURIServlet extends HttpServlet implements Servlet
     {
         @Override
@@ -1519,7 +1495,7 @@ public class DispatcherTest
             assertEquals("/context/AssertForwardServlet", request.getRequestURI());
             assertEquals("/context", request.getContextPath());
             assertEquals("/AssertForwardServlet", request.getServletPath());
-            assertEquals("http://local:80/context/AssertForwardServlet", request.getRequestURL().toString());
+            assertEquals("http://local/context/AssertForwardServlet", request.getRequestURL().toString());
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);

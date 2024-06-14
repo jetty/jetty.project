@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -226,7 +227,10 @@ public class MultiPart
 
         public long getLength()
         {
-            return getContentSource().getLength();
+            Content.Source source = getContentSource();
+            if (source != null)
+                return source.getLength();
+            return -1;
         }
 
         /**
@@ -320,16 +324,19 @@ public class MultiPart
         {
             try
             {
-                getContentSource().fail(t);
+                Content.Source source;
                 Path path = null;
                 try (AutoLock ignored = lock.lock())
                 {
+                    source = contentSource;
                     if (temporary)
                     {
                         path = this.path;
                         this.path = null;
                     }
                 }
+                if (source != null)
+                    source.fail(t);
                 if (path != null)
                     Files.delete(path);
             }
@@ -399,7 +406,7 @@ public class MultiPart
         @Override
         public Content.Source newContentSource()
         {
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 if (closed)
                     return null;
@@ -425,7 +432,7 @@ public class MultiPart
         public void fail(Throwable t)
         {
             List<Content.Source> contentSourcesToFail;
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 closed = true;
                 content.forEach(Content.Chunk::release);
@@ -902,6 +909,7 @@ public class MultiPart
         private final Utf8StringBuilder text = new Utf8StringBuilder();
         private final String boundary;
         private final SearchPattern boundaryFinder;
+        private final MultiPartCompliance compliance;
         private final Listener listener;
         private int partHeadersLength;
         private int partHeadersMaxLength = -1;
@@ -914,13 +922,33 @@ public class MultiPart
         private String fieldValue;
         private long maxParts = 1000;
         private int numParts;
+        private EnumSet<MultiPartCompliance.Violation> eols;
 
         public Parser(String boundary, Listener listener)
+        {
+            this(boundary, MultiPartCompliance.RFC7578, listener);
+        }
+
+        public Parser(String boundary, MultiPartCompliance compliance, Listener listener)
         {
             this.boundary = boundary;
             // While the spec mandates CRLF before the boundary, be more lenient and only require LF.
             this.boundaryFinder = SearchPattern.compile("\n--" + boundary);
+            this.compliance = compliance;
             this.listener = listener;
+
+            if (LOG.isDebugEnabled())
+            {
+                List.of(
+                    MultiPartCompliance.Violation.CR_LINE_TERMINATION,
+                    MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
+                    MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY
+                ).forEach(violation ->
+                {
+                    if (compliance.allows(violation))
+                        LOG.debug("{} ignoring violation {}: unable to allow it", getClass().getName(), violation.name());
+                });
+            }
             reset();
         }
 
@@ -1044,6 +1072,7 @@ public class MultiPart
                             HttpTokens.Token token = next(buffer);
                             if (token.getByte() != '-')
                                 throw new BadMessageException("bad last boundary");
+                            notifyEndOfLineViolations();
                             state = State.EPILOGUE;
                         }
                         case HEADER_START ->
@@ -1093,6 +1122,7 @@ public class MultiPart
                 if (LOG.isDebugEnabled())
                     LOG.debug("parse failure {} {}", state, BufferUtil.toDetailString(buffer), x);
                 buffer.position(buffer.limit());
+                notifyEndOfLineViolations();
                 notifyFailure(x);
             }
         }
@@ -1117,18 +1147,35 @@ public class MultiPart
                 }
                 case LF ->
                 {
+                    if (!crFlag)
+                    {
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                        addEndOfLineViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid LF-only EOL");
+                    }
                     crFlag = false;
                 }
                 case CR ->
                 {
                     if (crFlag)
-                        throw new BadMessageException("invalid EOL");
+                    {
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.CR_LINE_TERMINATION;
+                        addEndOfLineViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid CR-only EOL");
+                    }
                     crFlag = true;
                 }
                 default ->
                 {
                     if (crFlag)
-                        throw new BadMessageException("invalid EOL");
+                    {
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.CR_LINE_TERMINATION;
+                        addEndOfLineViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid CR-only EOL");
+                    }
                 }
             }
             return t;
@@ -1323,8 +1370,15 @@ public class MultiPart
                 {
                     if (boundaryMatch == boundaryFinder.getLength())
                     {
-                        // The boundary was fully matched.
+                        // The boundary was fully matched, so the part is complete.
                         buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
+                        if (!crContent)
+                        {
+                            MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                            addEndOfLineViolation(violation);
+                            if (!compliance.allows(violation))
+                                throw new BadMessageException("invalid LF-only EOL");
+                        }
                         partialBoundaryMatch = 0;
                         crContent = false;
                         notifyPartContent(Content.Chunk.EOF);
@@ -1333,7 +1387,8 @@ public class MultiPart
                     }
                     else
                     {
-                        // The boundary was partially matched.
+                        // The boundary was partially matched, but it
+                        // is not clear yet if it is content or boundary.
                         buffer.position(buffer.limit());
                         partialBoundaryMatch = boundaryMatch;
                         return false;
@@ -1341,8 +1396,8 @@ public class MultiPart
                 }
                 else
                 {
-                    // There was a partial boundary match, but a mismatch was found.
-                    // Handle the special case of parts with no content.
+                    // There was a partial boundary match in the previous chunk, but now a
+                    // mismatch was found. Handle the special case of parts with no content.
                     if (state == State.CONTENT_START)
                     {
                         // There is some content, reset the boundary match.
@@ -1363,18 +1418,39 @@ public class MultiPart
 
             // Search for a full boundary.
             int boundaryOffset = boundaryFinder.match(buffer);
-            if (boundaryOffset == 0)
-                crContent = false;
             if (boundaryOffset >= 0)
             {
-                // Output as content the previous partial match, if any.
+                if (boundaryOffset == 0)
+                {
+                    if (!crContent)
+                    {
+                        MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                        addEndOfLineViolation(violation);
+                        if (!compliance.allows(violation))
+                            throw new BadMessageException("invalid LF-only EOL");
+                    }
+                    crContent = false;
+                }
+
+                // Emit as content the last CR byte of the previous chunk, if any.
                 notifyCRContent();
+
+                // Emit as content the bytes of this chunk that are before the boundary.
                 int position = buffer.position();
                 int length = boundaryOffset;
                 // BoundaryFinder is configured to search for '\n--Boundary';
-                // if we found '\r\n--Boundary' then the '\r' is not content.
+                // if '\r\n--Boundary' is found, then the '\r' is not content.
                 if (length > 0 && buffer.get(position + length - 1) == '\r')
+                {
                     --length;
+                }
+                else
+                {
+                    MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                    addEndOfLineViolation(violation);
+                    if (!compliance.allows(violation))
+                        throw new BadMessageException("invalid LF-only EOL");
+                }
                 Content.Chunk content = asSlice(chunk, position, length, true);
                 buffer.position(position + boundaryOffset + boundaryFinder.getLength());
                 notifyPartContent(content);
@@ -1384,34 +1460,25 @@ public class MultiPart
 
             // Search for a partial boundary at the end of the buffer.
             partialBoundaryMatch = boundaryFinder.endsWith(buffer);
-            if (partialBoundaryMatch > 0)
+            if (partialBoundaryMatch > 0 && partialBoundaryMatch == buffer.remaining())
             {
-                int limit = buffer.limit();
-                int sliceLimit = limit - partialBoundaryMatch;
-                // BoundaryFinder is configured to search for '\n--Boundary';
-                // if we found '\r\n--Bo' then the '\r' may not be content,
-                // but remember it in case there is a boundary mismatch.
-                if (sliceLimit > 0 && buffer.get(sliceLimit - 1) == '\r')
-                {
-                    crContent = true;
-                    --sliceLimit;
-                }
-                int position = buffer.position();
-                Content.Chunk content = asSlice(chunk, position, sliceLimit - position, false);
-                buffer.position(limit);
-                if (content.hasRemaining())
-                    notifyPartContent(content);
+                // The boundary was partially matched, but it
+                // is not clear yet if it is content or boundary.
+                buffer.position(buffer.limit());
                 return false;
             }
 
-            // There is normal content with no boundary.
+            // Here, either the boundary was not found, or it was partially found at the end.
 
-            // Output as content the previous partial match, if any.
+            // Emit as content the last CR byte of the previous chunk, if any.
             notifyCRContent();
-            // If '\r' is found at the end of the buffer, it may
-            // not be content but the beginning of a '\r\n--Boundary';
-            // remember it in case it is truly normal content.
-            int sliceLimit = buffer.limit();
+
+            // Emit as content the bytes of this chunk, until the partial boundary match (if any).
+            int limit = buffer.limit();
+            int sliceLimit = limit - partialBoundaryMatch;
+            // BoundaryFinder is configured to search for '\n--Boundary';
+            // if '\r\n--Bo' is found, then the '\r' may not be content,
+            // but remember it in case there is a boundary mismatch.
             if (buffer.get(sliceLimit - 1) == '\r')
             {
                 crContent = true;
@@ -1419,7 +1486,7 @@ public class MultiPart
             }
             int position = buffer.position();
             Content.Chunk content = asSlice(chunk, position, sliceLimit - position, false);
-            buffer.position(buffer.limit());
+            buffer.position(limit);
             if (content.hasRemaining())
                 notifyPartContent(content);
             return false;
@@ -1535,6 +1602,39 @@ public class MultiPart
             }
         }
 
+        private void notifyEndOfLineViolations()
+        {
+            if (eols != null)
+            {
+                for (MultiPartCompliance.Violation violation: eols)
+                {
+                    notifyViolation(violation);
+                }
+                eols = null;
+            }
+        }
+
+        private void addEndOfLineViolation(MultiPartCompliance.Violation violation)
+        {
+            if (eols == null)
+                eols = EnumSet.of(violation);
+            else
+                eols.add(violation);
+        }
+
+        private void notifyViolation(MultiPartCompliance.Violation violation)
+        {
+            try
+            {
+                listener.onViolation(violation);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failure while notifying listener {}", listener, x);
+            }
+        }
+
         /**
          * <p>A listener for events emitted by a {@link Parser}.</p>
          */
@@ -1595,6 +1695,16 @@ public class MultiPart
              * @param failure the failure cause
              */
             default void onFailure(Throwable failure)
+            {
+            }
+
+            /**
+             * <p>Callback method invoked when the low level parser encounters
+             * a fundamental multipart violation</p>>
+             *
+             * @param violation the violation detected
+             */
+            default void onViolation(MultiPartCompliance.Violation violation)
             {
             }
         }
@@ -1663,7 +1773,7 @@ public class MultiPart
             if (value.matches(".??[a-zA-Z]:\\\\[^\\\\].*"))
             {
                 // Matched incorrectly escaped IE filenames that have the whole
-                // path, as in C:\foo, we just strip any leading & trailing quotes
+                // path, as in C:\foo, just strip any leading & trailing quotes.
                 char first = value.charAt(0);
                 if (first == '"' || first == '\'')
                     value = value.substring(1);

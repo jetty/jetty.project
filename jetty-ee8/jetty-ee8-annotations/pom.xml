@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8</groupId>
     <artifactId>jetty-ee8</artifactId>
-    <version>12.0.5-SNAPSHOT</version>
+    <version>12.0.11-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-annotations</artifactId>
   <name>EE8 :: Servlet Annotations</name>
@@ -48,11 +48,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.transaction</groupId>
-      <artifactId>jakarta.transaction-api</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -111,7 +106,7 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee8.annotations=org.eclipse.jetty.logging --add-opens org.eclipse.jetty.ee8.annotations/org.eclipse.jetty.ee8.annotations.resources=org.eclipse.jetty.ee8.plus</argLine>
+          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee8.annotations=org.eclipse.jetty.logging --add-opens org.eclipse.jetty.ee8.annotations/org.eclipse.jetty.ee8.annotations.resources=org.eclipse.jetty.plus</argLine>
         </configuration>
       </plugin>
     </plugins>

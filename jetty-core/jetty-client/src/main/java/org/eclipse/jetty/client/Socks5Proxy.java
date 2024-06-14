@@ -56,11 +56,26 @@ public class Socks5Proxy extends Proxy
 
     private final Map<Byte, Socks5.Authentication.Factory> authentications = new LinkedHashMap<>();
 
+    /**
+     * <p>Creates a new instance with the given SOCKS5 proxy host and port.</p>
+     *
+     * @param host the SOCKS5 proxy host name
+     * @param port the SOCKS5 proxy port
+     */
     public Socks5Proxy(String host, int port)
     {
         this(new Origin.Address(host, port), false);
     }
 
+    /**
+     * <p>Creates a new instance with the given SOCKS5 proxy address.</p>
+     * <p>When {@code secure=true} the communication between the client and the
+     * proxy will be encrypted (using this proxy {@link #getSslContextFactory()}
+     * which typically defaults to that of {@link HttpClient}.</p>
+     *
+     * @param address the SOCKS5 proxy address (host and port)
+     * @param secure whether the communication between the client and the SOCKS5 proxy should be secure
+     */
     public Socks5Proxy(Origin.Address address, boolean secure)
     {
         super(address, secure, null, null);
@@ -264,7 +279,7 @@ public class Socks5Proxy extends Proxy
                         .put(Socks5.ADDRESS_TYPE_IPV4);
                     for (int i = 1; i <= 4; ++i)
                     {
-                        byteBuffer.put(Byte.parseByte(matcher.group(i)));
+                        byteBuffer.put((byte)Integer.parseInt(matcher.group(i)));
                     }
                     byteBuffer.putShort(port)
                         .flip();

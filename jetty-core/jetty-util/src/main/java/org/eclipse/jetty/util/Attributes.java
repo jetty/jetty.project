@@ -38,7 +38,7 @@ public interface Attributes
     /**
      * Remove an attribute
      * @param name the attribute to remove
-     * @return the value of the attribute if removed, else null
+     * @return the value of the attribute if removed, else {@code null}
      */
     Object removeAttribute(String name);
 
@@ -46,22 +46,21 @@ public interface Attributes
      * Set an attribute
      * @param name the attribute to set
      * @param attribute the value to set. A null value is equivalent to removing the attribute.
-     * @return the previous value of the attribute if set, else null
+     * @return the previous value of the attribute if set, else {@code null}
      */
     Object setAttribute(String name, Object attribute);
 
     /**
      * Get an attribute
      * @param name the attribute to get
-     * @return the value of the attribute
+     * @return the value of the attribute, or {@code null} if no such attribute exists
      */
     Object getAttribute(String name);
 
     /**
      * Get the immutable set of attribute names.
-     * @return Set of attribute names
+     * @return Set of attribute names, or an empty set if there are no attributes.
      */
-    // TODO: change to getAttributeNames() once jetty-core is cleaned of servlet-api usages
     Set<String> getAttributeNameSet();
 
     default Map<String, Object> asAttributeMap()
@@ -566,14 +565,14 @@ public interface Attributes
      * but is instead calculated as needed. Modifications to synthetic attributes are maintained
      * in a separate layer and no modifications are made to the backing {@link Attributes}.
      * <p>
-     * Non synthetic attributes are handled normally by the backing {@link Attributes}
+     * Non-synthetic attributes are handled normally by the backing {@link Attributes}
      * <p>
      * Uses of this class must provide implementations for
      * {@link #getSyntheticNameSet()} amd {@link #getSyntheticAttribute(String)}.
      */
     abstract class Synthetic extends Wrapper
     {
-        private static final Object REMOVED = new Object()
+        protected static final Object REMOVED = new Object()
         {
             @Override
             public String toString()
@@ -622,6 +621,8 @@ public interface Attributes
 
             // Is there a synthetic value for the attribute? We just as for the value rather than checking the name.
             Object s = getSyntheticAttribute(name);
+            if (s == REMOVED)
+                return null;
             if (s != null)
                 return s;
 
@@ -696,9 +697,15 @@ public interface Attributes
                     if (l == REMOVED)
                         // it has been removed
                         names.remove(s);
-                    else if (l != null || getSyntheticAttribute(s) != null)
-                        // else it was modified or has an original value
+                    else if (l != null)
+                        // else it was modified
                         names.add(s);
+                    else
+                    {
+                        Object v = getSyntheticAttribute(s);
+                        if (v != null && v != REMOVED)
+                            names.add(s);
+                    }
                 }
             }
 

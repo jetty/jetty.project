@@ -16,8 +16,6 @@ package org.eclipse.jetty.websocket.tests.listeners;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,7 +23,6 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
@@ -42,7 +39,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketListenerTest
@@ -130,44 +129,18 @@ public class WebSocketListenerTest
     }
 
     @Test
-    public void testAnonymousListener() throws Exception
+    public void testAnonymousListener()
     {
-        CountDownLatch openLatch = new CountDownLatch(1);
-        CountDownLatch closeLatch = new CountDownLatch(1);
-        BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
         Session.Listener clientEndpoint = new Session.Listener.AutoDemanding()
         {
             @Override
             public void onWebSocketOpen(Session session)
             {
-                openLatch.countDown();
-            }
-
-            @Override
-            public void onWebSocketText(String message)
-            {
-                textMessages.add(message);
-            }
-
-            @Override
-            public void onWebSocketClose(int statusCode, String reason)
-            {
-                closeLatch.countDown();
             }
         };
-
-        Session session = client.connect(clientEndpoint, serverUri.resolve("/echo")).get(5, TimeUnit.SECONDS);
-        assertTrue(openLatch.await(5, TimeUnit.SECONDS));
-
-        // Send and receive echo on client.
-        String payload = "hello world";
-        session.sendText(payload, Callback.NOOP);
-        String echoMessage = textMessages.poll(5, TimeUnit.SECONDS);
-        assertThat(echoMessage, is(payload));
-
-        // Close normally.
-        session.close(StatusCode.NORMAL, "standard close", Callback.NOOP);
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+        Exception failure = assertThrows(Exception.class, () -> client.connect(clientEndpoint, serverUri.resolve("/echo")).get(5, TimeUnit.SECONDS));
+        // The endpoint class is not public.
+        assertThat(failure.getCause(), instanceOf(IllegalAccessException.class));
     }
 
     private List<Class<?>> getClassListFromArguments(Stream<Arguments> stream)

@@ -13,18 +13,16 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -37,6 +35,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -56,7 +55,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private MetaData.Response responseMetaData;
     private Content.Chunk chunk;
     private boolean committed;
-    private boolean expects100Continue;
 
     public HttpStreamOverHTTP3(ServerHTTP3StreamConnection connection, HttpChannel httpChannel, HTTP3StreamServer stream)
     {
@@ -77,7 +75,14 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             requestMetaData = (MetaData.Request)frame.getMetaData();
 
+            // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
+            ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
             Runnable handler = httpChannel.onRequest(requestMetaData);
+            Request request = this.httpChannel.getRequest();
+            listener.onRequestBegin(request);
+            // Note UriCompliance is done by HandlerInvoker
+            HttpCompliance httpCompliance = httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
+            HttpCompliance.checkHttpCompliance(requestMetaData, httpCompliance, listener);
 
             if (frame.isLast())
             {
@@ -88,8 +93,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
             }
 
             HttpFields fields = requestMetaData.getHttpFields();
-
-            expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
             if (LOG.isDebugEnabled())
             {
@@ -124,13 +127,17 @@ public class HttpStreamOverHTTP3 implements HttpStream
             if (LOG.isDebugEnabled())
                 LOG.debug("onRequest() failure", x);
             HttpException httpException = x instanceof HttpException http ? http : new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, x);
-            return () -> onBadMessage(httpException);
+            return onBadMessage(httpException);
         }
     }
 
-    private void onBadMessage(HttpException x)
+    private Runnable onBadMessage(HttpException x)
     {
-        // TODO
+        if (LOG.isDebugEnabled())
+            LOG.debug("badMessage {} {}", this, x);
+
+        Throwable failure = (Throwable)x;
+        return httpChannel.onFailure(failure);
     }
 
     @Override
@@ -156,12 +163,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
             // the two actions cancel each other, no need to further retain or release.
             chunk = createChunk(data);
 
-            // Some content is read, but the 100 Continue interim
-            // response has not been sent yet, then don't bother
-            // sending it later, as the client already sent the content.
-            if (expects100Continue && chunk.hasRemaining())
-                expects100Continue = false;
-
             try (AutoLock ignored = lock.lock())
             {
                 this.chunk = chunk;
@@ -186,11 +187,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }
         else
         {
-            if (expects100Continue)
-            {
-                expects100Continue = false;
-                send(requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
-            }
             stream.demand();
         }
     }
@@ -284,9 +280,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 callback.failed(new IllegalStateException("Interim response cannot have content"));
                 return;
             }
-
-            if (expects100Continue && response.getStatus() == HttpStatus.CONTINUE_100)
-                expects100Continue = false;
 
             headersFrame = new HeadersFrame(response, false);
         }
@@ -514,16 +507,17 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("HTTP3 Response #{}/{}: unconsumed request content, resetting stream", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
-            stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new IOException("unconsumed content"));
+            stream.reset(HTTP3ErrorCode.NO_ERROR.code(), CONTENT_NOT_CONSUMED);
         }
     }
 
     @Override
     public void failed(Throwable x)
     {
+        HTTP3ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? HTTP3ErrorCode.NO_ERROR : HTTP3ErrorCode.REQUEST_CANCELLED_ERROR;
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP3 Response #{}/{} aborted", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
-        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+            LOG.debug("HTTP3 Response #{}/{} failed {}", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), errorCode, x);
+        stream.reset(errorCode.code(), x);
     }
 
     public void onIdleTimeout(TimeoutException failure, BiConsumer<Runnable, Boolean> consumer)
@@ -541,6 +535,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 chunk.release();
             chunk = Content.Chunk.from(failure, true);
         }
+        connection.onFailure(failure);
         return httpChannel.onFailure(failure);
     }
 }

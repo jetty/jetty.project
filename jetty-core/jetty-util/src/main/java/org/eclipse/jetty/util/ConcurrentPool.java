@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
@@ -148,6 +149,11 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         leaked.increment();
         if (LOG.isDebugEnabled())
             LOG.debug("Leaked " + holder);
+        leaked();
+    }
+
+    protected void leaked()
+    {
     }
 
     @Override
@@ -194,8 +200,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             Holder<P> holder = entries.get(i);
             if (holder.getEntry() == null)
             {
-                leaked(holder);
                 entries.remove(i--);
+                leaked(holder);
             }
         }
     }
@@ -222,8 +228,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     ConcurrentEntry<P> entry = (ConcurrentEntry<P>)holder.getEntry();
                     if (entry == null)
                     {
-                        leaked(holder);
                         entries.remove(index);
+                        leaked(holder);
                         continue;
                     }
 
@@ -259,7 +265,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             case FIRST -> 0;
             case RANDOM -> ThreadLocalRandom.current().nextInt(size);
             case ROUND_ROBIN -> nextIndex.getAndUpdate(c -> Math.max(0, c + 1)) % size;
-            case THREAD_ID -> (int)((Thread.currentThread().getId() * 31) % size);
+            case THREAD_ID -> (int)(Thread.currentThread().getId() % size);
         };
     }
 
@@ -282,7 +288,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         // No need to lock, no race with reserve()
         // and the race with terminate() is harmless.
         Holder<P> holder = ((ConcurrentEntry<P>)entry).getHolder();
-        boolean evicted = holder != null && entries.remove(holder);
+        boolean evicted = entries.remove(holder);
         if (LOG.isDebugEnabled())
             LOG.debug("evicted {} {} for {}", evicted, entry, this);
 
@@ -349,6 +355,42 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     }
 
     @Override
+    public int getReservedCount()
+    {
+        return getCount(Entry::isReserved);
+    }
+
+    @Override
+    public int getIdleCount()
+    {
+        return getCount(Entry::isIdle);
+    }
+
+    @Override
+    public int getInUseCount()
+    {
+        return getCount(Entry::isInUse);
+    }
+
+    @Override
+    public int getTerminatedCount()
+    {
+        return getCount(Entry::isTerminated);
+    }
+
+    private int getCount(Predicate<Entry<P>> predicate)
+    {
+        int count = 0;
+        for (Holder<P> holder : entries)
+        {
+            Entry<P> entry = holder.getEntry();
+            if (entry != null && predicate.test(entry))
+                count++;
+        }
+        return count;
+    }
+
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this,
@@ -358,12 +400,14 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x[inUse=%d,size=%d,max=%d,terminated=%b]",
+        return String.format("%s@%x[strategy=%s,inUse=%d,size=%d,max=%d,leaked=%d,terminated=%b]",
             getClass().getSimpleName(),
             hashCode(),
+            strategyType,
             getInUseCount(),
             size(),
             getMaxSize(),
+            getLeaked(),
             isTerminated());
     }
 
@@ -416,16 +460,16 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         //    1+ -> multiplex count
         private final AtomicBiInteger state = new AtomicBiInteger(0, -1);
         private final ConcurrentPool<E> pool;
+        private final Holder<E> holder;
         // The pooled object. This is not volatile as it is set once and then never changed.
         // Other threads accessing must check the state field above first, so a good before/after
         // relationship exists to make a memory barrier.
         private E pooled;
-        private final Holder<E> holder;
 
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
             this.pool = pool;
-            holder = new Holder<>(this);
+            this.holder = new Holder<>(this);
         }
 
         private Holder<E> getHolder()
@@ -492,7 +536,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         {
             boolean enabled = state.compareAndSet(0, 0, -1, acquire ? 1 : 0);
             if (enabled && !acquire)
-                getHolder().hold();
+                getHolder().released();
             return enabled;
         }
 
@@ -527,7 +571,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 if (state.compareAndSet(encoded, 0, newMultiplexCount))
                 {
                     if (newMultiplexCount == 1)
-                        getHolder().free();
+                        getHolder().acquired();
                     return true;
                 }
             }
@@ -554,7 +598,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 if (state.compareAndSet(encoded, 0, newMultiplexCount))
                 {
                     if (newMultiplexCount == 0)
-                        getHolder().hold();
+                        getHolder().released();
                     return true;
                 }
             }
@@ -653,14 +697,14 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     /**
      * <p>Holds a strong and a weak reference to an {@link Entry} to avoid holding
      * on to entries that are not released, so that they can be garbage collected.</p>
-     * <p>Methods {@link #hold()} and {@link #free()} work together to clear the
+     * <p>Methods {@link #released()} and {@link #acquired()} work together to clear the
      * strong reference when the entry is acquired, and assign it when the entry
      * is released.</p>
      * <p>This class handles a race condition happening when an entry is being
      * released with multiplex count going {@code 1 -> 0} by one thread that
-     * has not yet called {@link #hold()}, and immediately acquired by another
-     * thread that is calling {@link #free()}.
-     * The call to {@link #free()} spin loops until {@link #hold()} returns.</p>
+     * has not yet called {@link #released()}, and immediately acquired by another
+     * thread that is calling {@link #acquired()}.
+     * The call to {@link #acquired()} spin loops until {@link #released()} returns.</p>
      *
      * @param <P>
      */
@@ -682,7 +726,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         /**
          * <p>Called when an entry is released to the pool with multiplex count going from {@code 1} to {@code 0}.</p>
          */
-        public void hold()
+        public void released()
         {
             _strong = _weak.get();
         }
@@ -690,7 +734,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         /**
          * <p>Called when an entry is acquired from the pool with multiplex count going from {@code 0} to {@code 1}.</p>
          */
-        public void free()
+        public void acquired()
         {
             ConcurrentEntry<P> entry = _weak.get();
             if (entry == null)
@@ -705,7 +749,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _weak.get(), _strong);
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _strong == null ? "acquired" : "released", _weak.get());
         }
     }
 }

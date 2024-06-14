@@ -38,7 +38,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -48,7 +47,7 @@ import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP2Connection extends AbstractConnection implements Parser.Listener, WriteFlusher.Listener, Connection.UpgradeTo
+public class HTTP2Connection extends AbstractConnection implements Parser.Listener, Connection.UpgradeTo
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Connection.class);
 
@@ -187,7 +186,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         return false;
     }
 
-    protected void offerTask(Runnable task, boolean dispatch)
+    public void offerTask(Runnable task, boolean dispatch)
     {
         offerTask(task);
         if (dispatch)
@@ -300,12 +299,6 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     {
         producer.failed = true;
         session.onConnectionFailure(error, reason);
-    }
-
-    @Override
-    public void onFlushed(long bytes) throws IOException
-    {
-        session.onFlushed(bytes);
     }
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer

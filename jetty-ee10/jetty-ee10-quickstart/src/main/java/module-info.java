@@ -11,6 +11,10 @@
 // ========================================================================
 //
 
+import org.eclipse.jetty.ee10.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.ee10.quickstart.QuickStartGeneratorConfiguration;
+import org.eclipse.jetty.ee10.webapp.Configuration;
+
 module org.eclipse.jetty.ee10.quickstart
 {
     requires  jakarta.servlet;
@@ -19,4 +23,6 @@ module org.eclipse.jetty.ee10.quickstart
     requires transitive org.eclipse.jetty.ee10.annotations;
 
     exports org.eclipse.jetty.ee10.quickstart;
+
+    provides Configuration with QuickStartConfiguration, QuickStartGeneratorConfiguration;
 }

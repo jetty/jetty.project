@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.0.5-SNAPSHOT</version>
+    <version>12.0.11-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.ee9.osgi</groupId>
   <artifactId>jetty-ee9-osgi</artifactId>
@@ -67,5 +67,28 @@
         </excludes>
       </resource>
     </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.basepom.maven</groupId>
+        <artifactId>duplicate-finder-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>verify</phase>
+            <configuration>
+              <!-- Additional ignoredResourcePatterns are not additive, you have to replace the whole list -->
+              <ignoredResourcePatterns>
+                <ignoredResourcePattern>about.html</ignoredResourcePattern>
+                <ignoredResourcePattern>.api_description</ignoredResourcePattern>
+                <ignoredResourcePattern>/?javax/servlet/resources/.*$</ignoredResourcePattern>
+              </ignoredResourcePatterns>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 </project>

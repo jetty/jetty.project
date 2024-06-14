@@ -28,8 +28,10 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.VirtualHostRuleContainer;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
@@ -171,17 +173,21 @@ public class BalancerServletTest
     {
         startBalancer(DumpServlet.class);
         balancer.stop();
+
         RewriteHandler rewrite = new RewriteHandler();
         rewrite.setHandler(balancer.getHandler());
         balancer.setHandler(rewrite);
         rewrite.addRule(new VirtualHostRuleContainer());
+        balancer.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        server1.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        server2.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         balancer.start();
 
-        ContentResponse response = getBalancedResponse("/test/%0A");
+        ContentResponse response = getBalancedResponse("/test/%22foo%22");
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getContentAsString(), containsString("requestURI='/context/mapping/test/%0A'"));
+        assertThat(response.getContentAsString(), containsString("requestURI='/context/mapping/test/%22foo%22'"));
         assertThat(response.getContentAsString(), containsString("servletPath='/mapping'"));
-        assertThat(response.getContentAsString(), containsString("pathInfo='/test/\n'"));
+        assertThat(response.getContentAsString(), containsString("pathInfo='/test/\"foo\"'"));
     }
 
     private String readFirstLine(byte[] responseBytes) throws IOException

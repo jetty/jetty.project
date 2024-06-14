@@ -497,6 +497,12 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
             callback.succeeded();
     }
 
+    protected Invocable.InvocationType getInvocationType()
+    {
+        Callback callback = readCallback.get();
+        return callback == null ? Invocable.InvocationType.NON_BLOCKING : callback.getInvocationType();
+    }
+
     @Override
     public String toString()
     {

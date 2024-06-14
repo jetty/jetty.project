@@ -32,13 +32,17 @@ import org.eclipse.jetty.util.StringUtil;
 import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
 
 /**
- * A {@link CompletableFuture} that is completed once a {@code application/x-www-form-urlencoded}
- * content has been parsed asynchronously from the {@link Content.Source}.
+ * <p>A {@link CompletableFuture} that is completed once a {@code application/x-www-form-urlencoded}
+ * content has been parsed asynchronously from the {@link Content.Source}.</p>
+ * <p><a href="https://url.spec.whatwg.org/#application/x-www-form-urlencoded">Specification</a>.</p>
  */
 public class FormFields extends ContentSourceCompletableFuture<Fields>
 {
     public static final String MAX_FIELDS_ATTRIBUTE = "org.eclipse.jetty.server.Request.maxFormKeys";
     public static final String MAX_LENGTH_ATTRIBUTE = "org.eclipse.jetty.server.Request.maxFormContentSize";
+    public static final int MAX_FIELDS_DEFAULT = 1000;
+    public static final int MAX_LENGTH_DEFAULT = 200000;
+
     private static final CompletableFuture<Fields> EMPTY = CompletableFuture.completedFuture(Fields.EMPTY);
 
     public static Charset getFormEncodedCharset(Request request)
@@ -51,9 +55,23 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         if (request.getLength() == 0 || StringUtil.isBlank(contentType))
             return null;
 
-        MimeTypes.Type type = MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
-        if (MimeTypes.Type.FORM_ENCODED != type)
-            return null;
+        String contentTypeWithoutCharset = MimeTypes.getContentTypeWithoutCharset(contentType);
+        MimeTypes.Type type = MimeTypes.CACHE.get(contentTypeWithoutCharset);
+        if (type != null)
+        {
+            if (type != MimeTypes.Type.FORM_ENCODED)
+                return null;
+        }
+        else
+        {
+            // Could be a non-cached Content-Type with other parameters such as "application/x-www-form-urlencoded; p=v".
+            // Verify that it is actually application/x-www-form-urlencoded.
+            int semi = contentTypeWithoutCharset.indexOf(';');
+            if (semi > 0)
+                contentTypeWithoutCharset = contentTypeWithoutCharset.substring(0, semi);
+            if (!MimeTypes.Type.FORM_ENCODED.is(contentTypeWithoutCharset.trim()))
+                return null;
+        }
 
         String cs = MimeTypes.getCharsetFromContentType(contentType);
         return StringUtil.isEmpty(cs) ? StandardCharsets.UTF_8 : Charset.forName(cs);
@@ -80,6 +98,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         Object attr = request.getAttribute(FormFields.class.getName());
         if (attr instanceof FormFields futureFormFields)
             return futureFormFields;
+        else if (attr instanceof Fields fields)
+            return CompletableFuture.completedFuture(fields);
         return EMPTY;
     }
 
@@ -93,8 +113,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      */
     public static CompletableFuture<Fields> from(Request request)
     {
-        int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
-        int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
+        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
         return from(request, maxFields, maxLength);
     }
 
@@ -109,8 +129,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      */
     public static CompletableFuture<Fields> from(Request request, Charset charset)
     {
-        int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
-        int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
+        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
         return from(request, charset, maxFields, maxLength);
     }
 
@@ -173,18 +193,18 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         return futureFormFields;
     }
 
-    private static int getRequestAttribute(Request request, String attribute)
+    private static int getContextAttribute(Context context, String attribute, int defValue)
     {
-        Object value = request.getAttribute(attribute);
+        Object value = context.getAttribute(attribute);
         if (value == null)
-            return -1;
+            return defValue;
         try
         {
             return Integer.parseInt(value.toString());
         }
         catch (NumberFormatException x)
         {
-            return -1;
+            return defValue;
         }
     }
 
@@ -203,104 +223,109 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         _maxFields = maxFields;
         _maxLength = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);
-        _fields = new Fields();
+        _fields = new Fields(true);
     }
 
     @Override
     protected Fields parse(Content.Chunk chunk) throws CharacterCodingException
     {
-        String value = null;
         ByteBuffer buffer = chunk.getByteBuffer();
 
-        do
+        while (BufferUtil.hasContent(buffer))
         {
-            loop:
-            while (BufferUtil.hasContent(buffer))
+            byte b = buffer.get();
+            switch (_percent)
             {
-                byte b = buffer.get();
-                switch (_percent)
+                case 1 ->
                 {
-                    case 1 ->
-                    {
-                        _percentCode = b;
-                        _percent++;
-                        continue;
-                    }
-                    case 2 ->
-                    {
-                        _builder.append(decodeHexByte((char)_percentCode, (char)b));
-                        _percent = 0;
-                        continue;
-                    }
+                    _percentCode = b;
+                    _percent++;
+                    continue;
                 }
-
-                if (_name == null)
+                case 2 ->
                 {
-                    switch (b)
-                    {
-                        case '=' ->
-                        {
-                            _name = _builder.build();
-                            checkLength(_name);
-                        }
-                        case '+' -> _builder.append((byte)' ');
-                        case '%' -> _percent++;
-                        default -> _builder.append(b);
-                    }
-                }
-                else
-                {
-                    switch (b)
-                    {
-                        case '&' ->
-                        {
-                            value = _builder.build();
-                            checkLength(value);
-                            break loop;
-                        }
-                        case '+' -> _builder.append((byte)' ');
-                        case '%' -> _percent++;
-                        default -> _builder.append(b);
-                    }
+                    _percent = 0;
+                    _builder.append(decodeHexByte((char)_percentCode, (char)b));
+                    continue;
                 }
             }
 
-            if (_name != null)
+            if (_name == null)
             {
-                if (value == null && chunk.isLast())
+                switch (b)
                 {
-                    if (_percent > 0)
+                    case '&' ->
                     {
-                        _builder.append((byte)'%');
-                        _builder.append(_percentCode);
+                        String name = _builder.build();
+                        checkMaxLength(name);
+                        onNewField(name, "");
                     }
-                    value = _builder.build();
-                    checkLength(value);
+                    case '=' ->
+                    {
+                        _name = _builder.build();
+                        checkMaxLength(_name);
+                    }
+                    case '+' -> _builder.append(' ');
+                    case '%' -> _percent++;
+                    default -> _builder.append(b);
                 }
-
-                if (value != null)
+            }
+            else
+            {
+                switch (b)
                 {
-                    Fields.Field field = new Fields.Field(_name, value);
-                    _name = null;
-                    value = null;
-                    if (_maxFields >= 0 && _fields.getSize() >= _maxFields)
-                        throw new IllegalStateException("form with too many fields > " + _maxFields);
-                    _fields.add(field);
+                    case '&' ->
+                    {
+                        String value = _builder.build();
+                        checkMaxLength(value);
+                        onNewField(_name, value);
+                        _name = null;
+                    }
+                    case '+' -> _builder.append(' ');
+                    case '%' -> _percent++;
+                    default -> _builder.append(b);
                 }
             }
         }
-        while (BufferUtil.hasContent(buffer));
 
-        return chunk.isLast() ? _fields : null;
+        if (!chunk.isLast())
+            return null;
+
+        // Append any remaining %x.
+        if (_percent > 0)
+            throw new IllegalStateException("invalid percent encoding");
+        String value = _builder.build();
+
+        if (_name == null)
+        {
+            if (!value.isEmpty())
+            {
+                checkMaxLength(value);
+                onNewField(value, "");
+            }
+            return _fields;
+        }
+
+        checkMaxLength(value);
+        onNewField(_name, value);
+        return _fields;
     }
 
-    private void checkLength(String nameOrValue)
+    private void checkMaxLength(String nameOrValue)
     {
         if (_maxLength >= 0)
         {
             _length += nameOrValue.length();
             if (_length > _maxLength)
-                throw new IllegalStateException("form too large");
+                throw new IllegalStateException("form too large > " + _maxLength);
         }
+    }
+
+    private void onNewField(String name, String value)
+    {
+        Fields.Field field = new Fields.Field(name, value);
+        _fields.add(field);
+        if (_maxFields >= 0 && _fields.getSize() > _maxFields)
+            throw new IllegalStateException("form with too many fields > " + _maxFields);
     }
 }

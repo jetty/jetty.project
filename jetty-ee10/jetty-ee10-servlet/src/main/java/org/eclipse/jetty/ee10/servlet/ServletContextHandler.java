@@ -75,8 +75,10 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -129,7 +131,12 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
 public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    public static final Environment __environment = Environment.ensure("ee10");
+    public static final Environment ENVIRONMENT = Environment.ensure("ee10");
+    /**
+     * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
+     */
+    @Deprecated(since = "12.0.9", forRemoval = true)
+    public static final Environment __environment = ENVIRONMENT;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
         {
             ServletContextListener.class,
@@ -143,10 +150,10 @@ public class ServletContextHandler extends ContextHandler
 
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
     public static final int EXTENDED_LISTENER_TYPE_INDEX = 0;
-    public static final String MAX_FORM_KEYS_KEY = "org.eclipse.jetty.server.Request.maxFormKeys";
-    public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
-    public static final int DEFAULT_MAX_FORM_KEYS = 1000;
-    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
+    public static final String MAX_FORM_KEYS_KEY = FormFields.MAX_FIELDS_ATTRIBUTE;
+    public static final String MAX_FORM_CONTENT_SIZE_KEY = FormFields.MAX_LENGTH_ATTRIBUTE;
+    public static final int DEFAULT_MAX_FORM_KEYS = FormFields.MAX_FIELDS_DEFAULT;
+    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = FormFields.MAX_LENGTH_DEFAULT;
 
     public static final int SESSIONS = 1;
     public static final int SECURITY = 2;
@@ -283,7 +290,7 @@ public class ServletContextHandler extends ContextHandler
         setErrorHandler(errorHandler);
 
         _objFactory = new DecoratedObjectFactory();
-        addBean(_objFactory, true);
+        installBean(_objFactory, true);
 
         // Link the handlers
         relinkHandlers();
@@ -784,11 +791,10 @@ public class ServletContextHandler extends ContextHandler
      *
      * @param uri the URI to convert to a Resource
      * @return the Resource for that URI
-     * @throws IOException if unable to create a Resource from the URL
      */
-    public Resource newResource(URI uri) throws IOException
+    public Resource newResource(URI uri)
     {
-        return ResourceFactory.root().newResource(uri);
+        return ResourceFactory.of(this).newResource(uri);
     }
 
     /**
@@ -796,9 +802,8 @@ public class ServletContextHandler extends ContextHandler
      *
      * @param urlOrPath The URL or path to convert
      * @return The Resource for the URL/path
-     * @throws IOException The Resource could not be created.
      */
-    public Resource newResource(String urlOrPath) throws IOException
+    public Resource newResource(String urlOrPath)
     {
         return ResourceFactory.of(this).newResource(urlOrPath);
     }
@@ -1131,11 +1136,15 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected ContextRequest wrapRequest(Request request, Response response)
     {
+        String decodedPathInContext;
+        MatchedResource<ServletHandler.MappedServlet> matchedResource;
+
         // Need to ask directly to the Context for the pathInContext, rather than using
         // Request.getPathInContext(), as the request is not yet wrapped in this Context.
-        String decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
+        decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
+        matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
 
-        MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
+
         if (matchedResource == null)
             return wrapNoServlet(request, response);
         ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
@@ -2701,10 +2710,14 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public jakarta.servlet.ServletContext getContext(String uripath)
+        public jakarta.servlet.ServletContext getContext(String path)
         {
-            //TODO jetty-12 does not currently support cross context dispatch
-            return null;
+            ContextHandler context = getContextHandler().getCrossContextHandler(path);
+            if (context == null)
+                return null;
+            if (context == ServletContextHandler.this)
+                return this;
+            return new CrossContextServletContext(ServletContextHandler.this, context.getContext());
         }
 
         @Override
@@ -2834,7 +2847,7 @@ public class ServletContextHandler extends ContextHandler
                 // Cannot serve directories as an InputStream
                 if (r.isDirectory())
                     return null;
-                return r.newInputStream();
+                return IOResources.asInputStream(r);
             }
             catch (Exception e)
             {

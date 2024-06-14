@@ -13,32 +13,48 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class ResourceFactoryTest
 {
+    public WorkDir workDir;
+
     @ParameterizedTest
     @ValueSource(strings = {
         "keystore.p12", "/keystore.p12",
@@ -135,16 +151,15 @@ public class ResourceFactoryTest
         // Try this as a normal String input first.
         // We are subject to the URIUtil.toURI(String) behaviors here.
         // Since the `ftp` scheme is not registered, it's not recognized as a supported URI.
-        // This will be treated as a relative path instead. (and the '//' will be compacted)
-        Resource resource = ResourceFactory.root().newResource("ftp://webtide.com/favicon.ico");
-        // Should not find this, as it doesn't exist on the filesystem.
-        assertNull(resource);
+        IllegalArgumentException iae = assertThrows(IllegalArgumentException.class,
+            () -> ResourceFactory.root().newResource("ftp://webtide.com/favicon.ico"));
+        assertThat(iae.getMessage(), containsString("URI scheme not registered: ftp"));
 
         // Now try it as a formal URI object as input.
         URI uri = URI.create("ftp://webtide.com/favicon.ico");
         // This is an unsupported URI scheme
-        IllegalArgumentException iae = assertThrows(IllegalArgumentException.class, () -> ResourceFactory.root().newResource(uri));
-        assertThat(iae.getMessage(), containsString("URI scheme not supported"));
+        iae = assertThrows(IllegalArgumentException.class, () -> ResourceFactory.root().newResource(uri));
+        assertThat(iae.getMessage(), containsString("URI scheme not registered: ftp"));
     }
 
     @Test
@@ -195,6 +210,196 @@ public class ResourceFactoryTest
         Resource subResource = resource.resolve("favicon.ico");
         assertThat(subResource.getFileName(), is("favicon.ico"));
         assertThat(subResource.length(), greaterThan(0L));
+    }
+
+    public static Stream<Arguments> newResourceCases()
+    {
+        List<Arguments> args = new ArrayList<>();
+
+        if (OS.WINDOWS.isCurrentOs())
+        {
+            // Windows format (absolute and relative)
+            args.add(Arguments.of("C:\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("D:\\path\\to\\bogus.txt", "file:///D:/path/to/bogus.txt"));
+            args.add(Arguments.of("\\path\\to\\foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("\\path\\to\\bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // unix format (relative)
+            args.add(Arguments.of("C:/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("D:/path/to/bogus.txt", "file:///D:/path/to/bogus.txt"));
+            args.add(Arguments.of("/path/to/foo.jar", "file:///C:/path/to/foo.jar"));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///C:/path/to/bogus.txt"));
+            // URI format (absolute)
+            args.add(Arguments.of("file:///D:/path/to/zed.jar", "file:///D:/path/to/zed.jar"));
+            args.add(Arguments.of("file:/e:/zed/yotta.txt", "file:///e:/zed/yotta.txt"));
+        }
+        else
+        {
+            // URI (and unix) format (relative)
+            args.add(Arguments.of("/path/to/foo.jar", "file:///path/to/foo.jar"));
+            args.add(Arguments.of("/path/to/bogus.txt", "file:///path/to/bogus.txt"));
+        }
+        // URI format (absolute)
+        args.add(Arguments.of("file:///path/to/zed.jar", "file:///path/to/zed.jar"));
+        Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        URI jarFileUri = URIUtil.toJarFileUri(testJar.toUri());
+        args.add(Arguments.of(jarFileUri.toASCIIString(), jarFileUri.toASCIIString()));
+
+        return args.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("newResourceCases")
+    public void testNewResource(String inputRaw, String expectedUri)
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            URI actual = resourceFactory.newResource(inputRaw).getURI();
+            URI expected = URI.create(expectedUri);
+            assertEquals(expected, actual);
+        }
+    }
+
+    @Test
+    public void testSplitSingleJar()
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+            String input = testJar.toUri().toASCIIString();
+            List<Resource> resources = resourceFactory.split(input);
+            String expected = URIUtil.toJarFileUri(testJar.toUri()).toASCIIString();
+            assertThat(resources.get(0).getURI().toString(), is(expected));
+        }
+    }
+
+    @Test
+    public void testSplitSinglePath()
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path testJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+            String input = testJar.toString();
+            List<Resource> resources = resourceFactory.split(input);
+            String expected = URIUtil.toJarFileUri(testJar.toUri()).toASCIIString();
+            assertThat(resources.get(0).getURI().toString(), is(expected));
+        }
+    }
+
+    @Test
+    public void testSplitOnComma()
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path base = workDir.getEmptyPathDir();
+            Path dir = base.resolve("dir");
+            FS.ensureDirExists(dir);
+            Path foo = dir.resolve("foo");
+            FS.ensureDirExists(foo);
+            Path bar = dir.resolve("bar");
+            FS.ensureDirExists(bar);
+
+            // This represents the user-space raw configuration
+            String config = String.format("%s,%s,%s", dir, foo, bar);
+
+            // Split using commas
+            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
+
+            URI[] expected = new URI[]{
+                dir.toUri(),
+                foo.toUri(),
+                bar.toUri()
+            };
+            assertThat(uris, contains(expected));
+        }
+    }
+
+    @Test
+    public void testSplitOnPipe()
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path base = workDir.getEmptyPathDir();
+            Path dir = base.resolve("dir");
+            FS.ensureDirExists(dir);
+            Path foo = dir.resolve("foo");
+            FS.ensureDirExists(foo);
+            Path bar = dir.resolve("bar");
+            FS.ensureDirExists(bar);
+
+            // This represents the user-space raw configuration
+            String config = String.format("%s|%s|%s", dir, foo, bar);
+
+            // Split using commas
+            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
+
+            URI[] expected = new URI[]{
+                dir.toUri(),
+                foo.toUri(),
+                bar.toUri()
+            };
+            assertThat(uris, contains(expected));
+        }
+    }
+
+    @Test
+    public void testSplitOnSemicolon()
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path base = workDir.getEmptyPathDir();
+            Path dir = base.resolve("dir");
+            FS.ensureDirExists(dir);
+            Path foo = dir.resolve("foo");
+            FS.ensureDirExists(foo);
+            Path bar = dir.resolve("bar");
+            FS.ensureDirExists(bar);
+
+            // This represents the user-space raw configuration
+            String config = String.format("%s;%s;%s", dir, foo, bar);
+
+            // Split using commas
+            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
+
+            URI[] expected = new URI[]{
+                dir.toUri(),
+                foo.toUri(),
+                bar.toUri()
+            };
+            assertThat(uris, contains(expected));
+        }
+    }
+
+    @Test
+    public void testSplitOnPipeWithGlob() throws IOException
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path base = workDir.getEmptyPathDir();
+            Path dir = base.resolve("dir");
+            FS.ensureDirExists(dir);
+            Path foo = dir.resolve("foo");
+            FS.ensureDirExists(foo);
+            Path bar = dir.resolve("bar");
+            FS.ensureDirExists(bar);
+            Files.copy(MavenPaths.findTestResourceFile("jar-file-resource.jar"), bar.resolve("lib-foo.jar"));
+            Files.copy(MavenPaths.findTestResourceFile("jar-file-resource.jar"), bar.resolve("lib-zed.zip"));
+
+            // This represents the user-space raw configuration with a glob
+            String config = String.format("%s;%s;%s%s*", dir, foo, bar, File.separator);
+
+            // Split using commas
+            List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
+
+            URI[] expected = new URI[]{
+                dir.toUri(),
+                foo.toUri(),
+                // Should see the two archives as `jar:file:` URI entries
+                URIUtil.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
+                URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri())
+            };
+
+            assertThat(uris, contains(expected));
+        }
     }
 
     public static class CustomResourceFactory implements ResourceFactory

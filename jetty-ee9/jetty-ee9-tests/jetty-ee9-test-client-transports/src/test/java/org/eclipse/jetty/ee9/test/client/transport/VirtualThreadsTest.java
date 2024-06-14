@@ -14,11 +14,8 @@
 package org.eclipse.jetty.ee9.test.client.transport;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -70,12 +67,7 @@ public class VirtualThreadsTest extends AbstractTest
         ThreadPool threadPool = server.getThreadPool();
         if (threadPool instanceof VirtualThreads.Configurable)
         {
-            // CAUTION: Java 19 specific reflection code, might change in future Java versions.
-            Object builder = Thread.class.getMethod("ofVirtual").invoke(null);
-            Class<?> builderClass = Arrays.stream(Thread.class.getClasses()).filter(klass -> klass.getName().endsWith("$Builder")).findFirst().orElseThrow();
-            builder = builderClass.getMethod("name", String.class, long.class).invoke(builder, virtualThreadsName, 0L);
-            ThreadFactory factory = (ThreadFactory)builderClass.getMethod("factory").invoke(builder);
-            Executor virtualThreadsExecutor = (Executor)Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class).invoke(null, factory);
+            Executor virtualThreadsExecutor = VirtualThreads.getNamedVirtualThreadsExecutor(virtualThreadsName);
             ((VirtualThreads.Configurable)threadPool).setVirtualThreadsExecutor(virtualThreadsExecutor);
         }
         server.start();

@@ -84,7 +84,7 @@ public class ForwardedRequestCustomizerTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations())
+                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint)
                 {
                     @Override
                     public SocketAddress getLocalSocketAddress()

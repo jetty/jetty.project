@@ -40,11 +40,11 @@ public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
 
-    public static Index<String> SUPPORTED_SCHEMES = new Index.Builder<String>()
-        .caseSensitive(false)
-        .with("file")
-        .with("jrt")
-        .build();
+    /**
+     * @deprecated Using ResourceFactoryInternals.isSupported() instead.
+     */
+    @Deprecated(since = "12.0.4", forRemoval = true)
+    public static Index<String> SUPPORTED_SCHEMES = new Index.Builder<String>().build();
 
     // The path object represented by this instance
     private final Path path;
@@ -164,14 +164,14 @@ public class PathResource extends Resource
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
-        if (!bypassAllowedSchemeCheck && !SUPPORTED_SCHEMES.contains(uri.getScheme()))
+        if (!bypassAllowedSchemeCheck && !ResourceFactoryInternals.isSupported(uri.getScheme()))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
         if (Files.isDirectory(path))
         {
             String uriString = uri.toASCIIString();
             if (!uriString.endsWith("/"))
-                uri = URIUtil.correctFileURI(URI.create(uriString + "/"));
+                uri = URIUtil.correctURI(URI.create(uriString + "/"));
         }
 
         this.path = path;
@@ -292,10 +292,7 @@ public class PathResource extends Resource
         URI uri = getURI();
         URI resolvedUri = URIUtil.addPath(uri, subUriPath);
         Path path = Paths.get(resolvedUri);
-        if (Files.exists(path))
-            return newResource(path, resolvedUri);
-
-        return null;
+        return newResource(path, resolvedUri);
     }
 
     /**
@@ -310,7 +307,7 @@ public class PathResource extends Resource
     @Override
     public boolean isDirectory()
     {
-        return Files.isDirectory(getPath(), LinkOption.NOFOLLOW_LINKS);
+        return Files.isDirectory(getPath());
     }
 
     @Override
@@ -350,8 +347,7 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            // in case of error, use Files.size() logic of 0L
-            return 0L;
+            return -1L;
         }
     }
 

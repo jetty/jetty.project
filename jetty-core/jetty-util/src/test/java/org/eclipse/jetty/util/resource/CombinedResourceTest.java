@@ -49,7 +49,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class CombinedResourceTest
@@ -110,15 +109,15 @@ public class CombinedResourceTest
             .toList();
 
         expected = new String[] {
-            "dir/1.txt",
-            "dir/2.txt",
-            "dir/3.txt"
+            FS.separators("dir/1.txt"),
+            FS.separators("dir/2.txt"),
+            FS.separators("dir/3.txt")
         };
 
         assertThat(relative, containsInAnyOrder(expected));
 
         Resource unk = rc.resolve("unknown");
-        assertNull(unk);
+        assertFalse(unk.exists());
 
         assertEquals(getContent(rc, "1.txt"), "1 - one");
         assertEquals(getContent(rc, "2.txt"), "2 - two");
@@ -281,9 +280,9 @@ public class CombinedResourceTest
                 "2.txt",
                 "3.txt",
                 "4.txt",
-                "dir/1.txt",
-                "dir/2.txt",
-                "dir/3.txt"
+                FS.separators("dir/1.txt"),
+                FS.separators("dir/2.txt"),
+                FS.separators("dir/3.txt")
             };
 
             assertThat(actual, contains(expected));
@@ -427,12 +426,12 @@ public class CombinedResourceTest
         String config = String.format("%s,%s,%s", dir, foo, bar);
 
         // To use this, we need to split it (and optionally honor globs)
-        List<URI> uris = URIUtil.split(config);
+        List<Resource> resources = resourceFactory.split(config);
         // Now let's create a ResourceCollection from this list of URIs
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
         // will be necessary things to mount
-        Resource rc = resourceFactory.newResource(uris);
+        Resource rc = ResourceFactory.combine(resources);
         assertThat(getContent(rc, "test.txt"), is("Test"));
     }
 
@@ -453,12 +452,12 @@ public class CombinedResourceTest
         String config = String.format("%s;%s;%s%s*", dir, foo, bar, File.separator);
 
         // To use this, we need to split it (and optionally honor globs)
-        List<URI> uris = URIUtil.split(config);
+        List<Resource> resources = resourceFactory.split(config);
         // Now let's create a ResourceCollection from this list of URIs
         // Since this is user space, we cannot know ahead of time what
         // this list contains, so we mount because we assume there
         // will be necessary things to mount
-        Resource rc = resourceFactory.newResource(uris);
+        Resource rc = ResourceFactory.combine(resources);
         assertThat(getContent(rc, "test.txt"), is("Test inside lib-foo.jar"));
         assertThat(getContent(rc, "testZed.txt"), is("TestZed inside lib-zed.jar"));
     }
@@ -804,9 +803,9 @@ public class CombinedResourceTest
             "2.txt",
             "3.txt",
             "dir",
-            "dir/1.txt",
-            "dir/2.txt",
-            "dir/3.txt"
+            FS.separators("dir/1.txt"),
+            FS.separators("dir/2.txt"),
+            FS.separators("dir/3.txt")
         ));
     }
 

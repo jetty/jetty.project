@@ -42,7 +42,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -201,7 +200,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the session does not exist
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {
@@ -246,7 +245,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the session does not exist
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {
@@ -288,8 +287,8 @@ public class CreationTest
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //check that the session does not exist
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            //check the session
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
             assertThat(response.getHeaders().getValuesList(HttpHeader.SET_COOKIE).size(), Matchers.is(1));
         }
         finally
@@ -303,8 +302,6 @@ public class CreationTest
      * session in it too. Check that both sessions exist after the response
      * completes.
      */
-    //TODO - no cross context support in jetty-12
-    @Disabled
     @Test
     public void testSessionCreateForward() throws Exception
     {
@@ -322,8 +319,10 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
+        contextHandler.setCrossContextDispatchSupported(true);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
+        ctxB.setCrossContextDispatchSupported(true);
         ctxB.addServlet(TestServletB.class, servletMapping);
         server1.start();
         int port1 = server1.getPort();
@@ -339,8 +338,8 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that the sessions exist persisted
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertTrue(ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {
@@ -353,8 +352,6 @@ public class CreationTest
      * in it, then invalidate the session in the original context: that should invalidate the
      * session in both contexts and no session should exist after the response completes.
      */
-    //TODO no cross context dispatch in jetty-12
-    @Disabled
     @Test
     public void testSessionCreateForwardAndInvalidate() throws Exception
     {
@@ -373,8 +370,10 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
+        contextHandler.setCrossContextDispatchSupported(true);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
+        ctxB.setCrossContextDispatchSupported(true);
         ctxB.addServlet(TestServletB.class, servletMapping);
         server1.start();
         int port1 = server1.getPort();
@@ -388,9 +387,9 @@ public class CreationTest
             ContentResponse response = client.GET(url + "?action=forwardinv");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-            //check that the session does not exist 
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
-            assertFalse(ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            //check that the session does not exist
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !ctxB.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
         }
         finally
         {

@@ -562,8 +562,8 @@ public class MetaInfConfigurationTest
             // we "correct" the bad file URLs that come from the ClassLoader
             // to be the same as what comes from every non-classloader URL/URI.
             String[] expectedContainerResources = {
-                URIUtil.correctFileURI(janbUri).toASCIIString(),
-                URIUtil.correctFileURI(servletUri).toASCIIString()
+                URIUtil.correctURI(janbUri).toASCIIString(),
+                URIUtil.correctURI(servletUri).toASCIIString()
             };
             assertThat("Discovered Container resources", discoveredContainerResources, hasItems(expectedContainerResources));
         }

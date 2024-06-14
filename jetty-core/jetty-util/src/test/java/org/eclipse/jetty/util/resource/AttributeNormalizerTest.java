@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -335,13 +336,13 @@ public class AttributeNormalizerTest
         assertThat(normalizer.expand("${WAR.uri}/file1"), containsString("/dir1/file1"));
         assertThat(normalizer.expand("${WAR.uri}/file2"), containsString("/dir2/file2"));
         assertThat(normalizer.expand("${WAR.uri}/file3"), containsString("/dir3/file3"));
-        assertThat(normalizer.expand("${WAR.path}/file1"), containsString("/dir1/file1"));
-        assertThat(normalizer.expand("${WAR.path}/file2"), containsString("/dir2/file2"));
-        assertThat(normalizer.expand("${WAR.path}/file3"), containsString("/dir3/file3"));
+        assertThat(normalizer.expand("${WAR.path}/file1"), containsString(FS.separators("/dir1/file1")));
+        assertThat(normalizer.expand("${WAR.path}/file2"), containsString(FS.separators("/dir2/file2")));
+        assertThat(normalizer.expand("${WAR.path}/file3"), containsString(FS.separators("/dir3/file3")));
 
         // If file cannot be found it just uses the first resource.
         assertThat(normalizer.expand("${WAR.uri}/file4"), containsString("/dir1/file4"));
-        assertThat(normalizer.expand("${WAR.path}/file4"), containsString("/dir1/file4"));
+        assertThat(normalizer.expand("${WAR.path}/file4"), containsString(File.separator + "dir1" + File.separator +  "file4"));
     }
 
     public static class Scenario

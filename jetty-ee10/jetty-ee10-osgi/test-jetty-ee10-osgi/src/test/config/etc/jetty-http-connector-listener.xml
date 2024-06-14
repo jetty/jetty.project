@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- ============================================================= -->
+<!-- Configure the Jetty Server instance with an ID "Server"       -->
+<!-- by adding an HTTP connector.                                   -->
+<!-- This configuration must be used in conjunction with jetty.xml -->
+<!-- ============================================================= -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- =========================================================== -->
+  <!-- Add a listener to the default HTTP Connector to set a       -->
+  <!-- system property with the port number. Mostly useful for     -->
+  <!-- testing.                                                    -->
+  <!-- =========================================================== -->
+  <Ref id="httpConnector">
+    <Call name="addEventListener">
+      <Arg>
+        <New class="org.eclipse.jetty.osgi.util.ServerConnectorListener">
+          <Set name="sysPropertyName">boot.http.port</Set>
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
+
+</Configure>

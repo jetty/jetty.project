@@ -19,6 +19,7 @@ import java.util.Map;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Transport;
 
 public class HttpClientConnectionFactory implements ClientConnectionFactory
 {
@@ -47,6 +48,12 @@ public class HttpClientConnectionFactory implements ClientConnectionFactory
         public List<String> getProtocols(boolean secure)
         {
             return protocols;
+        }
+
+        @Override
+        public Transport newTransport()
+        {
+            return Transport.TCP_IP;
         }
 
         @Override

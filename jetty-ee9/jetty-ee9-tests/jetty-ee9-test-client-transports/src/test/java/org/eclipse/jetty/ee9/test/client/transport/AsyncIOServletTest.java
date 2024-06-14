@@ -94,7 +94,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled
 public class AsyncIOServletTest extends AbstractTest
 {
     private static final ThreadLocal<RuntimeException> scope = new ThreadLocal<>();
@@ -1083,6 +1082,7 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
+    @Disabled // TODO Cannot write response from onError as failure has occurred
     public void testAsyncReadEarlyEOF(Transport transport) throws Exception
     {
         // SSLEngine receives the close alert from the client, and when
@@ -1138,7 +1138,7 @@ public class AsyncIOServletTest extends AbstractTest
             .body(requestContent)
             .onResponseSuccess(response ->
             {
-                if (transport == Transport.HTTP || transport == Transport.UNIX_DOMAIN)
+                if (transport == Transport.HTTP)
                     responseLatch.countDown();
             })
             .onResponseFailure((response, failure) ->
@@ -1157,7 +1157,6 @@ public class AsyncIOServletTest extends AbstractTest
             switch (transport)
             {
                 case HTTP:
-                case UNIX_DOMAIN:
                     assertThat(result.getResponse().getStatus(), Matchers.equalTo(responseCode));
                     break;
                 case H2C:
@@ -1175,7 +1174,6 @@ public class AsyncIOServletTest extends AbstractTest
         switch (transport)
         {
             case HTTP:
-            case UNIX_DOMAIN:
                 ((HttpConnectionOverHTTP)connection).getEndPoint().shutdownOutput();
                 break;
             case H2C:
@@ -1200,6 +1198,7 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
+    @Disabled // TODO
     public void testAsyncIntercepted(Transport transport) throws Exception
     {
         start(transport, new HttpServlet()
@@ -1550,6 +1549,7 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
+    @Disabled // TODO
     public void testAsyncInterceptedTwiceWithNulls(Transport transport) throws Exception
     {
         start(transport, new HttpServlet()

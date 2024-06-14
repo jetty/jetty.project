@@ -16,12 +16,14 @@ package org.eclipse.jetty.quic.common;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
@@ -220,6 +222,15 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         return session;
     }
 
+    @Override
+    public SslSessionData getSslSessionData()
+    {
+        X509Certificate[] peerCertificates = getQuicSession().getPeerCertificates();
+        if (peerCertificates == null)
+            return null;
+        return SslSessionData.from(null, null, null, peerCertificates);
+    }
+
     public void onWritable()
     {
         if (LOG.isDebugEnabled())
@@ -249,7 +260,19 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         if (LOG.isDebugEnabled())
             LOG.debug("stream #{} is readable, processing: {}", streamId, interested);
         if (interested)
+        {
             getFillInterest().fillable();
+        }
+        else
+        {
+            QuicStreamEndPoint streamEndPoint = getQuicSession().getStreamEndPoint(streamId);
+            if (streamEndPoint.isStreamFinished())
+            {
+                EofException e = new EofException();
+                streamEndPoint.getFillInterest().onFail(e);
+                streamEndPoint.getQuicSession().onFailure(e);
+            }
+        }
         return interested;
     }
 

@@ -29,7 +29,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -411,17 +410,11 @@ public class AttributeNormalizer
         {
             case "WAR", "WAR.path" ->
             {
-                Resource r = baseResource.resolve(suffix);
-                if (r == null)
-                    return prefix + URIUtil.addPaths(baseResource.iterator().next().getPath().toString(), suffix);
-                return prefix + r.getPath();
+                return prefix + baseResource.resolve(suffix).getPath();
             }
             case "WAR.uri" ->
             {
-                Resource r = baseResource.resolve(suffix);
-                if (r == null)
-                    return prefix + URIUtil.addPaths(baseResource.iterator().next().getURI().toString(), suffix);
-                return prefix + r.getURI();
+                return prefix + baseResource.resolve(suffix).getURI();
             }
         }
 

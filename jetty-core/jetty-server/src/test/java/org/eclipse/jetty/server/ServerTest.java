@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,8 +31,10 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ServerTest
 {
@@ -62,7 +66,7 @@ public class ServerTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations())
+                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint)
                 {
                     @Override
                     protected HttpChannel newHttpChannel(Server server, HttpConfiguration configuration)
@@ -109,6 +113,13 @@ public class ServerTest
     }
 
     @Test
+    public void testContextTempDirectory()
+    {
+        File tempDirectory = _server.getContext().getTempDirectory();
+        assertThat(tempDirectory, not(nullValue()));
+    }
+
+    @Test
     public void testSimpleGET() throws Exception
     {
         _context.setHandler(new Handler.Abstract()
@@ -131,6 +142,26 @@ public class ServerTest
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("Hello"));
+    }
+
+    @Test
+    public void testDump() throws Exception
+    {
+        testSimpleGET();
+        ((QueuedThreadPool)(_server.getThreadPool())).tryExecute(() -> {});
+        String dump = _server.dump();
+        assertThat(dump, containsString("oejs.Server@"));
+        assertThat(dump, containsString("QueuedThreadPool"));
+        assertThat(dump, containsString("+= ReservedThreadExecutor@"));
+        assertThat(dump, containsString(".ArrayByteBufferPool@"));
+        assertThat(dump, containsString("+- System Properties size="));
+        assertThat(dump, containsString("+> java.home: "));
+        assertThat(dump, containsString("+> java.runtime.version: "));
+        assertThat(dump, containsString("+= oejsh.ContextHandler@"));
+        assertThat(dump, containsString("+= LocalConnector@"));
+        assertThat(dump, containsString("key: +-"));
+        assertThat(dump, containsString("JVM: "));
+        assertThat(dump, containsString(Jetty.VERSION));
     }
 
     public static Stream<Arguments> completionScenarios()

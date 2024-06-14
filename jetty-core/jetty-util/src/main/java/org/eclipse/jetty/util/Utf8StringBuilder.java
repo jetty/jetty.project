@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Utf8StringBuilder implements CharsetStringBuilder
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(Utf8StringBuilder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Utf8StringBuilder.class);
     public static final char REPLACEMENT = '�';
     private static final int UTF8_ACCEPT = 0;
     private static final int UTF8_REJECT = 12;
@@ -92,6 +92,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         _buffer = buffer;
     }
 
+    @Override
     public int length()
     {
         return _buffer.length();

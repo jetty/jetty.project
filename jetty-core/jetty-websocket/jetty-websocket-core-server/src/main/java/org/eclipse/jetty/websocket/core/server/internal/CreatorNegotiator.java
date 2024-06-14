@@ -65,7 +65,11 @@ public class CreatorNegotiator extends WebSocketNegotiator.AbstractNegotiator
 
         if (websocketPojo == null)
             return null;
-        return factory.newFrameHandler(websocketPojo, request, response);
+
+        FrameHandler frameHandler = factory.newFrameHandler(websocketPojo, request, response);
+        if (frameHandler == null)
+            callback.failed(new IllegalStateException("No WebSocket FrameHandler was created"));
+        return frameHandler;
     }
 
     @Override

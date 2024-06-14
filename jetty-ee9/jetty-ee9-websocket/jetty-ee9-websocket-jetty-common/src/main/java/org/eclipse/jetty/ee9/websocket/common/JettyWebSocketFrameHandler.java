@@ -329,9 +329,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
 
         // Accept the payload into the message sink
-        activeMessageSink.accept(frame, callback);
+        MessageSink messageSink = activeMessageSink;
         if (frame.isFin())
             activeMessageSink = null;
+        messageSink.accept(frame, callback);
     }
 
     private void onBinaryFrame(Frame frame, Callback callback)

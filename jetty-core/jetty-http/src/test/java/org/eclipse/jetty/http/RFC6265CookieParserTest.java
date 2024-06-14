@@ -51,7 +51,7 @@ public class RFC6265CookieParserTest
         assertCookie("Cookies[1]", cookies.get(1), "Customer", "WILE_E_COYOTE", 0, null);
         assertCookie("Cookies[2]", cookies.get(2), "$Path", "/acme", 0, null);
 
-        // There attributes are seen as just normal cookies, so no violations
+        // Normal cookies with attributes, so no violations
         assertThat(parser.violations.size(), is(0));
 
         // Same again, but allow attributes which are ignored
@@ -60,7 +60,7 @@ public class RFC6265CookieParserTest
         assertThat("Cookies.length", cookies.size(), is(1));
         assertCookie("Cookies[0]", cookies.get(0), "Customer", "WILE_E_COYOTE", 0, null);
 
-        // There attributes are seen as just normal cookies, so no violations
+        // There are 2 attributes that are seen as violations
         assertThat(parser.violations.size(), is(2));
 
         // Same again, but allow attributes which are not ignored
@@ -69,10 +69,10 @@ public class RFC6265CookieParserTest
         assertThat("Cookies.length", cookies.size(), is(1));
         assertCookie("Cookies[0]", cookies.get(0), "Customer", "WILE_E_COYOTE", 1, "/acme");
 
-        // There attributes are seen as just normal cookies, so no violations
+        // There are 2 attributes that are seen as violations
         assertThat(parser.violations.size(), is(2));
 
-        // Same test with RFC 6265 strict should throw.
+        // Same test, but with RFC 6265 strict.
         parser = new TestCookieParser(CookieCompliance.RFC6265_STRICT);
         cookies = parser.parseFields(rawCookie);
         assertThat("Cookies.length", cookies.size(), is(3));
@@ -80,7 +80,7 @@ public class RFC6265CookieParserTest
         assertCookie("Cookies[1]", cookies.get(1), "Customer", "WILE_E_COYOTE", 0, null);
         assertCookie("Cookies[2]", cookies.get(2), "$Path", "/acme", 0, null);
 
-        // There attributes are seen as just normal cookies, so no violations
+        // Normal cookies with attributes, so no violations
         assertThat(parser.violations.size(), is(0));
     }
 
@@ -444,9 +444,9 @@ public class RFC6265CookieParserTest
         }
 
         @Override
-        public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+        public void onComplianceViolation(ComplianceViolation.Event event)
         {
-            violations.add((CookieCompliance.Violation)violation);
+            violations.add((CookieCompliance.Violation)event.violation());
         }
 
         private List<Cookie> parseFields(String... fields)

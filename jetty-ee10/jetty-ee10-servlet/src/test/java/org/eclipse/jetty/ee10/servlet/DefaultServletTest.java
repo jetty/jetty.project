@@ -53,9 +53,12 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
@@ -359,18 +362,6 @@ public class DefaultServletTest
         Path other = dir.resolve("other.txt");
         Files.writeString(other, "In a while", UTF_8);
 
-        // Access normally, in sub-dir of context
-
-        rawResponse = connector.getResponse("""
-            GET /context/dirFoo/other.txt HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """);
-        response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.toString(), response.getContent(), is("In a while"));
-
         // Attempt access of content in sub-dir of context, using "%2F" instead of "/", should be a 404
         // as neither getServletPath and getPathInfo are used and thus they don't throw.
         rawResponse = connector.getResponse("""
@@ -386,7 +377,7 @@ public class DefaultServletTest
     @Test
     public void testListingWithSession() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -417,7 +408,7 @@ public class DefaultServletTest
     @Test
     public void testListingXSS() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -465,7 +456,7 @@ public class DefaultServletTest
     @Test
     public void testListingWithQuestionMarks() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -493,7 +484,7 @@ public class DefaultServletTest
     @Test
     public void testSimpleListing() throws Exception
     {
-        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
         defHolder.setInitParameter("dirAllowed", "true");
 
         String rawResponse = connector.getResponse("""
@@ -513,7 +504,7 @@ public class DefaultServletTest
     @Test
     public void testIncludeListingAllowed() throws Exception
     {
-        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
         defHolder.setInitParameter("dirAllowed", "true");
 
         /* create a file with a non-fully ASCII name in the docroot */
@@ -553,7 +544,7 @@ public class DefaultServletTest
     @Test
     public void testIncludeListingForbidden() throws Exception
     {
-        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
         defHolder.setInitParameter("dirAllowed", "false");
 
         ServletHolder incHolder = new ServletHolder();
@@ -593,7 +584,7 @@ public class DefaultServletTest
     @Test
     public void testListingFilenamesOnly() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -731,7 +722,7 @@ public class DefaultServletTest
     @Test
     public void testListingProperUrlEncoding() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -1337,6 +1328,52 @@ public class DefaultServletTest
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
             }
         }
+    }
+
+    @Test
+    public void testDifferentBaseAbsolute() throws Exception
+    {
+        Path altRoot = workDir.getEmptyPathDir().resolve("altroot");
+        FS.ensureDirExists(altRoot);
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
+        defholder.setInitParameter("resourceBase", altRoot.toAbsolutePath().toUri().toASCIIString());
+
+        Path file = altRoot.resolve("file.txt");
+        Files.writeString(file, "How now brown cow", UTF_8);
+
+        String rawResponse = connector.getResponse("""
+            GET /context/alt/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
+    }
+
+    @Test
+    public void testDifferentBaseRelative() throws Exception
+    {
+        Path alt = docRoot.resolve("alt");
+        FS.ensureDirExists(alt);
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
+        defholder.setInitParameter("resourceBase", "alt");
+
+        Path file = alt.resolve("file.txt");
+        Files.writeString(file, "How now brown cow", UTF_8);
+
+        String rawResponse = connector.getResponse("""
+            GET /context/alt/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
     }
 
     @Test
@@ -3051,6 +3088,7 @@ public class DefaultServletTest
     @Test
     public void testControlCharacter() throws Exception
     {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         FS.ensureDirExists(docRoot);
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
@@ -3450,6 +3488,26 @@ public class DefaultServletTest
     }
 
     @Test
+    public void testSuffixMappings() throws Exception
+    {
+        server.stop();
+
+        Path suffixroot = MavenTestingUtils.getTestResourcePath("suffixroot");
+        ResourceFactory resourceFactory = ResourceFactory.of(context);
+        context.setBaseResource(resourceFactory.newResource(suffixroot.toUri()));
+
+        ServletHolder holderAlt = new ServletHolder("static-js", DefaultServlet.class);
+        context.addServlet(holderAlt, "*.js");
+        ServletHolder holderDef = new ServletHolder("default", DefaultServlet.class);
+        holderDef.setInitParameter("dirAllowed", "true");
+        context.addServlet(holderDef, "/");
+
+        server.start();
+        String rawResponse = connector.getResponse("GET /context/test.js HTTP/1.0\r\n\r\n");
+        assertThat(rawResponse, containsString("Hello"));
+    }
+
+    @Test
     public void testMemoryResourceRange() throws Exception
     {
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
@@ -3478,7 +3536,7 @@ public class DefaultServletTest
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = BufferUtil.toBuffer(getResource(), false);
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()
@@ -3532,7 +3590,7 @@ public class DefaultServletTest
         context.addServlet(new ServletHolder(defaultServlet), "/");
         defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
-            final ByteBuffer buffer = BufferUtil.toBuffer(getResource(), false);
+            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
             @Override
             public ByteBuffer getByteBuffer()

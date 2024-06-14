@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  * Content.Source content = ...;
  *
  * // Create and configure MultiPartFormData.
- * MultiPartFormData formData = new MultiPartFormData(boundary);
+ * MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
  * // Where to store the files.
  * formData.setFilesDirectory(Path.of("/tmp"));
  * // Max 1 MiB files.
@@ -77,13 +78,31 @@ public class MultiPartFormData
     {
     }
 
+    /**
+     * Returns {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578}.
+     */
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    {
+        return from(attributes, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP, boundary, parse);
+    }
+
+    /**
+     * Returns {@code multipart/form-data} parts using the given {@link MultiPartCompliance} and listener.
+     *
+     * @param attributes the attributes where the futureParts are tracked
+     * @param compliance the compliance mode
+     * @param listener the compliance violation listener
+     * @param boundary the boundary for the {@code multipart/form-data} parts
+     * @param parse the parser completable future
+     * @return the future parts
+     */
+    public static CompletableFuture<Parts> from(Attributes attributes, MultiPartCompliance compliance, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
         @SuppressWarnings("unchecked")
         CompletableFuture<Parts> futureParts = (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
         if (futureParts == null)
         {
-            futureParts = parse.apply(new Parser(boundary));
+            futureParts = parse.apply(new Parser(boundary, compliance, listener));
             attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
         }
         return futureParts;
@@ -200,6 +219,8 @@ public class MultiPartFormData
     {
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
+        private final MultiPartCompliance compliance;
+        private final ComplianceViolation.Listener complianceListener;
         private boolean useFilesForPartsWithoutFileName;
         private Path filesDirectory;
         private long maxFileSize = -1;
@@ -210,7 +231,14 @@ public class MultiPartFormData
 
         public Parser(String boundary)
         {
-            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), listener);
+            this(boundary, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP);
+        }
+
+        public Parser(String boundary, MultiPartCompliance multiPartCompliance, ComplianceViolation.Listener complianceViolationListener)
+        {
+            compliance = Objects.requireNonNull(multiPartCompliance);
+            complianceListener = Objects.requireNonNull(complianceViolationListener);
+            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), compliance, listener);
         }
 
         public CompletableFuture<Parts> parse(Content.Source content)
@@ -315,6 +343,21 @@ public class MultiPartFormData
         public void setFilesDirectory(Path filesDirectory)
         {
             this.filesDirectory = filesDirectory;
+        }
+
+        private Path findFilesDirectory()
+        {
+            Path dir = getFilesDirectory();
+            if (dir != null)
+                return dir;
+            String jettyBase = System.getProperty("jetty.base");
+            if (jettyBase != null)
+            {
+                dir = Path.of(jettyBase).resolve("work");
+                if (Files.exists(dir))
+                    return dir;
+            }
+            throw new IllegalArgumentException("No files directory configured");
         }
 
         /**
@@ -502,6 +545,40 @@ public class MultiPartFormData
                 memoryFileSize = 0;
                 try (AutoLock ignored = lock.lock())
                 {
+                    // Content-Transfer-Encoding is not a multi-valued field.
+                    String value = headers.get(HttpHeader.CONTENT_TRANSFER_ENCODING);
+                    if (value != null)
+                    {
+                        switch (StringUtil.asciiToLowerCase(value))
+                        {
+                            case "base64" ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
+                                        value));
+                            }
+                            case "quoted-printable" ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
+                                        value));
+                            }
+                            case "8bit", "binary" ->
+                            {
+                                // ignore
+                            }
+                            default ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
+                                        value));
+                            }
+                        }
+                    }
+
                     MultiPart.Part part;
                     if (fileChannel != null)
                         part = new MultiPart.PathPart(name, fileName, headers, filePath);
@@ -554,6 +631,21 @@ public class MultiPartFormData
             public void onFailure(Throwable failure)
             {
                 fail(failure);
+            }
+
+            @Override
+            public void onViolation(MultiPartCompliance.Violation violation)
+            {
+                try
+                {
+                    ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation");
+                    complianceListener.onComplianceViolation(event);
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failure while notifying listener {}", complianceListener, x);
+                }
             }
 
             private void fail(Throwable cause)
@@ -627,7 +719,7 @@ public class MultiPartFormData
             {
                 try (AutoLock ignored = lock.lock())
                 {
-                    Path directory = getFilesDirectory();
+                    Path directory = findFilesDirectory();
                     Files.createDirectories(directory);
                     String fileName = "MultiPart";
                     filePath = Files.createTempFile(directory, fileName, "");

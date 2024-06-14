@@ -106,7 +106,7 @@ public class QuotedCSVTest
         {
 
             @Override
-            protected void parsedValue(StringBuffer buffer)
+            protected void parsedValue(StringBuilder buffer)
             {
                 if (buffer.toString().contains("DELETE"))
                 {
@@ -123,7 +123,7 @@ public class QuotedCSVTest
             }
 
             @Override
-            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            protected void parsedParam(StringBuilder buffer, int valueLength, int paramName, int paramValue)
             {
                 String name = paramValue > 0 ? buffer.substring(paramName, paramValue - 1) : buffer.substring(paramName);
                 if ("IGNORE".equals(name))

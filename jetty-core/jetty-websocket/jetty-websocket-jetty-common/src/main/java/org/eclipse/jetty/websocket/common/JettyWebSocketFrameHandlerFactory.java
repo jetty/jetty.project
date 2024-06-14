@@ -162,7 +162,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
         metadata.setAutoDemand(Session.Listener.AutoDemanding.class.isAssignableFrom(endpointClass));
 
-        MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
+        MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
 
         Method openMethod = findMethod(endpointClass, "onWebSocketOpen", Session.class);
         if (openMethod != null)
@@ -244,19 +244,14 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         Method method = ReflectUtils.findMethod(klass, name, parameters);
         if (method == null)
             return null;
-        if (!isOverridden(method))
-            return null;
-        // The method is overridden, but it may be declared in a non-public
-        // class, for example an anonymous class, where it won't be accessible,
-        // therefore replace it with the accessible version from Session.Listener.
-        if (!Modifier.isPublic(klass.getModifiers()))
-            method = ReflectUtils.findMethod(Session.Listener.class, name, parameters);
-        return method;
+        if (isOverridden(method))
+            return method;
+        return null;
     }
 
     private boolean isOverridden(Method method)
     {
-        return method != null && method.getDeclaringClass() != Session.Listener.class;
+        return method.getDeclaringClass() != Session.Listener.class;
     }
 
     private JettyWebSocketFrameHandlerMetadata createAnnotatedMetadata(WebSocket anno, Class<?> endpointClass)
@@ -265,10 +260,9 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         metadata.setAutoDemand(anno.autoDemand());
 
         MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
-        Method onmethod;
 
         // OnWebSocketOpen [0..1]
-        onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketOpen.class);
+        Method onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketOpen.class);
         if (onmethod != null)
         {
             assertSignatureValid(endpointClass, onmethod, OnWebSocketOpen.class);

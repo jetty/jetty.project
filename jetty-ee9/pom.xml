@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.5-SNAPSHOT</version>
+    <version>12.0.11-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.ee9</groupId>
   <artifactId>jetty-ee9</artifactId>
@@ -47,7 +47,7 @@
     <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
     <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
     <jakarta.enterprise.cdi.api.version>3.0.1</jakarta.enterprise.cdi.api.version>
-    <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
+    <jakarta.inject.api.version>2.0.1.MR</jakarta.inject.api.version>
     <jakarta.interceptor.api.version>2.0.1</jakarta.interceptor.api.version>
     <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
     <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
@@ -69,7 +69,7 @@
     <!-- FIXME we need a separate property for this one -->
     <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
 
-    <jsp.impl.version>10.0.14</jsp.impl.version>
+    <jsp.impl.version>10.0.27</jsp.impl.version>
 
     <sonar.skip>true</sonar.skip>
     <weld.version>4.0.3.Final</weld.version>
@@ -622,6 +622,289 @@
                           <ignoreVersion>
                             <type>regex</type>
                             <version>^(?!2.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 10.0.x of mortbay apache-jsp impl
+                             ee10 starts with version 10.1.x -->
+                        <groupId>org.mortbay.jasper</groupId>
+                        <artifactId>apache-jsp</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!10.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 10.0.x of mortbay apache-el impl
+                             ee10 starts with version 10.1.x -->
+                        <groupId>org.mortbay.jasper</groupId>
+                        <artifactId>apache-el</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!10.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore unstable mina releases -->
+                        <groupId>org.apache.mina</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+-M[0-9]+$</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                    </rules>
+                  </ruleSet>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!--
+        $ mvn -Pupdate-dependencies-ee9 validate
+        -->
+      <id>update-dependencies-ee9</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>ee9-update</id>
+                <goals>
+                  <goal>update-properties</goal>
+                </goals>
+                <phase>validate</phase>
+                <configuration>
+                  <onlyProjectDependencies>true</onlyProjectDependencies>
+                  <onlyUpgradable>true</onlyUpgradable>
+                  <ruleSet>
+                    <rules>
+                      <rule>
+                        <!-- ignore maven alpha/beta releases -->
+                        <groupId>org.apache.maven</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+-(alpha|beta).?[0-9]+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore jetty core/root deps -->
+                        <groupId>org.eclipse.jetty</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- ignore all jetty nested deps -->
+                        <groupId>org.eclipse.jetty.*</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>.+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 2.0.x of activation spec
+                             ee10 starts with version 2.1.x -->
+                        <groupId>jakarta.activation</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 2.0.x of annotation spec
+                             ee10 starts with version 2.1.x -->
+                        <groupId>jakarta.annotation</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 2.x of authentication spec
+                             ee10 starts with version 3.x -->
+                        <groupId>jakarta.authentication</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 4.x of el spec
+                             ee10 starts with version 5.x -->
+                        <groupId>jakarta.el</groupId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!4.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 3.x of cdi spec
+                             ee10 starts with version 4.x -->
+                        <groupId>jakarta.enterprise</groupId>
+                        <artifactId>jakarta.enterprise.cdi-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!3.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 2.0.x of interceptor spec
+                             ee10 starts with version 2.1.x -->
+                        <groupId>jakarta.interceptor</groupId>
+                        <artifactId>jakarta.interceptor-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 2.0.x of inject spec
+                             ee10 starts with version 2.1.x -->
+                        <groupId>jakarta.inject</groupId>
+                        <artifactId>jakarta.inject-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 2.0.x of mail spec
+                             ee10 starts with version 2.1.x -->
+                        <groupId>jakarta.mail</groupId>
+                        <artifactId>jakarta.mail-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 5.x of servlet spec
+                             ee10 starts with version 6.x -->
+                        <groupId>jakarta.servlet</groupId>
+                        <artifactId>jakarta.servlet-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!5.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 3.0.x of jsp spec
+                             ee10 starts with version 3.1.x -->
+                        <groupId>jakarta.servlet</groupId>
+                        <artifactId>jakarta.servlet.jsp-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!3.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 2.x of jsp-jstl spec
+                             ee10 starts with version 3.x -->
+                        <groupId>jakarta.servlet.jsp.jstl</groupId>
+                        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!2.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 3.0.x of ws.rs.api spec
+                             ee10 starts with version 3.1.x -->
+                        <groupId>jakarta.ws.rs</groupId>
+                        <artifactId>jakarta.ws.rs-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!3.0).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 3.0.x of xml.bind-api
+                             ee10 starts with version 4.0.x -->
+                        <groupId>jakarta.xml.bind</groupId>
+                        <artifactId>jakarta.xml.bind-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!3.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 3.0.x of xml.bind implementation
+                             ee10 starts with version 4.0.x -->
+                        <groupId>org.glassfish.jaxb</groupId>
+                        <artifactId>jaxb-runtime</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!3.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 3.0.x of jaxws implementation
+                             ee10 starts with version 4.0.x -->
+                        <groupId>com.sun.xml.ws</groupId>
+                        <artifactId>jaxws-rt</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!3.0.).+</version>
+                          </ignoreVersion>
+                        </ignoreVersions>
+                      </rule>
+                      <rule>
+                        <!-- for ee9, we need to stay on 3.0.x of xml.ws api
+                             ee10 starts with version 4.0.x -->
+                        <groupId>jakarta.xml.ws</groupId>
+                        <artifactId>jakarta.xml.ws-api</artifactId>
+                        <ignoreVersions>
+                          <ignoreVersion>
+                            <type>regex</type>
+                            <version>^(?!3.0.).+</version>
                           </ignoreVersion>
                         </ignoreVersions>
                       </rule>

@@ -1,5 +1,6 @@
 [description]
-Enables and configures the Server ThreadPool with support for virtual threads in Java 21 or later.
+Enables and configures the Server ThreadPool with support for virtual threads to be used for blocking tasks.
+Only supported in Java 21 or later.
 
 [depends]
 logging

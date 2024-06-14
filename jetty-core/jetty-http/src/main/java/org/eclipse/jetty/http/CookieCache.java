@@ -21,31 +21,43 @@ import java.util.ListIterator;
 import java.util.Map;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Cookie parser
- * <p>Optimized stateful cookie parser.
- * If the added fields are identical to those last added (as strings), then the
- * cookies are not re-parsed.
- * 
+ * @deprecated Use {@code org.eclipse.jetty.server.CookieCache}
  */
-public class CookieCache implements CookieParser.Handler
+@Deprecated (forRemoval = true)
+public class CookieCache implements CookieParser.Handler, ComplianceViolation.Listener
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(CookieCache.class);
-    protected final List<String> _rawFields = new ArrayList<>();
-    protected List<HttpCookie> _cookieList;
+    private final List<String> _rawFields = new ArrayList<>();
+    private List<HttpCookie> _cookieList;
     private final CookieParser _parser;
+    private List<ComplianceViolation.Event> _violations;
 
+    @Deprecated
     public CookieCache()
     {
-        this(CookieCompliance.RFC6265, null);
+        this(CookieCompliance.RFC6265);
     }
 
+    @Deprecated
+    public CookieCache(CookieCompliance compliance)
+    {
+        _parser = CookieParser.newParser(this, compliance, this);
+    }
+
+    @Deprecated(forRemoval = true)
     public CookieCache(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
-        _parser = CookieParser.newParser(this, compliance, complianceListener);
+        this(compliance);
+    }
+
+    @Override
+    public void onComplianceViolation(ComplianceViolation.Event event)
+    {
+        if (_violations == null)
+            _violations = new ArrayList<>();
+        _violations.add(event);
     }
 
     @Override
@@ -67,6 +79,11 @@ public class CookieCache implements CookieParser.Handler
     }
 
     public List<HttpCookie> getCookies(HttpFields headers)
+    {
+        return getCookies(headers, ComplianceViolation.Listener.NOOP);
+    }
+
+    public List<HttpCookie> getCookies(HttpFields headers, ComplianceViolation.Listener complianceViolationListener)
     {
         boolean building = false;
         ListIterator<String> raw = _rawFields.listIterator();
@@ -136,6 +153,8 @@ public class CookieCache implements CookieParser.Handler
             _cookieList = new ArrayList<>();
             try
             {
+                if (_violations != null)
+                    _violations.clear();
                 _parser.parseFields(_rawFields);
             }
             catch (CookieParser.InvalidCookieException invalidCookieException)
@@ -143,6 +162,9 @@ public class CookieCache implements CookieParser.Handler
                 throw new BadMessageException(invalidCookieException.getMessage(), invalidCookieException);
             }
         }
+
+        if (_violations != null && !_violations.isEmpty())
+            _violations.forEach(complianceViolationListener::onComplianceViolation);
 
         return _cookieList == null ? Collections.emptyList() : _cookieList;
     }

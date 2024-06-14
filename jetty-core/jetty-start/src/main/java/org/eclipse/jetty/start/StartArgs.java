@@ -67,7 +67,7 @@ public class StartArgs
         String tag = System.getProperty(JETTY_TAG_NAME_KEY);
 
         // Use META-INF/MANIFEST.MF versions
-        if (ver == null)
+        if (Utils.isBlank(ver))
         {
             ver = ManifestUtils.getManifest(StartArgs.class)
                 .map(Manifest::getMainAttributes)
@@ -1078,7 +1078,7 @@ public class StartArgs
             return environment;
         }
 
-        if (arg.startsWith("--include-jetty-dir="))
+        if (arg.startsWith("--include-jetty-dir=") || arg.startsWith("--add-config-dir="))
         {
             // valid, but handled in ConfigSources instead
             return environment;
@@ -1091,7 +1091,7 @@ public class StartArgs
             return environment;
         }
 
-        if (arg.startsWith("--download="))
+        if (arg.startsWith("--download=") || arg.startsWith("--files="))
         {
             addFile(null, Props.getValue(arg));
             run = false;
@@ -1277,7 +1277,7 @@ public class StartArgs
         }
 
         // Skip [files] validation on a module
-        if (arg.startsWith("--skip-file-validation="))
+        if (arg.startsWith("--skip-file-validation=") || arg.startsWith("--skip-create-files="))
         {
             List<String> moduleNames = Props.getValues(arg);
             skipFileValidationModules.addAll(moduleNames);
@@ -1426,9 +1426,11 @@ public class StartArgs
     {
         for (String moduleName : moduleNames)
         {
-            modules.add(moduleName);
-            Set<String> set = sources.computeIfAbsent(moduleName, k -> new HashSet<>());
-            set.add(source);
+            if (modules.add(moduleName))
+            {
+                Set<String> set = sources.computeIfAbsent(moduleName, k -> new HashSet<>());
+                set.add(source);
+            }
         }
     }
 
