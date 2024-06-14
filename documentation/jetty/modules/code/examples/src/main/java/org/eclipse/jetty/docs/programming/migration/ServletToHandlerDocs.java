@@ -64,7 +64,8 @@ public class ServletToHandlerDocs
             // Gets the request URL.
             // Replaces:
             //   - servletRequest.getRequestURL();
-            StringBuffer requestURL = new StringBuffer(HttpURI.build(request.getHttpURI()).query(null).asString());
+            HttpURI httpURI = HttpURI.build(request.getHttpURI().query(null));
+            StringBuffer requestURL = new StringBuffer(httpURI.asString());
 
             // Gets the request context.
             // Replaces:
