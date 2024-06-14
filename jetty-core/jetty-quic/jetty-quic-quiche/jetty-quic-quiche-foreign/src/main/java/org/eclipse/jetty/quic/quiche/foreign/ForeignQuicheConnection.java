@@ -518,6 +518,7 @@ public class ForeignQuicheConnection extends QuicheConnection
         }
     }
 
+    @Override
     public byte[] getPeerCertificate()
     {
         try (AutoLock ignore = lock.lock())
@@ -532,7 +533,7 @@ public class ForeignQuicheConnection extends QuicheConnection
                 quiche_h.quiche_conn_peer_cert(quicheConn, outSegment, outLenSegment);
 
                 long outLen = outLenSegment.get(NativeHelper.C_LONG, 0L);
-                if (outLen == 0L)
+                if (outLen <= 0L)
                     return null;
                 byte[] out = new byte[(int)outLen];
                 // dereference outSegment pointer

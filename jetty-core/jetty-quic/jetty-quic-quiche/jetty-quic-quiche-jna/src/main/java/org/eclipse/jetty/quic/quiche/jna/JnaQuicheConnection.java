@@ -413,6 +413,7 @@ public class JnaQuicheConnection extends QuicheConnection
         }
     }
 
+    @Override
     public byte[] getPeerCertificate()
     {
         try (AutoLock ignore = lock.lock())
@@ -424,6 +425,8 @@ public class JnaQuicheConnection extends QuicheConnection
             size_t_pointer out_len = new size_t_pointer();
             LibQuiche.INSTANCE.quiche_conn_peer_cert(quicheConn, out, out_len);
             int len = out_len.getPointee().intValue();
+            if (len <= 0)
+                return null;
             return out.getValueAsBytes(len);
         }
     }
