@@ -15,6 +15,7 @@ package org.eclipse.jetty.io.internal;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,8 +69,9 @@ public class ContentCopier extends IteratingNestedCallback
         if (Content.Chunk.isFailure(current))
         {
             Throwable failure = current.getFailure();
-            current = Content.Chunk.next(current);
+            Content.Chunk next = Content.Chunk.next(current);
             current.release();
+            current = next;
             failed(failure);
             return Action.SCHEDULED;
         }
@@ -84,7 +86,6 @@ public class ContentCopier extends IteratingNestedCallback
         terminated = true;
         if (current != null)
             current.release();
-        source.fail(x);
-        super.onCompleteFailure(x);
+        ExceptionUtil.callThen(x, source::fail, super::onCompleteFailure);
     }
 }

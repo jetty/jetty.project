@@ -154,6 +154,16 @@ public class ExceptionUtil
      * @param t2 Another Throwable or null
      * @return true iff the exceptions are not associated by being the same instance, sharing a cause or one suppressing the other.
      */
+    public static boolean areAssociated(Throwable t1, Throwable t2)
+    {
+        return t1 != null && t2 != null && !areNotAssociated(t1, t2);
+    }
+
+    /** Check if two {@link Throwable}s are associated.
+     * @param t1 A Throwable or null
+     * @param t2 Another Throwable or null
+     * @return true iff the exceptions are not associated by being the same instance, sharing a cause or one suppressing the other.
+     */
     public static boolean areNotAssociated(Throwable t1, Throwable t2)
     {
         if (t1 == null || t2 == null)
@@ -291,6 +301,54 @@ public class ExceptionUtil
         if (areNotAssociated(t1, t2))
             t1.addSuppressed(t2);
         return t1;
+    }
+
+    public static void callThen(Throwable cause, Consumer<Throwable> first, Consumer<Throwable> second)
+    {
+        try
+        {
+            first.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            addSuppressedIfNotAssociated(cause, t);
+        }
+        finally
+        {
+            second.accept(cause);
+        }
+    }
+
+    public static void callThen(Throwable cause, Consumer<Throwable> first, Runnable second)
+    {
+        try
+        {
+            first.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            addSuppressedIfNotAssociated(cause, t);
+        }
+        finally
+        {
+            second.run();
+        }
+    }
+
+    public static void callThen(Runnable first, Runnable second)
+    {
+        try
+        {
+            first.run();
+        }
+        catch (Throwable t)
+        {
+            // ignored
+        }
+        finally
+        {
+            second.run();
+        }
     }
 
     /**
