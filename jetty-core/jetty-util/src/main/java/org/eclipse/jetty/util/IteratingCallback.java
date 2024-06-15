@@ -221,7 +221,7 @@ public abstract class IteratingCallback implements Callback
 
     private void doCompleteFailure(Throwable cause)
     {
-        ExceptionUtil.callThen(cause, this::onCompleteFailure, this::onCompleted);
+        ExceptionUtil.callAndThen(cause, this::onCompleteFailure, this::onCompleted);
     }
 
     /**
@@ -384,13 +384,13 @@ public abstract class IteratingCallback implements Callback
             }
         }
         if (onAbortDoCompleteFailure != null)
-            ExceptionUtil.callThen(onAbortDoCompleteFailure, this::onAbort, this::doCompleteFailure);
+            ExceptionUtil.callAndThen(onAbortDoCompleteFailure, this::onAbort, this::doCompleteFailure);
         else if (doCompleteSuccess)
             doCompleteSuccess();
         else if (doCompleteFailure != null)
             doCompleteFailure(doCompleteFailure);
         else if (onAbortScheduled != null)
-            ExceptionUtil.callThen(onAbortScheduled, this::onAbort, this::onAbortScheduledProcessing);
+            ExceptionUtil.callAndThen(onAbortScheduled, this::onAbort, this::onAbortScheduledProcessing);
     }
 
     private void onAbortScheduledProcessing()
@@ -612,7 +612,7 @@ public abstract class IteratingCallback implements Callback
         if (doAbort != null)
         {
             if (doCompleteFailure)
-                ExceptionUtil.callThen(doAbort, this::onAbort, this::doCompleteFailure);
+                ExceptionUtil.callAndThen(doAbort, this::onAbort, this::doCompleteFailure);
             else
                 onAbort(doAbort);
         }
@@ -698,7 +698,7 @@ public abstract class IteratingCallback implements Callback
         if (doAbort)
         {
             if (doCompleteFailure)
-                ExceptionUtil.callThen(cause, this::onAbort, this::doCompleteFailure);
+                ExceptionUtil.callAndThen(cause, this::onAbort, this::doCompleteFailure);
             else
                 onAbort(cause);
         }

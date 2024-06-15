@@ -1746,7 +1746,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private class WriteCompleteCB extends Callback.Abstract
     {
         @Override
-        protected void onCompleteSuccess()
+        protected void onSuccess()
         {
             onWriteComplete(true, null);
         }

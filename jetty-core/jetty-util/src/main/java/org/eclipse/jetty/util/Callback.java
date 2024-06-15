@@ -175,7 +175,7 @@ public interface Callback extends Invocable
      *
      * @param invocationType the Callback invocation type
      * @param success Called when the callback succeeds
-     * @param failure Called when the callback fails
+     * @param failure Called when the callback fails or has been aborted and completed
      * @return a new Callback
      */
     static Callback from(InvocationType invocationType, Runnable success, Consumer<Throwable> failure)
@@ -183,23 +183,53 @@ public interface Callback extends Invocable
         return new Abstract()
         {
             @Override
-            public void onCompleteSuccess()
-            {
-                success.run();
-            }
-
-            @Override
-            public void onCompleteFailure(Throwable x)
+            public void onCompleted(Throwable causeOrNull)
             {
                 try
                 {
-                    failure.accept(x);
+                    if (failure == null)
+                        success.run();
+                    else
+                        failure.accept(causeOrNull);
                 }
                 catch (Throwable t)
                 {
-                    ExceptionUtil.addSuppressedIfNotAssociated(t, x);
+                    ExceptionUtil.addSuppressedIfNotAssociated(t, causeOrNull);
                     throw t;
                 }
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Callback@%x{%s, %s,%s}".formatted(hashCode(), invocationType, success, failure);
+            }
+        };
+    }
+
+    /**
+     * Creates a callback with the given InvocationType from the given success and failure lambdas.
+     *
+     * @param invocationType the Callback invocation type
+     * @param success Called when the callback succeeds
+     * @param failure Called when the callback fails or has been aborted
+     * @param completed Called when the callback fails or has been aborted and completed
+     * @return a new Callback
+     */
+    static Callback from(InvocationType invocationType, Runnable success, Consumer<Throwable> failure, Consumer<Throwable> completed)
+    {
+        return new Abstract()
+        {
+            @Override
+            public void onCompleted(Throwable causeOrNull)
+            {
+                ExceptionUtil.callAndThrowAssociated(causeOrNull, completed);
             }
 
             @Override
@@ -310,7 +340,7 @@ public interface Callback extends Invocable
             }
 
             @Override
-            protected void onCompleteSuccess()
+            protected void onSuccess()
             {
                 completed.accept(null);
             }
@@ -374,9 +404,9 @@ public interface Callback extends Invocable
         return new Abstract()
         {
             @Override
-            protected void onCompleteSuccess()
+            protected void onSuccess()
             {
-                ExceptionUtil.callThen(success, complete);
+                ExceptionUtil.callAndThen(success, complete);
             }
 
             @Override
@@ -469,10 +499,15 @@ public interface Callback extends Invocable
     }
 
     /**
-     * <p>A Callback implementation that calls the {@link #onCompleted()} method when it either succeeds or fails.
-     * If the callback is aborted, then {@link #onAbort(Throwable)} is called, but the {@link #onCompleteFailure(Throwable)}
-     * and {@link #onCompleted()} methods are not called until either {@link #succeeded()} or {@link #failed(Throwable)}
-     * are called.</p>
+     * <p>A Callback implementation that calls the {@link #onCompleted(Throwable)} method when it either succeeds or fails.
+     * If the callback is aborted, then {@link #onAbort(Throwable)} is called, but the
+     * {@link #onCompleted(Throwable)} methods is not called until either {@link #succeeded()} or {@link #failed(Throwable)}
+     * are called.  Valid sequences of calls are: <ul>
+     *     <li>{@link #succeeded()} -> {@link #onSuccess()} -> {@link #onCompleted(Throwable)}</li>
+     *     <li>{@link #failed(Throwable)} -> {@link #onFailure(Throwable)} -> {@link #onCompleted(Throwable)}</li>
+     *     <li>{@link #abort(Throwable)} -> {@link #onAbort(Throwable)} -> {@link #onFailure(Throwable)}, {@link #succeeded()} -> {@link #onCompleted(Throwable)}</li>
+     *     <li>{@link #abort(Throwable)} -> {@link #onAbort(Throwable)} -> {@link #onFailure(Throwable)}, {@link #failed(Throwable)} -> {@link #onCompleted(Throwable)}</li>
+     * </ul></p>
      */
     class Abstract implements Callback
     {
@@ -486,11 +521,11 @@ public interface Callback extends Invocable
             {
                 try
                 {
-                    onCompleteSuccess();
+                    onSuccess();
                 }
                 finally
                 {
-                    onCompleted();
+                    onCompleted(null);
                 }
                 return;
             }
@@ -501,15 +536,16 @@ public interface Callback extends Invocable
             Throwable cause = _completion.getReference();
             if (_completion.compareAndSet(cause, cause, false, true))
             {
-                doCompleteFailure(cause);
+                // TODO might need to wait until abort calls completed
+                onCompleted(cause);
             }
         }
 
         /**
          * Abort the callback if it has not already been completed.
-         * The {@link #onAbort(Throwable)} method will be called, then the {@link #onCompleteFailure(Throwable)}
-         * will be called only once the {@link #succeeded()} or {@link #failed(Throwable)} methods are called, followed
-         * by a call to {@link #onCompleted()}.
+         * The {@link #onAbort(Throwable)} and {@link #onFailure(Throwable)} methods will be called, then the
+         * {@link #onCompleted(Throwable)} will be called only once the {@link #succeeded()} or
+         * {@link #failed(Throwable)} methods are called.
          * @param cause The cause of the abort
          * @return true if the callback was aborted
          */
@@ -521,7 +557,7 @@ public interface Callback extends Invocable
             // Try aborting directly by assuming that the callback is neither failed nor aborted.
             if (_completion.compareAndSet(null, cause, false, false))
             {
-                ExceptionUtil.callThen(cause, this::onAbort, this::onFailure);
+                ExceptionUtil.callAndThen(cause, this::onAbort, this::onFailure);
                 return true;
             }
 
@@ -538,7 +574,7 @@ public interface Callback extends Invocable
             // Try failing directly by assuming that the callback is neither failed nor aborted.
             if (_completion.compareAndSet(null, cause, false, true))
             {
-                ExceptionUtil.callThen(cause, this::onFailure, this::doCompleteFailure);
+                ExceptionUtil.callAndThen(cause, this::onFailure, causeOrNull -> onCompleted(causeOrNull));
                 return;
             }
 
@@ -552,30 +588,26 @@ public interface Callback extends Invocable
             // Have we aborted? in which case we can complete
             if (failure != null && _completion.compareAndSet(failure, failure, false, true))
             {
-                doCompleteFailure(failure);
+                // TODO might need to wait until abort calls completed
+                onCompleted(failure);
             }
-        }
-
-        private void doCompleteFailure(Throwable failure)
-        {
-            ExceptionUtil.callThen(failure, this::onCompleteFailure, this::onCompleted);
         }
 
         /**
          * Called when the callback has been {@link #succeeded() succeeded} and not {@link #abort(Throwable) aborted}.
-         * The {@link #onCompleted()} method will be also be called after this call.
+         * The {@link #onCompleted(Throwable)} method will be also be called after this call.
          * Typically, this method is implement to act on the success.  It can release or reuse any resources that may have
          * been in use by the scheduled operation, but it may defer that release or reuse to the subsequent call to
-         * {@link #onCompleted()} to avoid double releasing.
+         * {@link #onCompleted(Throwable)} to avoid double releasing.
          */
-        protected void onCompleteSuccess()
+        protected void onSuccess()
         {
         }
 
         /**
          * Called when the callback has been {@link #abort(Throwable) aborted}.
-         * The {@link #onCompleteFailure(Throwable)} method will ultimately be called, but only once the callback has been
-         * {@link #succeeded() succeeded} or {@link #failed(Throwable)}, and then the {@link #onCompleted()} method will be also be called.
+         * The {@link #onFailure(Throwable)} method will also be called immediately, but then once the callback has been
+         * {@link #succeeded() succeeded} or {@link #failed(Throwable)}, and the {@link #onCompleted(Throwable)} method will be also be called.
          * Typically, this method is implemented to act on the failure, but it should not release or reuse any resources that may
          * be in use by the schedule operation.
          * @param cause The cause of the abort
@@ -586,8 +618,8 @@ public interface Callback extends Invocable
 
         /**
          * Called when the callback has either been {@link #abort(Throwable) aborted} or {@link #failed(Throwable)}.
-         * The {@link #onCompleteFailure(Throwable)} method will ultimately be called, but only once the callback has been
-         * {@link #succeeded() succeeded} or {@link #failed(Throwable)}, and then the {@link #onCompleted()} method will be also be called.
+         * The {@link #onCompleted(Throwable)} method will ultimately be called, but only once the callback has been
+         * {@link #succeeded() succeeded} or {@link #failed(Throwable)}, and then the {@link #onCompleted(Throwable)} method will be also be called.
          * Typically, this method is implemented to act on the failure, but it should not release or reuse any resources that may
          * be in use by the schedule operation.
          * @param cause The cause of the failure
@@ -597,23 +629,12 @@ public interface Callback extends Invocable
         }
 
         /**
-         * Called when the callback has been {@link #failed(Throwable) failed} or {@link #abort(Throwable) aborted} and
-         * then either {@link #succeeded() succeeded} or {@link #failed(Throwable)} called.
-         * The {@link #onCompleted()} method will be also be called after this call.
-         * Typically, this method is implemented to act on the failure.It can release or reuse any resources that may have
-         * been in use by the scheduled operation, but it may defer that release or reuse to the subsequent call to
-         * {@link #onCompleted()} to avoid double releasing
-         * @param cause The cause of the failure
-         */
-        protected void onCompleteFailure(Throwable cause)
-        {
-        }
-
-        /**
          * Called once the callback has been either {@link #succeeded() succeeded} or {@link #failed(Throwable)}.
          * Typically, this method is implemented to release resources that may be used by the scheduled operation.
+         * @param causeOrNull {@code null} if successful, else the cause of any {@link #abort(Throwable) abort} or
+         * {@link #failed(Throwable) failure}
          */
-        public void onCompleted()
+        public void onCompleted(Throwable causeOrNull)
         {
         }
     }
@@ -686,7 +707,7 @@ public interface Callback extends Invocable
         }
 
         @Override
-        protected void onCompleteSuccess()
+        protected void onSuccess()
         {
             callback.succeeded();
         }

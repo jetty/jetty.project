@@ -322,7 +322,7 @@ public class CallbackTest
         }
 
         @Override
-        protected void onCompleteSuccess()
+        protected void onSuccess()
         {
             if (_completion.compareAndSet(null, null, false, true))
                 _completed.countDown();

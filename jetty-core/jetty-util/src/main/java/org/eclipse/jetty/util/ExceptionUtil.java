@@ -311,11 +311,11 @@ public class ExceptionUtil
         return t1;
     }
 
-    public static void callThen(Throwable cause, Consumer<Throwable> first, Consumer<Throwable> second)
+    public static void callAndThen(Throwable cause, Consumer<Throwable> call, Consumer<Throwable> then)
     {
         try
         {
-            first.accept(cause);
+            call.accept(cause);
         }
         catch (Throwable t)
         {
@@ -323,15 +323,15 @@ public class ExceptionUtil
         }
         finally
         {
-            second.accept(cause);
+            then.accept(cause);
         }
     }
 
-    public static void callThen(Throwable cause, Consumer<Throwable> first, Runnable second)
+    public static void callAndThen(Throwable cause, Consumer<Throwable> call, Runnable then)
     {
         try
         {
-            first.accept(cause);
+            call.accept(cause);
         }
         catch (Throwable t)
         {
@@ -339,15 +339,15 @@ public class ExceptionUtil
         }
         finally
         {
-            second.run();
+            then.run();
         }
     }
 
-    public static void callThen(Runnable first, Runnable second)
+    public static void callAndThen(Runnable call, Runnable then)
     {
         try
         {
-            first.run();
+            call.run();
         }
         catch (Throwable t)
         {
@@ -355,7 +355,20 @@ public class ExceptionUtil
         }
         finally
         {
-            second.run();
+            then.run();
+        }
+    }
+
+    public static void callAndThrowAssociated(Throwable cause, Consumer<Throwable> consumer)
+    {
+        try
+        {
+            consumer.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, cause);
+            throw t;
         }
     }
 

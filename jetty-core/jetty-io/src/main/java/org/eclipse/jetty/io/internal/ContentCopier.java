@@ -79,6 +79,6 @@ public class ContentCopier extends IteratingNestedCallback
     @Override
     protected void onCompleteFailure(Throwable x)
     {
-        ExceptionUtil.callThen(x, source::fail, super::onCompleteFailure);
+        ExceptionUtil.callAndThen(x, source::fail, super::onCompleteFailure);
     }
 }

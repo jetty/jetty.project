@@ -35,7 +35,7 @@ public class ContextResponse extends Response.Wrapper
         Callback contextCallback = new Callback.Nested(callback)
         {
             @Override
-            protected void onCompleteSuccess()
+            protected void onSuccess()
             {
                 _context.run(callback::succeeded, getRequest());
             }
