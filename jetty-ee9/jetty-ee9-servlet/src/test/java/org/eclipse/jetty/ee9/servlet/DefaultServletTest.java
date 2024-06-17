@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,6 +31,8 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -60,6 +64,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
@@ -2181,6 +2186,39 @@ public class DefaultServletTest
     }
 
     @Test
+    public void testGetPrecompressedSuffixMapping() throws Exception
+    {
+        FS.ensureEmpty(docRoot);
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "*.js");
+        defholder.setInitParameter("cacheControl", "no-store");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("gzip", "false");
+        defholder.setInitParameter("precompressed", "gzip=.gz");
+
+        FS.ensureDirExists(docRoot.resolve("scripts"));
+
+        String scriptText = "This is a script";
+        Files.writeString(docRoot.resolve("scripts/script.js"), scriptText, UTF_8);
+
+        byte[] compressedBytes = compressGzip(scriptText);
+        Files.write(docRoot.resolve("scripts/script.js.gz"), compressedBytes);
+
+        String rawResponse = connector.getResponse("""
+            GET /context/scripts/script.js HTTP/1.1
+            Host: test
+            Accept-Encoding: gzip
+            Connection: close
+            
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat("Suffix url-pattern mapping not used", response.get(HttpHeader.CACHE_CONTROL), is("no-store"));
+        String responseDecompressed = decompressGzip(response.getContentBytes());
+        assertThat(responseDecompressed, is("This is a script"));
+    }
+
+    @Test
     public void testHead() throws Exception
     {
         Path file = docRoot.resolve("file.txt");
@@ -2537,6 +2575,31 @@ public class DefaultServletTest
         assumeTrue(ret != null, "Directory creation not supported on OS: " + path + File.separator + subpath);
         assumeTrue(Files.exists(ret), "Directory creation not supported on OS: " + ret);
         return ret;
+    }
+
+    private static byte[] compressGzip(String textToCompress) throws IOException
+    {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             GZIPOutputStream gzipOut = new GZIPOutputStream(baos);
+             ByteArrayInputStream input = new ByteArrayInputStream(textToCompress.getBytes(UTF_8)))
+        {
+            IO.copy(input, gzipOut);
+            gzipOut.flush();
+            gzipOut.finish();
+            return baos.toByteArray();
+        }
+    }
+
+    private static String decompressGzip(byte[] compressedContent) throws IOException
+    {
+        try (ByteArrayInputStream input = new ByteArrayInputStream(compressedContent);
+             GZIPInputStream gzipInput = new GZIPInputStream(input);
+             ByteArrayOutputStream output = new ByteArrayOutputStream())
+        {
+            IO.copy(gzipInput, output);
+            output.flush();
+            return output.toString(UTF_8);
+        }
     }
 
     public static class Scenarios extends ArrayList<Arguments>

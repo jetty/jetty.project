@@ -213,6 +213,9 @@ public final class EtagUtils
      */
     public static String rewriteWithSuffix(String etag, String newSuffix)
     {
+//        if (etag == null)
+//            return null;
+//
         StringBuilder ret = new StringBuilder();
         boolean weak = etag.startsWith("W/");
         int start = 0;
