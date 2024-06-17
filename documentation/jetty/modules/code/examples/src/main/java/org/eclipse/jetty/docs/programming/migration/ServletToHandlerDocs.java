@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
@@ -60,10 +61,11 @@ public class ServletToHandlerDocs
             //   - servletRequest.getProtocol();
             String protocol = request.getConnectionMetaData().getProtocol();
 
-            // Gets the full request URI.
+            // Gets the request URL.
             // Replaces:
             //   - servletRequest.getRequestURL();
-            String fullRequestURI = request.getHttpURI().asString();
+            HttpURI httpURI = HttpURI.build(request.getHttpURI()).query(null);
+            StringBuffer requestURL = new StringBuffer(httpURI.asString());
 
             // Gets the request context.
             // Replaces:

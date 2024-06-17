@@ -112,6 +112,14 @@ public class AbstractTest
         return transports;
     }
 
+    public static Collection<Transport> transportsSecure()
+    {
+        EnumSet<Transport> transports = EnumSet.of(Transport.HTTPS, Transport.H2, Transport.H3);
+        if ("ci".equals(System.getProperty("env")))
+            transports.remove(Transport.H3);
+        return transports;
+    }
+
     @BeforeEach
     public void prepare()
     {
