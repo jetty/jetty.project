@@ -43,6 +43,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
@@ -50,8 +51,6 @@ import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.MultiPartConfig;
-import org.eclipse.jetty.server.MultiPartFormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -92,9 +91,21 @@ public class CoreMultiPartTest
         tmpDir = Files.createTempDirectory(CoreMultiPartTest.class.getSimpleName());
     }
 
+    private MultiPartConfig multiPartConfig(Path location, int maxFormKeys, long maxRequestSize, long maxFileSize, long fileSizeThreshold)
+    {
+        return new MultiPartConfig.Builder()
+            .location(location)
+            .maxParts(maxFormKeys)
+            .maxSize(maxRequestSize)
+            .maxPartSize(maxFileSize)
+            .fileSizeThreshold(fileSizeThreshold)
+            .useFilesForPartsWithoutFileName(true)
+            .build();
+    }
+
     private void start(Handler handler, MultiPartConfig config) throws Exception
     {
-        this.config = config == null ? new MultiPartConfig(tmpDir, -1, -1, MAX_FILE_SIZE, 0) : config;
+        this.config = config == null ? multiPartConfig(tmpDir, -1, -1, MAX_FILE_SIZE, 0) : config;
         server = new Server(null, null, null);
         connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -122,7 +133,8 @@ public class CoreMultiPartTest
     {
         try
         {
-            return MultiPartFormFields.from(request, config).get();
+            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+            return MultiPartFormData.from(request, request, contentType, config).get();
         }
         catch (Throwable t)
         {
@@ -142,7 +154,7 @@ public class CoreMultiPartTest
                 callback.succeeded();
                 return true;
             }
-        }, new MultiPartConfig(null, -1, -1, 1024 * 1024, -1));
+        }, multiPartConfig(null, -1, -1, 1024 * 1024, -1));
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
@@ -185,7 +197,7 @@ public class CoreMultiPartTest
                 callback.succeeded();
                 return true;
             }
-        }, new MultiPartConfig(null, 1024, -1, -1, -1));
+        }, multiPartConfig(null, 1024, -1, -1, -1));
 
         byte[] byteArray = new byte[1024];
         Arrays.fill(byteArray, (byte)1);
@@ -221,7 +233,7 @@ public class CoreMultiPartTest
                 callback.succeeded();
                 return true;
             }
-        }, new MultiPartConfig(tmpDir, -1, 1024, -1, 1024 * 1024 * 8));
+        }, multiPartConfig(tmpDir, -1, 1024, -1, 1024 * 1024 * 8));
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
@@ -381,9 +393,13 @@ public class CoreMultiPartTest
           @Override
           public boolean handle(Request request, Response response, Callback callback) throws Exception
           {
-              MultiPartConfig conf = MultiPartConfig.from(request, config.getLocation(),
-                  config.getMaxFormKeys(), config.getMaxRequestSize(),
-                  config.getMaxFileSize(), config.getFileSizeThreshold());
+              MultiPartConfig conf = Request.getMultiPartConfig(request, config.getLocation())
+                  .maxParts(config.getParts())
+                  .maxSize(config.getMaxSize())
+                  .maxPartSize(config.getMaxPartSize())
+                  .fileSizeThreshold(config.getFileSizeThreshold())
+                  .useFilesForPartsWithoutFileName(config.isUseFilesForPartsWithoutFileName())
+                  .build();
               MultiPartFormData.Parts parts = getParts(request, conf);
               assertNotNull(parts);
               assertEquals(1, parts.size());
@@ -399,7 +415,7 @@ public class CoreMultiPartTest
               callback.succeeded();
               return true;
           }
-        }, new MultiPartConfig(null, -1, MAX_FILE_SIZE, -1, 0));
+        }, multiPartConfig(null, -1, MAX_FILE_SIZE, -1, 0));
 
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {

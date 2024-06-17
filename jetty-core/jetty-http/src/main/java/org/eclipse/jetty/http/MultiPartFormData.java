@@ -79,6 +79,59 @@ public class MultiPartFormData
     }
 
     /**
+     * Returns {@code multipart/form-data} parts using the given {@link Content.Source} and {@link MultiPartConfig}.
+     *
+     * @param content the source of the multipart content.
+     * @param attributes the attributes where the futureParts are tracked.
+     * @param contentType the value of the {@link HttpHeader#CONTENT_TYPE} header.
+     * @param config the multipart configuration.
+     * @return the future parts
+     */
+    public static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config)
+    {
+        // Look for an existing future (we use the future here rather than the parts as it can remember any failure).
+        CompletableFuture<MultiPartFormData.Parts> futureParts = MultiPartFormData.get(attributes);
+        if (futureParts == null)
+        {
+            // No existing parts, so we need to try to read them ourselves
+
+            // Are we the right content type to produce our own parts?
+            if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.getValueParameters(contentType, null)))
+                return CompletableFuture.failedFuture(new IllegalStateException("Not multipart Content-Type"));
+
+            // Do we have a boundary?
+            String boundary = MultiPart.extractBoundary(contentType);
+            if (boundary == null)
+                return CompletableFuture.failedFuture(new IllegalStateException("No multipart boundary parameter in Content-Type"));
+
+            // Look for an existing future MultiPartFormData.Parts
+            futureParts = MultiPartFormData.from(attributes, config.getMultiPartCompliance(), config.getViolationListener(), boundary, parser ->
+            {
+                try
+                {
+                    // No existing core parts, so we need to configure the parser.
+                    parser.setMaxParts(config.getParts());
+                    parser.setMaxMemoryFileSize(config.getFileSizeThreshold());
+                    parser.setMaxFileSize(config.getMaxPartSize());
+                    parser.setMaxLength(config.getMaxSize());
+                    parser.setPartHeadersMaxLength(config.getMaxHeadersSize());
+                    parser.setUseFilesForPartsWithoutFileName(config.isUseFilesForPartsWithoutFileName());
+                    if (config.getLocation() != null)
+                        parser.setFilesDirectory(config.getLocation());
+
+                    // parse the core parts.
+                    return parser.parse(content);
+                }
+                catch (Throwable failure)
+                {
+                    return CompletableFuture.failedFuture(failure);
+                }
+            });
+        }
+        return futureParts;
+    }
+
+    /**
      * Returns {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578}.
      */
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
@@ -451,8 +504,7 @@ public class MultiPartFormData
             private final AutoLock lock = new AutoLock();
             private final List<MultiPart.Part> parts = new ArrayList<>();
             private final List<Content.Chunk> partChunks = new ArrayList<>();
-            private long fileSize;
-            private long memoryFileSize;
+            private long size;
             private Path filePath;
             private SeekableByteChannel fileChannel;
             private Throwable failure;
@@ -462,8 +514,8 @@ public class MultiPartFormData
             {
                 ByteBuffer buffer = chunk.getByteBuffer();
                 long maxFileSize = getMaxFileSize();
-                fileSize += buffer.remaining();
-                if (maxFileSize >= 0 && fileSize > maxFileSize)
+                size += buffer.remaining();
+                if (maxFileSize >= 0 && size > maxFileSize)
                 {
                     onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxFileSize)));
                     return;
@@ -475,8 +527,7 @@ public class MultiPartFormData
                     long maxMemoryFileSize = getMaxMemoryFileSize();
                     if (maxMemoryFileSize >= 0)
                     {
-                        memoryFileSize += buffer.remaining();
-                        if (memoryFileSize > maxMemoryFileSize)
+                        if (size > maxMemoryFileSize)
                         {
                             try
                             {
@@ -493,6 +544,11 @@ public class MultiPartFormData
                                     {
                                         write(c.getByteBuffer());
                                     }
+                                    try (AutoLock ignored = lock.lock())
+                                    {
+                                        this.partChunks.forEach(Content.Chunk::release);
+                                        this.partChunks.clear();
+                                    }
                                 }
                                 write(buffer);
                                 if (chunk.isLast())
@@ -502,16 +558,23 @@ public class MultiPartFormData
                             {
                                 onFailure(x);
                             }
-
-                            try (AutoLock ignored = lock.lock())
-                            {
-                                partChunks.forEach(Content.Chunk::release);
-                                partChunks.clear();
-                            }
                             return;
                         }
                     }
                 }
+                else
+                {
+                    long maxMemoryFileSize = getMaxMemoryFileSize();
+                    if (maxMemoryFileSize >= 0)
+                    {
+                        if (size > maxMemoryFileSize)
+                        {
+                            onFailure(new IllegalStateException("max memory file size exceeded: %d".formatted(maxFileSize)));
+                            return;
+                        }
+                    }
+                }
+
                 // Retain the chunk because it is stored for later use.
                 chunk.retain();
                 try (AutoLock ignored = lock.lock())
@@ -552,8 +615,7 @@ public class MultiPartFormData
             @Override
             public void onPart(String name, String fileName, HttpFields headers)
             {
-                fileSize = 0;
-                memoryFileSize = 0;
+                size = 0;
                 try (AutoLock ignored = lock.lock())
                 {
                     // Content-Transfer-Encoding is not a multi-valued field.
