@@ -155,6 +155,12 @@ public interface Callback extends Invocable
             {
                 return invocation;
             }
+
+            @Override
+            public String toString()
+            {
+                return "Callback.from@%x{%s,%s}".formatted(hashCode(), completable, invocation);
+            }
         };
     }
 
@@ -187,7 +193,7 @@ public interface Callback extends Invocable
             {
                 try
                 {
-                    if (failure == null)
+                    if (causeOrNull == null)
                         success.run();
                     else
                         failure.accept(causeOrNull);
@@ -208,9 +214,22 @@ public interface Callback extends Invocable
             @Override
             public String toString()
             {
-                return "Callback@%x{%s, %s,%s}".formatted(hashCode(), invocationType, success, failure);
+                return "Callback.from@%x{%s, %s,%s}".formatted(hashCode(), invocationType, success, failure);
             }
         };
+    }
+
+    /**
+     * Creates a callback with the given InvocationType from the given success and failure lambdas.
+     *
+     * @param success Called when the callback succeeds
+     * @param failure Called when the callback fails or has been aborted
+     * @param completed Called when the callback fails or has been aborted and completed
+     * @return a new Callback
+     */
+    static Callback from(Runnable success, Consumer<Throwable> failure, Consumer<Throwable> completed)
+    {
+        return from(Invocable.getInvocationType(success), success, failure, completed);
     }
 
     /**
@@ -227,7 +246,19 @@ public interface Callback extends Invocable
         return new Abstract()
         {
             @Override
-            public void onCompleted(Throwable causeOrNull)
+            protected void onSuccess()
+            {
+                success.run();
+            }
+
+            @Override
+            protected void onFailure(Throwable cause)
+            {
+                ExceptionUtil.call(cause, failure);
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
             {
                 ExceptionUtil.call(causeOrNull, completed);
             }
@@ -241,7 +272,73 @@ public interface Callback extends Invocable
             @Override
             public String toString()
             {
-                return "Callback@%x{%s, %s,%s}".formatted(hashCode(), invocationType, success, failure);
+                return "Callback.from@%x{%s,%s,%s,%s}".formatted(hashCode(), invocationType, success, failure, completed);
+            }
+        };
+    }
+
+    /**
+     * Creates a callback with the given InvocationType from the given success and failure lambdas.
+     *
+     * @param success Called when the callback succeeds
+     * @param abort Called when the callback jas been failed
+     * @param failure Called when the callback fails or has been aborted
+     * @param completed Called when the callback fails or has been aborted and completed
+     * @return a new Callback
+     */
+    static Callback from(Runnable success, Consumer<Throwable> abort, Consumer<Throwable> failure, Consumer<Throwable> completed)
+    {
+        return from(Invocable.getInvocationType(success), success, abort, failure, completed);
+    }
+
+    /**
+     * Creates a callback with the given InvocationType from the given success and failure lambdas.
+     *
+     * @param invocationType the Callback invocation type
+     * @param success Called when the callback succeeds
+     * @param abort Called when the callback jas been failed
+     * @param failure Called when the callback fails or has been aborted
+     * @param completed Called when the callback fails or has been aborted and completed
+     * @return a new Callback
+     */
+    static Callback from(InvocationType invocationType, Runnable success, Consumer<Throwable> abort, Consumer<Throwable> failure, Consumer<Throwable> completed)
+    {
+        return new Abstract()
+        {
+            @Override
+            protected void onSuccess()
+            {
+                success.run();
+            }
+
+            @Override
+            protected void onAbort(Throwable cause)
+            {
+                ExceptionUtil.call(cause, abort);
+            }
+
+            @Override
+            protected void onFailure(Throwable cause)
+            {
+                ExceptionUtil.call(cause, failure);
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                ExceptionUtil.call(causeOrNull, completed);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Callback.from@%x{%s,%s,%s,%s,%s}".formatted(hashCode(), invocationType, success, abort, failure, completed);
             }
         };
     }
@@ -284,7 +381,7 @@ public interface Callback extends Invocable
             @Override
             public String toString()
             {
-                return "Callback.Completing@%x{%s,%s}".formatted(hashCode(), invocationType, completed);
+                return "Callback.from@%x{%s,%s}".formatted(hashCode(), invocationType, completed);
             }
         };
     }
@@ -304,7 +401,13 @@ public interface Callback extends Invocable
             @Override
             public void onCompleted(Throwable causeOrNull)
             {
-                completed.run();
+                ExceptionUtil.callAndThen(causeOrNull, super::onCompleted, completed);
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Callback.from@%x{%s,%s}".formatted(hashCode(), callback, completed);
             }
         };
     }
@@ -324,7 +427,13 @@ public interface Callback extends Invocable
             @Override
             protected void onCompleted(Throwable cause)
             {
-                ExceptionUtil.call(cause, completed);
+                ExceptionUtil.callAndThen(cause, super::onCompleted, completed);
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Callback.from@%x{%s,%s}".formatted(hashCode(), callback, completed);
             }
         };
     }
@@ -352,7 +461,7 @@ public interface Callback extends Invocable
                 }
                 catch (Throwable t)
                 {
-                    Callback.failed(callback, t);
+                    ExceptionUtil.call(t, callback::failed);
                 }
             }
 
@@ -370,31 +479,13 @@ public interface Callback extends Invocable
             @Override
             public void failed(Throwable x)
             {
-                Callback.failed(this::completed, callback::failed, x);
-            }
-        };
-    }
-
-    static Callback from(Runnable success, Consumer<Throwable> failure, Runnable complete)
-    {
-        return new Abstract()
-        {
-            @Override
-            protected void onSuccess()
-            {
-                success.run();
+                ExceptionUtil.callAndThen(x, this::completed, callback::failed);
             }
 
             @Override
-            protected void onFailure(Throwable cause)
+            public String toString()
             {
-                ExceptionUtil.call(cause, failure);
-            }
-
-            @Override
-            protected void onCompleted(Throwable causeOrNull)
-            {
-                complete.run();
+                return "Callback.from@%x{%s,%s}".formatted(hashCode(), completed, callback);
             }
         };
     }
@@ -428,7 +519,13 @@ public interface Callback extends Invocable
             public void failed(Throwable x)
             {
                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
-                Callback.failed(callback, cause);
+                ExceptionUtil.call(cause, callback::failed);
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Callback.from@%x{%s,%s}".formatted(hashCode(), callback, cause);
             }
         };
     }
@@ -766,13 +863,19 @@ public interface Callback extends Invocable
             @Override
             public void failed(Throwable x)
             {
-                Callback.failed(cb1::failed, cb2::failed, x);
+                ExceptionUtil.callAndThen(x, cb1::failed, cb2::failed);
             }
 
             @Override
             public InvocationType getInvocationType()
             {
                 return Invocable.combine(Invocable.getInvocationType(cb1), Invocable.getInvocationType(cb2));
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Callback.combine@%x{%s,%s}".formatted(hashCode(), cb1, cb2);
             }
         };
     }
@@ -825,7 +928,7 @@ public interface Callback extends Invocable
                 @Override
                 public void failed(Throwable x)
                 {
-                    Callback.failed(callback::failed, super::failed, x);
+                    ExceptionUtil.callAndThen(x, callback::failed, super::failed);
                 }
             };
         }
@@ -887,57 +990,6 @@ public interface Callback extends Invocable
                     completable.failed(x);
             });
             return completable;
-        }
-    }
-
-    /**
-     * Invoke a callback failure, handling any {@link Throwable} thrown
-     * by adding the passed {@code failure} as a suppressed with
-     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
-     * @param callback The callback to fail
-     * @param failure The failure
-     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
-     */
-    private static void failed(Callback callback, Throwable failure)
-    {
-        try
-        {
-            callback.failed(failure);
-        }
-        catch (Throwable t)
-        {
-            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
-            throw t;
-        }
-    }
-
-    /**
-     * Invoke two consumers of a failure, handling any {@link Throwable} thrown
-     * by adding the passed {@code failure} as a suppressed with
-     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
-     * @param first The first consumer of a failure
-     * @param second The first consumer of a failure
-     * @param failure The failure
-     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
-     */
-    private static void failed(Consumer<Throwable> first, Consumer<Throwable> second,  Throwable failure)
-    {
-        try
-        {
-            first.accept(failure);
-        }
-        catch (Throwable t)
-        {
-            ExceptionUtil.addSuppressedIfNotAssociated(failure, t);
-        }
-        try
-        {
-            second.accept(failure);
-        }
-        catch (Throwable t)
-        {
-            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
-            throw t;
         }
     }
 }
