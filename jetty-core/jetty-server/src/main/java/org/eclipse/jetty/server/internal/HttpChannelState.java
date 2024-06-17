@@ -1147,7 +1147,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _writeFailure = x;
             else
                 ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
-            return () -> HttpChannelState.cancel(writeCallback, x);
+            return () -> ExceptionUtil.call(x, writeCallback::abort);
         }
 
         public long getContentBytesWritten()
@@ -1262,7 +1262,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (writeFailure != null)
                 {
                     Throwable failure = writeFailure;
-                    httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(callback, failure));
+                    httpChannelState._writeInvoker.run(() -> ExceptionUtil.call(failure, callback::failed));
                     return;
                 }
 
@@ -1330,7 +1330,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
-                httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
+                httpChannel._writeInvoker.run(() -> ExceptionUtil.call(x, callback::failed));
         }
 
         @Override
@@ -1723,7 +1723,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             else
             {
-                HttpChannelState.failed(httpChannelState._handlerInvoker, failure);
+                ExceptionUtil.call(failure, ((Callback)httpChannelState._handlerInvoker)::failed);
             }
         }
 
@@ -1746,7 +1746,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannelState._response._status = _errorResponse._status;
             }
             ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
-            HttpChannelState.failed(httpChannelState._handlerInvoker, failure);
+            ExceptionUtil.call(failure, ((Callback)httpChannelState._handlerInvoker)::failed);
         }
 
         @Override
@@ -1913,48 +1913,6 @@ public class HttpChannelState implements HttpChannel, Components
                     LOG.warn("Unable to notify ComplianceViolation.Listener implementation at {} of event {}", listener, event, e);
                 }
             }
-        }
-    }
-
-    /**
-     * Invoke a callback cancel, handling any {@link Throwable} thrown
-     * by adding the passed {@code failure} as a suppressed with
-     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
-     * @param callback The callback to fail
-     * @param failure The failure
-     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
-     */
-    private static void cancel(Callback callback, Throwable failure)
-    {
-        try
-        {
-            callback.abort(failure);
-        }
-        catch (Throwable t)
-        {
-            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
-            throw t;
-        }
-    }
-
-    /**
-     * Invoke a callback failure, handling any {@link Throwable} thrown
-     * by adding the passed {@code failure} as a suppressed with
-     * {@link ExceptionUtil#addSuppressedIfNotAssociated(Throwable, Throwable)}.
-     * @param callback The callback to fail
-     * @param failure The failure
-     * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
-     */
-    private static void failed(Callback callback, Throwable failure)
-    {
-        try
-        {
-            callback.failed(failure);
-        }
-        catch (Throwable t)
-        {
-            ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
-            throw t;
         }
     }
 }

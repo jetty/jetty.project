@@ -15,17 +15,19 @@ package org.eclipse.jetty.util;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicMarkableReference;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,15 +54,18 @@ public class CallbackTest
     {
         TestAbstractCB callback = new TestAbstractCB();
         callback.succeeded();
-        assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
-        assertThat(callback._completion.getReference(), Matchers.nullValue());
-        assertTrue(callback._completion.isMarked());
+        assertTrue(callback._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callback._success.get(), is(true));
+        assertThat(callback._failure.get(), nullValue());
+        assertThat(callback._abort.get(), nullValue());
+        assertThat(callback._completed.get(), nullValue());
 
         // Everything now a noop
         assertFalse(callback.abort(new Throwable()));
-        callback.failed(new Throwable());
-        assertThat(callback._completion.getReference(), Matchers.nullValue());
-        assertThat(callback._completed.getCount(), is(0L));
+        assertThat(callback._success.get(), is(true));
+        assertThat(callback._failure.get(), nullValue());
+        assertThat(callback._abort.get(), nullValue());
+        assertThat(callback._completed.get(), nullValue());
     }
 
     @Test
@@ -69,17 +74,22 @@ public class CallbackTest
         Throwable failure = new Throwable();
         TestAbstractCB callback = new TestAbstractCB();
         callback.failed(failure);
-        assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(failure));
-        assertTrue(callback._completion.isMarked());
+        assertTrue(callback._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(failure));
+        assertThat(callback._abort.get(), nullValue());
+        assertThat(callback._completed.get(), sameInstance(failure));
 
         // Everything now a noop, other than suppression
         callback.succeeded();
         Throwable late = new Throwable();
         assertFalse(callback.abort(late));
-        assertFalse(ExceptionUtil.areNotAssociated(failure, late));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(failure));
-        assertThat(callback._completed.getCount(), is(0L));
+        assertTrue(callback._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(failure));
+        assertThat(callback._abort.get(), nullValue());
+        assertThat(callback._completed.get(), sameInstance(failure));
+        assertTrue(ExceptionUtil.areAssociated(failure, late));
     }
 
     @Test
@@ -89,21 +99,28 @@ public class CallbackTest
 
         Throwable abort = new Throwable();
         callback.abort(abort);
-        assertFalse(callback._completed.await(100, TimeUnit.MILLISECONDS));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(callback._completion.isMarked());
+        assertThat(callback._complete.getCount(), is(1L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), nullValue());
 
         callback.succeeded();
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertThat(callback._completed.getCount(), is(0L));
-
+        assertThat(callback._complete.getCount(), is(0L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), sameInstance(abort));
 
         Throwable late = new Throwable();
         callback.failed(late);
         assertFalse(callback.abort(late));
-        assertFalse(ExceptionUtil.areNotAssociated(abort, late));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertThat(callback._completed.getCount(), is(0L));
+        assertThat(callback._complete.getCount(), is(0L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), sameInstance(abort));
+        assertTrue(ExceptionUtil.areAssociated(abort, late));
     }
 
     @Test
@@ -113,22 +130,124 @@ public class CallbackTest
 
         Throwable abort = new Throwable();
         callback.abort(abort);
-        assertFalse(callback._completed.await(100, TimeUnit.MILLISECONDS));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(callback._completion.isMarked());
+        assertThat(callback._complete.getCount(), is(1L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), nullValue());
 
         Throwable failure = new Throwable();
         callback.failed(failure);
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(ExceptionUtil.areNotAssociated(abort, failure));
-        assertThat(callback._completed.getCount(), is(0L));
+        assertThat(callback._complete.getCount(), is(0L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), sameInstance(abort));
+        assertTrue(ExceptionUtil.areAssociated(abort, failure));
 
         Throwable late = new Throwable();
         callback.failed(late);
         assertFalse(callback.abort(late));
-        assertFalse(ExceptionUtil.areNotAssociated(abort, late));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertThat(callback._completed.getCount(), is(0L));
+        assertThat(callback._complete.getCount(), is(0L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), sameInstance(abort));
+        assertTrue(ExceptionUtil.areAssociated(abort, late));
+    }
+
+    @Test
+    public void testAbstractSerializedAbortSuccess() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        TestAbstractCB callback = new TestAbstractCB()
+        {
+            @Override
+            protected void onFailure(Throwable cause)
+            {
+                try
+                {
+                    latch.await();
+                    super.onFailure(cause);
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+
+        Throwable abort = new Throwable();
+        new Thread(() -> callback.abort(abort)).start();
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> callback._abort.get() != null);
+
+        assertThat(callback._complete.getCount(), is(1L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), nullValue());
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), nullValue());
+
+        callback.succeeded();
+        assertThat(callback._complete.getCount(), is(1L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), nullValue());
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), nullValue());
+
+        latch.countDown();
+        assertTrue(callback._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), sameInstance(abort));
+    }
+
+    @Test
+    public void testAbstractSerializedAbortFailure() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        TestAbstractCB callback = new TestAbstractCB()
+        {
+            @Override
+            protected void onFailure(Throwable cause)
+            {
+                try
+                {
+                    latch.await();
+                    super.onFailure(cause);
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
+
+        Throwable abort = new Throwable();
+        new Thread(() -> callback.abort(abort)).start();
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> callback._abort.get() != null);
+
+        assertThat(callback._complete.getCount(), is(1L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), nullValue());
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), nullValue());
+
+        Throwable failure = new Throwable();
+        callback.failed(failure);
+        assertThat(callback._complete.getCount(), is(1L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), nullValue());
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), nullValue());
+
+        latch.countDown();
+        assertTrue(callback._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), sameInstance(abort));
+        assertTrue(ExceptionUtil.areAssociated(abort, failure));
     }
 
     @Test
@@ -139,13 +258,17 @@ public class CallbackTest
         Callback combined = Callback.combine(callbackA, callbackB);
 
         combined.succeeded();
-        assertTrue(callbackA._completed.await(1, TimeUnit.SECONDS));
-        assertThat(callbackA._completion.getReference(), Matchers.nullValue());
-        assertTrue(callbackA._completion.isMarked());
+        assertTrue(callbackA._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callbackA._success.get(), is(true));
+        assertThat(callbackA._failure.get(), nullValue());
+        assertThat(callbackA._abort.get(), nullValue());
+        assertThat(callbackA._completed.get(), nullValue());
 
-        assertTrue(callbackB._completed.await(1, TimeUnit.SECONDS));
-        assertThat(callbackB._completion.getReference(), Matchers.nullValue());
-        assertTrue(callbackB._completion.isMarked());
+        assertTrue(callbackB._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callbackB._success.get(), is(true));
+        assertThat(callbackB._failure.get(), nullValue());
+        assertThat(callbackB._abort.get(), nullValue());
+        assertThat(callbackB._completed.get(), nullValue());
     }
 
     @Test
@@ -158,13 +281,17 @@ public class CallbackTest
         Throwable failure = new Throwable();
         combined.failed(failure);
 
-        assertTrue(callbackA._completed.await(1, TimeUnit.SECONDS));
-        assertThat(callbackA._completion.getReference(), Matchers.sameInstance(failure));
-        assertTrue(callbackA._completion.isMarked());
+        assertTrue(callbackA._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callbackA._success.get(), is(false));
+        assertThat(callbackA._failure.get(), sameInstance(failure));
+        assertThat(callbackA._abort.get(), nullValue());
+        assertThat(callbackA._completed.get(), sameInstance(failure));
 
-        assertTrue(callbackB._completed.await(1, TimeUnit.SECONDS));
-        assertThat(callbackB._completion.getReference(), Matchers.sameInstance(failure));
-        assertTrue(callbackB._completion.isMarked());
+        assertTrue(callbackB._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callbackB._success.get(), is(false));
+        assertThat(callbackB._failure.get(), sameInstance(failure));
+        assertThat(callbackB._abort.get(), nullValue());
+        assertThat(callbackB._completed.get(), sameInstance(failure));
     }
 
     @Test
@@ -176,18 +303,33 @@ public class CallbackTest
 
         Throwable abort = new Throwable();
         combined.abort(abort);
-        assertFalse(callbackA._completed.await(100, TimeUnit.MILLISECONDS));
-        assertThat(callbackA._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(callbackA._completion.isMarked());
-        assertFalse(callbackB._completed.await(100, TimeUnit.MILLISECONDS));
-        assertThat(callbackB._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(callbackB._completion.isMarked());
+
+        assertThat(callbackA._complete.getCount(), is(1L));
+        assertThat(callbackA._success.get(), is(false));
+        assertThat(callbackA._failure.get(), sameInstance(abort));
+        assertThat(callbackA._abort.get(), sameInstance(abort));
+        assertThat(callbackA._completed.get(), nullValue());
+
+        assertThat(callbackB._complete.getCount(), is(1L));
+        assertThat(callbackB._success.get(), is(false));
+        assertThat(callbackB._failure.get(), sameInstance(abort));
+        assertThat(callbackB._abort.get(), sameInstance(abort));
+        assertThat(callbackB._completed.get(), nullValue());
+
 
         combined.succeeded();
-        assertThat(callbackA._completion.getReference(), Matchers.sameInstance(abort));
-        assertThat(callbackA._completed.getCount(), is(0L));
-        assertThat(callbackB._completion.getReference(), Matchers.sameInstance(abort));
-        assertThat(callbackB._completed.getCount(), is(0L));
+
+        assertThat(callbackA._complete.getCount(), is(0L));
+        assertThat(callbackA._success.get(), is(false));
+        assertThat(callbackA._failure.get(), sameInstance(abort));
+        assertThat(callbackA._abort.get(), sameInstance(abort));
+        assertThat(callbackA._completed.get(), sameInstance(abort));
+        assertThat(callbackB._complete.getCount(), is(0L));
+        assertThat(callbackB._success.get(), is(false));
+        assertThat(callbackB._failure.get(), sameInstance(abort));
+        assertThat(callbackB._abort.get(), sameInstance(abort));
+        assertThat(callbackB._completed.get(), sameInstance(abort));
+
     }
 
     @Test
@@ -199,20 +341,33 @@ public class CallbackTest
 
         Throwable abort = new Throwable();
         combined.abort(abort);
-        assertFalse(callbackA._completed.await(100, TimeUnit.MILLISECONDS));
-        assertThat(callbackA._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(callbackA._completion.isMarked());
-        assertFalse(callbackB._completed.await(100, TimeUnit.MILLISECONDS));
-        assertThat(callbackB._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(callbackB._completion.isMarked());
+        assertThat(callbackA._complete.getCount(), is(1L));
+        assertThat(callbackA._success.get(), is(false));
+        assertThat(callbackA._failure.get(), sameInstance(abort));
+        assertThat(callbackA._abort.get(), sameInstance(abort));
+        assertThat(callbackA._completed.get(), nullValue());
+
+        assertThat(callbackB._complete.getCount(), is(1L));
+        assertThat(callbackB._success.get(), is(false));
+        assertThat(callbackB._failure.get(), sameInstance(abort));
+        assertThat(callbackB._abort.get(), sameInstance(abort));
+        assertThat(callbackB._completed.get(), nullValue());
 
         Throwable failure = new Throwable();
         combined.failed(failure);
-        assertFalse(ExceptionUtil.areNotAssociated(abort, failure));
-        assertThat(callbackA._completion.getReference(), Matchers.sameInstance(abort));
-        assertThat(callbackA._completed.getCount(), is(0L));
-        assertThat(callbackB._completion.getReference(), Matchers.sameInstance(abort));
-        assertThat(callbackB._completed.getCount(), is(0L));
+
+        assertThat(callbackA._complete.getCount(), is(0L));
+        assertThat(callbackA._success.get(), is(false));
+        assertThat(callbackA._failure.get(), sameInstance(abort));
+        assertThat(callbackA._abort.get(), sameInstance(abort));
+        assertThat(callbackA._completed.get(), sameInstance(abort));
+        assertThat(callbackB._complete.getCount(), is(0L));
+        assertThat(callbackB._success.get(), is(false));
+        assertThat(callbackB._failure.get(), sameInstance(abort));
+        assertThat(callbackB._abort.get(), sameInstance(abort));
+        assertThat(callbackB._completed.get(), sameInstance(abort));
+
+        assertTrue(ExceptionUtil.areAssociated(failure, abort));
     }
 
     @Test
@@ -221,9 +376,11 @@ public class CallbackTest
         TestAbstractCB callback = new TestAbstractCB();
         Callback nested = new Callback.Wrapper(callback);
         nested.succeeded();
-        assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
-        assertThat(callback._completion.getReference(), Matchers.nullValue());
-        assertTrue(callback._completion.isMarked());
+        assertTrue(callback._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callback._success.get(), is(true));
+        assertThat(callback._failure.get(), nullValue());
+        assertThat(callback._abort.get(), nullValue());
+        assertThat(callback._completed.get(), nullValue());
     }
 
     @Test
@@ -233,9 +390,11 @@ public class CallbackTest
         TestAbstractCB callback = new TestAbstractCB();
         Callback nested = new Callback.Wrapper(callback);
         nested.failed(failure);
-        assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(failure));
-        assertTrue(callback._completion.isMarked());
+        assertTrue(callback._complete.await(1, TimeUnit.SECONDS));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(failure));
+        assertThat(callback._abort.get(), nullValue());
+        assertThat(callback._completed.get(), sameInstance(failure));
     }
 
     @Test
@@ -246,13 +405,18 @@ public class CallbackTest
 
         Throwable abort = new Throwable();
         nested.abort(abort);
-        assertFalse(callback._completed.await(100, TimeUnit.MILLISECONDS));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(callback._completion.isMarked());
+        assertThat(callback._complete.getCount(), is(1L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), nullValue());
 
         nested.succeeded();
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertThat(callback._completed.getCount(), is(0L));
+        assertThat(callback._complete.getCount(), is(0L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), sameInstance(abort));
     }
 
     @Test
@@ -263,15 +427,20 @@ public class CallbackTest
 
         Throwable abort = new Throwable();
         nested.abort(abort);
-        assertFalse(callback._completed.await(100, TimeUnit.MILLISECONDS));
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(callback._completion.isMarked());
+        assertThat(callback._complete.getCount(), is(1L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), nullValue());
 
         Throwable failure = new Throwable();
         nested.failed(failure);
-        assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
-        assertFalse(ExceptionUtil.areNotAssociated(abort, failure));
-        assertThat(callback._completed.getCount(), is(0L));
+        assertThat(callback._complete.getCount(), is(0L));
+        assertThat(callback._success.get(), is(false));
+        assertThat(callback._failure.get(), sameInstance(abort));
+        assertThat(callback._abort.get(), sameInstance(abort));
+        assertThat(callback._completed.get(), sameInstance(abort));
+        assertTrue(ExceptionUtil.areAssociated(failure, abort));
     }
 
     @Test
@@ -295,43 +464,41 @@ public class CallbackTest
 
         Throwable cause = new Throwable();
         legacyCb.abort(cause);
-        assertTrue(callback._completed.await(100, TimeUnit.MILLISECONDS));
-        assertThat(callback._completion.getReference(), sameInstance(cause));
+        assertTrue(callback._complete.await(100, TimeUnit.MILLISECONDS));
+        assertThat(callback._completed.get(), sameInstance(cause));
     }
 
     private static class TestAbstractCB extends Callback.Abstract
     {
-        final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
-        final CountDownLatch _completed = new CountDownLatch(2);
+        final AtomicBoolean _success = new AtomicBoolean();
+        final AtomicReference<Throwable> _failure = new AtomicReference<>();
+        final AtomicReference<Throwable> _abort = new AtomicReference<>();
+        final AtomicReference<Throwable> _completed = new AtomicReference<>();
+        final CountDownLatch _complete = new CountDownLatch(1);
 
         @Override
         protected void onAbort(Throwable cause)
         {
-            _completion.compareAndSet(null, cause, false, false);
+            _abort.compareAndSet(null, cause);
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onCompleted(Throwable causeOrNull)
         {
-            if (_completion.compareAndSet(null, cause, false, true))
-                _completed.countDown();
+            _completed.compareAndSet(null, causeOrNull);
+            _complete.countDown();
+        }
 
-            Throwable failure = _completion.getReference();
-            if (failure != null && _completion.compareAndSet(failure, failure, false, true))
-                _completed.countDown();
+        @Override
+        protected void onFailure(Throwable cause)
+        {
+            _failure.compareAndSet(null, cause);
         }
 
         @Override
         protected void onSuccess()
         {
-            if (_completion.compareAndSet(null, null, false, true))
-                _completed.countDown();
-        }
-
-        @Override
-        public void onCompleted()
-        {
-            _completed.countDown();
+            _success.compareAndSet(false, true);
         }
     }
 }

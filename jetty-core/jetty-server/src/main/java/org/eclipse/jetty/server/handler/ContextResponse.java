@@ -32,18 +32,24 @@ public class ContextResponse extends Response.Wrapper
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        Callback contextCallback = new Callback.Nested(callback)
+        Callback contextCallback = new Callback.Wrapper(callback)
         {
             @Override
-            protected void onSuccess()
+            public boolean abort(Throwable cause)
             {
-                _context.run(callback::succeeded, getRequest());
+                return _context.test(callback::abort, cause, getRequest());
             }
 
             @Override
-            protected void onCompleteFailure(Throwable cause)
+            public void failed(Throwable cause)
             {
                 _context.accept(callback::failed, cause, getRequest());
+            }
+
+            @Override
+            public void succeeded()
+            {
+                _context.run(callback::succeeded, getRequest());;
             }
         };
         super.write(last, content, contextCallback);

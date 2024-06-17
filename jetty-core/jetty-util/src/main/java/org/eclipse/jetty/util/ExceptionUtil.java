@@ -359,7 +359,7 @@ public class ExceptionUtil
         }
     }
 
-    public static void callAndThrowAssociated(Throwable cause, Consumer<Throwable> consumer)
+    public static void call(Throwable cause, Consumer<Throwable> consumer)
     {
         try
         {
@@ -372,8 +372,54 @@ public class ExceptionUtil
         }
     }
 
-    private ExceptionUtil()
+    /**
+     * Call a {@link Invocable.Callable} and handle failures
+     * @param callable The runnable to call
+     * @param failure The handling of failures
+     */
+    public static void call(Invocable.Callable callable, Consumer<Throwable> failure)
     {
+        try
+        {
+            callable.call();
+        }
+        catch (Throwable thrown)
+        {
+            try
+            {
+                failure.accept(thrown);
+            }
+            catch (Throwable alsoThrown)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(alsoThrown, thrown);
+                ExceptionUtil.ifExceptionThrowUnchecked(alsoThrown);
+            }
+        }
+    }
+
+    /**
+     * Call a {@link Runnable} and handle failures
+     * @param runnable The runnable to call
+     * @param failure The handling of failures
+     */
+    public static void run(Runnable runnable, Consumer<Throwable> failure)
+    {
+        try
+        {
+            runnable.run();
+        }
+        catch (Throwable thrown)
+        {
+            try
+            {
+                failure.accept(thrown);
+            }
+            catch (Throwable alsoThrown)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(alsoThrown, thrown);
+                ExceptionUtil.ifExceptionThrowUnchecked(alsoThrown);
+            }
+        }
     }
 
     /**
@@ -397,5 +443,9 @@ public class ExceptionUtil
         {
             throw new RuntimeException(e.getCause());
         }
+    }
+
+    private ExceptionUtil()
+    {
     }
 }

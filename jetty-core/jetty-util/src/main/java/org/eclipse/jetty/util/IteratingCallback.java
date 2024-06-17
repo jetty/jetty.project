@@ -209,14 +209,7 @@ public abstract class IteratingCallback implements Callback
 
     private void doCompleteSuccess()
     {
-        try
-        {
-            onCompleteSuccess();
-        }
-        finally
-        {
-            onCompleted();
-        }
+        ExceptionUtil.callAndThen(this::onCompleteSuccess, this::onCompleted);
     }
 
     private void doCompleteFailure(Throwable cause)
@@ -554,7 +547,6 @@ public abstract class IteratingCallback implements Callback
     {
         Throwable doAbort = null;
         boolean doCompleteFailure = false;
-        boolean aborted;
 
         try (AutoLock ignored = _lock.lock())
         {

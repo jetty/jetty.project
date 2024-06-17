@@ -1927,13 +1927,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onFailure(Throwable cause)
         {
             onWriteComplete(true, cause);
         }
 
         @Override
-        public void onCompleted()
+        protected void onCompleted(Throwable cause)
         {
             releaseBuffer();
         }

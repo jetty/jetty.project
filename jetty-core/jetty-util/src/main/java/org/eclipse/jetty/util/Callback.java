@@ -16,7 +16,7 @@ package org.eclipse.jetty.util;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicMarkableReference;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
@@ -229,7 +229,7 @@ public interface Callback extends Invocable
             @Override
             public void onCompleted(Throwable causeOrNull)
             {
-                ExceptionUtil.callAndThrowAssociated(causeOrNull, completed);
+                ExceptionUtil.call(causeOrNull, completed);
             }
 
             @Override
@@ -270,7 +270,7 @@ public interface Callback extends Invocable
         return new Abstract()
         {
             @Override
-            public void onCompleted()
+            public void onCompleted(Throwable causeOrNull)
             {
                 completed.run();
             }
@@ -302,7 +302,7 @@ public interface Callback extends Invocable
         return new Nested(callback)
         {
             @Override
-            public void onCompleted()
+            public void onCompleted(Throwable causeOrNull)
             {
                 completed.run();
             }
@@ -319,36 +319,12 @@ public interface Callback extends Invocable
      */
     static Callback from(Callback callback, Consumer<Throwable> completed)
     {
-        return new Abstract()
+        return new Nested(callback)
         {
             @Override
-            public boolean abort(Throwable cause)
+            protected void onCompleted(Throwable cause)
             {
-                return callback.abort(cause) && super.abort(cause);
-            }
-
-            @Override
-            public void failed(Throwable cause)
-            {
-                callback.failed(cause);
-            }
-
-            @Override
-            public void succeeded()
-            {
-                callback.succeeded();
-            }
-
-            @Override
-            protected void onSuccess()
-            {
-                completed.accept(null);
-            }
-
-            @Override
-            protected void onCompleteFailure(Throwable cause)
-            {
-                super.onCompleteFailure(cause);
+                ExceptionUtil.call(cause, completed);
             }
         };
     }
@@ -406,17 +382,17 @@ public interface Callback extends Invocable
             @Override
             protected void onSuccess()
             {
-                ExceptionUtil.callAndThen(success, complete);
+                success.run();
             }
 
             @Override
-            public void onFailure(Throwable cause)
+            protected void onFailure(Throwable cause)
             {
-                failure.accept(cause);
+                ExceptionUtil.call(cause, failure);
             }
 
             @Override
-            public void onCompleted()
+            protected void onCompleted(Throwable causeOrNull)
             {
                 complete.run();
             }
@@ -511,33 +487,71 @@ public interface Callback extends Invocable
      */
     class Abstract implements Callback
     {
-        private static final Throwable SUCCEEDED = new StaticException("Completed");
-        private final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
+        private static final State SUCCEEDED = new State(null);
+
+        private final AtomicReference<State> _state = new AtomicReference<>(null);
 
         @Override
         public void succeeded()
         {
-            if (_completion.compareAndSet(null, SUCCEEDED, false, true))
+            // Is this a direct success?
+            if (_state.compareAndSet(null, SUCCEEDED))
             {
+                Throwable cause = null;
                 try
                 {
                     onSuccess();
                 }
+                catch (Throwable t)
+                {
+                    cause = t;
+                }
                 finally
                 {
-                    onCompleted(null);
+                    onCompleted(cause);
                 }
                 return;
             }
 
-            if (_completion.isMarked())
-                return;
-
-            Throwable cause = _completion.getReference();
-            if (_completion.compareAndSet(cause, cause, false, true))
+            // Are we aborted?
+            State state = _state.get();
+            if (state instanceof Aborted aborted)
             {
-                // TODO might need to wait until abort calls completed
-                onCompleted(cause);
+                // If the abort notifications are still running, then they will complete for us
+                if (aborted.completed.compareAndSet(null, Boolean.TRUE))
+                    return;
+
+                // abort notifications were complete, so we do the completions
+                if (aborted.completed.compareAndSet(Boolean.FALSE, Boolean.TRUE))
+                    ExceptionUtil.call(state.causeOrNull, this::onCompleted);
+            }
+        }
+
+        @Override
+        public void failed(Throwable cause)
+        {
+            cause = Objects.requireNonNullElseGet(cause, Exception::new);
+
+            // Is this a direct failure?
+            if (_state.compareAndSet(null, new State(cause)))
+            {
+                ExceptionUtil.callAndThen(cause, this::onFailure, this::onCompleted);
+                return;
+            }
+
+            // Are we aborted?
+            State state = _state.get();
+            if (state instanceof Aborted aborted)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(aborted.causeOrNull, cause);
+
+                // If the abort notifications are still running, then they will complete for us
+                if (aborted.completed.compareAndSet(null, Boolean.TRUE))
+                    return;
+
+                // abort notifications were complete, so we do the completions
+                if (aborted.completed.compareAndSet(Boolean.FALSE, Boolean.TRUE))
+                    ExceptionUtil.call(state.causeOrNull, this::onCompleted);
             }
         }
 
@@ -552,45 +566,28 @@ public interface Callback extends Invocable
         @Override
         public boolean abort(Throwable cause)
         {
-            if (cause == null)
-                cause = new CancellationException();
-            // Try aborting directly by assuming that the callback is neither failed nor aborted.
-            if (_completion.compareAndSet(null, cause, false, false))
+            cause = Objects.requireNonNullElseGet(cause, CancellationException::new);
+
+            Aborted aborted = new Aborted(cause);
+
+            // If we can directly abort, then we are aborting
+            if (_state.compareAndSet(null, aborted))
             {
+                // We are aborting, so notify
                 ExceptionUtil.callAndThen(cause, this::onAbort, this::onFailure);
+
+                // if we can set completed then we were not succeeded or failed during notification
+                if (aborted.completed.compareAndSet(null, Boolean.FALSE))
+                    return true;
+
+                // We were succeeded or failed during notification, so we have to complete
+                ExceptionUtil.call(cause, this::onCompleted);
                 return true;
             }
 
-            Throwable failure = _completion.getReference();
-            ExceptionUtil.addSuppressedIfNotAssociated(failure, cause);
+            // Either we were already complete or somebody else is aborting
+            ExceptionUtil.addSuppressedIfNotAssociated(_state.get().causeOrNull, cause);
             return false;
-        }
-
-        @Override
-        public void failed(Throwable cause)
-        {
-            if (cause == null)
-                cause = new Exception();
-            // Try failing directly by assuming that the callback is neither failed nor aborted.
-            if (_completion.compareAndSet(null, cause, false, true))
-            {
-                ExceptionUtil.callAndThen(cause, this::onFailure, causeOrNull -> onCompleted(causeOrNull));
-                return;
-            }
-
-            Throwable failure = _completion.getReference();
-            ExceptionUtil.addSuppressedIfNotAssociated(failure, cause);
-
-            // Have we somehow already completed?
-            if (_completion.isMarked())
-                return;
-
-            // Have we aborted? in which case we can complete
-            if (failure != null && _completion.compareAndSet(failure, failure, false, true))
-            {
-                // TODO might need to wait until abort calls completed
-                onCompleted(failure);
-            }
         }
 
         /**
@@ -634,8 +631,28 @@ public interface Callback extends Invocable
          * @param causeOrNull {@code null} if successful, else the cause of any {@link #abort(Throwable) abort} or
          * {@link #failed(Throwable) failure}
          */
-        public void onCompleted(Throwable causeOrNull)
+        protected void onCompleted(Throwable causeOrNull)
         {
+        }
+
+        private static class State
+        {
+            final Throwable causeOrNull;
+
+            protected State(Throwable causeOrNull)
+            {
+                this.causeOrNull = causeOrNull;
+            }
+        }
+
+        private static class Aborted extends State
+        {
+            AtomicReference<Boolean> completed = new AtomicReference<>(null);
+
+            private Aborted(Throwable cause)
+            {
+                super(cause);
+            }
         }
     }
 
@@ -707,15 +724,12 @@ public interface Callback extends Invocable
         }
 
         @Override
-        protected void onSuccess()
+        protected void onCompleted(Throwable causeOrNull)
         {
-            callback.succeeded();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            callback.failed(cause);
+            if (causeOrNull == null)
+                callback.succeeded();
+            else
+                callback.failed(causeOrNull);
         }
     }
 

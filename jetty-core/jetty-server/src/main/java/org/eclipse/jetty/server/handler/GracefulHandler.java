@@ -21,7 +21,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Graceful;
 import org.slf4j.Logger;
@@ -100,7 +99,11 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
         {
             boolean handled = super.handle(request, response, shutdownCallback);
             if (!handled)
-                shutdownCallback.onCompleted();
+            {
+                _requests.decrement();
+                if (isShutdown())
+                    _shutdown.check();
+            }
             return handled;
         }
         catch (Throwable t)
@@ -123,21 +126,21 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
         return _shutdown.shutdown();
     }
 
-    private class ShutdownTrackingCallback extends CountingCallback
+    private class ShutdownTrackingCallback extends Callback.Nested
     {
         final Request request;
         final Response response;
 
         public ShutdownTrackingCallback(Request request, Response response, Callback callback)
         {
-            super(callback, 1);
+            super(callback);
             this.request = request;
             this.response = response;
             _requests.increment();
         }
 
         @Override
-        public void onCompleted()
+        protected void onCompleted(Throwable cause)
         {
             _requests.decrement();
             if (isShutdown())
