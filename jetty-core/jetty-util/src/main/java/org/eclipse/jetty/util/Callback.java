@@ -572,7 +572,7 @@ public interface Callback extends Invocable
     }
 
     /**
-     * <p>A Callback implementation that calls the {@link #onCompleted(Throwable)} method when it either succeeds or fails.
+     * A Callback implementation that calls the {@link #onCompleted(Throwable)} method when it either succeeds or fails.
      * If the callback is aborted, then {@link #onAbort(Throwable)} is called, but the
      * {@link #onCompleted(Throwable)} methods is not called until either {@link #succeeded()} or {@link #failed(Throwable)}
      * are called.  Valid sequences of calls are: <ul>
@@ -580,7 +580,7 @@ public interface Callback extends Invocable
      *     <li>{@link #failed(Throwable)} -> {@link #onFailure(Throwable)} -> {@link #onCompleted(Throwable)}</li>
      *     <li>{@link #abort(Throwable)} -> {@link #onAbort(Throwable)} -> {@link #onFailure(Throwable)}, {@link #succeeded()} -> {@link #onCompleted(Throwable)}</li>
      *     <li>{@link #abort(Throwable)} -> {@link #onAbort(Throwable)} -> {@link #onFailure(Throwable)}, {@link #failed(Throwable)} -> {@link #onCompleted(Throwable)}</li>
-     * </ul></p>
+     * </ul>
      */
     class Abstract implements Callback
     {
