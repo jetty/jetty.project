@@ -1746,19 +1746,19 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private class WriteCompleteCB extends Callback.Abstract
     {
         @Override
-        protected void onSuccess()
+        protected void onSucceeded()
         {
             onWriteComplete(true, null);
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onFailed(Throwable cause)
         {
             onWriteComplete(true, cause);
         }
 
         @Override
-        public void onCompleted()
+        public void onCompleted(Throwable causeOrNull)
         {
             releaseBuffer();
         }

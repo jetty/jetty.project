@@ -618,7 +618,7 @@ public class IteratingCallbackTest
             }
 
             @Override
-            protected void onCompleted()
+            protected void onCompleted(Throwable causeOrNull)
             {
                 onCompleted.set(true);
             }
@@ -750,7 +750,7 @@ public class IteratingCallbackTest
         }
 
         @Override
-        protected void onCompleted()
+        protected void onCompleted(Throwable causeOrNull)
         {
             _completed.countDown();
         }

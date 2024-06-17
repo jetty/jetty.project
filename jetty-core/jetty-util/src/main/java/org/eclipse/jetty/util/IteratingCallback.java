@@ -55,7 +55,7 @@ public abstract class IteratingCallback implements Callback
     /**
      * The internal states of this callback.
      */
-    protected enum State
+    enum State
     {
         /**
          * This callback is idle, ready to iterate.
@@ -203,13 +203,13 @@ public abstract class IteratingCallback implements Callback
     {
     }
 
-    protected void onCompleted()
+    protected void onCompleted(Throwable causeOrNull)
     {
     }
 
     private void doCompleteSuccess()
     {
-        ExceptionUtil.callAndThen(this::onCompleteSuccess, this::onCompleted);
+        ExceptionUtil.callAndThen(this::onCompleteSuccess, () -> onCompleted(null));
     }
 
     private void doCompleteFailure(Throwable cause)

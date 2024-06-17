@@ -246,13 +246,13 @@ public interface Callback extends Invocable
         return new Abstract()
         {
             @Override
-            protected void onSuccess()
+            protected void onSucceeded()
             {
                 success.run();
             }
 
             @Override
-            protected void onFailure(Throwable cause)
+            protected void onFailed(Throwable cause)
             {
                 ExceptionUtil.call(cause, failure);
             }
@@ -306,19 +306,19 @@ public interface Callback extends Invocable
         return new Abstract()
         {
             @Override
-            protected void onSuccess()
+            protected void onSucceeded()
             {
                 success.run();
             }
 
             @Override
-            protected void onAbort(Throwable cause)
+            protected void onAborted(Throwable cause)
             {
                 ExceptionUtil.call(cause, abort);
             }
 
             @Override
-            protected void onFailure(Throwable cause)
+            protected void onFailed(Throwable cause)
             {
                 ExceptionUtil.call(cause, failure);
             }
@@ -573,13 +573,13 @@ public interface Callback extends Invocable
 
     /**
      * A Callback implementation that calls the {@link #onCompleted(Throwable)} method when it either succeeds or fails.
-     * If the callback is aborted, then {@link #onAbort(Throwable)} is called, but the
+     * If the callback is aborted, then {@link #onAborted(Throwable)} is called, but the
      * {@link #onCompleted(Throwable)} methods is not called until either {@link #succeeded()} or {@link #failed(Throwable)}
      * are called.  Valid sequences of calls are: <ul>
-     *     <li>{@link #succeeded()} -> {@link #onSuccess()} -> {@link #onCompleted(Throwable)}</li>
-     *     <li>{@link #failed(Throwable)} -> {@link #onFailure(Throwable)} -> {@link #onCompleted(Throwable)}</li>
-     *     <li>{@link #abort(Throwable)} -> {@link #onAbort(Throwable)} -> {@link #onFailure(Throwable)}, {@link #succeeded()} -> {@link #onCompleted(Throwable)}</li>
-     *     <li>{@link #abort(Throwable)} -> {@link #onAbort(Throwable)} -> {@link #onFailure(Throwable)}, {@link #failed(Throwable)} -> {@link #onCompleted(Throwable)}</li>
+     *     <li>{@link #succeeded()} -> {@link #onSucceeded()} -> {@link #onCompleted(Throwable)}</li>
+     *     <li>{@link #failed(Throwable)} -> {@link #onFailed(Throwable)} -> {@link #onCompleted(Throwable)}</li>
+     *     <li>{@link #abort(Throwable)} -> {@link #onAborted(Throwable)} -> {@link #onFailed(Throwable)}, {@link #succeeded()} -> {@link #onCompleted(Throwable)}</li>
+     *     <li>{@link #abort(Throwable)} -> {@link #onAborted(Throwable)} -> {@link #onFailed(Throwable)}, {@link #failed(Throwable)} -> {@link #onCompleted(Throwable)}</li>
      * </ul>
      */
     class Abstract implements Callback
@@ -597,7 +597,7 @@ public interface Callback extends Invocable
                 Throwable cause = null;
                 try
                 {
-                    onSuccess();
+                    onSucceeded();
                 }
                 catch (Throwable t)
                 {
@@ -632,7 +632,7 @@ public interface Callback extends Invocable
             // Is this a direct failure?
             if (_state.compareAndSet(null, new State(cause)))
             {
-                ExceptionUtil.callAndThen(cause, this::onFailure, this::onCompleted);
+                ExceptionUtil.callAndThen(cause, this::onFailed, this::onCompleted);
                 return;
             }
 
@@ -654,7 +654,7 @@ public interface Callback extends Invocable
 
         /**
          * Abort the callback if it has not already been completed.
-         * The {@link #onAbort(Throwable)} and {@link #onFailure(Throwable)} methods will be called, then the
+         * The {@link #onAborted(Throwable)} and {@link #onFailed(Throwable)} methods will be called, then the
          * {@link #onCompleted(Throwable)} will be called only once the {@link #succeeded()} or
          * {@link #failed(Throwable)} methods are called.
          * @param cause The cause of the abort
@@ -671,7 +671,7 @@ public interface Callback extends Invocable
             if (_state.compareAndSet(null, aborted))
             {
                 // We are aborting, so notify
-                ExceptionUtil.callAndThen(cause, this::onAbort, this::onFailure);
+                ExceptionUtil.callAndThen(cause, this::onAborted, this::onFailed);
 
                 // if we can set completed then we were not succeeded or failed during notification
                 if (aborted.completed.compareAndSet(null, Boolean.FALSE))
@@ -694,19 +694,19 @@ public interface Callback extends Invocable
          * been in use by the scheduled operation, but it may defer that release or reuse to the subsequent call to
          * {@link #onCompleted(Throwable)} to avoid double releasing.
          */
-        protected void onSuccess()
+        protected void onSucceeded()
         {
         }
 
         /**
          * Called when the callback has been {@link #abort(Throwable) aborted}.
-         * The {@link #onFailure(Throwable)} method will also be called immediately, but then once the callback has been
+         * The {@link #onFailed(Throwable)} method will also be called immediately, but then once the callback has been
          * {@link #succeeded() succeeded} or {@link #failed(Throwable)}, and the {@link #onCompleted(Throwable)} method will be also be called.
          * Typically, this method is implemented to act on the failure, but it should not release or reuse any resources that may
          * be in use by the schedule operation.
          * @param cause The cause of the abort
          */
-        protected void onAbort(Throwable cause)
+        protected void onAborted(Throwable cause)
         {
         }
 
@@ -718,7 +718,7 @@ public interface Callback extends Invocable
          * be in use by the schedule operation.
          * @param cause The cause of the failure
          */
-        protected void onFailure(Throwable cause)
+        protected void onFailed(Throwable cause)
         {
         }
 
@@ -744,7 +744,7 @@ public interface Callback extends Invocable
 
         private static class Aborted extends State
         {
-            AtomicReference<Boolean> completed = new AtomicReference<>(null);
+            private final AtomicReference<Boolean> completed = new AtomicReference<>(null);
 
             private Aborted(Throwable cause)
             {
@@ -815,7 +815,7 @@ public interface Callback extends Invocable
         }
 
         @Override
-        protected void onAbort(Throwable cause)
+        protected void onAborted(Throwable cause)
         {
             callback.abort(cause);
         }

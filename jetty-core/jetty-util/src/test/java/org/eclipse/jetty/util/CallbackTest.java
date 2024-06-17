@@ -165,12 +165,12 @@ public class CallbackTest
         TestAbstractCB callback = new TestAbstractCB()
         {
             @Override
-            protected void onFailure(Throwable cause)
+            protected void onFailed(Throwable cause)
             {
                 try
                 {
                     latch.await();
-                    super.onFailure(cause);
+                    super.onFailed(cause);
                 }
                 catch (InterruptedException e)
                 {
@@ -211,12 +211,12 @@ public class CallbackTest
         TestAbstractCB callback = new TestAbstractCB()
         {
             @Override
-            protected void onFailure(Throwable cause)
+            protected void onFailed(Throwable cause)
             {
                 try
                 {
                     latch.await();
-                    super.onFailure(cause);
+                    super.onFailed(cause);
                 }
                 catch (InterruptedException e)
                 {
@@ -847,7 +847,7 @@ public class CallbackTest
         final CountDownLatch _complete = new CountDownLatch(1);
 
         @Override
-        protected void onAbort(Throwable cause)
+        protected void onAborted(Throwable cause)
         {
             _abort.compareAndSet(null, cause);
         }
@@ -860,13 +860,13 @@ public class CallbackTest
         }
 
         @Override
-        protected void onFailure(Throwable cause)
+        protected void onFailed(Throwable cause)
         {
             _failure.compareAndSet(null, cause);
         }
 
         @Override
-        protected void onSuccess()
+        protected void onSucceeded()
         {
             _success.compareAndSet(false, true);
         }

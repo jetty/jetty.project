@@ -68,10 +68,7 @@ public class ContentCopier extends IteratingNestedCallback
 
         if (Content.Chunk.isFailure(current))
         {
-            Throwable failure = current.getFailure();
-            current.release();
-            current = Content.Chunk.next(current);
-            failed(failure);
+            failed(current.getFailure());
             return Action.SCHEDULED;
         }
 
@@ -82,6 +79,11 @@ public class ContentCopier extends IteratingNestedCallback
     @Override
     protected void onCompleteFailure(Throwable x)
     {
+        if (current != null)
+        {
+            current.release();
+            current = Content.Chunk.next(current);
+        }
         ExceptionUtil.callAndThen(x, source::fail, super::onCompleteFailure);
     }
 }

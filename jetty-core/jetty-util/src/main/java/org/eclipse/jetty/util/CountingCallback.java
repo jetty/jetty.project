@@ -69,7 +69,7 @@ public class CountingCallback extends Callback.Wrapper
     @Override
     public boolean abort(Throwable cause)
     {
-        return count.updateAndGet(c -> c > 1 ? 1 : 0) == 1 && super.abort(cause);
+        return count.updateAndGet(c -> c >= 1 ? 1 : 0) == 1 && super.abort(cause);
     }
 
     @Override
