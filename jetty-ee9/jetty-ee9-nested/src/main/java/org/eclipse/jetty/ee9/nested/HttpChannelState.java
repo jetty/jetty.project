@@ -531,7 +531,7 @@ public class HttpChannelState
             if (_state != State.HANDLING || _requestState != RequestState.BLOCKING)
                 throw new IllegalStateException(this.getStatusStringLocked());
 
-            if (_channel.getHttpConfiguration().isNotifyRemoteAsyncErrors() && !_failureListener)
+            if (!_failureListener)
             {
                 _failureListener = true;
                 getHttpChannel().getCoreRequest().addFailureListener(this::asyncError);

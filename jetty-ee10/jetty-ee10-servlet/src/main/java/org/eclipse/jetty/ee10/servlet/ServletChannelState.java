@@ -569,7 +569,7 @@ public class ServletChannelState
             if (_state != State.HANDLING || (_requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING))
                 throw new IllegalStateException(this.getStatusStringLocked());
 
-            if (_servletChannel.getHttpConfiguration().isNotifyRemoteAsyncErrors() && !_failureListener)
+            if (!_failureListener)
             {
                 _failureListener = true;
                 _servletChannel.getRequest().addFailureListener(this::asyncError);

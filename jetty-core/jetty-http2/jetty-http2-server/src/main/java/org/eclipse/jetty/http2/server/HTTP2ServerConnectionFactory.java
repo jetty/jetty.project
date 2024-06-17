@@ -156,7 +156,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             EofException failure = new EofException("Reset " + ErrorCode.toString(frame.getError(), null));
-            onFailure(stream, failure, callback);
+            getConnection().onStreamFailure(stream, failure, true, callback);
         }
 
         @Override
@@ -164,12 +164,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         {
             if (!(failure instanceof QuietException))
                 failure = new EofException(failure);
-            onFailure(stream, failure, callback);
-        }
-
-        private void onFailure(Stream stream, Throwable failure, Callback callback)
-        {
-            getConnection().onStreamFailure(stream, failure, callback);
+            getConnection().onStreamFailure(stream, failure, false, callback);
         }
 
         @Override
