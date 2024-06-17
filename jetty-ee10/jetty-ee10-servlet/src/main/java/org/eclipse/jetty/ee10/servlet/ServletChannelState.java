@@ -569,11 +569,10 @@ public class ServletChannelState
             if (_state != State.HANDLING || (_requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING))
                 throw new IllegalStateException(this.getStatusStringLocked());
 
-            if (!_failureListener)
+            if (_servletChannel.getHttpConfiguration().isNotifyRemoteAsyncErrors() && !_failureListener)
             {
                 _failureListener = true;
-                if (_servletChannel.getHttpConfiguration().isNotifyRemoteAsyncErrors())
-                    _servletChannel.getRequest().addFailureListener(this::asyncError);
+                _servletChannel.getRequest().addFailureListener(this::asyncError);
             }
             _requestState = RequestState.ASYNC;
             _event = event;
