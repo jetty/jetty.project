@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.test.client.transport;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,12 +24,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -41,22 +36,12 @@ import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
-import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
-import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
-import org.eclipse.jetty.http3.HTTP3ErrorCode;
-import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
@@ -77,8 +62,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -100,11 +83,6 @@ public class AbstractTest
     protected AbstractConnector connector;
     protected ServletContextHandler servletContextHandler;
     protected HttpClient client;
-
-    private HTTP2Client http2Client;
-    private final Map<Integer, org.eclipse.jetty.http2.api.Stream> h2Streams = new HashMap<>();
-    private HTTP3Client http3Client;
-    private final Map<Long, org.eclipse.jetty.http3.api.Stream> h3Streams = new HashMap<>();
 
     public static Collection<Transport> transports()
     {
@@ -128,14 +106,6 @@ public class AbstractTest
         return transports;
     }
 
-    public static Collection<Transport> transportsWithStreams()
-    {
-        EnumSet<Transport> transports = EnumSet.of(Transport.H2C, Transport.H3);
-        if ("ci".equals(System.getProperty("env")))
-            transports.remove(Transport.H3);
-        return transports;
-    }
-
     @BeforeEach
     public void prepare()
     {
@@ -145,8 +115,6 @@ public class AbstractTest
     @AfterEach
     public void dispose()
     {
-        h2Streams.clear();
-        h3Streams.clear();
         LifeCycle.stop(client);
         LifeCycle.stop(server);
     }
@@ -228,100 +196,6 @@ public class AbstractTest
         client.start();
     }
 
-    protected long newRequestOnStream(Transport transport) throws Exception
-    {
-        switch (transport)
-        {
-            case H2C, H2 ->
-            {
-                return sendHeadersWithNewH2Stream();
-            }
-            case H3 ->
-            {
-                return sendHeadersWithNewH3Stream();
-            }
-            default -> throw new IllegalArgumentException("Transport does not support streams: " + transport);
-        }
-    }
-
-    private int sendHeadersWithNewH2Stream() throws Exception
-    {
-        org.eclipse.jetty.http2.api.Session session = newHttp2ClientSession(new org.eclipse.jetty.http2.api.Session.Listener() {});
-        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-        HeadersFrame frame = new HeadersFrame(metaData, null, false);
-        FuturePromise<org.eclipse.jetty.http2.api.Stream> promise = new FuturePromise<>();
-        session.newStream(frame, promise, null);
-        org.eclipse.jetty.http2.api.Stream stream = promise.get(5, TimeUnit.SECONDS);
-        int streamId = stream.getId();
-        h2Streams.put(streamId, stream);
-        return streamId;
-    }
-
-    private long sendHeadersWithNewH3Stream() throws Exception
-    {
-        org.eclipse.jetty.http3.api.Session.Client session = newHttp3ClientSession(new org.eclipse.jetty.http3.api.Session.Client.Listener() {});
-        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-        CompletableFuture<Stream> cf = session.newRequest(new org.eclipse.jetty.http3.frames.HeadersFrame(metaData, false), null);
-        org.eclipse.jetty.http3.api.Stream stream = cf.get(5, TimeUnit.SECONDS);
-        long streamId = stream.getId();
-        h3Streams.put(streamId, stream);
-        return streamId;
-    }
-
-    protected void resetStream(Transport transport, long streamId)
-    {
-        switch (transport)
-        {
-            case H2C, H2 -> resetH2Stream((int)streamId);
-            case H3 -> resetH3Stream(streamId);
-            default -> throw new IllegalArgumentException("Transport does not support streams: " + transport);
-        }
-    }
-
-    private void resetH2Stream(int streamId)
-    {
-        org.eclipse.jetty.http2.api.Stream stream = h2Streams.get(streamId);
-        stream.reset(new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-    }
-
-    private void resetH3Stream(long streamId)
-    {
-        org.eclipse.jetty.http3.api.Stream stream = h3Streams.get(streamId);
-        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new Exception(getClass().getSimpleName() + " reset"));
-    }
-
-    private org.eclipse.jetty.http2.api.Session newHttp2ClientSession(org.eclipse.jetty.http2.api.Session.Listener listener) throws Exception
-    {
-        String host = "localhost";
-        int port = ((NetworkConnector)connector).getLocalPort();
-        InetSocketAddress address = new InetSocketAddress(host, port);
-        FuturePromise<org.eclipse.jetty.http2.api.Session> promise = new FuturePromise<>();
-        http2Client.connect(address, listener, promise);
-        return promise.get(5, TimeUnit.SECONDS);
-    }
-
-    private org.eclipse.jetty.http3.api.Session.Client newHttp3ClientSession(org.eclipse.jetty.http3.api.Session.Client.Listener listener) throws Exception
-    {
-        String host = "localhost";
-        int port = ((NetworkConnector)connector).getLocalPort();
-        InetSocketAddress address = new InetSocketAddress(host, port);
-        CompletableFuture<org.eclipse.jetty.http3.api.Session.Client> cf = http3Client.connect(address, listener);
-        return cf.get(5, TimeUnit.SECONDS);
-    }
-
-    protected MetaData.Request newRequest(String method, HttpFields fields)
-    {
-        return newRequest(method, "/", fields);
-    }
-
-    protected MetaData.Request newRequest(String method, String path, HttpFields fields)
-    {
-        String host = "localhost";
-        int port = ((NetworkConnector)connector).getLocalPort();
-        String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields, -1);
-    }
-
     public AbstractConnector newConnector(Transport transport, Server server)
     {
         return switch (transport)
@@ -394,7 +268,7 @@ public class AbstractTest
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
                 clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                http2Client = new HTTP2Client(clientConnector);
+                HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 yield new HttpClientTransportOverHTTP2(http2Client);
             }
             case H3 ->
@@ -404,7 +278,7 @@ public class AbstractTest
                 SslContextFactory.Client sslContextFactory = newSslContextFactoryClient();
                 clientConnector.setSslContextFactory(sslContextFactory);
                 Path clientPemDirectory = Files.createDirectories(pemDir.resolve("client"));
-                http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, clientPemDirectory));
+                HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, clientPemDirectory));
                 yield new HttpClientTransportOverHTTP3(http3Client);
             }
             case FCGI -> new HttpClientTransportOverFCGI(1, "");

@@ -34,8 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.AsyncContext;
-import jakarta.servlet.AsyncEvent;
-import jakarta.servlet.AsyncListener;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
@@ -85,7 +83,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1535,92 +1532,6 @@ public class AsyncIOServletTest extends AbstractTest
 
         ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
-    }
-
-    @ParameterizedTest
-    @MethodSource("transportsWithStreams")
-    public void testStartAsyncThenClientResetRemoteErrorDoesNotify(Transport transport) throws Exception
-    {
-        testStartAsyncThenClientResetRemoteErrorNotification(transport, true);
-    }
-
-    @ParameterizedTest
-    @MethodSource("transportsWithStreams")
-    public void testStartAsyncThenClientResetRemoteErrorDoesNotNotify(Transport transport) throws Exception
-    {
-        testStartAsyncThenClientResetRemoteErrorNotification(transport, false);
-    }
-
-    private void testStartAsyncThenClientResetRemoteErrorNotification(Transport transport, boolean notify) throws Exception
-    {
-        httpConfig.setNotifyRemoteAsyncErrors(notify);
-
-        AtomicReference<AsyncEvent> errorAsyncEventRef = new AtomicReference<>();
-        AtomicReference<HttpServletResponse> responseRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
-            {
-                AsyncContext asyncContext = request.startAsync();
-                asyncContext.addListener(new AsyncListener()
-                {
-                    @Override
-                    public void onComplete(AsyncEvent event)
-                    {
-                    }
-
-                    @Override
-                    public void onTimeout(AsyncEvent event)
-                    {
-                    }
-
-                    @Override
-                    public void onError(AsyncEvent event)
-                    {
-                        errorAsyncEventRef.set(event);
-                    }
-
-                    @Override
-                    public void onStartAsync(AsyncEvent event)
-                    {
-                    }
-                });
-                asyncContext.setTimeout(0);
-                responseRef.set(response);
-                latch.countDown();
-            }
-        });
-
-        long streamId = newRequestOnStream(transport);
-
-        // Wait for the server to be in ASYNC_WAIT.
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-        sleep(500);
-
-        resetStream(transport, streamId);
-
-        if (notify)
-            // Wait for the reset to be notified to the async context listener.
-            await().atMost(5, TimeUnit.SECONDS).until(() ->
-            {
-                AsyncEvent asyncEvent = errorAsyncEventRef.get();
-                return asyncEvent == null ? null : asyncEvent.getThrowable();
-            }, instanceOf(EofException.class));
-        else
-            // Wait for the reset to NOT be notified to the failure listener.
-            await().atMost(5, TimeUnit.SECONDS).during(1, TimeUnit.SECONDS).until(errorAsyncEventRef::get, nullValue());
-
-        ServletOutputStream output = responseRef.get().getOutputStream();
-
-        assertThrows(IOException.class,
-            () ->
-            {
-                // Large writes or explicit flush() must
-                // fail because the stream has been reset.
-                output.flush();
-            });
     }
 
     private static class Listener implements ReadListener, WriteListener
