@@ -660,30 +660,6 @@ public class CallbackTest
     }
 
     @Test
-    public void testFromCallbackRunnableAborted()
-    {
-        CountDownLatch success = new CountDownLatch(1);
-        CountDownLatch complete = new CountDownLatch(1);
-        AtomicReference<Throwable> failed = new AtomicReference<>();
-        Callback callback = Callback.from(Callback.from(success::countDown, failed::set), () ->
-        {
-            if (failed.get() != null)
-                complete.countDown();
-        });
-
-        Throwable abort = new Throwable();
-        callback.abort(abort);
-        assertThat(success.getCount(), is(1L));
-        assertThat(complete.getCount(), is(1L));
-        assertThat(failed.get(), nullValue());
-
-        callback.succeeded();
-        assertThat(success.getCount(), is(1L));
-        assertThat(complete.getCount(), is(0L));
-        assertThat(failed.get(), sameInstance(abort));
-    }
-
-    @Test
     public void testFromRunnableConsumerSuccess()
     {
         CountDownLatch success = new CountDownLatch(1);
@@ -715,14 +691,19 @@ public class CallbackTest
         AtomicReference<Throwable> failed = new AtomicReference<>();
         Callback callback = Callback.from(success::countDown, failed::set);
 
+        // This from is a simple stateless wrapper that always calls the methods
         Throwable abort = new Throwable();
         callback.abort(abort);
         assertThat(success.getCount(), is(1L));
-        assertThat(failed.get(), nullValue());
+        assertThat(failed.get(), sameInstance(abort));
+
+        Throwable failure = new Throwable();
+        callback.failed(failure);
+        assertThat(success.getCount(), is(1L));
+        assertThat(failed.get(), sameInstance(failure));
 
         callback.succeeded();
-        assertThat(success.getCount(), is(1L));
-        assertThat(failed.get(), sameInstance(abort));
+        assertThat(success.getCount(), is(0L));
     }
 
     @Test
