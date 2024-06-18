@@ -32,11 +32,6 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
-import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
@@ -200,19 +195,6 @@ public class AbstractTest
         if (consumer != null)
             consumer.accept(client);
         client.start();
-    }
-
-    protected MetaData.Request newRequest(String method, HttpFields fields)
-    {
-        return newRequest(method, "/", fields);
-    }
-
-    protected MetaData.Request newRequest(String method, String path, HttpFields fields)
-    {
-        String host = "localhost";
-        int port = ((NetworkConnector)connector).getLocalPort();
-        String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields, -1);
     }
 
     public AbstractConnector newConnector(Transport transport, Server server)
