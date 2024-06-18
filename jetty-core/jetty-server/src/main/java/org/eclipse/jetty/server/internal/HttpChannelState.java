@@ -1447,8 +1447,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
-    // TODO: as this is often passed to writes, it may be aborted, so handle abort.
-    private static class ChannelCallback implements Callback
+    private static class ChannelCallback extends Callback.Abstract
     {
         private final ChannelRequest _request;
         private Throwable _completedBy;
@@ -1462,7 +1461,7 @@ public class HttpChannelState implements HttpChannel, Components
          * Called when the {@link Handler} (or it's delegates) succeeds the request handling.
          */
         @Override
-        public void succeeded()
+        public void onSucceeded()
         {
             // Called when the request/response cycle is completing successfully.
             HttpStream stream;
@@ -1544,7 +1543,7 @@ public class HttpChannelState implements HttpChannel, Components
          * @param failure The reason for the failure.
          */
         @Override
-        public void failed(Throwable failure)
+        public void onFailed(Throwable failure)
         {
             try
             {
