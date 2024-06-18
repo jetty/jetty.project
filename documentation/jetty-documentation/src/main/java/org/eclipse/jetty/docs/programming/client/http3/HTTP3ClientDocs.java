@@ -257,9 +257,9 @@ public class HTTP3ClientDocs
         CompletableFuture<Stream> streamCF = session.newRequest(headersFrame, new Stream.Client.Listener()
         {
             @Override
-            public void onFailure(Stream.Client stream, long error, Throwable failure)
+            public void onFailure(Stream.Client stream, boolean remote, long error, Throwable failure)
             {
-                // The server reset this stream.
+                // The server reset this stream when remote is true.
             }
         });
         Stream stream = streamCF.get();
