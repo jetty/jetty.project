@@ -1447,6 +1447,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
+    // TODO: as this is often passed to writes, it may be aborted, so handle abort.
     private static class ChannelCallback implements Callback
     {
         private final ChannelRequest _request;

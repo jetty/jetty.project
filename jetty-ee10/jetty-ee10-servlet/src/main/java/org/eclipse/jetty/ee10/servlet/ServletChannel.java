@@ -704,6 +704,7 @@ public class ServletChannel
         try
         {
             _state.completing();
+            // TODO: handle abort.
             getServletContextResponse().write(true, getServletContextResponse().getHttpOutput().getByteBuffer(), Callback.from(() -> _state.completed(null), _state::completed));
         }
         catch (Throwable x)
