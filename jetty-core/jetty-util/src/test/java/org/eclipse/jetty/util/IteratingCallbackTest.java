@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.atomic.AtomicReference;
@@ -445,6 +444,7 @@ public class IteratingCallbackTest
             protected void onCompleted(Throwable causeOrNull)
             {
                 completed.set(causeOrNull, true);
+                super.onCompleted(causeOrNull);
             }
         };
 
@@ -542,6 +542,7 @@ public class IteratingCallbackTest
             protected void onCompleted(Throwable causeOrNull)
             {
                 completed.set(causeOrNull, true);
+                super.onCompleted(causeOrNull);
             }
         };
 
@@ -703,9 +704,10 @@ public class IteratingCallbackTest
         CountDownLatch processLatch = new CountDownLatch(1);
 
         AtomicReference<Throwable> onAbort = new AtomicReference<>();
-        AtomicReference<Throwable> onCompleteFailure = new AtomicReference<>();
-        AtomicBoolean onCompleteSuccess = new AtomicBoolean();
         AtomicMarkableReference<Throwable> onCompleted = new AtomicMarkableReference<>(null, false);
+
+        Throwable cause = new Throwable("abort");
+        Throwable failure = new Throwable("failure");
 
         IteratingCallback callback = new IteratingCallback()
         {
@@ -717,7 +719,7 @@ public class IteratingCallbackTest
                     if (success)
                         succeeded();
                     else
-                        failed(new Throwable("failure"));
+                        failed(failure);
                 }
 
                 if (state.contains("PENDING"))
@@ -748,18 +750,6 @@ public class IteratingCallbackTest
             }
 
             @Override
-            protected void onCompleteSuccess()
-            {
-                onCompleteSuccess.set(true);
-            }
-
-            @Override
-            protected void onCompleteFailure(Throwable cause)
-            {
-                onCompleteFailure.set(cause);
-            }
-
-            @Override
             protected void onCompleted(Throwable causeOrNull)
             {
                 onCompleted.set(causeOrNull, true);
@@ -775,7 +765,6 @@ public class IteratingCallbackTest
         assertThat(callback.toString(), containsString("[" + state + ","));
         onAbort.set(null);
 
-        Throwable cause = new Throwable("abort");
         boolean aborted = callback.abort(cause);
 
         // Check abort in completed state
@@ -783,20 +772,11 @@ public class IteratingCallbackTest
         {
             assertThat(aborted, is(false));
             assertThat(onAbort.get(), nullValue());
-            if (success == Boolean.TRUE)
-            {
-                assertThat(onCompleteFailure.get(), nullValue());
-                assertTrue(onCompleteSuccess.get());
-                assertThat(onCompleted.getReference(), nullValue());
-            }
-            else
-            {
-                assertFalse(onCompleteSuccess.get());
-                assertThat(onCompleteFailure.get(), notNullValue());
-                assertTrue(ExceptionUtil.areAssociated(onCompleteFailure.get(), cause));
-                assertTrue(ExceptionUtil.areAssociated(onCompleted.getReference(), cause));
-            }
             assertTrue(onCompleted.isMarked());
+            if (success == Boolean.TRUE)
+                assertThat(onCompleted.getReference(), nullValue());
+            else
+                assertThat(onCompleted.getReference(), notNullValue());
             return;
         }
 
@@ -826,15 +806,16 @@ public class IteratingCallbackTest
         }
 
         assertTrue(onCompleted.isMarked());
-        assertThat(onCompleted.getReference(), sameInstance(cause));
-        assertThat(onCompleteFailure.get(), sameInstance(cause));
 
-        Throwable abort = onAbort.get();
-        assertThat(abort, notNullValue());
-        if (abort != cause)
+        if (state.contains("CALLED") && !success)
         {
-            assertThat(abort.getMessage(), is("abort in process"));
-            assertTrue(ExceptionUtil.areAssociated(abort, cause));
+            assertThat(onCompleted.getReference(), sameInstance(failure));
+            assertThat(onAbort.get(), sameInstance(failure));
+        }
+        else
+        {
+            assertThat(onCompleted.getReference(), sameInstance(cause));
+            assertThat(onAbort.get(), sameInstance(cause));
         }
     }
 
@@ -887,6 +868,7 @@ public class IteratingCallbackTest
         @Override
         protected void onCompleted(Throwable causeOrNull)
         {
+            super.onCompleted(causeOrNull);
             _completed.countDown();
         }
     }

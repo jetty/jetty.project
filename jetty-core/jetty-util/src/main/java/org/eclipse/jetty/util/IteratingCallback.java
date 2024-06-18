@@ -183,16 +183,20 @@ public abstract class IteratingCallback implements Callback
 
     protected void onCompleted(Throwable causeOrNull)
     {
+        if (causeOrNull == null)
+            onCompleteSuccess();
+        else
+            onCompleteFailure(causeOrNull);
     }
 
     private void doCompleteSuccess()
     {
-        ExceptionUtil.callAndThen(this::onCompleteSuccess, () -> onCompleted(null));
+        onCompleted(null);
     }
 
     private void doCompleteFailure(Throwable cause)
     {
-        ExceptionUtil.callAndThen(cause, this::onCompleteFailure, this::onCompleted);
+        onCompleted(cause);
     }
 
     /**
@@ -597,6 +601,7 @@ public abstract class IteratingCallback implements Callback
                     onAbortDoCompleteFailure = true;
                     break;
                 }
+
                 case PROCESSING:
                 {
                     // Another thread is processing, so we just tell it the state and let it handle everything
@@ -608,8 +613,10 @@ public abstract class IteratingCallback implements Callback
                 case PROCESSING_CALLED:
                 {
                     // Another thread is processing, but we have already succeeded or failed.
-                    ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
-                    _failure = cause;
+                    if (_failure == null)
+                        _failure = cause;
+                    else
+                        ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
                     _aborted = true;
                     break;
                 }

@@ -186,23 +186,18 @@ public interface Callback extends Invocable
      */
     static Callback from(InvocationType invocationType, Runnable success, Consumer<Throwable> failure)
     {
-        return new Abstract()
+        return new Callback()
         {
             @Override
-            public void onCompleted(Throwable causeOrNull)
+            public void succeeded()
             {
-                try
-                {
-                    if (causeOrNull == null)
-                        success.run();
-                    else
-                        failure.accept(causeOrNull);
-                }
-                catch (Throwable t)
-                {
-                    ExceptionUtil.addSuppressedIfNotAssociated(t, causeOrNull);
-                    throw t;
-                }
+                success.run();
+            }
+
+            @Override
+            public void failed(Throwable cause)
+            {
+                failure.accept(cause);
             }
 
             @Override
@@ -370,6 +365,47 @@ public interface Callback extends Invocable
             public void onCompleted(Throwable causeOrNull)
             {
                 completed.run();
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Callback.from@%x{%s,%s}".formatted(hashCode(), invocationType, completed);
+            }
+        };
+    }
+
+    /**
+     * Creates a callback that runs completed when it succeeds or fails
+     *
+     * @param completed The completion to run on success or failure
+     * @return a new callback
+     */
+    static Callback from(Consumer<Throwable> completed)
+    {
+        return from(Invocable.getInvocationType(completed), completed);
+    }
+
+    /**
+     * Creates a callback that runs completed when it succeeds or fails
+     *
+     * @param completed The completion to run on success or failure
+     * @return a new callback
+     */
+    static Callback from(InvocationType invocationType, Consumer<Throwable> completed)
+    {
+        return new Abstract()
+        {
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                completed.accept(causeOrNull);
             }
 
             @Override
