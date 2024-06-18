@@ -42,6 +42,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
     private static final ByteBuffer LAST_FLAG = ByteBuffer.allocate(0);
+    private static final ByteBuffer EMPTY_WRITABLE_BUFFER = ByteBuffer.allocate(0);
 
     private final QuicSession session;
     private final long streamId;
@@ -273,7 +274,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
                 boolean reset = false;
                 try
                 {
-                    streamEndPoint.fill(BufferUtil.EMPTY_BUFFER);
+                    streamEndPoint.fill(EMPTY_WRITABLE_BUFFER);
                 }
                 catch (IOException x)
                 {
