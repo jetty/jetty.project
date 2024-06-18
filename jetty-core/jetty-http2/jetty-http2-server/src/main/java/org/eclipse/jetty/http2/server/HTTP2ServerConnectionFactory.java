@@ -156,8 +156,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
-            EofException failure = new EofException("Reset " + ErrorCode.toString(frame.getError(), null));
-            failure.initCause(new EOFException()); // reset marker
+            EOFException failure = new EOFException("Reset " + ErrorCode.toString(frame.getError(), null));
             onFailure(stream, failure, callback);
         }
 
