@@ -39,6 +39,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -264,7 +265,7 @@ public class IteratingCallbackTest
             }
 
             @Override
-            protected void onAbort(Throwable cause)
+            protected void onAborted(Throwable cause)
             {
                 abortLatch.countDown();
             }
@@ -412,45 +413,181 @@ public class IteratingCallbackTest
     }
 
     @Test
-    public void testWhenProcessingAbortSerializesOnCompleteFailure() throws Exception
+    public void testWhenPendingAbortSerializesOnCompleteFailure() throws Exception
     {
-        AtomicInteger count = new AtomicInteger();
-        CountDownLatch ocfLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> aborted = new AtomicReference<>();
+        CountDownLatch abortLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        AtomicMarkableReference<Throwable> completed = new AtomicMarkableReference<>(null, false);
+
         IteratingCallback icb = new IteratingCallback()
         {
             @Override
             protected Action process() throws Throwable
             {
-                count.incrementAndGet();
-                abort(new Exception());
-
-                // After calling abort, onCompleteFailure() must not be called yet.
-                assertFalse(ocfLatch.await(100, TimeUnit.MILLISECONDS));
-
                 return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onAborted(Throwable cause)
+            {
+                aborted.set(cause);
+                ExceptionUtil.call(abortLatch::await, Throwable::printStackTrace);
             }
 
             @Override
             protected void onCompleteFailure(Throwable cause)
             {
-                ocfLatch.countDown();
+                failure.set(cause);
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                completed.set(causeOrNull, true);
             }
         };
 
         icb.iterate();
 
-        assertEquals(1, count.get());
+        assertThat(icb.toString(), containsString("[PENDING, false,"));
 
-        assertFalse(ocfLatch.await(10, TimeUnit.MILLISECONDS));
-        assertTrue(icb.isAborted());
+        Throwable cause = new Throwable("test abort");
+        new Thread(() -> icb.abort(cause)).start();
 
-        // Calling succeeded() won't cause further iterations.
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> icb.toString().contains("[PENDING, true,"));
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> aborted.get() != null);
+
         icb.succeeded();
 
-        assertTrue(ocfLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(icb.isFailed());
-        assertTrue(icb.isAborted());
-        assertEquals(1, count.get());
+        // We are now complete, but callbacks have not yet been done
+        assertThat(icb.toString(), containsString("[COMPLETE, true,"));
+        assertThat(failure.get(), nullValue());
+        assertFalse(completed.isMarked());
+
+        abortLatch.countDown();
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(completed::isMarked);
+        assertThat(failure.get(), sameInstance(cause));
+        assertThat(completed.getReference(), sameInstance(cause));
+    }
+
+    public enum Event
+    {
+        PROCESSED,
+        ABORTED,
+        SUCCEEDED,
+        FAILED
+    }
+
+    public static Stream<List<Event>> serializedEvents()
+    {
+        return Stream.of(
+            List.of(Event.PROCESSED, Event.ABORTED, Event.SUCCEEDED),
+            List.of(Event.PROCESSED, Event.SUCCEEDED, Event.ABORTED),
+
+            List.of(Event.SUCCEEDED, Event.PROCESSED, Event.ABORTED),
+            List.of(Event.SUCCEEDED, Event.ABORTED, Event.PROCESSED),
+
+            List.of(Event.ABORTED, Event.SUCCEEDED, Event.PROCESSED),
+            List.of(Event.ABORTED, Event.PROCESSED, Event.SUCCEEDED),
+
+            List.of(Event.PROCESSED, Event.ABORTED, Event.FAILED),
+            List.of(Event.PROCESSED, Event.FAILED, Event.ABORTED),
+
+            List.of(Event.FAILED, Event.PROCESSED, Event.ABORTED),
+            List.of(Event.FAILED, Event.ABORTED, Event.PROCESSED),
+
+            List.of(Event.ABORTED, Event.FAILED, Event.PROCESSED),
+            List.of(Event.ABORTED, Event.PROCESSED, Event.FAILED)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("serializedEvents")
+    public void testSerializesProcessAbortCompletion(List<Event> events) throws Exception
+    {
+        AtomicReference<Throwable> aborted = new AtomicReference<>();
+        CountDownLatch processingLatch = new CountDownLatch(1);
+        CountDownLatch abortLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        AtomicMarkableReference<Throwable> completed = new AtomicMarkableReference<>(null, false);
+
+
+        Throwable cause = new Throwable("test abort");
+
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process() throws Throwable
+            {
+                abort(cause);
+                ExceptionUtil.call(processingLatch::await, Throwable::printStackTrace);
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onAborted(Throwable cause)
+            {
+                aborted.set(cause);
+                ExceptionUtil.call(abortLatch::await, Throwable::printStackTrace);
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                failure.set(cause);
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                completed.set(causeOrNull, true);
+            }
+        };
+
+        new Thread(icb::iterate).start();
+
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> icb.toString().contains("[PROCESSING, true,"));
+
+        // we have aborted, but onAborted not yet called
+        assertThat(aborted.get(), nullValue());
+
+        int count = 0;
+        for (Event event : events)
+        {
+            switch (event)
+            {
+                case PROCESSED ->
+                {
+                    processingLatch.countDown();
+                    // We can call aborted
+                    Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> aborted.get() != null);
+                }
+                case ABORTED ->
+                {
+                    abortLatch.countDown();
+                    Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> !icb.toString().contains("AbortingException"));
+                }
+                case SUCCEEDED -> icb.succeeded();
+
+                case FAILED -> icb.failed(new Throwable("failure"));
+            }
+
+            if (++count < 3)
+            {
+                // Not complete yet
+                assertThat(failure.get(), nullValue());
+                assertFalse(completed.isMarked());
+            }
+
+            // Extra aborts ignored
+            assertFalse(icb.abort(new Throwable("ignored")));
+        }
+
+        // When the callback is succeeded, the completion events can be called
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(completed::isMarked);
+        assertThat(failure.get(), sameInstance(cause));
+        assertThat(completed.getReference(), sameInstance(cause));
     }
 
     @Test
@@ -526,7 +663,15 @@ public class IteratingCallbackTest
             {
                 for (IteratingCallback.Action action : IteratingCallback.Action.values())
                 {
-                    if (name.contains("CALLED") || action == IteratingCallback.Action.SCHEDULED)
+                    if (name.contains("CALLED"))
+                    {
+                        if (action == IteratingCallback.Action.SCHEDULED)
+                        {
+                            tests.add(Arguments.of(name, action.toString(), Boolean.TRUE));
+                            tests.add(Arguments.of(name, action.toString(), Boolean.FALSE));
+                        }
+                    }
+                    else if (action == IteratingCallback.Action.SCHEDULED)
                     {
                         tests.add(Arguments.of(name, action.toString(), Boolean.TRUE));
                         tests.add(Arguments.of(name, action.toString(), Boolean.FALSE));
@@ -560,7 +705,7 @@ public class IteratingCallbackTest
         AtomicReference<Throwable> onAbort = new AtomicReference<>();
         AtomicReference<Throwable> onCompleteFailure = new AtomicReference<>();
         AtomicBoolean onCompleteSuccess = new AtomicBoolean();
-        AtomicBoolean onCompleted = new AtomicBoolean();
+        AtomicMarkableReference<Throwable> onCompleted = new AtomicMarkableReference<>(null, false);
 
         IteratingCallback callback = new IteratingCallback()
         {
@@ -574,9 +719,6 @@ public class IteratingCallbackTest
                     else
                         failed(new Throwable("failure"));
                 }
-
-                if (state.contains("ABORT"))
-                    abort(new Throwable("abort in process"));
 
                 if (state.contains("PENDING"))
                     return Action.SCHEDULED;
@@ -600,7 +742,7 @@ public class IteratingCallbackTest
             }
 
             @Override
-            protected void onAbort(Throwable cause)
+            protected void onAborted(Throwable cause)
             {
                 onAbort.set(cause);
             }
@@ -620,7 +762,7 @@ public class IteratingCallbackTest
             @Override
             protected void onCompleted(Throwable causeOrNull)
             {
-                onCompleted.set(true);
+                onCompleted.set(causeOrNull, true);
             }
         };
 
@@ -630,47 +772,42 @@ public class IteratingCallbackTest
         }
 
         Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> callback.toString().contains(state));
-        assertThat(callback.toString(), containsString(state));
+        assertThat(callback.toString(), containsString("[" + state + ","));
+        onAbort.set(null);
 
         Throwable cause = new Throwable("abort");
         boolean aborted = callback.abort(cause);
 
         // Check abort in completed state
-        if (state.equals("COMPLETE"))
+        if (state.equals("COMPLETE") || state.equals("CLOSED"))
         {
             assertThat(aborted, is(false));
             assertThat(onAbort.get(), nullValue());
-            if (success)
+            if (success == Boolean.TRUE)
             {
                 assertThat(onCompleteFailure.get(), nullValue());
                 assertTrue(onCompleteSuccess.get());
+                assertThat(onCompleted.getReference(), nullValue());
             }
             else
             {
                 assertFalse(onCompleteSuccess.get());
                 assertThat(onCompleteFailure.get(), notNullValue());
                 assertTrue(ExceptionUtil.areAssociated(onCompleteFailure.get(), cause));
+                assertTrue(ExceptionUtil.areAssociated(onCompleted.getReference(), cause));
             }
-            assertTrue(onCompleted.get());
+            assertTrue(onCompleted.isMarked());
             return;
         }
 
-        // Check abort in non completed states
-        if ((state.contains("CALLED") && !success) || state.equals("CLOSED"))
-            assertThat(aborted, is(false));
-        else
-            assertThat(aborted, is(true));
+        // Check abort in non completed state
+        assertThat(aborted, is(true));
 
         if (state.contains("PROCESSING"))
         {
             processLatch.countDown();
 
             Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> !callback.toString().contains("PROCESSING"));
-
-            if (state.contains("CALLED"))
-            {
-                assertTrue(onCompleted.get());
-            }
 
             if (action.equals("SCHEDULED"))
             {
@@ -688,18 +825,16 @@ public class IteratingCallbackTest
                 callback.failed(new Throwable("failure after abort"));
         }
 
-        assertTrue(onCompleted.get());
-        assertThat(onCompleteFailure.get(), notNullValue());
+        assertTrue(onCompleted.isMarked());
+        assertThat(onCompleted.getReference(), sameInstance(cause));
+        assertThat(onCompleteFailure.get(), sameInstance(cause));
 
-        if (callback.isAborted())
+        Throwable abort = onAbort.get();
+        assertThat(abort, notNullValue());
+        if (abort != cause)
         {
-            Throwable abort = onAbort.get();
-            assertThat(abort, notNullValue());
-            if (abort != cause)
-            {
-                assertThat(abort.getMessage(), is("abort in process"));
-                assertTrue(ExceptionUtil.areAssociated(abort, cause));
-            }
+            assertThat(abort.getMessage(), is("abort in process"));
+            assertTrue(ExceptionUtil.areAssociated(abort, cause));
         }
     }
 
@@ -726,7 +861,7 @@ public class IteratingCallbackTest
         }
 
         @Override
-        protected void onAbort(Throwable cause)
+        protected void onAborted(Throwable cause)
         {
             _completion.compareAndSet(null, cause, false, false);
         }

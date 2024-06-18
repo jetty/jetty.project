@@ -53,7 +53,7 @@ public abstract class IteratingNestedCallback extends IteratingCallback
     }
 
     @Override
-    protected void onAbort(Throwable cause)
+    protected void onAborted(Throwable cause)
     {
         _callback.abort(cause);
     }
