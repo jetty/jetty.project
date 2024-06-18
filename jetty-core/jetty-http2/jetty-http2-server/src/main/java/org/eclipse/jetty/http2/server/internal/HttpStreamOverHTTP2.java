@@ -587,6 +587,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Runnable onFailure(Throwable failure, boolean remote, Callback callback)
     {
+        // TODO failure.getCause() instanceof EOFException
         Runnable runnable = remote ? _httpChannel.onRemoteFailure(failure) : _httpChannel.onFailure(failure);
         return () ->
         {

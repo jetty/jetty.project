@@ -79,7 +79,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                     return new Stream.Server.Listener()
                     {
                         @Override
-                        public void onFailure(Stream.Server stream, boolean remote, long error, Throwable failure)
+                        public void onFailure(Stream.Server stream, long error, Throwable failure)
                         {
                             serverLatch.countDown();
                         }
@@ -184,7 +184,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Client.Listener()
         {
             @Override
-            public void onFailure(Stream.Client stream, boolean remote, long error, Throwable failure)
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
             {
                 // The server idle times out, but did not send any data back.
                 // However, the stream is readable and the implementation

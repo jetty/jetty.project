@@ -439,7 +439,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (stream != null)
             stream.onData(frame);
         else
-            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), false, "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
+            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
     }
 
     @Override
@@ -682,7 +682,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                     stream.reset(error, failure);
                 // Since the stream failure was generated
                 // by a GOAWAY, notify the application.
-                stream.onFailure(false, error, failure);
+                stream.onFailure(error, failure);
             });
     }
 
@@ -796,7 +796,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         failStreams(stream -> true, error, reason, false, failure);
 
         if (notifyFailure)
-            onSessionFailure(error, false, reason, failure);
+            onSessionFailure(error, reason, failure);
 
         notifyDisconnect(error, reason);
     }
@@ -814,27 +814,27 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     }
 
     @Override
-    public void onStreamFailure(long streamId, boolean remote, long error, Throwable failure)
+    public void onStreamFailure(long streamId, long error, Throwable failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("stream failure 0x{}/{} for stream #{} on {}", Long.toHexString(error), failure.getMessage(), streamId, this);
         HTTP3Stream stream = getStream(streamId);
         if (stream != null)
-            stream.onFailure(remote, error, failure);
+            stream.onFailure(error, failure);
     }
 
     @Override
-    public void onSessionFailure(long error, boolean remote, String reason, Throwable failure)
+    public void onSessionFailure(long error, String reason, Throwable failure)
     {
-        notifyFailure(error, remote, reason, failure);
+        notifyFailure(error, reason, failure);
         inwardClose(error, reason);
     }
 
-    private void notifyFailure(long error, boolean remote, String reason, Throwable failure)
+    private void notifyFailure(long error, String reason, Throwable failure)
     {
         try
         {
-            listener.onFailure(this, remote, error, reason, failure);
+            listener.onFailure(this, error, reason, failure);
         }
         catch (Throwable x)
         {

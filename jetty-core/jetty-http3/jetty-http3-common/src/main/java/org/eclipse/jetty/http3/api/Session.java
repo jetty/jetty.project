@@ -243,7 +243,7 @@ public interface Session
          * @param reason the failure reason
          * @param failure the failure
          */
-        public default void onFailure(Session session, boolean remote, long error, String reason, Throwable failure)
+        public default void onFailure(Session session, long error, String reason, Throwable failure)
         {
         }
     }

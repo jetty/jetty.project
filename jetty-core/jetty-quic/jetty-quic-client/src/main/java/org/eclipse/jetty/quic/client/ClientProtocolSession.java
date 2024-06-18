@@ -93,7 +93,7 @@ public class ClientProtocolSession extends ProtocolSession
     }
 
     @Override
-    protected void onFailure(boolean remote, long error, String reason, Throwable failure)
+    protected void onFailure(long error, String reason, Throwable failure)
     {
         outwardClose(QuicErrorCode.NO_ERROR.code(), "failure");
     }

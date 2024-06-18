@@ -204,7 +204,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
     private void failControlStream(Throwable failure)
     {
         long error = HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code();
-        onFailure(false, error, "control_stream_failure", failure);
+        onFailure(error, "control_stream_failure", failure);
     }
 
     @Override
@@ -254,9 +254,9 @@ public class ClientHTTP3Session extends ClientProtocolSession
     }
 
     @Override
-    protected void onFailure(boolean remote, long error, String reason, Throwable failure)
+    protected void onFailure(long error, String reason, Throwable failure)
     {
-        session.onSessionFailure(error, remote, reason, failure);
+        session.onSessionFailure(error, reason, failure);
     }
 
     @Override

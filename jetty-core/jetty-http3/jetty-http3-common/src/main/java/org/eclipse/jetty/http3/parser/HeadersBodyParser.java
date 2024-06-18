@@ -127,19 +127,19 @@ public class HeadersBodyParser extends BodyParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            notifyStreamFailure(streamId, false, x.getErrorCode(), x);
+            notifyStreamFailure(streamId, x.getErrorCode(), x);
         }
         catch (QpackException.SessionException x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            notifySessionFailure(x.getErrorCode(), false, x.getMessage(), x);
+            notifySessionFailure(x.getErrorCode(), x.getMessage(), x);
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            notifySessionFailure(HTTP3ErrorCode.INTERNAL_ERROR.code(), false, "internal_error", x);
+            notifySessionFailure(HTTP3ErrorCode.INTERNAL_ERROR.code(), "internal_error", x);
         }
         return false;
     }

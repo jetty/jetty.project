@@ -120,13 +120,13 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
     }
 
     @Override
-    protected void notifyFailure(boolean remote, long error, Throwable failure)
+    protected void notifyFailure(long error, Throwable failure)
     {
         Listener listener = this.listener;
         try
         {
             if (listener != null)
-                listener.onFailure(this, remote, error, failure);
+                listener.onFailure(this, error, failure);
         }
         catch (Throwable x)
         {

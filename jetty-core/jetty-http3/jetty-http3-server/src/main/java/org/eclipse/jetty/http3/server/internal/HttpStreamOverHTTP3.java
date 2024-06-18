@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -527,7 +528,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         consumer.accept(runnable, idle);
     }
 
-    public Runnable onFailure(Throwable failure, boolean remote)
+    public Runnable onFailure(Throwable failure)
     {
         try (AutoLock ignored = lock.lock())
         {
@@ -536,6 +537,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
             chunk = Content.Chunk.from(failure, true);
         }
         connection.onFailure(failure);
+
+        boolean remote = failure != null && failure.getCause() instanceof EOFException;
         return remote ? httpChannel.onRemoteFailure(failure) : httpChannel.onFailure(failure);
     }
 }

@@ -77,11 +77,11 @@ public class SessionClientListener implements Session.Client.Listener
     @Override
     public void onDisconnect(Session session, long error, String reason)
     {
-        onFailure(session, false, error, reason, new ClosedChannelException());
+        onFailure(session, error, reason, new ClosedChannelException());
     }
 
     @Override
-    public void onFailure(Session session, boolean remote, long error, String reason, Throwable failure)
+    public void onFailure(Session session, long error, String reason, Throwable failure)
     {
         if (failConnectionPromise(failure))
             return;

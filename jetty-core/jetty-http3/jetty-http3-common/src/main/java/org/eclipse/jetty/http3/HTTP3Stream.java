@@ -370,13 +370,13 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     protected abstract void notifyIdleTimeout(TimeoutException timeout, Promise<Boolean> promise);
 
-    public void onFailure(boolean remote, long error, Throwable failure)
+    public void onFailure(long error, Throwable failure)
     {
-        notifyFailure(remote, error, failure);
+        notifyFailure(error, failure);
         session.removeStream(this, failure);
     }
 
-    protected abstract void notifyFailure(boolean remote, long error, Throwable failure);
+    protected abstract void notifyFailure(long error, Throwable failure);
 
     protected boolean validateAndUpdate(EnumSet<FrameState> allowed, FrameState target)
     {
@@ -392,7 +392,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
             if (frameState == FrameState.FAILED)
                 return false;
             frameState = FrameState.FAILED;
-            session.onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), false, "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
+            session.onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
             return false;
         }
     }

@@ -86,7 +86,7 @@ public class ServerProtocolSession extends ProtocolSession
     }
 
     @Override
-    protected void onFailure(boolean remote, long error, String reason, Throwable failure)
+    protected void onFailure(long error, String reason, Throwable failure)
     {
         // TODO: should probably reset the stream if it exists.
     }

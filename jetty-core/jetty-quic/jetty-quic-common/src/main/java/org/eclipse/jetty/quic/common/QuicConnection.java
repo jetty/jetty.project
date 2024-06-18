@@ -323,7 +323,7 @@ public abstract class QuicConnection extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("process failure for {}", session, x);
-            session.onFailure(false, x);
+            session.onFailure(x);
             return null;
         }
     }

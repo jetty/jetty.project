@@ -208,9 +208,9 @@ public abstract class QuicSession extends ContainerLifeCycle
         return protocolSession.onIdleTimeout();
     }
 
-    public void onFailure(boolean remote, Throwable failure)
+    public void onFailure(Throwable failure)
     {
-        protocolSession.onFailure(remote, QuicErrorCode.NO_ERROR.code(), "failure", failure);
+        protocolSession.onFailure(QuicErrorCode.NO_ERROR.code(), "failure", failure);
     }
 
     /**

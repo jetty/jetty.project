@@ -190,7 +190,7 @@ public class GoAwayTest extends AbstractClientServerTest
                 clientSession.newRequest(new HeadersFrame(newRequest("/2"), true), new Stream.Client.Listener()
                 {
                     @Override
-                    public void onFailure(Stream.Client stream, boolean remote, long error, Throwable failure)
+                    public void onFailure(Stream.Client stream, long error, Throwable failure)
                     {
                         streamFailureLatch.countDown();
                     }
@@ -948,7 +948,7 @@ public class GoAwayTest extends AbstractClientServerTest
         clientSession.newRequest(new HeadersFrame(newRequest("/"), false), new Stream.Client.Listener()
         {
             @Override
-            public void onFailure(Stream.Client stream, boolean remote, long error, Throwable failure)
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
             {
                 clientFailureLatch.countDown();
             }
@@ -1038,7 +1038,7 @@ public class GoAwayTest extends AbstractClientServerTest
         clientSession.newRequest(new HeadersFrame(newRequest("/"), false), new Stream.Client.Listener()
         {
             @Override
-            public void onFailure(Stream.Client stream, boolean remote, long error, Throwable failure)
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
             {
                 streamFailureLatch.countDown();
             }
@@ -1110,7 +1110,7 @@ public class GoAwayTest extends AbstractClientServerTest
         clientSession.newRequest(new HeadersFrame(newRequest("/"), false), new Stream.Client.Listener()
         {
             @Override
-            public void onFailure(Stream.Client stream, boolean remote, long error, Throwable failure)
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
             {
                 clientFailureLatch.countDown();
             }

@@ -92,11 +92,11 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onFailure(Session session, boolean remote, long error, String reason, Throwable failure)
+        public void onFailure(Session session, long error, String reason, Throwable failure)
         {
             session.getStreams().stream()
                 .map(stream -> (HTTP3Stream)stream)
-                .forEach(stream -> stream.onFailure(remote, error, failure));
+                .forEach(stream -> stream.onFailure(error, failure));
         }
     }
 
@@ -165,10 +165,10 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onFailure(Stream.Server stream, boolean remote, long error, Throwable failure)
+        public void onFailure(Stream.Server stream, long error, Throwable failure)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            Runnable task = getConnection().onFailure((HTTP3Stream)stream, remote, failure);
+            Runnable task = getConnection().onFailure((HTTP3Stream)stream, failure);
             if (task != null)
             {
                 ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();

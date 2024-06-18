@@ -154,7 +154,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
     }
 
     @Override
-    public void onFailure(Stream.Client stream, boolean remote, long error, Throwable failure)
+    public void onFailure(Stream.Client stream, long error, Throwable failure)
     {
         responseFailure(failure, Promise.noop());
     }

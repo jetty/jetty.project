@@ -253,11 +253,10 @@ public interface Stream
              * the stream has been reset.</p>
              *
              * @param stream the stream
-             * @param remote true if the error comes from a remote notification
              * @param error the failure error
              * @param failure the cause of the failure
              */
-            public default void onFailure(Stream.Client stream, boolean remote, long error, Throwable failure)
+            public default void onFailure(Stream.Client stream, long error, Throwable failure)
             {
             }
         }
@@ -370,11 +369,10 @@ public interface Stream
              * the stream has been reset.</p>
              *
              * @param stream the stream
-             * @param remote true if the error comes from a remote notification
              * @param error the failure error
              * @param failure the cause of the failure
              */
-            public default void onFailure(Server stream, boolean remote, long error, Throwable failure)
+            public default void onFailure(Stream.Server stream, long error, Throwable failure)
             {
             }
         }

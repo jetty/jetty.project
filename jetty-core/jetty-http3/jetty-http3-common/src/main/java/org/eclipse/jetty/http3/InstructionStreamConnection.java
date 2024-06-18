@@ -109,28 +109,28 @@ public abstract class InstructionStreamConnection extends AbstractConnection imp
         }
         catch (QpackException.SessionException x)
         {
-            fail(x.getErrorCode(), false, x.getMessage(), x);
+            fail(x.getErrorCode(), x.getMessage(), x);
         }
         catch (Throwable x)
         {
-            fail(HTTP3ErrorCode.INTERNAL_ERROR.code(), false, "internal_error", x);
+            fail(HTTP3ErrorCode.INTERNAL_ERROR.code(), "internal_error", x);
         }
     }
 
-    private void fail(long errorCode, boolean remote, String message, Throwable failure)
+    private void fail(long errorCode, String message, Throwable failure)
     {
         buffer.release();
         buffer = null;
         if (LOG.isDebugEnabled())
             LOG.debug("could not process instruction stream {}", getEndPoint(), failure);
-        notifySessionFailure(errorCode, remote, message, failure);
+        notifySessionFailure(errorCode, message, failure);
     }
 
-    protected void notifySessionFailure(long error, boolean remote, String reason, Throwable failure)
+    protected void notifySessionFailure(long error, String reason, Throwable failure)
     {
         try
         {
-            listener.onSessionFailure(error, remote, reason, failure);
+            listener.onSessionFailure(error, reason, failure);
         }
         catch (Throwable x)
         {

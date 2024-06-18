@@ -78,10 +78,10 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         httpStream.onIdleTimeout(timeout, consumer);
     }
 
-    public Runnable onFailure(HTTP3Stream stream, boolean remote, Throwable failure)
+    public Runnable onFailure(HTTP3Stream stream, Throwable failure)
     {
         HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
-        return httpStream.onFailure(failure, remote);
+        return httpStream.onFailure(failure);
     }
 
     void offer(Runnable task)
