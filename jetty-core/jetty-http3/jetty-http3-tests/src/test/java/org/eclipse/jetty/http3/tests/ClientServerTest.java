@@ -492,7 +492,7 @@ public class ClientServerTest extends AbstractClientServerTest
         clientSession.newRequest(new HeadersFrame(newRequest("/large"), true), new Stream.Client.Listener()
             {
                 @Override
-                public void onFailure(Stream.Client stream, long error, Throwable failure)
+                public void onFailure(Stream.Client stream, boolean remote, long error, Throwable failure)
                 {
                     streamFailureLatch.countDown();
                 }
