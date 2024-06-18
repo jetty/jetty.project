@@ -147,7 +147,7 @@ public class MessageParser
                                 // SPEC: control frames on a message stream are invalid.
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("invalid control frame type {} on message stream", Long.toHexString(frameType));
-                                sessionFailure(buffer, false, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(),"invalid_frame_type", new IOException("invalid control frame in message stream"));
+                                sessionFailure(buffer, false, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type", new IOException("invalid control frame in message stream"));
                                 return Result.NO_FRAME;
                             }
 

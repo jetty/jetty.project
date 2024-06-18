@@ -439,7 +439,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (stream != null)
             stream.onData(frame);
         else
-            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), false,"invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
+            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), false, "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
     }
 
     @Override
