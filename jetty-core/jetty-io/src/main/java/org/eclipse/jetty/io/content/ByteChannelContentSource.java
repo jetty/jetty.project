@@ -57,7 +57,7 @@ public class ByteChannelContentSource implements Content.Source
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
     {
         this(byteBufferPool, (ByteChannel)seekableByteChannel, offset, length);
-        if (offset > 0 && seekableByteChannel != null)
+        if (offset >= 0 && seekableByteChannel != null)
         {
             try
             {
@@ -117,10 +117,11 @@ public class ByteChannelContentSource implements Content.Source
             ExceptionUtil.run(demandCallback, this::fail);
     }
 
-    private void checkOpenLocked()
+    private void lockedCheckOpen()
     {
-        if (_terminal == null)
+        if (_terminal == null || !Content.Chunk.isFailure(_terminal) && _terminal.isLast())
         {
+            _terminal = null;
             if (_byteChannel == null || !_byteChannel.isOpen())
             {
                 try
@@ -150,7 +151,7 @@ public class ByteChannelContentSource implements Content.Source
     {
         try (AutoLock ignored = lock.lock())
         {
-            checkOpenLocked();
+            lockedCheckOpen();
             if (_terminal != null)
                 return _terminal;
 
@@ -231,7 +232,7 @@ public class ByteChannelContentSource implements Content.Source
     {
         try (AutoLock ignored = lock.lock())
         {
-            checkOpenLocked();
+            lockedCheckOpen();
             if (_terminal != null || _byteChannel == null || !_byteChannel.isOpen())
                 return false;
 

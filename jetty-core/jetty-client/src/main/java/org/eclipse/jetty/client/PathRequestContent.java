@@ -75,7 +75,7 @@ public class PathRequestContent extends ByteChannelContentSource.PathContentSour
     /**
      * @deprecated Use the {@link ByteBufferPool.Sized} in a constructor
      */
-    @Deprecated (forRemoval = true)
+    @Deprecated (forRemoval = true, since = "12.0.11")
     public void setUseDirectByteBuffers()
     {
     }

@@ -34,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentCopierTest
 {
-
     @Test
     public void testSimpleCopy() throws Exception
     {

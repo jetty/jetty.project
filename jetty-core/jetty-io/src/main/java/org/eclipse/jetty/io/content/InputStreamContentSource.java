@@ -89,7 +89,7 @@ public class InputStreamContentSource implements Content.Source
      * @param useDirectByteBuffers {@code true} if direct buffers will be used.
      * @deprecated Use {@link InputStreamContentSource#InputStreamContentSource(InputStream, ByteBufferPool.Sized)}
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(forRemoval = true, since = "12.0.11")
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
         try (AutoLock ignored = lock.lock())

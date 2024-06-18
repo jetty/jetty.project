@@ -303,7 +303,7 @@ public class ExceptionUtil
         return t1;
     }
 
-    public static void callThen(Throwable cause, Consumer<Throwable> first, Consumer<Throwable> second)
+    public static void callAndThen(Throwable cause, Consumer<Throwable> first, Consumer<Throwable> second)
     {
         try
         {
@@ -319,7 +319,7 @@ public class ExceptionUtil
         }
     }
 
-    public static void callThen(Throwable cause, Consumer<Throwable> first, Runnable second)
+    public static void callAndThen(Throwable cause, Consumer<Throwable> first, Runnable second)
     {
         try
         {
@@ -335,7 +335,7 @@ public class ExceptionUtil
         }
     }
 
-    public static void callThen(Runnable first, Runnable second)
+    public static void callAndThen(Runnable first, Runnable second)
     {
         try
         {
