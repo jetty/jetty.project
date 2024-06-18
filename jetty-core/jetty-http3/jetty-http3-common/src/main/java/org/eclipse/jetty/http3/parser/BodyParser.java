@@ -87,11 +87,11 @@ public abstract class BodyParser
         }
     }
 
-    protected void notifyStreamFailure(long streamId, long error, Throwable failure)
+    protected void notifyStreamFailure(long streamId, boolean remote, long error, Throwable failure)
     {
         try
         {
-            listener.onStreamFailure(streamId, error, failure);
+            listener.onStreamFailure(streamId, remote, error, failure);
         }
         catch (Throwable x)
         {

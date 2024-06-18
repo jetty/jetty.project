@@ -127,7 +127,7 @@ public class HeadersBodyParser extends BodyParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            notifyStreamFailure(streamId, x.getErrorCode(), x);
+            notifyStreamFailure(streamId, false, x.getErrorCode(), x);
         }
         catch (QpackException.SessionException x)
         {

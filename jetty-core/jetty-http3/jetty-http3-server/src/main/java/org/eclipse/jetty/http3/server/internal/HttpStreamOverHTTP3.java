@@ -527,7 +527,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         consumer.accept(runnable, idle);
     }
 
-    public Runnable onFailure(Throwable failure)
+    public Runnable onFailure(Throwable failure, boolean remote)
     {
         try (AutoLock ignored = lock.lock())
         {
@@ -536,6 +536,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
             chunk = Content.Chunk.from(failure, true);
         }
         connection.onFailure(failure);
-        return httpChannel.onFailure(failure);
+        return remote ? httpChannel.onRemoteFailure(failure) : httpChannel.onFailure(failure);
     }
 }

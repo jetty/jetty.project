@@ -36,7 +36,7 @@ public interface ParserListener
     {
     }
 
-    public default void onStreamFailure(long streamId, long error, Throwable failure)
+    public default void onStreamFailure(long streamId, boolean remote, long error, Throwable failure)
     {
     }
 
@@ -72,9 +72,9 @@ public interface ParserListener
         }
 
         @Override
-        public void onStreamFailure(long streamId, long error, Throwable failure)
+        public void onStreamFailure(long streamId, boolean remote, long error, Throwable failure)
         {
-            listener.onStreamFailure(streamId, error, failure);
+            listener.onStreamFailure(streamId, remote, error, failure);
         }
 
         @Override

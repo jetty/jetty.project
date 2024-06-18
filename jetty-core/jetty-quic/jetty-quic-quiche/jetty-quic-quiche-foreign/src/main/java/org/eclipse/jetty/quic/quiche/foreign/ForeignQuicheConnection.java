@@ -14,6 +14,7 @@
 package org.eclipse.jetty.quic.quiche.foreign;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -926,6 +927,8 @@ public class ForeignQuicheConnection extends QuicheConnection
 
             if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
+            if (read == quiche_error.QUICHE_ERR_STREAM_RESET)
+                throw new EOFException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             if (read < 0L)
                 throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             buffer.position((int)(buffer.position() + read));

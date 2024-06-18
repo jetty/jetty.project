@@ -682,7 +682,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                     stream.reset(error, failure);
                 // Since the stream failure was generated
                 // by a GOAWAY, notify the application.
-                stream.onFailure(error, failure);
+                stream.onFailure(false, error, failure);
             });
     }
 
@@ -814,13 +814,13 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     }
 
     @Override
-    public void onStreamFailure(long streamId, long error, Throwable failure)
+    public void onStreamFailure(long streamId, boolean remote, long error, Throwable failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("stream failure 0x{}/{} for stream #{} on {}", Long.toHexString(error), failure.getMessage(), streamId, this);
         HTTP3Stream stream = getStream(streamId);
         if (stream != null)
-            stream.onFailure(error, failure);
+            stream.onFailure(remote, error, failure);
     }
 
     @Override

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -150,8 +151,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
             getEndPoint().close(error, x);
             // Notify the application that a failure happened.
-            parser.getListener().onStreamFailure(getEndPoint().getStreamId(), error, x);
+            parser.getListener().onStreamFailure(getEndPoint().getStreamId(), isReset(x), error, x);
         }
+    }
+
+    private static boolean isReset(Throwable x)
+    {
+        return x.getCause() instanceof EOFException;
     }
 
     private void processNonDataFrames()
@@ -238,7 +244,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
             getEndPoint().close(error, x);
             // Notify the application that a failure happened.
-            parser.getListener().onStreamFailure(getEndPoint().getStreamId(), error, x);
+            parser.getListener().onStreamFailure(getEndPoint().getStreamId(), isReset(x), error, x);
         }
     }
 
