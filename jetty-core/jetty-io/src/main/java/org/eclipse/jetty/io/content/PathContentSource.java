@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -36,16 +35,18 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 /**
  * <p>A {@link Content.Source} that provides the file content of the passed {@link Path}.</p>
- * @deprecated use {@link ByteChannelContentSource.PathContentSource}
  */
-@Deprecated(forRemoval = true)
 public class PathContentSource implements Content.Source
 {
+    // TODO in 12.1.x reimplement this class based on ByteChannelContentSource
+
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final Path path;
     private final long length;
-    private ByteBufferPool.Sized byteBufferPool;
+    private final ByteBufferPool byteBufferPool;
+    private int bufferSize;
+    private boolean useDirectByteBuffers;
     private SeekableByteChannel channel;
     private long totalRead;
     private Runnable demandCallback;
@@ -53,15 +54,20 @@ public class PathContentSource implements Content.Source
 
     public PathContentSource(Path path)
     {
-        this(path, new ByteBufferPool.Sized(null, true, 4096));
+        this(path, null, true, -1);
     }
 
     public PathContentSource(Path path, ByteBufferPool byteBufferPool)
     {
-        this(path, new ByteBufferPool.Sized(byteBufferPool, true, 4096));
+        this(path, new ByteBufferPool.Sized(byteBufferPool, true, -1));
     }
 
     public PathContentSource(Path path, ByteBufferPool.Sized byteBufferPool)
+    {
+        this(path, byteBufferPool.getWrapped(), byteBufferPool.isDirect(), byteBufferPool.getSize());
+    }
+
+    private PathContentSource(Path path, ByteBufferPool byteBufferPool, boolean direct, int bufferSize)
     {
         try
         {
@@ -71,7 +77,10 @@ public class PathContentSource implements Content.Source
                 throw new AccessDeniedException(path.toString());
             this.path = path;
             this.length = Files.size(path);
-            this.byteBufferPool = Objects.requireNonNull(byteBufferPool);
+
+            this.byteBufferPool = byteBufferPool != null ? byteBufferPool : ByteBufferPool.NON_POOLING;
+            this.useDirectByteBuffers = direct;
+            this.bufferSize = bufferSize > 0 ? bufferSize : 4096;
         }
         catch (IOException x)
         {
@@ -92,7 +101,7 @@ public class PathContentSource implements Content.Source
 
     public int getBufferSize()
     {
-        return byteBufferPool.getSize();
+        return bufferSize;
     }
 
     /**
@@ -102,16 +111,12 @@ public class PathContentSource implements Content.Source
     @Deprecated(forRemoval = true)
     public void setBufferSize(int bufferSize)
     {
-        try (AutoLock ignored = lock.lock())
-        {
-            if (bufferSize != byteBufferPool.getSize())
-                byteBufferPool = new ByteBufferPool.Sized(byteBufferPool.getWrapped(), byteBufferPool.isDirect(), bufferSize);
-        }
+        this.bufferSize = bufferSize;
     }
 
     public boolean isUseDirectByteBuffers()
     {
-        return byteBufferPool.isDirect();
+        return useDirectByteBuffers;
     }
 
     /**
@@ -121,11 +126,7 @@ public class PathContentSource implements Content.Source
     @Deprecated(forRemoval = true)
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
-        try (AutoLock ignored = lock.lock())
-        {
-            if (useDirectByteBuffers != byteBufferPool.isDirect())
-                byteBufferPool = new ByteBufferPool.Sized(byteBufferPool.getWrapped(), useDirectByteBuffers, byteBufferPool.getSize());
-        }
+        this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
     @Override
@@ -154,7 +155,7 @@ public class PathContentSource implements Content.Source
         if (!channel.isOpen())
             return Content.Chunk.EOF;
 
-        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire();
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(getBufferSize(), isUseDirectByteBuffers());
         ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
 
         int read;

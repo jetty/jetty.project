@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -289,6 +290,20 @@ public class ContentSourceTest
         source.demand(task);
         task.get(10, TimeUnit.SECONDS);
         assertThat(builder.toString(), is("oneonetwo"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("rewind")
+    public void testReadAllRewindReadAll(Content.Source source) throws Exception
+    {
+        // A raw BCCS cannot be rewound if fully consumed, as it is not able to re-open a passed in channel
+        Assumptions.assumeTrue(!(source instanceof ByteChannelContentSource) || source instanceof ByteChannelContentSource.PathContentSource);
+
+        String first = Content.Source.asString(source);
+        assertThat(first, is("onetwo"));
+        source.rewind();
+        String second = Content.Source.asString(source);
+        assertThat(second, is("onetwo"));
     }
 
     @ParameterizedTest

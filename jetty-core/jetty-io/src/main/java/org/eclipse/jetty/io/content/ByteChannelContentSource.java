@@ -65,7 +65,8 @@ public class ByteChannelContentSource implements Content.Source
             }
             catch (IOException e)
             {
-                _terminal = Content.Chunk.from(e, true);
+                // lock not needed in constructor
+                lockedSetTerminal(Content.Chunk.from(e, true));
             }
         }
     }
@@ -117,31 +118,33 @@ public class ByteChannelContentSource implements Content.Source
             ExceptionUtil.run(demandCallback, this::fail);
     }
 
-    private void lockedCheckOpen()
+    protected void lockedSetTerminal(Content.Chunk terminal)
     {
-        if (_terminal == null || !Content.Chunk.isFailure(_terminal) && _terminal.isLast())
-        {
-            _terminal = null;
-            if (_byteChannel == null || !_byteChannel.isOpen())
-            {
-                try
-                {
-                    _byteChannel = open();
-                    if (_byteChannel == null || !_byteChannel.isOpen())
-                        _terminal = Content.Chunk.from(new ClosedChannelException(), true);
-                    if (_offset > 0 && _byteChannel instanceof SeekableByteChannel seekableByteChannel)
-                        seekableByteChannel.position(_offset);
-                }
-                catch (IOException e)
-                {
-                    _terminal = Content.Chunk.from(e, true);
-                }
+        if (_terminal == null)
+            _terminal = Objects.requireNonNull(terminal);
+        else
+            ExceptionUtil.addSuppressedIfNotAssociated(_terminal.getFailure(), terminal.getFailure());
+        IO.close(_byteChannel);
+        if (_buffer != null)
+            _buffer.release();
+        _buffer = null;
+    }
 
-                if (_terminal != null && _buffer != null)
-                {
-                    _buffer.release();
-                    _buffer = null;
-                }
+    private void lockedEnsureOpenOrTerminal()
+    {
+        if (_terminal == null && (_byteChannel == null || !_byteChannel.isOpen()))
+        {
+            try
+            {
+                _byteChannel = open();
+                if (_byteChannel == null || !_byteChannel.isOpen())
+                    lockedSetTerminal(Content.Chunk.from(new ClosedChannelException(), true));
+                else if (_offset >= 0 && _byteChannel instanceof SeekableByteChannel seekableByteChannel)
+                    seekableByteChannel.position(_offset);
+            }
+            catch (IOException e)
+            {
+                lockedSetTerminal(Content.Chunk.from(e, true));
             }
         }
     }
@@ -151,7 +154,7 @@ public class ByteChannelContentSource implements Content.Source
     {
         try (AutoLock ignored = lock.lock())
         {
-            lockedCheckOpen();
+            lockedEnsureOpenOrTerminal();
             if (_terminal != null)
                 return _terminal;
 
@@ -178,26 +181,19 @@ public class ByteChannelContentSource implements Content.Source
                 if (read > 0)
                 {
                     _totalRead += read;
+                    _buffer.retain();
                     if (_length < 0 || _totalRead < _length)
-                    {
-                        _buffer.retain();
                         return Content.Chunk.asChunk(byteBuffer, false, _buffer);
-                    }
 
-                    _terminal = Content.Chunk.EOF;
-                    IO.close(_byteChannel);
                     Content.Chunk last = Content.Chunk.asChunk(byteBuffer, true, _buffer);
-                    _buffer = null;
+                    lockedSetTerminal(Content.Chunk.EOF);
                     return last;
                 }
-                _buffer.release();
-                _buffer = null;
-                _terminal = Content.Chunk.EOF;
-                IO.close(_byteChannel);
+                lockedSetTerminal(Content.Chunk.EOF);
             }
             catch (Throwable t)
             {
-                _terminal = Content.Chunk.from(t, true);
+                lockedSetTerminal(Content.Chunk.from(t, true));
             }
         }
         return _terminal;
@@ -208,16 +204,7 @@ public class ByteChannelContentSource implements Content.Source
     {
         try (AutoLock ignored = lock.lock())
         {
-            if (_terminal == null)
-                _terminal = Content.Chunk.from(failure, true);
-            else
-                ExceptionUtil.addSuppressedIfNotAssociated(_terminal.getFailure(), failure);
-            IO.close(_byteChannel);
-            if (_buffer != null)
-            {
-                _buffer.release();
-                _buffer = null;
-            }
+            lockedSetTerminal(Content.Chunk.from(failure, true));
         }
     }
 
@@ -232,7 +219,11 @@ public class ByteChannelContentSource implements Content.Source
     {
         try (AutoLock ignored = lock.lock())
         {
-            lockedCheckOpen();
+            // We can remove terminal condition for a rewind that is likely to occur
+            if (_terminal != null && !Content.Chunk.isFailure(_terminal) && (_byteChannel == null || _byteChannel instanceof SeekableByteChannel))
+                _terminal = null;
+
+            lockedEnsureOpenOrTerminal();
             if (_terminal != null || _byteChannel == null || !_byteChannel.isOpen())
                 return false;
 
@@ -246,7 +237,7 @@ public class ByteChannelContentSource implements Content.Source
                 }
                 catch (Throwable t)
                 {
-                    _terminal = Content.Chunk.from(t, true);
+                    lockedSetTerminal(Content.Chunk.from(t, true));
                 }
             }
             return false;
@@ -255,7 +246,9 @@ public class ByteChannelContentSource implements Content.Source
 
     /**
      * A {@link ByteChannelContentSource} for a {@link Path}
+     * @deprecated To be replaced by an updated {@link org.eclipse.jetty.io.content.PathContentSource} in 12.1.0
      */
+    @Deprecated(forRemoval = true, since = "12.0.11")
     public static class PathContentSource extends ByteChannelContentSource
     {
         private final Path _path;

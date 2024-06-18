@@ -94,7 +94,8 @@ public interface ByteBufferPool
     }
 
     /**
-     * A ByteBufferPool for a specific size and type of buffer
+     * A ByteBufferPool with an additional no-args {@link #acquire()} method to obtain a buffer of a
+     * preconfigured specific size and type.
      */
     class Sized extends Wrapper
     {
@@ -102,7 +103,7 @@ public interface ByteBufferPool
         private final int _size;
 
         /**
-         * Create a sized pool for non direct buffers of a default size
+         * Create a sized pool for non direct buffers of a default size from a wrapped pool.
          * @param wrapped The actual {@link ByteBufferPool}
          */
         public Sized(ByteBufferPool wrapped)
@@ -111,7 +112,7 @@ public interface ByteBufferPool
         }
 
         /**
-         * Create a sized pool for a give directness and size
+         * Create a sized pool for a give directness and size from a wrapped pool.
          * @param wrapped The actual {@link ByteBufferPool}
          * @param direct {@code true} for direct buffers.
          * @param size The specified size in bytes of the buffer, or -1 for a default
@@ -134,7 +135,7 @@ public interface ByteBufferPool
         }
 
         /**
-         * @return A {@link RetainableByteBuffer} suitable for the specified size and type.
+         * @return A {@link RetainableByteBuffer} suitable for the specified preconfigured size and type.
          */
         public RetainableByteBuffer acquire()
         {

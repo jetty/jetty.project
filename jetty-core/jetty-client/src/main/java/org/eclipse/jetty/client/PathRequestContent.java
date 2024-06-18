@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.content.ByteChannelContentSource;
+import org.eclipse.jetty.io.content.PathContentSource;
 
 /**
  * <p>A {@link Request.Content} for files using JDK 7's {@code java.nio.file} APIs.</p>
@@ -26,7 +26,7 @@ import org.eclipse.jetty.io.content.ByteChannelContentSource;
  * {@link ByteBufferPool} from which {@code ByteBuffer}s will be acquired
  * to read from the {@code Path}.</p>
  */
-public class PathRequestContent extends ByteChannelContentSource.PathContentSource implements Request.Content
+public class PathRequestContent extends PathContentSource implements Request.Content
 {
     private final String contentType;
 
@@ -42,27 +42,24 @@ public class PathRequestContent extends ByteChannelContentSource.PathContentSour
 
     public PathRequestContent(String contentType, Path filePath) throws IOException
     {
-        this(contentType, filePath, new ByteBufferPool.Sized(null));
+        this(contentType, filePath, 4096);
     }
 
     public PathRequestContent(String contentType, Path filePath, int bufferSize) throws IOException
     {
-        this(contentType, filePath, new ByteBufferPool.Sized(null, false, bufferSize));
+        this(contentType, filePath, null);
+        setBufferSize(bufferSize);
     }
 
     public PathRequestContent(String contentType, Path filePath, ByteBufferPool bufferPool) throws IOException
     {
-        this(contentType, filePath, new ByteBufferPool.Sized(bufferPool));
-    }
-
-    public PathRequestContent(String contentType, Path filePath, ByteBufferPool bufferPool, boolean direct, int bufferSize) throws IOException
-    {
-        this(contentType, filePath, new ByteBufferPool.Sized(bufferPool, direct, bufferSize));
+        super(filePath, bufferPool);
+        this.contentType = contentType;
     }
 
     public PathRequestContent(String contentType, Path filePath, ByteBufferPool.Sized bufferPool) throws IOException
     {
-        super(bufferPool, filePath);
+        super(filePath, bufferPool);
         this.contentType = contentType;
     }
 
@@ -70,21 +67,5 @@ public class PathRequestContent extends ByteChannelContentSource.PathContentSour
     public String getContentType()
     {
         return contentType;
-    }
-
-    /**
-     * @deprecated Use the {@link ByteBufferPool.Sized} in a constructor
-     */
-    @Deprecated (forRemoval = true, since = "12.0.11")
-    public void setUseDirectByteBuffers()
-    {
-    }
-
-    /**
-     * @deprecated Use the {@link ByteBufferPool.Sized} in a constructor
-     */
-    @Deprecated (forRemoval = true)
-    public void setBufferSize(int bufferSize)
-    {
     }
 }
