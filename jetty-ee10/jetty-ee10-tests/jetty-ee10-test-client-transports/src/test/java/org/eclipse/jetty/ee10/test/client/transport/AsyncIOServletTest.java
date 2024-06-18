@@ -56,19 +56,13 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.ee10.servlet.HttpOutput;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
-import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
-import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -84,7 +78,6 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -1545,15 +1538,27 @@ public class AsyncIOServletTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    public void testStartAsyncThenClientResetRemoteErrorNotification(boolean notify) throws Exception
+    @MethodSource("transportsWithStreams")
+    public void testStartAsyncThenClientResetRemoteErrorDoesNotify(Transport transport) throws Exception
+    {
+        testStartAsyncThenClientResetRemoteErrorNotification(transport, true);
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsWithStreams")
+    public void testStartAsyncThenClientResetRemoteErrorDoesNotNotify(Transport transport) throws Exception
+    {
+        testStartAsyncThenClientResetRemoteErrorNotification(transport, false);
+    }
+
+    private void testStartAsyncThenClientResetRemoteErrorNotification(Transport transport, boolean notify) throws Exception
     {
         httpConfig.setNotifyRemoteAsyncErrors(notify);
 
         AtomicReference<AsyncEvent> errorAsyncEventRef = new AtomicReference<>();
         AtomicReference<HttpServletResponse> responseRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        start(Transport.H2C, new HttpServlet()
+        start(transport, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -1588,18 +1593,13 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        Session session = newHttp2ClientSession(new Session.Listener() {});
-        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-        HeadersFrame frame = new HeadersFrame(metaData, null, true);
-        FuturePromise<Stream> promise = new FuturePromise<>();
-        session.newStream(frame, promise, null);
-        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        long streamId = newRequestOnStream(transport);
 
         // Wait for the server to be in ASYNC_WAIT.
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         sleep(500);
 
-        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        resetStream(transport, streamId);
 
         if (notify)
             // Wait for the reset to be notified to the async context listener.
