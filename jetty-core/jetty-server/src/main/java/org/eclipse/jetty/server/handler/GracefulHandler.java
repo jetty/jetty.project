@@ -145,6 +145,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
             _requests.decrement();
             if (isShutdown())
                 _shutdown.check();
+            super.onCompleted(cause);
         }
     }
 }

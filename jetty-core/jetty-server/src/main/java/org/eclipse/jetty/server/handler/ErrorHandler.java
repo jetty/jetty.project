@@ -593,6 +593,7 @@ public class ErrorHandler implements Request.Handler
         protected void onCompleted(Throwable cause)
         {
             _retainable.release();
+            super.onCompleted(cause);
         }
     }
 }
