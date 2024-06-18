@@ -34,6 +34,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -538,7 +539,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }
         connection.onFailure(failure);
 
-        boolean remote = failure != null && failure.getCause() instanceof EOFException;
-        return remote ? httpChannel.onRemoteFailure(failure) : httpChannel.onFailure(failure);
+        boolean remote = failure instanceof EOFException;
+        return remote ? httpChannel.onRemoteFailure(new EofException(failure)) : httpChannel.onFailure(failure);
     }
 }

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -266,23 +267,25 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         }
         else
         {
-            QuicStreamEndPoint streamEndPoint = getQuicSession().getStreamEndPoint(streamId);
-            if (streamEndPoint.isStreamFinished())
+            if (isStreamFinished())
             {
-                // Check if the stream was finished because of a reset frame.
-                Throwable x = null;
+                // Check if the stream was finished normally.
                 try
                 {
-                    streamEndPoint.fill(EMPTY_WRITABLE_BUFFER);
+                    fill(EMPTY_WRITABLE_BUFFER);
                 }
-                catch (IOException ioe)
+                catch (EOFException x)
                 {
-                    x = ioe;
+                    // Got reset.
+                    getFillInterest().onFail(x);
+                    getQuicSession().onFailure(x);
                 }
-
-                EofException e = new EofException(x);
-                streamEndPoint.getFillInterest().onFail(e);
-                streamEndPoint.getQuicSession().onFailure(e);
+                catch (Throwable x)
+                {
+                    EofException e = new EofException(x);
+                    getFillInterest().onFail(e);
+                    getQuicSession().onFailure(e);
+                }
             }
         }
         return interested;
