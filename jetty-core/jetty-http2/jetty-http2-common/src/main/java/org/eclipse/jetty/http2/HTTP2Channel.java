@@ -63,7 +63,7 @@ public interface HTTP2Channel
         // TODO: can it be simplified? The callback seems to only be succeeded, which
         //  means it can be converted into a Runnable which may just be the return type
         //  so we can get rid of the Callback parameter.
-        public Runnable onFailure(Throwable failure, boolean remote, Callback callback);
+        public Runnable onFailure(Throwable failure, Callback callback);
 
         // TODO: is this needed?
         public boolean isIdle();

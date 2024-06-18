@@ -67,10 +67,10 @@ public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     }
 
     @Override
-    public Runnable onFailure(Throwable failure, boolean remote, Callback callback)
+    public Runnable onFailure(Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}failure on {}", remote ? "remote " : "", this, failure);
+            LOG.debug("failure on {}", this, failure);
         processFailure(failure);
         close(failure);
         return callback::succeeded;

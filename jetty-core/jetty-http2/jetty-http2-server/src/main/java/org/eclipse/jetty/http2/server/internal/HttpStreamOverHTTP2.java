@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.server.internal;
 
+import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
@@ -585,9 +586,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public Runnable onFailure(Throwable failure, boolean remote, Callback callback)
+    public Runnable onFailure(Throwable failure, Callback callback)
     {
-        // TODO failure.getCause() instanceof EOFException
+        boolean remote = failure != null && failure.getCause() instanceof EOFException;
         Runnable runnable = remote ? _httpChannel.onRemoteFailure(failure) : _httpChannel.onFailure(failure);
         return () ->
         {

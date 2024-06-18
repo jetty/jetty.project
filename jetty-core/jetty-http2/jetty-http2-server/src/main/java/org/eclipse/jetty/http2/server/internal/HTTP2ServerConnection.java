@@ -194,14 +194,14 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
     }
 
-    public void onStreamFailure(Stream stream, Throwable failure, boolean remote, Callback callback)
+    public void onStreamFailure(Stream stream, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Processing {}stream failure on {}", remote ? "remote " : "", stream, failure);
+            LOG.debug("Processing stream failure on {}", stream, failure);
         HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
         if (channel != null)
         {
-            Runnable task = channel.onFailure(failure, remote, callback);
+            Runnable task = channel.onFailure(failure, callback);
             if (task != null)
             {
                 // We must dispatch to another thread because the task
