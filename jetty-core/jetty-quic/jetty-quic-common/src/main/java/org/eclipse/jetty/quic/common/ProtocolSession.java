@@ -146,7 +146,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         return true;
     }
 
-    protected void onFailure(long error, String reason, Throwable failure)
+    protected void onFailure(boolean remote, long error, String reason, Throwable failure)
     {
     }
 

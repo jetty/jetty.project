@@ -392,7 +392,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
             if (frameState == FrameState.FAILED)
                 return false;
             frameState = FrameState.FAILED;
-            session.onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
+            session.onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), false, "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
             return false;
         }
     }

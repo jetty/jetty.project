@@ -66,20 +66,20 @@ public abstract class BodyParser
 
     protected void emptyBody(ByteBuffer buffer)
     {
-        sessionFailure(buffer, HTTP3ErrorCode.PROTOCOL_ERROR.code(), "invalid_frame", new IOException("invalid empty body frame"));
+        sessionFailure(buffer, HTTP3ErrorCode.PROTOCOL_ERROR.code(), false, "invalid_frame", new IOException("invalid empty body frame"));
     }
 
-    protected void sessionFailure(ByteBuffer buffer, long error, String reason, Throwable failure)
+    protected void sessionFailure(ByteBuffer buffer, long error, boolean remote, String reason, Throwable failure)
     {
         BufferUtil.clear(buffer);
-        notifySessionFailure(error, reason, failure);
+        notifySessionFailure(error, remote, reason, failure);
     }
 
-    protected void notifySessionFailure(long error, String reason, Throwable failure)
+    protected void notifySessionFailure(long error, boolean remote, String reason, Throwable failure)
     {
         try
         {
-            listener.onSessionFailure(error, reason, failure);
+            listener.onSessionFailure(error, remote, reason, failure);
         }
         catch (Throwable x)
         {

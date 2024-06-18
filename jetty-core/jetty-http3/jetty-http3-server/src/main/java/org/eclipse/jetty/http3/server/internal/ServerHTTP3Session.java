@@ -203,7 +203,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
     private void failControlStream(Throwable failure)
     {
         long error = HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code();
-        onFailure(error, "control_stream_failure", failure);
+        onFailure(false, error, "control_stream_failure", failure);
     }
 
     private QuicStreamEndPoint openInstructionEndPoint(long streamId)
@@ -246,9 +246,9 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    protected void onFailure(long error, String reason, Throwable failure)
+    protected void onFailure(boolean remote, long error, String reason, Throwable failure)
     {
-        session.onSessionFailure(HTTP3ErrorCode.NO_ERROR.code(), "failure", failure);
+        session.onSessionFailure(HTTP3ErrorCode.NO_ERROR.code(), remote, "failure", failure);
     }
 
     @Override

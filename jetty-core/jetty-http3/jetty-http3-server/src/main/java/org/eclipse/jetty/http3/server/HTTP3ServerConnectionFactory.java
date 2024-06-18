@@ -92,11 +92,11 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onFailure(Session session, long error, String reason, Throwable failure)
+        public void onFailure(Session session, boolean remote, long error, String reason, Throwable failure)
         {
             session.getStreams().stream()
                 .map(stream -> (HTTP3Stream)stream)
-                .forEach(stream -> stream.onFailure(false, error, failure));
+                .forEach(stream -> stream.onFailure(remote, error, failure));
         }
     }
 

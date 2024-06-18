@@ -919,9 +919,12 @@ public class ForeignQuicheConnection extends QuicheConnection
                     MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
                     read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin);
 
-                    int prevPosition = buffer.position();
-                    buffer.put(bufferSegment.asByteBuffer().limit((int)read));
-                    buffer.position(prevPosition);
+                    if (read > 0)
+                    {
+                        int prevPosition = buffer.position();
+                        buffer.put(bufferSegment.asByteBuffer().limit((int)read));
+                        buffer.position(prevPosition);
+                    }
                 }
             }
 

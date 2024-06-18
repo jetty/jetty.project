@@ -439,7 +439,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (stream != null)
             stream.onData(frame);
         else
-            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
+            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), false,"invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
     }
 
     @Override
@@ -796,7 +796,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         failStreams(stream -> true, error, reason, false, failure);
 
         if (notifyFailure)
-            onSessionFailure(error, reason, failure);
+            onSessionFailure(error, false, reason, failure);
 
         notifyDisconnect(error, reason);
     }
@@ -824,17 +824,17 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     }
 
     @Override
-    public void onSessionFailure(long error, String reason, Throwable failure)
+    public void onSessionFailure(long error, boolean remote, String reason, Throwable failure)
     {
-        notifyFailure(error, reason, failure);
+        notifyFailure(error, remote, reason, failure);
         inwardClose(error, reason);
     }
 
-    private void notifyFailure(long error, String reason, Throwable failure)
+    private void notifyFailure(long error, boolean remote, String reason, Throwable failure)
     {
         try
         {
-            listener.onFailure(this, error, reason, failure);
+            listener.onFailure(this, remote, error, reason, failure);
         }
         catch (Throwable x)
         {

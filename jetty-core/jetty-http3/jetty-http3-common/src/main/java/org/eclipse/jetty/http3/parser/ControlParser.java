@@ -88,7 +88,7 @@ public class ControlParser
                                 // SPEC: message frames on the control stream are invalid.
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("invalid message frame type {} on control stream", Long.toHexString(frameType));
-                                sessionFailure(buffer, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type", new IOException("invalid message frame on control stream"));
+                                sessionFailure(buffer, false, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type", new IOException("invalid message frame on control stream"));
                                 return;
                             }
 
@@ -135,13 +135,13 @@ public class ControlParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("parse failed", x);
-            sessionFailure(buffer, HTTP3ErrorCode.INTERNAL_ERROR.code(), "parser_error", x);
+            sessionFailure(buffer, false, HTTP3ErrorCode.INTERNAL_ERROR.code(), "parser_error", x);
         }
     }
 
-    private void sessionFailure(ByteBuffer buffer, long error, String reason, Throwable failure)
+    private void sessionFailure(ByteBuffer buffer, boolean remote, long error, String reason, Throwable failure)
     {
-        unknownBodyParser.sessionFailure(buffer, error, reason, failure);
+        unknownBodyParser.sessionFailure(buffer, error, remote, reason, failure);
     }
 
     private enum State
