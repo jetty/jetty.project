@@ -67,7 +67,8 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
     @AfterEach
     public void stopJettyBase()
     {
-        runStart.close();
+        if (runStart.getProcess().isAlive())
+            runStart.close();
     }
 
     public static Stream<Arguments> dispatchPlans() throws IOException
@@ -153,6 +154,10 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
                 }
             }
 
+            // stop the forked running server.
+            // we need to verify the session behaviors, and can only do that on a stopped server.
+            runStart.close();
+
             // Verify that Context Attributes for Session.id are in agreement
             // And that all ids have had their .commit() and .release() methods called.
             Path sessionLog = jettyBase.jettyBase.resolve("work/session.log");
@@ -169,8 +174,6 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
                 assertThat(logEntries, hasItem("SessionCache.event.commit()=" + sessionId));
                 assertThat(logEntries, hasItem("SessionCache.event.release()=" + sessionId));
             }
-
-            // TODO: should we check the response headers for a "Set-Cookie" entry?
         }
     }
 }
