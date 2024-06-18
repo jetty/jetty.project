@@ -20,12 +20,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * HTTP Fields. A collection of HTTP header and or Trailer fields.
- *
- * <p>This class is not synchronized as it is expected that modifications will only be performed by a
- * single thread.
- *
- * <p>The cookie handling provided by this class is guided by the Servlet specification and RFC6265.
+ * An immutable implementation of {@link HttpFields}.
  */
 class ImmutableHttpFields implements HttpFields
 {
@@ -70,10 +65,9 @@ class ImmutableHttpFields implements HttpFields
     {
         if (this == o)
             return true;
-        if (!(o instanceof org.eclipse.jetty.http.ImmutableHttpFields))
-            return false;
-
-        return isEqualTo((HttpFields)o);
+        if (o instanceof HttpFields httpFields)
+            return isEqualTo(httpFields);
+        return false;
     }
 
     @Override
