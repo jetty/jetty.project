@@ -131,13 +131,13 @@ public class CrossContextDispatcherTest
         _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
 
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-        _contextHandler = new ServletContextHandler();
+        _contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         _contextHandler.setContextPath("/context");
         _contextHandler.setBaseResourceAsPath(MavenPaths.findTestResourceDir("contextResources"));
         _contextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_contextHandler);
 
-        _targetServletContextHandler = new ServletContextHandler();
+        _targetServletContextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         _targetServletContextHandler.setContextPath("/foreign");
         _targetServletContextHandler.setBaseResourceAsPath(MavenPaths.findTestResourceDir("dispatchResourceTest"));
         _targetServletContextHandler.setCrossContextDispatchSupported(true);

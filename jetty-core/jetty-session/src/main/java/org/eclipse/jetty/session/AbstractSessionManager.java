@@ -393,7 +393,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     /**
      * Get a known existing session
      *
-     * @param extendedId The session id, possibly imcluding worker name suffix.
+     * @param extendedId The session id, possibly including worker name suffix.
      * @return the Session matching the id or null if none exists
      */
     @Override
@@ -1263,6 +1263,18 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                         ids = new ArrayList<>();
                     ids.add(p.substring(name.length() + 1).trim());
                 }
+            }
+        }
+
+        //try getting a session id for our context that has been newly created by another context
+        if (request.getContext().isCrossContextDispatch(request))
+        {
+            String tmp = (String)request.getAttribute(DefaultSessionIdManager.__NEW_SESSION_ID);
+            if (!StringUtil.isEmpty(tmp))
+            {
+                if (ids == null)
+                    ids = new ArrayList<>();
+                ids.add(tmp);
             }
         }
 

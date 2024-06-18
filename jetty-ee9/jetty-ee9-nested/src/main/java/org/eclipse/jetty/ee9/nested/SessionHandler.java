@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionConfig;
@@ -513,6 +514,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             {
                 case REQUEST:
                 {
+                    //add a HttpStream.wrapper to commit and complete sessions created/loaded during this request
                     _sessionManager.addSessionStreamWrapper(coreRequest);
                     // find and set the session if one exists, along with an appropriate session manager
                     currentRequestedSession = _sessionManager.resolveRequestedSessionId(coreRequest);
@@ -531,11 +533,16 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
                     oldSession = coreRequest.getManagedSession();
                     oldRequestedSession = coreRequest.getRequestedSession();
 
+                    //We have been cross context dispatched. Could be from the same type of context, or a different
+                    //type of context. If from the same type of context, the request is preserved and mutated during the
+                    //dispatch, so a HttpStream.Wrapper would already have been added to it. If from a different type
+                    //of context, we cannot share the HttpStream.Wrapper  and so we need to add a new one.
+                    if (oldSessionManager == null)
+                        _sessionManager.addSessionStreamWrapper(coreRequest);
+
                     //check if we have changed contexts during the dispatch
                     if (oldSessionManager != _sessionManager)
                     {
-                        _sessionManager.addSessionStreamWrapper(coreRequest);
-
                         //find any existing session for this context that has already been accessed
                         currentSession = coreRequest.getManagedSession(_sessionManager);
 
@@ -569,7 +576,6 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
                     (request.getDispatcherType() == DispatcherType.ASYNC ||
                         request.getDispatcherType() == DispatcherType.REQUEST))
                     baseRequest.getResponse().replaceCookie(cookie);
-                baseRequest.getResponse().replaceCookie(cookie);
             }
 
             if (LOG.isDebugEnabled())

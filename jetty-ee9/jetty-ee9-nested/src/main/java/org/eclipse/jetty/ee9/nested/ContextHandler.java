@@ -923,7 +923,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         {
             // check the target.
             String contextPath = getContextPath();
-            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
+            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) || baseRequest.getCoreRequest().getContext().isCrossContextDispatch(baseRequest.getCoreRequest()))
             {
                 if (target.length() > contextPath.length())
                 {
