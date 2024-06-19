@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public abstract class AbstractRedispatchTest
 {
     protected static final int START_TIMEOUT = Integer.getInteger("home.start.timeout", 30);
-    protected static final List<String> ENVIRONMENTS = List.of("ee8", "ee9", "ee10");
+    protected static final List<String> ENVIRONMENTS = List.of("ee8", "ee9", "ee10", "ee11");
 
     static String toResponseDetails(ContentResponse response)
     {
