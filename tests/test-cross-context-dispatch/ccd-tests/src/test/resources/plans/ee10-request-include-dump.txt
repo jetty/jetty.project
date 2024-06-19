@@ -1,0 +1,12 @@
+REQUEST|GET|/ccd-ee10/redispatch/ee10
+STEP|REQUEST_INCLUDE|/dump/ee10
+EXPECTED_EVENT|Initial plan: ee10-request-include-dump.txt
+EXPECTED_EVENT|DispatchPlanHandler.handle() method=GET path-query=/ccd-ee10/redispatch/ee10
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee10.CCDServlet.service() dispatcherType=REQUEST method=GET requestUri=/ccd-ee10/redispatch/ee10
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee10.DumpServlet.service() dispatcherType=INCLUDE method=GET requestUri=/ccd-ee10/redispatch/ee10
+EXPECTED_PROP|request.dispatcherType|INCLUDE
+EXPECTED_PROP|request.requestURI|/ccd-ee10/redispatch/ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.include.context_path]|/ccd-ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.include.path_info]|/ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.include.request_uri]|/ccd-ee10/dump/ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.include.servlet_path]|/dump
