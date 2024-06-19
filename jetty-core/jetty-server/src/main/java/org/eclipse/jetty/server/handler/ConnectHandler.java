@@ -726,7 +726,11 @@ public class ConnectHandler extends Handler.Wrapper
             @Override
             protected Action process()
             {
-                buffer = bufferPool.acquire(getInputBufferSize(), true);
+                if (buffer == null)
+                    buffer = bufferPool.acquire(getInputBufferSize(), true);
+                else
+                    buffer.clear();
+
                 try
                 {
                     ByteBuffer byteBuffer = buffer.getByteBuffer();
@@ -736,18 +740,18 @@ public class ConnectHandler extends Handler.Wrapper
                         write(connection.getEndPoint(), byteBuffer, this);
                         return Action.SCHEDULED;
                     }
-                    else if (filled == 0)
+
+                    buffer.release();
+                    buffer = null;
+
+                    if (filled == 0)
                     {
-                        buffer.release();
                         fillInterested();
                         return Action.IDLE;
                     }
-                    else
-                    {
-                        buffer.release();
-                        connection.getEndPoint().shutdownOutput();
-                        return Action.SUCCEEDED;
-                    }
+
+                    connection.getEndPoint().shutdownOutput();
+                    return Action.SUCCEEDED;
                 }
                 catch (IOException x)
                 {
@@ -760,26 +764,19 @@ public class ConnectHandler extends Handler.Wrapper
             }
 
             @Override
-            public void succeeded()
+            protected void onAborted(Throwable cause)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Wrote {} bytes {}", filled, TunnelConnection.this);
-                buffer.release();
-                super.succeeded();
+                disconnect(cause);
             }
 
             @Override
-            protected void onCompleteSuccess()
-            {
-            }
-
-            @Override
-            protected void onCompleteFailure(Throwable x)
+            protected void onCompleteFailure(Throwable cause)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Failed to write {} bytes {}", filled, TunnelConnection.this, x);
+                    LOG.debug("Failed to write {} bytes {}", filled, TunnelConnection.this, cause);
                 buffer.release();
-                disconnect(x);
+                buffer = null;
+                disconnect(cause);
             }
 
             private void disconnect(Throwable x)
