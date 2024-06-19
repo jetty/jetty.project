@@ -66,13 +66,9 @@ public final class EtagUtils
      */
     public static HttpField createWeakEtagField(Resource resource, String etagSuffix)
     {
-        Path path = resource.getPath();
-        if (path == null)
-            return null;
-
-        String etagValue = EtagUtils.computeWeakEtag(path, etagSuffix);
-        if (etagValue != null)
-            return new PreEncodedHttpField(HttpHeader.ETAG, etagValue);
+        String etag = EtagUtils.computeWeakEtag(resource, etagSuffix);
+        if (etag != null)
+            return new PreEncodedHttpField(HttpHeader.ETAG, etag);
         return null;
     }
 
@@ -213,9 +209,9 @@ public final class EtagUtils
      */
     public static String rewriteWithSuffix(String etag, String newSuffix)
     {
-//        if (etag == null)
-//            return null;
-//
+        if (etag == null)
+            return null;
+
         StringBuilder ret = new StringBuilder();
         boolean weak = etag.startsWith("W/");
         int start = 0;

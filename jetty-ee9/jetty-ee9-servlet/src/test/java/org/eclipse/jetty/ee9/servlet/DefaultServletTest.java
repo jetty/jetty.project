@@ -68,6 +68,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -2568,13 +2569,23 @@ public class DefaultServletTest
     @Test
     public void testGetPrecompressedSuffixMapping() throws Exception
     {
-        FS.ensureEmpty(docRoot);
+        Path docRoot = workDir.getEmptyPathDir().resolve("docroot");
+        FS.ensureDirExists(docRoot);
 
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "*.js");
-        defholder.setInitParameter("cacheControl", "no-store");
-        defholder.setInitParameter("dirAllowed", "false");
-        defholder.setInitParameter("gzip", "false");
-        defholder.setInitParameter("precompressed", "gzip=.gz");
+        startServer((context) ->
+        {
+            ResourceFactory.registerResourceFactory("file", new URLResourceFactory());
+            Resource resource = ResourceFactory.of(context).newResource(docRoot);
+            assertThat("Expecting URLResource", resource.getClass().getName(), endsWith("URLResource"));
+            context.setBaseResource(resource);
+
+            ServletHolder defholder = context.addServlet(DefaultServlet.class, "*.js");
+            defholder.setInitParameter("cacheControl", "no-store");
+            defholder.setInitParameter("dirAllowed", "false");
+            defholder.setInitParameter("gzip", "false");
+            defholder.setInitParameter("precompressed", "gzip=.gz");
+        });
+
 
         FS.ensureDirExists(docRoot.resolve("scripts"));
 
