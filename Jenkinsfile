@@ -127,7 +127,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      junit testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
     }
   }
 }
