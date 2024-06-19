@@ -68,7 +68,10 @@ public interface Step
         throw new RuntimeException("Unknown STEP type [" + parts[1] + "]");
     }
 
-    public class HttpSessionSetAttribute implements Step
+    /**
+     * Will cause an Attribute to be set on the HttpSession via {@code HttpSession.setAttribute(String, Object)}
+     */
+    class HttpSessionSetAttribute implements Step
     {
         private Property property;
 
@@ -83,7 +86,11 @@ public interface Step
         }
     }
 
-    public class GetHttpSession implements Step
+    /**
+     * Will cause the HttpSession to be fetched via {@code HttpServletRequest#getHttpSession(false)}
+     * and report the state of the HttpSession in the events (even if null).
+     */
+    class GetHttpSession implements Step
     {
         private String name;
 
@@ -98,7 +105,14 @@ public interface Step
         }
     }
 
-    public class ContextRedispatch implements Step
+    /**
+     * Performs a Redispatch with FORWARD or INCLUDE types using the {@code ServletContext}.
+     * Uses the {@code ServletContext.getContext(contextPath)} to obtain the
+     * {@code ServletContext} to then use {@code ServletContext.getRequestDispatcher(dispatchPath)}
+     * against, which then results in a {@code RequestDispatcher.include} or {@code RequestDispatcher.forward}
+     * call.
+     */
+    class ContextRedispatch implements Step
     {
         private DispatchType dispatchType;
         private String contextPath;
@@ -135,7 +149,13 @@ public interface Step
         }
     }
 
-    public class RequestDispatch implements Step
+    /**
+     * Performs a Redispatch with FORWARD or INCLUDE types using the {@code HttpServletRequest}.
+     * Uses the {@code HttpServletRequest.getRequestDispatcher(dispatchPath)} which then
+     * results in a {@code RequestDispatcher.include} or {@code RequestDispatcher.forward}
+     * call.
+     */
+    class RequestDispatch implements Step
     {
         private DispatchType dispatchType;
         private String dispatchPath;
