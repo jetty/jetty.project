@@ -110,8 +110,8 @@ public class MultiPartFormData
                 try
                 {
                     // No existing core parts, so we need to configure the parser.
-                    parser.setMaxParts(config.getParts());
-                    parser.setMaxMemoryFileSize(config.getFileSizeThreshold());
+                    parser.setMaxParts(config.getMaxParts());
+                    parser.setMaxMemoryFileSize(config.getMaxMemoryPartSize());
                     parser.setMaxFileSize(config.getMaxPartSize());
                     parser.setMaxLength(config.getMaxSize());
                     parser.setPartHeadersMaxLength(config.getMaxHeadersSize());

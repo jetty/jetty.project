@@ -98,7 +98,7 @@ public class CoreMultiPartTest
             .maxParts(maxFormKeys)
             .maxSize(maxRequestSize)
             .maxPartSize(maxFileSize)
-            .fileSizeThreshold(fileSizeThreshold)
+            .maxMemoryPartSize(fileSizeThreshold)
             .useFilesForPartsWithoutFileName(true)
             .build();
     }
@@ -394,10 +394,10 @@ public class CoreMultiPartTest
           public boolean handle(Request request, Response response, Callback callback) throws Exception
           {
               MultiPartConfig conf = Request.getMultiPartConfig(request, config.getLocation())
-                  .maxParts(config.getParts())
+                  .maxParts(config.getMaxParts())
                   .maxSize(config.getMaxSize())
                   .maxPartSize(config.getMaxPartSize())
-                  .fileSizeThreshold(config.getFileSizeThreshold())
+                  .maxMemoryPartSize(config.getMaxMemoryPartSize())
                   .useFilesForPartsWithoutFileName(config.isUseFilesForPartsWithoutFileName())
                   .build();
               MultiPartFormData.Parts parts = getParts(request, conf);

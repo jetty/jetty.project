@@ -29,7 +29,7 @@ public class MultiPartConfig
     private static final int DEFAULT_MAX_PARTS = 100;
     private static final int DEFAULT_MAX_SIZE = 50 * 1024 * 1024;
     private static final int DEFAULT_MAX_PART_SIZE = 10 * 1024 * 1024;
-    private static final int DEFAULT_FILE_SIZE_THRESHOLD = 1024;
+    private static final int DEFAULT_MAX_MEMORY_PART_SIZE = 1024;
     private static final int DEFAULT_MAX_HEADERS_SIZE = 8 * 1024;
     private static final boolean DEFAULT_USE_FILES_FOR_PARTS_WITHOUT_FILE_NAME = false;
 
@@ -39,7 +39,7 @@ public class MultiPartConfig
         private Integer _maxParts;
         private Long _maxSize;
         private Long _maxPartSize;
-        private Long _fileSizeThreshold;
+        private Long _maxMemoryPartSize;
         private Integer _maxHeadersSize;
         private Boolean _useFilesForPartsWithoutFileName;
         private MultiPartCompliance _complianceMode;
@@ -90,11 +90,11 @@ public class MultiPartConfig
          * <p>Use value {@code 0} to always write the part to disk.</p>
          * <p>Use value {@code -1} to never write the part to disk.</p>
          *
-         * @param fileSizeThreshold the maximum part size which can be held in memory.
+         * @param maxMemoryPartSize the maximum part size which can be held in memory.
          */
-        public Builder fileSizeThreshold(long fileSizeThreshold)
+        public Builder maxMemoryPartSize(long maxMemoryPartSize)
         {
-            _fileSizeThreshold = fileSizeThreshold;
+            _maxMemoryPartSize = maxMemoryPartSize;
             return this;
         }
 
@@ -140,7 +140,7 @@ public class MultiPartConfig
                 _maxParts == null ? DEFAULT_MAX_PARTS : _maxParts,
                 _maxSize == null ? DEFAULT_MAX_SIZE : _maxSize,
                 _maxPartSize == null ? DEFAULT_MAX_PART_SIZE : _maxPartSize,
-                _fileSizeThreshold == null ? DEFAULT_FILE_SIZE_THRESHOLD : _fileSizeThreshold,
+                _maxMemoryPartSize == null ? DEFAULT_MAX_MEMORY_PART_SIZE : _maxMemoryPartSize,
                 _maxHeadersSize == null ? DEFAULT_MAX_HEADERS_SIZE : _maxHeadersSize,
                 _useFilesForPartsWithoutFileName == null ? DEFAULT_USE_FILES_FOR_PARTS_WITHOUT_FILE_NAME : _useFilesForPartsWithoutFileName,
                 _complianceMode == null ? MultiPartCompliance.RFC7578 : _complianceMode,
@@ -149,7 +149,7 @@ public class MultiPartConfig
     }
 
     private final Path _location;
-    private final long _fileSizeThreshold;
+    private final long _maxMemoryPartSize;
     private final long _maxPartSize;
     private final long _maxSize;
     private final int _maxParts;
@@ -158,7 +158,7 @@ public class MultiPartConfig
     private final MultiPartCompliance _compliance;
     private final ComplianceViolation.Listener _listener;
 
-    private MultiPartConfig(Path location, int maxParts, long maxSize, long maxPartSize, long fileSizeThreshold,
+    private MultiPartConfig(Path location, int maxParts, long maxSize, long maxPartSize, long maxMemoryPartSize,
                             int maxHeadersSize, boolean useFilesForPartsWithoutFileName,
                             MultiPartCompliance compliance, ComplianceViolation.Listener listener)
     {
@@ -166,7 +166,7 @@ public class MultiPartConfig
         this._maxParts = maxParts;
         this._maxSize = maxSize;
         this._maxPartSize = maxPartSize;
-        this._fileSizeThreshold = fileSizeThreshold;
+        this._maxMemoryPartSize = maxMemoryPartSize;
         this._maxHeadersSize = maxHeadersSize;
         this._useFilesForPartsWithoutFileName = useFilesForPartsWithoutFileName;
         this._compliance = compliance;
@@ -178,7 +178,7 @@ public class MultiPartConfig
         return _location;
     }
 
-    public int getParts()
+    public int getMaxParts()
     {
         return _maxParts;
     }
@@ -193,9 +193,9 @@ public class MultiPartConfig
         return _maxPartSize;
     }
 
-    public long getFileSizeThreshold()
+    public long getMaxMemoryPartSize()
     {
-        return _fileSizeThreshold;
+        return _maxMemoryPartSize;
     }
 
     public int getMaxHeadersSize()
