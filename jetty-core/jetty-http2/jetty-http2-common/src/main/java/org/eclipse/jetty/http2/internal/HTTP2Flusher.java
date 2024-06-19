@@ -254,7 +254,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("Failure generating {}", entry, failure);
                     failed(failure);
-                    return Action.SUCCEEDED;
+                    return Action.SCHEDULED;
                 }
             }
 
