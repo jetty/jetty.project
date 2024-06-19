@@ -51,6 +51,11 @@ import org.slf4j.LoggerFactory;
  * completion of the asynchronous sub-task, while a call to
  * {@link #failed(Throwable)} on this callback represents the
  * completion with a failure of the large asynchronous task.
+ * <p>
+ * For most purposes, the {@link #succeeded()} and {@link #failed(Throwable)}
+ * methods of this class should be considered final, and only overridden in
+ * extraordinary circumstances. Any action taken in such extensions are not
+ * serialized.
  */
 public abstract class IteratingCallback implements Callback
 {
@@ -164,6 +169,10 @@ public abstract class IteratingCallback implements Callback
 
     /**
      * Invoked when the overall task has completed successfully.
+     * <p>
+     * Calls to this method are serialized with respect to {@link #process()}, {@link #onAborted(Throwable)}
+     * and {@link #onCompleted(Throwable)}.
+     * If this method is called, then {@link #onCompleteFailure(Throwable)} ()} will never be called.
      *
      * @see #onCompleteFailure(Throwable)
      */
@@ -173,6 +182,10 @@ public abstract class IteratingCallback implements Callback
 
     /**
      * Invoked when the overall task has completed with a failure.
+     * <p>
+     * Calls to this method are serialized with respect to {@link #process()}, {@link #onAborted(Throwable)}
+     * and {@link #onCompleted(Throwable)}.
+     * If this method is called, then {@link #onCompleteSuccess()} will never be called.
      *
      * @param cause the throwable to indicate cause of failure
      * @see #onCompleteSuccess()
@@ -181,10 +194,33 @@ public abstract class IteratingCallback implements Callback
     {
     }
 
+    /**
+     * Invoked when the overall task has been aborted.
+     * <p>
+     * Calls to this method are serialized with respect to {@link #process()}, {@link #onCompleteFailure(Throwable)}
+     * and {@link #onCompleted(Throwable)}.
+     * If this method is called, then {@link #onCompleteSuccess()} will never be called.
+     * <p>
+     * The default implementation of this method calls {@link #failed(Throwable)}.  Overridden implementations of
+     * this method SHOULD NOT call {@code super.onAborted(Throwable)}.
+     *
+     * @param cause The cause of the abort
+     */
     protected void onAborted(Throwable cause)
     {
+        failed(cause);
     }
 
+    /**
+     * Invoked when the overall task has completed.
+     * <p>
+     * Calls to this method are serialized with respect to {@link #process()} and {@link #onAborted(Throwable)}.
+     * The default implementation of this method will call either {@link #onCompleteSuccess()} or {@link #onCompleteFailure(Throwable)}
+     * thus implementations of this method should always call {@code super.onCompleted(Throwable)}.
+     *
+     * @param causeOrNull the cause of any {@link #abort(Throwable) abort} or {@link #failed(Throwable) failure},
+     * else {@code null} for {@link #succeeded() success}.
+     */
     protected void onCompleted(Throwable causeOrNull)
     {
         if (causeOrNull == null)
@@ -370,8 +406,12 @@ public abstract class IteratingCallback implements Callback
     /**
      * Method to invoke when the asynchronous sub-task succeeds.
      * <p>
-     * Subclasses that override this method must always remember
-     * to call {@code super.succeeded()}.
+     * For most purposes, this method should be considered {@code final} and should only be
+     * overridden in extraordinary circumstances.
+     * Subclasses that override this method must always call {@code super.succeeded()}.
+     * Such overridden methods are not serialized with respect to {@link #process()}, {@link #onCompleteSuccess()},
+     * {@link #onCompleteFailure(Throwable)}, nor {@link #onAborted(Throwable)}. They should not act on nor change any
+     * fields that may be used by those methods.
      */
     @Override
     public void succeeded()
@@ -436,13 +476,16 @@ public abstract class IteratingCallback implements Callback
      * or to fail the overall asynchronous task and therefore
      * terminate the iteration.
      * <p>
-     * Subclasses that override this method must always remember
-     * to call {@code super.failed(Throwable)}.
-     * <p>
      * Eventually, {@link #onCompleteFailure(Throwable)} is
      * called, either by the caller thread or by the processing
      * thread.
-     *
+     * <p>
+     * For most purposes, this method should be considered {@code final} and should only be
+     * overridden in extraordinary circumstances.
+     * Subclasses that override this method must always call {@code super.succeeded()}.
+     * Such overridden methods are not serialized with respect to {@link #process()}, {@link #onCompleteSuccess()},
+     * {@link #onCompleteFailure(Throwable)}, nor {@link #onAborted(Throwable)}. They should not act on nor change any
+     * fields that may be used by those methods.
      * @see #isFailed()
      */
     @Override
