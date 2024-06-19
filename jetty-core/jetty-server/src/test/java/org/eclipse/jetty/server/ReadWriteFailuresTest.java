@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -33,6 +34,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -180,14 +182,32 @@ public class ReadWriteFailuresTest
 
                 request.addIdleTimeoutListener(x -> fatal);
 
-                Callback.Completable completable1 = new Callback.Completable();
-                Content.Sink.write(response, true, "hello world", completable1);
-                Throwable writeFailure1 = assertThrows(ExecutionException.class, () -> completable1.get(2 * idleTimeout, TimeUnit.MILLISECONDS)).getCause();
+                AtomicReference<Throwable> failure = new AtomicReference<>();
+                CountDownLatch abort1 = new CountDownLatch(1);
+                CountDownLatch complete1 = new CountDownLatch(1);
+                Callback callback1 = Callback.from(Task.NOOP,
+                    t -> abort1.countDown(),
+                    failure::set,
+                    t -> complete1.countDown());
+                Content.Sink.write(response, true, "hello world", callback1);
+
+                assertTrue(abort1.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+                Throwable writeFailure1 = failure.get();
+                assertThat(writeFailure1, notNullValue());
+                callback1.succeeded();
+                assertTrue(complete1.await(2, TimeUnit.SECONDS));
 
                 // Verify that further writes are failed.
-                Callback.Completable completable2 = new Callback.Completable();
-                Content.Sink.write(response, true, "hello world", completable2);
-                Throwable writeFailure2 = assertThrows(ExecutionException.class, () -> completable2.get(5, TimeUnit.SECONDS)).getCause();
+                failure.set(null);
+                CountDownLatch complete2 = new CountDownLatch(1);
+                Content.Sink.write(response, true, "hello world", Callback.from(t ->
+                {
+                    failure.set(t);
+                    complete2.countDown();
+                }));
+                assertTrue(complete2.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+                Throwable writeFailure2 = failure.get();
+                assertThat(writeFailure2, notNullValue());
                 assertSame(writeFailure1, writeFailure2);
 
                 latch.countDown();
@@ -202,7 +222,7 @@ public class ReadWriteFailuresTest
             POST / HTTP/1.1
             Host: localhost
             Content-Length: 1
-                        
+            
             """;
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(request))
         {
@@ -234,7 +254,7 @@ public class ReadWriteFailuresTest
             POST / HTTP/1.1
             Host: localhost
             Content-Length: %d
-                        
+            
             %s
             """.formatted(content.length(), content);
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
