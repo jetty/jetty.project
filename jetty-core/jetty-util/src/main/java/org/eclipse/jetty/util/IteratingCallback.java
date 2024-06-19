@@ -268,6 +268,9 @@ public abstract class IteratingCallback implements Callback
             // acted on the action we have just received
             try (AutoLock ignored = _lock.lock())
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("processing {} {}", action, this);
+
                 switch (_state)
                 {
                     case PROCESSING:
@@ -377,6 +380,8 @@ public abstract class IteratingCallback implements Callback
         Throwable doCompleteFailure = null;
         try (AutoLock ignored = _lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("succeeded {}", this);
             switch (_state)
             {
                 case PROCESSING:
@@ -448,6 +453,8 @@ public abstract class IteratingCallback implements Callback
         Throwable doCompleteFailure = null;
         try (AutoLock ignored = _lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failed {}", this, cause);
             switch (_state)
             {
                 case PROCESSING:
@@ -519,6 +526,8 @@ public abstract class IteratingCallback implements Callback
 
         try (AutoLock ignored = _lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("close {}", this);
             switch (_state)
             {
                 case IDLE ->
@@ -587,6 +596,9 @@ public abstract class IteratingCallback implements Callback
         boolean onAbortDoCompleteFailure = false;
         try (AutoLock ignored = _lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("abort {}", this, cause);
+
             // Are we already aborted?
             if (_aborted)
             {

@@ -185,8 +185,7 @@ public class ReadWriteFailuresTest
                 AtomicReference<Throwable> failure = new AtomicReference<>();
                 CountDownLatch abort1 = new CountDownLatch(1);
                 CountDownLatch complete1 = new CountDownLatch(1);
-                Callback callback1 = Callback.from(Task.NOOP,
-                    t -> abort1.countDown(),
+                Callback callback1 = Callback.from(t -> abort1.countDown(), Task.NOOP,
                     failure::set,
                     t -> complete1.countDown());
                 Content.Sink.write(response, true, "hello world", callback1);

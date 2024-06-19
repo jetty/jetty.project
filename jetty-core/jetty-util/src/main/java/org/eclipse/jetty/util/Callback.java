@@ -16,10 +16,14 @@ package org.eclipse.jetty.util;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.thread.Invocable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A callback abstraction that handles completed/failed events of asynchronous operations.</p>
@@ -167,27 +171,114 @@ public interface Callback extends Invocable
     /**
      * Creates a callback from the given success and failure lambdas.
      *
-     * @param success Called when the callback succeeds
-     * @param failure Called when the callback fails
+     * @param success Called when {@link #succeeded()} is called
+     * @param failure Called when {@link #failed(Throwable)} is called
      * @return a new Callback
+     * @see #from(InvocationType, Predicate, Runnable, Consumer)
      */
     static Callback from(Runnable success, Consumer<Throwable> failure)
     {
-        return from(InvocationType.BLOCKING, success, failure);
+        return from(Invocable.getInvocationType(success), null, success, failure);
     }
 
     /**
      * Creates a callback with the given InvocationType from the given success and failure lambdas.
      *
      * @param invocationType the Callback invocation type
-     * @param success Called when the callback succeeds
-     * @param failure Called when the callback fails or has been aborted and completed
+     * @param success Called when {@link #succeeded()} is called
+     * @param failure Called when {@link #failed(Throwable)} is called
      * @return a new Callback
+     * @see #from(InvocationType, Predicate, Runnable, Consumer)
      */
     static Callback from(InvocationType invocationType, Runnable success, Consumer<Throwable> failure)
     {
+        return from(invocationType, null, success, failure);
+    }
+
+    /**
+     * Creates a callback from the given abort, success and failure lambdas.
+     *
+     * @param abort Predicate to test when {@link #abort(Throwable)} is called
+     * @param success Called when {@link #succeeded()} is called
+     * @param failure Called when {@link #failed(Throwable)} is called
+     * @return a new Callback
+     * @see #from(InvocationType, Predicate, Runnable, Consumer)
+     */
+    static Callback from(Predicate<Throwable> abort, Runnable success, Consumer<Throwable> failure)
+    {
+        return from(Invocable.getInvocationType(success), abort, success, failure);
+    }
+
+    /**
+     * Creates a callback with the given InvocationType from the given abort, success and failure lambdas.
+     * If debug logging is enabled on {@link Abstract}, then the callback returned will warn if redundant calls
+     * are made after the callback is completed.
+     *
+     * @param invocationType the Callback invocation type
+     * @param abort Predicate to test when {@link #abort(Throwable)} is called
+     * @param success Called when {@link #succeeded()} is called
+     * @param failure Called when {@link #failed(Throwable)} is called
+     * @return a new Callback
+     */
+    static Callback from(InvocationType invocationType, Predicate<Throwable> abort, Runnable success, Consumer<Throwable> failure)
+    {
+        if (Abstract.LOG.isDebugEnabled())
+        {
+            // If debug is enabled, return a version that warns on redundant calls.
+            return new Callback()
+            {
+                final AtomicBoolean completed = new AtomicBoolean();
+
+                @Override
+                public boolean abort(Throwable cause)
+                {
+                    if (completed.get())
+                        Abstract.LOG.warn("Callback.abort when completed {}", this, cause);
+                    if (abort == null)
+                        return Callback.super.abort(cause);
+                    return abort.test(cause);
+                }
+
+                @Override
+                public void succeeded()
+                {
+                    if (!completed.compareAndSet(false, true))
+                        Abstract.LOG.warn("Callback.succeeded when completed {}", this);
+                    success.run();
+                }
+
+                @Override
+                public void failed(Throwable cause)
+                {
+                    if (!completed.compareAndSet(false, true))
+                        Abstract.LOG.warn("Callback.failed when completed {}", this, cause);
+                    failure.accept(cause);
+                }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return invocationType;
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "Callback.from@%x{%s, %b, %s,%s}".formatted(hashCode(), invocationType, completed.get(), success, failure);
+                }
+            };
+        }
+
         return new Callback()
         {
+            @Override
+            public boolean abort(Throwable cause)
+            {
+                if (abort == null)
+                    return Callback.super.abort(cause);
+                return abort.test(cause);
+            }
+
             @Override
             public void succeeded()
             {
@@ -217,9 +308,9 @@ public interface Callback extends Invocable
     /**
      * Creates a callback with the given InvocationType from the given success and failure lambdas.
      *
-     * @param success Called when the callback succeeds
-     * @param failure Called when the callback fails or has been aborted
-     * @param completed Called when the callback fails or has been aborted and completed
+     * @param success Called when {@link #succeeded()} is called
+     * @param failure Called when {@link #abort(Throwable)} or {@link #failed(Throwable)} are called
+     * @param completed Called when {@link #succeeded()} or {@link #failed(Throwable)} are called
      * @return a new Callback
      */
     static Callback from(Runnable success, Consumer<Throwable> failure, Consumer<Throwable> completed)
@@ -231,9 +322,9 @@ public interface Callback extends Invocable
      * Creates a callback with the given InvocationType from the given success and failure lambdas.
      *
      * @param invocationType the Callback invocation type
-     * @param success Called when the callback succeeds
-     * @param failure Called when the callback fails or has been aborted
-     * @param completed Called when the callback fails or has been aborted and completed
+     * @param success Called when {@link #succeeded()} is called
+     * @param failure Called when {@link #abort(Throwable)} or {@link #failed(Throwable)} are called
+     * @param completed Called when {@link #succeeded()} or {@link #failed(Throwable)} are called
      * @return a new Callback
      */
     static Callback from(InvocationType invocationType, Runnable success, Consumer<Throwable> failure, Consumer<Throwable> completed)
@@ -275,28 +366,28 @@ public interface Callback extends Invocable
     /**
      * Creates a callback with the given InvocationType from the given success and failure lambdas.
      *
-     * @param success Called when the callback succeeds
-     * @param abort Called when the callback jas been failed
-     * @param failure Called when the callback fails or has been aborted
-     * @param completed Called when the callback fails or has been aborted and completed
+     * @param abort Called when {@link #abort(Throwable)} has been called prior to {@link #succeeded()} or {@link #failed(Throwable)}.
+     * @param success Called when {@link #succeeded()} is called
+     * @param failure Called when {@link #abort(Throwable)} or {@link #failed(Throwable)} are called
+     * @param completed Called when {@link #succeeded()} or {@link #failed(Throwable)} are called
      * @return a new Callback
      */
-    static Callback from(Runnable success, Consumer<Throwable> abort, Consumer<Throwable> failure, Consumer<Throwable> completed)
+    static Callback from(Consumer<Throwable> abort, Runnable success, Consumer<Throwable> failure, Consumer<Throwable> completed)
     {
-        return from(Invocable.getInvocationType(success), success, abort, failure, completed);
+        return from(Invocable.getInvocationType(success), abort, success, failure, completed);
     }
 
     /**
      * Creates a callback with the given InvocationType from the given success and failure lambdas.
      *
      * @param invocationType the Callback invocation type
-     * @param success Called when the callback succeeds
-     * @param abort Called when the callback jas been failed
-     * @param failure Called when the callback fails or has been aborted
-     * @param completed Called when the callback fails or has been aborted and completed
+     * @param abort Called when {@link #abort(Throwable)} has been called prior to {@link #succeeded()} or {@link #failed(Throwable)}.
+     * @param success Called when {@link #succeeded()} is called
+     * @param failure Called when {@link #abort(Throwable)} or {@link #failed(Throwable)} are called
+     * @param completed Called when {@link #succeeded()} or {@link #failed(Throwable)} are called
      * @return a new Callback
      */
-    static Callback from(InvocationType invocationType, Runnable success, Consumer<Throwable> abort, Consumer<Throwable> failure, Consumer<Throwable> completed)
+    static Callback from(InvocationType invocationType, Consumer<Throwable> abort, Runnable success, Consumer<Throwable> failure, Consumer<Throwable> completed)
     {
         return new Abstract()
         {
@@ -341,7 +432,7 @@ public interface Callback extends Invocable
     /**
      * Creates a callback that runs completed when it succeeds or fails
      *
-     * @param completed The completion to run on success or failure
+     * @param completed Called when {@link #succeeded()} or {@link #failed(Throwable)} are called
      * @return a new callback
      */
     static Callback from(Runnable completed)
@@ -354,15 +445,15 @@ public interface Callback extends Invocable
      * that runs the given {@code Runnable} when it succeeds or fails.</p>
      *
      * @param invocationType the invocation type of the returned Callback
-     * @param completed the Runnable to run when the callback either succeeds or fails
+     * @param completed Called when {@link #succeeded()} or {@link #failed(Throwable)} are called
      * @return a new Callback with the given invocation type
      */
     static Callback from(InvocationType invocationType, Runnable completed)
     {
-        return new Abstract()
+        return new Completing()
         {
             @Override
-            public void onCompleted(Throwable causeOrNull)
+            public void completed()
             {
                 completed.run();
             }
@@ -384,7 +475,7 @@ public interface Callback extends Invocable
     /**
      * Creates a callback that runs completed when it succeeds or fails
      *
-     * @param completed The completion to run on success or failure
+     * @param completed Called when {@link #succeeded()} or {@link #failed(Throwable)} are called
      * @return a new callback
      */
     static Callback from(Consumer<Throwable> completed)
@@ -395,7 +486,7 @@ public interface Callback extends Invocable
     /**
      * Creates a callback that runs completed when it succeeds or fails
      *
-     * @param completed The completion to run on success or failure
+     * @param completed Called when {@link #succeeded()} or {@link #failed(Throwable)} are called
      * @return a new callback
      */
     static Callback from(InvocationType invocationType, Consumer<Throwable> completed)
@@ -427,7 +518,7 @@ public interface Callback extends Invocable
      * completing the nested callback.
      *
      * @param callback The nested callback
-     * @param completed The completion to run after the nested callback is completed
+     * @param completed Called after {@link #succeeded()} or {@link #failed(Throwable)} are called
      * @return a new callback.
      */
     static Callback from(Callback callback, Runnable completed)
@@ -453,7 +544,7 @@ public interface Callback extends Invocable
      * completing the nested callback.
      *
      * @param callback The nested callback
-     * @param completed The completion to run after the nested callback is completed
+     * @param completed Called after {@link #succeeded()} or {@link #failed(Throwable)} are called
      * @return a new callback.
      */
     static Callback from(Callback callback, Consumer<Throwable> completed)
@@ -479,8 +570,7 @@ public interface Callback extends Invocable
      * completing the nested callback.
      *
      * @param callback The nested callback
-     * @param completed The completion to run before the nested callback is completed. Any exceptions thrown
-     * from completed will result in a callback failure.
+     * @param completed Called before either {@link #succeeded()} or {@link #failed(Throwable)} are called on the nested callback
      * @return a new callback.
      */
     static Callback from(Runnable completed, Callback callback)
@@ -578,10 +668,8 @@ public interface Callback extends Invocable
     }
 
     /**
-     * <p>A Callback implementation that calls the {@link #completed()} method when it either succeeds or fails.</p>
-     * @deprecated use {@link Abstract}
+     * <p>A Callback implementation that calls the {@link #completed()} method when it either {@link #succeeded()} or {@link #failed(Throwable)} are called.</p>
      */
-    @Deprecated (forRemoval = true, since = "12.0.11")
     interface Completing extends Callback
     {
         void completed();
@@ -620,6 +708,8 @@ public interface Callback extends Invocable
      */
     class Abstract implements Callback
     {
+        private static Logger LOG = LoggerFactory.getLogger(Callback.class);
+
         private static final State SUCCEEDED = new State(null);
 
         private final AtomicReference<State> _state = new AtomicReference<>(null);
@@ -657,7 +747,11 @@ public interface Callback extends Invocable
                 // abort notifications were complete, so we do the completions
                 if (aborted.completed.compareAndSet(Boolean.FALSE, Boolean.TRUE))
                     ExceptionUtil.call(state.causeOrNull, this::onCompleted);
+                return;
             }
+
+            if (LOG.isDebugEnabled())
+                LOG.warn("succeeded called in {}", this);
         }
 
         @Override
@@ -685,7 +779,12 @@ public interface Callback extends Invocable
                 // abort notifications were complete, so we do the completions
                 if (aborted.completed.compareAndSet(Boolean.FALSE, Boolean.TRUE))
                     ExceptionUtil.call(state.causeOrNull, this::onCompleted);
+
+                return;
             }
+
+            if (LOG.isDebugEnabled())
+                LOG.warn("failed called in {}", this, cause);
         }
 
         /**

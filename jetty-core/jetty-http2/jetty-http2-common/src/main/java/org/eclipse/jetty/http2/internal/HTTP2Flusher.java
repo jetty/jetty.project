@@ -110,7 +110,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             {
                 entries.offer(entry);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Appended {}, entries={}", entry, entries.size());
+                    LOG.debug("Appended {}, entries={}, {}", entry, entries.size(), this);
             }
         }
         if (closed == null)
@@ -129,7 +129,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             {
                 list.forEach(entries::offer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Appended {}, entries={}", list, entries.size());
+                    LOG.debug("Appended {}, entries={} {}", list, entries.size(), this);
             }
         }
         if (closed == null)
@@ -158,7 +158,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     protected Action process() throws Throwable
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Flushing {}", session);
+            LOG.debug("process {} {}", session, this);
 
         try (AutoLock ignored = lock.lock())
         {
@@ -181,7 +181,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         if (pendingEntries.isEmpty())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Flushed {}", session);
+                LOG.debug("Flushed {} {}", session, this);
             return Action.IDLE;
         }
 
@@ -334,6 +334,21 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     protected void onCompleteSuccess()
     {
         throw new IllegalStateException();
+    }
+
+    @Override
+    protected void onAborted(Throwable cause)
+    {
+        Set<HTTP2Session.Entry> allEntries;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("aborted {} {}", cause, this);
+            allEntries = new HashSet<>(entries);
+        }
+        allEntries.forEach(entry -> entry.abort(cause));
+
+        super.onAborted(cause);
     }
 
     @Override

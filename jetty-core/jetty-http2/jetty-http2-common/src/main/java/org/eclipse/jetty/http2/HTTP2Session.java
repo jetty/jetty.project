@@ -2009,7 +2009,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
         private void sendGoAwayAndTerminate(GoAwayFrame frame, GoAwayFrame eventFrame)
         {
-            sendGoAway(frame, Callback.from(() -> terminate(eventFrame)));
+            sendGoAway(frame, Callback.from(
+                t ->
+                {
+                    terminate(eventFrame);
+                    return true;
+                },
+                () -> terminate(eventFrame),
+                t -> terminate(eventFrame)));
         }
 
         private void sendGoAway(GoAwayFrame frame, Callback callback)
