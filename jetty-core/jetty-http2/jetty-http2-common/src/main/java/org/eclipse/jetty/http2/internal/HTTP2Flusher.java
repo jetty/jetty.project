@@ -355,8 +355,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         }
         abortEntries.forEach(entry -> entry.abort(cause));
         failEntries.forEach(entry -> entry.failed(cause));
-
-        super.onAborted(cause);
     }
 
     @Override
