@@ -15,6 +15,7 @@
     <module>jetty-alpn</module>
     <module>jetty-bom</module>
     <module>jetty-client</module>
+    <module>jetty-compress</module>
     <module>jetty-demos</module>
     <module>jetty-deploy</module>
     <module>jetty-ee</module>
