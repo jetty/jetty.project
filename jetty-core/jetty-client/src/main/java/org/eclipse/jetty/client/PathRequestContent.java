@@ -47,7 +47,7 @@ public class PathRequestContent extends PathContentSource implements Request.Con
 
     public PathRequestContent(String contentType, Path filePath, int bufferSize) throws IOException
     {
-        this(contentType, filePath, null);
+        this(contentType, filePath, (ByteBufferPool)null);
         setBufferSize(bufferSize);
     }
 
