@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This specialized callback implements a pattern that allows
@@ -52,6 +54,8 @@ import org.eclipse.jetty.util.thread.AutoLock;
  */
 public abstract class IteratingCallback implements Callback
 {
+    private static final Logger LOG = LoggerFactory.getLogger(IteratingCallback.class);
+
     /**
      * The internal states of this callback.
      */
@@ -331,7 +335,7 @@ public abstract class IteratingCallback implements Callback
                     case PROCESSING_CALLED:
                     {
                         if (action != Action.SCHEDULED && action != null)
-                            throw new IllegalStateException(String.format("%s[action=%s]", this, action));
+                            LOG.warn("Processing called when not schedules {}", action);
                         if (_failure != null)
                         {
                             if (_aborted)
