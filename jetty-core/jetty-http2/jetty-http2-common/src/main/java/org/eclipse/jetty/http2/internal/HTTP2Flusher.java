@@ -339,14 +339,22 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     @Override
     protected void onAborted(Throwable cause)
     {
-        Set<HTTP2Session.Entry> allEntries;
+        Set<HTTP2Session.Entry> abortEntries;
+        Set<HTTP2Session.Entry> failEntries;
         try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("aborted {} {}", cause, this);
-            allEntries = new HashSet<>(entries);
+
+            // We can fail non-pending entries, as they are not being written yet
+            failEntries = new HashSet<>(entries);
+            entries.clear();
+
+            // We can only abort pending entries
+            abortEntries = new HashSet<>(pendingEntries);
         }
-        allEntries.forEach(entry -> entry.abort(cause));
+        abortEntries.forEach(entry -> entry.abort(cause));
+        failEntries.forEach(entry -> entry.failed(cause));
 
         super.onAborted(cause);
     }
