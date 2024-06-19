@@ -107,4 +107,14 @@
   <system systemId="https://jakarta.ee/xml/ns/jakartaee/web-fragment_6_0.xsd" uri="resources/web-fragment_6_0.xsd" />
   <public publicId="jakartaee_web_services_client_2_0.xsd" uri="resources/jakartaee_web_services_client_2_0.xsd" />
   <system systemId="https://jakarta.ee/xml/ns/jakartaee/jakartaee_web_services_client_2_0.xsd" uri="resources/jakartaee_web_services_client_2_0.xsd" />
+
+  <!-- Servlet 6.1 -->
+  <public publicId="web-app_6_1.xsd" uri="resources/web-app_6_1.xsd" />
+  <public publicId="webapp_6_1.xsd" uri="resources/web-app_6_1.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd" uri="resources/web-app_6_1.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/webapp_6_1.xsd" uri="resources/web-app_6_1.xsd" />
+  <public publicId="web-common_6_1.xsd" uri="resources/web-common_6_1.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/web-common_6_1.xsd" uri="resources/web-common_6_1.xsd" />
+  <public publicId="web-fragment_6_1.xsd" uri="resources/web-fragment_6_1.xsd" />
+  <system systemId="https://jakarta.ee/xml/ns/jakartaee/web-fragment_6_1.xsd" uri="resources/web-fragment_6_1.xsd" />
 </catalog>
