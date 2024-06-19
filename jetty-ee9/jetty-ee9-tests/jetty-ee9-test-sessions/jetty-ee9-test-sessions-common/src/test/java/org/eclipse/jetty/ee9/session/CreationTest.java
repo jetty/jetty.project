@@ -464,94 +464,94 @@ public class CreationTest
         protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
         {
             String action = request.getParameter("action");
-
-            if ("forward".equalsIgnoreCase(action))
+            switch (action.toLowerCase())
             {
-                HttpSession session = request.getSession(true);
-                
-                _id = session.getId();
-                session.setAttribute("value", 1);
-
-                ServletContext contextB = getServletContext().getContext("/contextB");
-                RequestDispatcher dispatcherB = contextB.getRequestDispatcher(request.getServletPath());
-                dispatcherB.forward(request, httpServletResponse);
-
-                if (action.endsWith("inv"))
+                case "forward" ->
                 {
-                    session.invalidate();
-                }
-                else
-                {
+                    HttpSession session = createAndSaveSessionId(request);
+
+                    ServletContext contextB = getServletContext().getContext("/contextB");
+                    RequestDispatcher dispatcherB = contextB.getRequestDispatcher(request.getServletPath());
+                    dispatcherB.forward(request, httpServletResponse);
                     session = request.getSession(false);
                     assertNotNull(session);
                     assertEquals(_id, session.getId());
                     assertNotNull(session.getAttribute("value"));
                     assertNull(session.getAttribute("B")); //check we don't see stuff from other context
                 }
-                return;
-            }
-            else if ("forwardC".equals(action))
-            {
-                HttpSession session = request.getSession(true);
+                case "forwardinv" ->
+                {
+                    HttpSession session = createAndSaveSessionId(request);
 
-                _id = session.getId();
-                session.setAttribute("value", 1);
-
+                    ServletContext contextB = getServletContext().getContext("/contextB");
+                    RequestDispatcher dispatcherB = contextB.getRequestDispatcher(request.getServletPath());
+                    dispatcherB.forward(request, httpServletResponse);
+                    session.invalidate();
+                }
+                case "forwardc" ->
+                {
+                    HttpSession session = createAndSaveSessionId(request);
                 //forward to contextC
                 ServletContext contextC = getServletContext().getContext("/contextC");
                 RequestDispatcher dispatcherC = contextC.getRequestDispatcher(request.getServletPath());
                 dispatcherC.forward(request, httpServletResponse);
-            }
-            else if ("test".equals(action))
-            {
-                HttpSession session = request.getSession(false);
-                assertNotNull(session);
-                assertNotNull(session.getAttribute("value")); //check we see the session we created earlier
-                assertNull(session.getAttribute("B")); //check we don't see stuff from other contexts
-                assertNull(session.getAttribute("C"));
-                return;
-            }
-            else if (action != null && action.startsWith("create"))
-            {
-                currentRequest.set(request);
-                HttpSession session = request.getSession(true);
-                _id = session.getId();
-                session.setAttribute("value", 1);
-
-                String check = request.getParameter("check");
-                if (!StringUtil.isBlank(check) && _store != null)
-                {
-                    boolean exists;
-                    try
-                    {
-                        exists = _store.exists(_id);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new ServletException(e);
-                    }
-
-                    if ("false".equalsIgnoreCase(check))
-                        assertFalse(exists);
-                    else
-                        assertTrue(exists);
                 }
-
-                if ("createinv".equals(action))
+                case "test" ->
                 {
-                    session.invalidate();
-                    assertNull(request.getSession(false));
+                    HttpSession session = request.getSession(false);
                     assertNotNull(session);
+                    assertNotNull(session.getAttribute("value")); //check we see the session we created earlier
+                    assertNull(session.getAttribute("B")); //check we don't see stuff from other contexts
+                    assertNull(session.getAttribute("C"));
                 }
-                else if ("createinvcreate".equals(action))
+                case "create", "createinv", "createinvcreate" ->
                 {
-                    session.invalidate();
-                    assertNull(request.getSession(false));
-                    assertNotNull(session);
-                    session = request.getSession(true);
-                    _id = session.getId();
+                    currentRequest.set(request);
+                    HttpSession session = createAndSaveSessionId(request);
+                    String check = request.getParameter("check");
+                    if (!StringUtil.isBlank(check) && _store != null)
+                    {
+                        boolean exists = false;
+                        try
+                        {
+                            exists = _store.exists(_id);
+                        }
+                        catch (Exception e)
+                        {
+                            throw new ServletException(e);
+                        }
+
+                        switch (check.toLowerCase())
+                        {
+                            case "true" -> assertTrue(exists);
+                            case "false" -> assertFalse(exists);
+                        }
+                    }
+
+                    if ("createinv".equals(action))
+                    {
+                        session.invalidate();
+                        assertNull(request.getSession(false));
+                        assertNotNull(session);
+                    }
+                    else if ("createinvcreate".equals(action))
+                    {
+                        session.invalidate();
+                        assertNull(request.getSession(false));
+                        assertNotNull(session);
+                        session = request.getSession(true);
+                        _id = session.getId();
+                    }
                 }
             }
+        }
+
+        private HttpSession createAndSaveSessionId(HttpServletRequest request)
+        {
+            HttpSession session = request.getSession(true);
+            _id = session.getId();
+            session.setAttribute("value", 1);
+            return session;
         }
     }
 
