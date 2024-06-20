@@ -29,7 +29,7 @@
             <require>asciidoctor-diagram</require>
           </requires>
           <attributes>
-            <JDURL>http://www.eclipse.org/jetty/javadoc/jetty-9</JDURL>
+            <JDURL>https://jetty.org/javadoc/jetty-9</JDURL>
             <JXURL>http://download.eclipse.org/jetty/stable-9/xref</JXURL>
             <SRCDIR>${basedir}/..</SRCDIR>
             <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>

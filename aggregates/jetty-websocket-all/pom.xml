@@ -65,7 +65,7 @@
                 <manifest></manifest>
                 <manifestEntries>
                   <mode>development</mode>
-                  <url>https://eclipse.org/jetty</url>
+                  <url>https://jetty.org/</url>
                   <Built-By>${user.name}</Built-By>
                   <package>org.eclipse.jetty</package>
                   <Bundle-License>https://raw.githubusercontent.com/eclipse/jetty.project/master/NOTICE.txt</Bundle-License>
