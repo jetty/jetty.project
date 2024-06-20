@@ -542,6 +542,7 @@ public class ResourceServlet extends HttpServlet
                 if (included)
                     yield URIUtil.encodePath((String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH));
                 else if (request instanceof ServletApiRequest apiRequest)
+                    // Strip the context path from the canonically encoded path, so no need to re-encode (and mess up %2F etc.)
                     yield Context.getPathInContext(request.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
                 else
                     yield URIUtil.encodePath(request.getServletPath());
@@ -560,6 +561,7 @@ public class ResourceServlet extends HttpServlet
                     if (included)
                         yield URIUtil.encodePath(URIUtil.addPaths((String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH), (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO)));
                     else if (request instanceof ServletApiRequest apiRequest)
+                        // Strip the context path from the canonically encoded path, so no need to re-encode (and mess up %2F etc.)
                         yield Context.getPathInContext(request.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
                     else
                         yield URIUtil.encodePath(URIUtil.addPaths(request.getServletPath(), request.getPathInfo()));

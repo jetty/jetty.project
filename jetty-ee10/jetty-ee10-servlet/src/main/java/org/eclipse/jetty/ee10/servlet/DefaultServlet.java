@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -156,7 +157,7 @@ public class DefaultServlet extends ResourceServlet
         if (deprecatedPath != null)
             return deprecatedPath;
 
-        if (request.getPathInfo() != null)
+        if (request.getHttpServletMapping().getMappingMatch() != MappingMatch.DEFAULT)
         {
             if (warned.compareAndSet(false, true))
                 LOG.warn("Incorrect mapping for DefaultServlet at %s. Use ResourceServlet".formatted(request.getHttpServletMapping().getPattern()));
@@ -173,8 +174,8 @@ public class DefaultServlet extends ResourceServlet
         }
 
         if (request instanceof ServletApiRequest apiRequest)
+            // Strip the context path from the canonically encoded path, so no need to re-encode (and mess up %2F etc.)
             return Context.getPathInContext(request.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
-
 
         return URIUtil.encodePath(request.getServletPath());
     }
