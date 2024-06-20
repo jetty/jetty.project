@@ -81,7 +81,7 @@ public class ProxyWebAppTest
     @Tag("external")
     public void testProxyRequest() throws InterruptedException, ExecutionException, TimeoutException
     {
-        ContentResponse response = client.newRequest(server.getURI().resolve("/proxy/current/"))
+        ContentResponse response = client.newRequest(server.getURI().resolve("/proxy/jetty-12/index.html"))
             .followRedirects(false)
             .send();
 
@@ -92,7 +92,6 @@ public class ProxyWebAppTest
         assertThat("response status", response.getStatus(), is(HttpStatus.OK_200));
         // Expecting a Javadoc / APIDoc response - look for something unique for APIdoc.
         String body = response.getContentAsString();
-        assertThat(body, containsString("All&nbsp;Classes"));
-        assertThat(body, containsString("<title>Overview (Jetty :: Project 9."));
+        assertThat(body, containsString("<title>Overview (Eclipse Jetty API Doc"));
     }
 }
